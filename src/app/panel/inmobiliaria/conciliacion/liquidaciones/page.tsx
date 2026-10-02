@@ -26,7 +26,7 @@
  * fallan avisan con un toast honesto y dejan la fila intacta.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
 import { Receipt, ShieldCheck } from '@phosphor-icons/react'
@@ -65,6 +65,16 @@ import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  LARGO_MAXIMO_DEL_PERIODO,
+  LARGO_MAXIMO_DEL_PROPIETARIO,
+  MONTO_MAXIMO_DE_LA_LIQUIDACION,
+  erroresDeLaLiquidacion,
+  type CampoDeLaLiquidacion,
+} from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
 import { Chip } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
@@ -218,6 +228,24 @@ const EMPTY_FORM: GenerateFormState = {
   otherDeductionsCop: '',
 }
 
+/** Los campos del diálogo, en el orden en que se ven (el primero con error recibe el foco). */
+const CAMPOS_DE_LA_LIQUIDACION: readonly CampoDeLaLiquidacion[] = [
+  'ownerName',
+  'period',
+  'grossCop',
+  'commissionCop',
+  'otherDeductionsCop',
+]
+
+/** El `id` de cada campo (el de su `<Label htmlFor>`). */
+const ID_DEL_CAMPO: Record<CampoDeLaLiquidacion, string> = {
+  ownerName: 'liq-owner',
+  period: 'liq-period',
+  grossCop: 'liq-gross',
+  commissionCop: 'liq-commission',
+  otherDeductionsCop: 'liq-other',
+}
+
 function toIntCop(raw: string): number {
   const n = Math.trunc(Number(raw))
   return Number.isFinite(n) && n >= 0 ? n : 0
@@ -262,12 +290,54 @@ function ConciliacionLiquidaciones() {
   const canGenerate =
     form.period.trim().length > 0 && form.grossCop.trim().length > 0 && !busy
 
+  /**
+   * El error de cada campo: el tope atajado antes de enviar o lo que dijo el
+   * micro (un 400 con `campos`). Se borra en cuanto la persona toca el campo.
+   */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaLiquidacion, string>>>({})
+
+  function escribir(campo: CampoDeLaLiquidacion, valor: string) {
+    setForm((f) => ({ ...f, [campo]: valor }))
+    setErrores((e) => (e[campo] ? { ...e, [campo]: undefined } : e))
+  }
+
+  /**
+   * El campo que recibe el foco. Se enfoca DESPUÉS del render: mientras la
+   * orden viaja los campos están apagados (`busy`) y un campo apagado no se
+   * puede enfocar.
+   */
+  const [aEnfocar, setAEnfocar] = useState<CampoDeLaLiquidacion | null>(null)
+  useEffect(() => {
+    if (!aEnfocar || busy) return
+    document.getElementById(ID_DEL_CAMPO[aEnfocar])?.focus()
+    setAEnfocar(null)
+  }, [aEnfocar, busy])
+
+  function mostrarErrores(porCampo: Partial<Record<CampoDeLaLiquidacion, string>>) {
+    setErrores(porCampo)
+    setAEnfocar(CAMPOS_DE_LA_LIQUIDACION.find((c) => porCampo[c]) ?? null)
+  }
+
+  /** Lo que cada input le dice al lector de pantalla. */
+  function aria(campo: CampoDeLaLiquidacion) {
+    return errores[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {}
+  }
+
   function resetForm() {
     setForm(EMPTY_FORM)
+    setErrores({})
   }
 
   async function handleGenerate() {
     if (!canGenerate) return
+    // Lo que el micro (o la columna) rechazaría se ataja acá, en su campo.
+    const delCliente = erroresDeLaLiquidacion(form)
+    if (Object.keys(delCliente).length > 0) {
+      mostrarErrores(delCliente)
+      return
+    }
     setBusy(true)
     const result = await generateSettlement({
       period: form.period.trim(),
@@ -279,11 +349,20 @@ function ConciliacionLiquidaciones() {
     setBusy(false)
 
     if (!result.ok) {
-      toast.error(
-        result.error === 'not_configured'
-          ? 'No se pudo generar: servicio no configurado.'
-          : `No se pudo generar la liquidación (${result.error ?? 'error'}).`,
-      )
+      if (result.error === 'not_configured') {
+        toast.error('No se pudo generar: servicio no configurado.')
+        return
+      }
+      // Con la regla de oro: lo que el micro dijo de un campo va a SU campo;
+      // al toast sólo lo que no tiene dónde ir. Antes: «No se pudo generar la
+      // liquidación (403).»
+      const reparto = repartirErroresDelServidor<CampoDeLaLiquidacion>(result.fallo, {
+        campos: CAMPOS_DE_LA_LIQUIDACION,
+        porDefecto: 'No se pudo generar la liquidación.',
+        accion: 'generar la liquidación',
+      })
+      mostrarErrores(reparto.porCampo)
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
       return
     }
     toast.success('Liquidación generada como borrador.')
@@ -306,7 +385,11 @@ function ConciliacionLiquidaciones() {
       toast.error(
         result.error === 'not_configured'
           ? 'No se pudo aprobar: servicio no configurado.'
-          : `No se pudo aprobar la liquidación (${result.error ?? 'error'}).`,
+          : // Con la regla de oro; antes: «No se pudo aprobar la liquidación (409).»
+            mensajeParaLaPersona(result.fallo, {
+              porDefecto: 'No se pudo aprobar la liquidación.',
+              accion: 'aprobar la liquidación',
+            }),
       )
       return
     }
@@ -471,20 +554,26 @@ function ConciliacionLiquidaciones() {
               <Input
                 id="liq-owner"
                 value={form.ownerName}
-                onChange={(e) => setForm((f) => ({ ...f, ownerName: e.target.value }))}
+                onChange={(e) => escribir('ownerName', e.target.value)}
                 placeholder="Nombre del propietario"
+                maxLength={LARGO_MAXIMO_DEL_PROPIETARIO}
                 disabled={busy}
+                {...aria('ownerName')}
               />
+              <ErrorDelCampo id="liq-owner-error" mensaje={errores.ownerName} className="mt-0" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="liq-period">Periodo</Label>
               <Input
                 id="liq-period"
                 value={form.period}
-                onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))}
+                onChange={(e) => escribir('period', e.target.value)}
                 placeholder="Ej: 2026-06 o Junio 2026"
+                maxLength={LARGO_MAXIMO_DEL_PERIODO}
                 disabled={busy}
+                {...aria('period')}
               />
+              <ErrorDelCampo id="liq-period-error" mensaje={errores.period} className="mt-0" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
@@ -494,11 +583,14 @@ function ConciliacionLiquidaciones() {
                   type="number"
                   inputMode="numeric"
                   min={0}
+                  max={MONTO_MAXIMO_DE_LA_LIQUIDACION}
                   value={form.grossCop}
-                  onChange={(e) => setForm((f) => ({ ...f, grossCop: e.target.value }))}
+                  onChange={(e) => escribir('grossCop', e.target.value)}
                   placeholder="0"
                   disabled={busy}
+                  {...aria('grossCop')}
                 />
+                <ErrorDelCampo id="liq-gross-error" mensaje={errores.grossCop} className="mt-0" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="liq-commission">Comisión (COP)</Label>
@@ -507,11 +599,14 @@ function ConciliacionLiquidaciones() {
                   type="number"
                   inputMode="numeric"
                   min={0}
+                  max={MONTO_MAXIMO_DE_LA_LIQUIDACION}
                   value={form.commissionCop}
-                  onChange={(e) => setForm((f) => ({ ...f, commissionCop: e.target.value }))}
+                  onChange={(e) => escribir('commissionCop', e.target.value)}
                   placeholder="0"
                   disabled={busy}
+                  {...aria('commissionCop')}
                 />
+                <ErrorDelCampo id="liq-commission-error" mensaje={errores.commissionCop} className="mt-0" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="liq-other">Otros descuentos (COP)</Label>
@@ -520,11 +615,14 @@ function ConciliacionLiquidaciones() {
                   type="number"
                   inputMode="numeric"
                   min={0}
+                  max={MONTO_MAXIMO_DE_LA_LIQUIDACION}
                   value={form.otherDeductionsCop}
-                  onChange={(e) => setForm((f) => ({ ...f, otherDeductionsCop: e.target.value }))}
+                  onChange={(e) => escribir('otherDeductionsCop', e.target.value)}
                   placeholder="0"
                   disabled={busy}
+                  {...aria('otherDeductionsCop')}
                 />
+                <ErrorDelCampo id="liq-other-error" mensaje={errores.otherDeductionsCop} className="mt-0" />
               </div>
             </div>
 

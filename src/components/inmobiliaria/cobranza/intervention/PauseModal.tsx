@@ -12,6 +12,9 @@ import { useEffect, useState } from 'react'
 import { Pause, Play } from '@phosphor-icons/react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { erroresDeLaIntervencion, errorDelMotivo } from './error-de-la-intervencion'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -64,12 +67,15 @@ export function PauseModal({
   const [reason, setReason] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  /** El error de cada campo: el del cliente (el motivo) o el que mandó el micro en `campos`. */
+  const [errores, setErrores] = useState<Partial<Record<'reason' | 'paused_until', string>>>({})
 
   useEffect(() => {
     if (open) {
       setPausedUntil(defaultPausedUntil())
       setReason('')
       setError(null)
+      setErrores({})
     }
   }, [open])
 
@@ -78,12 +84,16 @@ export function PauseModal({
 
   const handleSubmit = async () => {
     setError(null)
+    setErrores({})
     if (envMissing) {
       setError(t('inmobiliaria.ai.cobranza.detail.acciones.envMissing'))
       return
     }
-    if (reason.trim().length < 5) {
-      setError('Min 5 characters')
+    // Antes: «Min 5 characters», en inglés y lejos del campo.
+    const delMotivo = errorDelMotivo(reason, 5)
+    if (delMotivo) {
+      setErrores({ reason: delMotivo })
+      document.getElementById('pausa-motivo')?.focus()
       return
     }
     setSubmitting(true)
@@ -102,18 +112,23 @@ export function PauseModal({
           }),
         },
       )
-      if (!res.ok) {
-        setError(`${res.status}`)
-        return
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       onSuccess()
       onClose()
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cobranza.detail.acciones.genericError'),
-      )
+      // Antes: el status crudo («500»). Un `fetch` que no salió llega tal cual
+      // (el traductor dice «conexión»).
+      const reanudar = modo === 'reanudar'
+      const r = erroresDeLaIntervencion<'reason' | 'paused_until'>(err, {
+        campos: ['reason', 'paused_until'],
+        porDefecto: reanudar ? 'No pudimos reanudar la cobranza.' : 'No pudimos pausar la cobranza.',
+        accion: reanudar ? 'reanudar la cobranza' : 'pausar la cobranza',
+      })
+      setErrores(r.porCampo)
+      setError(r.general)
+      if (r.primero) {
+        document.getElementById(r.primero === 'reason' ? 'pausa-motivo' : 'pausa-hasta')?.focus()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -156,11 +171,18 @@ export function PauseModal({
                   {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
                 </span>
                 <Input
+                  id="pausa-hasta"
                   type="date"
                   value={pausedUntil}
-                  onChange={(e) => setPausedUntil(e.target.value)}
+                  onChange={(e) => {
+                    setPausedUntil(e.target.value)
+                    setErrores(({ paused_until: _, ...resto }) => resto)
+                  }}
                   className="mt-1 w-full"
+                  aria-invalid={errores.paused_until ? true : undefined}
+                  aria-describedby={errores.paused_until ? 'pausa-hasta-error' : undefined}
                 />
+                <ErrorDelCampo id="pausa-hasta-error" mensaje={errores.paused_until} />
               </label>
             )}
             <label className="block">
@@ -168,20 +190,31 @@ export function PauseModal({
                 {t('inmobiliaria.ai.cobranza.detail.acciones.pause.reasonLabel')}
               </span>
               <Textarea
+                id="pausa-motivo"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e) => {
+                  setReason(e.target.value)
+                  setErrores(({ reason: _, ...resto }) => resto)
+                }}
                 rows={3}
                 minLength={5}
                 placeholder={t(
                   'inmobiliaria.ai.cobranza.detail.acciones.pause.reasonPlaceholder',
                 )}
                 className="mt-1 w-full"
+                aria-invalid={errores.reason ? true : undefined}
+                aria-describedby={errores.reason ? 'pausa-motivo-error' : undefined}
               />
+              <ErrorDelCampo id="pausa-motivo-error" mensaje={errores.reason} />
             </label>
           </div>
         )}
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && (
+          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+            {error}
+          </p>
+        )}
 
         <DialogFooter>
           <Button

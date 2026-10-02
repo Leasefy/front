@@ -43,8 +43,40 @@ import {
   type EtapaCartera,
 } from '@/lib/cobranza/acuerdo-general-vocab'
 import type { AcuerdoGeneralNuevo } from '@/lib/hooks/cobranza/use-acuerdos-generales'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  erroresDelAcuerdoGeneral,
+  type CampoDelAcuerdoGeneral,
+} from '@/lib/hooks/cobranza/limites-de-cobranza'
 
 const VOLVER = '/panel/inmobiliaria/pagos/cobranza/acuerdos'
+
+/**
+ * El `id` del control de cada campo, en el orden de la pantalla. Su error vive
+ * en `${id}-error` (el `aria-describedby` del control) y el primero con error
+ * recibe el foco.
+ */
+const ID_DEL_CAMPO: Record<CampoDelAcuerdoGeneral, string> = {
+  name: 'ag-nombre',
+  conditionEs: 'ag-condicion',
+  minDaysOverdue: 'ag-min-dias',
+  maxDaysOverdue: 'ag-max-dias',
+  minAmountCop: 'ag-min-monto',
+  maxAmountCop: 'ag-max-monto',
+  discountPct: 'ag-descuento',
+  maxInstallments: 'ag-cuotas',
+  minInitialPct: 'ag-inicial',
+  priority: 'ag-prioridad',
+}
+const CAMPOS = Object.keys(ID_DEL_CAMPO) as CampoDelAcuerdoGeneral[]
+
+type ErroresDelAcuerdo = Partial<Record<CampoDelAcuerdoGeneral, string>>
+
+function enfocarElPrimero(errores: ErroresDelAcuerdo) {
+  const primero = CAMPOS.find((c) => errores[c])
+  if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+}
 
 export interface Borrador {
   name: string
@@ -127,8 +159,24 @@ export function AcuerdoGeneralForm({
   const [b, setB] = useState<Borrador>(inicial)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** El error de cada campo: el del cliente (los topes del micro) o el que el micro mandó en `campos`. */
+  const [errores, setErrores] = useState<ErroresDelAcuerdo>({})
 
   const set = useCallback(<K extends keyof Borrador>(k: K, v: Borrador[K]) => {
+    // Al corregir un campo, su error ya no aplica (y el del par del rango tampoco).
+    setErrores((prev) => {
+      const pares: Partial<Record<keyof Borrador, CampoDelAcuerdoGeneral[]>> = {
+        minDaysOverdue: ['minDaysOverdue', 'maxDaysOverdue'],
+        maxDaysOverdue: ['minDaysOverdue', 'maxDaysOverdue'],
+        minAmountCop: ['minAmountCop', 'maxAmountCop'],
+        maxAmountCop: ['minAmountCop', 'maxAmountCop'],
+      }
+      const limpiar = pares[k] ?? (CAMPOS.includes(k as CampoDelAcuerdoGeneral) ? [k as CampoDelAcuerdoGeneral] : [])
+      if (!limpiar.some((c) => prev[c])) return prev
+      const siguiente = { ...prev }
+      for (const c of limpiar) delete siguiente[c]
+      return siguiente
+    })
     setB((prev) => {
       const siguiente = { ...prev, [k]: v }
       // El porcentaje y el «sobre qué» son la MISMA decisión escrita en dos
@@ -174,8 +222,16 @@ export function AcuerdoGeneralForm({
     !(b.discountPct === 0 && b.maxInstallments === 0)
 
   const guardar = useCallback(async () => {
-    setGuardando(true)
     setError(null)
+    // Lo que el micro rechazaría se ataja acá, debajo de su campo.
+    const delCliente = erroresDelAcuerdoGeneral(b)
+    if (Object.keys(delCliente).length > 0) {
+      setErrores(delCliente)
+      enfocarElPrimero(delCliente)
+      return
+    }
+    setErrores({})
+    setGuardando(true)
     try {
       await onGuardar({
         name: b.name.trim(),
@@ -194,10 +250,25 @@ export function AcuerdoGeneralForm({
       })
       router.push(VOLVER)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos guardar el acuerdo.')
+      // Un 400 con `campos` va a su campo; arriba de Guardar, sólo lo suelto
+      // (las etapas, un 409, un 5xx con su referencia, la red).
+      const reparto = repartirErroresDelServidor<CampoDelAcuerdoGeneral>(e, {
+        campos: CAMPOS,
+        porDefecto: 'No pudimos guardar el acuerdo.',
+        accion: 'guardar el acuerdo',
+      })
+      setErrores(reparto.porCampo)
+      enfocarElPrimero(reparto.porCampo)
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
       setGuardando(false)
     }
   }, [b, onGuardar, router])
+
+  /** Lo que lleva cada control para leer su error. */
+  const aria = (campo: CampoDelAcuerdoGeneral) => ({
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
+  })
 
   return (
     <main className="p-6 lg:p-8 space-y-6 max-w-3xl">
@@ -235,7 +306,9 @@ export function AcuerdoGeneralForm({
             maxLength={120}
             placeholder="Cierre rápido de fin de mes"
             onChange={(e) => set('name', e.target.value)}
+            {...aria('name')}
           />
+          <ErrorDelCampo id="ag-nombre-error" mensaje={errores.name} />
         </div>
 
         <div className="space-y-1.5">
@@ -248,10 +321,13 @@ export function AcuerdoGeneralForm({
             maxLength={280}
             placeholder="Firma el acuerdo y paga la inicial en 7 días"
             onChange={(e) => set('conditionEs', e.target.value)}
+            {...aria('conditionEs')}
           />
-          <p className="text-xs text-fg-muted">
-            Se lo dice tal cual, en la llamada. Escribilo como se lo dirías tú.
-          </p>
+          <ErrorDelCampo
+            id="ag-condicion-error"
+            mensaje={errores.conditionEs}
+            pista="Se lo dice tal cual, en la llamada. Escribilo como se lo dirías tú."
+          />
         </div>
       </Card>
 
@@ -293,7 +369,9 @@ export function AcuerdoGeneralForm({
               value={b.minDaysOverdue ?? ''}
               placeholder="Sin mínimo"
               onChange={(e) => set('minDaysOverdue', numeroOpcional(e.target.value))}
+              {...aria('minDaysOverdue')}
             />
+            <ErrorDelCampo id="ag-min-dias-error" mensaje={errores.minDaysOverdue} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ag-max-dias" className="text-sm">
@@ -305,7 +383,9 @@ export function AcuerdoGeneralForm({
               value={b.maxDaysOverdue ?? ''}
               placeholder="Sin máximo"
               onChange={(e) => set('maxDaysOverdue', numeroOpcional(e.target.value))}
+              {...aria('maxDaysOverdue')}
             />
+            <ErrorDelCampo id="ag-max-dias-error" mensaje={errores.maxDaysOverdue} />
           </div>
         </div>
 
@@ -320,7 +400,9 @@ export function AcuerdoGeneralForm({
               value={b.minAmountCop ?? ''}
               placeholder="Sin mínimo"
               onChange={(e) => set('minAmountCop', numeroOpcional(e.target.value))}
+              {...aria('minAmountCop')}
             />
+            <ErrorDelCampo id="ag-min-monto-error" mensaje={errores.minAmountCop} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ag-max-monto" className="text-sm">
@@ -332,7 +414,9 @@ export function AcuerdoGeneralForm({
               value={b.maxAmountCop ?? ''}
               placeholder="Sin máximo"
               onChange={(e) => set('maxAmountCop', numeroOpcional(e.target.value))}
+              {...aria('maxAmountCop')}
             />
+            <ErrorDelCampo id="ag-max-monto-error" mensaje={errores.maxAmountCop} />
           </div>
         </div>
       </Card>
@@ -356,7 +440,9 @@ export function AcuerdoGeneralForm({
               inputMode="numeric"
               value={b.discountPct}
               onChange={(e) => set('discountPct', entero(e.target.value, 0))}
+              {...aria('discountPct')}
             />
+            <ErrorDelCampo id="ag-descuento-error" mensaje={errores.discountPct} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm">Sobre qué</Label>
@@ -386,8 +472,9 @@ export function AcuerdoGeneralForm({
               inputMode="numeric"
               value={b.maxInstallments}
               onChange={(e) => set('maxInstallments', entero(e.target.value, 0))}
+              {...aria('maxInstallments')}
             />
-            <p className="text-xs text-fg-muted">0 = pago único.</p>
+            <ErrorDelCampo id="ag-cuotas-error" mensaje={errores.maxInstallments} pista="0 = pago único." />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ag-inicial" className="text-sm">
@@ -399,7 +486,9 @@ export function AcuerdoGeneralForm({
               value={b.minInitialPct}
               disabled={b.maxInstallments === 0}
               onChange={(e) => set('minInitialPct', entero(e.target.value, 0))}
+              {...aria('minInitialPct')}
             />
+            <ErrorDelCampo id="ag-inicial-error" mensaje={errores.minInitialPct} />
           </div>
         </div>
       </Card>
@@ -413,13 +502,18 @@ export function AcuerdoGeneralForm({
               Si un deudor califica para varios acuerdos, gana el número más alto.
             </p>
           </div>
-          <Input
-            className="w-24"
-            inputMode="numeric"
-            aria-label="Prioridad"
-            value={b.priority}
-            onChange={(e) => set('priority', entero(e.target.value, 0))}
-          />
+          <div className="w-full sm:w-auto sm:max-w-[16rem]">
+            <Input
+              id="ag-prioridad"
+              className="w-24"
+              inputMode="numeric"
+              aria-label="Prioridad"
+              value={b.priority}
+              onChange={(e) => set('priority', entero(e.target.value, 0))}
+              {...aria('priority')}
+            />
+            <ErrorDelCampo id="ag-prioridad-error" mensaje={errores.priority} />
+          </div>
         </div>
 
         <div className="flex items-start justify-between gap-4 border-t border-border pt-4">

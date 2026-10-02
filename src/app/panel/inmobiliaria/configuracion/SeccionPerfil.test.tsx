@@ -133,10 +133,64 @@ describe('SeccionPerfil — el correo de otra inmobiliaria', () => {
     expect(init.method).toBe('PUT')
     expect(JSON.parse(String(init.body))).toEqual({ email: 'hola@valle.co' })
 
-    expect(h.toastError).toHaveBeenCalledWith('Error al guardar configuración', { description: MENSAJE })
+    // Por el traductor: el `message` del 409 es el aviso entero (antes iba
+    // debajo de un «Error al guardar configuración» fijo).
+    expect(h.toastError).toHaveBeenCalledWith(MENSAJE)
     expect(h.toastSuccess).not.toHaveBeenCalled()
     expect(h.refetch).not.toHaveBeenCalled()
     // Relanzado con su `code`, para quien quiera marcar el campo.
     expect(h.resultado.error).toMatchObject({ status: 409, code: 'CORREO_DE_OTRA_INMOBILIARIA', message: MENSAJE })
+  })
+})
+
+/**
+ * 02-10-2026 · tanda 2 del sistema de errores (A6): la regla de oro en el
+ * guardado de Configuración.
+ */
+describe('SeccionPerfil — el guardado dice lo que de verdad pasó', () => {
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    fetchFalso.mockResolvedValue(
+      new Response(
+        JSON.stringify({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'a1b2c3d4' }),
+        { status: 500, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+
+    await guardarCorreo()
+
+    expect(h.toastError).toHaveBeenCalledTimes(1)
+    const texto = String(h.toastError.mock.calls[0][0])
+    expect(texto).toContain('No pudimos guardar la configuración: algo falló de nuestro lado')
+    expect(texto).toContain('a1b2c3d4')
+    expect(texto).not.toMatch(/conexi/i)
+    expect(h.resultado.error).toMatchObject({ status: 500 })
+  })
+
+  it('sin respuesta (status 0) sí habla de la conexión', async () => {
+    fetchFalso.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await guardarCorreo()
+
+    expect(h.toastError).toHaveBeenCalledTimes(1)
+    expect(String(h.toastError.mock.calls[0][0])).toMatch(/conexi/i)
+  })
+
+  it('un 400 con campos de los datos de la empresa no sale en el toast: lo pinta el formulario en su campo', async () => {
+    fetchFalso.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['El correo puede tener hasta 255 caracteres.'],
+          campos: [{ campo: 'email', regla: 'longitud_maxima', mensaje: 'El correo puede tener hasta 255 caracteres.' }],
+        }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+
+    await guardarCorreo()
+
+    expect(h.toastError).not.toHaveBeenCalled()
+    expect(h.resultado.error).toMatchObject({ status: 400, code: 'DATOS_INVALIDOS' })
   })
 })

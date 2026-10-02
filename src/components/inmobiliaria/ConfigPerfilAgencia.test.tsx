@@ -21,6 +21,12 @@ vi.mock('sonner', () => ({
 
 import { ConfigPerfilAgencia } from './ConfigPerfilAgencia'
 import type { AgencyProfile } from '@/lib/types/inmobiliaria'
+import { ApiError } from '@/lib/api/client'
+import { toast } from 'sonner'
+import {
+  MENSAJE_NIT_INVALIDO,
+  MENSAJES_DE_LA_INMOBILIARIA,
+} from '@/lib/configuracion/limites-de-la-inmobiliaria'
 
 const AGENCY: AgencyProfile = {
   id: 'ag-1',
@@ -586,11 +592,32 @@ describe('<ConfigPerfilAgencia> — impuestos y retenciones', () => {
     expect(props.onSave).toHaveBeenCalledWith({ diasDePlazo: 5 })
   })
 
-  it('un NIT con letras sigue siendo inválido', async () => {
-    const props = render({ agency: { ...AGENCY, nit: 'ABC-1' } })
+  it('un NIT con letras sigue siendo inválido (la regla del registro, con su frase)', async () => {
+    // 02-10-2026: el NIT sólo se escribe mientras la agencia no tiene uno; uno
+    // ya guardado está bloqueado y NO se valida (no puede impedir guardar lo
+    // demás: la persona no lo puede cambiar).
+    const props = render({ agency: { ...AGENCY, nit: null } })
     enterEditMode()
+    act(() => setInputValue(container.querySelector('input[placeholder="901.234.567-8"]') as HTMLInputElement, 'ABC-1'))
     await clickSave()
     expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-nit-error')?.textContent).toBe(MENSAJE_NIT_INVALIDO)
+  })
+
+  it('un NIT guardado con formato viejo (bloqueado) no impide guardar otro campo', async () => {
+    const props = render({ agency: { ...AGENCY, nit: 'ABC-1' } })
+    enterEditMode()
+    act(() => setInputValue(container.querySelector('[data-testid="dias-de-plazo"]') as HTMLInputElement, '5'))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ diasDePlazo: 5 })
+  })
+
+  it('el NIT se manda sin puntos ni espacios (el back usa la regla del registro)', async () => {
+    const props = render({ agency: { ...AGENCY, nit: null } })
+    enterEditMode()
+    act(() => setInputValue(container.querySelector('input[placeholder="901.234.567-8"]') as HTMLInputElement, '901.234.567-8'))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ nit: '901234567-8' })
   })
 })
 
@@ -909,5 +936,106 @@ describe('<ConfigPerfilAgencia> — dirección y código postal con la regla del
     act(() => setInputValue(web, 'https://abc.com.co'))
     await clickSave()
     expect(props.onSave).toHaveBeenCalledWith({ website: 'https://abc.com.co' })
+  })
+})
+
+/**
+ * 02-10-2026 · tanda 2 del sistema de errores (A6): los topes del back
+ * atajados antes de mandar, y los `campos` de un 400 en su campo.
+ */
+describe('<ConfigPerfilAgencia> — errores en su campo', () => {
+  const porId = (id: string) => container.querySelector(`#${id}`) as HTMLInputElement | null
+  /** Por su valor: así la prueba también corre contra el formulario de antes. */
+  const porValor = (valor: string) =>
+    Array.from(container.querySelectorAll('input')).find((i) => i.value === valor) as HTMLInputElement
+
+  it('un nombre de 201 caracteres no se manda: la frase del back en su campo', async () => {
+    const props = render()
+    enterEditMode()
+    act(() => setInputValue(porValor('Inmobiliaria ABC'), 'a'.repeat(201)))
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(porId('perfil-name-error')?.textContent).toBe(MENSAJES_DE_LA_INMOBILIARIA.nombreLargo)
+    expect(porId('perfil-name')?.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('el tope sólo mira lo que cambió: un teléfono viejo de 25 caracteres no impide guardar otro campo', async () => {
+    const props = render({ agency: { ...AGENCY, phone: '+57 601 345 6789 ext. 1234' } })
+    enterEditMode()
+    act(() => setInputValue(porValor('Bogota'), 'Medellín'))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ city: 'Medellín' })
+  })
+
+  it('un monto de doble aprobación de once cifras no se manda', async () => {
+    const props = render()
+    enterEditMode()
+    act(() =>
+      setInputValue(
+        container.querySelector('[data-testid="dispersion-monto-doble-aprobacion"]') as HTMLInputElement,
+        '30000000000',
+      ),
+    )
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(porId('perfil-dispersionMontoDobleAprobacion-error')?.textContent).toBe(
+      MENSAJES_DE_LA_INMOBILIARIA.montoDobleAprobacionMaximo,
+    )
+  })
+
+  it('🔴 un 400 con campos pinta cada error en su campo, con el foco en el primero, y sólo lo suelto va al toast', async () => {
+    const error = new ApiError(
+      400,
+      ['El correo puede tener hasta 255 caracteres.', 'El nombre del representante legal puede tener hasta 200 caracteres.', 'Algo que este formulario no muestra.'],
+      'DATOS_INVALIDOS',
+      {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [
+          { campo: 'email', regla: 'longitud_maxima', mensaje: 'El correo puede tener hasta 255 caracteres.' },
+          {
+            campo: 'legalRepresentative',
+            regla: 'longitud_maxima',
+            mensaje: 'El nombre del representante legal puede tener hasta 200 caracteres.',
+          },
+          { campo: 'branding.socials.x', regla: 'longitud_maxima', mensaje: 'Algo que este formulario no muestra.' },
+        ],
+      },
+    )
+    const props = render({ onSave: vi.fn().mockRejectedValue(error) })
+    enterEditMode()
+    act(() => setInputValue(porValor('Bogota'), 'Medellín'))
+    await clickSave()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30))
+    })
+
+    expect(props.onSave).toHaveBeenCalledTimes(1)
+    expect(porId('perfil-email-error')?.textContent).toBe('El correo puede tener hasta 255 caracteres.')
+    expect(porId('perfil-legalRepresentative-error')?.textContent).toBe(
+      'El nombre del representante legal puede tener hasta 200 caracteres.',
+    )
+    expect(porId('perfil-email')?.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(porId('perfil-email'))
+    // Lo que el formulario no muestra va al toast; lo demás, no.
+    expect(toast.error).toHaveBeenCalledTimes(1)
+    expect(toast.error).toHaveBeenCalledWith('Algo que este formulario no muestra.')
+    // Sigue en edición, con lo escrito.
+    expect(porValor('Medellín')).toBeTruthy()
+  })
+
+  it('un 5xx no pinta campos ni repite el toast (lo dice el padre por el traductor) y se queda en edición', async () => {
+    const error = new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      referencia: 'a1b2c3d4',
+    })
+    const props = render({ onSave: vi.fn().mockRejectedValue(error) })
+    enterEditMode()
+    act(() => setInputValue(porValor('Bogota'), 'Medellín'))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledTimes(1)
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(findButton('Guardar cambios')).toBeTruthy()
   })
 })

@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisosApi } from '@/lib/api/avisos.service';
 import type { AvisoAutomatico, EstadoDeLosAvisos } from '@/lib/api/avisos.service';
 import { cn } from '@/lib/utils';
@@ -98,9 +99,12 @@ export function SeccionAvisos() {
         toast.success(r.prendido ? 'Aviso prendido' : 'Aviso apagado');
       }
     } catch (e) {
-      toast.error('No se pudo cambiar el aviso', {
-        description: e instanceof Error ? e.message : undefined,
-      });
+toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo cambiar el aviso. Prueba de nuevo en un momento.',
+          accion: 'cambiar el aviso',
+        }),
+      );
     } finally {
       setGuardando(null);
     }
@@ -116,9 +120,12 @@ export function SeccionAvisos() {
         });
       }
     } catch (e) {
-      toast.error('No se pudo ver el correo', {
-        description: e instanceof Error ? e.message : undefined,
-      });
+toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo ver el correo. Prueba de nuevo en un momento.',
+          accion: 'armar la vista previa del correo',
+        }),
+      );
     }
   };
 

@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 
 export function ConfigPenalidadDeTerminacion({
@@ -38,6 +39,9 @@ export function ConfigPenalidadDeTerminacion({
     setGuardando(true);
     try {
       await onSave?.({ penalidadTerminacionCanones: canones });
+    } catch {
+      // El padre ya lo dijo en un toast, por el traductor. Sin este `catch`
+      // el rechazo quedaba sin atrapar (tanda 2 de errores, 02-10-2026).
     } finally {
       setGuardando(false);
     }
@@ -67,13 +71,15 @@ export function ConfigPenalidadDeTerminacion({
             disabled={!canEdit || guardando}
             className="mt-1 w-28"
             data-testid="penalidad-por-defecto"
+            aria-invalid={Boolean(error) || undefined}
+            aria-describedby="penalidad-por-defecto-error"
           />
         </label>
         <Button size="sm" variant="outline" disabled={!canEdit || guardando} onClick={() => void guardar()}>
           Guardar
         </Button>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      <ErrorDelCampo id="penalidad-por-defecto-error" mensaje={error} className="mt-0" />
     </section>
   );
 }

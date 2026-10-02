@@ -28,6 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── API shapes (matched to conciliacion-settlements.ts backend route) ────────
 
@@ -77,13 +78,19 @@ export interface SettlementsFilters {
 
 export interface GenerateResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   settlement?: ConciliacionSettlement
 }
 
 export interface ApproveResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   settlement?: ConciliacionSettlement
 }
 
@@ -209,15 +216,12 @@ export function useConciliacionSettlements(
             body: JSON.stringify(input),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const settlement = (await res.json()) as ConciliacionSettlement
         await fetchData()
         return { ok: true, settlement }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'generate_failed' }
+        return accionSinRespuesta(err, 'generate_failed')
       }
     },
     [agencyId, fetchData],
@@ -243,15 +247,12 @@ export function useConciliacionSettlements(
             }),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const settlement = (await res.json()) as ConciliacionSettlement
         await fetchData()
         return { ok: true, settlement }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'approve_failed' }
+        return accionSinRespuesta(err, 'approve_failed')
       }
     },
     [agencyId, fetchData],

@@ -28,6 +28,7 @@
 
 import { useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Buildings, Check, MagnifyingGlass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button, Input } from '@/components/ui';
@@ -130,7 +131,10 @@ export function AsignarInmuebleAlAsesor({
       onCerrar();
     } catch (err) {
       toast.error('No pudimos asignar el inmueble', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'asignar el inmueble',
+        }),
       });
     } finally {
       setGuardando(null);

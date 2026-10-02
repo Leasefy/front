@@ -34,7 +34,8 @@ export interface UsePilotoFlotaResult {
   notAvailable: boolean
   /** PUT en vuelo. */
   busy: boolean
-  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallidos?: string[] }>
+  /** `fallo` es el error entero para el traductor; `error`, el código viejo (no es para la persona). */
+  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown; fallidos?: string[] }>
   refetch: () => Promise<void>
 }
 
@@ -116,7 +117,7 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
       setBusy(false)
       if (!res.ok) {
         setData(previa)
-        return { ok: false, error: res.error }
+        return { ok: false, error: res.error, fallo: res.fallo }
       }
       if (res.data) {
         const { cambiados, fallidos, ...estado } = res.data

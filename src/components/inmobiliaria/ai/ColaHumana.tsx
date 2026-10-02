@@ -46,6 +46,8 @@ import { useI18n } from '@/lib/i18n'
 import type { TranslationParams } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
 import {
   Table,
   TableBody,
@@ -208,12 +210,15 @@ export interface ColaHumanaProps {
    * (`inmobiliaria.ai.workspace.pages.{agente}.estado.*`) in all estado chips.
    */
   agente?: string
-  /** Posts the action's body to its endpoint; returns ok/error for toasting. */
+  /**
+   * Posts the action's body to its endpoint. `fallo` es el error entero para
+   * el traductor (`error` es el código viejo y no se muestra).
+   */
   onAction: (
     item: WorkItem,
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Optional: open the work-item detail. */
   onOpen?: (item: WorkItem) => void
   /** Title for the empty state (defaults to the generic "Cola vacía"). */
@@ -255,7 +260,10 @@ function FilaDeCaso({
   const { t } = useI18n()
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
+  const motivoId = `reason-${item.id}`
 
   async function run(action: WorkItemAction, body?: Record<string, unknown>) {
     setBusyActionId(action.id)
@@ -265,8 +273,14 @@ function FilaDeCaso({
       toast.success(t(`${WORKSPACE_NS}.acciones.toastOk`, { label: action.label }))
       setReasonForActionId(null)
       setReasonText('')
+      setErrorDelMotivo(null)
     } else {
-      toast.error(t(`${WORKSPACE_NS}.acciones.toastFail`, { error: res.error ?? 'error' }))
+      // Con la regla de oro: el error del motivo a su campo (y el foco ahí);
+      // al toast lo demás. Antes: «No se pudo: 403» o el código del micro.
+      const { motivo, sueltos } = repartirFalloDeLaAccion(res.fallo, action.label, body?.reason !== undefined)
+      setErrorDelMotivo(motivo ?? null)
+      if (motivo) document.getElementById(motivoId)?.focus()
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
     }
   }
 
@@ -274,6 +288,7 @@ function FilaDeCaso({
     if (action.requiresReason) {
       // El primer clic despliega el motivo; el envío sale del panel de abajo.
       setReasonForActionId((cur) => (cur === action.id ? null : action.id))
+      setErrorDelMotivo(null)
       return
     }
     void run(action)
@@ -413,13 +428,20 @@ function FilaDeCaso({
                 })}
               </label>
               <Textarea
-                id={`reason-${item.id}`}
+                id={motivoId}
                 value={reasonText}
-                onChange={(e) => setReasonText(e.target.value)}
+                onChange={(e) => {
+                  setReasonText(e.target.value)
+                  setErrorDelMotivo(null)
+                }}
                 rows={2}
                 className="w-full max-w-2xl resize-none text-xs"
                 placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
+                {...(errorDelMotivo
+                  ? { 'aria-describedby': `${motivoId}-error`, 'aria-invalid': true as const }
+                  : {})}
               />
+              <ErrorDelCampo id={`${motivoId}-error`} mensaje={errorDelMotivo} className="mt-0" />
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -440,6 +462,7 @@ function FilaDeCaso({
                   onClick={() => {
                     setReasonForActionId(null)
                     setReasonText('')
+                    setErrorDelMotivo(null)
                   }}
                 >
                   {t(`${WORKSPACE_NS}.acciones.cancelar`)}

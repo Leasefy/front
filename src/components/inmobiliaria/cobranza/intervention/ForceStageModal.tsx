@@ -13,6 +13,12 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import {
+  erroresDeLaIntervencion,
+  LARGO_MAXIMO_DEL_MOTIVO,
+} from './error-de-la-intervencion'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
@@ -76,12 +82,15 @@ export function ForceStageModal({
   const [reason, setReason] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  /** El error de cada campo: el del cliente o el que mandó el micro en `campos`. */
+  const [errores, setErrores] = useState<Partial<Record<'target_stage' | 'reason', string>>>({})
 
   useEffect(() => {
     if (open) {
       setTarget('')
       setReason('')
       setError(null)
+      setErrores({})
     }
   }, [open])
 
@@ -90,16 +99,26 @@ export function ForceStageModal({
 
   const handleSubmit = async () => {
     setError(null)
+    setErrores({})
     if (envMissing) {
       setError(t('inmobiliaria.ai.cobranza.detail.acciones.envMissing'))
       return
     }
+    // Lo que falta se dice debajo de su campo (antes, todo en una línea suelta).
+    const delCliente: Partial<Record<'target_stage' | 'reason', string>> = {}
     if (!target) {
-      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetMissing'))
-      return
+      delCliente.target_stage = t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetMissing')
     }
     if (reason.trim().length < 10) {
-      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonTooShort'))
+      delCliente.reason = t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonTooShort')
+    } else if (reason.trim().length > LARGO_MAXIMO_DEL_MOTIVO) {
+      delCliente.reason = `El motivo puede tener hasta ${LARGO_MAXIMO_DEL_MOTIVO} caracteres.`
+    }
+    if (delCliente.target_stage || delCliente.reason) {
+      setErrores(delCliente)
+      document
+        .getElementById(delCliente.target_stage ? 'forzar-etapa-destino' : 'forzar-etapa-motivo')
+        ?.focus()
       return
     }
     setSubmitting(true)
@@ -112,18 +131,23 @@ export function ForceStageModal({
           body: JSON.stringify({ target_stage: target, reason: reason.trim() }),
         },
       )
-      if (!res.ok) {
-        setError(`${res.status}`)
-        return
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       onSuccess()
       onClose()
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cobranza.detail.acciones.genericError'),
-      )
+      // Antes: el status crudo («500»), o «Acción fallida — intenta de nuevo».
+      const r = erroresDeLaIntervencion<'target_stage' | 'reason'>(err, {
+        campos: ['target_stage', 'reason'],
+        porDefecto: 'No pudimos cambiar la etapa.',
+        accion: 'cambiar la etapa',
+      })
+      setErrores(r.porCampo)
+      setError(r.general)
+      if (r.primero) {
+        document
+          .getElementById(r.primero === 'target_stage' ? 'forzar-etapa-destino' : 'forzar-etapa-motivo')
+          ?.focus()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -178,9 +202,17 @@ export function ForceStageModal({
                 </span>
                 <Select
                   value={target}
-                  onValueChange={(v) => setTarget(v as CarteraStage)}
+                  onValueChange={(v) => {
+                    setTarget(v as CarteraStage)
+                    setErrores(({ target_stage: _, ...resto }) => resto)
+                  }}
                 >
-                  <SelectTrigger className="mt-1 w-full">
+                  <SelectTrigger
+                    id="forzar-etapa-destino"
+                    className="mt-1 w-full"
+                    aria-invalid={errores.target_stage ? true : undefined}
+                    aria-describedby={errores.target_stage ? 'forzar-etapa-destino-error' : undefined}
+                  >
                     <SelectValue
                       placeholder={t(
                         'inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetPlaceholder',
@@ -207,6 +239,7 @@ export function ForceStageModal({
                     })}
                   </SelectContent>
                 </Select>
+                <ErrorDelCampo id="forzar-etapa-destino-error" mensaje={errores.target_stage} />
               </label>
 
               {/* La consecuencia, en la misma pantalla donde se decide. Cambiar
@@ -232,20 +265,31 @@ export function ForceStageModal({
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
                 </span>
                 <Textarea
+                  id="forzar-etapa-motivo"
                   value={reason}
-                  onChange={(e) => setReason(e.target.value)}
+                  onChange={(e) => {
+                    setReason(e.target.value)
+                    setErrores(({ reason: _, ...resto }) => resto)
+                  }}
                   rows={4}
                   minLength={10}
                   placeholder={t(
                     'inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonPlaceholder',
                   )}
                   className="mt-1 w-full"
+                  aria-invalid={errores.reason ? true : undefined}
+                  aria-describedby={errores.reason ? 'forzar-etapa-motivo-error' : undefined}
                 />
+                <ErrorDelCampo id="forzar-etapa-motivo-error" mensaje={errores.reason} />
               </label>
             </div>
           ))}
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && (
+          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+            {error}
+          </p>
+        )}
 
         <DialogFooter>
           <Button

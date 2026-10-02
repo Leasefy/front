@@ -26,10 +26,11 @@
  *    donde alguien puede parar un correo a una aseguradora.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Callout, Checkbox, Label, RadioGroup, RadioGroupItem, Textarea } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useI18n } from '@/lib/i18n'
 import type { AccionCampo, InboxAccion } from '@/lib/api/piloto'
 
@@ -39,6 +40,12 @@ export interface PilotoAccionFormProps {
   onEnviar: (valores: Record<string, unknown>) => void
   onCancelar: () => void
   enVuelo: boolean
+  /**
+   * Lo que el micro dijo de cada dato al ejecutar (un 400 con `campos`), por
+   * `id` del campo. Va debajo de SU campo y el primero recibe el foco; se
+   * borra en cuanto la persona lo corrige.
+   */
+  errores?: Partial<Record<string, string>>
 }
 
 /** Un campo requerido está completo cuando tiene algo que enviar. */
@@ -53,11 +60,27 @@ export function PilotoAccionForm({
   onEnviar,
   onCancelar,
   enVuelo,
+  errores,
 }: PilotoAccionFormProps) {
   const { t } = useI18n()
   // `?? []` crea un array nuevo en cada render y ensucia las deps del memo.
   const campos = useMemo(() => accion.campos ?? [], [accion.campos])
   const [valores, setValores] = useState<Record<string, unknown>>({})
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // Los errores del servidor que siguen a la vista: llegan por props y cada
+  // uno se va cuando la persona toca su campo.
+  const [visibles, setVisibles] = useState<Partial<Record<string, string>>>({})
+  useEffect(() => {
+    setVisibles(errores ?? {})
+    const primero = campos.find((c) => errores?.[c.id])
+    if (!primero) return
+    formRef.current
+      ?.querySelector<HTMLElement>(
+        [`textarea`, `button`, `input`].map((tag) => `[data-campo="${primero.id}"] ${tag}`).join(', '),
+      )
+      ?.focus()
+  }, [errores, campos])
 
   const faltantes = useMemo(
     () => campos.filter((c) => !completo(c, valores[c.id])),
@@ -65,10 +88,14 @@ export function PilotoAccionForm({
   )
   const listo = faltantes.length === 0
 
-  const set = (id: string, v: unknown) => setValores((prev) => ({ ...prev, [id]: v }))
+  const set = (id: string, v: unknown) => {
+    setValores((prev) => ({ ...prev, [id]: v }))
+    setVisibles((prev) => (prev[id] ? { ...prev, [id]: undefined } : prev))
+  }
 
   return (
     <form
+      ref={formRef}
       className="space-y-4"
       data-testid="piloto-cajon-formulario"
       onSubmit={(e) => {
@@ -86,8 +113,11 @@ export function PilotoAccionForm({
     >
       {campos.map((campo) => {
         const id = `accion-${campo.id}`
+        const errorId = `${id}-error`
+        const conError = Boolean(visibles[campo.id])
+        const describe = conError ? { 'aria-describedby': errorId, 'aria-invalid': true as const } : {}
         return (
-          <fieldset key={campo.id} className="space-y-2">
+          <fieldset key={campo.id} className="space-y-2" data-campo={campo.id}>
             <Label htmlFor={id} {...(campo.requerido ? { required: true } : {})}>
               {campo.label}
             </Label>
@@ -96,6 +126,7 @@ export function PilotoAccionForm({
               <RadioGroup
                 value={(valores[campo.id] as string) ?? ''}
                 onValueChange={(v) => set(campo.id, v)}
+                {...describe}
               >
                 {(campo.opciones ?? []).map((o) => (
                   <label
@@ -110,7 +141,7 @@ export function PilotoAccionForm({
             )}
 
             {campo.tipo === 'multiple' && (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2" role="group" aria-label={campo.label} {...describe}>
                 {(campo.opciones ?? []).map((o) => {
                   const sel = (valores[campo.id] as string[] | undefined) ?? []
                   return (
@@ -145,8 +176,11 @@ export function PilotoAccionForm({
                 {...(campo.placeholder ? { placeholder: campo.placeholder } : {})}
                 value={(valores[campo.id] as string) ?? ''}
                 onChange={(e) => set(campo.id, e.target.value)}
+                {...describe}
               />
             )}
+
+            <ErrorDelCampo id={errorId} mensaje={visibles[campo.id]} />
           </fieldset>
         )
       })}

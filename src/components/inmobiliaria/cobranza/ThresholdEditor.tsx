@@ -16,30 +16,35 @@
  */
 
 import { useState } from 'react'
-import { z } from 'zod'
 import { MonoLabel } from '@leasefy/cadence'
 
 import type { ThresholdRow, ThresholdUpdateBody } from '@/lib/hooks/cobranza/use-thresholds'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { leerFallo } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  erroresDeLosUmbrales,
+  type CampoDeLosUmbrales,
+} from '@/lib/hooks/cobranza/limites-de-cobranza'
 
-// Matches 34-05 PUT schema + DB CHECKs (defense in depth)
-const ThresholdSchema = z.object({
-  top_n_debtors_in_report: z.number().int().min(1).max(50),
-  mora_dias_bucket_boundaries: z
-    .array(z.number().int().nonnegative())
-    .min(1)
-    .max(10)
-    .refine(
-      (arr) => arr.every((v, i) => i === 0 || v > arr[i - 1]),
-      { message: 'must_be_monotonically_increasing' },
-    ),
-  pkr_pct_alert_below: z.number().min(0).max(100),
-  indice_morosidad_pct_alert_above: z.number().min(0).max(100),
-  compliance_violations_critical_at_least: z.number().int().nonnegative(),
-  calls_outside_window_critical_at_least: z.number().int().nonnegative(),
-})
+/**
+ * Cada campo y el `id` de su control (su error vive en `${id}-error`), en el
+ * orden de la pantalla. Los topes y las frases (en español) son el espejo del
+ * PUT del micro (`limites-de-cobranza.ts`); antes se pintaba el mensaje de zod
+ * en inglés («Number must be less than or equal to 50»).
+ */
+const ID_DEL_CAMPO: Record<CampoDeLosUmbrales, string> = {
+  top_n_debtors_in_report: 'umbral-top-n',
+  mora_dias_bucket_boundaries: 'umbral-cortes-de-mora',
+  pkr_pct_alert_below: 'umbral-pkr',
+  indice_morosidad_pct_alert_above: 'umbral-morosidad',
+  compliance_violations_critical_at_least: 'umbral-violaciones',
+  calls_outside_window_critical_at_least: 'umbral-fuera-de-horario',
+}
+const CAMPOS = Object.keys(ID_DEL_CAMPO) as CampoDeLosUmbrales[]
 
 export interface ThresholdEditorProps {
   active: ThresholdRow
@@ -48,7 +53,12 @@ export interface ThresholdEditorProps {
   onSuccess?: (version: number | null) => void
 }
 
-type FieldErrors = Partial<Record<keyof ThresholdUpdateBody | 'form', string>>
+type FieldErrors = Partial<Record<CampoDeLosUmbrales | 'form', string>>
+
+function enfocarElPrimero(errores: FieldErrors) {
+  const primero = CAMPOS.find((c) => errores[c])
+  if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+}
 
 function parseBoundaries(raw: string): number[] | null {
   if (!raw.trim()) return null
@@ -84,11 +94,6 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     setSuccessVersion(null)
 
     const boundariesParsed = parseBoundaries(boundaries)
-    if (!boundariesParsed) {
-      setErrors({ mora_dias_bucket_boundaries: 'invalid_csv_ints' })
-      return
-    }
-
     const raw = {
       top_n_debtors_in_report: Number(topN),
       mora_dias_bucket_boundaries: boundariesParsed,
@@ -98,36 +103,47 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
       calls_outside_window_critical_at_least: Number(outsideHours),
     }
 
-    const parsed = ThresholdSchema.safeParse(raw)
-    if (!parsed.success) {
-      const fieldErrors: FieldErrors = {}
-      for (const issue of parsed.error.issues) {
-        const k = issue.path[0] as keyof ThresholdUpdateBody
-        if (k && !fieldErrors[k]) fieldErrors[k] = issue.message
-      }
-      setErrors(fieldErrors)
+    // Lo que el micro rechazaría se ataja acá, debajo de su campo.
+    const delCliente = erroresDeLosUmbrales(raw)
+    if (Object.keys(delCliente).length > 0 || !boundariesParsed) {
+      setErrors(delCliente)
+      enfocarElPrimero(delCliente)
       return
     }
 
     setIsSaving(true)
     try {
-      const row = await onSubmit(parsed.data)
+      const row = await onSubmit({ ...raw, mora_dias_bucket_boundaries: boundariesParsed })
       setSuccessVersion(row.version ?? null)
       onSuccess?.(row.version ?? null)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'submit_failed'
-      // 400 from server -> show under form-level error; 403 special-cased
-      if (msg.startsWith('403')) {
-        setErrors({ form: locale.startsWith('es') ? 'Sin permiso' : 'Forbidden' })
+      // El 403 del micro no trae un `message` para la persona: se dice acá
+      // (por el status, nunca por el texto). Un 400 con `campos` va a su campo;
+      // lo demás (un 5xx con la referencia, la red) abajo.
+      if (leerFallo(err).status === 403) {
+        setErrors({ form: 'No tienes permiso para cambiar los umbrales. Pídeselo a un administrador.' })
       } else {
-        setErrors({ form: msg })
+        const reparto = repartirErroresDelServidor<CampoDeLosUmbrales>(err, {
+          campos: CAMPOS,
+          porDefecto: 'No pudimos guardar los umbrales.',
+          accion: 'guardar los umbrales',
+        })
+        const siguientes: FieldErrors = { ...reparto.porCampo }
+        if (reparto.sueltos.length > 0) siguientes.form = reparto.sueltos.join(' · ')
+        setErrors(siguientes)
+        enfocarElPrimero(siguientes)
       }
     } finally {
       setIsSaving(false)
     }
   }
 
-  const errorClass = 'text-xs text-danger font-mono mt-1'
+  /** Lo que lleva cada control para leer su error. */
+  const aria = (campo: CampoDeLosUmbrales) => ({
+    id: ID_DEL_CAMPO[campo],
+    'aria-invalid': errors[campo] ? true : undefined,
+    'aria-describedby': errors[campo] ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
+  })
 
   return (
     <form
@@ -146,11 +162,10 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             max={50}
             value={topN}
             onChange={(e) => setTopN(e.target.value)}
+            {...aria('top_n_debtors_in_report')}
             required
           />
-          {errors.top_n_debtors_in_report && (
-            <p className={errorClass}>{errors.top_n_debtors_in_report}</p>
-          )}
+          <ErrorDelCampo id="umbral-top-n-error" mensaje={errors.top_n_debtors_in_report} />
         </div>
 
         <div>
@@ -162,12 +177,14 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             type="text"
             value={boundaries}
             onChange={(e) => setBoundaries(e.target.value)}
+            {...aria('mora_dias_bucket_boundaries')}
             placeholder="0,8,31,91"
             required
           />
-          {errors.mora_dias_bucket_boundaries && (
-            <p className={errorClass}>{errors.mora_dias_bucket_boundaries}</p>
-          )}
+          <ErrorDelCampo
+            id="umbral-cortes-de-mora-error"
+            mensaje={errors.mora_dias_bucket_boundaries}
+          />
         </div>
 
         <div>
@@ -182,11 +199,10 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             step="0.1"
             value={pkr}
             onChange={(e) => setPkr(e.target.value)}
+            {...aria('pkr_pct_alert_below')}
             required
           />
-          {errors.pkr_pct_alert_below && (
-            <p className={errorClass}>{errors.pkr_pct_alert_below}</p>
-          )}
+          <ErrorDelCampo id="umbral-pkr-error" mensaje={errors.pkr_pct_alert_below} />
         </div>
 
         <div>
@@ -201,11 +217,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             step="0.1"
             value={morosidad}
             onChange={(e) => setMorosidad(e.target.value)}
+            {...aria('indice_morosidad_pct_alert_above')}
             required
           />
-          {errors.indice_morosidad_pct_alert_above && (
-            <p className={errorClass}>{errors.indice_morosidad_pct_alert_above}</p>
-          )}
+          <ErrorDelCampo
+            id="umbral-morosidad-error"
+            mensaje={errors.indice_morosidad_pct_alert_above}
+          />
         </div>
 
         <div>
@@ -219,13 +237,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             step="1"
             value={violations}
             onChange={(e) => setViolations(e.target.value)}
+            {...aria('compliance_violations_critical_at_least')}
             required
           />
-          {errors.compliance_violations_critical_at_least && (
-            <p className={errorClass}>
-              {errors.compliance_violations_critical_at_least}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="umbral-violaciones-error"
+            mensaje={errors.compliance_violations_critical_at_least}
+          />
         </div>
 
         <div>
@@ -239,18 +257,22 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
             step="1"
             value={outsideHours}
             onChange={(e) => setOutsideHours(e.target.value)}
+            {...aria('calls_outside_window_critical_at_least')}
             required
           />
-          {errors.calls_outside_window_critical_at_least && (
-            <p className={errorClass}>
-              {errors.calls_outside_window_critical_at_least}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="umbral-fuera-de-horario-error"
+            mensaje={errors.calls_outside_window_critical_at_least}
+          />
         </div>
       </div>
 
       {errors.form && (
-        <div className="rounded-sm border border-danger/30 bg-danger-soft text-danger font-mono">
+        <div
+          role="alert"
+          data-testid="umbrales-error"
+          className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
           {errors.form}
         </div>
       )}

@@ -27,6 +27,7 @@ import { Clock } from '@phosphor-icons/react';
 import { Button, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { slaDePqrsApi, type SlaDePqrs } from '@/lib/api/sla-de-pqrs.service';
 import { EsqueletoDeSeccion, TarjetaDeAjustes, FilaDeAjuste } from './piezas';
@@ -105,7 +106,12 @@ export function SeccionSlaDePqrs() {
       setDatos(d);
       toast.success('Listo. Las PQRS ya radicadas conservan el plazo que se les prometió.');
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo guardar el tiempo máximo'));
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo guardar el tiempo máximo.',
+          accion: 'guardar el tiempo máximo',
+        }),
+      );
     } finally {
       setGuardando(false);
     }
@@ -198,12 +204,4 @@ export function SeccionSlaDePqrs() {
       )}
     </div>
   );
-}
-
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
 }

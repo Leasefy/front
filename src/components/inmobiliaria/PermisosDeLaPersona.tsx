@@ -122,7 +122,10 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
       onCerrar();
     } catch (e) {
       toast.error('No se pudieron guardar sus permisos', {
-        description: mensajeParaLaPersona(e),
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'guardar sus permisos',
+        }),
       });
     } finally {
       setGuardando(false);

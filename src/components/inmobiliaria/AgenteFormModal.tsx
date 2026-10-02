@@ -30,8 +30,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import Link from 'next/link';
+import { Banner, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { leerElError } from '@/lib/conexion/leer-el-error';
+import { CODIGO_LIMITE_DEL_PLAN } from '@/lib/errores/codigos-del-plan';
+import {
+  MAX_LARGO_NOMBRE_DEL_INVITADO,
+  MENSAJES_DE_LA_INMOBILIARIA,
+} from '@/lib/configuracion/limites-de-la-inmobiliaria';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
 import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 
@@ -46,11 +55,22 @@ import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 interface AgenteFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Tiene que RECHAZAR si el back no guardó la invitación: el modal se queda
+   * abierto con lo escrito y dice qué pasó (por campo si el 400 trae `campos`).
+   */
   onSubmit: (data: UserInvite) => Promise<void> | void;
   /** 'agent' = agent-only (default), 'member' = full invite with role selector */
   variant?: 'agent' | 'member';
   isLoading?: boolean;
 }
+
+/** Los campos del formulario que pueden traer un error del servidor. */
+type CampoDelFormulario = 'name' | 'email' | 'phone' | 'zone' | 'commissionSplit';
+const CAMPOS_DEL_FORMULARIO: readonly CampoDelFormulario[] = ['name', 'email', 'phone', 'zone', 'commissionSplit'];
+
+/** Dónde se ven y se cambian los planes (el 402 del tope de asesores). */
+const PAGINA_DE_LOS_PLANES = '/panel/inmobiliaria/upgrade';
 
 // Colombian departments grouped by natural region.
 const ZONE_GROUPS: { label: string; zones: string[] }[] = [
@@ -92,6 +112,13 @@ export function AgenteFormModal({
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Lo que el servidor dijo y no va en ningún campo (un 409, un 5xx, la red).
+  // El texto se conserva al ocultarlo: el aviso sale diciendo lo último que
+  // dijo, no vacío.
+  const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  const [verErrorGeneral, setVerErrorGeneral] = useState(false);
+  // El 402 del tope de asesores del plan: se dice acá, con «Ver planes».
+  const [topeDelPlan, setTopeDelPlan] = useState(false);
   // El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo): el
   // botón de enviar lo apunta con `form=`.
   const idDelFormulario = useId();
@@ -147,25 +174,29 @@ export function AgenteFormModal({
     setSystemRole(variant === 'agent' ? 'agente' : 'agente');
     setAgentRole('agent'); setZone(''); setSpecialization('all');
     setCommissionSplit(50); setMessage('');
-    setErrors({});
+    setErrors({}); setErrorGeneral(null); setVerErrorGeneral(false); setTopeDelPlan(false);
   }, [variant]);
 
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = t('inmobiliaria.agente.errorNameRequired');
+    else if (name.trim().length > MAX_LARGO_NOMBRE_DEL_INVITADO) newErrors.name = MENSAJES_DE_LA_INMOBILIARIA.nombreDelInvitadoLargo;
     if (!email.trim()) newErrors.email = t('inmobiliaria.agente.errorEmailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t('inmobiliaria.agente.errorEmailInvalid');
     if (showAgentFields && !phone.trim()) newErrors.phone = t('inmobiliaria.agente.errorPhoneRequired');
     if (showAgentFields && agentRole === 'agent' && (commissionSplit < 0 || commissionSplit > 100)) newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
     setErrors(newErrors);
+    const primero = CAMPOS_DEL_FORMULARIO.find((c) => newErrors[c]);
+    if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
     return Object.keys(newErrors).length === 0;
-  }, [name, email, phone, commissionSplit, showAgentFields, t]);
+  }, [name, email, phone, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setVerErrorGeneral(false);
     try {
       const invite: UserInvite = {
         email,
@@ -189,7 +220,22 @@ export function AgenteFormModal({
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Error submitting:', error);
+      // 🔴 Antes: `console.error` y nada. SeccionEquipo se tragaba el error,
+      // el modal se cerraba y se perdía lo escrito. Ahora se queda abierto,
+      // cada error del 400 va a su campo (con el foco en el primero) y lo
+      // demás se dice acá arriba del pie, por el traductor.
+      const reparto = repartirErroresDelServidor(error, {
+        campos: CAMPOS_DEL_FORMULARIO,
+        porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+        accion: 'enviar la invitación',
+      });
+      setErrors((prev) => ({ ...prev, ...reparto.porCampo }));
+      const general = reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null;
+      if (general) setErrorGeneral(general);
+      setVerErrorGeneral(!!general);
+      setTopeDelPlan(leerElError(error).code === CODIGO_LIMITE_DEL_PLAN);
+      const primero = reparto.orden[0];
+      if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
     } finally {
       setIsSubmitting(false);
     }
@@ -234,22 +280,22 @@ export function AgenteFormModal({
         <form id={idDelFormulario} onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label htmlFor={`${idDelFormulario}-name`} className="text-sm font-medium text-foreground flex items-center gap-2">
               <User className="w-4 h-4 text-muted-foreground" />
               {t('inmobiliaria.agente.fullName')} *
             </label>
-            <Input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
-            {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
+            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+            <ErrorDelCampo id={`${idDelFormulario}-name-error`} mensaje={errors.name} className="mt-0" />
           </div>
 
           {/* Email */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label htmlFor={`${idDelFormulario}-email`} className="text-sm font-medium text-foreground flex items-center gap-2">
               <Envelope className="w-4 h-4 text-muted-foreground" />
               Email *
             </label>
-            <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
-            {errors.email && <p className="text-xs text-danger">{errors.email}</p>}
+            <Input id={`${idDelFormulario}-email`} aria-invalid={!!errors.email || undefined} aria-describedby={`${idDelFormulario}-email-error`} type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
+            <ErrorDelCampo id={`${idDelFormulario}-email-error`} mensaje={errors.email} className="mt-0" />
           </div>
 
           {/* Rol del sistema — sólo al invitar un miembro */}
@@ -276,12 +322,12 @@ export function AgenteFormModal({
           {/* Phone — always for agent, shown for member when agente */}
           {(variant === 'agent' || showAgentFields) && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <label htmlFor={`${idDelFormulario}-phone`} className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Phone className="w-4 h-4 text-muted-foreground" />
                 {t('inmobiliaria.agente.phone')} {showAgentFields ? '*' : ''}
               </label>
-              <Input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
-              {errors.phone && <p className="text-xs text-danger">{errors.phone}</p>}
+              <Input id={`${idDelFormulario}-phone`} aria-invalid={!!errors.phone || undefined} aria-describedby={`${idDelFormulario}-phone-error`} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
+              <ErrorDelCampo id={`${idDelFormulario}-phone-error`} mensaje={errors.phone} className="mt-0" />
             </div>
           )}
 
@@ -322,8 +368,8 @@ export function AgenteFormModal({
                     <MapPin className="w-4 h-4 text-muted-foreground" />
                     {t('inmobiliaria.agente.zone')}
                   </label>
-                  <Select value={zone || undefined} onValueChange={setZone}>
-                    <SelectTrigger className="w-full">
+                  <Select value={zone || undefined} onValueChange={(v) => { setZone(v); if (errors.zone) setErrors((p) => { const n = { ...p }; delete n.zone; return n; }); }}>
+                    <SelectTrigger id={`${idDelFormulario}-zone`} aria-invalid={!!errors.zone || undefined} aria-describedby={`${idDelFormulario}-zone-error`} className="w-full">
                       <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -335,6 +381,7 @@ export function AgenteFormModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  <ErrorDelCampo id={`${idDelFormulario}-zone-error`} mensaje={errors.zone} className="mt-0" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -370,12 +417,12 @@ export function AgenteFormModal({
                       aria-label={t('inmobiliaria.agente.commissionPercentage')}
                     />
                     <div className="relative w-20">
-                      <Input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <Input id={`${idDelFormulario}-commissionSplit`} aria-invalid={!!errors.commissionSplit || undefined} aria-describedby={`${idDelFormulario}-commissionSplit-error`} type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
-                  {errors.commissionSplit && <p className="text-xs text-danger">{errors.commissionSplit}</p>}
+                  <ErrorDelCampo id={`${idDelFormulario}-commissionSplit-error`} mensaje={errors.commissionSplit} className="mt-0" />
                 </div>
               )}
             </>
@@ -388,6 +435,22 @@ export function AgenteFormModal({
               <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
             </div>
           )}
+
+          {/* Lo que el servidor dijo y no va en ningún campo. Entra suave
+              (Presence de Cadence: transform/opacity, movimiento reducido). */}
+          <Presence show={verErrorGeneral}>
+            <Banner variant="danger" role="alert" data-testid="invitacion-error">
+              {errorGeneral}
+              {topeDelPlan && (
+                <>
+                  {' '}
+                  <Link href={PAGINA_DE_LOS_PLANES} className="font-medium underline underline-offset-2">
+                    Ver planes
+                  </Link>
+                </>
+              )}
+            </Banner>
+          </Presence>
         </form>
 
         <DialogFooter>

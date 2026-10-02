@@ -92,6 +92,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
 import { cn } from '@/lib/utils'
 import { RUTA_PILOTO, RUTA_PROCESOS } from './rutas-del-piloto'
@@ -237,7 +238,13 @@ export function PilotoModoHeader() {
     setConfirmando(null)
     const res = await flota.setModo(nuevo)
     if (!res.ok) {
-      toast.error(t('inmobiliaria.piloto.flota.toastFail', { error: res.error ?? 'error' }))
+      // Lo que pasó, con la regla de oro: nunca «No se pudo cambiar el modo: 500».
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo cambiar el modo del Piloto.',
+          accion: 'cambiar el modo del Piloto',
+        }),
+      )
       return
     }
     if (res.fallidos && res.fallidos.length > 0) {

@@ -86,7 +86,12 @@ export function AcuerdosGeneralesTabla() {
       try {
         await editar(a.id, { active: !a.active })
       } catch (e) {
-        setErrorAccion(e instanceof Error ? e.message : 'No pudimos guardar el cambio.')
+        setErrorAccion(
+          mensajeParaLaPersona(e, {
+            porDefecto: a.active ? 'No pudimos apagar el acuerdo.' : 'No pudimos activar el acuerdo.',
+            accion: a.active ? 'apagar el acuerdo' : 'activar el acuerdo',
+          }),
+        )
       } finally {
         setOcupado(null)
       }
@@ -144,7 +149,9 @@ export function AcuerdosGeneralesTabla() {
           role="alert"
           className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
-          <span>No pudimos cargar los acuerdos generales. {error}</span>
+          {/* `error` ya es la frase entera (el traductor del hook): «No pudimos
+              cargar…» con el porqué. */}
+          <span>{error}</span>
           <Button
             variant="link"
             size="sm"

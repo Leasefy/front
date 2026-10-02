@@ -34,6 +34,9 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
   Dialog,
   DialogContent,
@@ -54,6 +57,10 @@ import { TablePagination } from '@/components/ui/pagination'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
+import {
+  LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO,
+  LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO,
+} from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { Chip } from '@leasefy/cadence'
@@ -155,6 +162,8 @@ function ConciliacionCola() {
   /** Fila cuyo rechazo está pidiendo motivo. */
   const [rechazando, setRechazando] = useState<ConciliacionQueueItem | null>(null)
   const [motivo, setMotivo] = useState('')
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
 
   const queueFilters = useMemo(
     () => ({
@@ -220,7 +229,11 @@ function ConciliacionCola() {
       toast.error(
         result.error === 'not_configured'
           ? 'No se pudo confirmar: servicio no configurado.'
-          : `No se pudo confirmar la selección (${result.error ?? 'error'}).`,
+          : // Con la regla de oro; antes: «No se pudo confirmar la selección (500).»
+            mensajeParaLaPersona(result.fallo, {
+              porDefecto: 'No se pudo confirmar la selección.',
+              accion: 'confirmar la selección',
+            }),
       )
       return
     }
@@ -242,21 +255,38 @@ function ConciliacionCola() {
     const res = await confirmMatch(item.id)
     setBusyRow(null)
     if (res.ok) toast.success('Cruce aprobado.')
-    else toast.error(`No se pudo aprobar el cruce (${res.error ?? 'error'}).`)
+    // Con la regla de oro; antes: «No se pudo aprobar el cruce (403).»
+    else toast.error(mensajeParaLaPersona(res.fallo, { porDefecto: 'No se pudo aprobar el cruce.', accion: 'aprobar el cruce' }))
   }
 
   /** Rechazar pide motivo: el backend lo exige y queda en la auditoría. */
   async function rechazar() {
     const item = rechazando
     const razon = motivo.trim()
-    if (!item || razon.length < 5) return
+    if (!item || razon.length < LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO) return
     setBusyRow(item.id)
     const res = await rejectMatch(item.id, razon)
     setBusyRow(null)
-    setRechazando(null)
-    setMotivo('')
-    if (res.ok) toast.success('Cruce rechazado.')
-    else toast.error(`No se pudo rechazar el cruce (${res.error ?? 'error'}).`)
+    if (res.ok) {
+      setRechazando(null)
+      setMotivo('')
+      setErrorDelMotivo(null)
+      toast.success('Cruce rechazado.')
+      return
+    }
+    // Si no salió, el diálogo queda abierto con lo escrito (antes se cerraba
+    // y el motivo se perdía). Lo que el micro dijo del motivo va debajo del
+    // campo, con el foco; lo demás, con la regla de oro, al toast. Antes:
+    // «No se pudo rechazar el cruce (reject_failed).»
+    const reparto = repartirErroresDelServidor<'motivo'>(res.fallo, {
+      mapa: { reason: 'motivo' },
+      campos: ['motivo'],
+      porDefecto: 'No se pudo rechazar el cruce.',
+      accion: 'rechazar el cruce',
+    })
+    setErrorDelMotivo(reparto.porCampo.motivo ?? null)
+    if (reparto.porCampo.motivo) document.getElementById('motivo-rechazo')?.focus()
+    if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
   }
 
   return (
@@ -572,6 +602,7 @@ function ConciliacionCola() {
           if (!abierto) {
             setRechazando(null)
             setMotivo('')
+            setErrorDelMotivo(null)
           }
         }}
       >
@@ -589,13 +620,25 @@ function ConciliacionCola() {
             <Textarea
               id="motivo-rechazo"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value)
+                setErrorDelMotivo(null)
+              }}
               placeholder="No es el pago de ese contrato."
               rows={3}
-              maxLength={300}
+              maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO}
               aria-label="Motivo del rechazo"
+              {...(errorDelMotivo
+                ? { 'aria-invalid': true as const, 'aria-describedby': 'motivo-rechazo-error' }
+                : {})}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+            {/* La ayuda y el error del micro se cruzan (ver ErrorDelCampo). */}
+            <ErrorDelCampo
+              id="motivo-rechazo-error"
+              mensaje={errorDelMotivo}
+              pista={`Entre ${LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO} y ${LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO} caracteres.`}
+              className="mt-0 text-caption"
+            />
           </div>
           <DialogFooter>
             <Button
@@ -605,6 +648,7 @@ function ConciliacionCola() {
               onClick={() => {
                 setRechazando(null)
                 setMotivo('')
+                setErrorDelMotivo(null)
               }}
             >
               Cancelar
@@ -613,7 +657,7 @@ function ConciliacionCola() {
               hideArrow
               variant="destructive"
               isLoading={rechazando !== null && busyRow === rechazando.id}
-              disabled={motivo.trim().length < 5 || busyRow !== null}
+              disabled={motivo.trim().length < LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO || busyRow !== null}
               onClick={() => void rechazar()}
               data-testid="conciliacion-confirmar-rechazo"
             >

@@ -52,9 +52,14 @@ export function SubscriptionToggles({
           {locale.startsWith('es') ? 'Guardando…' : 'Saving…'}
         </MonoLabel>
       )}
+      {/* `error` ya es la frase entera del traductor (el hook la arma). */}
       {error && (
-        <div className="rounded-sm border border-danger/30 bg-danger-soft text-danger font-mono">
-          {locale.startsWith('es') ? 'Error al actualizar suscripción' : 'Subscription update failed'}: {error}
+        <div
+          role="alert"
+          data-testid="suscripcion-error"
+          className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {error}
         </div>
       )}
     </div>

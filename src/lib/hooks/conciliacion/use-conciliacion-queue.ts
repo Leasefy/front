@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalio, accionQueNoSalioConCuerpo, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── API shapes (matched to conciliacion-queue.ts backend) ─────────────────
 
@@ -150,7 +151,10 @@ export interface ConciliacionQueueFilters {
 
 export interface ActionResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 /** Bank statement CSV formats accepted by POST .../conciliacion/ingest. */
@@ -159,7 +163,10 @@ export type IngestBank = 'bancolombia' | 'davivienda'
 /** Result of a statement ingest (POST .../conciliacion/ingest → 202). */
 export interface IngestResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   created?: number
   skipped?: number
   processed?: number
@@ -247,14 +254,11 @@ export function useConciliacionQueue(
             body: JSON.stringify({}),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'confirm_failed' }
+        return accionSinRespuesta(err, 'confirm_failed')
       }
     },
     [agencyId, fetchData],
@@ -273,14 +277,11 @@ export function useConciliacionQueue(
             body: JSON.stringify({ reason }),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'reject_failed' }
+        return accionSinRespuesta(err, 'reject_failed')
       }
     },
     [agencyId, fetchData],
@@ -299,14 +300,11 @@ export function useConciliacionQueue(
             body: JSON.stringify({}),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'reverse_failed' }
+        return accionSinRespuesta(err, 'reverse_failed')
       }
     },
     [agencyId, fetchData],
@@ -332,9 +330,7 @@ export function useConciliacionQueue(
           processed?: number
           runEnqueued?: boolean
         }
-        if (!res.ok) {
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalioConCuerpo(res.status, body)
         // The reconciliation run is enqueued asynchronously (Inngest), so new
         // suggestions surface on a later poll. Refetch to reflect already-persisted
         // rows; the operator can refresh again once matching completes.
@@ -347,7 +343,7 @@ export function useConciliacionQueue(
           runEnqueued: body.runEnqueued,
         }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'ingest_failed' }
+        return accionSinRespuesta(err, 'ingest_failed')
       }
     },
     [agencyId, fetchData],

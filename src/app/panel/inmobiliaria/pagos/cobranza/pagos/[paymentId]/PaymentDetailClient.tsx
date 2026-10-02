@@ -14,11 +14,13 @@
  * error for the not-found path.
  */
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
 
-import { Button } from '@/components/ui'
+import { Button, toast } from '@/components/ui'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
@@ -133,7 +135,21 @@ function BackLink() {
 }
 
 export default function PaymentDetailClient({ paymentId }: { paymentId: string }) {
-  const { data, isLoading, verifyPayment, isVerifying } = usePaymentDetail({ paymentId })
+  const { data, isLoading, verifyPayment, isVerifying, falloDeVerificacion, limpiarFalloDeVerificacion } =
+    usePaymentDetail({ paymentId })
+
+  // Antes un fallo al verificar no decía nada: el botón volvía a su estado y
+  // el pago seguía «reportado» sin que nadie supiera por qué.
+  useEffect(() => {
+    if (!falloDeVerificacion) return
+    toast.error(
+      mensajeParaLaPersona(falloDeVerificacion, {
+        porDefecto: 'No pudimos verificar el pago.',
+        accion: 'verificar el pago',
+      }),
+    )
+    limpiarFalloDeVerificacion()
+  }, [falloDeVerificacion, limpiarFalloDeVerificacion])
 
   if (isLoading) {
     return <PageSkeleton variant="detail" />

@@ -286,6 +286,17 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
   `archivo.ts:N`, Prisma o un JSON. `RegistrarPagoModal` ya pasa por el traductor.
 - Un `code` estable decide; nunca el texto (P2002 del back viejo → `YA_EXISTE`; «should not
   exist» → `campos[].regla === 'no_permitido'`).
+- **El micro (cobranza, piloto, agentes IA, conciliación; 02-10-2026)**: `agentFetch` devuelve la
+  `Response` cruda. Una que no salió bien se vuelve `ApiError` con `falloDelMicro(res)`
+  (`src/lib/api/fallo-del-micro.ts`): status, `code`, el `message` del sobre y `campos`; el `error`
+  en inglés del cuerpo viejo nunca se muestra (queda en `detalle`, y como `code` si parece uno). Los
+  hooks que devuelven `{ ok: false, error }` conservan `error` (hay pantallas que deciden con
+  `'not_configured'`) y suman `fallo` (ese `ApiError`, o el `TypeError` de red tal cual):
+  `lib/hooks/ai/accion-del-micro.ts`. La pantalla pinta `mensajeParaLaPersona(r.fallo, …)`.
+- **Configuración**: los topes de `UpdateAgencyDto`/`InviteMemberDto` y de los medios de pago tienen
+  su espejo en `src/lib/configuracion/limites-de-la-inmobiliaria.ts` y `limites-de-los-medios-de-pago.ts`
+  (sólo se mira lo que cambió: un dato viejo no impide guardar lo demás). `SeccionPerfil` toastea por
+  el traductor; con `campos`, los datos de la empresa los pintan en su campo y el toast calla.
 
 ## Carga de inmuebles reanudable (T-0130)
 

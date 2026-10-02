@@ -44,6 +44,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Card, CardContent, Spinner } from '@/components/ui'
 import { confirmar } from '@/components/ui/confirmar'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { SegmentedControl, Eyebrow } from '@leasefy/cadence'
 import {
   DebtorPicker,
@@ -326,9 +327,11 @@ function ReportesPropietariosContent() {
     generate,
     isGenerating,
     generateError,
+    generateFallo,
     approve,
     isApproving,
     approveError,
+    approveFallo,
     downloadPdf,
     isDownloading,
   } = useOwnerReports()
@@ -464,9 +467,13 @@ function ReportesPropietariosContent() {
         <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
       </header>
 
+      {/* Antes: «Intenta de nuevo» fijo ante cualquier fallo. */}
       {generateError && (
-        <p className="text-sm text-danger" role="alert">
-          No pudimos generar el reporte. Intenta de nuevo.
+        <p className="text-sm text-danger" role="alert" data-testid="reporte-generar-error">
+          {mensajeDeLaAccion(
+            { error: generateError, fallo: generateFallo },
+            { porDefecto: 'No pudimos generar el reporte.', accion: 'generar el reporte' },
+          )}
         </p>
       )}
 
@@ -623,13 +630,19 @@ function ReportesPropietariosContent() {
               )}
               {pdfMsg && <p className="text-xs text-fg-muted">{pdfMsg}</p>}
               {approveError && (
-                <p className="text-xs text-danger">
-                  No se pudo aprobar el reporte. Intenta de nuevo.
+                <p className="text-xs text-danger" role="alert" data-testid="reporte-aprobar-error">
+                  {mensajeDeLaAccion(
+                    { error: approveError, fallo: approveFallo },
+                    { porDefecto: 'No pudimos aprobar el reporte.', accion: 'aprobar el reporte' },
+                  )}
                 </p>
               )}
               {generateError && (
                 <p className="text-xs text-danger">
-                  No se pudo generar el borrador. Intenta de nuevo.
+                  {mensajeDeLaAccion(
+                    { error: generateError, fallo: generateFallo },
+                    { porDefecto: 'No pudimos generar el borrador.', accion: 'generar el borrador' },
+                  )}
                 </p>
               )}
 

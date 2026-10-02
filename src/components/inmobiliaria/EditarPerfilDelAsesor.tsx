@@ -156,7 +156,10 @@ export function EditarPerfilDelAsesor({
       onCerrar();
     } catch (err) {
       toast.error('No pudimos guardar el perfil', {
-        description: mensajeParaLaPersona(err),
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'guardar el perfil',
+        }),
       });
     } finally {
       setGuardando(false);

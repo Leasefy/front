@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { EnvelopeSimple, PaperPlaneTilt, Warning, CaretDown } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { Button, Input } from '@/components/ui';
 import { Switch } from '@/components/ui/switch';
@@ -132,7 +134,9 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
       })
       .catch((e: unknown) => {
         if (!vigente) return;
-        setErrorDeResumen({ mensaje: e instanceof Error && e.message ? e.message : null });
+        // Por el traductor: un 5xx dice «de nuestro lado» con la referencia y
+        // «conexión» sólo si no hubo respuesta. `null` = la frase de siempre.
+        setErrorDeResumen({ mensaje: mensajeParaLaPersona(e, { porDefecto: '', accion: 'leer el último envío' }) || null });
       })
       .finally(() => {
         if (vigente) setCargandoResumen(false);
@@ -169,7 +173,10 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
       setResumenVersion((v) => v + 1);
     } catch (e: unknown) {
       toast.error(t('inmobiliaria.config.extractoMensual.errorEnvio'), {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'enviar los extractos',
+        }),
       });
     } finally {
       setEnviando(false);
@@ -240,9 +247,13 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
             }}
             className={cn('w-28 tabular-nums', errorDeDia && 'border-danger/30')}
           />
-          <p id="extracto-mensual-dia-ayuda" className={cn('text-xs', errorDeDia ? 'text-danger' : 'text-muted-foreground')}>
-            {errorDeDia ?? t('inmobiliaria.config.extractoMensual.diaHint')}
-          </p>
+          {/* El error de la casa: se cruza con la ayuda, sin saltar el alto. */}
+          <ErrorDelCampo
+            id="extracto-mensual-dia-ayuda"
+            mensaje={errorDeDia}
+            pista={t('inmobiliaria.config.extractoMensual.diaHint')}
+            className="mt-0"
+          />
         </div>
       )}
 

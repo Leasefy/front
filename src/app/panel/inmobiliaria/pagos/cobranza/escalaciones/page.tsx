@@ -36,7 +36,8 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner } from '@/components/ui'
+import { Button, Spinner, toast } from '@/components/ui'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -81,11 +82,24 @@ function EscalacionesContent() {
     [router],
   )
 
+  // Tomar y asignar ignoraban el resultado: si fallaban, la tarjeta volvía a
+  // su sitio sin decir nada. Ahora avisan con el traductor (un 409 dice su
+  // `message`, un 5xx «de nuestro lado», la red la conexión).
   const handleClaim = useCallback(
     async (id: string) => {
-      await claim(id)
+      const r = await claim(id)
+      if (!r.ok) {
+        toast.error(
+          r.status === 403
+            ? t('inmobiliaria.ai.cobranza.escalaciones.errors.forbidden')
+            : mensajeDeLaAccion(r, {
+                porDefecto: 'No pudimos tomar la escalación.',
+                accion: 'tomar la escalación',
+              }),
+        )
+      }
     },
-    [claim],
+    [claim, t],
   )
 
   const handleResolve = useCallback(
@@ -98,9 +112,19 @@ function EscalacionesContent() {
 
   const handleAssign = useCallback(
     async (id: string, memberUserId: string) => {
-      await assign(id, memberUserId)
+      const r = await assign(id, memberUserId)
+      if (!r.ok) {
+        toast.error(
+          r.status === 403
+            ? t('inmobiliaria.ai.cobranza.escalaciones.errors.forbidden')
+            : mensajeDeLaAccion(r, {
+                porDefecto: 'No pudimos asignar la escalación.',
+                accion: 'asignar la escalación',
+              }),
+        )
+      }
     },
-    [assign],
+    [assign, t],
   )
 
   const lastUpdated = useMemo(() => {

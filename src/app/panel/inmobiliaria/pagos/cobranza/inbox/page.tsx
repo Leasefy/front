@@ -35,6 +35,8 @@ import Link from 'next/link'
 import { Tray, PhoneCall, Users } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { toast } from '@/components/ui'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useI18n } from '@/lib/i18n'
 import { formatRelativeTime } from '@/lib/format'
 import { EmptyState } from '@/components/data-display/EmptyState'
@@ -169,6 +171,15 @@ function InboxContent() {
     setMarcandoLeido(true)
     try {
       await markRead(openThreadId)
+    } catch (e) {
+      // Antes un try/finally sin catch: el rechazo quedaba sin atrapar y la
+      // pantalla no decía nada.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos marcar la conversación como leída.',
+          accion: 'marcar la conversación como leída',
+        }),
+      )
     } finally {
       setMarcandoLeido(false)
     }

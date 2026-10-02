@@ -29,8 +29,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { toast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { leerFallo } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
 import type { CambiosDePreferencias, PilotoPreferenciasResponse, RangoDePreferencia } from '@/lib/api/piloto'
 
@@ -43,7 +46,8 @@ export interface PilotoTopesProps {
   error: string | null
   notAvailable: boolean
   guardando: boolean
-  onGuardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string }>
+  /** `fallo` es el error entero (un 400 trae `campos` por tope); `error`, el código viejo, no se muestra. */
+  onGuardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   onReintentar: () => Promise<void> | void
 }
 
@@ -62,6 +66,12 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
   const { t } = useI18n()
   const [valores, setValores] = useState<Record<Campo, string>>({ topeMontoCop: '', topeDestinatarios: '', graciaSegundos: '' })
   const [fallo, setFallo] = useState<string | null>(null)
+  /** Lo que el micro dijo de cada tope (un 400 con `campos`): va debajo de SU campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<Campo, string>>>({})
+  const cambiar = (c: Campo, texto: string) => {
+    setValores((v) => ({ ...v, [c]: texto }))
+    setDelServidor((e) => (e[c] ? { ...e, [c]: undefined } : e))
+  }
 
   // Lo guardado manda cada vez que llega (al abrir, y tras guardar).
   useEffect(() => {
@@ -117,13 +127,32 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
 
   const guardar = async () => {
     setFallo(null)
+    setDelServidor({})
     const r = await onGuardar(cambios)
     if (r.ok) {
       toast.success(t('inmobiliaria.piloto.topes.guardado'))
-    } else {
-      const porQue = r.error ?? 'error'
-      setFallo(porQue)
-      toast.error(t('inmobiliaria.piloto.topes.errorAlGuardar', { error: porQue }))
+      return
+    }
+    // Con la regla de oro: lo que el micro dijo de un tope va a SU campo (y el
+    // foco ahí); el resto, dicho para la persona, al pie y al toast. Antes:
+    // «No se guardaron: 403» o el `error` del micro tal cual.
+    const reparto = repartirErroresDelServidor<Campo>(r.fallo, {
+      campos: CAMPOS,
+      // El 403 del micro trae su frase en `error` (que no se muestra) y el
+      // código `SOLO_ADMINISTRADOR`: se decide por el código.
+      porDefecto:
+        leerFallo(r.fallo).code === 'SOLO_ADMINISTRADOR'
+          ? 'Sólo un administrador puede cambiar los topes del Piloto.'
+          : 'No se guardaron los topes.',
+      accion: 'guardar los topes',
+    })
+    setDelServidor(reparto.porCampo)
+    const primero = reparto.orden[0]
+    if (primero) document.getElementById(`piloto-topes-${primero}`)?.focus()
+    if (reparto.sueltos.length > 0) {
+      const texto = reparto.sueltos.join(' · ')
+      setFallo(texto)
+      toast.error(texto)
     }
   }
 
@@ -133,15 +162,27 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
     return t('inmobiliaria.piloto.topes.fueraDeRango', { min: f(r.min), max: f(r.max) })
   }
 
+  /** El error de un tope: el rango (se ataja antes de enviar) o lo que dijo el micro. */
+  const errorDe = (c: Campo): string | undefined => (invalidos.includes(c) ? rango(c) : delServidor[c])
+  /** Lo que el input le dice al lector de pantalla cuando su tope tiene un error. */
+  const aria = (c: Campo) =>
+    errorDe(c)
+      ? { 'aria-invalid': true as const, 'aria-describedby': `piloto-topes-${c}-error` }
+      : { 'aria-invalid': false as const }
+
   const campo = (c: Campo, control: ReactNode) => (
     <div className="space-y-1.5" data-testid={`piloto-topes-campo-${c}`}>
       <label htmlFor={`piloto-topes-${c}`} className="text-body-sm font-medium text-fg">
         {t(`inmobiliaria.piloto.topes.${c}.label`)}
       </label>
       {control}
-      <p className={invalidos.includes(c) ? 'text-caption text-danger' : 'text-caption text-fg-muted'} role={invalidos.includes(c) ? 'alert' : undefined}>
-        {invalidos.includes(c) ? rango(c) : t(`inmobiliaria.piloto.topes.${c}.ayuda`)}
-      </p>
+      {/* La ayuda y el error se cruzan (sin saltar el alto): ver ErrorDelCampo. */}
+      <ErrorDelCampo
+        id={`piloto-topes-${c}-error`}
+        mensaje={errorDe(c)}
+        pista={t(`inmobiliaria.piloto.topes.${c}.ayuda`)}
+        className="mt-0 text-caption"
+      />
     </div>
   )
 
@@ -160,9 +201,9 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
         <MoneyInput
           id="piloto-topes-topeMontoCop"
           value={valores.topeMontoCop}
-          onChange={(crudo) => setValores((v) => ({ ...v, topeMontoCop: crudo }))}
+          onChange={(crudo) => cambiar('topeMontoCop', crudo)}
           disabled={!editable}
-          aria-invalid={invalidos.includes('topeMontoCop')}
+          {...aria('topeMontoCop')}
           className="font-mono tabular-nums"
         />,
       )}
@@ -172,9 +213,9 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
           id="piloto-topes-topeDestinatarios"
           inputMode="numeric"
           value={valores.topeDestinatarios}
-          onChange={(e) => setValores((v) => ({ ...v, topeDestinatarios: e.target.value.replace(/\D/g, '') }))}
+          onChange={(e) => cambiar('topeDestinatarios', e.target.value.replace(/\D/g, ''))}
           disabled={!editable}
-          aria-invalid={invalidos.includes('topeDestinatarios')}
+          {...aria('topeDestinatarios')}
           className="font-mono tabular-nums"
         />,
       )}
@@ -184,9 +225,9 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
           id="piloto-topes-graciaSegundos"
           inputMode="numeric"
           value={valores.graciaSegundos}
-          onChange={(e) => setValores((v) => ({ ...v, graciaSegundos: e.target.value.replace(/\D/g, '') }))}
+          onChange={(e) => cambiar('graciaSegundos', e.target.value.replace(/\D/g, ''))}
           disabled={!editable}
-          aria-invalid={invalidos.includes('graciaSegundos')}
+          {...aria('graciaSegundos')}
           className="font-mono tabular-nums"
         />,
       )}
@@ -223,7 +264,7 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
 
       {fallo && (
         <p className="text-caption text-danger" role="alert" data-testid="piloto-topes-fallo">
-          {t('inmobiliaria.piloto.topes.errorAlGuardar', { error: fallo })}
+          {fallo}
         </p>
       )}
 

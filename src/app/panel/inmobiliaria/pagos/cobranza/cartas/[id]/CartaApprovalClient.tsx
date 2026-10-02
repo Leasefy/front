@@ -22,6 +22,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
 import {
@@ -86,6 +87,8 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     rejectResult,
     approveError,
     rejectError,
+    approveFallo,
+    rejectFallo,
     pdfDownloadUrl,
     pdfApprovedAt,
     approve,
@@ -340,14 +343,29 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </Button>
       </div>
 
-      {approveError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {approveError}
+      {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
+      {(Boolean(approveError) || approveFallo != null) && (
+        <div
+          role="alert"
+          data-testid="approval-aprobar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: approveError, fallo: approveFallo },
+            { porDefecto: 'No pudimos aprobar la carta.', accion: 'aprobar la carta' },
+          )}
         </div>
       )}
-      {rejectError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {rejectError}
+      {(Boolean(rejectError) || rejectFallo != null) && (
+        <div
+          role="alert"
+          data-testid="approval-rechazar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: rejectError, fallo: rejectFallo },
+            { porDefecto: 'No pudimos rechazar la carta.', accion: 'rechazar la carta' },
+          )}
         </div>
       )}
       {rejectResult?.ok && (

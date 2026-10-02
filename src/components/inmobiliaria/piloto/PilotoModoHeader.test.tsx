@@ -39,7 +39,9 @@ const { estado, setModoMock, toastMock, alternarMock } = vi.hoisted(() => ({
     isAdmin: true,
     movil: false,
   },
-  setModoMock: vi.fn(async (_modo: string): Promise<{ ok: boolean; error?: string; fallidos?: string[] }> => ({ ok: true })),
+  setModoMock: vi.fn(
+    async (_modo: string): Promise<{ ok: boolean; error?: string; fallo?: unknown; fallidos?: string[] }> => ({ ok: true }),
+  ),
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
   alternarMock: vi.fn(),
 }))
@@ -103,6 +105,7 @@ vi.mock('@/components/ui/button', () => ({
 
 import { PilotoModoHeader, retrasoEscalonado } from './PilotoModoHeader'
 import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 const FLOTA = (extra: Record<string, unknown> = {}) => ({
   activo: true,
@@ -218,13 +221,40 @@ describe('PilotoModoHeader', () => {
   })
 
   it('si el micro no deja cambiar el modo, lo dice (toast de error) y no se queda callado', async () => {
-    setModoMock.mockImplementation(async () => ({ ok: false, error: '500' }))
+    // Tanda 2 de errores (02-10-2026): antes salía «No se pudo cambiar el
+    // modo: 500». Un 5xx dice «de nuestro lado» con la referencia.
+    const fallo = await falloDelMicro({ status: 500, json: async () => ({ error: 'boom', requestId: 'a1b2c3d4-9999' }) })
+    setModoMock.mockImplementation(async () => ({ ok: false, error: '500', fallo }))
     render()
     await act(async () => {
       radio('sombra').click()
     })
-    expect(toastMock.error).toHaveBeenCalledWith('inmobiliaria.piloto.flota.toastFail(500)')
+    expect(toastMock.error).toHaveBeenCalledTimes(1)
+    const texto = String(toastMock.error.mock.calls[0]![0])
+    expect(texto).toContain('No pudimos cambiar el modo del Piloto: algo falló de nuestro lado')
+    expect(texto).toContain('a1b2c3d4')
+    expect(texto).not.toMatch(/conexi|500/i)
     expect(toastMock.success).not.toHaveBeenCalled()
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión; un 403 dice el `message`, no el status', async () => {
+    const red = new TypeError('Failed to fetch')
+    setModoMock.mockImplementation(async () => ({ ok: false, error: red.message, fallo: red }))
+    render()
+    await act(async () => {
+      radio('sombra').click()
+    })
+    expect(String(toastMock.error.mock.calls[0]![0])).toMatch(/conexión/)
+
+    const prohibido = await falloDelMicro({
+      status: 403,
+      json: async () => ({ code: 'SOLO_ADMINISTRADOR', message: 'Sólo un administrador mueve la flota.' }),
+    })
+    setModoMock.mockImplementation(async () => ({ ok: false, error: '403', fallo: prohibido }))
+    await act(async () => {
+      radio('sombra').click()
+    })
+    expect(toastMock.error).toHaveBeenLastCalledWith('Sólo un administrador mueve la flota.')
   })
 
   it('quien no es admin ve el modo pero las otras opciones no se ofrecen (y un clic no mueve nada)', async () => {

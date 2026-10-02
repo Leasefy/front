@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -20,7 +20,6 @@ import {
   Calendar,
   Bell,
   Check,
-  Warning,
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -39,6 +38,17 @@ import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  repartirErroresDelServidor,
+  traeErroresPorCampo,
+} from '@/lib/errores/errores-en-el-formulario';
+import {
+  LARGO_MAXIMO_DEL_CAMPO,
+  errorDelNit,
+  erroresDeLosTopes,
+  normalizarNit,
+} from '@/lib/configuracion/limites-de-la-inmobiliaria';
 import { DEPARTAMENTO_NOMBRES } from '@/lib/constants/colombia-geo';
 import {
   errorDeCodigoPostal,
@@ -116,6 +126,51 @@ interface PerfilFormState {
   agenteRetenedorIca: boolean | null;
 }
 
+/**
+ * Los campos que este formulario muestra, para repartir los `campos` de un 400
+ * del back: lo que el servidor marque fuera de esta lista va al toast.
+ */
+const CAMPOS_DEL_PERFIL: ReadonlyArray<keyof PerfilFormState> = [
+  'name',
+  'phone',
+  'whatsapp',
+  'email',
+  'supportEmail',
+  'website',
+  'address',
+  'city',
+  'department',
+  'postalCode',
+  'nit',
+  'razonSocial',
+  'legalRepresentative',
+  'legalDocumentNumber',
+  'matriculaInmobiliaria',
+  'registroCamara',
+  'defaultCommissionPercent',
+  'defaultLateFeePercent',
+  'paymentDueDay',
+  'disbursementDay',
+  'reminderDaysBefore',
+  'reminderDaysAfter',
+  'motorDeCobrosV2',
+  'diasDePlazo',
+  'diasParaSiniestro',
+  'diasParaAvisoAseguradora',
+  'dispersionExigePin',
+  'dispersionMontoDobleAprobacion',
+  'ivaPorcentaje',
+  'retefuenteArrendamientoPorcentaje',
+  'retefuenteComisionPorcentaje',
+  'reteicaPorMil',
+  'reteivaPorcentaje',
+  'baseMinimaRetefuenteCop',
+  'topeInteresMoraEaPorcentaje',
+  'agenteRetenedorRenta',
+  'agenteRetenedorIva',
+  'agenteRetenedorIca',
+];
+
 /** Techo de días de plazo — el mismo `@Max(60)` del DTO del back. */
 const MAX_DIAS_DE_PLAZO = 60;
 /** Rango del siniestro — `@Min(1) @Max(365)` en el DTO del back; 30 es el default del esquema. */
@@ -135,35 +190,49 @@ function reminderDayOptions(current: number[]): number[] {
 
 // Module-level so React doesn't remount the inputs (and drop focus) on every
 // keystroke — a defect the previous inline-component version had.
+//
+// El error bajo el campo es el de la casa (`ErrorDelCampo`, el `FormError` de
+// Cadence): entra suave y se cruza con la ayuda gris en vez de saltar. Con
+// `campo`, el label apunta a `perfil-<campo>` y el error lleva el id que ese
+// input nombra en `aria-describedby`; `data-campo` es por donde
+// `enfocarElCampo` encuentra el control cuando el servidor marca el campo.
 const InputWrapper = ({
   label,
   required,
   error,
   hint,
+  campo,
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
   hint?: string;
+  /** El nombre del campo en `PerfilFormState` (y en el DTO del back). */
+  campo?: string;
   children: React.ReactNode;
-}) => (
-  <div className="space-y-1.5">
-    <label className="block text-sm font-medium text-foreground">
-      {label}
-      {required && <span className="text-danger ml-0.5">*</span>}
-    </label>
-    {children}
-    {error ? (
-      <p className="text-xs text-danger flex items-center gap-1">
-        <Warning className="w-3 h-3" />
-        {error}
-      </p>
-    ) : hint ? (
-      <p className="text-xs text-muted-foreground">{hint}</p>
-    ) : null}
-  </div>
-);
+}) => {
+  const idPropio = useId();
+  const idDelError = campo ? `perfil-${campo}-error` : `${idPropio}-error`;
+  return (
+    <div className="space-y-1.5" data-campo={campo}>
+      <label className="block text-sm font-medium text-foreground" htmlFor={campo ? `perfil-${campo}` : undefined}>
+        {label}
+        {required && <span className="text-danger ml-0.5">*</span>}
+      </label>
+      {children}
+      <ErrorDelCampo id={idDelError} mensaje={error} pista={hint} className="mt-0" />
+    </div>
+  );
+};
+
+/** Lleva el foco al control del campo que el servidor (o la validación) marcó. */
+function enfocarElCampo(campo: string) {
+  if (typeof document === 'undefined') return;
+  const contenedor = document.querySelector(`[data-campo="${campo}"]`);
+  const control = contenedor?.querySelector<HTMLElement>('input:not([disabled]), button, textarea, [role="combobox"]');
+  control?.focus();
+}
 
 const SectionHeader = ({
   icon: Icon,
@@ -424,10 +493,9 @@ export function ConfigPerfilAgencia({
   // El dígito de verificación es OPCIONAL: una cédula no lo tiene y muchas
   // inmobiliarias escriben el NIT sin él. Exigirlo bloqueaba guardar TODA la
   // configuración de una agencia con NIT «1004997858» (visto en QA).
-  const validateNIT = (nit: string): boolean => {
-    const normalized = nit.replace(/[.\s]/g, '');
-    return /^\d{8,11}(-\d)?$/.test(normalized);
-  };
+  // 02-10-2026: la regla es la del registro y del back (de 6 a 10 dígitos y
+  // el DV opcional, `limites-de-la-inmobiliaria.ts`). La de antes (8 a 11)
+  // dejaba pasar NITs que el back rechaza y frenaba los de 6 o 7 que acepta.
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -445,9 +513,8 @@ export function ConfigPerfilAgencia({
     ) {
       newErrors.supportEmail = t('inmobiliaria.config.profile.validation.emailInvalid');
     }
-    if (formData.nit.trim() && !validateNIT(formData.nit)) {
-      newErrors.nit = t('inmobiliaria.config.profile.validation.nitInvalid');
-    }
+    const errorNit = nitLocked ? undefined : errorDelNit(formData.nit);
+    if (errorNit) newErrors.nit = errorNit;
     if (
       formData.defaultCommissionPercent < 0 ||
       formData.defaultCommissionPercent > 100
@@ -515,7 +582,20 @@ export function ConfigPerfilAgencia({
       if (mensaje) newErrors[campo] = mensaje;
     }
 
+    // Los topes de las columnas, con las frases del back: sólo sobre lo que
+    // cambió (un dato viejo no impide guardar lo demás).
+    for (const [campo, mensaje] of Object.entries(erroresDeLosTopes(buildChangedPayload()))) {
+      if (mensaje && !newErrors[campo]) newErrors[campo] = mensaje;
+    }
+
     setErrors(newErrors);
+    // Los que sólo se ven tocados (nombre, correos, NIT) se marcan: si no, el
+    // error existe y nadie lo ve.
+    if (Object.keys(newErrors).length > 0) {
+      setTouched((prev) => ({ ...prev, ...Object.fromEntries(Object.keys(newErrors).map((c) => [c, true])) }));
+      const primero = Object.keys(newErrors)[0];
+      if (primero) requestAnimationFrame(() => enfocarElCampo(primero));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -572,7 +652,12 @@ export function ConfigPerfilAgencia({
       if (field === 'nit' && nitLocked) continue;
       // La dirección viaja limpia (NFC, un espacio), igual que en el registro.
       // Sin tocarla, una dirección vieja con espacios de más no se reescribe.
-      const value = field === 'address' ? limpiarDireccion(formData[field]) : formData[field].trim();
+      const value =
+        field === 'address'
+          ? limpiarDireccion(formData[field])
+          : field === 'nit'
+            ? normalizarNit(formData[field])
+            : formData[field].trim();
       const antes = field === 'address' ? limpiarDireccion(original[field]) : original[field];
       if (value !== antes) {
         payload[field] = value;
@@ -662,9 +747,22 @@ export function ConfigPerfilAgencia({
     try {
       await onSave?.(payload);
       setIsEditing(false);
-    } catch {
-      // The parent surfaced the error (toast with the backend message,
-      // e.g. 403 for non-admins) — keep the form in edit mode.
+    } catch (error) {
+      // El formulario se queda en edición con lo escrito. Un fallo SIN campos
+      // (un 403, un 5xx, la red) ya lo dijo el padre en un toast (por el
+      // traductor). Uno CON campos (el 400 del DTO) va a cada campo, con el
+      // foco en el primero; al toast va sólo lo que este formulario no muestra.
+      if (traeErroresPorCampo(error)) {
+        const reparto = repartirErroresDelServidor(error, { campos: CAMPOS_DEL_PERFIL });
+        setErrors((prev) => ({ ...prev, ...reparto.porCampo }));
+        setTouched((prev) => ({
+          ...prev,
+          ...Object.fromEntries(reparto.orden.map((c) => [c, true])),
+        }));
+        const primero = reparto.orden[0];
+        if (primero) requestAnimationFrame(() => enfocarElCampo(primero));
+        if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -731,10 +829,15 @@ export function ConfigPerfilAgencia({
             label={t('inmobiliaria.config.profile.agencyName')}
             required
             error={touched.name ? errors.name : undefined}
+            campo="name"
           >
             <div className="relative">
               <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
+                id="perfil-name"
+                aria-describedby="perfil-name-error"
+                aria-invalid={Boolean(errors.name) || undefined}
+                maxLength={LARGO_MAXIMO_DEL_CAMPO.name}
                 type="text"
                 value={formData.name}
                 onChange={(e) => updateField('name', e.target.value)}
@@ -755,10 +858,14 @@ export function ConfigPerfilAgencia({
 
         {isEditing ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputWrapper label={t('inmobiliaria.config.profile.mainPhone')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.mainPhone')} campo="phone" error={errors.phone}>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-phone"
+                  aria-describedby="perfil-phone-error"
+                  aria-invalid={Boolean(errors.phone) || undefined}
+                  maxLength={LARGO_MAXIMO_DEL_CAMPO.phone}
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => updateField('phone', e.target.value)}
@@ -771,10 +878,15 @@ export function ConfigPerfilAgencia({
             <InputWrapper
               label={t('inmobiliaria.config.profile.mainEmail')}
               error={touched.email ? errors.email : undefined}
+              campo="email"
             >
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-email"
+                  aria-describedby="perfil-email-error"
+                  aria-invalid={Boolean(errors.email) || undefined}
+                  maxLength={LARGO_MAXIMO_DEL_CAMPO.email}
                   type="email"
                   value={formData.email}
                   onChange={(e) => updateField('email', e.target.value)}
@@ -788,10 +900,14 @@ export function ConfigPerfilAgencia({
               label={t('inmobiliaria.config.profile.supportEmail')}
               hint={t('common.optional')}
               error={touched.supportEmail ? errors.supportEmail : undefined}
+              campo="supportEmail"
             >
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-supportEmail"
+                  aria-describedby="perfil-supportEmail-error"
+                  aria-invalid={Boolean(errors.supportEmail) || undefined}
                   type="email"
                   value={formData.supportEmail}
                   onChange={(e) => updateField('supportEmail', e.target.value)}
@@ -801,10 +917,13 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="WhatsApp" hint={t('common.optional')}>
+            <InputWrapper label="WhatsApp" hint={t('common.optional')} campo="whatsapp" error={errors.whatsapp}>
               <div className="relative">
                 <WhatsappLogo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-whatsapp"
+                  aria-describedby="perfil-whatsapp-error"
+                  aria-invalid={Boolean(errors.whatsapp) || undefined}
                   type="tel"
                   value={formData.whatsapp}
                   onChange={(e) => updateField('whatsapp', e.target.value)}
@@ -814,10 +933,13 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.website')} hint={t('common.optional')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.website')} hint={t('common.optional')} campo="website" error={errors.website}>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-website"
+                  aria-describedby="perfil-website-error"
+                  aria-invalid={Boolean(errors.website) || undefined}
                   type="url"
                   value={formData.website}
                   onChange={(e) => updateField('website', e.target.value)}
@@ -834,10 +956,14 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.address')}
                 error={errors.address}
+                campo="address"
               >
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-address"
+                    aria-describedby="perfil-address-error"
+                    maxLength={LARGO_MAXIMO_DEL_CAMPO.address}
                     type="text"
                     autoComplete="address-line1"
                     value={formData.address}
@@ -852,8 +978,12 @@ export function ConfigPerfilAgencia({
               </InputWrapper>
             </div>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.city')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.city')} campo="city" error={errors.city}>
               <Input
+                id="perfil-city"
+                aria-describedby="perfil-city-error"
+                aria-invalid={Boolean(errors.city) || undefined}
+                maxLength={LARGO_MAXIMO_DEL_CAMPO.city}
                 type="text"
                 value={formData.city}
                 onChange={(e) => updateField('city', e.target.value)}
@@ -862,7 +992,7 @@ export function ConfigPerfilAgencia({
               />
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.department')} hint={t('common.optional')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.department')} hint={t('common.optional')} campo="department" error={errors.department}>
               <Select
                 value={formData.department || undefined}
                 onValueChange={(v) => updateField('department', v)}
@@ -887,8 +1017,11 @@ export function ConfigPerfilAgencia({
               label={t('inmobiliaria.config.profile.postalCode')}
               hint="Opcional · 6 dígitos; los dos primeros son los del departamento."
               error={errors.postalCode}
+              campo="postalCode"
             >
               <Input
+                id="perfil-postalCode"
+                aria-describedby="perfil-postalCode-error"
                 type="text"
                 inputMode="numeric"
                 autoComplete="postal-code"
@@ -957,10 +1090,14 @@ export function ConfigPerfilAgencia({
                     : 'To change the NIT, contact Leasefy support.'
                   : t('inmobiliaria.config.profile.nitFormat')
               }
+              campo="nit"
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-nit"
+                  aria-describedby="perfil-nit-error"
+                  aria-invalid={Boolean(errors.nit) || undefined}
                   type="text"
                   value={formData.nit}
                   onChange={(e) => updateField('nit', e.target.value)}
@@ -975,8 +1112,11 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.legalName')} hint={t('common.optional')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.legalName')} hint={t('common.optional')} campo="razonSocial" error={errors.razonSocial}>
               <Input
+                id="perfil-razonSocial"
+                aria-describedby="perfil-razonSocial-error"
+                aria-invalid={Boolean(errors.razonSocial) || undefined}
                 type="text"
                 value={formData.razonSocial}
                 onChange={(e) => updateField('razonSocial', e.target.value)}
@@ -985,10 +1125,14 @@ export function ConfigPerfilAgencia({
               />
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.legalRep')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.legalRep')} campo="legalRepresentative" error={errors.legalRepresentative}>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-legalRepresentative"
+                  aria-describedby="perfil-legalRepresentative-error"
+                  aria-invalid={Boolean(errors.legalRepresentative) || undefined}
+                  maxLength={LARGO_MAXIMO_DEL_CAMPO.legalRepresentative}
                   type="text"
                   value={formData.legalRepresentative}
                   onChange={(e) => updateField('legalRepresentative', e.target.value)}
@@ -998,10 +1142,14 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.legalRepId')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.legalRepId')} campo="legalDocumentNumber" error={errors.legalDocumentNumber}>
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  id="perfil-legalDocumentNumber"
+                  aria-describedby="perfil-legalDocumentNumber-error"
+                  aria-invalid={Boolean(errors.legalDocumentNumber) || undefined}
+                  maxLength={LARGO_MAXIMO_DEL_CAMPO.legalDocumentNumber}
                   type="text"
                   value={formData.legalDocumentNumber}
                   onChange={(e) => updateField('legalDocumentNumber', e.target.value)}
@@ -1011,8 +1159,11 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.realEstateRegistration')} hint={t('common.optional')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.realEstateRegistration')} hint={t('common.optional')} campo="matriculaInmobiliaria" error={errors.matriculaInmobiliaria}>
               <Input
+                id="perfil-matriculaInmobiliaria"
+                aria-describedby="perfil-matriculaInmobiliaria-error"
+                aria-invalid={Boolean(errors.matriculaInmobiliaria) || undefined}
                 type="text"
                 value={formData.matriculaInmobiliaria}
                 onChange={(e) => updateField('matriculaInmobiliaria', e.target.value)}
@@ -1021,8 +1172,11 @@ export function ConfigPerfilAgencia({
               />
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.chamberRegistration')} hint={t('common.optional')}>
+            <InputWrapper label={t('inmobiliaria.config.profile.chamberRegistration')} hint={t('common.optional')} campo="registroCamara" error={errors.registroCamara}>
               <Input
+                id="perfil-registroCamara"
+                aria-describedby="perfil-registroCamara-error"
+                aria-invalid={Boolean(errors.registroCamara) || undefined}
                 type="text"
                 value={formData.registroCamara}
                 onChange={(e) => updateField('registroCamara', e.target.value)}
@@ -1084,10 +1238,14 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.commissionPercent')}
                 error={errors.defaultCommissionPercent}
+                campo="defaultCommissionPercent"
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-defaultCommissionPercent"
+                    aria-describedby="perfil-defaultCommissionPercent-error"
+                    aria-invalid={Boolean(errors.defaultCommissionPercent) || undefined}
                     type="number"
                     min={0}
                     max={100}
@@ -1105,10 +1263,14 @@ export function ConfigPerfilAgencia({
                 label={t('inmobiliaria.config.profile.lateFeePercent')}
                 error={errors.defaultLateFeePercent}
                 hint="% mensual fijo (sólo si el motor de cobros con reglas de mora está apagado)"
+                campo="defaultLateFeePercent"
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-defaultLateFeePercent"
+                    aria-describedby="perfil-defaultLateFeePercent-error"
+                    aria-invalid={Boolean(errors.defaultLateFeePercent) || undefined}
                     type="number"
                     min={0}
                     max={100}
@@ -1125,10 +1287,14 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.paymentDueDay')}
                 error={errors.paymentDueDay}
+                campo="paymentDueDay"
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-paymentDueDay"
+                    aria-describedby="perfil-paymentDueDay-error"
+                    aria-invalid={Boolean(errors.paymentDueDay) || undefined}
                     type="number"
                     min={1}
                     max={28}
@@ -1144,10 +1310,14 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.disbursementDay')}
                 error={errors.disbursementDay}
+                campo="disbursementDay"
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-disbursementDay"
+                    aria-describedby="perfil-disbursementDay-error"
+                    aria-invalid={Boolean(errors.disbursementDay) || undefined}
                     type="number"
                     min={1}
                     max={28}
@@ -1203,6 +1373,8 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.daysBeforeDue')}
                 hint={t('inmobiliaria.config.profile.remindersEmptyHint')}
+                campo="reminderDaysBefore"
+                error={errors.reminderDaysBefore}
               >
                 <div className="flex flex-wrap gap-2">
                   {reminderDayOptions(formData.reminderDaysBefore).map((day) => (
@@ -1222,6 +1394,8 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.daysAfterDue')}
                 hint={t('inmobiliaria.config.profile.remindersEmptyHint')}
+                campo="reminderDaysAfter"
+                error={errors.reminderDaysAfter}
               >
                 <div className="flex flex-wrap gap-2">
                   {reminderDayOptions(formData.reminderDaysAfter).map((day) => (
@@ -1295,10 +1469,14 @@ export function ConfigPerfilAgencia({
                 label="Días de plazo antes de la mora"
                 error={errors.diasDePlazo}
                 hint="Días después de la fecha de cobro en los que todavía no corre mora. Un contrato puede tener los suyos."
+                campo="diasDePlazo"
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-diasDePlazo"
+                    aria-describedby="perfil-diasDePlazo-error"
+                    aria-invalid={Boolean(errors.diasDePlazo) || undefined}
                     type="number"
                     inputMode="numeric"
                     min={0}
@@ -1319,10 +1497,14 @@ export function ConfigPerfilAgencia({
                 label="Días de mora para siniestro"
                 error={errors.diasParaSiniestro}
                 hint="Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. Sólo aplica con el motor de cobros prendido."
+                campo="diasParaSiniestro"
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-diasParaSiniestro"
+                    aria-describedby="perfil-diasParaSiniestro-error"
+                    aria-invalid={Boolean(errors.diasParaSiniestro) || undefined}
                     type="number"
                     inputMode="numeric"
                     min={MIN_DIAS_PARA_SINIESTRO}
@@ -1343,10 +1525,14 @@ export function ConfigPerfilAgencia({
                 label="Días de mora para avisar a la aseguradora"
                 error={errors.diasParaAvisoAseguradora}
                 hint="Antes del siniestro: a estos días de mora se avisa al equipo que hay que reportar el caso a la aseguradora del contrato."
+                campo="diasParaAvisoAseguradora"
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="perfil-diasParaAvisoAseguradora"
+                    aria-describedby="perfil-diasParaAvisoAseguradora-error"
+                    aria-invalid={Boolean(errors.diasParaAvisoAseguradora) || undefined}
                     type="number"
                     inputMode="numeric"
                     min={MIN_DIAS_PARA_SINIESTRO}
@@ -1374,8 +1560,12 @@ export function ConfigPerfilAgencia({
                 label="Techo legal del interés de mora (% efectivo anual)"
                 error={errors.topeInteresMoraEaPorcentaje}
                 hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de acá. Vacío = sin validar."
+                campo="topeInteresMoraEaPorcentaje"
               >
                 <Input
+                  id="perfil-topeInteresMoraEaPorcentaje"
+                  aria-describedby="perfil-topeInteresMoraEaPorcentaje-error"
+                  aria-invalid={Boolean(errors.topeInteresMoraEaPorcentaje) || undefined}
                   type="number"
                   inputMode="decimal"
                   step="0.01"
@@ -1457,9 +1647,12 @@ export function ConfigPerfilAgencia({
                 label="Segundo aprobador desde (COP)"
                 error={errors.dispersionMontoDobleAprobacion}
                 hint="Un lote que sume este monto o más exige el código de otra persona. Vacío = nunca por monto."
+                campo="dispersionMontoDobleAprobacion"
               >
                 <CurrencyInput
-                  id="dispersion-monto-doble-aprobacion"
+                  id="perfil-dispersionMontoDobleAprobacion"
+                  aria-describedby="perfil-dispersionMontoDobleAprobacion-error"
+                  aria-invalid={Boolean(errors.dispersionMontoDobleAprobacion) || undefined}
                   data-testid="dispersion-monto-doble-aprobacion"
                   value={formData.dispersionMontoDobleAprobacion ?? undefined}
                   onChange={(v) =>
@@ -1501,8 +1694,11 @@ export function ConfigPerfilAgencia({
 
         {isEditing ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <InputWrapper label="IVA (%)" error={errors.ivaPorcentaje} hint="Canon comercial, comisiones y servicios gravados.">
+            <InputWrapper label="IVA (%)" error={errors.ivaPorcentaje} hint="Canon comercial, comisiones y servicios gravados." campo="ivaPorcentaje">
               <Input
+                id="perfil-ivaPorcentaje"
+                aria-describedby="perfil-ivaPorcentaje-error"
+                aria-invalid={Boolean(errors.ivaPorcentaje) || undefined}
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -1518,8 +1714,12 @@ export function ConfigPerfilAgencia({
               label="Retefuente arrendamiento (%)"
               error={errors.retefuenteArrendamientoPorcentaje}
               hint="La practica el inquilino agente retenedor sobre el canon."
+              campo="retefuenteArrendamientoPorcentaje"
             >
               <Input
+                id="perfil-retefuenteArrendamientoPorcentaje"
+                aria-describedby="perfil-retefuenteArrendamientoPorcentaje-error"
+                aria-invalid={Boolean(errors.retefuenteArrendamientoPorcentaje) || undefined}
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -1537,8 +1737,12 @@ export function ConfigPerfilAgencia({
               label="Retefuente comisiones (%)"
               error={errors.retefuenteComisionPorcentaje}
               hint="La practica el propietario agente retenedor sobre tu comisión."
+              campo="retefuenteComisionPorcentaje"
             >
               <Input
+                id="perfil-retefuenteComisionPorcentaje"
+                aria-describedby="perfil-retefuenteComisionPorcentaje-error"
+                aria-invalid={Boolean(errors.retefuenteComisionPorcentaje) || undefined}
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -1556,8 +1760,12 @@ export function ConfigPerfilAgencia({
               label="ReteICA (por mil)"
               error={errors.reteicaPorMil}
               hint="Según el municipio (Bogotá, demás actividades comerciales: 9,66). Vacío = no se practica."
+              campo="reteicaPorMil"
             >
               <Input
+                id="perfil-reteicaPorMil"
+                aria-describedby="perfil-reteicaPorMil-error"
+                aria-invalid={Boolean(errors.reteicaPorMil) || undefined}
                 type="number"
                 inputMode="decimal"
                 step="0.001"
@@ -1570,8 +1778,11 @@ export function ConfigPerfilAgencia({
                 className={cn('tabular-nums', errors.reteicaPorMil && 'border-danger/30')}
               />
             </InputWrapper>
-            <InputWrapper label="ReteIVA (%)" error={errors.reteivaPorcentaje} hint="Sobre el valor del IVA, no sobre la base.">
+            <InputWrapper label="ReteIVA (%)" error={errors.reteivaPorcentaje} hint="Sobre el valor del IVA, no sobre la base." campo="reteivaPorcentaje">
               <Input
+                id="perfil-reteivaPorcentaje"
+                aria-describedby="perfil-reteivaPorcentaje-error"
+                aria-invalid={Boolean(errors.reteivaPorcentaje) || undefined}
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -1587,9 +1798,12 @@ export function ConfigPerfilAgencia({
               label="Base mínima de retefuente (COP)"
               error={errors.baseMinimaRetefuenteCop}
               hint="Por debajo de este canon no se practica retefuente (27 UVT). Vacío = sin mínimo."
+              campo="baseMinimaRetefuenteCop"
             >
               <CurrencyInput
-                id="base-minima-retefuente"
+                id="perfil-baseMinimaRetefuenteCop"
+                aria-describedby="perfil-baseMinimaRetefuenteCop-error"
+                aria-invalid={Boolean(errors.baseMinimaRetefuenteCop) || undefined}
                 data-testid="base-minima-retefuente"
                 value={formData.baseMinimaRetefuenteCop ?? undefined}
                 onChange={(v) => updateField('baseMinimaRetefuenteCop', Number.isNaN(v) ? null : v)}

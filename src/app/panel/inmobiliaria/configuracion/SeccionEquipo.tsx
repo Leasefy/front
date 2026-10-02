@@ -33,6 +33,7 @@ import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { AgencyInviteResult, AgencyRole, AgencyUser, UserInvite } from '@/lib/types/inmobiliaria';
 import { EsqueletoDeSeccion } from './piezas';
@@ -146,7 +147,10 @@ export function SeccionEquipo() {
           });
         }
       } catch (error) {
-        toast.error('Error al invitar', { description: error instanceof Error ? error.message : undefined });
+        // 🔴 No se traga: el modal (`AgenteFormModal`) se queda abierto con lo
+        // escrito y dice qué pasó, por campo si el 400 trae `campos`. Antes el
+        // toast decía «Error al invitar» y el modal se cerraba y se reseteaba.
+        throw error;
       }
     },
     [refetch, t, accionDelCorreoCaido],
@@ -159,9 +163,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
       } catch (error) {
-        toast.error('Error al actualizar rol', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos cambiar el rol. Prueba de nuevo en un momento.',
+            accion: 'cambiar el rol',
+          }),
+        );
       }
     },
     [refetch, t],
@@ -177,9 +184,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
       } catch (error) {
-        toast.error('Error al actualizar estado', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos cambiar el estado de la persona. Prueba de nuevo en un momento.',
+            accion: 'cambiar el estado de la persona',
+          }),
+        );
       }
     },
     [users, refetch, t],
@@ -209,9 +219,12 @@ export function SeccionEquipo() {
         }
         await refetch();
       } catch (error) {
-        toast.error('No pudimos reenviar la invitación', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos reenviar la invitación. Prueba de nuevo en un momento.',
+            accion: 'reenviar la invitación',
+          }),
+        );
       }
     },
     [users, refetch, t, accionDelCorreoCaido],
@@ -224,9 +237,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.userDeleted'));
       } catch (error) {
-        toast.error('Error al eliminar usuario', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos quitar a la persona del equipo. Prueba de nuevo en un momento.',
+            accion: 'quitar a la persona del equipo',
+          }),
+        );
       }
     },
     [refetch, t],

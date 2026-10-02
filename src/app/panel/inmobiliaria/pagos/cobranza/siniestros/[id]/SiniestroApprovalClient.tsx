@@ -24,6 +24,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
 import { BackButton } from '@leasefy/cadence'
@@ -77,6 +78,8 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     rejectResult,
     approveError,
     rejectError,
+    approveFallo,
+    rejectFallo,
     approvedInsurers,
     approve,
     reject,
@@ -316,14 +319,29 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         </Button>
       </div>
 
-      {approveError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {approveError}
+      {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
+      {(Boolean(approveError) || approveFallo != null) && (
+        <div
+          role="alert"
+          data-testid="approval-aprobar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: approveError, fallo: approveFallo },
+            { porDefecto: 'No pudimos aprobar el siniestro.', accion: 'aprobar el siniestro' },
+          )}
         </div>
       )}
-      {rejectError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {rejectError}
+      {(Boolean(rejectError) || rejectFallo != null) && (
+        <div
+          role="alert"
+          data-testid="approval-rechazar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: rejectError, fallo: rejectFallo },
+            { porDefecto: 'No pudimos rechazar el siniestro.', accion: 'rechazar el siniestro' },
+          )}
         </div>
       )}
       {rejectResult?.ok && (

@@ -35,6 +35,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Domains ───────────────────────────────────────────────────────────────
 
@@ -118,7 +119,10 @@ export interface SavePolicyInput {
 
 export interface SavePolicyResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   created?: ConciliacionPolicyCreated
 }
 
@@ -209,15 +213,12 @@ export function useConciliacionPolicy(): UseConciliacionPolicyResult {
             }),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const created = (await res.json()) as ConciliacionPolicyCreated
         await fetchData()
         return { ok: true, created }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'save_failed' }
+        return accionSinRespuesta(err, 'save_failed')
       }
     },
     [agencyId, fetchData],

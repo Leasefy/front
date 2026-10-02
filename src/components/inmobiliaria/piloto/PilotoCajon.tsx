@@ -56,6 +56,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PilotoAccionForm } from './PilotoAccionForm'
+import { textosDelFallo } from './fallo-de-la-accion'
 import { PilotoDocumento } from './PilotoDocumento'
 import {
   Sheet,
@@ -65,6 +66,7 @@ import {
   SheetHeader,
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
@@ -209,6 +211,12 @@ export function PilotoCajon({
    */
   const [abierta, setAbierta] = useState<InboxAccion | null>(null)
   /**
+   * Lo que el micro dijo de cada dato del formulario (un 400 con `campos`):
+   * va debajo de SU campo, no a un toast. Se limpia al cambiar de acción.
+   */
+  const [erroresDelFormulario, setErroresDelFormulario] = useState<Partial<Record<string, string>>>({})
+  useEffect(() => setErroresDelFormulario({}), [abierta])
+  /**
    * El documento abierto ENCIMA del caso. Leer la carta no puede costar salir
    * del Piloto: es lo que se hace justo antes de autorizar que salga.
    */
@@ -245,9 +253,16 @@ export function PilotoCajon({
           setAbierta(null)
           await Promise.allSettled([refetch(), onAccionEjecutada?.() ?? Promise.resolve()])
         } else {
-          toast.error(
-            t('inmobiliaria.piloto.bandeja.toastFail', { error: res.error ?? 'error' }),
-          )
+          // Con la regla de oro: lo que el micro dijo de un dato del
+          // formulario va a SU campo; al toast sólo lo que no tiene dónde ir
+          // (un 5xx con su referencia, un 409, la conexión si no salió).
+          // Antes: «No se pudo: 403».
+          const reparto = repartirErroresDelServidor(res.fallo, {
+            campos: (accion.campos ?? []).map((c) => c.id),
+            ...textosDelFallo(accion.label),
+          })
+          setErroresDelFormulario(reparto.porCampo)
+          if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
         }
       } finally {
         setEnVuelo(null)
@@ -528,6 +543,7 @@ export function PilotoCajon({
                  vive acá y no en otro diálogo encima del cajón. */
               <PilotoAccionForm
                 accion={abierta}
+                errores={erroresDelFormulario}
                 enVuelo={enVuelo === abierta.label}
                 onCancelar={() => setAbierta(null)}
                 onEnviar={(valores: Record<string, unknown>) => void ejecutar(abierta, valores)}

@@ -20,6 +20,7 @@ import { ArrowCounterClockwise } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 
 import type { ThresholdRow } from '@/lib/hooks/cobranza/use-thresholds'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -60,6 +61,8 @@ export function ThresholdVersionsTable({
   const [rollbackConfirmVersion, setRollbackConfirmVersion] = useState<number | null>(null)
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false)
   const [toast, setToast] = useState<string | null>(null)
+  /** Un fallo no se pinta en verde: el aviso dice si salió o no. */
+  const [toastEsError, setToastEsError] = useState<boolean>(false)
 
   // currentMax = highest version in the list; new rollback row will be max+1.
   // Se calcula sobre TODAS las versiones, no sobre la página: si mirara sólo la
@@ -79,6 +82,7 @@ export function ThresholdVersionsTable({
     setIsRollingBack(true)
     try {
       const row = await onRollback(rollbackConfirmVersion)
+      setToastEsError(false)
       setToast(
         locale.startsWith('es')
           ? `Restaurado a versión ${rollbackConfirmVersion} (ahora vigente como versión ${row.version})`
@@ -86,7 +90,16 @@ export function ThresholdVersionsTable({
       )
       setRollbackConfirmVersion(null)
     } catch (err) {
-      setToast(err instanceof Error ? err.message : 'rollback_failed')
+      // Antes: «403: {cuerpo crudo}» o «rollback_failed», y en verde.
+      setToastEsError(true)
+      setToast(
+        leerFallo(err).status === 403
+          ? 'No tienes permiso para restaurar versiones. Pídeselo a un administrador.'
+          : mensajeParaLaPersona(err, {
+              porDefecto: 'No pudimos restaurar esa versión.',
+              accion: 'restaurar esa versión',
+            }),
+      )
     } finally {
       setIsRollingBack(false)
       setTimeout(() => setToast(null), 4000)
@@ -202,7 +215,14 @@ export function ThresholdVersionsTable({
 
       {/* Toast */}
       {toast && (
-        <div className="px-4 py-2 border-t border-border bg-success-soft text-success">
+        <div
+          role={toastEsError ? 'alert' : 'status'}
+          className={
+            toastEsError
+              ? 'px-4 py-2 border-t border-border bg-danger-soft text-danger'
+              : 'px-4 py-2 border-t border-border bg-success-soft text-success'
+          }
+        >
           {toast}
         </div>
       )}

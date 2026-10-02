@@ -92,8 +92,12 @@ export function usePilotoLoQueHizo(abierto: boolean): LecturaDelPiloto<PilotoLoQ
 
 export interface UsePilotoPreferenciasResult extends LecturaDelPiloto<PilotoPreferenciasResponse> {
   guardando: boolean
-  /** Guarda y, si salió, vuelve a leer (el «quién y cuándo» cambia). */
-  guardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string }>
+  /**
+   * Guarda y, si salió, vuelve a leer (el «quién y cuándo» cambia). `fallo`
+   * es el error entero (el 400 trae `campos` para cada tope); `error`, el
+   * código viejo (no es para la persona).
+   */
+  guardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
 }
 
 /** Topes y gracia de la inmobiliaria. Se lee cuando `abierto`. */
@@ -109,7 +113,9 @@ export function usePilotoPreferencias(abierto: boolean): UsePilotoPreferenciasRe
       try {
         const r = await putPilotoPreferencias(agency.id, cambios)
         if (r.ok) await refetch()
-        return r.ok ? { ok: true } : { ok: false, ...(r.error ? { error: r.error } : {}) }
+        return r.ok
+          ? { ok: true }
+          : { ok: false, ...(r.error ? { error: r.error } : {}), ...(r.fallo !== undefined ? { fallo: r.fallo } : {}) }
       } finally {
         setGuardando(false)
       }

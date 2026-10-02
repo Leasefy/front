@@ -45,12 +45,28 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   permissionsApi: { updateMemberRole: vi.fn(), updateMemberStatus: vi.fn() },
 }))
 
+const h = vi.hoisted(() => ({
+  modal: null as null | { onSubmit: (invite: unknown) => Promise<void> },
+  toastError: vi.fn(),
+}))
+
 // El formulario es un diálogo: cerrado no aporta al DOM y complica el render.
+// Se guardan sus props para probar qué recibe cuando el back no guarda.
 vi.mock('@/components/inmobiliaria/AgenteFormModal', () => ({
-  AgenteFormModal: () => null,
+  AgenteFormModal: (props: { onSubmit: (invite: unknown) => Promise<void> }) => {
+    h.modal = props
+    return null
+  },
+}))
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: h.toastError, info: vi.fn(), warning: vi.fn() },
 }))
 
 import { SeccionEquipo } from './SeccionEquipo'
+import { inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria'
+import { agencyApi } from '@/lib/api/inmobiliaria.service'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -133,6 +149,40 @@ describe('sección Equipo', () => {
       expect(items).toContain('activate')
       expect(items).toContain('delete')
     })
+
+    it('reenviar con un 5xx dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
+      h.toastError.mockReset()
+      vi.mocked(agencyApi.resendInvitation).mockRejectedValueOnce(
+        new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+          statusCode: 500,
+          code: 'ERROR_INTERNO',
+          referencia: 'f00dbabe',
+        }),
+      )
+      await render()
+      await abrirMenuDe('nuevo@agencia.com')
+      const reenviar = [...document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+        (el) => (el.textContent ?? '').trim() === 'resendInvite',
+      )!
+      await act(async () => {
+        reenviar.click()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      expect(h.toastError).toHaveBeenCalledTimes(1)
+      const texto = String(h.toastError.mock.calls[0][0])
+      expect(texto).toContain('No pudimos reenviar la invitación: algo falló de nuestro lado')
+      expect(texto).toContain('f00dbabe')
+    })
+  })
+
+  it('🔴 invitar no se traga el error: el formulario lo recibe y se queda abierto con lo escrito', async () => {
+    const error = new ApiError(400, ['El nombre puede tener hasta 120 caracteres.'], 'DATOS_INVALIDOS', {
+      campos: [{ campo: 'name', regla: 'longitud_maxima', mensaje: 'El nombre puede tener hasta 120 caracteres.' }],
+    })
+    vi.mocked(inmobiliariaConfigApi.inviteUser).mockRejectedValueOnce(error)
+    await render()
+    expect(h.modal).not.toBeNull()
+    await expect(h.modal!.onSubmit({ email: 'x@y.co', name: 'X', role: 'agente' })).rejects.toBe(error)
   })
 
   it('ofrece las tres vistas: el padrón y los dos tableros de desempeño', async () => {

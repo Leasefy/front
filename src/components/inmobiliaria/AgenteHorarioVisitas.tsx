@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Clock, CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -65,7 +66,10 @@ export function AgenteHorarioVisitas({
       toast.success(t(k('horarioAgenteGuardado'), { count: applied }));
     } catch (err) {
       toast.error(t(k('horarioAgenteError')), {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'guardar el horario',
+        }),
       });
     } finally {
       setSaving(false);

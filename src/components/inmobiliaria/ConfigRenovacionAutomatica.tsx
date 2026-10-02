@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowsClockwise, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Switch } from '@/components/ui/switch';
 import { renovacionAutomaticaApi } from '@/lib/api/renovacion-automatica.service';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
@@ -214,7 +215,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
           value={ipcTexto}
           disabled={!canEdit || guardando}
           aria-invalid={!!errorDeIpc}
-          aria-describedby="renovacion-ipc-ayuda"
+          aria-describedby="renovacion-ipc-ayuda-error"
           onChange={(e) => setIpcTexto(e.target.value)}
           onBlur={() => void confirmarIpc()}
           onKeyDown={(e) => {
@@ -222,14 +223,15 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
           }}
           className={cn('w-28 tabular-nums', errorDeIpc && 'border-danger/30')}
         />
-        <p
-          id="renovacion-ipc-ayuda"
-          data-testid="renovacion-ipc-ayuda"
-          className={cn('text-xs', errorDeIpc ? 'text-danger' : 'text-muted-foreground')}
-        >
-          {errorDeIpc ??
-            'Se usa para el incremento del canon en cada renovación; si está vacío se usa el IPC de diciembre del año anterior de la tabla de Leasefy.'}
-        </p>
+        {/* El error de la casa: se cruza con la ayuda, sin saltar el alto. */}
+        <div data-testid="renovacion-ipc-ayuda">
+          <ErrorDelCampo
+            id="renovacion-ipc-ayuda-error"
+            mensaje={errorDeIpc}
+            pista="Se usa para el incremento del canon en cada renovación; si está vacío se usa el IPC de diciembre del año anterior de la tabla de Leasefy."
+            className="mt-0"
+          />
+        </div>
       </div>
 
       {/* N3: el IPC por año. El de arriba no tiene año y se queda viejo en silencio. */}

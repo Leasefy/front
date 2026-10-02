@@ -212,3 +212,53 @@ describe('MemosTab', () => {
     expect(container.querySelector('[data-testid="memo-nota-form"]')).not.toBeNull()
   })
 })
+
+// ── Errores al guardar la nota: la regla de oro (02-10-2026) ─────────────────
+// Antes: «HTTP 500» crudo, y cualquier fallo de red como un texto en inglés.
+
+describe('MemosTab — errores al guardar la nota', () => {
+  it('un 400 con `campos` pinta el error debajo de la nota y le da el foco', async () => {
+    conMemos([])
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La nota puede tener hasta 4000 caracteres.'],
+        campos: [{ campo: 'body', regla: 'longitud_maxima', mensaje: 'La nota puede tener hasta 4000 caracteres.' }],
+      }),
+    })
+    render()
+    await escribirYGuardar('nota')
+    const area = container.querySelector('textarea') as HTMLTextAreaElement
+    expect(container.querySelector('#memo-nota-error')?.textContent).toBe(
+      'La nota puede tener hasta 4000 caracteres.',
+    )
+    expect(area.getAttribute('aria-describedby')).toBe('memo-nota-error')
+    expect(document.activeElement).toBe(area)
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, no «HTTP 500»', async () => {
+    conMemos([])
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Internal Server Error', requestId: 'feedbeef-0000-4000-8000-000000000000' }),
+    })
+    render()
+    await escribirYGuardar('nota')
+    const texto = container.querySelector('#memo-nota-error')?.textContent ?? ''
+    expect(texto).toContain('No pudimos guardar la nota: algo falló de nuestro lado')
+    expect(texto).toContain('feedbeef')
+    expect(texto).not.toContain('HTTP 500')
+  })
+
+  it('un `fetch` que no salió (status 0) habla de la conexión', async () => {
+    conMemos([])
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    render()
+    await escribirYGuardar('nota')
+    expect(container.querySelector('#memo-nota-error')?.textContent).toMatch(/conexi[oó]n/i)
+  })
+})

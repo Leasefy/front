@@ -34,6 +34,7 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 // =============================================================================
 // Types
@@ -96,20 +97,37 @@ export interface UsePaymentPlanApprovalOptions {
   canApprove?: boolean
 }
 
+/**
+ * Lo que devuelve una acción que no salió.
+ *
+ * `error` se conserva por compatibilidad (`approve 500`, `PERMISSION_DENIED`…)
+ * pero NO es para una persona. Para eso está `fallo`: el `ApiError` del micro
+ * (status, `code`, `message`, `campos`) o el error de la red tal cual, que la
+ * pantalla traduce con `mensajeParaLaPersona`. Sin `fallo`, la acción ni se
+ * intentó (sin permiso, sin agente, sin plan cargado) y `error` es su código.
+ * `code` lo pone el hook para un caso que la pantalla trata aparte
+ * (`DUPLICATE_PLAN_RISK`): se decide con él, nunca con el texto.
+ */
+export interface FalloDeLaAccion {
+  error: string
+  fallo?: unknown
+  code?: 'DUPLICATE_PLAN_RISK'
+}
+
 export interface UsePaymentPlanApprovalResult {
   plan: PaymentPlanApprovalView | null
   isLoading: boolean
   error: string | null
   isMaxDiscountExceeded: boolean
   refetch: () => Promise<void>
-  approvePlan: () => Promise<{ wompiLink: string } | { error: string }>
+  approvePlan: () => Promise<{ wompiLink: string } | FalloDeLaAccion>
   rejectPlan: (input: {
     reject_reason: RejectReasonSlug | undefined
     reject_comment?: string
-  }) => Promise<{ ok: true } | { error: string }>
+  }) => Promise<{ ok: true } | FalloDeLaAccion>
   modifyPlan: (
     input: ModifyPlanInput,
-  ) => Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }>
+  ) => Promise<{ ok: true; newPlanId?: string } | (FalloDeLaAccion & { newPlanId?: string })>
 }
 
 // =============================================================================
@@ -221,7 +239,7 @@ export function usePaymentPlanApproval(
   // ── Mutations ────────────────────────────────────────────────────────────
 
   const approvePlan = useCallback(async (): Promise<
-    { wompiLink: string } | { error: string }
+    { wompiLink: string } | FalloDeLaAccion
   > => {
     if (!canApproveRef.current) {
       return { error: 'PERMISSION_DENIED' }
@@ -245,7 +263,7 @@ export function usePaymentPlanApproval(
         },
       )
       if (!res.ok) {
-        return { error: `approve ${res.status}` }
+        return { error: `approve ${res.status}`, fallo: await falloDelMicro(res) }
       }
       const json = (await res.json()) as components['schemas']['PaymentPlanApproveResponse']
       // Optimistic local update — no second GET.
@@ -254,7 +272,7 @@ export function usePaymentPlanApproval(
       )
       return { wompiLink: json.wompiUrl }
     } catch (err) {
-      return { error: err instanceof Error ? err.message : 'approve failed' }
+      return { error: err instanceof Error ? err.message : 'approve failed', fallo: err }
     }
   }, [agencyId, planId, plan])
 
@@ -262,7 +280,7 @@ export function usePaymentPlanApproval(
     async (input: {
       reject_reason: RejectReasonSlug | undefined
       reject_comment?: string
-    }): Promise<{ ok: true } | { error: string }> => {
+    }): Promise<{ ok: true } | FalloDeLaAccion> => {
       if (!input.reject_reason) {
         throw new Error('reject_reason is required')
       }
@@ -289,11 +307,11 @@ export function usePaymentPlanApproval(
             }),
           },
         )
-        if (!res.ok) return { error: `reject ${res.status}` }
+        if (!res.ok) return { error: `reject ${res.status}`, fallo: await falloDelMicro(res) }
         setPlan((prev) => (prev ? { ...prev, status: 'rejected' } : prev))
         return { ok: true }
       } catch (err) {
-        return { error: err instanceof Error ? err.message : 'reject failed' }
+        return { error: err instanceof Error ? err.message : 'reject failed', fallo: err }
       }
     },
     [agencyId, planId, plan],
@@ -302,7 +320,7 @@ export function usePaymentPlanApproval(
   const modifyPlan = useCallback(
     async (
       input: ModifyPlanInput,
-    ): Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }> => {
+    ): Promise<{ ok: true; newPlanId?: string } | (FalloDeLaAccion & { newPlanId?: string })> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
         return { error: 'ENV_OR_AGENCY_MISSING' }
@@ -333,7 +351,7 @@ export function usePaymentPlanApproval(
             }),
           },
         )
-        if (!offerRes.ok) return { error: `offer ${offerRes.status}` }
+        if (!offerRes.ok) return { error: `offer ${offerRes.status}`, fallo: await falloDelMicro(offerRes) }
         const offerJson = (await offerRes.json()) as { planId?: string }
 
         // Step 2 — POST /reject on the CURRENT planId. The typed enum has no
@@ -361,13 +379,15 @@ export function usePaymentPlanApproval(
           return {
             error: `DUPLICATE_PLAN_RISK: counter-offer ${offerJson.planId ?? '(created)'} exists but original ${planId} could not be rejected (reject ${rejectRes.status}). Both plans may be active — resolve manually.`,
             newPlanId: offerJson.planId,
+            code: 'DUPLICATE_PLAN_RISK',
+            fallo: await falloDelMicro(rejectRes),
           }
         }
 
         setPlan((prev) => (prev ? { ...prev, status: 'counter_offered' } : prev))
         return { ok: true, newPlanId: offerJson.planId }
       } catch (err) {
-        return { error: err instanceof Error ? err.message : 'modify failed' }
+        return { error: err instanceof Error ? err.message : 'modify failed', fallo: err }
       }
     },
     [agencyId, planId, plan],

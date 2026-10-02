@@ -33,6 +33,9 @@ import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { erroresDeLaIntervencion } from './error-de-la-intervencion'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -132,14 +135,20 @@ export function ManualWAModal({
       try {
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/wa-templates`)
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) throw await falloDelMicro(res)
         const json = (await res.json()) as { templates: WATemplate[] }
         if (cancelled) return
         setTemplates(json.templates ?? [])
         if (json.templates?.[0]) setSelectedId(json.templates[0].id)
       } catch (err) {
+        // Antes: «500» o «Failed to load templates».
         if (!cancelled)
-          setError(err instanceof Error ? err.message : 'Failed to load templates')
+          setError(
+            mensajeParaLaPersona(err, {
+              porDefecto: 'No pudimos cargar las plantillas de WhatsApp.',
+              accion: 'cargar las plantillas de WhatsApp',
+            }),
+          )
       } finally {
         if (!cancelled) setTemplatesLoading(false)
       }
@@ -193,7 +202,7 @@ export function ManualWAModal({
       return
     }
     if (!selectedId) {
-      setError('No template selected')
+      setError('Elige la plantilla que vas a enviar.')
       return
     }
     setSubmitting(true)
@@ -206,18 +215,19 @@ export function ManualWAModal({
           body: JSON.stringify({ template_id: selectedId, variables }),
         },
       )
-      if (!res.ok) {
-        setError(`${res.status}`)
-        return
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       onSuccess()
       onClose()
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cobranza.detail.acciones.genericError'),
-      )
+      // Antes: el status crudo («409», «502»). Una valla legal dice cuál; un
+      // 502 del proveedor, que falló de nuestro lado; la red, la conexión.
+      const r = erroresDeLaIntervencion<never>(err, {
+        campos: [],
+        porDefecto: 'No pudimos enviar el WhatsApp.',
+        accion: 'enviar el WhatsApp',
+        noEncontrado: 'No encontramos a este deudor o no tiene un teléfono registrado.',
+      })
+      setError(r.general)
     } finally {
       setSubmitting(false)
     }
@@ -336,7 +346,11 @@ export function ManualWAModal({
           </div>
         )}
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && (
+          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+            {error}
+          </p>
+        )}
 
         <DialogFooter>
           <Button

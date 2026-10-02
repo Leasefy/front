@@ -276,4 +276,31 @@ describe('ConfigExtractoMensual — enviar ahora', () => {
     expect((toastMock.error.mock.calls[0] as unknown[])[1]).toEqual({ description: 'Resend caído' })
     expect(q('extracto-mensual-resultado')).toBeNull()
   })
+
+  // 02-10-2026 · tanda 2 del sistema de errores (A6).
+  it('un 5xx al enviar dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    enviarExtractosDelMesMock.mockRejectedValue(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { statusCode: 500, referencia: 'abad1dea' }),
+    )
+    await render()
+    await act(async () => {
+      q('extracto-mensual-enviar-ahora')!.click()
+    })
+    await act(async () => {
+      q('extracto-mensual-confirmar', document.body)!.click()
+    })
+    await flush()
+
+    const { description } = (toastMock.error.mock.calls[0] as [string, { description: string }])[1]
+    expect(description).toContain('No pudimos enviar los extractos: algo falló de nuestro lado')
+    expect(description).toContain('abad1dea')
+    expect(description).not.toContain('Internal server error')
+  })
+
+  it('si el resumen no responde (status 0), habla de la conexión', async () => {
+    extractosResumenMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await render()
+    expect(q('extracto-mensual-error')!.textContent).toMatch(/conexión/)
+  })
 })

@@ -29,6 +29,7 @@ const { estado } = vi.hoisted(() => ({
       ok: boolean
       mensaje?: string
       error?: string
+      fallo?: unknown
     },
     toasts: [] as string[],
   },
@@ -61,6 +62,13 @@ vi.mock('@/lib/format', () => ({ formatCurrency: (n: number) => `$${n}` }))
 
 import { PilotoBandeja } from './PilotoBandeja'
 import type { InboxItem } from '@/lib/api/piloto'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+
+/** Lo que `runInboxAccion` devuelve cuando el micro contesta mal: `fallo` sale del sobre. */
+async function noSalio(status: number, cuerpo: Record<string, unknown>) {
+  const fallo = await falloDelMicro({ status, json: async () => cuerpo })
+  return { ok: false, error: typeof cuerpo.error === 'string' ? cuerpo.error : String(status), fallo }
+}
 
 const base = (extra: Partial<InboxItem> = {}): InboxItem => ({
   id: 'hold:r-1',
@@ -176,5 +184,57 @@ describe('PilotoBandeja', () => {
   it('dice qué es el bloque (EL MOLDE, regla 6)', () => {
     render({ items: [base()] })
     expect(container.textContent).toContain('inmobiliaria.piloto.bandeja.queEs')
+  })
+})
+
+/*
+ * Tanda 2 de errores (02-10-2026): el toast de una acción que no salió decía
+ * «No se pudo: 500» o el código del micro («No se pudo: not_found»). Ahora
+ * pasa por el traductor con la regla de oro.
+ */
+describe('PilotoBandeja — una acción que no sale', () => {
+  const unClic = () =>
+    base({
+      id: 'esc:9',
+      fuente: 'escalacion',
+      accion: { label: 'Tomar el caso', method: 'POST', path: '/claim', body: {} },
+    })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión ni mostrar el status', async () => {
+    estado.respuesta = await noSalio(500, { error: 'Internal Server Error', requestId: 'abcdef12-3456-7890' })
+    render({ items: [unClic()] })
+    await act(async () => boton('esc:9')!.click())
+    expect(estado.toasts).toHaveLength(1)
+    expect(estado.toasts[0]).toContain('No pudimos tomar el caso: algo falló de nuestro lado')
+    expect(estado.toasts[0]).toContain('abcdef12')
+    expect(estado.toasts[0]).not.toMatch(/conexi|500/i)
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión', async () => {
+    const red = new TypeError('Failed to fetch')
+    estado.respuesta = { ok: false, error: red.message, fallo: red }
+    render({ items: [unClic()] })
+    await act(async () => boton('esc:9')!.click())
+    expect(estado.toasts[0]).toMatch(/conexión/)
+    expect(estado.toasts[0]).not.toContain('Failed to fetch')
+  })
+
+  it('un 4xx dice el `message` del micro, nunca el código ni el status', async () => {
+    estado.respuesta = await noSalio(409, {
+      statusCode: 409,
+      code: 'CASO_YA_TOMADO',
+      message: 'Otra persona ya tomó este caso.',
+      error: 'CASO_YA_TOMADO',
+    })
+    render({ items: [unClic()] })
+    await act(async () => boton('esc:9')!.click())
+    expect(estado.toasts[0]).toBe('Otra persona ya tomó este caso.')
+  })
+
+  it('un 4xx sin nada legible (el `error` en inglés del cuerpo viejo) dice qué no se pudo, no «403»', async () => {
+    estado.respuesta = await noSalio(403, { error: 'Forbidden — no membership row' })
+    render({ items: [unClic()] })
+    await act(async () => boton('esc:9')!.click())
+    expect(estado.toasts[0]).toBe('No se pudo tomar el caso.')
   })
 })

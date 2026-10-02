@@ -53,6 +53,7 @@ import {
   type GobiernoItem,
 } from '@/lib/api/piloto'
 import { useAuth } from '@/lib/auth'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /** La lista única de modos (ver `MODOS_DEL_PILOTO`). */
 const MODOS: readonly AutonomiaModo[] = MODOS_DEL_PILOTO
@@ -131,7 +132,14 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
       )
     } else {
       setGobierno(previa)
-      toast.error(t('inmobiliaria.piloto.autonomia.toastFail', { error: res.error ?? 'error' }))
+      // Lo que pasó, con la regla de oro (antes: «No se pudo cambiar el modo:
+      // 403», con el texto del modo y el status crudo).
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: habilitado ? 'No se pudo encender el agente.' : 'No se pudo apagar el agente.',
+          accion: habilitado ? 'encender el agente' : 'apagar el agente',
+        }),
+      )
     }
   }
 
@@ -153,7 +161,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
       )
     } else {
       toast.error(
-        t('inmobiliaria.piloto.autonomia.toastFail', { error: res.error ?? 'error' }),
+        mensajeParaLaPersona(res.fallo, { porDefecto: 'No se pudo cambiar el modo.', accion: 'cambiar el modo' }),
       )
     }
   }

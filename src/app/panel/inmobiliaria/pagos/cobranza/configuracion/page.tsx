@@ -45,6 +45,7 @@ import {
   type AgencyPolicyPatchBody,
 } from '@/lib/hooks/cobranza/use-agency-policy'
 import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autonomy'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -360,7 +361,12 @@ function CobranzaConfiguracionContent() {
   const [negDraft, setNegDraft] = useState<NegotiationDraft | null>(null)
   const negSavedRef = useRef<NegotiationDraft | null>(null)
   const [negSaving, setNegSaving] = useState(false)
-  const [negError, setNegError] = useState<string | null>(null)
+  /**
+   * El error del último guardado de la política, con el botón que lo disparó:
+   * «Guardar facturación» y el «Guardar» del aviso diario mandan el mismo PATCH,
+   * y el error se pinta junto al que se tocó. Antes se guardaba y nadie lo leía.
+   */
+  const [negError, setNegError] = useState<{ texto: string; donde: 'comercial' | 'aviso' } | null>(null)
 
   useEffect(() => {
     if (policy.data) {
@@ -397,7 +403,7 @@ function CobranzaConfiguracionContent() {
     })
   }, [])
 
-  const handleSaveNegotiation = useCallback(async () => {
+  const handleSaveNegotiation = useCallback(async (donde: 'comercial' | 'aviso' = 'comercial') => {
     if (!negDraft || !negSavedRef.current) return
     const patch = diffPatch(negSavedRef.current, negDraft)
     if (Object.keys(patch).length === 0) return
@@ -406,8 +412,15 @@ function CobranzaConfiguracionContent() {
     try {
       await policy.patchPolicy(patch)
       negSavedRef.current = negDraft
-    } catch {
-      setNegError('No pudimos guardar los cambios de negociación. Intenta de nuevo.')
+    } catch (err) {
+      // «Conexión» sólo si no hubo respuesta; un 400 dice qué está mal; un 5xx, que fue nuestro.
+      setNegError({
+        donde,
+        texto: mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos guardar los cambios de negociación.',
+          accion: 'guardar los cambios de negociación',
+        }),
+      })
     } finally {
       setNegSaving(false)
     }
@@ -428,8 +441,13 @@ function CobranzaConfiguracionContent() {
       setAutonomyError(null)
       try {
         await autonomy.saveAutonomy(level)
-      } catch {
-        setAutonomyError('No pudimos guardar el nivel de autonomía. Intenta de nuevo.')
+      } catch (err) {
+        setAutonomyError(
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No pudimos guardar el nivel de autonomía.',
+            accion: 'guardar el nivel de autonomía',
+          }),
+        )
       } finally {
         setAutonomySaving(false)
       }
@@ -678,7 +696,7 @@ function CobranzaConfiguracionContent() {
                 className="min-h-[44px]"
                 data-testid="save-comercial"
                 disabled={!comercialDirty || negSaving}
-                onClick={() => void handleSaveNegotiation()}
+                onClick={() => void handleSaveNegotiation('comercial')}
               >
                 {negSaving ? (
                   <Spinner size="sm" variant="current" className="mr-1" />
@@ -688,6 +706,11 @@ function CobranzaConfiguracionContent() {
                 Guardar facturación
               </Button>
             </div>
+          )}
+          {negError?.donde === 'comercial' && (
+            <p role="alert" className="text-sm text-danger text-right" data-testid="comercial-save-error">
+              {negError.texto}
+            </p>
           )}
         </section>
       )}
@@ -744,7 +767,7 @@ function CobranzaConfiguracionContent() {
             </div>
 
             {autonomyError && (
-              <p className="text-sm text-danger" data-testid="autonomia-save-error">
+              <p role="alert" className="text-sm text-danger" data-testid="autonomia-save-error">
                 {autonomyError}
               </p>
             )}
@@ -820,7 +843,7 @@ function CobranzaConfiguracionContent() {
                   hideArrow
                   data-testid="save-aviso"
                   disabled={negSaving}
-                  onClick={() => void handleSaveNegotiation()}
+                  onClick={() => void handleSaveNegotiation('aviso')}
                 >
                   Guardar
                 </Button>
@@ -834,6 +857,11 @@ function CobranzaConfiguracionContent() {
               />
             </div>
           </div>
+        )}
+        {negError?.donde === 'aviso' && (
+          <p role="alert" className="text-sm text-danger" data-testid="aviso-save-error">
+            {negError.texto}
+          </p>
         )}
 
         <div className="flex flex-wrap items-center gap-2">

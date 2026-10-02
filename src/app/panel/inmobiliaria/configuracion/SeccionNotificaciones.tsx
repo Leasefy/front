@@ -6,6 +6,7 @@
  */
 
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Bell, CreditCard, Envelope, FileText, Tag } from '@phosphor-icons/react';
 
 import { Switch } from '@/components/ui';
@@ -79,8 +80,18 @@ export function SeccionNotificaciones() {
                     ? t('inmobiliaria.config.notifications.enabled')
                     : t('inmobiliaria.config.notifications.disabled'),
                 );
-              } catch {
-                toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
+              } catch (e) {
+                // Por el traductor: un 4xx dice qué pasó, un 5xx «de nuestro
+                // lado» con la referencia, «conexión» sólo sin respuesta.
+                toast.error(
+                  mensajeParaLaPersona(e, {
+                    porDefecto:
+                      locale === 'es'
+                        ? 'No se pudo cambiar la notificación. Prueba de nuevo en un momento.'
+                        : 'Error updating settings',
+                    accion: 'cambiar la notificación',
+                  }),
+                );
               }
             }}
           />

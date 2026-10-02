@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -333,7 +334,14 @@ export function ConciliacionDelAgente() {
     if (result.ok) {
       toast.success(t(k('toastConfirmed')));
     } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
+      // La descripción dice qué pasó, con la regla de oro (antes: el código
+      // del micro o el status crudo).
+      toast.error(t(k('toastActionError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'No se pudo confirmar el cruce.',
+          accion: 'confirmar el cruce',
+        }),
+      });
     }
   }
 
@@ -347,7 +355,12 @@ export function ConciliacionDelAgente() {
     if (result.ok) {
       toast.success(t(k('toastRejected')));
     } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
+      toast.error(t(k('toastActionError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'No se pudo rechazar el cruce.',
+          accion: 'rechazar el cruce',
+        }),
+      });
     }
   }
 
@@ -358,7 +371,12 @@ export function ConciliacionDelAgente() {
     if (result.ok) {
       toast.success(t(k('toastReversed')));
     } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
+      toast.error(t(k('toastActionError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'No se pudo revertir el cruce.',
+          accion: 'revertir el cruce',
+        }),
+      });
     }
   }
 
@@ -385,7 +403,12 @@ export function ConciliacionDelAgente() {
         }),
       });
     } else {
-      toast.error(t(k('uploadError')), { description: result.error });
+      toast.error(t(k('uploadError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'El agente no recibió el extracto.',
+          accion: 'cargar el extracto',
+        }),
+      });
     }
   }
 

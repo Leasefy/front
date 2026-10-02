@@ -122,6 +122,58 @@ describe('La conexión con Wompi', () => {
   });
 });
 
+/**
+ * 02-10-2026 · tanda 2 del sistema de errores (A6): guardar las llaves dice
+ * lo que de verdad pasó, por campo si el 400 trae `campos`.
+ */
+describe('Las llaves de Wompi — cuando el back no las guarda', () => {
+  async function guardarLlaves() {
+    await pintar();
+    const [apiKey, usuario] = ['#wompi-api-key', '#wompi-usuario'].map((s) => container.querySelector<HTMLInputElement>(s)!);
+    await act(async () => {
+      escribir(apiKey, 'prv_prod_NUEVA');
+      escribir(usuario, 'up-9');
+    });
+    const form = container.querySelector('[data-testid="formulario-de-llaves"]') as HTMLFormElement;
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 30));
+    });
+  }
+
+  it('🔴 un 400 con campos pinta el error bajo su campo y le da el foco', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    h.guardar.mockRejectedValue(
+      new ApiError(400, ['La API Key no tiene la forma de una llave de Wompi.'], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'apiKey', regla: 'formato', mensaje: 'La API Key no tiene la forma de una llave de Wompi.' }],
+      }),
+    );
+    await guardarLlaves();
+    expect(container.querySelector('#wompi-api-key-error')?.textContent).toBe(
+      'La API Key no tiene la forma de una llave de Wompi.',
+    );
+    expect(container.querySelector('#wompi-api-key')?.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(container.querySelector('#wompi-api-key'));
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    h.guardar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', { statusCode: 500, referencia: 'c0ffee12' }),
+    );
+    await guardarLlaves();
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('No pudimos guardar las llaves: algo falló de nuestro lado');
+    expect(texto).toContain('c0ffee12');
+  });
+
+  it('sin respuesta (status 0) sí habla de la conexión', async () => {
+    h.guardar.mockRejectedValue(new TypeError('Failed to fetch'));
+    await guardarLlaves();
+    expect(container.textContent).toMatch(/Revisa tu conexión|No tienes conexión/);
+  });
+});
+
 describe('resumenDeLaConexion', () => {
   it('sin conexión lo dice', () => {
     expect(resumenDeLaConexion({ disponible: true, motivo: null, conexion: null })).toMatch(/todavía no ha conectado/);

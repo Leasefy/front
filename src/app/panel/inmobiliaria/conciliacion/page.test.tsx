@@ -32,7 +32,7 @@ const { resumen, corrida, toastMock, delBack } = vi.hoisted(() => ({
   },
   corrida: {
     isRunning: false,
-    requestRun: vi.fn<() => Promise<{ ok: boolean; enqueued?: boolean; reason?: string }>>(),
+    requestRun: vi.fn<() => Promise<{ ok: boolean; enqueued?: boolean; reason?: string; fallo?: unknown }>>(),
   },
   toastMock: { success: vi.fn(), error: vi.fn() },
   /*
@@ -75,6 +75,7 @@ vi.mock('@/components/inmobiliaria/ai/TrazaCaso', () => ({
 }))
 
 import ConciliacionSalaPage from './page'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 function datos(movimientos = 10, conciliados = 2): ConciliacionSummaryResponse {
   return {
@@ -350,3 +351,70 @@ describe('🔴 el Resumen no puede contradecir a Movimientos', () => {
     expect(boton.getAttribute('title')).toContain('Movimientos')
   })
 })
+
+/*
+ * Tanda 2 de errores (02-10-2026): pedir la corrida decía «No se pudo iniciar
+ * la conciliación. Intenta de nuevo.» para TODO (un 403, un 500, la red).
+ */
+describe('/panel/inmobiliaria/conciliacion — pedir la corrida que no sale', () => {
+  async function pedirCorrida() {
+    await clic($('[data-testid="conciliacion-run-cta"]'))
+    const dialogo = $('[role="alertdialog"]')
+    const accion = Array.from(dialogo.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('Conciliar ahora'),
+    )
+    if (!accion) throw new Error('no hay botón «Conciliar ahora» en el diálogo')
+    await clic(accion)
+  }
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    resumen.data = datos()
+    corrida.requestRun.mockResolvedValue({
+      ok: false,
+      reason: 'Internal Server Error',
+      fallo: await falloDelMicro({ status: 500, json: async () => ({ error: 'Internal Server Error', requestId: 'c0ffee00-1' }) }),
+    })
+    await montar()
+    await pedirCorrida()
+    expect(toastMock.error).toHaveBeenCalledTimes(1)
+    const texto = String(toastMock.error.mock.calls[0]![0])
+    expect(texto).toContain('No pudimos iniciar la conciliación: algo falló de nuestro lado')
+    expect(texto).toContain('c0ffee00')
+    expect(texto).not.toMatch(/conexi|Intenta de nuevo/i)
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión', async () => {
+    resumen.data = datos()
+    const red = new TypeError('Failed to fetch')
+    corrida.requestRun.mockResolvedValue({ ok: false, reason: red.message, fallo: red })
+    await montar()
+    await pedirCorrida()
+    expect(String(toastMock.error.mock.calls[0]![0])).toMatch(/conexión/)
+  })
+
+  it('un 403 dice el `message` del micro, no el status', async () => {
+    resumen.data = datos()
+    corrida.requestRun.mockResolvedValue({
+      ok: false,
+      reason: '403',
+      fallo: await falloDelMicro({
+        status: 403,
+        json: async () => ({ code: 'SIN_PERMISO', message: 'Sólo un administrador o el contador piden una corrida.' }),
+      }),
+    })
+    await montar()
+    await pedirCorrida()
+    expect(toastMock.error).toHaveBeenCalledWith('Sólo un administrador o el contador piden una corrida.')
+  })
+
+  it('el micro contestó pero no pudo encolar: es nuestro, no «Intenta de nuevo más tarde»', async () => {
+    resumen.data = datos()
+    corrida.requestRun.mockResolvedValue({ ok: true, enqueued: false, reason: 'inngest_unavailable' })
+    await montar()
+    await pedirCorrida()
+    const texto = String(toastMock.error.mock.calls[0]![0])
+    expect(texto).toContain('algo falló de nuestro lado')
+    expect(texto).not.toMatch(/conexi|más tarde/i)
+  })
+})
+

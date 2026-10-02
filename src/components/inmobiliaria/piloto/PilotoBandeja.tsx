@@ -65,9 +65,11 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
 import { accionPregunta, runInboxAccion, type InboxItem } from '@/lib/api/piloto'
+import { textosDelFallo } from './fallo-de-la-accion'
 
 const POR_PAGINA = 10
 
@@ -183,9 +185,10 @@ export function PilotoBandeja({
           )
           await onRefetch()
         } else {
-          toast.error(
-            t('inmobiliaria.piloto.bandeja.toastFail', { error: res.error ?? 'error' }),
-          )
+          // Lo que pasó, con la regla de oro: el `message` del micro en un 4xx,
+          // «de nuestro lado» con la referencia en un 5xx, la conexión sólo si
+          // el pedido no salió. Nunca «No se pudo: 403».
+          toast.error(mensajeParaLaPersona(res.fallo, textosDelFallo(item.accion.label)))
         }
       } finally {
         setEnVuelo(null)

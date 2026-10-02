@@ -43,6 +43,7 @@ import { Scales, CheckCircle } from '@phosphor-icons/react'
 
 import type { AgentAutonomiaResponse, AutonomiaModo } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { toast } from '@/components/ui/toast'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -81,7 +82,7 @@ export interface AutonomiaPanelProps {
    * La escritura real (PUT del modo). Sólo con esto el modo se vuelve un
    * control; sin esto se muestra como chip. Devuelve el error para el toast.
    */
-  onCambiarModo?: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string }>
+  onCambiarModo?: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Si la persona puede cambiarlo (administrador). Sin permiso: chip. */
   puedeCambiar?: boolean
   /** Hay un cambio en vuelo: el control se deshabilita. */
@@ -162,7 +163,14 @@ export function AutonomiaPanel({
     if (res.ok) {
       toast.success(`${t(`${NS}.modo.${modo}`)}: ${hintDe(modo) || t(`${NS}.grupoAria`)}`)
     } else {
-      toast.error(t(`${NS}.error`, { error: res.error ?? 'error' }))
+      // Antes decía «No se pudo cargar la configuración de autonomía: 403»: el
+      // texto de la CARGA con el status crudo, para un fallo al GUARDAR.
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo cambiar la autonomía del agente.',
+          accion: 'cambiar la autonomía del agente',
+        }),
+      )
     }
   }
 

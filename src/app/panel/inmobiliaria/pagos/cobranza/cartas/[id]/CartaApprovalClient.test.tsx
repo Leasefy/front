@@ -257,3 +257,61 @@ describe('CartaApprovalClient', () => {
     unmount(h)
   })
 })
+
+// ── Errores al aprobar o rechazar: la regla de oro (02-10-2026) ──────────────
+// Antes se pintaba `approveError` tal cual: el cuerpo crudo de la respuesta o
+// «approve 500». Ahora el hook deja el fallo y la pantalla lo traduce.
+
+describe('CartaApprovalClient — errores de aprobar y rechazar', () => {
+  it('un 409 del micro muestra su `message`, no «approve 409»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    hookState = {
+      ...hookState,
+      approveError: 'approve 409',
+      approveFallo: new ApiError(409, 'Esta carta ya fue aprobada por otra persona.', 'YA_APROBADA', {
+        code: 'YA_APROBADA',
+        message: 'Esta carta ya fue aprobada por otra persona.',
+      }),
+    }
+    const h = mount()
+    const alerta = getByTestId(h.container, 'approval-aprobar-error')
+    expect(alerta?.textContent).toBe('Esta carta ya fue aprobada por otra persona.')
+    expect(alerta?.getAttribute('role')).toBe('alert')
+    expect(h.container.textContent).not.toContain('approve 409')
+    unmount(h)
+  })
+
+  it('un 5xx al rechazar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    hookState = {
+      ...hookState,
+      rejectError: 'reject 500',
+      rejectFallo: new ApiError(500, '', undefined, { error: 'Internal Server Error', requestId: 'c0ffee00-0000' }),
+    }
+    const h = mount()
+    const texto = getByTestId(h.container, 'approval-rechazar-error')?.textContent ?? ''
+    expect(texto).toContain('No pudimos rechazar la carta: algo falló de nuestro lado')
+    expect(texto).toContain('c0ffee00')
+    unmount(h)
+  })
+
+  it('un `fetch` que no salió (status 0) habla de la conexión', () => {
+    hookState = {
+      ...hookState,
+      approveError: 'Failed to fetch',
+      approveFallo: new TypeError('Failed to fetch'),
+    }
+    const h = mount()
+    expect(getByTestId(h.container, 'approval-aprobar-error')?.textContent).toMatch(/conexi[oó]n/i)
+    unmount(h)
+  })
+
+  it('un código del hook (la acción ni salió) se dice en español', () => {
+    hookState = { ...hookState, approveError: 'SEND_METHOD_OR_ADDRESS_MISSING', approveFallo: null }
+    const h = mount()
+    expect(getByTestId(h.container, 'approval-aprobar-error')?.textContent).toBe(
+      'Elige cómo se envía la carta y escribe la dirección.',
+    )
+    unmount(h)
+  })
+})

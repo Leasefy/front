@@ -20,6 +20,10 @@ import { toast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useArcoDetail } from '@/lib/hooks/cobranza/use-arco-detail'
 import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdownBadge'
@@ -321,13 +325,20 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resolveData),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.resolved'))
       await detailRefetch()
-    } catch {
+    } catch (e) {
       // Una acción de cumplimiento que falla en silencio es peor que una que
       // no existe: el operador cree que respondió y el plazo sigue corriendo.
-      toast.error(t('inmobiliaria.ai.arco.error.resolve'))
+      // Antes decía «Verifica la conexión» ante cualquier fallo; ahora un 400
+      // dice qué falta, un 5xx que fue nuestro, y la conexión sólo sin respuesta.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos guardar la resolución.',
+          accion: 'guardar la resolución',
+        }),
+      )
     } finally {
       setIsResolving(false)
     }
@@ -342,13 +353,18 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rejectReason.trim() ? { reason: rejectReason.trim() } : {}),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.rejected'))
       setRejectOpen(false)
       setRejectReason('')
       await detailRefetch()
-    } catch {
-      toast.error(t('inmobiliaria.ai.arco.error.reject'))
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos rechazar la solicitud.',
+          accion: 'rechazar la solicitud',
+        }),
+      )
     } finally {
       setIsRejecting(false)
     }
@@ -482,11 +498,16 @@ function TriageButton({
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.triaged'))
       await detailRefetch()
-    } catch {
-      toast.error(t('inmobiliaria.ai.arco.error.triage'))
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: t('inmobiliaria.ai.arco.error.triage'),
+          accion: 'tomar la solicitud',
+        }),
+      )
     } finally {
       setIsBusy(false)
     }
@@ -542,12 +563,24 @@ function ExtendDialog({
   const [days, setDays] = useState(String(maxDays))
   const [reason, setReason] = useState('')
   const [isBusy, setIsBusy] = useState(false)
+  /** El error de cada campo que mandó el micro en `campos` (un 400). */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<'days' | 'reason', string>>
+  >({})
 
   const NS = 'inmobiliaria.ai.arco.extend'
   // El back exige 20 caracteres: «ocupado» no es un motivo de demora.
   const reasonTooShort = reason.trim().length < 20
   const parsedDays = Number(days)
   const daysInvalid = !Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > maxDays
+  // El botón se apaga con datos que el micro no acepta; acá se dice por qué.
+  const errorDeLosDias = daysInvalid
+    ? `Escribe un número entero de días, de 1 a ${maxDays}.`
+    : erroresDelServidor.days
+  const errorDelMotivo =
+    reason.trim().length > 0 && reasonTooShort
+      ? 'El motivo necesita al menos 20 caracteres: se le copia tal cual al solicitante.'
+      : erroresDelServidor.reason
 
   const handleExtend = async () => {
     if (!actionBase || reasonTooShort || daysInvalid) return
@@ -558,13 +591,26 @@ function ExtendDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ days: parsedDays, reason: reason.trim() }),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t(`${NS}.toastOk`))
       setOpen(false)
       setReason('')
+      setErroresDelServidor({})
       await detailRefetch()
-    } catch {
-      toast.error(t(`${NS}.toastError`))
+    } catch (e) {
+      // Un 400 con `campos` va a su campo; al toast, sólo lo suelto (un 5xx
+      // con la referencia, la red, el aviso al solicitante que no salió).
+      const reparto = repartirErroresDelServidor<'days' | 'reason'>(e, {
+        campos: ['days', 'reason'],
+        porDefecto: t(`${NS}.toastError`),
+        accion: 'extender el plazo',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        document.getElementById(primero === 'days' ? 'arco-extend-days' : 'arco-extend-reason')?.focus()
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setIsBusy(false)
     }
@@ -596,9 +642,15 @@ function ExtendDialog({
               min={1}
               max={maxDays}
               value={days}
-              onChange={(e) => setDays(e.target.value)}
+              onChange={(e) => {
+                setDays(e.target.value)
+                setErroresDelServidor(({ days: _, ...resto }) => resto)
+              }}
               disabled={isBusy}
+              aria-invalid={errorDeLosDias ? true : undefined}
+              aria-describedby={errorDeLosDias ? 'arco-extend-days-error' : undefined}
             />
+            <ErrorDelCampo id="arco-extend-days-error" mensaje={errorDeLosDias} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="arco-extend-reason" className="text-xs font-medium text-fg-muted">
@@ -607,14 +659,23 @@ function ExtendDialog({
             <Textarea
               id="arco-extend-reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => {
+                setReason(e.target.value)
+                setErroresDelServidor(({ reason: _, ...resto }) => resto)
+              }}
               maxLength={1000}
               disabled={isBusy}
               className="min-h-[88px]"
               placeholder={t(`${NS}.reasonPlaceholder`)}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'arco-extend-reason-error' : undefined}
             />
             {/* El motivo se le copia tal cual al solicitante en el correo. */}
-            <p className="text-caption text-fg-subtle">{t(`${NS}.reasonHint`)}</p>
+            <ErrorDelCampo
+              id="arco-extend-reason-error"
+              mensaje={errorDelMotivo}
+              pista={t(`${NS}.reasonHint`)}
+            />
           </div>
         </div>
 

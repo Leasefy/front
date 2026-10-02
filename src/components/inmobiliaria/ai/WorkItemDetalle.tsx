@@ -84,11 +84,14 @@ export interface WorkItemDetalleProps {
   colaLabel: string
   /** Phosphor icon for the breadcrumb; falls back to Robot (never crash). */
   icon?: Icon
-  /** Posts the action's body to its endpoint; returns ok/error for toasting. */
+  /**
+   * Posts the action's body to its endpoint. `fallo` es el error entero para
+   * el traductor (`error` es el código viejo y no se muestra).
+   */
   onAction: (
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   crossLink?: WorkItemDetalleCrossLink
   /** Optional CTA for the not-available/not-found states (pill link). */
   notFoundAction?: { label: string; href: string }

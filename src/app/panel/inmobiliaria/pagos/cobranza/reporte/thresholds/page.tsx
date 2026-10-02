@@ -56,9 +56,10 @@ function ThresholdsContent() {
          a "no thresholds" state never surfaces. See SUMMARY deviations. */}
       {isLoading && !active && <PageSkeleton variant="list" />}
 
+      {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
       {error && (
-        <div className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
+        <div role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+          {error}
         </div>
       )}
 

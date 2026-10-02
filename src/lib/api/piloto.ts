@@ -21,6 +21,8 @@
  */
 
 import { agentFetch } from './agent-fetch'
+import type { ApiError } from './client'
+import { falloDelMicro } from './fallo-del-micro'
 import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId } from './work-item'
 
@@ -218,6 +220,26 @@ async function getJson<T>(
   if (res.status === 404) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)
   return { data: (await res.json()) as T, notAvailable: false }
+}
+
+// ── Escrituras que no salen (02-10-2026, tanda 2 de errores, A6) ───────────
+
+/**
+ * Una escritura que no salió. `error` se conserva por compatibilidad (el
+ * `error` del cuerpo viejo o el status; NO es para la persona) y `fallo` lleva
+ * el error entero para el traductor: el `ApiError` de `falloDelMicro` (status,
+ * `code`, `message` del sobre y `campos`) o, si el pedido ni salió, el error
+ * de red tal cual (status 0 = conexión). La pantalla dice
+ * `mensajeParaLaPersona(r.fallo, …)`, nunca `r.error`.
+ */
+async function escrituraQueNoSalio(res: Response): Promise<{ ok: false; error: string; fallo: ApiError }> {
+  const fallo = await falloDelMicro(res)
+  const viejo = fallo.detalle?.error
+  return { ok: false, error: typeof viejo === 'string' && viejo ? viejo : `${res.status}`, fallo }
+}
+
+function escrituraSinRespuesta(err: unknown, codigo: string): { ok: false; error: string; fallo: unknown } {
+  return { ok: false, error: err instanceof Error ? err.message : codigo, fallo: err }
 }
 
 // ── Fetchers ────────────────────────────────────────────────────────────────
@@ -435,7 +457,7 @@ export async function putPilotoAutonomia(
   // por agencia (2026-08-31); el micro valida — acá no se duplica el roster.
   agente: string,
   modo: AutonomiaModo,
-): Promise<{ ok: boolean; data?: PilotoAutonomiaPutResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoAutonomiaPutResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -447,13 +469,10 @@ export async function putPilotoAutonomia(
         body: JSON.stringify({ modo }),
       },
     )
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoAutonomiaPutResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -492,7 +511,7 @@ export async function putPilotoGobierno(
   agencyId: string,
   agente: string,
   habilitado: boolean,
-): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -504,13 +523,10 @@ export async function putPilotoGobierno(
         body: JSON.stringify({ habilitado }),
       },
     )
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoGobiernoResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -528,7 +544,7 @@ export async function runInboxAccion(
    * si no hay campos, esto va vacío y el comportamiento es el de siempre.
    */
   valores?: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string; mensaje?: string; programadaPara?: string }> {
+): Promise<{ ok: boolean; error?: string; fallo?: unknown; mensaje?: string; programadaPara?: string }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   const hayValores = valores !== undefined && Object.keys(valores).length > 0
@@ -546,10 +562,7 @@ export async function runInboxAccion(
           }
         : {}),
     })
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     // Lo que PASÓ, dicho por el micro («programé la llamada para mañana a las
     // 8:00»). Sin esto el toast decía «Aprobar y llamar · listo» aunque la
     // llamada no hubiera salido (auditoría del Piloto, hallazgo 2).
@@ -560,7 +573,7 @@ export async function runInboxAccion(
       ...(typeof cuerpoOk.programadaPara === 'string' ? { programadaPara: cuerpoOk.programadaPara } : {}),
     }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'accion_failed' }
+    return escrituraSinRespuesta(err, 'accion_failed')
   }
 }
 
@@ -628,7 +641,7 @@ export interface PilotoFlotaPutResponse extends PilotoFlotaResponse {
 export async function putPilotoFlota(
   agencyId: string,
   modo: AutonomiaModo,
-): Promise<{ ok: boolean; data?: PilotoFlotaPutResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoFlotaPutResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -637,13 +650,10 @@ export async function putPilotoFlota(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ modo }),
     })
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoFlotaPutResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -942,7 +952,7 @@ export type CambiosDePreferencias = Partial<Pick<PreferenciasDelPiloto, 'topeMon
 export async function putPilotoPreferencias(
   agencyId: string,
   cambios: CambiosDePreferencias,
-): Promise<{ ok: boolean; data?: PreferenciasDelPiloto; error?: string; code?: string }> {
+): Promise<{ ok: boolean; data?: PreferenciasDelPiloto; error?: string; code?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -952,15 +962,12 @@ export async function putPilotoPreferencias(
       body: JSON.stringify(cambios),
     })
     if (!res.ok) {
-      const cuerpo = (await res.json().catch(() => ({}))) as { error?: unknown; code?: unknown }
-      return {
-        ok: false,
-        error: typeof cuerpo.error === 'string' ? cuerpo.error : `${res.status}`,
-        ...(typeof cuerpo.code === 'string' ? { code: cuerpo.code } : {}),
-      }
+      const r = await escrituraQueNoSalio(res)
+      const code = r.fallo.detalle?.code
+      return { ...r, ...(typeof code === 'string' ? { code } : {}) }
     }
     return { ok: true, data: (await res.json()) as PreferenciasDelPiloto }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }

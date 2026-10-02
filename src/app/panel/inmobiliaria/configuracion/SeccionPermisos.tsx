@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
@@ -87,12 +88,14 @@ export function SeccionPermisos() {
       });
     } catch (error) {
       // 🔴 Acá había `t(...) || 'Error al guardar permisos'`. Ese `||` NUNCA
-      // corre: `t()` de una clave que falta devuelve LA CLAVE, y una clave es
-      // un texto con contenido. Lo que salía en el toast era
-      // «inmobiliaria.config.toasts.error». La clave ya existe en los dos
-      // idiomas; el mensaje concreto va en la descripción.
+      // corre: `t()` de una clave que falta devuelve LA CLAVE. La clave ya
+      // existe en los dos idiomas; el mensaje concreto sale del traductor
+      // (02-10-2026: antes era el `message` crudo, también ante un 5xx).
       toast.error(t('inmobiliaria.config.toasts.error'), {
-        description: error instanceof Error ? error.message : undefined,
+        description: mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudieron guardar los permisos.',
+          accion: 'guardar los permisos',
+        }),
       });
     } finally {
       setGuardando(false);
@@ -112,7 +115,10 @@ export function SeccionPermisos() {
       });
     } catch (error) {
       toast.error(t('inmobiliaria.config.toasts.error'), {
-        description: error instanceof Error ? error.message : undefined,
+        description: mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudieron restablecer los permisos.',
+          accion: 'restablecer los permisos',
+        }),
       });
     } finally {
       setGuardando(false);

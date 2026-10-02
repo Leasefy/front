@@ -391,3 +391,125 @@ describe('sin la migración aplicada', () => {
     expect(botonQueDice(/Ver a quién le llega/)?.disabled).toBe(true)
   })
 })
+
+// ── Errores: un solo traductor y la regla de oro (02-10-2026) ────────────────
+// Antes había una copia local `mensajeDeError` que pintaba el `message` crudo
+// (o «Error 500») y un 400 con `campos` iba entero al toast.
+
+describe('errores al guardar las condiciones y al enviar', () => {
+  async function escribirEn(id: string, valor: string) {
+    const input = contenedor.querySelector<HTMLInputElement>(`#${id}`)!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    return input
+  }
+
+  async function errorDelToast(): Promise<string> {
+    const { toast } = await import('@/components/ui')
+    const llamadas = (toast.error as unknown as ReturnType<typeof vi.fn>).mock.calls
+    return String(llamadas.at(-1)?.[0] ?? '')
+  }
+
+  beforeEach(async () => {
+    const { toast } = await import('@/components/ui')
+    ;(toast.error as unknown as ReturnType<typeof vi.fn>).mockClear()
+  })
+
+  it('un día del recordatorio fuera de 1–28 se ataja antes de enviar, debajo del campo y con el foco', async () => {
+    await montar()
+    const input = await escribirEn('dia-recordatorio', '31')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    expect(guardarMock).not.toHaveBeenCalled()
+    expect(contenedor.querySelector('#dia-recordatorio-error')?.textContent).toBe(
+      'El día del recordatorio va de 1 a 28, en números enteros.',
+    )
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe('dia-recordatorio-error')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('un 400 con `campos` pinta el error en su campo, le da el foco y no va al toast', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    guardarMock.mockRejectedValue(
+      new ApiError(400, 'Los días entre avisos no pueden pasar de 30.', 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: 'Los días entre avisos no pueden pasar de 30.',
+        campos: [
+          { campo: 'diasEntreAvisos', regla: 'maximo', mensaje: 'Los días entre avisos no pueden pasar de 30.' },
+        ],
+      }),
+    )
+    await montar()
+    const input = await escribirEn('dias-entre', '5')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    expect(guardarMock).toHaveBeenCalledTimes(1)
+    expect(contenedor.querySelector('#dias-entre-error')?.textContent).toBe(
+      'Los días entre avisos no pueden pasar de 30.',
+    )
+    expect(document.activeElement).toBe(input)
+    const { toast } = await import('@/components/ui')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    guardarMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await montar()
+    await escribirEn('dias-entre', '5')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    const texto = await errorDelToast()
+    expect(texto).toContain('No pudimos guardar las condiciones de cobro: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('un envío que no sale (status 0) habla de la conexión', async () => {
+    enviarMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    await act(async () => {
+      botonQueDice(/Enviar a/)?.click()
+    })
+    expect(await errorDelToast()).toMatch(/conexi[oó]n/i)
+  })
+
+  it('un 409 al enviar muestra el `message` del back, no el status', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    enviarMock.mockRejectedValue(
+      new ApiError(409, 'Ese paso ya se envió hoy por correo.', 'YA_ENVIADO', {
+        statusCode: 409,
+        code: 'YA_ENVIADO',
+        message: 'Ese paso ya se envió hoy por correo.',
+      }),
+    )
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    await act(async () => {
+      botonQueDice(/Enviar a/)?.click()
+    })
+    const texto = await errorDelToast()
+    expect(texto).toBe('Ese paso ya se envió hoy por correo.')
+    expect(texto).not.toContain('409')
+  })
+})

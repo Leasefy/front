@@ -35,6 +35,8 @@ import {
 } from '@/lib/hooks/conciliacion/use-conciliacion-policy'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
 import { useI18n } from '@/lib/i18n'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -89,6 +91,8 @@ function PoliticaAutoMatch() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  /** Lo que el micro dijo de un umbral (un 400 con `campos`): va debajo de SU campo. */
+  const [erroresDelUmbral, setErroresDelUmbral] = useState<Partial<Record<ConciliacionDomain, string>>>({})
   const [savedOk, setSavedOk] = useState(false)
 
   // Hydrate the draft from the active policy whenever it (re)loads.
@@ -122,6 +126,7 @@ function PoliticaAutoMatch() {
 
   const updateThreshold = useCallback((domain: ConciliacionDomain, raw: string) => {
     setSavedOk(false)
+    setErroresDelUmbral((e) => (e[domain] ? { ...e, [domain]: undefined } : e))
     setDraftThresholds((prev) => {
       const next = { ...prev }
       if (raw.trim() === '') {
@@ -140,6 +145,7 @@ function PoliticaAutoMatch() {
   const handleSave = useCallback(async () => {
     setIsSaving(true)
     setSaveError(null)
+    setErroresDelUmbral({})
     const res = await savePolicy({
       policyJson: {
         autoMatchEnabled: draftEnabled,
@@ -150,12 +156,29 @@ function PoliticaAutoMatch() {
     if (res.ok) {
       setConfirmOpen(false)
       setSavedOk(true)
+    } else if (res.error === 'not_configured' || backendUnavailable) {
+      setSaveError('No se pudo guardar: esta función requiere el backend de conciliación desplegado.')
     } else {
-      setSaveError(
-        res.error === 'not_configured' || backendUnavailable
-          ? 'No se pudo guardar: esta función requiere el backend de conciliación desplegado.'
-          : `No se pudo guardar la política${res.error ? ` (${res.error})` : ''}.`,
-      )
+      // Con la regla de oro: el umbral que el micro rechazó va a SU campo
+      // (`policy_json.confidenceThresholds.<dominio>`); el resto, dicho para
+      // la persona, al pie. Antes: «No se pudo guardar la política (403).»
+      const reparto = repartirErroresDelServidor<ConciliacionDomain>(res.fallo, {
+        // Por la ruta completa: `autoMatchEnabled.recaudo` también termina en
+        // `recaudo` y no es el umbral.
+        mapa: Object.fromEntries(
+          CONCILIACION_DOMAINS.map((d) => [`policy_json.confidenceThresholds.${d}`, d]),
+        ),
+        campos: [],
+        porDefecto: 'No se pudo guardar la política.',
+        accion: 'guardar la política',
+      })
+      setErroresDelUmbral(reparto.porCampo)
+      if (reparto.orden.length > 0) {
+        // El umbral está debajo del diálogo: se cierra para que se vea.
+        setConfirmOpen(false)
+        document.getElementById(`umbral-${reparto.orden[0]}`)?.focus()
+      }
+      if (reparto.sueltos.length > 0) setSaveError(reparto.sueltos.join(' · '))
     }
   }, [savePolicy, draftEnabled, draftThresholds, backendUnavailable])
 
@@ -251,6 +274,7 @@ function PoliticaAutoMatch() {
               </div>
 
               {/* Umbral de confianza (opcional) — solo relevante con auto-match ON */}
+              <div className="space-y-1">
               <div className="flex items-center gap-2 pl-0">
                 <Label
                   htmlFor={`umbral-${domain}`}
@@ -270,8 +294,13 @@ function PoliticaAutoMatch() {
                   value={thresholdDisplay(domain)}
                   onChange={(e) => updateThreshold(domain, e.target.value)}
                   aria-label={`Umbral de confianza mínimo para ${meta.title}`}
+                  {...(erroresDelUmbral[domain]
+                    ? { 'aria-invalid': true as const, 'aria-describedby': `umbral-${domain}-error` }
+                    : {})}
                 />
                 <span className="text-xs text-fg-muted">opcional</span>
+              </div>
+              <ErrorDelCampo id={`umbral-${domain}-error`} mensaje={erroresDelUmbral[domain]} className="mt-0" />
               </div>
             </div>
           )

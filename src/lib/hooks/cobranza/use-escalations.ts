@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type {
   EscalationCategory,
@@ -67,20 +68,31 @@ async function safeJson(res: Response): Promise<unknown> {
   }
 }
 
+/**
+ * El resultado de tomar, asignar o resolver. Sin `ok`, `fallo` dice por qué:
+ * el `ApiError` del micro (status, `code`, `message`, `campos`) o el error de
+ * la red tal cual; la pantalla lo traduce con `mensajeParaLaPersona`. `error`
+ * = `ENV_OR_AGENCY_MISSING` cuando la acción ni salió.
+ */
+export interface ResultadoDeLaEscalacion {
+  ok: boolean
+  /** 0 = no hubo respuesta (o la acción ni salió). */
+  status: number
+  fallo?: unknown
+  error?: string
+}
+
 export interface UseEscalationsResult {
   data: EscalationsListResponse | null
   isLoading: boolean
   error: string | null
   mutate: () => Promise<void>
-  claim: (id: string) => Promise<{ ok: boolean; status: number }>
-  assign: (
-    id: string,
-    assigneeUserId: string,
-  ) => Promise<{ ok: boolean; status: number }>
+  claim: (id: string) => Promise<ResultadoDeLaEscalacion>
+  assign: (id: string, assigneeUserId: string) => Promise<ResultadoDeLaEscalacion>
   resolve: (
     id: string,
     body: { category: EscalationCategory; resolution_text: string },
-  ) => Promise<{ ok: boolean; status: number; cascaded_to_legal?: boolean }>
+  ) => Promise<ResultadoDeLaEscalacion & { cascaded_to_legal?: boolean }>
 }
 
 export function useEscalations(): UseEscalationsResult {
@@ -136,42 +148,50 @@ export function useEscalations(): UseEscalationsResult {
       id: string,
       path: 'claim' | 'assign' | 'resolve',
       body: Record<string, unknown> | null,
-    ): Promise<{ ok: boolean; status: number; payload: unknown }> => {
+    ): Promise<ResultadoDeLaEscalacion & { payload: unknown }> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
-        return { ok: false, status: 0, payload: null }
+        return { ok: false, status: 0, payload: null, error: 'ENV_OR_AGENCY_MISSING' }
       }
-      const res = await agentFetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${id}/${path}`,
-        {
-          method: 'POST',
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-          body: body ? JSON.stringify(body) : undefined,
-        },
-      )
+      let res: Response
+      try {
+        res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${id}/${path}`,
+          {
+            method: 'POST',
+            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            body: body ? JSON.stringify(body) : undefined,
+          },
+        )
+      } catch (err) {
+        // Antes un `fetch` que no salía dejaba un rechazo sin atrapar y la
+        // pantalla no decía nada. Llega tal cual: el traductor dice «conexión».
+        return { ok: false, status: 0, payload: null, fallo: err }
+      }
+      if (!res.ok) {
+        return { ok: false, status: res.status, payload: null, fallo: await falloDelMicro(res) }
+      }
       const payload = await safeJson(res)
-      if (res.ok) {
-        await fetchOnce()
-      }
-      return { ok: res.ok, status: res.status, payload }
+      await fetchOnce()
+      return { ok: true, status: res.status, payload }
     },
     [agencyId, fetchOnce],
   )
 
   const claim = useCallback(
     async (id: string) => {
-      const r = await mutateAction(id, 'claim', null)
-      return { ok: r.ok, status: r.status }
+      const { payload: _, ...r } = await mutateAction(id, 'claim', null)
+      return r
     },
     [mutateAction],
   )
 
   const assign = useCallback(
     async (id: string, assigneeUserId: string) => {
-      const r = await mutateAction(id, 'assign', {
+      const { payload: _, ...r } = await mutateAction(id, 'assign', {
         assignee_user_id: assigneeUserId,
       })
-      return { ok: r.ok, status: r.status }
+      return r
     },
     [mutateAction],
   )
@@ -181,13 +201,9 @@ export function useEscalations(): UseEscalationsResult {
       id: string,
       body: { category: EscalationCategory; resolution_text: string },
     ) => {
-      const r = await mutateAction(id, 'resolve', body)
-      const payload = r.payload as { cascaded_to_legal?: boolean } | null
-      return {
-        ok: r.ok,
-        status: r.status,
-        cascaded_to_legal: payload?.cascaded_to_legal ?? false,
-      }
+      const { payload, ...r } = await mutateAction(id, 'resolve', body)
+      const datos = payload as { cascaded_to_legal?: boolean } | null
+      return { ...r, cascaded_to_legal: datos?.cascaded_to_legal ?? false }
     },
     [mutateAction],
   )

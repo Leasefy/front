@@ -323,3 +323,64 @@ describe('<CobranzaConfiguracionPage> — autonomy save (PUT /cobranza/autonomy)
     expect(saveAutonomy).toHaveBeenCalledWith('aprobar')
   })
 })
+
+// ── Errores: la regla de oro (02-10-2026) ────────────────────────────────────
+// Antes los dos guardados decían «…Intenta de nuevo.» ante cualquier fallo, y
+// el de la política ni se pintaba (se guardaba en un estado que nadie leía).
+
+describe('<CobranzaConfiguracionPage> — errores al guardar', () => {
+  async function guardarComision() {
+    const fee = byTestId('field-successFeePct') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      setter?.call(fee, '9')
+      fee.dispatchEvent(new Event('input', { bubbles: true }))
+      await Promise.resolve()
+    })
+    await act(async () => {
+      ;(byTestId('save-comercial') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('la política: un 400 del micro muestra su `message` junto al botón, no «Intenta de nuevo»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    patchPolicy.mockRejectedValue(
+      new ApiError(400, 'La comisión no puede pasar del 50 %.', 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        message: 'La comisión no puede pasar del 50 %.',
+      }),
+    )
+    render()
+    await guardarComision()
+    const error = byTestId('comercial-save-error')
+    expect(error?.textContent).toBe('La comisión no puede pasar del 50 %.')
+    expect(error?.getAttribute('role')).toBe('alert')
+  })
+
+  it('la política: un PATCH que no sale (status 0) habla de la conexión', async () => {
+    patchPolicy.mockRejectedValue(new TypeError('Failed to fetch'))
+    render()
+    await guardarComision()
+    expect(byTestId('comercial-save-error')?.textContent).toMatch(/conexi[oó]n/i)
+  })
+
+  it('la autonomía: un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    saveAutonomy.mockRejectedValue(
+      new ApiError(500, '', 'internal_error', { error: 'internal_error', requestId: '9f8e7d6c-0000-4000-8000-000000000000' }),
+    )
+    render()
+    const radios = Array.from(
+      document.querySelectorAll('input[type="radio"], [role="radio"]'),
+    ) as HTMLElement[]
+    await act(async () => {
+      radios.find((r) => r.getAttribute('value') === 'aprobar')!.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = byTestId('autonomia-save-error')?.textContent ?? ''
+    expect(texto).toContain('No pudimos guardar el nivel de autonomía: algo falló de nuestro lado')
+    expect(texto).toContain('9f8e7d6c')
+    expect(texto).not.toMatch(/conexi[oó]n|Intenta de nuevo/i)
+  })
+})

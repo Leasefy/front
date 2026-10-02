@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalio, accionSinRespuesta } from './accion-del-micro'
 import type {
   AgenteId,
   AgentWorkItemsResponse,
@@ -32,7 +33,14 @@ export interface AgentWorkItemsFilters {
 
 export interface ActionResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /**
+   * El error entero, para el traductor: el `ApiError` del micro (con `campos`
+   * en un 400) o el error de red tal cual. La pantalla dice
+   * `mensajeParaLaPersona(r.fallo, …)`.
+   */
+  fallo?: unknown
 }
 
 export interface UseAgentWorkItemsResult {
@@ -168,14 +176,11 @@ export function useAgentWorkItems(
           headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: JSON.stringify(body ?? {}),
         })
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: errBody.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'action_failed' }
+        return accionSinRespuesta(err, 'action_failed')
       }
     },
     [agencyId, fetchData],

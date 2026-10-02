@@ -25,6 +25,7 @@ import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalioConCuerpo } from '@/lib/hooks/ai/accion-del-micro'
 
 export interface ConciliacionRunWindow {
   /** ISO-8601 lower bound. Omit → backend default look-back (7 days). */
@@ -38,8 +39,10 @@ export interface ConciliacionRunResult {
   /** true only when the backend confirmed the run was enqueued. */
   enqueued?: boolean
   runId?: string
-  /** db_unavailable | inngest_unavailable (backend) · http status · network msg. */
+  /** db_unavailable | inngest_unavailable (backend) · http status · network msg. NO es para la persona. */
   reason?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 export interface UseConciliacionRunResult {
@@ -86,7 +89,8 @@ export function useConciliacionRun(): UseConciliacionRunResult {
           error?: string
         }
         if (!res.ok) {
-          return { ok: false, reason: json.error ?? json.reason ?? `${res.status}` }
+          const { fallo } = await accionQueNoSalioConCuerpo(res.status, json)
+          return { ok: false, reason: json.error ?? json.reason ?? `${res.status}`, fallo }
         }
         return {
           ok: true,
@@ -95,7 +99,7 @@ export function useConciliacionRun(): UseConciliacionRunResult {
           reason: json.reason,
         }
       } catch (err) {
-        return { ok: false, reason: err instanceof Error ? err.message : 'run_failed' }
+        return { ok: false, reason: err instanceof Error ? err.message : 'run_failed', fallo: err }
       } finally {
         setIsRunning(false)
       }

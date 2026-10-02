@@ -18,6 +18,7 @@
  */
 
 import { agentAuthHeaders } from './agent-auth'
+import { falloDelMicro } from './fallo-del-micro'
 import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId, OwnerRole, WorkItem, WorkItemAction, WorkItemEstado } from './work-item'
 
@@ -251,7 +252,7 @@ export function fetchAiHubResumen(
 export async function runWorkItemAction(
   action: WorkItemAction,
   body?: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -261,11 +262,16 @@ export async function runWorkItemAction(
       body: JSON.stringify(body ?? {}),
     })
     if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
+      // `error` se conserva por compatibilidad (el `error` del cuerpo viejo o
+      // el status; NO es para la persona). `fallo` es el error entero para el
+      // traductor: status, `code`, `message` del sobre y `campos` (02-10-2026).
+      const fallo = await falloDelMicro(res)
+      const viejo = fallo.detalle?.error
+      return { ok: false, error: typeof viejo === 'string' && viejo ? viejo : `${res.status}`, fallo }
     }
     return { ok: true }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'action_failed' }
+    // El pedido no salió: el error de red llega TAL CUAL (status 0 = conexión).
+    return { ok: false, error: err instanceof Error ? err.message : 'action_failed', fallo: err }
   }
 }

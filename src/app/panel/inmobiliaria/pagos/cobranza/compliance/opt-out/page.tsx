@@ -20,6 +20,9 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { toast } from '@/components/ui'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
@@ -71,14 +74,19 @@ function OptOutContent() {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`)
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) throw await falloDelMicro(res)
         const json = (await res.json()) as ComplianceLogResponse<RawOptOut>
         const page = normalizeOptOuts(json)
         setItems((prev) => (append ? [...prev, ...page] : page))
         setNextCursor(nextCursorOf(json))
         setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'fetch_failed')
+        setError(
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No pudimos cargar las solicitudes de no contacto.',
+            accion: 'cargar las solicitudes de no contacto',
+          }),
+        )
       } finally {
         setIsLoading(false)
         setIsLoadingMore(false)
@@ -112,15 +120,19 @@ function OptOutContent() {
             headers: { 'content-type': 'application/json' },
           },
         )
-        if (res.ok) {
-          // Refresh first page; cursor reset
-          setNextCursor(null)
-          await fetchPage(null, false)
-        } else {
-          setError(t('inmobiliaria.ai.cobranza.compliance.optOut.errors.ackFailed'))
-        }
-      } catch {
-        setError(t('inmobiliaria.ai.cobranza.compliance.optOut.errors.ackFailed'))
+        if (!res.ok) throw await falloDelMicro(res)
+        // Refresh first page; cursor reset
+        setNextCursor(null)
+        await fetchPage(null, false)
+      } catch (e) {
+        // Antes culpaba a la conexión ante cualquier fallo, y lo escribía en el
+        // error de la CARGA. Ahora el traductor dice qué pasó, en un aviso.
+        toast.error(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos registrar el acuse.',
+            accion: 'registrar el acuse',
+          }),
+        )
       } finally {
         setAcking((prev) => {
           const n = new Set(prev)
@@ -129,7 +141,7 @@ function OptOutContent() {
         })
       }
     },
-    [agencyId, fetchPage, t],
+    [agencyId, fetchPage],
   )
 
   // Phase 38-05a: page-level skeleton during first load
@@ -154,9 +166,10 @@ function OptOutContent() {
         </h1>
       </div>
 
+      {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
       {error && (
-        <div className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
+        <div role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+          {error}
         </div>
       )}
 

@@ -55,6 +55,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { ArrowsClockwise, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -316,12 +317,23 @@ function ConciliacionSala() {
       setCorrida({ estado: 'corriendo' })
       vigilarLaCorrida(antes)
     } else if (res.ok && !res.enqueued) {
-      // Backend respondió pero no pudo encolar (db/inngest no disponible).
-      toast.error('No se pudo iniciar la conciliación en este momento. Intenta de nuevo más tarde.')
+      // El micro contestó pero no pudo encolar (su base o su cola no
+      // estaban): es nuestro, no de la persona ni de su conexión.
+      toast.error(
+        'No pudimos iniciar la conciliación: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+      )
     } else if (res.reason === 'not_available') {
       toast.error('La conciliación bajo demanda aún no está disponible.')
     } else {
-      toast.error('No se pudo iniciar la conciliación. Intenta de nuevo.')
+      // Con la regla de oro: el 4xx dice qué pasó, el 5xx «de nuestro lado»
+      // con la referencia y la conexión sólo si el pedido no salió. Antes
+      // decía «Intenta de nuevo» para todo.
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo iniciar la conciliación.',
+          accion: 'iniciar la conciliación',
+        }),
+      )
     }
   }
 

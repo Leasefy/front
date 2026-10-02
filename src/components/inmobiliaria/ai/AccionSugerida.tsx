@@ -25,18 +25,23 @@ import type {
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { ACTION_KIND_VARIANT } from './ColaHumana'
+import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
 export interface AccionSugeridaProps {
   accion: AccionSugeridaModel
   actions: WorkItemAction[]
-  /** Posts the action's body to its endpoint; returns ok/error for toasting. */
+  /**
+   * Posts the action's body to its endpoint. `fallo` es el error entero para
+   * el traductor (`error` es el código viejo y no se muestra).
+   */
   onAction: (
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   disabled?: boolean
 }
 
@@ -44,6 +49,8 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
   const { t } = useI18n()
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
 
   async function run(action: WorkItemAction, body?: Record<string, unknown>) {
@@ -54,8 +61,14 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       toast.success(t(`${WORKSPACE_NS}.acciones.toastOk`, { label: action.label }))
       setReasonForActionId(null)
       setReasonText('')
+      setErrorDelMotivo(null)
     } else {
-      toast.error(t(`${WORKSPACE_NS}.acciones.toastFail`, { error: res.error ?? 'error' }))
+      // Con la regla de oro: el error del motivo a su campo (y el foco ahí);
+      // al toast lo demás. Antes: «No se pudo: 403» o el código del micro.
+      const { motivo, sueltos } = repartirFalloDeLaAccion(res.fallo, action.label, body?.reason !== undefined)
+      setErrorDelMotivo(motivo ?? null)
+      if (motivo) document.getElementById('accion-sugerida-reason')?.focus()
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
     }
   }
 
@@ -63,6 +76,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
     if (action.requiresReason) {
       // First click reveals the reason input; submit happens from the panel.
       setReasonForActionId((cur) => (cur === action.id ? null : action.id))
+      setErrorDelMotivo(null)
       return
     }
     void run(action)
@@ -117,11 +131,18 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
           <Textarea
             id="accion-sugerida-reason"
             value={reasonText}
-            onChange={(e) => setReasonText(e.target.value)}
+            onChange={(e) => {
+              setReasonText(e.target.value)
+              setErrorDelMotivo(null)
+            }}
             rows={2}
             className="w-full text-xs resize-none"
             placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
+            {...(errorDelMotivo
+              ? { 'aria-describedby': 'accion-sugerida-reason-error', 'aria-invalid': true as const }
+              : {})}
           />
+          <ErrorDelCampo id="accion-sugerida-reason-error" mensaje={errorDelMotivo} className="mt-0" />
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -146,6 +167,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               onClick={() => {
                 setReasonForActionId(null)
                 setReasonText('')
+                setErrorDelMotivo(null)
               }}
             >
               {t(`${WORKSPACE_NS}.acciones.cancelar`)}

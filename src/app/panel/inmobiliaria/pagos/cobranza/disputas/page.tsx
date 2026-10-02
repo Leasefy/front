@@ -50,6 +50,9 @@ import {
 import { DisputasList } from '@/components/inmobiliaria/cobranza/DisputasList'
 import { DisputaDetailPanel } from '@/components/inmobiliaria/cobranza/DisputaDetailPanel'
 import { TablePagination } from '@/components/ui/pagination'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
   DebtorPicker,
@@ -60,7 +63,17 @@ const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
 
 const REASON_MIN = 1
+/** El mismo tope del micro (`reason: z.string().trim().min(1).max(2000)`). */
 const REASON_MAX = 2000
+
+/** Los campos del formulario de abrir disputa, con el nombre que usa el micro en `campos`. */
+type CampoDeLaDisputa = 'debtorId' | 'reason' | 'disputedAmount'
+const ID_DEL_CAMPO_DE_LA_DISPUTA: Record<CampoDeLaDisputa, string> = {
+  debtorId: 'disputa-debtor',
+  reason: 'disputa-reason',
+  disputedAmount: 'disputa-monto',
+}
+const CAMPOS_DE_LA_DISPUTA = Object.keys(ID_DEL_CAMPO_DE_LA_DISPUTA) as CampoDeLaDisputa[]
 
 /**
  * Alto de la cabecera del panel + las secciones de Cobros + las pestañas de
@@ -94,7 +107,7 @@ interface AbrirDisputaModalProps {
     debtorId: string
     reason: string
     disputedAmount?: number
-  }) => Promise<{ ok: boolean; status: number; persisted: boolean }>
+  }) => Promise<{ ok: boolean; status: number; persisted: boolean; fallo?: unknown; error?: string }>
 }
 
 function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps) {
@@ -103,6 +116,10 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   const [monto, setMonto] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  /** El error de cada campo que mandó el micro en `campos` (un 400). */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDeLaDisputa, string>>
+  >({})
 
   // El deudor se ELIGE de la cartera; el UUID nunca lo escribe una persona.
   const debtorIdOk = debtor !== null
@@ -124,23 +141,48 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
       ...(montoNum !== undefined ? { disputedAmount: montoNum } : {}),
     })
     setSubmitting(false)
+    setErroresDelServidor({})
     if (res.ok) {
       setDebtor(null)
       setReason('')
       setMonto('')
       onClose()
     } else if (res.status === 403) {
+      // El 403 del micro no trae un `message` para la persona: se dice acá.
       setSubmitError('No tienes permiso para abrir disputas.')
     } else if (res.status === 404) {
       setSubmitError('No se encontró el deudor con ese identificador.')
-    } else if (res.status === 0) {
+    } else if (res.fallo === undefined) {
+      // La acción ni salió (sin agente configurado).
       setSubmitError(
-        'No se pudo registrar la disputa. El servicio aún no está disponible.',
+        mensajeDeLaAccion(res, {
+          porDefecto: 'No pudimos registrar la disputa.',
+          accion: 'registrar la disputa',
+        }),
       )
     } else {
-      setSubmitError(`No se pudo registrar la disputa (error ${res.status}).`)
+      // Un 400 con `campos` va a su campo; lo demás (un 5xx con su referencia,
+      // la red) abajo. Antes decía «error 500» o culpaba al servicio.
+      const reparto = repartirErroresDelServidor<CampoDeLaDisputa>(res.fallo, {
+        campos: CAMPOS_DE_LA_DISPUTA,
+        porDefecto: 'No pudimos registrar la disputa.',
+        accion: 'registrar la disputa',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = CAMPOS_DE_LA_DISPUTA.find((c) => reparto.porCampo[c])
+      if (primero) document.getElementById(ID_DEL_CAMPO_DE_LA_DISPUTA[primero])?.focus()
+      setSubmitError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
     }
   }, [canSubmit, onSubmit, debtor, reason, montoNum, onClose])
+
+  /** Lo que se le dice a la persona debajo de cada campo: el tope del cliente o lo del micro. */
+  const errorDelMotivo =
+    reasonLen > REASON_MAX
+      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString('es-CO')} caracteres.`
+      : erroresDelServidor.reason
+  const errorDelMonto = !montoOk
+    ? 'El monto debe ser un número mayor o igual a cero.'
+    : erroresDelServidor.disputedAmount
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -165,8 +207,12 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <DebtorPicker
               inputId="disputa-debtor"
               value={debtor}
-              onChange={setDebtor}
+              onChange={(d) => {
+                setDebtor(d)
+                setErroresDelServidor(({ debtorId: _, ...resto }) => resto)
+              }}
             />
+            <ErrorDelCampo id="disputa-debtor-error" mensaje={erroresDelServidor.debtorId} />
           </div>
 
           {/* Motivo */}
@@ -180,14 +226,22 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <Textarea
               id="disputa-reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => {
+                setReason(e.target.value)
+                setErroresDelServidor(({ reason: _, ...resto }) => resto)
+              }}
               rows={4}
               maxLength={REASON_MAX + 50}
               placeholder="Describe qué disputa el deudor (saldo, cargo, etc.)."
               className="leading-relaxed"
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'disputa-reason-error' : undefined}
             />
-            <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
-              {reasonLen} / {REASON_MAX}
+            <div className="flex items-start justify-between gap-3">
+              <ErrorDelCampo id="disputa-reason-error" mensaje={errorDelMotivo} className="mt-0" />
+              <span className="ml-auto shrink-0 text-xs text-fg-muted tabular-nums">
+                {reasonLen} / {REASON_MAX}
+              </span>
             </div>
           </div>
 
@@ -203,18 +257,23 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
               id="disputa-monto"
               inputMode="numeric"
               value={monto}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(e) => {
+                setMonto(e.target.value)
+                setErroresDelServidor(({ disputedAmount: _, ...resto }) => resto)
+              }}
               placeholder="COP"
               className="tabular-nums"
+              aria-invalid={errorDelMonto ? true : undefined}
+              aria-describedby={errorDelMonto ? 'disputa-monto-error' : undefined}
             />
-            {!montoOk && (
-              <p className="text-xs text-danger">
-                El monto debe ser un número mayor o igual a cero.
-              </p>
-            )}
+            <ErrorDelCampo id="disputa-monto-error" mensaje={errorDelMonto} />
           </div>
 
-          {submitError && <p className="text-xs text-danger">{submitError}</p>}
+          {submitError && (
+            <p role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
+              {submitError}
+            </p>
+          )}
         </div>
 
         <DialogFooter>
@@ -316,6 +375,8 @@ function DisputasContent() {
         ok: res.ok,
         status: res.status,
         persisted: res.data?.persisted ?? false,
+        fallo: res.fallo,
+        error: res.error,
       }
     },
     [openDispute, refetch],
@@ -334,6 +395,8 @@ function DisputasContent() {
         ok: res.ok,
         status: res.status,
         recommendation: res.data?.recommendation ?? null,
+        fallo: res.fallo,
+        error: res.error,
       }
     },
     [resolveDispute, refetch, authUser?.id],

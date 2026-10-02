@@ -97,7 +97,8 @@ export interface UsePilotoAutonomiaResult {
   error: string | null
   /** Agente cuyo PUT está en vuelo (deshabilita su control). */
   busyAgente: AgentePiloto | null
-  setModo: (agente: AgentePiloto, modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string }>
+  /** `fallo` es el error entero para el traductor; `error`, el código viejo (no es para la persona). */
+  setModo: (agente: AgentePiloto, modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   refetch: () => Promise<void>
 }
 
@@ -170,7 +171,7 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
   }, [fetchData, agencyId])
 
   const setModo = useCallback(
-    async (agente: AgentePiloto, modo: AutonomiaModo): Promise<{ ok: boolean; error?: string }> => {
+    async (agente: AgentePiloto, modo: AutonomiaModo): Promise<{ ok: boolean; error?: string; fallo?: unknown }> => {
       if (!agencyId) return { ok: false, error: 'not_configured' }
       const previa = rows.find((r) => r.agente === agente)?.modo
       if (previa === undefined || previa === modo) return { ok: true }
@@ -182,7 +183,7 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
       setBusyAgente(null)
       if (!res.ok) {
         setRows((cur) => cur.map((r) => (r.agente === agente ? { ...r, modo: previa } : r)))
-        return { ok: false, error: res.error }
+        return { ok: false, error: res.error, fallo: res.fallo }
       }
       // El micro es la autoridad: se relee para traer la frase del modo nuevo.
       void fetchData()

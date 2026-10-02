@@ -15,6 +15,7 @@
  */
 
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Plugs } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -38,9 +39,12 @@ export function SeccionIntegraciones() {
           : t('inmobiliaria.config.toasts.integrationDisabled'),
       );
     } catch (error) {
-      toast.error('Error al actualizar integración', {
-        description: error instanceof Error ? error.message : undefined,
-      });
+toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo cambiar la integración. Prueba de nuevo en un momento.',
+          accion: 'cambiar la integración',
+        }),
+      );
     }
   };
 

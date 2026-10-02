@@ -128,7 +128,7 @@ describe('ConfigIpcPorAnio', () => {
     const onSave = await montar();
     await escribirYSalir(campo(2026), '0');
     expect(onSave).not.toHaveBeenCalled();
-    expect(container.querySelector('[data-testid="ipc-anio-2026-error"]')?.textContent).toContain('mayor que 0');
+    expect(container.querySelector('#ipc-anio-2026-error')?.textContent).toContain('mayor que 0');
     expect(campo(2026)?.value).toBe('');
 
     await escribirYSalir(campo(2026), '5,123');

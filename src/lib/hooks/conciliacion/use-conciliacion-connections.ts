@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Closed sets (mirror the backend CHECK constraints) ───────────────────────
 
@@ -88,7 +89,10 @@ export interface PatchConnectionInput {
 export interface ConnectionActionResult {
   ok: boolean
   connection?: ConciliacionConnection
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────
@@ -200,15 +204,12 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
             body: JSON.stringify(body),
           },
         )
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: errBody.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const connection = (await res.json()) as ConciliacionConnection
         await fetchData()
         return { ok: true, connection }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'create_failed' }
+        return accionSinRespuesta(err, 'create_failed')
       }
     },
     [agencyId, fetchData],
@@ -235,15 +236,12 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
             body: JSON.stringify(body),
           },
         )
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: errBody.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const connection = (await res.json()) as ConciliacionConnection
         await fetchData()
         return { ok: true, connection }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'patch_failed' }
+        return accionSinRespuesta(err, 'patch_failed')
       }
     },
     [agencyId, fetchData],

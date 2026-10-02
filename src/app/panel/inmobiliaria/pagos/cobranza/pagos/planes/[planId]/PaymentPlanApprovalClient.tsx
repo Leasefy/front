@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/table'
 import { Slider, NumberInput } from '@leasefy/cadence'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import {
   usePaymentPlanApproval,
   type RejectReasonSlug,
@@ -180,7 +181,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     try {
       const res = await approvePlan()
       if ('error' in res) {
-        setActionError(res.error)
+        setActionError(
+          mensajeDeLaAccion(res, { porDefecto: 'No pudimos aprobar el plan.', accion: 'aprobar el plan' }),
+        )
       } else {
         setWompiLink(res.wompiLink)
       }
@@ -199,15 +202,19 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         reject_comment: rejectComment || undefined,
       })
       if ('error' in res) {
-        setActionError(res.error)
+        setActionError(
+          mensajeDeLaAccion(res, { porDefecto: 'No pudimos rechazar el plan.', accion: 'rechazar el plan' }),
+        )
       } else {
         setRechazarOpen(false)
         setRejectReason('')
         setRejectComment('')
         setToast(t('inmobiliaria.ai.cobranza.planes.rechazarForm.success'))
       }
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'reject failed')
+    } catch {
+      // El hook sólo tira si el motivo falta o no es de la lista (en inglés,
+      // para el programador): a la persona se le dice qué hacer.
+      setActionError('Elige un motivo de rechazo de la lista.')
     } finally {
       setActionLoading(false)
     }
@@ -228,9 +235,12 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         // could not be rejected, so two plans may be active. Show a clear,
         // localized warning and pull canonical server state.
         setActionError(
-          res.error.startsWith('DUPLICATE_PLAN_RISK')
+          res.code === 'DUPLICATE_PLAN_RISK'
             ? t('inmobiliaria.ai.cobranza.planes.modificarForm.duplicateRisk')
-            : res.error,
+            : mensajeDeLaAccion(res, {
+                porDefecto: 'No pudimos enviar la contraoferta.',
+                accion: 'enviar la contraoferta',
+              }),
         )
         void refetch()
       } else {
@@ -401,7 +411,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       </div>
 
       {actionError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+        <div
+          role="alert"
+          data-testid="plan-accion-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
           {actionError}
         </div>
       )}

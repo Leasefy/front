@@ -10,6 +10,8 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -46,12 +48,18 @@ export function useDebtorMemos(args: { debtorId: string }): UseDebtorMemosResult
     }
     try {
       const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/memos`)
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw await falloDelMicro(res)
       const json: DebtorMemosResponse = await res.json()
       setData(json)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch debtor memos')
+      // La frase para la persona (antes: «500» crudo detrás del título).
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos cargar las notas.',
+          accion: 'cargar las notas',
+        }),
+      )
     } finally {
       setIsLoading(false)
     }

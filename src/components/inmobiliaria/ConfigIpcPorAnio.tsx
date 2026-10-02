@@ -24,6 +24,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 
 /** El ancla del bloque: a esto apunta el aviso de /contratos/renovaciones. */
@@ -167,7 +168,7 @@ export function ConfigIpcPorAnio({ agency, onSave, canEdit = true, hoy }: Props)
                 value={textos[clave] ?? ''}
                 disabled={!canEdit || guardando}
                 aria-invalid={!!error}
-                aria-describedby={error ? `${id}-error` : undefined}
+                aria-describedby={`${id}-error`}
                 onChange={(e) => {
                   const texto = e.target.value;
                   setTextos((t) => ({ ...t, [clave]: texto }));
@@ -178,11 +179,8 @@ export function ConfigIpcPorAnio({ agency, onSave, canEdit = true, hoy }: Props)
                 }}
                 className={cn('w-28 tabular-nums', error && 'border-danger/30')}
               />
-              {error ? (
-                <p id={`${id}-error`} data-testid={`${id}-error`} className="text-xs text-danger">
-                  {error}
-                </p>
-              ) : null}
+              {/* El error de la casa: entra suave (Cadence), no aparece de golpe. */}
+              <ErrorDelCampo id={`${id}-error`} mensaje={error} className="mt-0" />
             </div>
           );
         })}

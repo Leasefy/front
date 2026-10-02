@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { useAuth } from '@/lib/auth'
 import type { paths } from '@/lib/api/generated/agent'
 
@@ -75,8 +76,17 @@ type ResolveDisputeResponse =
 /** Resultado de una mutación — la UI muestra errores inline sin romper. */
 export interface DisputeMutationResult<T> {
   ok: boolean
+  /** 0 = no hubo respuesta (o la acción ni salió: ver `error`). */
   status: number
   data: T | null
+  /**
+   * Por qué no salió: el `ApiError` del micro (status, `code`, `message`,
+   * `campos` de un 400) o el error de la red tal cual. La pantalla lo traduce
+   * con `mensajeParaLaPersona` o lo reparte por campo; nunca por el status.
+   */
+  fallo?: unknown
+  /** `ENV_OR_AGENCY_MISSING` cuando la acción ni salió (sin agente o sin agencia). */
+  error?: string
 }
 
 export interface UseDisputesParams {
@@ -176,7 +186,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
     ): Promise<DisputeMutationResult<OpenDisputeResponse>> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
-        return { ok: false, status: 0, data: null }
+        return { ok: false, status: 0, data: null, error: 'ENV_OR_AGENCY_MISSING' }
       }
       try {
         const res = await agentFetch(
@@ -187,15 +197,19 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
             body: JSON.stringify(body),
           },
         )
+        if (!res.ok) {
+          return { ok: false, status: res.status, data: null, fallo: await falloDelMicro(res) }
+        }
         let data: OpenDisputeResponse | null = null
         try {
           data = (await res.json()) as OpenDisputeResponse
         } catch {
           data = null
         }
-        return { ok: res.ok, status: res.status, data }
-      } catch {
-        return { ok: false, status: 0, data: null }
+        return { ok: true, status: res.status, data }
+      } catch (err) {
+        // Un `fetch` que no salió llega tal cual: el traductor lo lee como conexión.
+        return { ok: false, status: 0, data: null, fallo: err }
       }
     },
     [agencyId],
@@ -208,7 +222,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
     ): Promise<DisputeMutationResult<ResolveDisputeResponse>> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
-        return { ok: false, status: 0, data: null }
+        return { ok: false, status: 0, data: null, error: 'ENV_OR_AGENCY_MISSING' }
       }
       try {
         const res = await agentFetch(
@@ -219,15 +233,19 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
             body: JSON.stringify(body),
           },
         )
+        if (!res.ok) {
+          return { ok: false, status: res.status, data: null, fallo: await falloDelMicro(res) }
+        }
         let data: ResolveDisputeResponse | null = null
         try {
           data = (await res.json()) as ResolveDisputeResponse
         } catch {
           data = null
         }
-        return { ok: res.ok, status: res.status, data }
-      } catch {
-        return { ok: false, status: 0, data: null }
+        return { ok: true, status: res.status, data }
+      } catch (err) {
+        // Un `fetch` que no salió llega tal cual: el traductor lo lee como conexión.
+        return { ok: false, status: 0, data: null, fallo: err }
       }
     },
     [agencyId],

@@ -605,9 +605,11 @@ curva) · `Popover`, `DropdownMenu` (y submenú), `Select`, `Combobox`, `HoverCa
 curva de entrada del sistema) · `Switch` (thumb con resorte que se estira al presionar) ·
 `Checkbox` (el visto **se dibuja** al marcar y se borra al desmarcar) · `Radio` (el punto crece) ·
 `Badge` (cruza el color al cambiar de estado) · `Chip` (presión) · `Card interactive` (hover sutil:
-sube 1px) · `Banner`, `Alert`, `Callout` (entran subiendo 8px) · `Skeleton` (deja de brillar con
-movimiento reducido). `Dialog`, `AlertDialog`, `Sheet` y `Drawer` tienen su propia coreografía
-(§17) con los mismos tokens.
+sube 1px) · `Banner`, `Alert`, `Callout` (entran subiendo 8px) · `FormError` (el error bajo el
+campo **baja 4px con un fundido** y sale acelerando; con `hint`, la ayuda gris y el error se cruzan
+sin verse juntos — Cadence v1.1.1; `ErrorDelCampo` de `components/estado/` es su adaptador en
+español) · `Skeleton` (deja de brillar con movimiento reducido). `Dialog`, `AlertDialog`, `Sheet`
+y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
 
 ### Páginas
 
@@ -955,6 +957,11 @@ import { SegmentedControl } from '@leasefy/cadence';
 - Los segmentos son `<button role="radio">` dentro de un `role="radiogroup"`;
   el activo es la píldora blanca con `shadow-sm`. **No re-pintes el estado
   activo** desde el call site.
+- **En oscuro** (Cadence v1.1.1, 02-10): el riel es un velo neutro de blanco al
+  5 % (el de la bandeja del chat) y la píldora blanco al 7 % encima, con un
+  filete interior de blanco al 8 %. Antes la píldora era el mismo #0a0a0a del
+  fondo y no se veía. Igual en las `Tabs` `segmented` y `text`. En claro no
+  cambió nada.
 - `label` acepta un nodo (icono + texto, o texto + píldora de conteo). El DS no
   pasa props sueltas a cada segmento: un `data-testid` va **dentro** del
   `label`, y para clickearlo en un test se sube al botón con `.closest('button')`.

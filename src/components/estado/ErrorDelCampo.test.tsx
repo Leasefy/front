@@ -1,12 +1,15 @@
 /**
- * 02-10-2026 · El error bajo un campo, con su entrada suave (`Presence` /
- * `CrossFade` de Cadence). En las pruebas las animaciones de framer saltan a su
- * valor final (`vitest.setup.ts`), así que se mira el estado, no el viaje.
+ * 02-10-2026 · El error bajo un campo, con su entrada suave. Desde Cadence
+ * v1.1.1 el movimiento vive en su `FormError` y `ErrorDelCampo` es un
+ * adaptador fino. En las pruebas las animaciones de framer saltan a su valor
+ * final (`vitest.setup.ts`), así que se mira el estado, no el viaje.
  */
 import * as React from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { FormControl, FormField, FormLabel } from '@leasefy/cadence'
+import { Input } from '@/components/ui/input'
 import { ErrorDelCampo, type ErrorDelCampoProps } from './ErrorDelCampo'
 
 void React
@@ -84,5 +87,57 @@ describe('<ErrorDelCampo>', () => {
     pintar({ id: 'x-error', mensaje: 'Uno' })
     pintar({ id: 'x-error', mensaje: 'Otro' })
     expect(alerta()?.textContent).toBe('Otro')
+  })
+
+  it('es UN solo <p> (el de Cadence), con el aire de arriba de siempre', () => {
+    pintar({ id: 'x-error', mensaje: 'Falta el nombre.' })
+    expect(alerta()?.tagName).toBe('P')
+    expect(alerta()?.parentElement).toBe(container)
+    expect(alerta()?.className).toContain('mt-1.5')
+    expect(alerta()?.className).toContain('text-caption')
+  })
+
+  it('la pista no es una alerta: el lector anuncia sólo el error', () => {
+    pintar({ id: 'p-error', pista: 'En pesos colombianos.', mensaje: null })
+    const pista = container.querySelector('p')
+    expect(pista?.getAttribute('role')).toBeNull()
+    expect(pista?.className).toContain('text-fg-subtle')
+  })
+
+  it('dentro de un FormField de Cadence: el control lo nombra en aria-describedby', () => {
+    act(() =>
+      root.render(
+        <FormField id="displayName" required invalid>
+          <FormLabel>¿Cómo te llamas?</FormLabel>
+          <FormControl>
+            <Input />
+          </FormControl>
+          <ErrorDelCampo id="displayName-error" mensaje="Escribe tu nombre." className="mt-0" />
+        </FormField>,
+      ),
+    )
+    const campo = container.querySelector('input')
+    expect(campo?.getAttribute('aria-describedby')?.split(' ')).toContain('displayName-error')
+    expect(campo?.getAttribute('aria-invalid')).toBe('true')
+    const error = document.getElementById('displayName-error')
+    expect(error?.getAttribute('role')).toBe('alert')
+    expect(error?.textContent).toBe('Escribe tu nombre.')
+    // el `className` del uso manda sobre el aire por defecto
+    expect(error?.className).toContain('mt-0')
+    expect(error?.className).not.toContain('mt-1.5')
+  })
+
+  it('se ve por el mensaje, aunque el FormField todavía no esté en rojo', () => {
+    act(() =>
+      root.render(
+        <FormField id="rut">
+          <FormControl>
+            <Input />
+          </FormControl>
+          <ErrorDelCampo id="rut-error" mensaje="El documento no es válido." />
+        </FormField>,
+      ),
+    )
+    expect(alerta()?.textContent).toBe('El documento no es válido.')
   })
 })

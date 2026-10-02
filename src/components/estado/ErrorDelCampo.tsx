@@ -1,27 +1,32 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { CrossFade, Presence } from '@leasefy/cadence'
+import type { ReactNode } from 'react'
+import { FormError } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 
 /**
  * El mensaje de error bajo un campo, con su entrada suave (02-10-2026).
+ *
+ * Adaptador fino sobre `FormError` de Cadence (v1.1.1), que es donde vive el
+ * movimiento desde que Nico lo pidió en el sistema de diseño: todo formulario
+ * que use el `FormError` de Cadence lo hereda. Este adaptador sólo conserva la
+ * API en español y el aire de arriba (`mt-1.5`) de los pasos que lo usan.
  *
  * Sistema de errores de la plataforma: el error de un campo —el del cliente
  * (zod) o el que mandó el servidor en `campos[]` (ver
  * `lib/errores/errores-en-el-formulario.ts`)— se pinta debajo del campo con el
  * estilo de error de la casa y ENTRA, no aparece de golpe:
  *
- *  · sin `pista`: baja 4px con un fundido (`Presence`) y al corregirse sale
- *    acelerando, diciendo lo último que dijo (no sale vacío);
- *  · con `pista` (la ayuda gris que el error reemplaza): cruce entre las dos
- *    (`CrossFade`), sin que se vean ambas a la vez ni salte el alto.
+ *  · sin `pista`: baja 4px con un fundido y al corregirse sale acelerando,
+ *    diciendo lo último que dijo (no sale vacío);
+ *  · con `pista` (la ayuda gris que el error reemplaza): cruce entre las dos,
+ *    sin que se vean ambas a la vez ni salte el alto.
  *
- * Sólo `transform` y `opacity`; con movimiento reducido las primitivas de
- * Cadence dejan nada más el fundido corto.
+ * Sólo `transform` y `opacity`; con movimiento reducido queda el fundido corto.
  *
  * `id` es el que el campo nombra en `aria-describedby`: dentro de un
- * `FormField` de Cadence es `${id}-error`, como el de su `FormError`.
+ * `FormField` de Cadence es `${id}-error`, el mismo que pone su `FormControl`.
+ * Se ve cuando hay `mensaje`, esté o no dentro de un `FormField`.
  */
 export interface ErrorDelCampoProps {
   id: string
@@ -32,30 +37,10 @@ export interface ErrorDelCampoProps {
   className?: string
 }
 
-const ESTILO = 'mt-1.5 text-caption'
-
 export function ErrorDelCampo({ id, mensaje, pista, className }: ErrorDelCampoProps) {
-  // Mientras sale, sigue diciendo lo último que dijo (si no, saldría vacío).
-  const [ultimo, setUltimo] = useState(mensaje ?? '')
-  if (mensaje && mensaje !== ultimo) setUltimo(mensaje)
-
-  const error = (
-    <p id={id} role="alert" className={cn(ESTILO, 'text-danger', className)}>
-      {mensaje || ultimo}
-    </p>
-  )
-
-  if (pista !== undefined) {
-    return (
-      <CrossFade swapKey={mensaje ? 'error' : 'pista'}>
-        {mensaje ? error : <p className={cn(ESTILO, 'text-fg-subtle', className)}>{pista}</p>}
-      </CrossFade>
-    )
-  }
-
   return (
-    <Presence show={!!mensaje} direction="down" distance="xs">
-      {error}
-    </Presence>
+    <FormError id={id} invalid={!!mensaje} hint={pista} className={cn('mt-1.5', className)}>
+      {mensaje || null}
+    </FormError>
   )
 }

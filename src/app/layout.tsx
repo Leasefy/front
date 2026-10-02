@@ -14,6 +14,7 @@ import { IdleSessionGuard } from "@/components/auth/IdleSessionGuard";
 import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacionGuard";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
+import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -155,6 +156,12 @@ export default async function RootLayout({
               Sonner pinta cada toast en TODOS los <Toaster> montados: debe haber uno solo.
               Si agregas otro en un layout, los toasts se duplican. */}
           <Toaster position="top-right" />
+          {/* La franja de «Leasefy no está respondiendo» / «Estás sin internet»
+              (01-10-2026). Va acá, junto al Toaster y fuera de todo guard, por
+              la misma razón: tiene que verse aunque un guard esté resolviendo
+              o no deje pasar. Una sola en toda la app; no la montes en un
+              layout. Ver src/lib/conexion/estado-de-conexion.ts. */}
+          <AvisoDeConexion />
         </ThemeProvider>
       </body>
     </html>

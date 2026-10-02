@@ -201,6 +201,55 @@ en `.orchestration/tasks/T-0128-migracion-terceros-incompletos-y-masivo/contract
   `PROPIETARIO_SIN_DOCUMENTO` y `PAGARE_DATOS_INCOMPLETOS` se explican en
   `src/lib/errores/documento-del-propietario.ts` (enchufado en `mensajeDelFallo` y `errorEnCristiano`).
 
+## Centro de procesos — la base común (01-10-2026)
+
+Toda carga, descarga o acción masiva larga corre en el centro de procesos, por una de dos puertas
+(`src/lib/procesos/en-el-centro.ts`, con sus pruebas al lado):
+
+- **`lanzarEnElCentro({ titulo, tipoDeProceso, pedir, recursos?, alTerminar? })`** — el trabajo lo
+  hace el SERVIDOR (`procesos.lanzar`, 202 `{ procesoId }`). Anuncia, pide, abre el centro con el
+  proceso arriba y lo sigue (`procesosApi.ver` cada 2,5 s) hasta TERMINADO/FALLO/CANCELADO; entonces
+  invalida `recursos` y llama `alTerminar`. Devuelve `{ procesoId }` de una; un error de `pedir()`
+  sube tal cual. `seguirProceso(id, opciones)` sirve si el id ya se tiene.
+- **`correrEnElNavegador({ tipo, titulo, total?, trabajo, recursos? })`** — el trabajo lo hace la
+  PESTAÑA (`POST /inmobiliaria/procesos` y `:id/avance|terminar|fallar`). `trabajo(ctx)` usa
+  `ctx.avanzar(hechos, extra?)` (como mucho 1/s; `false` = parar: «Detener» acá o «Cancelar» desde
+  el centro) y `ctx.debeParar()`; devuelve `{ archivo?: { blob, nombre }, mensaje?, titulo? }`. Si el
+  back no puede abrir el proceso (503 sin migración) el trabajo corre igual sin el centro y el
+  archivo se baja directo: lo que funcionaba no se rompe.
+- **`concurrencia(items, n, fn)`** para bucles que hoy disparan todo junto con `Promise.allSettled`.
+- Tipos nuevos: `CARGA`, `ENVIO_MASIVO`, `GENERACION`, `APROBACION_MASIVA` (nombre e ícono en
+  `estado-del-proceso.ts` / `FilaDeProceso.tsx`).
+
+## Caídas: avisar sin culpar a nadie (01-10-2026)
+
+Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». Dos capas en el front
+(`src/lib/conexion/`, con sus pruebas al lado):
+
+- **Capa 1 — Leasefy entero no responde / sin internet** (`estado-de-conexion.ts`): un store
+  fuera de React que alimenta `apiClient` con cada respuesta. `fetch` que no sale → `sin-internet`
+  (si `navigator.onLine === false`) o `leasefy-no-responde`; un 502/503/504 cuyo cuerpo no trae
+  `statusCode` ni `code` (el balanceador) → `leasefy-no-responde`, y el `ApiError` sale con
+  `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano. La base caída (5xx con `servicio: 'base'`)
+  también va por acá: sin Postgres no funciona nada. Cualquier otra respuesta del back → `bien`.
+  Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
+  abajo (sube 5rem bajo `lg` por `MobileNavBar`) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
+  primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
+  NO pasan por acá (son capa 2, servicio `asistente`).
+- **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): 502 o 503
+  `{ code: 'SERVICIO_NO_DISPONIBLE', servicio? }` (los proxies de avalúos y del cotizador siguen
+  en 502: la página de avalúos mira ese status), o cualquier 5xx con `servicio` (el 502
+  `WOMPI_NO_RESPONDIO` cuando Wompi se cayó). Otro 503 sin `servicio` (`FALTA_UNA_MIGRACION`,
+  `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída. `apiClient` no toca `status` ni `code`; le
+  pone al error el texto que nombra lo caído; `clasificarFallo` tiene el tipo
+  `servicioNoDisponible`; `FalloDeCarga` (y por él
+  `EstadoDeDatos`), los banners del registro y `mensajeDelFallo` / `errorEnCristiano` /
+  `descripcionDelError` / `motivosDelError` dicen el texto de capa 2. «Nuestro equipo ya está
+  avisado» sale SÓLO si `GET /health/servicios` lo confirma para ese servicio
+  (`useEstadoDelServicio`, que pregunta sólo con un error de ese servicio en pantalla).
+- Mientras la franja esté, un fallo de red en pantalla no repite el rojo: «Esperando a Leasefy…»
+  con su reintento.
+
 ## Carga de inmuebles reanudable (T-0130)
 
 La carga de inmuebles (`ImportWizard`, paso 3 del muro) ya no vive y muere con la pestaña. Contrato

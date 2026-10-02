@@ -52,6 +52,7 @@ import {
   tipoDeDocumentoDe,
 } from '@/lib/migracion/ayuda-del-documento';
 import { placeholderDeEjemplo } from '@/lib/migracion/columnas-de-tercero';
+import { cn } from '@/lib/utils';
 
 /** Radix no admite `value=""` en un `<SelectItem>`. */
 const SIN_VALOR = '__vacio__';
@@ -122,13 +123,12 @@ function CeldaEditable({
         >
           <SelectTrigger
             aria-invalid={conError || undefined}
-            className={conError ? 'border-danger' : undefined}
+            /* «Sin definir» es la AUSENCIA de dato, no un dato: con el color de
+               un valor elegido se leía como lleno (Nico, 01-10). */
+            className={cn(conError && 'border-danger', !valor && 'text-fg-placeholder')}
             aria-labelledby={idEtiqueta}
             aria-describedby={columna.ayuda ? idAyuda : undefined}
             data-testid={`campo-${columna.campo}`}
-            /* «Sin definir» es la AUSENCIA de dato, no un dato: con el color de
-               un valor elegido se leía como lleno (Nico, 01-10). */
-            className={valor ? undefined : 'text-fg-placeholder'}
           >
             <SelectValue />
           </SelectTrigger>

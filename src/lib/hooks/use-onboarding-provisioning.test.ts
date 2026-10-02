@@ -17,19 +17,13 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import type { OnboardingResumePoint } from '@/lib/api/onboarding-provisioning.service'
 
 void React // jsx-preserve
 
 const postUsersOnboardingMock = vi.fn()
 // El hook pregunta primero dónde quedó la persona. Por defecto: nunca empezó.
-type PuntoDeRetorno = {
-  agentSessionId: string | null
-  tenantId: string | null
-  provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
-  legalName: string | null
-  nit: string | null
-  onboardingCompleted: boolean
-}
+type PuntoDeRetorno = OnboardingResumePoint
 const SIN_EMPEZAR: PuntoDeRetorno = {
   agentSessionId: null,
   tenantId: null,
@@ -49,9 +43,11 @@ vi.mock('@/lib/api/onboarding-provisioning.service', () => ({
 import { ApiError } from '@/lib/api/client'
 import {
   useOnboardingProvisioning,
+  interpretarFallo,
   INMOBILIARIA_USER_TYPE,
   type ProvisioningInput,
 } from './use-onboarding-provisioning'
+import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
 
 type Hook = ReturnType<typeof useOnboardingProvisioning>
 
@@ -329,7 +325,8 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     })
   })
 
-  it('con la agencia en FAILED no ofrece reintento: es terminal', async () => {
+  // Nico, 01-10-2026: «le dice que es irreversible, ¿cómo así? es ilógico».
+  it('con la agencia en FAILED vuelve el formulario lleno para corregir: nunca «quedó bloqueado»', async () => {
     getOnboardingResumePointMock.mockResolvedValue({
       agentSessionId: null,
       tenantId: 'agencia-1',
@@ -341,8 +338,13 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     const hook = renderHook()
     await flush()
 
-    expect(hook.get().status).toBe('error')
-    expect(hook.get().fallo?.reintentable).toBe(false)
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo).toMatchObject({ reintentable: true, paraCorregir: true })
+    expect(hook.get().fallo?.mensaje).not.toMatch(/bloquead|soporte/i)
+    expect(hook.get().valoresGuardados).toMatchObject({
+      razonSocial: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+    })
   })
 
   it('si no se puede averiguar dónde quedó, se empieza igual', async () => {
@@ -353,20 +355,20 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     expect(hook.get().status).toBe('needs-info')
   })
 
-  it('guarda el mensaje del back en vez de comérselo', async () => {
+  it('un 400 son los datos: guarda el mensaje del back y vuelve al formulario para corregir', async () => {
     postUsersOnboardingMock.mockRejectedValue(
-      new ApiError(400, 'El registro de esta inmobiliaria no se pudo completar previamente.'),
+      new ApiError(400, 'No se pudo completar el registro de la inmobiliaria. Verifica los datos e intenta nuevamente.'),
     )
     const hook = renderHook()
     await flush()
     act(() => hook.get().provision(VALID_INPUT))
     await flush()
 
-    expect(hook.get().status).toBe('error')
-    expect(hook.get().fallo?.mensaje).toContain('no se pudo completar previamente')
-    // 400 en este flujo es terminal: reintentar da lo mismo para siempre.
-    expect(hook.get().fallo?.reintentable).toBe(false)
-    expect(hook.get().fallo?.status).toBe(400)
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo?.mensaje).toContain('Verifica los datos')
+    expect(hook.get().fallo).toMatchObject({ reintentable: true, paraCorregir: true, status: 400 })
+    // Lo que escribió vuelve al formulario.
+    expect(hook.get().valoresGuardados).toMatchObject({ razonSocial: 'Inmobiliaria Andes SAS' })
   })
 
   it('el 409 CORREO_DE_OTRA_INMOBILIARIA muestra el mensaje del back y no ofrece reintentar', async () => {
@@ -424,6 +426,84 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     expect(hook.get().valoresGuardados).toEqual({
       razonSocial: 'Inmobiliaria Andes SAS',
       nit: '900123456-7',
+      nombreCompleto: 'Ana Pérez',
     })
+  })
+
+  // 🔴 01-10-2026 (Alexis): con el micro caído la agencia quedaba FAILED y al
+  // volver a entrar sólo veía «Tu registro quedó bloqueado». El back ahora la
+  // informa PENDING y trae lo que ya había escrito: vuelve el formulario lleno.
+  it('una agencia que el micro no alcanzó a crear vuelve al formulario con TODO lo que ya escribió', async () => {
+    getOnboardingResumePointMock.mockResolvedValue({
+      agentSessionId: null,
+      tenantId: 'agencia-1',
+      provisioningStatus: 'PENDING',
+      legalName: 'La Carpita Real Estate',
+      nit: '123456789-6',
+      ownerFirstName: 'Donqui',
+      ownerLastName: 'de la Mancha',
+      legalRepresentative: 'Sancho Panza',
+      onboardingCompleted: true,
+    })
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo).toBeNull()
+    expect(hook.get().valoresGuardados).toEqual({
+      razonSocial: 'La Carpita Real Estate',
+      nit: '123456789-6',
+      nombreCompleto: 'Donqui de la Mancha',
+      representanteLegal: 'Sancho Panza',
+    })
+  })
+})
+
+/*
+ * 01-10-2026: con el micro de agentes caído el registro decía «Código 503» y
+ * la persona no sabía si era ella. Una caída se reconoce como caída.
+ */
+describe('interpretarFallo ante una caída', () => {
+  it('503 SERVICIO_NO_DISPONIBLE del asistente: caída de servicio, reintentable, lo escrito se queda', () => {
+    const fallo = interpretarFallo(
+      new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE', {
+        statusCode: 503,
+        code: 'SERVICIO_NO_DISPONIBLE',
+        servicio: 'asistente',
+      }),
+    )
+    expect(fallo.caida).toEqual({ tipo: 'servicio', servicio: 'asistente' })
+    expect(fallo.reintentable).toBe(true)
+    expect(fallo.mensaje).toContain('Lo que escribiste no se pierde.')
+    expect(fallo.mensaje).not.toMatch(/503/)
+  })
+
+  it('sin `servicio` también es caída, con el servicio en null', () => {
+    const fallo = interpretarFallo(new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE'))
+    expect(fallo.caida).toEqual({ tipo: 'servicio', servicio: null })
+  })
+
+  it('sin red o con Leasefy entero caído: caída de conexión, reintentable', () => {
+    expect(interpretarFallo(new ApiError(0, 'No pudimos conectarnos')).caida).toEqual({ tipo: 'conexion' })
+    const general = interpretarFallo(new ApiError(502, 'x', CODIGO_LEASEFY_NO_RESPONDE))
+    expect(general.caida).toEqual({ tipo: 'conexion' })
+    expect(general.reintentable).toBe(true)
+  })
+
+  it('la base caída no es «el asistente»: es Leasefy sin responder', () => {
+    const fallo = interpretarFallo(
+      new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE', {
+        statusCode: 503,
+        code: 'SERVICIO_NO_DISPONIBLE',
+        servicio: 'base',
+      }),
+    )
+    expect(fallo.caida).toEqual({ tipo: 'conexion' })
+  })
+
+  it('un 503 viejo, sin el code, sigue como antes (sin caída)', () => {
+    const fallo = interpretarFallo(new ApiError(503, 'Intenta en unos minutos.'))
+    expect(fallo.caida).toBeUndefined()
+    expect(fallo.mensaje).toBe('Intenta en unos minutos.')
   })
 })

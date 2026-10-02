@@ -80,6 +80,9 @@ export function postUsersOnboarding(
  *  - `null` → todavía no hay agencia; se muestra el paso previo.
  *  - `'ACTIVE'` → la agencia existe y el traspaso al agente falló; reenviar el
  *    paso previo lo vuelve a intentar (el back ya no devuelve null para siempre).
+ *  - `'PENDING'` → la agencia existe pero el micro no respondió (caída nuestra);
+ *    reenviar el paso previo lo vuelve a intentar. Desde el 01-10-2026 el back
+ *    también informa así las que la regla vieja dejó FAILED por una caída.
  *  - `'FAILED'` → terminal, lo tiene que destrabar soporte; no ofrecer reintento.
  */
 export interface OnboardingResumePoint {
@@ -88,6 +91,10 @@ export interface OnboardingResumePoint {
   provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
   legalName: string | null
   nit: string | null
+  /** Lo que ya escribió quien se registra. Opcionales: un back anterior no los manda. */
+  ownerFirstName?: string | null
+  ownerLastName?: string | null
+  legalRepresentative?: string | null
   onboardingCompleted: boolean
 }
 

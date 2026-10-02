@@ -31,9 +31,12 @@ import {
   PaperPlaneTilt,
   Books,
   CheckCircle,
+  Checks,
   Clock,
   DownloadSimple,
+  EnvelopeSimple,
   FileArrowDown,
+  FilePlus,
   FileZip,
   Prohibit,
   Receipt,
@@ -73,6 +76,10 @@ const ICONO_DEL_TIPO: Record<string, Icon> = {
   MIGRACION_CONTRATOS: UploadSimple,
   MIGRACION_INMUEBLES: UploadSimple,
   EXPORTACION: FileArrowDown,
+  CARGA: UploadSimple,
+  ENVIO_MASIVO: EnvelopeSimple,
+  GENERACION: FilePlus,
+  APROBACION_MASIVA: Checks,
 }
 
 /** El color del estado en palabras: texto, sin píldora. */

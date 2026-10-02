@@ -186,6 +186,7 @@ describe('mensajeParaLaPersona: los mensajes largos de caja pasan; los volcados 
     ['un archivo con su línea', 'Falló en recibos-de-caja.service.ts:512'],
     ['una consulta de Prisma', 'Error en prisma.reciboDeCaja.create( ... ) con datos inválidos'],
     ['un volcado de Prisma en el medio', 'Fallo: Invalid `this.prisma.cobro.update()` invocation'],
+    ['el nombre de un error de Prisma', 'PrismaClientKnownRequestError: Unique constraint failed on the fields: (`nit`)'],
     ['un HTML en el medio', 'El proveedor respondió: <html><body><h1>502 Bad Gateway</h1></body></html>'],
     ['un HTML al principio', '<!DOCTYPE html><html>…'],
     ['un JSON', '{"statusCode":500,"message":"Internal server error"}'],

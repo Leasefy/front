@@ -165,6 +165,7 @@ const PARECE_UNA_TRAZA = [
   /\.(?:[cm]?[jt]sx?|java|py):\d+/,
   /Invalid `/,
   /prisma\.\w+\.\w+\(/,
+  /PrismaClient\w*Error/,
   /^[[{]/,
 ]
 

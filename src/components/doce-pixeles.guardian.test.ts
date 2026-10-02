@@ -96,7 +96,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // bloque «Filtros aplicados» y dos vistas de 12 px). Develop había subido uno
 // (2740) con la migración de terceros; queda contado acá.
 // 02-10: 2731 con los rediseños de modales, cajones y chat del día.
-const CUANTOS_HABIA = 2731;
+// 02-10 tarde: 2606 con la tanda 2 de errores (los errores de campo hechos a
+// mano pasaron a `ErrorDelCampo`).
+const CUANTOS_HABIA = 2606;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

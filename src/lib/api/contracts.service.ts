@@ -558,6 +558,21 @@ export const contractsApi = {
       );
     },
 
+    /**
+     * Corregir cuánto del canon es de cada dueño, sin volver a subir el
+     * archivo. `canonPorDueno` va en el orden de `asociacion.propietario.reparto.duenos`
+     * y debe sumar exactamente el canon de la fila.
+     */
+    async corregirReparto(
+      id: string,
+      canonPorDueno: number[],
+    ): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/reparto`,
+        { canonPorDueno },
+      );
+    },
+
     async descartar(id: string): Promise<FilaDeMigracion> {
       return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
     },

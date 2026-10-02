@@ -37,6 +37,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PercentInput } from "@/components/ui/percent-input";
@@ -79,6 +80,8 @@ export function FilaDeRevision({
 }: FilaDeRevisionProps) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** La confirmación de «Descartar esta fila» va en la propia fila, no en un diálogo del navegador. */
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
 
   const yaActivada = fila.estado === "ACTIVADO";
   const descartada = fila.estado === "DESCARTADO";
@@ -162,6 +165,21 @@ export function FilaDeRevision({
          */
         comisionPorcentaje:
           fila.comisionPorcentaje ?? fila.datos.comisionPorcentaje ?? 0,
+      };
+    });
+  }
+
+  async function descartarFila() {
+    await correr(async () => {
+      const descartada = await contractsApi.migracion.descartar(fila.id);
+      setConfirmandoDescarte(false);
+      // El back devuelve la fila cruda, sin lo que arma el listado: se
+      // conserva lo que la tarjeta ya mostraba para que no parpadee.
+      return {
+        ...descartada,
+        propietario: fila.propietario,
+        asociacion: fila.asociacion,
+        comisionPorcentaje: fila.comisionPorcentaje,
       };
     });
   }
@@ -318,11 +336,68 @@ export function FilaDeRevision({
             onActualizada({
               ...f,
               propietario: fila.propietario,
+              asociacion:
+                f.asociacion ??
+                (f.datos as { _asociacion?: FilaDeMigracion["asociacion"] })
+                  ._asociacion ??
+                fila.asociacion,
               comisionPorcentaje: fila.comisionPorcentaje,
             });
             onCambio();
           }}
         />
+      ) : null}
+
+      {/*
+        Una fila que no se va a traer (vacía, repetida, de otro cliente) se
+        descarta acá mismo: sin esto la única salida era arreglar el archivo y
+        volver a subirlo. No se borra, queda el rastro; deja de contar como
+        pendiente.
+      */}
+      {editable ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+          {confirmandoDescarte ? (
+            <>
+              <p
+                className="mr-auto text-caption text-muted-foreground"
+                data-testid="confirmar-descarte-fila"
+              >
+                ¿Descartar esta fila? No se importará; queda el rastro y se
+                puede ver como descartada.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
+                disabled={guardando}
+                onClick={() => setConfirmandoDescarte(false)}
+              >
+                Conservar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                disabled={guardando}
+                data-testid="confirmar-descartar-fila"
+                onClick={() => void descartarFila()}
+              >
+                {guardando ? "Descartando..." : "Sí, descartar"}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
+              disabled={guardando}
+              data-testid="descartar-fila"
+              onClick={() => setConfirmandoDescarte(true)}
+            >
+              Descartar esta fila
+            </Button>
+          )}
+        </div>
       ) : null}
     </Card>
   );

@@ -126,11 +126,7 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
           <OwnerNameStepForm
             onSubmit={provision}
             isSubmitting={status === 'provisioning'}
-            valoresIniciales={
-              valoresGuardados
-                ? { razonSocial: valoresGuardados.razonSocial, nit: valoresGuardados.nit }
-                : undefined
-            }
+            valoresIniciales={valoresGuardados ?? undefined}
           />
         ) : (
           <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />

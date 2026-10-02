@@ -17,19 +17,13 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import type { OnboardingResumePoint } from '@/lib/api/onboarding-provisioning.service'
 
 void React // jsx-preserve
 
 const postUsersOnboardingMock = vi.fn()
 // El hook pregunta primero dónde quedó la persona. Por defecto: nunca empezó.
-type PuntoDeRetorno = {
-  agentSessionId: string | null
-  tenantId: string | null
-  provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
-  legalName: string | null
-  nit: string | null
-  onboardingCompleted: boolean
-}
+type PuntoDeRetorno = OnboardingResumePoint
 const SIN_EMPEZAR: PuntoDeRetorno = {
   agentSessionId: null,
   tenantId: null,
@@ -424,6 +418,35 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     expect(hook.get().valoresGuardados).toEqual({
       razonSocial: 'Inmobiliaria Andes SAS',
       nit: '900123456-7',
+      nombreCompleto: 'Ana Pérez',
+    })
+  })
+
+  // 🔴 01-10-2026 (Alexis): con el micro caído la agencia quedaba FAILED y al
+  // volver a entrar sólo veía «Tu registro quedó bloqueado». El back ahora la
+  // informa PENDING y trae lo que ya había escrito: vuelve el formulario lleno.
+  it('una agencia que el micro no alcanzó a crear vuelve al formulario con TODO lo que ya escribió', async () => {
+    getOnboardingResumePointMock.mockResolvedValue({
+      agentSessionId: null,
+      tenantId: 'agencia-1',
+      provisioningStatus: 'PENDING',
+      legalName: 'La Carpita Real Estate',
+      nit: '123456789-6',
+      ownerFirstName: 'Donqui',
+      ownerLastName: 'de la Mancha',
+      legalRepresentative: 'Sancho Panza',
+      onboardingCompleted: true,
+    })
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo).toBeNull()
+    expect(hook.get().valoresGuardados).toEqual({
+      razonSocial: 'La Carpita Real Estate',
+      nit: '123456789-6',
+      nombreCompleto: 'Donqui de la Mancha',
+      representanteLegal: 'Sancho Panza',
     })
   })
 })

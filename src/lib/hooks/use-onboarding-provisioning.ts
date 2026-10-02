@@ -63,6 +63,14 @@ export interface AgencyPrefill {
   nit: string
 }
 
+/** Lo que la persona ya escribió en el paso previo, de esta visita o de una anterior. */
+export interface ValoresGuardados {
+  razonSocial: string
+  nit: string
+  nombreCompleto?: string
+  representanteLegal?: string
+}
+
 export interface FalloDeAprovisionamiento {
   /** Lo que dijo el back, tal cual. Ya viene en español y es específico. */
   mensaje: string
@@ -82,7 +90,7 @@ export interface UseOnboardingProvisioningResult {
    */
   agencyPrefill: AgencyPrefill | null
   /** Lo que ya había escrito en una visita anterior, para no volver a pedirlo. */
-  valoresGuardados: { razonSocial: string; nit: string } | null
+  valoresGuardados: ValoresGuardados | null
   /** Sólo cuando `status === 'error'`. */
   fallo: FalloDeAprovisionamiento | null
   /** Re-posts the last `provision()` payload. Wired to the "Reintentar" CTA. */
@@ -138,14 +146,21 @@ export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
   return { mensaje: FALLO_GENERICO, reintentable: true, status: null }
 }
 
+function valoresDelEnvio(input: ProvisioningInput): ValoresGuardados {
+  const nombreCompleto = [input.firstName, input.lastName].filter(Boolean).join(' ')
+  return {
+    razonSocial: input.agencyName,
+    nit: input.nit,
+    ...(nombreCompleto ? { nombreCompleto } : {}),
+    ...(input.legalRepresentative ? { representanteLegal: input.legalRepresentative } : {}),
+  }
+}
+
 export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
   const [status, setStatus] = useState<OnboardingProvisioningStatus>('resuming')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [agencyPrefill, setAgencyPrefill] = useState<AgencyPrefill | null>(null)
-  const [valoresGuardados, setValoresGuardados] = useState<{
-    razonSocial: string
-    nit: string
-  } | null>(null)
+  const [valoresGuardados, setValoresGuardados] = useState<ValoresGuardados | null>(null)
   const [fallo, setFallo] = useState<FalloDeAprovisionamiento | null>(null)
 
   const mountedRef = useRef(true)
@@ -176,9 +191,17 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (!vigente || !mountedRef.current) return
 
         if (punto.legalName || punto.nit) {
+          const nombreCompleto = [punto.ownerFirstName, punto.ownerLastName]
+            .map((parte) => parte?.trim())
+            .filter(Boolean)
+            .join(' ')
           setValoresGuardados({
             razonSocial: punto.legalName ?? '',
             nit: punto.nit ?? '',
+            ...(nombreCompleto ? { nombreCompleto } : {}),
+            ...(punto.legalRepresentative?.trim()
+              ? { representanteLegal: punto.legalRepresentative.trim() }
+              : {}),
           })
         }
 
@@ -248,7 +271,7 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
           // sesión. Reintentar SÍ sirve: el back vuelve a intentar sólo ese
           // traspaso (`startAgentOnboarding`), no el aprovisionamiento entero.
           setSessionId(null)
-          setValoresGuardados({ razonSocial: input.agencyName, nit: input.nit })
+          setValoresGuardados(valoresDelEnvio(input))
           setFallo({
             mensaje:
               'Tu inmobiliaria quedó creada, pero no alcanzamos a abrir el asistente. Vuelve a intentarlo.',
@@ -262,7 +285,7 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         inFlightRef.current = false
         if (!mountedRef.current || requestIdRef.current !== requestId) return
         setSessionId(null)
-        setValoresGuardados({ razonSocial: input.agencyName, nit: input.nit })
+        setValoresGuardados(valoresDelEnvio(input))
         setFallo(interpretarFallo(error))
         setStatus('error')
       })

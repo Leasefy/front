@@ -28,6 +28,13 @@ import {
   getOnboardingResumePoint,
 } from '@/lib/api/onboarding-provisioning.service'
 import { ApiError } from '@/lib/api/client'
+import { esErrorDeConexion } from '@/lib/conexion/estado-de-conexion'
+import {
+  esServicioNoDisponible,
+  servicioDelError,
+  textoDeServicioNoDisponible,
+  type ServicioId,
+} from '@/lib/conexion/servicio-no-disponible'
 
 /**
  * userType for the OWNER who creates the agency through this wizard.
@@ -71,6 +78,21 @@ export interface ValoresGuardados {
   representanteLegal?: string
 }
 
+/**
+ * ¿El fallo fue una caída y no algo de los datos? (01-10-2026)
+ *
+ *  - `servicio`: el back contestó 503 `SERVICIO_NO_DISPONIBLE` —se cayó una
+ *    parte, casi siempre el asistente (el micro de agentes)—. `servicio` es
+ *    `null` si el back no dijo cuál.
+ *  - `conexion`: no hubo red, o Leasefy entero no respondió.
+ *
+ * En los dos casos lo escrito no se pierde y reintentar sí puede servir: el
+ * banner lo dice sin «Código 503».
+ */
+export type CaidaDelRegistro =
+  | { tipo: 'servicio'; servicio: ServicioId | null }
+  | { tipo: 'conexion' }
+
 export interface FalloDeAprovisionamiento {
   /** Lo que dijo el back, tal cual. Ya viene en español y es específico. */
   mensaje: string
@@ -78,7 +100,12 @@ export interface FalloDeAprovisionamiento {
   reintentable: boolean
   /** Código HTTP, o 0 si nunca salió de la máquina. Para el reporte a soporte. */
   status: number | null
+  /** Sólo cuando lo que falló fue una caída. Ver `CaidaDelRegistro`. */
+  caida?: CaidaDelRegistro
 }
+
+/** Lo que tranquiliza en el registro: lo escrito se queda (ver `valoresGuardados`). */
+export const LO_ESCRITO_NO_SE_PIERDE = 'Lo que escribiste no se pierde.'
 
 export interface UseOnboardingProvisioningResult {
   status: OnboardingProvisioningStatus
@@ -118,6 +145,30 @@ const FALLO_GENERICO =
  * dos casos volver a mandar lo mismo da lo mismo.
  */
 export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
+  /*
+   * 🔴 01-10-2026: con el micro de agentes caído, esto mostraba el `message`
+   * del back con «Código 503» abajo, y la persona no sabía si era ella ni si
+   * había perdido lo escrito. Una caída se dice como caída: qué se cayó, que
+   * no es su culpa, que lo escrito se queda y que reintentar sirve.
+   */
+  if (esServicioNoDisponible(error)) {
+    const servicio = servicioDelError(error)
+    return {
+      mensaje: textoDeServicioNoDisponible(servicio, { tranquilidad: LO_ESCRITO_NO_SE_PIERDE })
+        .detalle,
+      reintentable: true,
+      status: 503,
+      caida: { tipo: 'servicio', servicio },
+    }
+  }
+  if (esErrorDeConexion(error)) {
+    return {
+      mensaje: `${LO_ESCRITO_NO_SE_PIERDE} Apenas Leasefy responda, vuelve a intentar.`,
+      reintentable: true,
+      status: error instanceof ApiError ? error.status : null,
+      caida: { tipo: 'conexion' },
+    }
+  }
   if (error instanceof ApiError) {
     /*
      * 🔴 Auditoría de seguridad 23-09-2026 (back): el correo de la agencia es

@@ -23,6 +23,13 @@
 import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
+import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
+import {
+  esServicioNoDisponible,
+  servicioDelError,
+  textoDeServicioNoDisponible,
+  textoParaUnAviso,
+} from '@/lib/conexion/servicio-no-disponible'
 
 export type TipoDeFallo =
   | 'noExiste'
@@ -55,6 +62,19 @@ export type TipoDeFallo =
    * despliegue a medias.
    */
   | 'baseAtrasada'
+  /**
+   * 503 `SERVICIO_NO_DISPONIBLE` (01-10-2026): el back contestó, pero se cayó
+   * UNA parte de la que depende esto —el asistente, los pagos, el correo—. Lo
+   * demás funciona y reintentar en unos minutos sí puede servir. Ver
+   * `src/lib/conexion/servicio-no-disponible.ts`.
+   */
+  | 'servicioNoDisponible'
+  /**
+   * 502/503/504 que NO mandó nuestro back sino el balanceador: Leasefy entero
+   * no respondió. La franja global ya lo está diciendo; ver
+   * `src/lib/conexion/estado-de-conexion.ts`.
+   */
+  | 'leasefyNoResponde'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -300,6 +320,37 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         'Es algo nuestro y ya sabemos qué es: quedó una actualización del sistema a medio terminar. No se arregla reintentando; se resuelve del lado nuestro.',
       // Reintentar no cambia nada hasta que alguien aplique la migración.
       sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  /*
+   * Capa 2 (01-10-2026): se cayó UNA parte. El título la nombra; la
+   * descripción es la línea que se basta sola —la que usan quienes pintan
+   * `descripcion` en un toast—. `<FalloDeCarga>` arma su propio texto con
+   * `textoDeServicioNoDisponible`, que además sabe si el equipo ya está avisado.
+   */
+  if (esServicioNoDisponible(error)) {
+    const servicio = servicioDelError(error)
+    return {
+      tipo: 'servicioNoDisponible',
+      titulo: textoDeServicioNoDisponible(servicio).titulo,
+      descripcion: textoParaUnAviso(servicio),
+      sePuedeReintentar: true,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  // Capa 1: el balanceador contestó por un back que no está. No es «un
+  // problema nuestro, escríbenos»: es una caída que se arregla sola.
+  if (cuerpoDelNo(error).code === CODIGO_LEASEFY_NO_RESPONDE) {
+    return {
+      tipo: 'leasefyNoResponde',
+      titulo: 'Leasefy no respondió',
+      descripcion: 'No es nada que hayas hecho. Prueba de nuevo en un momento.',
+      sePuedeReintentar: true,
       status,
       mensajeOriginal,
     }

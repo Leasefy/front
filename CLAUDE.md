@@ -221,6 +221,31 @@ Toda carga, descarga o acción masiva larga corre en el centro de procesos, por 
 - Tipos nuevos: `CARGA`, `ENVIO_MASIVO`, `GENERACION`, `APROBACION_MASIVA` (nombre e ícono en
   `estado-del-proceso.ts` / `FilaDeProceso.tsx`).
 
+## Caídas: avisar sin culpar a nadie (01-10-2026)
+
+Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». Dos capas en el front
+(`src/lib/conexion/`, con sus pruebas al lado):
+
+- **Capa 1 — Leasefy entero no responde / sin internet** (`estado-de-conexion.ts`): un store
+  fuera de React que alimenta `apiClient` con cada respuesta. `fetch` que no sale → `sin-internet`
+  (si `navigator.onLine === false`) o `leasefy-no-responde`; un 502/503/504 cuyo cuerpo no trae
+  `statusCode` ni `code` (el balanceador) → `leasefy-no-responde`, y el `ApiError` sale con
+  `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano; cualquier otra respuesta del back → `bien`.
+  Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
+  arriba que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
+  primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
+  NO pasan por acá (son capa 2, servicio `asistente`).
+- **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): el back manda 503
+  `{ code: 'SERVICIO_NO_DISPONIBLE', servicio? }`. Otro 503 (`FALTA_UNA_MIGRACION`,
+  `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída. `apiClient` le pone al error el texto que
+  nombra lo caído; `clasificarFallo` tiene el tipo `servicioNoDisponible`; `FalloDeCarga` (y por él
+  `EstadoDeDatos`), los banners del registro y `mensajeDelFallo` / `errorEnCristiano` /
+  `descripcionDelError` / `motivosDelError` dicen el texto de capa 2. «Nuestro equipo ya está
+  avisado» sale SÓLO si `GET /health/servicios` lo confirma para ese servicio
+  (`useEstadoDelServicio`, que pregunta sólo con un error de ese servicio en pantalla).
+- Mientras la franja esté, un fallo de red en pantalla no repite el rojo: «Esperando a Leasefy…»
+  con su reintento.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

@@ -9,10 +9,18 @@
  * `undefined` y quien llama pone su propio texto.
  */
 import { ApiError } from '@/lib/api/client';
+import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible';
 
 const LARGO_MAXIMO = 160;
 
+/*
+ * 01-10-2026 · Un 5xx no explica nada… salvo una caída. El 503
+ * `SERVICIO_NO_DISPONIBLE` dice QUÉ parte se cayó y que reintentar en unos
+ * minutos sirve, y eso sí le sirve a la persona: antes de la regla del 5xx.
+ */
 export function descripcionDelError(e: unknown): string | undefined {
+  const caida = mensajeDeCaida(e);
+  if (caida) return caida;
   if (!(e instanceof Error) || !e.message) return undefined;
   if (e instanceof ApiError && e.status >= 500) return undefined;
   const m = e.message.trim();
@@ -34,6 +42,8 @@ export function descripcionDelError(e: unknown): string | undefined {
  * volcado de Prisma, un mensaje larguísimo): quien llama pone su propio texto.
  */
 export function motivosDelError(e: unknown): string[] {
+  const caida = mensajeDeCaida(e);
+  if (caida) return [caida];
   if (!(e instanceof Error)) return [];
   if (e instanceof ApiError && e.status >= 500) return [];
   const lista =

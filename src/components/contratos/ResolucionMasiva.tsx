@@ -19,6 +19,15 @@
  * por el mismo `upsert` de `Propietario` y por `recalcular()` de las mismas
  * filas. Un trozo que falla a mitad de camino NO borra lo que los anteriores
  * ya aplicaron: `resultado` se actualiza tanda por tanda, nunca sólo al final.
+ *
+ * T-0135 — reanudable. Con `lote`, antes de aplicar se le pregunta al SERVIDOR
+ * cuáles de las seleccionadas TODAVÍA no tienen el dato (`GET migrar/filas/ids
+ * ?faltante=`, que ya excluye las ACTIVADO y DESCARTADO): una fila que una
+ * corrida anterior alcanzó a resolver no vuelve a mandarse. Cerrar la pestaña a
+ * mitad no obliga a empezar de cero — al volver, «Seguir con las N que faltan»
+ * (en la lista) selecciona sólo lo que queda, y repetir la acción continúa. El
+ * progreso se lee contra ese total del servidor, no contra la selección
+ * original.
  */
 
 import { useState } from 'react'
@@ -39,12 +48,18 @@ import {
   type FilaDeMigracion,
   type ResultadoMasivo,
 } from '@/lib/api/contracts.service'
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
 
 /**
  * Frozen en contract.md §3.2.G2 — 1.365 filas ⇒ 14 requests secuenciales.
  * Debe quedar ≤ `@ArrayMaxSize(200)` del back; 100 deja margen.
  */
 const CHUNK_MASIVA = 100
+
+/** Vueltas máximas contra el servidor: un tope duro, nunca un bucle sin fin. */
+const MAX_VUELTAS = 50
+
+type Modo = 'uso' | 'propietario'
 
 interface Props {
   /**
@@ -61,6 +76,14 @@ interface Props {
    */
   seleccionadas: FilaDeMigracion[]
   onListo: () => void
+  /**
+   * El lote de las filas. Con él, la acción sólo toca las filas a las que
+   * todavía les falta el dato (lo dice el servidor). Sin él (usos viejos) se
+   * manda `ids` tal cual.
+   */
+  lote?: string
+  /** Abre ya en este modo: «Seguir con las N que faltan» elige el modo por la persona. */
+  modoInicial?: Modo | null
 }
 
 /** Junta el resultado de una tanda al acumulado, sin pisar lo anterior. */
@@ -73,8 +96,14 @@ function acumular(acc: ResultadoMasivo, tanda: ResultadoMasivo): ResultadoMasivo
   }
 }
 
-export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
-  const [modo, setModo] = useState<'uso' | 'propietario' | null>(null)
+export function ResolucionMasiva({
+  ids,
+  seleccionadas,
+  onListo,
+  lote,
+  modoInicial = null,
+}: Props) {
+  const [modo, setModo] = useState<Modo | null>(modoInicial)
   const [uso, setUso] = useState<'VIVIENDA' | 'COMERCIAL' | ''>('')
   const [nombre, setNombre] = useState('')
   const [documento, setDocumento] = useState('')
@@ -84,6 +113,14 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
   const [resultado, setResultado] = useState<ResultadoMasivo | null>(null)
   /** Cuántas filas ya pasaron por una tanda (aplicada, fallida u omitida). */
   const [hechas, setHechas] = useState(0)
+  /** Cuántas de las seleccionadas faltaban de verdad, según el servidor. */
+  const [porHacer, setPorHacer] = useState(0)
+  /** De las seleccionadas, cuántas ya tenían el dato (o ya están activadas) y no se tocaron. */
+  const [yaResueltas, setYaResueltas] = useState(0)
+
+  // Mientras corre la acción, cerrar la pestaña la corta: lo aplicado queda
+  // guardado en el servidor, pero la persona tiene que saberlo antes de irse.
+  useAvisoAlSalir(corriendo)
 
   /*
    * Cuántas de las seleccionadas (cargadas) todavía no tienen inmueble.
@@ -95,10 +132,42 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
    */
   const sinInmueble = seleccionadas.filter((f) => !f.propertyId).length
 
+  /**
+   * Las filas a las que hay que aplicarle el cambio AHORA: las seleccionadas
+   * que el servidor dice que todavía no lo tienen. Si no se puede preguntar (o
+   * no hay `lote`), se cae a la selección completa — el servidor igual omite
+   * lo activado y lo descartado, así que nunca es un daño, sólo más ruido.
+   */
+  async function pendientesAhora(
+    faltante: Modo,
+    yaIntentadas: Set<string>,
+  ): Promise<string[]> {
+    if (!lote) return ids.filter((id) => !yaIntentadas.has(id))
+    try {
+      const r = await contractsApi.migracion.idsDeFilas(lote, undefined, faltante)
+      const faltan = new Set(r.ids)
+      // «Mismo propietario» también alcanza a una fila ACTIVADA sin propietario
+      // (se consigna): esas no tienen faltante, así que se respetan si la
+      // persona las marcó a mano.
+      const activadas =
+        faltante === 'propietario'
+          ? new Set(seleccionadas.filter((f) => f.estado === 'ACTIVADO').map((f) => f.id))
+          : new Set<string>()
+      return ids.filter(
+        (id) => (faltan.has(id) || activadas.has(id)) && !yaIntentadas.has(id),
+      )
+    } catch {
+      return ids.filter((id) => !yaIntentadas.has(id))
+    }
+  }
+
   async function aplicar() {
+    if (modo === null) return
     setCorriendo(true)
     setError(null)
     setHechas(0)
+    setPorHacer(0)
+    setYaResueltas(0)
     let acumulado: ResultadoMasivo = { pedidas: 0, aplicadas: 0, fallidas: [], omitidas: [] }
     setResultado(acumulado)
     try {
@@ -114,19 +183,39 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
               },
             }
 
-      for (let i = 0; i < ids.length; i += CHUNK_MASIVA) {
-        const trozo = ids.slice(i, i + CHUNK_MASIVA)
-        const r = await contractsApi.migracion.resolverMasivo(trozo, cambios)
-        acumulado = acumular(acumulado, r)
-        setResultado(acumulado)
-        setHechas(Math.min(i + trozo.length, ids.length))
+      const intentadas = new Set<string>()
+      let totalPorHacer = 0
+      for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
+        const pendientes = await pendientesAhora(modo, intentadas)
+        if (vuelta === 0) {
+          totalPorHacer = pendientes.length
+          setPorHacer(totalPorHacer)
+          setYaResueltas(ids.length - pendientes.length)
+        } else if (pendientes.length > 0) {
+          // El servidor topa los ids de una vez: lo que quedó atrás se suma.
+          totalPorHacer += pendientes.length
+          setPorHacer(totalPorHacer)
+        }
+        if (pendientes.length === 0) break
+
+        for (let i = 0; i < pendientes.length; i += CHUNK_MASIVA) {
+          const trozo = pendientes.slice(i, i + CHUNK_MASIVA)
+          const r = await contractsApi.migracion.resolverMasivo(trozo, cambios)
+          acumulado = acumular(acumulado, r)
+          trozo.forEach((id) => intentadas.add(id))
+          setResultado(acumulado)
+          setHechas(intentadas.size)
+        }
+        // Sin `lote` no hay a quién volver a preguntarle: una sola vuelta.
+        if (!lote) break
       }
     } catch (e) {
       // Una tanda puede fallar a mitad de camino: lo que las anteriores ya
-      // aplicaron QUEDA en `resultado` (nunca se pisa acá) — el error dice
-      // hasta dónde llegó, para que nunca sea "no sabemos qué pasó".
+      // aplicaron QUEDA en `resultado` (nunca se pisa acá) y en el servidor —
+      // el error dice hasta dónde llegó y cómo seguir, para que nunca sea «no
+      // sabemos qué pasó».
       setError(
-        `${e instanceof Error ? e.message : 'No se pudo aplicar'} — se alcanzaron a aplicar ${acumulado.aplicadas} de ${ids.length} antes de este error.`,
+        `${e instanceof Error ? e.message : 'No se pudo aplicar'} — se alcanzaron a aplicar ${acumulado.aplicadas} antes de este error. Lo aplicado quedó guardado: vuelve a pulsar «Aplicar» para seguir solo con las que faltan.`,
       )
     } finally {
       setCorriendo(false)
@@ -155,6 +244,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
             variant={modo === 'uso' ? 'default' : 'outline'}
             size="sm"
             hideArrow
+            disabled={corriendo}
             onClick={() => setModo(modo === 'uso' ? null : 'uso')}
           >
             Definir el uso
@@ -163,6 +253,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
             variant={modo === 'propietario' ? 'default' : 'outline'}
             size="sm"
             hideArrow
+            disabled={corriendo}
             onClick={() => setModo(modo === 'propietario' ? null : 'propietario')}
           >
             <Users className="mr-1.5 h-3.5 w-3.5" />
@@ -235,10 +326,13 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
 
       {/* §3.2.G2 — progreso legible mientras corren las tandas secuenciales:
           con 1.365 filas en 14 requests, un botón que gira sin decir nada es
-          indistinguible de uno colgado. */}
+          indistinguible de uno colgado. T-0135: el total es el que dice el
+          servidor (las que de verdad faltan), y lo aplicado queda guardado
+          tanda por tanda — si se corta, se retoma con las que quedan. */}
       {corriendo ? (
         <p className="text-caption text-muted-foreground" data-testid="progreso-masivo">
-          Aplicando {hechas}/{ids.length}…
+          Aplicando {hechas}/{porHacer || ids.length}… Lo aplicado se va guardando: si se
+          corta, puedes continuar con las que falten.
         </p>
       ) : null}
 
@@ -253,6 +347,12 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
           <p className="text-sm text-foreground">
             {resultado.aplicadas} de {resultado.pedidas} resueltas.
           </p>
+          {yaResueltas > 0 ? (
+            <p className="text-caption text-muted-foreground" data-testid="ya-resueltas-masivo">
+              {yaResueltas} de las {ids.length} seleccionadas ya tenían ese dato (o ya están
+              activadas) y no se tocaron.
+            </p>
+          ) : null}
           {/* §3.2.G3 — una fila sin inmueble a la que se le pidió propietario
               NO es un fallo: registrarPropietario la rechaza siempre, y en un
               lote real son la mayoría de las filas. Reportarla junto con

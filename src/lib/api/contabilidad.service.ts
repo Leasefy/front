@@ -885,6 +885,24 @@ export interface InformeDeDocumentos extends RevisionDeDocumentos {
   /** Cuántos se escribieron de verdad en esta corrida. */
   migrados: number;
   fallasAlEscribir: { fila: number; motivo: string }[];
+  /**
+   * T-0135 · el avance del archivo entero — sólo cuando la llamada mandó
+   * `lote` y `totalDelArchivo`. Ausente significa «no sé», nunca «0» ni
+   * «terminó».
+   */
+  carga?: ProgresoDeCarga;
+}
+
+/**
+ * T-0135 · seguimiento de una carga de comprobantes. Con `lote` +
+ * `totalDelArchivo` el back guarda cuántos del PRINCIPIO del archivo ya
+ * procesó; `desde` es la posición (0-based) del primer comprobante de la
+ * llamada. Sin esto todo se comporta como antes.
+ */
+export interface SeguimientoDeCarga {
+  lote: string;
+  totalDelArchivo: number;
+  desde: number;
 }
 
 /**
@@ -1666,11 +1684,39 @@ export const contabilidadApi = {
         );
       },
 
-      /** Escribe el lote. Idempotente: reenviarlo devuelve `YA_MIGRADO`, no duplica. */
-      async migrar(documentos: DocumentoMigrado[]): Promise<InformeDeDocumentos> {
+      /**
+       * Escribe el lote. Idempotente: reenviarlo devuelve `YA_MIGRADO`, no duplica.
+       * Con `seguimiento` el back además lleva el avance del archivo (T-0135).
+       */
+      async migrar(
+        documentos: DocumentoMigrado[],
+        seguimiento?: SeguimientoDeCarga,
+      ): Promise<InformeDeDocumentos> {
         return apiClient.post<InformeDeDocumentos>(`${BASE}/migracion/documentos`, {
           documentos,
+          ...seguimiento,
         });
+      },
+
+      /**
+       * T-0135 · los archivos de comprobantes que quedaron a medias (carga
+       * ABIERTA), el más reciente primero. Vacío = nada pendiente.
+       */
+      async cargas(): Promise<CargaAbierta[]> {
+        return apiClient.get<CargaAbierta[]>(`${BASE}/migracion/documentos/cargas`);
+      },
+
+      /**
+       * T-0135 · «no voy a seguir con esta carga». NO borra ningún comprobante.
+       * Idempotente; un lote que no es de esta agencia es 404.
+       */
+      async descartarCarga(
+        lote: string,
+      ): Promise<{ lote: string; estado: EstadoDeCargaDeAsientos }> {
+        return apiClient.post<{ lote: string; estado: EstadoDeCargaDeAsientos }>(
+          `${BASE}/migracion/documentos/cargas/descartar`,
+          { lote },
+        );
       },
 
       async listar(

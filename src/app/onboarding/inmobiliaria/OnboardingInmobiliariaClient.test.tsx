@@ -32,9 +32,12 @@ vi.mock('@/lib/hooks/use-onboarding-provisioning', () => ({
  * 404 y no se podía regenerar (auditoría 2026-09-05).
  */
 const mockInviteUser = vi.fn()
+// Quién ya tiene invitación lo dice el back (`GET /inmobiliaria/agency/members`).
+const mockGetUsers = vi.fn()
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
   inmobiliariaConfigApi: {
     inviteUser: (invite: unknown) => mockInviteUser(invite),
+    getUsers: () => mockGetUsers(),
   },
 }))
 
@@ -107,6 +110,9 @@ beforeEach(() => {
   mockUseOnboardingSession.mockClear()
   mockUseOnboardingProvisioning.mockClear()
   mockUseOnboardingProvisioning.mockReturnValue(baseProvisioningResult())
+  // Por defecto el back dice que sólo está la fundadora.
+  mockGetUsers.mockReset()
+  mockGetUsers.mockResolvedValue([{ email: 'fundadora@inmobiliaria.test', status: 'active' }])
 })
 
 afterEach(() => {
@@ -992,6 +998,11 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
   it('🔴 volver a editar Miembros arranca con los guardados y sólo invita a los correos NUEVOS (Nico, 30-09)', async () => {
     mockInviteUser.mockClear()
     mockInviteUser.mockResolvedValue({ emailDelivered: true, emailStatus: 'sent', invitationToken: 'tok-nuevo' })
+    // Ana ya tiene su invitación EN EL BACK: eso, y no el borrador, la saca de la lista.
+    mockGetUsers.mockResolvedValue([
+      { email: 'fundadora@inmobiliaria.test', status: 'active' },
+      { email: 'ana@inmobiliaria.test', status: 'invited' },
+    ])
     const submitMembers = vi.fn().mockResolvedValue({
       sessionId: 'sess-1',
       currentStep: 'habeas_data',
@@ -1024,6 +1035,113 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     expect(submitMembers).toHaveBeenCalledTimes(1)
     expect(mockInviteUser).toHaveBeenCalledTimes(1)
     expect(mockInviteUser).toHaveBeenCalledWith(expect.objectContaining({ email: 'bob@inmobiliaria.test' }))
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Alexis, QA): «En el punto 2 del flujo de creación de cuenta
+ * siempre falla la primera vez al ingresar un invitado». Un invitado VIEWER
+ * (`alex.dev+9@leasefy.co`), plan inicial.
+ */
+describe('<OnboardingInmobiliariaClient> — Miembros, primer intento (Alexis 02-10)', () => {
+  function enMiembros(overrides: Record<string, unknown> = {}) {
+    const submitMembers = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'payment_provider',
+      nextStep: 'policy',
+      draft: {},
+      inviteTokens: [],
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ currentStep: 'members', submitMembers, ...overrides }),
+    )
+    return submitMembers
+  }
+
+  async function invitarALaVisora() {
+    // La tarjeta «MIEMBRO 1» ya escrita y SIN enviar (el borrador local del
+    // paso): así llega con el rol «Solo lectura», que en la prueba no se puede
+    // elegir en el Select de Radix. El micro todavía no tiene a nadie.
+    sessionStorage.setItem(
+      'leasefy-asistente:sess-1:members',
+      JSON.stringify({ members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER', nombre: '' }] }),
+    )
+    render()
+    expect(byId('members.0.email').value).toBe('alex.dev+9@leasefy.co')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="members-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('el PRIMER intento invita en el back y muestra la invitación, sin error', async () => {
+    mockInviteUser.mockReset()
+    mockInviteUser.mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'suppressed',
+      invitationToken: 'tok-9',
+    })
+    const submitMembers = enMiembros()
+
+    await invitarALaVisora()
+
+    expect(submitMembers).toHaveBeenCalledTimes(1)
+    expect(submitMembers).toHaveBeenCalledWith({
+      members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER' }],
+    })
+    expect(mockInviteUser).toHaveBeenCalledTimes(1)
+    expect(mockInviteUser).toHaveBeenCalledWith({ email: 'alex.dev+9@leasefy.co', name: '', role: 'viewer' })
+    expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeFalsy()
+    expect(container.innerHTML).toContain('/invitacion/tok-9')
+  })
+
+  it('🔴 si el back no deja ni preguntar quién está invitado (403 del segundo factor), NADIE del borrador se da por invitado', async () => {
+    // El fundador llega al asistente sin segundo factor (el registro no lo
+    // pide, ProtectedRoute `enElRegistro`), y `AgencyMemberGuard` se lo exige
+    // al ADMIN en GET y POST /inmobiliaria/agency/members.
+    const sinSegundoFactor = Object.assign(
+      new Error('Tu rol exige segundo factor. Actívalo en Configuración → Seguridad y vuelve a entrar.'),
+      { status: 403, code: 'SEGUNDO_FACTOR_REQUERIDO' },
+    )
+    mockGetUsers.mockRejectedValue(sinSegundoFactor)
+    mockInviteUser.mockReset()
+    mockInviteUser.mockRejectedValue(sinSegundoFactor)
+    // Segundo intento: la visora YA quedó en el borrador del micro por el
+    // primero (el micro guarda el paso antes de que el back invite).
+    const submitMembers = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'habeas_data',
+      nextStep: 'complete',
+      draft: {},
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({
+        currentStep: 'habeas_data',
+        submitMembers,
+        draft: { members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER', requestedRole: 'VIEWER' }] },
+      }),
+    )
+    render()
+
+    act(() => {
+      ;(container.querySelector('[data-testid="wizard-step-link-members"]') as HTMLButtonElement).click()
+    })
+    expect(byId('members.0.email').value).toBe('alex.dev+9@leasefy.co')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="members-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // Antes: el borrador era el respaldo, la visora se daba por invitada, no
+    // se le pedía nada al back y el paso «funcionaba» sin invitar a nadie.
+    expect(mockInviteUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'alex.dev+9@leasefy.co', role: 'viewer' }),
+    )
+    expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="invite-error-alex.dev+9@leasefy.co"]')?.textContent,
+    ).toContain('segundo factor')
   })
 })
 

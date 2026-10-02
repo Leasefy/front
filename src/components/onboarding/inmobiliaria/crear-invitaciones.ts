@@ -50,9 +50,34 @@ export interface InvitacionCreada {
   estadoDelCorreo?: 'sent' | 'suppressed' | 'not_configured' | 'failed'
   /** El motivo del rechazo, en las palabras del back. */
   error: string | null
+  /**
+   * `false` cuando volver a intentarlo AHORA no sirve: falta el segundo
+   * factor de quien invita (ver `faltaElSegundoFactor`). Ausente = sí sirve.
+   */
+  reintentable?: boolean
+}
+
+/**
+ * 🔴 02-10-2026 (Alexis): «siempre falla la primera vez al ingresar un
+ * invitado». El fundador llega al asistente SIN segundo factor —el registro
+ * no lo pide (`enElRegistro` en `ProtectedRoute`, Nico 30-09)— y el back se lo
+ * exige al administrador para invitar (`AgencyMemberGuard`, 403
+ * `SEGUNDO_FACTOR_REQUERIDO`). Reintentar en el asistente no lo arregla:
+ * se dice qué falta y dónde se hace.
+ */
+export const MOTIVO_SIN_SEGUNDO_FACTOR =
+  'Para invitar a tu equipo, Leasefy te pide el segundo factor y todavía no lo tienes activo. Cuando lo actives (Configuración → Seguridad), invita a esta persona desde Configuración → Equipo.'
+
+function faltaElSegundoFactor(e: unknown): boolean {
+  return (
+    typeof e === 'object' &&
+    e !== null &&
+    (e as { code?: unknown }).code === 'SEGUNDO_FACTOR_REQUERIDO'
+  )
 }
 
 function mensajeDeError(e: unknown): string {
+  if (faltaElSegundoFactor(e)) return MOTIVO_SIN_SEGUNDO_FACTOR
   if (e instanceof Error && e.message.trim()) return e.message
   return 'No pudimos crear esta invitación. Puedes invitar a esta persona más tarde desde el panel.'
 }
@@ -98,6 +123,7 @@ export async function crearInvitacionesDelEquipo(
         enlace: null,
         correoEnviado: false,
         error: mensajeDeError(e),
+        ...(faltaElSegundoFactor(e) && { reintentable: false }),
       })
     }
   }
@@ -107,7 +133,8 @@ export async function crearInvitacionesDelEquipo(
 
 /**
  * Los correos que YA tienen invitación en el back (vigente o aceptada), en
- * minúsculas. `null` si no se pudo preguntar.
+ * minúsculas. `null` si no se pudo preguntar — y entonces NO hay respaldo que
+ * valga: el borrador del micro no sabe quién quedó invitado (ver abajo).
  *
  * 🔴 01-10-2026 (Alexis): «quién ya está invitado» se sacaba del borrador del
  * micro, y el borrador NO dice eso — dice a quién se escribió en el paso. El

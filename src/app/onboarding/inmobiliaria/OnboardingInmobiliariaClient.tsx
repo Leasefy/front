@@ -241,15 +241,21 @@ function OnboardingWizard({
    * pasó con cada persona y el equipo se puede invitar desde el panel.
    */
   const handleSubmitMembers = async (values: MembersStepFormValues) => {
-    // Respaldo, por si no se puede preguntarle al back: lo que había en el
-    // borrador ANTES de guardar.
-    const delBorrador = new Set(miembrosDelBorrador(draft).map((m) => m.email.toLowerCase()))
     const result = await submitMembers(toMembersRequest(values))
     if (!result) return result
     // Al volver a editar Miembros sólo se invita a quien el BACK todavía no
     // tiene invitado (01-10-2026, Alexis: una invitación que el back rechazó
     // seguía en el borrador, se daba por hecha y el correo nunca salió).
-    const yaInvitados = (await correosConInvitacion()) ?? delBorrador
+    //
+    // 🔴 Si no se le puede preguntar al back, se le pide la invitación de
+    // TODOS y el back decide (02-10-2026, Alexis: «siempre falla la primera
+    // vez»). El respaldo era el borrador del micro, y el borrador NO dice quién
+    // quedó invitado: con el fundador sin segundo factor el back rechaza las
+    // dos llamadas (GET y POST /inmobiliaria/agency/members, 403
+    // `SEGUNDO_FACTOR_REQUERIDO`), el segundo intento tomaba a la persona del
+    // borrador por invitada y el paso «funcionaba» sin invitar a nadie. A lo
+    // sumo, una invitación vigente vuelve con el 409 del back que lo dice.
+    const yaInvitados = (await correosConInvitacion()) ?? new Set<string>()
     const nuevos = values.members.filter((m) => !yaInvitados.has(m.email.trim().toLowerCase()))
     if (nuevos.length === 0) return result
 
@@ -259,9 +265,11 @@ function OnboardingWizard({
   }
 
   // «Reintentar» en la pantalla de resultados: vuelve a pedirle al back SÓLO
-  // las invitaciones que fallaron y deja las demás como estaban.
+  // las invitaciones que fallaron —y que reintentar puede arreglar— y deja
+  // las demás como estaban.
   const reintentarInvitaciones = async () => {
-    const fallidas = pendingMembersInvites?.invitaciones.filter((i) => i.error !== null) ?? []
+    const fallidas =
+      pendingMembersInvites?.invitaciones.filter((i) => i.error !== null && i.reintentable !== false) ?? []
     if (fallidas.length === 0) return
     const otraVez = await crearInvitacionesDelEquipo(
       fallidas.map((i) => ({ email: i.email, role: i.role, nombre: i.nombre })),

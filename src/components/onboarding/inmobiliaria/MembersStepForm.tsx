@@ -102,6 +102,9 @@ function MembersInviteLinksScreen({
 
   const invitaciones = pendingInvites.invitaciones
   const conError = invitaciones.filter((i) => i.error !== null)
+  // Sin segundo factor de quien invita, «Inténtalo de nuevo ahora» mentiría:
+  // el back va a contestar lo mismo (ver `MOTIVO_SIN_SEGUNDO_FACTOR`).
+  const algunaSePuedeReintentar = conError.some((i) => i.reintentable !== false)
   const enviadas = invitaciones.filter((i) => i.error === null && i.correoEnviado)
   const sinCorreo = invitaciones.filter((i) => i.error === null && !i.correoEnviado)
   // Un entorno de pruebas retiene los correos a propósito: no es una falla.
@@ -116,14 +119,18 @@ function MembersInviteLinksScreen({
       <div>
         {/* Sin marco propio: ya vive en la tarjeta del asistente. Y sin
             negrita, como todos los títulos (Nico, 30-09). */}
+        {/* Con todas rechazadas no se dice «enviadas» ni «quedaron creadas»:
+            no se creó ninguna (02-10-2026). Lo que pasó lo dice el aviso rojo. */}
         <h2 className="font-heading text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg">
-          Invitaciones enviadas
+          {conError.length === invitaciones.length ? 'Invitaciones' : 'Invitaciones enviadas'}
         </h2>
-        <p className="text-body-sm text-fg-muted mt-1">
-          {enviadas.length > 0
-            ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
-            : 'Estas son las invitaciones que quedaron creadas.'}
-        </p>
+        {conError.length < invitaciones.length && (
+          <p className="text-body-sm text-fg-muted mt-1">
+            {enviadas.length > 0
+              ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
+              : 'Estas son las invitaciones que quedaron creadas.'}
+          </p>
+        )}
       </div>
 
       {/*
@@ -169,9 +176,11 @@ function MembersInviteLinksScreen({
                 : `No pudimos invitar a ${conError.length} personas.`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Inténtalo de nuevo ahora, o más tarde desde Configuración → Equipo.
+              {algunaSePuedeReintentar
+                ? 'Inténtalo de nuevo ahora, o más tarde desde Configuración → Equipo.'
+                : 'Puedes seguir con el registro: abajo de cada persona está qué falta para invitarla.'}
             </p>
-            {onReintentarInvitaciones && (
+            {onReintentarInvitaciones && algunaSePuedeReintentar && (
               <Button
                 type="button"
                 variant="outline"
@@ -270,7 +279,7 @@ export function MembersStepForm({
     control,
     watch,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting: enviando },
   } = useForm<MembersStepFormValues>({
     // Lo escrito sin enviar manda; si no hay, lo que ya quedó guardado.
     defaultValues:
@@ -447,8 +456,15 @@ export function MembersStepForm({
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
-        {isSubmitting ? (
+      {/*
+        `enviando` cubre TODO el envío: el micro (`isSubmitting` del padre
+        vuelve a `false` apenas responde) y DESPUÉS las invitaciones del back,
+        una por una. Sin él, «Continuar» se volvía a prender en medio y un
+        segundo clic volvía a invitar a la misma persona (409 «ya existe una
+        invitación pendiente», 02-10-2026).
+      */}
+      <Button type="submit" disabled={isSubmitting || enviando} hideArrow className="w-full">
+        {isSubmitting || enviando ? (
           <>
             <Spinner size="xs" variant="current" />
             Guardando...

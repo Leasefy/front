@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 
-import { correosConInvitacion, crearInvitacionesDelEquipo } from './crear-invitaciones'
+import {
+  MOTIVO_SIN_SEGUNDO_FACTOR,
+  correosConInvitacion,
+  crearInvitacionesDelEquipo,
+} from './crear-invitaciones'
 import { buildMemberInviteLink } from './invite-link'
 
 /**
@@ -124,9 +128,42 @@ describe('correosConInvitacion', () => {
     expect(correos?.has('alex.dev+9@leasefy.co')).toBe(false)
   })
 
-  it('si no se puede preguntar, devuelve null (el llamador decide el respaldo)', async () => {
+  it('si no se puede preguntar, devuelve null (y el llamador NO usa el borrador como respaldo)', async () => {
     const listar = vi.fn().mockRejectedValue(new Error('network down'))
     expect(await correosConInvitacion(listar)).toBeNull()
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Alexis): el fundador llega al asistente sin segundo factor y
+ * el back se lo exige al administrador para invitar (403
+ * `SEGUNDO_FACTOR_REQUERIDO`). Se dice qué falta, y no se ofrece reintentar.
+ */
+describe('crearInvitacionesDelEquipo — sin el segundo factor de quien invita', () => {
+  const sinSegundoFactor = Object.assign(
+    new Error('Tu rol exige segundo factor. Actívalo en Configuración → Seguridad y vuelve a entrar.'),
+    { status: 403, code: 'SEGUNDO_FACTOR_REQUERIDO' },
+  )
+
+  it('dice qué falta y que reintentar ahora no sirve', async () => {
+    const invitar = vi.fn().mockRejectedValue(sinSegundoFactor)
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+9@leasefy.co', nombre: '', role: 'VIEWER' }],
+      invitar,
+    )
+    expect(creada.error).toBe(MOTIVO_SIN_SEGUNDO_FACTOR)
+    expect(creada.reintentable).toBe(false)
+    expect(creada.enlace).toBeNull()
+  })
+
+  it('cualquier otro rechazo sigue siendo reintentable y con las palabras del back', async () => {
+    const invitar = vi.fn().mockRejectedValue(new Error('Alcanzaste el límite de agentes de tu plan.'))
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+8@leasefy.co', nombre: '', role: 'AGENTE' }],
+      invitar,
+    )
+    expect(creada.error).toBe('Alcanzaste el límite de agentes de tu plan.')
+    expect(creada.reintentable).toBeUndefined()
   })
 })
 

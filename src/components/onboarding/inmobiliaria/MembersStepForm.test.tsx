@@ -242,6 +242,31 @@ describe('<MembersStepForm>', () => {
       members: [{ email: 'ana@inmobiliaria.test', nombre: 'Ana Restrepo', role: 'AGENTE' }],
     })
   })
+
+  it('🔴 «Continuar» queda apagado mientras corren las invitaciones del back, aunque el micro ya haya respondido (02-10)', async () => {
+    // El padre resuelve `onSubmit` DESPUÉS de invitar a cada persona en el
+    // back; `isSubmitting` (el del micro) ya volvió a `false` para entonces.
+    let terminar: (v: unknown) => void = () => {}
+    const onSubmit = vi.fn().mockImplementation(() => new Promise((r) => (terminar = r)))
+    render({ onSubmit, isSubmitting: false })
+
+    clickButton('members-add-row')
+    setInputValue(byId('members.0.email'), 'alex.dev+9@leasefy.co')
+    await clickSubmit()
+
+    const boton = container.querySelector(
+      '[data-testid="members-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    await clickSubmit()
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      terminar(null)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(boton.disabled).toBe(false)
+  })
 })
 
 /**
@@ -420,6 +445,37 @@ describe('<MembersStepForm> — reintentar y entorno de pruebas', () => {
     expect(container.querySelector('[data-testid="members-invite-errors"]')?.textContent).toContain(
       'Configuración',
     )
+  })
+
+  it('🔴 sin el segundo factor de quien invita no se ofrece «Reintentar»: el back contestaría lo mismo (02-10)', () => {
+    const onReintentarInvitaciones = vi.fn()
+    render({
+      onReintentarInvitaciones,
+      pendingInvites: {
+        invitaciones: [
+          {
+            email: 'alex.dev+9@leasefy.co',
+            role: 'VIEWER',
+            nombre: '',
+            enlace: null,
+            correoEnviado: false,
+            error: 'Para invitar a tu equipo, Leasefy te pide el segundo factor y todavía no lo tienes activo.',
+            reintentable: false,
+          },
+        ],
+      },
+    })
+
+    expect(container.querySelector('[data-testid="members-invite-retry"]')).toBeFalsy()
+    const errores = container.querySelector('[data-testid="members-invite-errors"]')?.textContent ?? ''
+    expect(errores).not.toContain('Inténtalo de nuevo ahora')
+    // No se creó ninguna: la pantalla no dice «enviadas» ni «quedaron creadas».
+    const pantalla = container.querySelector('[data-testid="members-invite-links"]')?.textContent ?? ''
+    expect(pantalla).not.toContain('Invitaciones enviadas')
+    expect(pantalla).not.toContain('quedaron creadas')
+    expect(
+      container.querySelector('[data-testid="invite-error-alex.dev+9@leasefy.co"]')?.textContent,
+    ).toContain('segundo factor')
   })
 
   it('un correo retenido por el entorno de pruebas se dice como tal, con el enlace a la mano', () => {

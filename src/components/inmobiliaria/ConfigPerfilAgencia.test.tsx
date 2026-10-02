@@ -860,3 +860,54 @@ describe('<ConfigPerfilAgencia> — semántica real de cada campo (T-0107 ronda 
     expect(container.querySelector('[data-testid="reteica-no-se-aplica"]')).toBeNull()
   })
 })
+
+describe('<ConfigPerfilAgencia> — dirección y código postal con la regla del registro (QA 01-10)', () => {
+  const porTestId = (id: string) => container.querySelector(`[data-testid="${id}"]`) as HTMLInputElement
+
+  it('🔴 una dirección con símbolos no se guarda: borde rojo y mensaje', async () => {
+    const props = render()
+    enterEditMode()
+    act(() => setInputValue(porTestId('perfil-direccion'), '!@#$%^&*()(*&^%$'))
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(porTestId('perfil-direccion').getAttribute('aria-invalid')).toBe('true')
+    expect(container.textContent).toMatch(/no van en una dirección/)
+  })
+
+  it('una dirección real se guarda limpia', async () => {
+    const props = render()
+    enterEditMode()
+    act(() => setInputValue(porTestId('perfil-direccion'), ' Calle 93   # 11-27 Of. 502 '))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ address: 'Calle 93 # 11-27 Of. 502' })
+  })
+
+  it('el código postal sólo deja dígitos, hasta seis, sin maxLength', () => {
+    render()
+    enterEditMode()
+    const postal = porTestId('perfil-codigo-postal')
+    expect(postal.getAttribute('inputmode')).toBe('numeric')
+    expect(postal.hasAttribute('maxlength')).toBe(false)
+    act(() => setInputValue(postal, '11a02-21 99'))
+    expect(porTestId('perfil-codigo-postal').value).toBe('110221')
+  })
+
+  it('un código postal de otro departamento no se guarda', async () => {
+    const props = render({ agency: { ...AGENCY, department: 'Antioquia', postalCode: '' } })
+    enterEditMode()
+    act(() => setInputValue(porTestId('perfil-codigo-postal'), '110221'))
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ese código postal es de Bogotá D.C. Los de Antioquia empiezan por 05.')
+  })
+
+  it('lo guardado antes de la regla no impide guardar otro campo', async () => {
+    // Cundinamarca con 110221 (prefijo de Bogotá) y una dirección con «;».
+    const props = render({ agency: { ...AGENCY, address: 'Cra 11 #82-76; Of. 501' } })
+    enterEditMode()
+    const web = Array.from(container.querySelectorAll('input')).find((i) => i.value === 'https://abc.co')!
+    act(() => setInputValue(web, 'https://abc.com.co'))
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ website: 'https://abc.com.co' })
+  })
+})

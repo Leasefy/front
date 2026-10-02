@@ -2064,3 +2064,120 @@ describe('el aviso hacia arriba, al layout (el segundo factor dentro del panel n
     expect(avisos.at(-1)).toBe(false);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// 🔴 Mientras no se sabe, el panel no se ve nítido (Nico, 01-10-2026)
+// ══════════════════════════════════════════════════════════════════════════
+
+import { ESPERA_MAXIMA_DEL_ESTADO_MS } from './MuroDeMigracion';
+import { ApiError } from '@/lib/api/client';
+
+describe('la llegada al panel: difuminado hasta saber si toca decidir', () => {
+  const MARCA = 'leasefy:migracion:muro-abajo:agencia';
+  const DECISION = 'leasefy:migracion:decision:agencia';
+  const velo = () => document.querySelector('[data-testid="muro-esperando-estado"]');
+
+  beforeEach(() => {
+    localStorage.removeItem(MARCA);
+    localStorage.removeItem(DECISION);
+  });
+
+  /** Pinta SIN dejar que la consulta vuelva: el primer cuadro. */
+  function pintarPrimerCuadro() {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <MuroDeMigracion>
+          <a href="/panel/inmobiliaria/reportes/resumen" data-testid="algo-del-panel">
+            Panel
+          </a>
+        </MuroDeMigracion>,
+      );
+    });
+  }
+
+  it('🔴 desde el primer cuadro: borroso, inerte, oculto y con el velo', () => {
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    const detras = q('panel-detras-del-muro') as HTMLElement;
+    expect(detras.className).toContain('blur');
+    expect(detras.hasAttribute('inert')).toBe(true);
+    expect(detras.getAttribute('aria-hidden')).toBe('true');
+    expect(velo()).not.toBeNull();
+    expect(q('muro-migracion')).toBeNull();
+  });
+
+  it('si toca decidir, la pregunta entra encima y el panel sigue borroso', async () => {
+    let responder: (v: unknown) => void = () => {};
+    estadoMock.estado.mockReturnValue(new Promise((r) => (responder = r)));
+    pintarPrimerCuadro();
+    await act(async () => {
+      responder({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    });
+    expect(document.querySelector('[data-testid="decision-de-migracion"]')).not.toBeNull();
+    const detras = q('panel-detras-del-muro') as HTMLElement;
+    expect(detras.className).toContain('blur');
+    expect(detras.hasAttribute('inert')).toBe(true);
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+
+  it('si no le aplica, el panel queda nítido y se recuerda: la próxima carga no parpadea', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: TODO_MIGRADO });
+    await pintar();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(localStorage.getItem(MARCA)).toBe('1');
+
+    act(() => root?.unmount());
+    container.remove();
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(q('panel-detras-del-muro')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('quien ya decidió «en otro momento» entra nítido desde el primer cuadro', () => {
+    localStorage.setItem(DECISION, 'luego');
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+  });
+
+  it('una respuesta que vuelve a bloquear borra la marca', async () => {
+    localStorage.setItem(MARCA, '1');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    await pintar();
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+
+  it('🔴 si tarda más del tope, cae a «no sé»: el panel se ve (nunca borroso para siempre)', () => {
+    vi.useFakeTimers();
+    try {
+      estadoMock.estado.mockReturnValue(new Promise(() => {}));
+      pintarPrimerCuadro();
+      expect((q('panel-detras-del-muro') as HTMLElement).className).toContain('blur');
+      act(() => {
+        vi.advanceTimersByTime(ESPERA_MAXIMA_DEL_ESTADO_MS);
+      });
+      const detras = q('panel-detras-del-muro') as HTMLElement;
+      expect(detras.className).toBe('');
+      expect(detras.hasAttribute('inert')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('un 403 de permisos (no el del segundo factor) se recuerda como «no le va»', async () => {
+    estadoMock.estado.mockRejectedValue(new ApiError(403, 'Sin permiso', 'SIN_PERMISO_DE_MODULO'));
+    await pintar();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(localStorage.getItem(MARCA)).toBe('1');
+  });
+
+  it('el 403 del segundo factor NO se recuerda: es una ventana, no una respuesta', async () => {
+    estadoMock.estado.mockRejectedValue(new ApiError(403, 'x', 'SEGUNDO_FACTOR_REQUERIDO'));
+    await pintar();
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+});

@@ -268,3 +268,61 @@ describe('<AgencyStepForm> — teléfono y borrador local (Nico, 30-09)', () => 
     expect(sessionStorage.length).toBe(0)
   })
 })
+
+describe('<AgencyStepForm> — dirección y código postal (QA 01-10)', () => {
+  const PREFILL_DIRECCION = {
+    legalName: 'Inmobiliaria Andes SAS',
+    nit: '900123456-8',
+    address: { calle: '', ciudad: 'Medellín', departamento: 'Antioquia', codigoPostal: '' },
+  }
+
+  it('🔴 la dirección del reporte («!@#$%^&*()(*&^%$») no se envía: borde rojo y mensaje', async () => {
+    const props = render({ prefill: PREFILL_DIRECCION })
+    fillEditableFields()
+    setInputValue(byId('address.calle'), '!@#$%^&*()(*&^%$')
+    await clickSubmit()
+    expect(props.onSubmit).not.toHaveBeenCalled()
+    const calle = byId('address.calle')
+    expect(calle.getAttribute('aria-invalid')).toBe('true')
+    const error = container.querySelector('[id="address.calle-error"]')
+    expect(error?.textContent).toMatch(/no van en una dirección/)
+    expect(error?.textContent).toContain('Calle 10 # 43-20')
+  })
+
+  it('el código postal no deja escribir letras ni símbolos, y corta en seis sin maxLength', () => {
+    render()
+    const postal = byId('address.codigoPostal')
+    expect(postal.getAttribute('inputmode')).toBe('numeric')
+    expect(postal.hasAttribute('maxlength')).toBe(false)
+    setInputValue(postal, '05a0-02 1 9')
+    expect(postal.value).toBe('050021')
+  })
+
+  it('el código postal de otro departamento no se envía', async () => {
+    const props = render({ prefill: PREFILL_DIRECCION })
+    fillEditableFields()
+    setInputValue(byId('address.codigoPostal'), '110111')
+    await clickSubmit()
+    expect(props.onSubmit).not.toHaveBeenCalled()
+    expect(container.querySelector('[id="address.codigoPostal-error"]')?.textContent).toBe(
+      'Ese código postal es de Bogotá D.C. Los de Antioquia empiezan por 05.',
+    )
+    expect(byId('address.codigoPostal').getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('una dirección real y su código postal se envían limpios', async () => {
+    const props = render({ prefill: PREFILL_DIRECCION })
+    fillEditableFields()
+    setInputValue(byId('address.calle'), '  Cra. 76  No. 32-15 Apto 301 ')
+    setInputValue(byId('address.codigoPostal'), '050021')
+    await clickSubmit()
+    expect(props.onSubmit).toHaveBeenCalledTimes(1)
+    const body = (props.onSubmit as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(body.address).toEqual({
+      calle: 'Cra. 76 No. 32-15 Apto 301',
+      ciudad: 'Medellín',
+      departamento: 'Antioquia',
+      codigoPostal: '050021',
+    })
+  })
+})

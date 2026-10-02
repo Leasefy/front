@@ -11,6 +11,11 @@ import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
 import { Spinner } from '@/components/ui/spinner'
 import { DEPARTAMENTO_NOMBRES, municipiosDe } from '@/lib/constants/colombia-geo'
+import {
+  EJEMPLO_DE_DIRECCION,
+  errorDeCodigoPostal,
+  limpiarCodigoPostalAlEscribir,
+} from '@/lib/direccion/direccion'
 import type { OnboardingSessionAgencyRequest } from '@/lib/api/generated/agency'
 import {
   AGENCY_STEP_DEFAULT_VALUES,
@@ -54,9 +59,9 @@ export interface AgencyStepFormProps {
   sessionId?: string
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ message, id }: { message?: string; id?: string }) {
   if (!message) return null
-  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
+  return <p id={id} role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 /** A read-only "confirmado" note under a locked field. */
@@ -81,6 +86,8 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
     watch,
     setValue,
     setError,
+    clearErrors,
+    getValues,
     formState: { errors },
   } = useForm<AgencyStepFormValues>({
     defaultValues: {
@@ -117,6 +124,12 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
   // read-only "confirmed" fields — but keep them `register`ed so their values
   // still ship in the payload (the agent schema requires both). Missing values
   // degrade to editable inputs.
+  /** El error del código postal según la regla, o ninguno. */
+  const revisarCodigoPostal = (mensaje: string | null) => {
+    if (mensaje) setError('address.codigoPostal', { message: mensaje })
+    else clearErrors('address.codigoPostal')
+  }
+
   const legalNameConfirmed = hasPrefilledValue(prefill?.legalName)
   const nitConfirmed = hasPrefilledValue(prefill?.nit)
 
@@ -183,8 +196,21 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
         <label htmlFor="address.calle" className="mb-1.5 block text-caption font-semibold text-fg">
           Dirección <span className="text-danger">*</span>
         </label>
-        <Input id="address.calle" type="text" autoComplete="address-line1" {...register('address.calle')} />
-        <FieldError message={errors.address?.calle?.message} />
+        <Input
+          id="address.calle"
+          type="text"
+          autoComplete="address-line1"
+          placeholder={EJEMPLO_DE_DIRECCION}
+          invalid={Boolean(errors.address?.calle)}
+          aria-invalid={Boolean(errors.address?.calle) || undefined}
+          aria-describedby={errors.address?.calle ? 'address.calle-error' : undefined}
+          /* El error sale al «Continuar», como en los demás campos. NO al
+             salir del campo: el mensaje que aparecía en el blur empujaba el
+             Departamento 44 px y el clic con que la persona salía caía en el
+             vacío (medido en el navegador el 02-10). */
+          {...register('address.calle')}
+        />
+        <FieldError id="address.calle-error" message={errors.address?.calle?.message} />
       </div>
 
       {/* Departamento → Municipio: dependent searchable comboboxes. The
@@ -206,6 +232,11 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
                 onChange={(next) => {
                   field.onChange(next ?? '')
                   setValue('address.ciudad', '', { shouldDirty: true })
+                  // Si el código postal ya estaba en rojo, se vuelve a cruzar
+                  // con el departamento nuevo: elegir el correcto lo apaga.
+                  if (errors.address?.codigoPostal) {
+                    revisarCodigoPostal(errorDeCodigoPostal(getValues('address.codigoPostal') ?? '', next ?? ''))
+                  }
                 }}
                 options={departamentoOptions}
                 placeholder="Selecciona departamento"
@@ -250,8 +281,25 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
           type="text"
           inputMode="numeric"
           autoComplete="postal-code"
-          {...register('address.codigoPostal')}
+          className="font-mono tabular-nums"
+          invalid={Boolean(errors.address?.codigoPostal)}
+          aria-invalid={Boolean(errors.address?.codigoPostal) || undefined}
+          aria-describedby={errors.address?.codigoPostal ? 'address.codigoPostal-error' : 'address.codigoPostal-pista'}
+          {...register('address.codigoPostal', {
+            // Sólo dígitos y hasta seis, limpiando al escribir: sin `maxLength`
+            // (ya nos cortó dígitos de un celular pegado). `setValue` y no
+            // mutar el evento: RHF ya leyó.
+            onChange: (e) =>
+              setValue('address.codigoPostal', limpiarCodigoPostalAlEscribir(String(e.target.value))),
+          })}
         />
+        {errors.address?.codigoPostal?.message ? (
+          <FieldError id="address.codigoPostal-error" message={errors.address.codigoPostal.message} />
+        ) : (
+          <p id="address.codigoPostal-pista" className="mt-1.5 text-caption text-fg-subtle">
+            6 dígitos; los dos primeros son los del departamento.
+          </p>
+        )}
       </div>
 
       <div>

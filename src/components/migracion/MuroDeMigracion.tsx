@@ -56,8 +56,12 @@
  * algo, con confirmación. 🔴 Sin la segunda, una inmobiliaria nueva —que no
  * tiene nada que migrar— no puede salir nunca.
  *
- * **No bloquea ante la duda.** Si el estado no llegó, tardó, falló o vino con
- * otra forma, el panel se ve normal. Está en `normalizarEstado()`.
+ * **No bloquea ante la duda.** Si el estado falló, tardó más de
+ * `ESPERA_MAXIMA_DEL_ESTADO_MS` o vino con otra forma, el panel se ve normal
+ * (con un aviso si estaba esperando). Está en `normalizarEstado()`.
+ * Lo que sí cambió el 01-10-2026: MIENTRAS se pregunta, a quien no se sabe que
+ * el muro no le va, el panel se ve difuminado y quieto (`espera`), para que
+ * nadie vea el panel nítido antes de decidir qué hace con su migración.
  */
 
 import { AuthContext } from "@/lib/auth/auth-context";
@@ -113,6 +117,13 @@ import { RegistrosContables } from "./RegistrosContables";
 import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
+import { VeloDeEspera } from "./VeloDeEspera";
+import { toast } from "@/components/ui/toast";
+import {
+  muroAbajoRecordado,
+  olvidarMuroAbajo,
+  recordarMuroAbajo,
+} from "@/lib/migracion/muro-abajo-recordado";
 import {
   leerBienvenidaPendiente,
   marcarBienvenidaPendiente,
@@ -151,6 +162,33 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 
 /** Cuándo se vuelve a pedir el estado si la primera consulta falló. Ver `consultar`. */
 export const ESPERAS_SI_LA_CONSULTA_FALLA_MS = [2_000, 8_000, 30_000] as const;
+
+/**
+ * Lo más que el panel queda difuminado esperando el estado. Pasado esto, la
+ * espera cae a «no sé» —nunca a «pendiente»—: el panel se ve, con un aviso, y
+ * si la respuesta llega después y toca decidir, la decisión sale encima.
+ */
+export const ESPERA_MAXIMA_DEL_ESTADO_MS = 8_000;
+
+/** El id del aviso de «no pudimos revisar tu migración», para no repetirlo y quitarlo. */
+const AVISO_SIN_ESTADO = "muro-sin-estado-de-migracion";
+
+/**
+ * Deja dicho en este navegador si el muro va o no para esta inmobiliaria, con
+ * una respuesta VÁLIDA y nada más (ver `muro-abajo-recordado.ts`).
+ */
+function anotarSiTapa(bruto: unknown, agencyId: string | null) {
+  if (normalizarEstado(bruto)) olvidarMuroAbajo(agencyId);
+  else if (leerEstado(bruto)?.bloquea === false) recordarMuroAbajo(agencyId);
+}
+
+function avisarQueNoSeSupo() {
+  toast.warning("No pudimos revisar tu migración", {
+    id: AVISO_SIN_ESTADO,
+    description:
+      "Te dejamos entrar al panel y lo seguimos intentando. Si hay algo que decidir, te lo preguntamos apenas responda.",
+  });
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
@@ -250,6 +288,40 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [consultado, setConsultado] = useState(false);
 
   /*
+   * 🔴 Mientras no se sabe, el panel va difuminado (Nico, 01-10-2026: «hay un
+   * momento que pueden ver todo el panel y luego sale el modal de migración»).
+   * Antes el panel se veía nítido hasta que volvía la consulta, y recién ahí
+   * salía la pregunta encima.
+   *
+   * No a todos: a quien ya se sabe que el muro no le va —la última respuesta
+   * en este navegador dijo `bloquea: false`, o decidió «en otro momento» o «no
+   * requiero»— se le muestra el panel de una, sin parpadeo. Si esa marca
+   * mintiera, la consulta igual corre y el muro sale encima, como antes.
+   *
+   * Y nunca para siempre: si la consulta falla o tarda más de
+   * `ESPERA_MAXIMA_DEL_ESTADO_MS`, cae a «no sé» —panel a la vista con un
+   * aviso— y no a «pendiente».
+   */
+  const yaSeSabiaQueNoTapa = useMemo(() => {
+    if (muroAbajoRecordado(agencyId)) return true;
+    const previa = leerDecisionDeMigracion(agencyId);
+    return previa === "luego" || previa === "nunca";
+  }, [agencyId]);
+  const yaSeSabiaRef = useRef(yaSeSabiaQueNoTapa);
+  yaSeSabiaRef.current = yaSeSabiaQueNoTapa;
+  /** Se acabó la espera sin respuesta (falló o tardó): «no sé». */
+  const [seCansoDeEsperar, setSeCansoDeEsperar] = useState(false);
+  const espera = !consultado && !seCansoDeEsperar && !yaSeSabiaQueNoTapa;
+  useEffect(() => {
+    if (!espera) return;
+    const tope = setTimeout(() => {
+      setSeCansoDeEsperar(true);
+      avisarQueNoSeSupo();
+    }, ESPERA_MAXIMA_DEL_ESTADO_MS);
+    return () => clearTimeout(tope);
+  }, [espera]);
+
+  /*
    * 🔴 Si la PRIMERA consulta falla, se vuelve a preguntar — pocas veces.
    *
    * Nico, 30-09-2026, con una inmobiliaria recién creada: «esto entró y no me
@@ -274,11 +346,31 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       const bruto = await migracionEstadoApi.estado();
       // Ojo: `normalizarEstado` devuelve null ante CUALQUIER duda. Ese null
       // es «panel abierto», no «error» — no hay cartel que mostrar.
-      setConocido(leerEstado(bruto));
-      setEstado(normalizarEstado(bruto));
-    } catch {
+      const leido = leerEstado(bruto);
+      const bloquea = normalizarEstado(bruto);
+      setConocido(leido);
+      setEstado(bloquea);
+      anotarSiTapa(bruto, agencyIdRef.current);
+      toast.dismiss(AVISO_SIN_ESTADO);
+    } catch (error) {
       setConocido(null);
       setEstado(null);
+      /*
+       * Un 403 que no es la ventana del segundo factor dice «esta persona no
+       * ve la migración»: el muro nunca le va a salir, no hay nada que avisar
+       * y la próxima carga no se difumina. Lo demás es «no sé»: se avisa sólo
+       * si el panel estaba esperando difuminado (a quien ya lo tenía a la
+       * vista no se le interrumpe por un dato que no lo frena).
+       */
+      if (
+        error instanceof ApiError &&
+        error.status === 403 &&
+        error.code !== "SEGUNDO_FACTOR_REQUERIDO"
+      ) {
+        recordarMuroAbajo(agencyIdRef.current);
+      } else if (reintentos.current === 0 && !yaSeSabiaRef.current) {
+        avisarQueNoSeSupo();
+      }
       const espera = ESPERAS_SI_LA_CONSULTA_FALLA_MS[reintentos.current++];
       if (espera != null) {
         reintento.current = setTimeout(() => void consultarRef.current(), espera);
@@ -314,6 +406,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       const nuevo = normalizarEstado(bruto);
       const previo = estadoAnterior.current;
       setConocido(leerEstado(bruto));
+      anotarSiTapa(bruto, agencyIdRef.current);
       // Sin bienvenida cuando se salió por decisión («en otro momento», la
       // ✕): la persona no terminó nada, no hay qué celebrar.
       if (previo !== null && nuevo === null && !saltarBienvenida.current) {
@@ -547,8 +640,12 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
-  /** Lo que se ve: además, la tarjeta de la decisión esperando qué sigue. */
-  const cubierto = tapado || relevo === "pasando";
+  /**
+   * Lo que se ve: además, la tarjeta de la decisión esperando qué sigue, y la
+   * espera del estado (ver `espera`). La espera NO se le avisa al layout
+   * (`tapado`): no es el muro, y lo que venga después lo decide la respuesta.
+   */
+  const cubierto = tapado || relevo === "pasando" || espera;
   const contexto = useMemo<ContextoDeMigracion>(
     () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: cubierto }),
     [conocido, abrir, refrescar, cubierto],
@@ -575,11 +672,20 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         data-testid="panel-detras-del-muro"
         className={cn(
           cubierto &&
-            "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
+            // 8 px: con 3 px todavía se leían el menú y «Piloto automático», y
+            // Nico pidió que no se pueda ver el panel hasta decidir (02-10).
+            "min-h-screen select-none blur-[8px] saturate-[0.6] pointer-events-none",
         )}
       >
         {children}
       </div>
+      {/* Mientras no se sabe (o se sabe pero la decisión guardada todavía no
+          se leyó): el velo. Si lo que sigue es la tarjeta o el muro, se va
+          sin fundido en el mismo cuadro en que ellos entran. */}
+      <VeloDeEspera
+        visible={espera || (puesto && !decisionLeida)}
+        loReemplazaUnModal={puesto}
+      />
       {puesto && decisionLeida ? (
         decision === null ? (
           <ModalDecisionDeMigracion onDecidir={decidir} />

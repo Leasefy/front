@@ -27,7 +27,6 @@ import { cn } from '@/lib/utils';
 import {
   Button,
   Input,
-  Textarea,
   Select,
   SelectContent,
   SelectItem,
@@ -40,7 +39,13 @@ import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
-import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
+import { DEPARTAMENTO_NOMBRES } from '@/lib/constants/colombia-geo';
+import {
+  errorDeCodigoPostal,
+  errorDeDireccion,
+  limpiarCodigoPostalAlEscribir,
+  limpiarDireccion,
+} from '@/lib/direccion/direccion';
 
 interface ConfigPerfilAgenciaProps {
   /** Real agency row from GET /inmobiliaria/config (`agency` key) */
@@ -505,9 +510,38 @@ export function ConfigPerfilAgencia({
       newErrors.topeInteresMoraEaPorcentaje = 'Un porcentaje anual mayor que 0, o vacío';
     }
 
+    for (const campo of ['address', 'postalCode'] as const) {
+      const mensaje = errorDeUbicacion(campo);
+      if (mensaje) newErrors[campo] = mensaje;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  /**
+   * La regla de la dirección y del código postal (`@/lib/direccion`, la misma
+   * del registro), SÓLO si la persona los cambió: una dirección guardada antes
+   * de la regla —migrada, con «;» o con un salto de línea— no puede impedir
+   * guardar la comisión. El código postal también se revisa si cambió el
+   * departamento, porque el prefijo se cruza con él.
+   */
+  const errorDeUbicacion = (campo: 'address' | 'postalCode'): string | null => {
+    const original = buildFormState(agency);
+    if (campo === 'address') {
+      if (limpiarDireccion(formData.address) === limpiarDireccion(original.address)) return null;
+      return errorDeDireccion(formData.address);
+    }
+    const cambio =
+      formData.postalCode.trim() !== original.postalCode.trim() ||
+      formData.department !== original.department;
+    if (!cambio) return null;
+    return errorDeCodigoPostal(formData.postalCode, formData.department);
+  };
+
+  // El error sale al guardar, como en los demás campos, y NO al salir del
+  // campo: un mensaje que aparece en el blur corre lo de abajo y el clic con
+  // que la persona salía cae en el vacío (visto en el registro el 02-10).
 
   /** Diff form state against the loaded agency: only changed fields are sent. */
   const buildChangedPayload = (): UpdateAgencyPayload => {
@@ -536,8 +570,11 @@ export function ConfigPerfilAgencia({
       // Never send nit once it's locked — it's immutable server-side and the
       // input is disabled, so a stray value would only earn a 403.
       if (field === 'nit' && nitLocked) continue;
-      const value = formData[field].trim();
-      if (value !== original[field]) {
+      // La dirección viaja limpia (NFC, un espacio), igual que en el registro.
+      // Sin tocarla, una dirección vieja con espacios de más no se reescribe.
+      const value = field === 'address' ? limpiarDireccion(formData[field]) : formData[field].trim();
+      const antes = field === 'address' ? limpiarDireccion(original[field]) : original[field];
+      if (value !== antes) {
         payload[field] = value;
       }
     }
@@ -791,15 +828,25 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <div className="sm:col-span-2">
-              <InputWrapper label={t('inmobiliaria.config.profile.address')}>
+              {/* Una línea, como en el registro, y con su misma regla
+                  (`@/lib/direccion`): un salto de línea no es parte de una
+                  dirección de recibo. */}
+              <InputWrapper
+                label={t('inmobiliaria.config.profile.address')}
+                error={errors.address}
+              >
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                  <Textarea
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    autoComplete="address-line1"
                     value={formData.address}
                     onChange={(e) => updateField('address', e.target.value)}
-                    placeholder="Cra 11 #82-76, Oficina 501"
-                    rows={2}
-                    className="w-full pl-10 resize-none"
+                    placeholder="Cra 11 # 82-76, Oficina 501"
+                    invalid={Boolean(errors.address)}
+                    aria-invalid={Boolean(errors.address) || undefined}
+                    data-testid="perfil-direccion"
+                    className="w-full pl-10"
                   />
                 </div>
               </InputWrapper>
@@ -824,7 +871,10 @@ export function ConfigPerfilAgencia({
                   <SelectValue placeholder={t('inmobiliaria.config.profile.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {COLOMBIAN_DEPARTMENTS.map((dept) => (
+                  {/* La lista del registro (DIVIPOLA, con Bogotá D.C.): la
+                      vieja no tenía Bogotá y el código postal 11xxxx de una
+                      inmobiliaria bogotana no tenía con qué cruzarse. */}
+                  {DEPARTAMENTO_NOMBRES.map((dept) => (
                     <SelectItem key={dept} value={dept}>
                       {dept}
                     </SelectItem>
@@ -833,13 +883,23 @@ export function ConfigPerfilAgencia({
               </Select>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.postalCode')} hint={t('common.optional')}>
+            <InputWrapper
+              label={t('inmobiliaria.config.profile.postalCode')}
+              hint="Opcional · 6 dígitos; los dos primeros son los del departamento."
+              error={errors.postalCode}
+            >
               <Input
                 type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
                 value={formData.postalCode}
-                onChange={(e) => updateField('postalCode', e.target.value)}
+                // Sólo dígitos y hasta seis, limpiando al escribir (sin `maxLength`).
+                onChange={(e) => updateField('postalCode', limpiarCodigoPostalAlEscribir(e.target.value))}
                 placeholder="110221"
-                className="w-full"
+                invalid={Boolean(errors.postalCode)}
+                aria-invalid={Boolean(errors.postalCode) || undefined}
+                data-testid="perfil-codigo-postal"
+                className="w-full font-mono tabular-nums"
               />
             </InputWrapper>
           </div>

@@ -195,6 +195,7 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           </label>
           <Input
             type="date"
+            required
             value={formData.deliveryDate}
             onChange={(e) => updateFormData({ deliveryDate: e.target.value })}
             className="w-full"
@@ -204,8 +205,10 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           <label className="text-sm font-medium text-fg">
             {t('inmobiliaria.acta.time')}
           </label>
+          {/* La hora se guarda con el acta (02-10-2026): sin ella no se sigue. */}
           <Input
             type="time"
+            required
             value={formData.deliveryTime}
             onChange={(e) => updateFormData({ deliveryTime: e.target.value })}
             className="w-full"

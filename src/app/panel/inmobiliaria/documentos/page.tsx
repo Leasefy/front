@@ -74,7 +74,7 @@ import {
 } from '@/components/inmobiliaria/CerrarActaSinFirma';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
-import type { CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
+import { cuandoFueLaEntrega, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import {
   documentosLegalesApi,
   type CategoriaDeDocumento,
@@ -785,7 +785,8 @@ function DocumentosContent() {
                         <span className="block truncate text-fg-muted">{acta.tenantName}</span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
-                        {fechaCorta(acta.deliveryDate, locale)}
+                        {/* La fecha y la hora de la entrega; sin ella, la de creación (02-10-2026). */}
+                        {cuandoFueLaEntrega(acta, locale)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <span

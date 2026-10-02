@@ -20,7 +20,12 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
-import { cuerpoParaCrearElActa, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
+import {
+  cuerpoParaCrearElActa,
+  esHoraDeEntrega,
+  hoyEnBogota,
+  type CuerpoParaCrearElActa,
+} from '@/lib/actas/acta-del-back';
 import type {
   ActaEntrega,
   Consignacion,
@@ -102,7 +107,8 @@ export function ActaEntregaForm({
   const [formData, setFormData] = useState<FormData>({
     type: initialData?.type || 'entrega',
     consignacionId: initialData?.consignacionId || '',
-    deliveryDate: initialData?.deliveryDate || new Date().toISOString().split('T')[0],
+    // Hoy en Colombia: el día UTC ya es «mañana» desde las 7 p. m.
+    deliveryDate: initialData?.deliveryDate || hoyEnBogota(),
     deliveryTime: initialData?.deliveryTime || '10:00',
     rooms: initialData?.rooms || [...DEFAULT_ROOMS],
     items: initialData?.items || [],
@@ -133,7 +139,10 @@ export function ActaEntregaForm({
   const isStepValid = useMemo(() => {
     switch (currentStep) {
       case 1:
-        return Boolean(formData.consignacionId && formData.deliveryDate);
+        // La fecha Y la hora de la entrega: el acta las guarda (02-10-2026).
+        return Boolean(
+          formData.consignacionId && formData.deliveryDate && esHoraDeEntrega(formData.deliveryTime),
+        );
       case 2:
         return formData.rooms.length > 0;
       case 3:

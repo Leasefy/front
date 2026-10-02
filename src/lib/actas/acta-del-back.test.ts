@@ -9,7 +9,14 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
-import { actaDelBack, cuerpoParaCrearElActa, type LoQueSeLevanto } from './acta-del-back'
+import {
+  actaDelBack,
+  cargoAparteDelCierre,
+  cuandoFueLaEntrega,
+  cuerpoParaCrearElActa,
+  hoyEnBogota,
+  type LoQueSeLevanto,
+} from './acta-del-back'
 
 /** 🔁 El MISMO literal que `CUERPO_DEL_PANEL` del back. */
 const CUERPO_DEL_PANEL = {
@@ -32,6 +39,8 @@ const CUERPO_DEL_PANEL = {
     { concept: 'Aseo', amount: 300_000, notes: 'Cocina' },
   ],
   depositToReturn: 0,
+  // La fecha y la hora del primer paso, en la hora de Colombia (02-10-2026).
+  fechaDeEntrega: '2026-10-02T10:00:00-05:00',
 }
 
 const MANDATO = {
@@ -60,6 +69,8 @@ const LEVANTADO: LoQueSeLevanto = {
     { concept: '  ', amount: 0 },
     { concept: ' Aseo ', amount: 300_000, notes: ' Cocina ' },
   ],
+  deliveryDate: '2026-10-02',
+  deliveryTime: '10:00',
 }
 
 describe('cuerpoParaCrearElActa', () => {
@@ -116,6 +127,59 @@ describe('cuerpoParaCrearElActa', () => {
     )
     expect(cuerpo.depositToReturn).toBe(1_700_000)
     expect(CUERPO_DEL_PANEL.depositToReturn).toBe(0)
+  })
+})
+
+describe('🔴 la fecha y la hora de la entrega (Nico, 02-10-2026)', () => {
+  it('sin una hora válida no se manda la fecha (el asistente no deja seguir sin ella)', () => {
+    for (const deliveryTime of ['', '25:00', '9:5', undefined]) {
+      expect(cuerpoParaCrearElActa({ ...LEVANTADO, deliveryTime }, MANDATO)).not.toHaveProperty('fechaDeEntrega')
+    }
+  })
+
+  it('la que guardó el back se lee en la hora de Colombia: día y hora', () => {
+    // 2:30 a. m. UTC del 3 = 9:30 p. m. del 2 en Colombia.
+    const acta = actaDelBack({ fechaDeEntrega: '2026-10-03T02:30:00.000Z', createdAt: '2026-09-30T15:00:00.000Z' })
+    expect(acta.deliveryDate).toBe('2026-10-02')
+    expect(acta.deliveryTime).toBe('21:30')
+  })
+
+  it('🔴 sin ella, la de creación, también en Colombia (antes, después de las 7 p. m. salía el día siguiente)', () => {
+    const acta = actaDelBack({ fechaDeEntrega: null, createdAt: '2026-10-03T01:00:00.000Z' })
+    expect(acta.deliveryDate).toBe('2026-10-02')
+    expect(acta.deliveryTime).toBeUndefined()
+  })
+
+  it('la lista dice el día y la hora; sin hora, sólo el día; y nunca corre el día por la zona', () => {
+    expect(cuandoFueLaEntrega({ deliveryDate: '2026-10-02', deliveryTime: '21:30' }, 'es')).toMatch(
+      /^02\s(de\s)?oct\.?\s(de\s)?2026 · 9:30\sp\.\s?m\.$/,
+    )
+    expect(cuandoFueLaEntrega({ deliveryDate: '2026-10-01' }, 'es')).toMatch(/^01\s(de\s)?oct\.?\s(de\s)?2026$/)
+    expect(cuandoFueLaEntrega({ deliveryDate: '' }, 'es')).toBe('—')
+  })
+
+  it('hoy en Colombia, no en UTC', () => {
+    expect(hoyEnBogota(new Date('2026-10-03T01:00:00.000Z'))).toBe('2026-10-02')
+    expect(hoyEnBogota(new Date('2026-10-02T15:00:00.000Z'))).toBe('2026-10-02')
+  })
+})
+
+describe('🔴 el cargo aparte al cerrar el acta (Nico, 02-10-2026)', () => {
+  it('lee el cargo que trae la respuesta del cierre', () => {
+    expect(
+      cargoAparteDelCierre({
+        id: 'a-1',
+        cargoAparte: { estado: 'CREADO', valorCop: 500_000, mensaje: 'Se le cargaron $500.000', cargoId: 'c-1', mes: '2026-10' },
+      }),
+    ).toEqual({ estado: 'CREADO', valorCop: 500_000, mensaje: 'Se le cargaron $500.000' })
+  })
+
+  it('sin cargo, o con uno que no se entiende, `null` (nunca se inventa un aviso)', () => {
+    expect(cargoAparteDelCierre({ id: 'a-1', cargoAparte: null })).toBeNull()
+    expect(cargoAparteDelCierre({ id: 'a-1' })).toBeNull()
+    expect(cargoAparteDelCierre({ cargoAparte: { estado: 'OTRO', valorCop: 1, mensaje: 'x' } })).toBeNull()
+    expect(cargoAparteDelCierre({ cargoAparte: { estado: 'CREADO', valorCop: 1, mensaje: '  ' } })).toBeNull()
+    expect(cargoAparteDelCierre(null)).toBeNull()
   })
 })
 

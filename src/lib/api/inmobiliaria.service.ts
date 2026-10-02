@@ -2174,6 +2174,12 @@ export const actasApi = {
    * — sin documento «un testigo» es un nombre cualquiera y no sirve el día que
    * haya que sostener el acta.
    */
+  /*
+   * 02-10-2026: si el acta es de devolución y los descuentos pasan el
+   * depósito, la respuesta trae `cargoAparte` (el cargo creado en el estado de
+   * cuenta del inquilino, o por qué no se creó). `actaDelBack` lo deja pasar;
+   * se lee con `cargoAparteDelCierre` (`lib/actas/acta-del-back.ts`).
+   */
   async cerrarSinFirma(
     id: string,
     testigo: { testigoNombre: string; testigoDocumento: string },

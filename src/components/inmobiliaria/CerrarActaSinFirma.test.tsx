@@ -251,4 +251,36 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     await cerrarConFallo(new ApiError(0, 'Failed to fetch'))
     expect(dialogo().querySelector('[role="alert"]')?.textContent).toMatch(/conexi[oó]n/i)
   })
+
+  async function cerrarConCargo(cargoAparte: unknown) {
+    h.actasApi.cerrarSinFirma.mockResolvedValue({
+      ...acta({ status: 'completed' }),
+      cargoAparte,
+    })
+    await montar(acta())
+    await escribir(campos()[0], 'Pedro Ruiz')
+    await escribir(campos()[1], '71234567')
+    await act(async () => {
+      botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('🔴 02-10 · el cargo aparte que entró al estado de cuenta va en el MISMO aviso del cierre', async () => {
+    const mensaje = 'Se le cargaron $500.000 aparte al inquilino, en su cuota de 2026-10.'
+    await cerrarConCargo({ estado: 'CREADO', valorCop: 500_000, mensaje, cargoId: 'c-1', mes: '2026-10' })
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(h.toast.success).toHaveBeenCalledWith(expect.stringContaining('5 días para objetar'), {
+      description: mensaje,
+    })
+    expect(h.toast.warning).not.toHaveBeenCalled()
+  })
+
+  it('🔴 02-10 · si el cargo NO entró (falta la migración), el aviso es de advertencia y dice por qué', async () => {
+    const mensaje = 'El inquilino debe $500.000 más que el depósito, pero esta base todavía no puede crear el cargo.'
+    await cerrarConCargo({ estado: 'SIN_MIGRACION', valorCop: 500_000, mensaje, cargoId: null, mes: null })
+    expect(h.toast.success).not.toHaveBeenCalled()
+    expect(h.toast.warning).toHaveBeenCalledWith(expect.stringContaining('Acta cerrada'), {
+      description: mensaje,
+    })
+  })
 })

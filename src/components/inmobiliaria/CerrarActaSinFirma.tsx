@@ -42,6 +42,7 @@ import {
   MIN_LARGO_NOMBRE_DEL_TESTIGO,
 } from '@/lib/actas/limites-del-acta';
 import { actasApi } from '@/lib/api/inmobiliaria.service';
+import { cargoAparteDelCierre } from '@/lib/actas/acta-del-back';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 
 /** Una condición del back, leída acá antes de que alguien intente. */
@@ -129,9 +130,15 @@ export function CerrarActaSinFirma({
         testigoNombre: nombre.trim(),
         testigoDocumento: documento.trim(),
       });
-      toast.success(
-        'Acta cerrada. Se le manda copia al inquilino: tiene 5 días para objetar.',
-      );
+      const cerrada =
+        'Acta cerrada. Se le manda copia al inquilino: tiene 5 días para objetar.';
+      // 02-10-2026: lo que los descuentos pasan del depósito. Un solo aviso: el
+      // del cierre, con lo que pasó con el cargo abajo (y en advertencia si NO
+      // entró a su estado de cuenta: hay que cargarlo a mano).
+      const cargo = cargoAparteDelCierre(actualizada);
+      if (!cargo) toast.success(cerrada);
+      else if (cargo.estado === 'CREADO') toast.success(cerrada, { description: cargo.mensaje });
+      else toast.warning(cerrada, { description: cargo.mensaje });
       onCerrada(actualizada);
     } catch (err) {
       // 02-10-2026: lo del testigo va bajo su campo (con el foco); el aviso de

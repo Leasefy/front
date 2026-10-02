@@ -4801,7 +4801,7 @@
       "addDeduction": "Add deduction",
       "concept": "Concept",
       "amountToReturn": "Amount to return",
-      "aCargoDelInquilino": "The tenant owes {{monto}} more than the deposit: it is not taken from the deposit, it goes as a separate charge.",
+      "aCargoDelInquilino": "The tenant owes {{monto}} more than the deposit: it is not taken from the deposit, it goes as a separate charge on their statement when the record is closed.",
       "reviewTitle": "Review and Confirmation",
       "reviewDesc": "Verify the information before creating the record",
       "notSelected": "Not selected",

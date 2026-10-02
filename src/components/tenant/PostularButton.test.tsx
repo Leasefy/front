@@ -54,9 +54,9 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-vi.mock('@phosphor-icons/react', () => ({ Info: () => null }))
+vi.mock('@phosphor-icons/react', () => ({ Info: () => null, WarningCircle: () => null }))
 
-import { PostularButton, motivoDeBloqueo } from './PostularButton'
+import { PostularButton, AntesDePostularte, motivoDeBloqueo } from './PostularButton'
 import { cabeEnTope, estaVigente, type Aprobacion } from '@/lib/api/aprobacion.service'
 
 const APROBADA: Aprobacion = {
@@ -200,6 +200,127 @@ describe('estaVigente', () => {
 
   it('null no revienta', () => {
     expect(estaVigente(null, ahora)).toBe(false)
+  })
+})
+
+/**
+ * T-0132 (asegurabilidad-opcional-al-postular) — contract §3.3: the
+ * approval study never blocks applying any more. `AntesDePostularte` gets a
+ * "continue without knowing" exit for every motivo except `sin_sesion`
+ * (O-1, out of scope, unchanged); `rechazado` additionally shows a warning
+ * alert (likely rejection); `sin_aprobacion` / `vencida` / `en_proceso` show
+ * a neutral note instead (A-1: the owner treats en_proceso/vencida the same
+ * as "no study").
+ */
+describe('<AntesDePostularte> — T-0132', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  function render(motivo: Parameters<typeof AntesDePostularte>[0]['motivo']) {
+    act(() => {
+      root.render(
+        <AntesDePostularte open={true} onClose={() => {}} motivo={motivo} propertyId="prop-X" />,
+      )
+    })
+  }
+
+  // Button/Link are mocked above as plain <span>/<a> that do NOT forward
+  // arbitrary props (only `children`/`href`/`onClick`), so a `data-testid`
+  // placed on a Button/Link never reaches the DOM here — same reason the
+  // "ya postulado" suite below asserts on `href`/`textContent`, not
+  // `data-testid`, for links. Plain `<div data-testid="…">` elsewhere in
+  // this component (the alert/note) are NOT mocked, so those DO work.
+  function continuar(): HTMLAnchorElement | null {
+    return (
+      Array.from(container.querySelectorAll('a')).find(
+        (a) => a.getAttribute('href') === '/aplicar/prop-X',
+      ) ?? null
+    )
+  }
+
+  it('sin_sesion: unchanged — NO continue-without-knowing exit (out of scope, O-1)', () => {
+    render('sin_sesion')
+    expect(continuar()).toBeFalsy()
+    // The two original exits are still there.
+    expect(container.textContent).toContain('Es mi primera vez')
+    expect(container.textContent).toContain('Ya tengo cuenta, entrar')
+  })
+
+  it('rechazado: shows a WARNING alert (likely rejection)', () => {
+    render('rechazado')
+    const alerta = container.querySelector('[data-testid="antes-de-postularte-alerta-rechazo"]')
+    expect(alerta).toBeTruthy()
+    // No neutral note on this motivo — it gets the alert instead.
+    expect(container.querySelector('[data-testid="antes-de-postularte-nota-neutral"]')).toBeFalsy()
+  })
+
+  it('rechazado: "postularme de todas formas" continues to /aplicar/:id, and the kept link to /inquilino/aprobacion survives', () => {
+    render('rechazado')
+    expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
+    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+    expect(links).toContain('/inquilino/aprobacion')
+  })
+
+  it.each(['sin_aprobacion', 'vencida', 'en_proceso'] as const)(
+    '%s: shows the NEUTRAL note (no alert) and a continue exit to /aplicar/:id',
+    (motivo) => {
+      render(motivo)
+      expect(container.querySelector('[data-testid="antes-de-postularte-nota-neutral"]')).toBeTruthy()
+      expect(
+        container.querySelector('[data-testid="antes-de-postularte-alerta-rechazo"]'),
+      ).toBeFalsy()
+      expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
+    },
+  )
+
+  it('sin_aprobacion: the kept "Conoce hasta cuánto te arrendamos" link to /aprobacion survives', () => {
+    render('sin_aprobacion')
+    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+    expect(links).toContain('/aprobacion')
+  })
+
+  it('vencida: the kept "Renovar mi aprobación" link to /aprobacion survives', () => {
+    render('vencida')
+    expect(container.textContent).toContain('Renovar mi aprobación')
+  })
+
+  it('en_proceso: the kept "Ver el estado" link to /inquilino/aprobacion survives', () => {
+    render('en_proceso')
+    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+    expect(links).toContain('/inquilino/aprobacion')
+  })
+
+  it('tenant copy never says "asegurabilidad" or "estudio" (front/docs/VOCABULARIO.md)', () => {
+    for (const motivo of ['sin_aprobacion', 'vencida', 'en_proceso', 'rechazado', 'sin_sesion'] as const) {
+      render(motivo)
+      expect(container.textContent?.toLowerCase()).not.toContain('asegurabilidad')
+      expect(container.textContent?.toLowerCase()).not.toContain('estudio')
+    }
+  })
+
+  it('Ahora no keeps closing the dialog for every motivo', () => {
+    const onClose = vi.fn()
+    act(() => {
+      root.render(
+        <AntesDePostularte open={true} onClose={onClose} motivo="sin_aprobacion" propertyId="prop-X" />,
+      )
+    })
+    const ahoraNo = Array.from(container.querySelectorAll('span, button')).find(
+      (el) => el.textContent === 'Ahora no',
+    ) as HTMLElement | undefined
+    ahoraNo?.click()
+    expect(onClose).toHaveBeenCalled()
   })
 })
 

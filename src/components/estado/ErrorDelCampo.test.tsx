@@ -141,3 +141,38 @@ describe('<ErrorDelCampo>', () => {
     expect(alerta()?.textContent).toBe('El documento no es válido.')
   })
 })
+
+/**
+ * 02-10-2026 (Nico): la `pista` lleva id (`${id}-pista`) para que un campo
+ * FUERA de un `FormField` la nombre en `aria-describedby`. La API y el aspecto
+ * no cambian.
+ */
+describe('<ErrorDelCampo> — la pista con id', () => {
+  it('🔴 fuera de un FormField, la pista tiene `${id}-pista` y el campo la puede nombrar', () => {
+    act(() =>
+      root.render(
+        <>
+          <input id="codigo" aria-describedby="codigo-error-pista codigo-error" />
+          <ErrorDelCampo id="codigo-error" pista="Son los 6 números de la app." mensaje={null} />
+        </>,
+      ),
+    )
+    const pista = document.getElementById('codigo-error-pista')
+    expect(pista?.textContent).toBe('Son los 6 números de la app.')
+    // Sigue siendo UN `<p>` con el estilo de la ayuda.
+    expect(container.querySelectorAll('p')).toHaveLength(1)
+    expect(container.querySelector('p')?.className).toContain('text-fg-subtle')
+  })
+
+  it('con error, se ve el error con su id (la pista se va)', async () => {
+    pintar({ id: 'codigo-error', pista: 'Son los 6 números de la app.', mensaje: 'El código no es correcto.' })
+    await esperarLaSalida()
+    expect(document.getElementById('codigo-error')?.textContent).toBe('El código no es correcto.')
+    expect(document.getElementById('codigo-error-pista')).toBeNull()
+  })
+
+  it('sin pista no se agrega nada', () => {
+    pintar({ id: 'x-error', mensaje: 'Algo.' })
+    expect(document.getElementById('x-error-pista')).toBeNull()
+  })
+})

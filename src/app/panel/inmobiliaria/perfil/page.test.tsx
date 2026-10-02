@@ -429,9 +429,20 @@ describe('Perfil — guardar los datos (sistema de errores)', () => {
     updateProfileMock.mockRejectedValue(
       errorDelBack(400, { code: 'DATOS_INVALIDOS', message: [FRASE], campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }] }),
     )
-    await editarYGuardar(() => escribirEn('3001234567', '12345'))
+    // Un celular bien escrito que el back igual rechaza: el cliente lo deja salir.
+    await editarYGuardar(() => escribirEn('3001234567', '3109998877'))
 
     expect(container.querySelector('#perfil-inmobiliaria-phone-error')?.textContent).toBe(FRASE)
+    expect(document.activeElement).toBe(container.querySelector('#perfil-inmobiliaria-phone'))
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un celular incompleto no sale: «El celular en Colombia tiene 10 dígitos.», en su campo y sin PATCH', async () => {
+    await editarYGuardar(() => escribirEn('3001234567', '300123'))
+    expect(updateProfileMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-inmobiliaria-phone-error')?.textContent).toBe(
+      'El celular en Colombia tiene 10 dígitos.',
+    )
     expect(document.activeElement).toBe(container.querySelector('#perfil-inmobiliaria-phone'))
     expect(toast.error).not.toHaveBeenCalled()
   })

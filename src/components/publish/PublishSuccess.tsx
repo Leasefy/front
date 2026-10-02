@@ -4,16 +4,69 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus } from '@phosphor-icons/react';
-import { usePublish } from '@/lib/context/PublishContext';
+import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus, WarningCircle } from '@phosphor-icons/react';
+import { Appear, Stagger, StaggerItem } from '@leasefy/cadence';
+import { usePublish, type FotoQueNoSubio } from '@/lib/context/PublishContext';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
 
+/**
+ * Las fotos que no subieron al publicar, cada una con su motivo (02-10-2026).
+ * El inmueble ya quedó publicado; antes esto vivía sólo en un toast que se iba
+ * solo y decía el motivo de la primera. Acá queda la lista entera, con lo que
+ * dijo el traductor de errores para cada una: nada inventado.
+ */
+function FotosQueNoSubieron({ fotos }: { fotos: FotoQueNoSubio[] }) {
+  const titulo =
+    fotos.length === 1 ? 'Una foto no se subió' : `${fotos.length} fotos no se subieron`;
+  return (
+    <Appear
+      as="section"
+      aria-labelledby="fotos-que-no-subieron-titulo"
+      data-testid="fotos-que-no-subieron"
+      className="rounded-[14px] border border-warning/20 bg-warning-soft p-4"
+    >
+      <div className="flex items-start gap-2.5">
+        <WarningCircle className="mt-0.5 size-4 shrink-0 text-warning" weight="fill" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <h2 id="fotos-que-no-subieron-titulo" className="text-sm font-medium text-fg">
+            {titulo}
+          </h2>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            El inmueble quedó publicado. Puedes agregarlas desde el inmueble.
+          </p>
+          <Stagger as="ul" className="mt-3 space-y-2">
+            {fotos.map((foto, i) => (
+              // La lista no cambia después de montarse: el índice sólo
+              // desempata dos archivos con el mismo nombre.
+              <StaggerItem
+                key={`${i}-${foto.nombre}`}
+                as="li"
+                className="rounded-[10px] bg-surface/70 px-3 py-2"
+              >
+                <p className="truncate font-mono text-caption text-fg" title={foto.nombre}>
+                  {foto.nombre}
+                </p>
+                <p className="mt-0.5 text-sm text-fg-muted">{foto.motivo}</p>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </div>
+      </div>
+    </Appear>
+  );
+}
+
 export function PublishSuccess() {
-  const { draft } = usePublish();
+  const { draft, fotosQueNoSubieron } = usePublish();
+  /*
+   * Con fotos que no subieron, la persona tiene que poder leer cuáles y por qué:
+   * no se la lleva sola al panel a los 5 s (se va con el botón cuando quiera).
+   */
+  const hayFotosSinSubir = fotosQueNoSubieron.length > 0;
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [countdown, setCountdown] = useState(5);
@@ -78,7 +131,7 @@ export function PublishSuccess() {
 
   // Auto-redirect countdown (only for authenticated users)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || hayFotosSinSubir) return;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -92,7 +145,7 @@ export function PublishSuccess() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router, isAuthenticated]);
+  }, [router, isAuthenticated, hayFotosSinSubir]);
 
   const planLabels = Object.fromEntries([
     ...PLANS.map((p) => [p.id, `Plan ${p.name}`]),
@@ -164,6 +217,8 @@ export function PublishSuccess() {
 
           {/* Property summary */}
           <div className="p-6 space-y-4">
+            {hayFotosSinSubir && <FotosQueNoSubieron fotos={fotosQueNoSubieron} />}
+
             {/* Preview image */}
             {draft.photos.length > 0 && (
               <motion.div
@@ -267,9 +322,11 @@ export function PublishSuccess() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               {isAuthenticated ? (
-                <span className="text-xs text-fg-subtle">
-                  Redirigiendo en {countdown}s...
-                </span>
+                hayFotosSinSubir ? null : (
+                  <span className="text-xs text-fg-subtle">
+                    Redirigiendo en {countdown}s...
+                  </span>
+                )
               ) : (
                 <span className="text-xs text-fg-subtle">
                   Inicia sesion para acceder al panel

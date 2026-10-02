@@ -33,7 +33,9 @@ vi.mock('@/lib/api/leases.service', () => ({
   leasesApi: { getPaymentInfo: (...a: unknown[]) => getPaymentInfoMock(...a) },
 }))
 
-vi.mock('@/lib/api/client', () => ({
+// El `ApiError` de verdad: el modal lee el sobre de error de la ruta con él.
+vi.mock('@/lib/api/client', async (original) => ({
+  ...(await original<typeof import('@/lib/api/client')>()),
   getAccessToken: () => 'tenant-jwt',
 }))
 
@@ -212,7 +214,11 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 409,
-      json: async () => ({ error: 'period_not_payable' }),
+      json: async () => ({
+        statusCode: 409,
+        code: 'PERIODO_NO_PAGABLE',
+        message: 'Este período ya está pagado o en verificación.',
+      }),
     } as unknown as Response) as unknown as typeof globalThis.fetch
 
     render()
@@ -223,7 +229,9 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     })
     await flush()
 
-    expect(toast.error).toHaveBeenCalled()
+    expect(String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])).toBe(
+      'Este período ya está pagado o en verificación.',
+    )
     // Back on the confirm step — the CTA is present again, not stuck on "redirecting".
     expect(dialogo().textContent).toContain('Monto a pagar')
   })
@@ -233,7 +241,7 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
-      json: async () => ({ error: 'wompi_not_configured' }),
+      json: async () => ({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
     } as unknown as Response) as unknown as typeof globalThis.fetch
 
     render()
@@ -249,7 +257,52 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     // 🔴 02-10-2026 · regla de oro: un 5xx es nuestro; nunca el código crudo ni «conexión».
     const texto = String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])
     expect(texto).toMatch(/^No pudimos iniciar el pago: algo falló de nuestro lado/)
-    expect(texto).not.toMatch(/wompi_not_configured|conexi[oó]n/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('🔴 la frase del sobre de la ruta gana: Wompi sin configurar lo dice en español, nunca el código', async () => {
+    getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        statusCode: 500,
+        code: 'PAGOS_SIN_CONFIGURAR',
+        message:
+          'Los pagos en línea no están disponibles en este momento: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo más tarde.',
+      }),
+    } as unknown as Response) as unknown as typeof globalThis.fetch
+
+    render()
+    await flush()
+    act(() => {
+      findCta('Pagar arriendo').click()
+    })
+    await flush()
+
+    const texto = String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])
+    expect(texto).toMatch(/^Los pagos en línea no están disponibles en este momento/)
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('una respuesta sin el sobre (un `{ error }` en inglés) no muestra el código: decide el status', async () => {
+    getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'payment_info_failed' }),
+    } as unknown as Response) as unknown as typeof globalThis.fetch
+
+    render()
+    await flush()
+    act(() => {
+      findCta('Pagar arriendo').click()
+    })
+    await flush()
+
+    const texto = String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])
+    expect(texto).toBe('No encontramos este arriendo a tu nombre. Recarga la página e intenta de nuevo.')
   })
 
   it('🔴 sin respuesta (el fetch no salió): ahí sí se habla de la conexión', async () => {
@@ -272,7 +325,11 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
-      json: async () => ({ error: 'unauthorized' }),
+      json: async () => ({
+        statusCode: 401,
+        code: 'SESION_REQUERIDA',
+        message: 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.',
+      }),
     } as unknown as Response) as unknown as typeof globalThis.fetch
 
     render()

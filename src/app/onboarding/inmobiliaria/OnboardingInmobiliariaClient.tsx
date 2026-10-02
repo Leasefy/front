@@ -483,6 +483,8 @@ function OnboardingWizard({
               <PaymentProviderAutoSkipStep
                 isSubmitting={isSubmitting}
                 onSkip={() => withOverrideClear(submitPaymentProvider)({ skip: true })}
+                // El `null` del paso no se traga el 400: su frase está en `error` (02-10-2026).
+                mensajeDelFallo={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : effectiveStep === 'policy' ? (
               // Invisible step — the collection policy is an optional adjustment
@@ -494,6 +496,7 @@ function OnboardingWizard({
                 onSkip={() =>
                   withOverrideClear(submitPolicy)(toPolicyRequest(POLICY_STEP_DEFAULT_VALUES))
                 }
+                mensajeDelFallo={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : effectiveStep === 'habeas_data' ? (
               // The signed-habeas-data upload was replaced by a terms

@@ -23,7 +23,8 @@ import { MonoLabel } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { leasesApi } from '@/lib/api/leases.service';
-import { getAccessToken } from '@/lib/api/client';
+import { getAccessToken, type ApiError } from '@/lib/api/client';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import {
   buildWompiCheckoutUrl,
   type WompiRentSession,
@@ -74,23 +75,35 @@ type Step =
  * y el velo incluidos). Lenis lo frena `SmoothScroll` al ver el diálogo abierto.
  */
 /**
- * Por qué no arrancó el pago, según el status de `/api/inquilino/pagos/wompi-session`
- * (02-10-2026). Esa ruta responde `{ error: 'código_en_inglés' }`: el código
- * no se muestra; el status decide, con la regla de oro del traductor.
+ * Por qué no arrancó el pago, según lo que respondió `/api/inquilino/pagos/wompi-session`.
+ *
+ * 02-10-2026 · La ruta responde con el sobre de error (`{ statusCode, code,
+ * message }`, `message` en español): se dice SU frase con el traductor y la
+ * regla de oro (un 5xx, «de nuestro lado» con la referencia). Las frases por
+ * status quedan para cuando no hay frase legible (una respuesta sin el sobre,
+ * un balanceador). Nunca se decide por el texto.
  */
-export function motivoDelPagoQueNoInicio(status: number): string {
-  if (status === 401) return 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.';
-  if (status === 403 || status === 404) {
-    return 'No encontramos este arriendo a tu nombre. Recarga la página e intenta de nuevo.';
+export function motivoDelPagoQueNoInicio(fallo: { status: number } | ApiError): string {
+  const status = fallo.status;
+  let porDefecto = 'No pudimos iniciar el pago. Prueba de nuevo en un momento.';
+  if (status === 401) porDefecto = 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.';
+  else if (status === 403 || status === 404) {
+    porDefecto = 'No encontramos este arriendo a tu nombre. Recarga la página e intenta de nuevo.';
+  } else if (status === 409) porDefecto = 'Este período ya está pagado o en verificación.';
+  else if (status === 400 || status === 422) {
+    porDefecto = 'No pudimos iniciar el pago con estos datos. Recarga la página e intenta de nuevo.';
   }
-  if (status === 400 || status === 422) {
-    return 'No pudimos iniciar el pago con estos datos. Recarga la página e intenta de nuevo.';
-  }
-  // Un 5xx (Wompi sin configurar, un canon inválido, el back caído): es nuestro.
-  return mensajeParaLaPersona(
-    { status },
-    { accion: 'iniciar el pago', porDefecto: 'No pudimos iniciar el pago. Prueba de nuevo en un momento.' },
-  );
+  return mensajeParaLaPersona(fallo, { accion: 'iniciar el pago', porDefecto });
+}
+
+/**
+ * La respuesta que no salió bien, como error: con el sobre, un `ApiError` con
+ * su `code`, su frase y su referencia; sin el sobre (no trae `statusCode`),
+ * sólo el status, para que un `{ error: 'código_en_inglés' }` nunca se vea.
+ */
+async function falloDeLaSesionDePago(res: Response): Promise<{ status: number } | ApiError> {
+  const fallo = await falloDelMicro(res);
+  return typeof fallo.detalle?.statusCode === 'number' ? fallo : { status: res.status };
 }
 
 export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
@@ -157,13 +170,10 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
         body: JSON.stringify({ leaseId }), // ONLY leaseId — nunca un amount (anti-tamper)
       });
 
-      if (res.status === 409) {
-        toast.error('Este período ya está pagado o en verificación.');
-        setStep('confirm');
-        return;
-      }
+      // Un 409 (`PERIODO_NO_PAGABLE`: ya pagado o en verificación) también
+      // vuelve a confirmar, con la frase de la ruta.
       if (!res.ok) {
-        toast.error(motivoDelPagoQueNoInicio(res.status));
+        toast.error(motivoDelPagoQueNoInicio(await falloDeLaSesionDePago(res)));
         setStep('confirm');
         return;
       }

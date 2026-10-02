@@ -27,6 +27,12 @@ import { cn } from '@/lib/utils'
  * `id` es el que el campo nombra en `aria-describedby`: dentro de un
  * `FormField` de Cadence es `${id}-error`, el mismo que pone su `FormControl`.
  * Se ve cuando hay `mensaje`, esté o no dentro de un `FormField`.
+ *
+ * La `pista` lleva su propio id, `${id}-pista` (02-10-2026): fuera de un
+ * `FormField`, Cadence no le pone ninguno y el campo no tenía cómo nombrarla.
+ * Así el control dice `aria-describedby={`${id}-pista ${id}`}` y el lector lee
+ * la ayuda sin error y el error cuando lo hay (sólo existe el que se ve). Va en
+ * un `<span>` dentro del mismo `<p>`: el aspecto no cambia.
  */
 export interface ErrorDelCampoProps {
   id: string
@@ -38,8 +44,9 @@ export interface ErrorDelCampoProps {
 }
 
 export function ErrorDelCampo({ id, mensaje, pista, className }: ErrorDelCampoProps) {
+  const ayuda = pista === undefined ? undefined : <span id={`${id}-pista`}>{pista}</span>
   return (
-    <FormError id={id} invalid={!!mensaje} hint={pista} className={cn('mt-1.5', className)}>
+    <FormError id={id} invalid={!!mensaje} hint={ayuda} className={cn('mt-1.5', className)}>
       {mensaje || null}
     </FormError>
   )

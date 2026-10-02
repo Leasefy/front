@@ -24,6 +24,8 @@
 import { VERSION_TERMINOS } from '@/lib/legal/versiones'
 import {
   camposDelError,
+  leerFallo,
+  mensajeDeUnFalloNuestro,
   mensajeParaLaPersona,
   mensajeSinRespuesta,
   type CampoConError,
@@ -104,6 +106,79 @@ const STATUS_TO_KIND: Record<number, OnboardingSessionErrorKind> = {
   409: 'conflict',
   410: 'expired',
   503: 'unavailable',
+}
+
+/** Lo que se le dice a la persona cuando un paso del registro falla (por el traductor). */
+const OPCIONES_DEL_MENSAJE = {
+  accion: 'continuar con el registro',
+  porDefecto: 'No pudimos continuar con el registro. Revisa los datos e intenta de nuevo.',
+}
+
+/**
+ * El `code` de una respuesta 2xx cuyo cuerpo no se pudo leer (02-10-2026; el mismo que usa
+ * `owner-portal.http.ts`). Hubo respuesta: no es la conexión, es nuestro (va como un 500).
+ */
+const CODIGO_RESPUESTA_ILEGIBLE = 'RESPUESTA_ILEGIBLE'
+
+function respuestaIlegible(statusRecibido: number): OnboardingSessionError {
+  const detalle = { statusCode: 500, code: CODIGO_RESPUESTA_ILEGIBLE, statusRecibido }
+  return new OnboardingSessionError(
+    'unknown',
+    500,
+    mensajeParaLaPersona({ status: 500, detalle }, OPCIONES_DEL_MENSAJE),
+    undefined,
+    [],
+    detalle,
+  )
+}
+
+function cuerpoDelError(err: unknown): Record<string, unknown> | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const detalle = (err as { detalle?: unknown }).detalle
+  return detalle && typeof detalle === 'object' && !Array.isArray(detalle)
+    ? (detalle as Record<string, unknown>)
+    : undefined
+}
+
+/**
+ * Cualquier fallo como `OnboardingSessionError`, sin perder el status ni el cuerpo (02-10-2026).
+ *
+ * El hook (`use-onboarding-session.ts`) lo usa para todo lo que le llega. Antes, un error que no
+ * era un `OnboardingSessionError` (un `ApiError`, un `SyntaxError`, un error de programación) se
+ * volvía `kind: 'unknown'`, `status: null` y su `message` crudo en inglés: un 400 con `campos`
+ * quedaba sin campos ni status. Ahora decide con el status (nunca con el texto):
+ *  · sin respuesta (status 0 / `fetch` que no salió) → `network`, lo único que habla de la conexión;
+ *  · con status → el `kind` de siempre, los `campos` y el cuerpo en `detalle`, y la frase del traductor;
+ *  · sin status (no vino de una respuesta) → `unknown`, «de nuestro lado»: su texto no es para nadie.
+ */
+export function errorDelOnboarding(err: unknown): OnboardingSessionError {
+  if (err instanceof OnboardingSessionError) return err
+  const fallo = leerFallo(err)
+  if (fallo.tipo === 'sinRespuesta') return new OnboardingSessionError('network', null, mensajeSinRespuesta())
+  const detalle = cuerpoDelError(err)
+  if (fallo.status === null) {
+    return new OnboardingSessionError(
+      'unknown',
+      null,
+      mensajeDeUnFalloNuestro({ ...fallo, mensajes: [] }, OPCIONES_DEL_MENSAJE.accion),
+      undefined,
+      [],
+      detalle,
+    )
+  }
+  const kind = STATUS_TO_KIND[fallo.status] ?? 'unknown'
+  const message =
+    fallo.campos.length > 0
+      ? Array.from(new Set(fallo.campos.map((c) => c.mensaje))).join('; ')
+      : mensajeParaLaPersona(err, OPCIONES_DEL_MENSAJE)
+  return new OnboardingSessionError(
+    kind,
+    fallo.status,
+    message,
+    kind === 'conflict' ? (detalle as OnboardingSessionStepConflict | undefined) : undefined,
+    fallo.campos,
+    detalle,
+  )
 }
 
 // ── Zod validation body → Spanish per-field message ─────────────────────────
@@ -207,13 +282,7 @@ async function throwForErrorResponse(res: Response): Promise<never> {
     // 02-10-2026 · La regla de oro, del traductor: un 4xx dice lo que mandó
     // el micro (`{ error }` o `message`); un 5xx dice que falló de nuestro
     // lado, con la referencia (`requestId`), y nunca «(500)» crudo.
-    message = mensajeParaLaPersona(
-      { status, detalle },
-      {
-        accion: 'continuar con el registro',
-        porDefecto: 'No pudimos continuar con el registro. Revisa los datos e intenta de nuevo.',
-      },
-    )
+    message = mensajeParaLaPersona({ status, detalle }, OPCIONES_DEL_MENSAJE)
   }
   const kind = STATUS_TO_KIND[status] ?? 'unknown'
 
@@ -247,7 +316,14 @@ async function request<TRes>(sessionId: string, step: string, init: RequestInit)
   if (!res.ok) {
     await throwForErrorResponse(res)
   }
-  return (await res.json()) as TRes
+  try {
+    return (await res.json()) as TRes
+  } catch {
+    // 02-10-2026 · Contestó 2xx pero el cuerpo no se pudo leer (un HTML de un
+    // proxy, un JSON cortado). Antes subía el `SyntaxError` crudo, en inglés.
+    // Hubo respuesta: NO es la conexión, es nuestro.
+    throw respuestaIlegible(res.status)
+  }
 }
 
 function postStep<TReq, TRes>(sessionId: string, step: string, body: TReq): Promise<TRes> {

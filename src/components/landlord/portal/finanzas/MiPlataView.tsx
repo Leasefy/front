@@ -25,6 +25,9 @@ interface MiPlataViewProps {
    * simplemente DESAPARECÍA, y «se cayó el servidor» quedaba indistinguible de
    * «este año no has recaudado nada». En una pantalla de plata, esas dos cosas
    * se arreglan distinto: una se reintenta, la otra se explica.
+   *
+   * 02-10-2026: es la frase del traductor (`ResultadoDelPortal.mensaje`), que ya
+   * dice qué pasó y qué hacer; acá sólo se suma que lo demás sí llegó.
    */
   falloProyeccion?: string | null;
   falloRecaudo?: string | null;
@@ -145,7 +148,7 @@ export function MiPlataView({
               <h2 className="text-base font-semibold mb-2">Recaudo por concepto</h2>
               <p className="text-sm text-fg-muted" data-testid="recaudo-sin-datos">
                 {falloRecaudo
-                  ? `No pudimos traer esta parte: ${falloRecaudo} Vuelve a cargar la página; el resto de tu plata sí está.`
+                  ? `${falloRecaudo} El resto de tu plata sí está.`
                   : 'Este año todavía no hay recaudo registrado a tu nombre.'}
               </p>
             </Card>
@@ -172,7 +175,7 @@ export function MiPlataView({
               <h2 className="text-base font-semibold mb-2">Proyección de ingresos</h2>
               <p className="text-sm text-fg-muted" data-testid="proyeccion-sin-datos">
                 {falloProyeccion
-                  ? `No pudimos traer esta parte: ${falloProyeccion} Vuelve a cargar la página; el resto de tu plata sí está.`
+                  ? `${falloProyeccion} El resto de tu plata sí está.`
                   : 'La proyección aparece cuando tienes un contrato vigente con cuotas por venir.'}
               </p>
             </Card>

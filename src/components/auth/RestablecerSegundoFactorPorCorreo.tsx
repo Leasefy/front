@@ -184,6 +184,7 @@ export function RestablecerSegundoFactorPorCorreo({
         }}
         onCompleto={(v) => void confirmar(v)}
         hayError={Boolean(error)}
+        aria-describedby={error ? 'codigo-del-correo-error' : undefined}
         disabled={confirmando}
         autoFocus
       />

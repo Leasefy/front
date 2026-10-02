@@ -7,9 +7,13 @@ import { AMENITIES_OPTIONS } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ariaDelGrupo, idDelCampo, idDelError } from '../campos-con-error';
 
 export function StepAmenities() {
-  const { draft, updateDraft } = usePublish();
+  const { draft, updateDraft, erroresDelServidor } = usePublish();
+  const error = erroresDelServidor.amenities;
+  const tituloId = `${idDelCampo('amenities')}-titulo`;
   const [showCustom, setShowCustom] = useState(false);
   const [customValue, setCustomValue] = useState('');
 
@@ -36,7 +40,7 @@ export function StepAmenities() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-fg mb-1">
+        <h3 id={tituloId} className="text-sm font-medium text-fg mb-1">
           ¿Qué amenidades tiene tu inmueble?
         </h3>
         <p className="text-sm text-fg-muted">
@@ -44,98 +48,108 @@ export function StepAmenities() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {AMENITIES_OPTIONS.map((amenity) => {
-          const isSelected = draft.amenities.includes(amenity.value);
+      <div>
+        <div
+          role="group"
+          aria-labelledby={tituloId}
+          {...ariaDelGrupo('amenities', error)}
+          className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+        >
+          {AMENITIES_OPTIONS.map((amenity) => {
+            const isSelected = draft.amenities.includes(amenity.value);
 
-          return (
+            return (
+              <button
+                key={amenity.value}
+                type="button"
+                onClick={() => toggleAmenity(amenity.value)}
+                aria-pressed={isSelected}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-[14px] text-left transition-all duration-200',
+                  isSelected
+                    ? 'border-2 border-primary bg-primary-soft'
+                    : 'border border-border hover:border-border-strong bg-surface'
+                )}
+              >
+                <div className={cn(
+                  'w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                  isSelected
+                    ? 'bg-primary border-primary'
+                    : 'border-border-strong'
+                )}>
+                  {isSelected && <Check className="w-3 h-3 text-primary-fg" weight="bold" />}
+                </div>
+                <span className={cn(
+                  'text-sm',
+                  isSelected ? 'text-fg font-medium' : 'text-fg-muted'
+                )}>
+                  {amenity.label}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Custom amenities */}
+          {customAmenities.map((amenity) => (
             <button
-              key={amenity.value}
+              key={amenity}
               type="button"
-              onClick={() => toggleAmenity(amenity.value)}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-[14px] text-left transition-all duration-200',
-                isSelected
-                  ? 'border-2 border-primary bg-primary-soft'
-                  : 'border border-border hover:border-border-strong bg-surface'
-              )}
+              onClick={() => toggleAmenity(amenity)}
+              aria-pressed
+              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border-2 border-primary bg-primary-soft text-left transition-all duration-200"
             >
-              <div className={cn(
-                'w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
-                isSelected
-                  ? 'bg-primary border-primary'
-                  : 'border-border-strong'
-              )}>
-                {isSelected && <Check className="w-3 h-3 text-primary-fg" weight="bold" />}
+              <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 bg-primary border-primary">
+                <Check className="w-3 h-3 text-primary-fg" weight="bold" />
               </div>
-              <span className={cn(
-                'text-sm',
-                isSelected ? 'text-fg font-medium' : 'text-fg-muted'
-              )}>
-                {amenity.label}
-              </span>
+              <span className="text-sm text-fg font-medium">{amenity}</span>
             </button>
-          );
-        })}
+          ))}
 
-        {/* Custom amenities */}
-        {customAmenities.map((amenity) => (
-          <button
-            key={amenity}
-            type="button"
-            onClick={() => toggleAmenity(amenity)}
-            className="flex items-center gap-3 px-4 py-3 rounded-[14px] border-2 border-primary bg-primary-soft text-left transition-all duration-200"
-          >
-            <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 bg-primary border-primary">
-              <Check className="w-3 h-3 text-primary-fg" weight="bold" />
-            </div>
-            <span className="text-sm text-fg font-medium">{amenity}</span>
-          </button>
-        ))}
-
-        {/* "Otro" button */}
-        {!showCustom ? (
-          <button
-            type="button"
-            onClick={() => setShowCustom(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-[14px] border border-dashed border-border-strong text-left transition-all duration-200 hover:border-border-strong hover:bg-surface-hover bg-surface"
-          >
-            <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 border-border-strong">
-              <Plus className="w-3 h-3 text-fg-subtle" weight="bold" />
-            </div>
-            <span className="text-sm text-fg-subtle">Otro</span>
-          </button>
-        ) : (
-          <div className="col-span-2 sm:col-span-3 flex items-center gap-2">
-            <Input
-              autoFocus
-              type="text"
-              placeholder="Ej: Jacuzzi, Coworking..."
-              value={customValue}
-              onChange={(e) => setCustomValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') addCustom();
-                if (e.key === 'Escape') { setShowCustom(false); setCustomValue(''); }
-              }}
-              className="flex-1"
-            />
-            <Button
+          {/* "Otro" button */}
+          {!showCustom ? (
+            <button
               type="button"
-              onClick={addCustom}
-              disabled={!customValue.trim()}
-              hideArrow
+              onClick={() => setShowCustom(true)}
+              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border border-dashed border-border-strong text-left transition-all duration-200 hover:border-border-strong hover:bg-surface-hover bg-surface"
             >
-              Agregar
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => { setShowCustom(false); setCustomValue(''); }}
-            >
-              Cancelar
-            </Button>
-          </div>
-        )}
+              <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 border-border-strong">
+                <Plus className="w-3 h-3 text-fg-subtle" weight="bold" />
+              </div>
+              <span className="text-sm text-fg-subtle">Otro</span>
+            </button>
+          ) : (
+            <div className="col-span-2 sm:col-span-3 flex items-center gap-2">
+              <Input
+                autoFocus
+                type="text"
+                placeholder="Ej: Jacuzzi, Coworking..."
+                value={customValue}
+                onChange={(e) => setCustomValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addCustom();
+                  if (e.key === 'Escape') { setShowCustom(false); setCustomValue(''); }
+                }}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={addCustom}
+                disabled={!customValue.trim()}
+                hideArrow
+              >
+                Agregar
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { setShowCustom(false); setCustomValue(''); }}
+              >
+                Cancelar
+              </Button>
+            </div>
+          )}
+        </div>
+        <ErrorDelCampo id={idDelError('amenities')} mensaje={error} />
       </div>
 
       {draft.amenities.length > 0 && (

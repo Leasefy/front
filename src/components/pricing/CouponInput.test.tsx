@@ -78,3 +78,31 @@ describe('CouponInput — errores', () => {
     expect(container.querySelector('#coupon-code-error')?.textContent).toBe('El cupón ya venció.')
   })
 })
+
+/**
+ * 🔴 02-10-2026 (Nico): «Prueba: LAUNCH100, VERANO20, GRATIS3» no se le muestra
+ * a nadie en producción; en local o dev, sí.
+ */
+describe('CouponInput — los cupones de prueba', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  function pintar() {
+    act(() => {
+      root.render(<CouponInput planId="pro" price={149_000} appliedCoupon={null} onApplyCoupon={vi.fn()} key={Math.random()} />)
+    })
+  }
+
+  it('🔴 en producción no se ven', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    pintar()
+    expect(container.textContent).not.toContain('LAUNCH100')
+  })
+
+  it('en local o dev, sí', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    pintar()
+    expect(container.textContent).toContain('Prueba: LAUNCH100, VERANO20, GRATIS3')
+  })
+})

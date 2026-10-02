@@ -24,11 +24,16 @@ export type FalloDeLaAccion = { tipo: 'no-habilitado' } | { tipo: 'mensaje'; tex
 const STATUS_DE_NO_HABILITADO = new Set([401, 404])
 
 export function falloDeLaAccionDelPortal(
-  res: Pick<OwnerActionResult<unknown>, 'status' | 'error'>,
+  res: Pick<OwnerActionResult<unknown>, 'status' | 'error' | 'fallo'>,
   opciones: { accion: string; porDefecto: string },
 ): FalloDeLaAccion {
   if (res.status === 0 && res.error === 'unavailable') return { tipo: 'no-habilitado' }
   if (STATUS_DE_NO_HABILITADO.has(res.status)) return { tipo: 'no-habilitado' }
+  // 02-10-2026 · `ownerPost` ya trae el fallo entero (status, `code`, cuerpo):
+  // el traductor lee de ahí el `message` del sobre de un 4xx y la referencia
+  // de un 5xx. Un 2xx ilegible llega como un 500 nuestro, no como la red.
+  if (res.fallo) return { tipo: 'mensaje', texto: mensajeParaLaPersona(res.fallo, opciones) }
+  // Sin el fallo (un resultado armado a mano): por el status y el `error`.
   // `network`: el `fetch` no salió. Lo demás con status 0 tampoco tuvo respuesta legible.
   const error =
     res.status === 0

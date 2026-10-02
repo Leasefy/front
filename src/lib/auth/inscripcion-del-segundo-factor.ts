@@ -20,6 +20,14 @@ import { getSupabase } from '@/lib/supabase/client';
 export const TOPE_MS = 15000;
 
 /**
+ * Lo que se dice cuando se agotan los 15 s (Nico, 02-10-2026). Decía
+ * «Supabase no respondió a tiempo»: a la persona no le importa el proveedor,
+ * y nombrarlo no le dice qué hacer.
+ */
+export const MENSAJE_DEL_TOPE =
+  'El servicio de acceso no respondió a tiempo. Intenta de nuevo en un momento.';
+
+/**
  * Llama la API de auth de Supabase por HTTP, sin el SDK.
  *
  * Por qué no el SDK: `supabase.auth.mfa.*` serializa todo detrás de un candado
@@ -72,7 +80,7 @@ export async function apiDeAuth<T>(
     return cuerpo as T;
   } catch (err) {
     if ((err as Error).name === 'AbortError') {
-      throw new Error('Supabase no respondió a tiempo. Intenta de nuevo.');
+      throw new Error(MENSAJE_DEL_TOPE);
     }
     // El pedido no salió (sin red, DNS): «Failed to fetch» no le dice nada a
     // nadie. Sale como «sin respuesta», que es lo único que habla de la
@@ -108,7 +116,7 @@ export function conTope<T>(promesa: Promise<T>): Promise<T> {
   let reloj: ReturnType<typeof setTimeout> | undefined;
   const tope = new Promise<never>((_, rechazar) => {
     reloj = setTimeout(
-      () => rechazar(new Error('Supabase no respondió a tiempo. Intenta de nuevo.')),
+      () => rechazar(new Error(MENSAJE_DEL_TOPE)),
       TOPE_MS,
     );
   });

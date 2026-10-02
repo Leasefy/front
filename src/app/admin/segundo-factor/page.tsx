@@ -8,6 +8,7 @@ import { Wordmark } from '@/components/admin/Wordmark'
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
 import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
+import { MENSAJE_DEL_TOPE } from '@/lib/auth/inscripcion-del-segundo-factor'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /**
@@ -49,7 +50,8 @@ function conTope<T>(promesa: Promise<T>): Promise<T> {
   return Promise.race([
     promesa,
     new Promise<T>((_, rechazar) =>
-      setTimeout(() => rechazar(new Error('Supabase no respondió a tiempo. Intenta de nuevo.')), TOPE_MS),
+      // El mismo texto que `apiDeAuth`: sin nombrar al proveedor (Nico, 02-10-2026).
+      setTimeout(() => rechazar(new Error(MENSAJE_DEL_TOPE)), TOPE_MS),
     ),
   ])
 }

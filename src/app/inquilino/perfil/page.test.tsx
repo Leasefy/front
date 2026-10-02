@@ -255,9 +255,21 @@ describe('Perfil del inquilino — guardar los datos', () => {
         campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }],
       }),
     )
-    await editarYGuardar(() => escribir(campo('perfil-inquilino-phone'), '12345'))
+    // Un celular bien escrito que el back igual rechaza: el cliente lo deja salir.
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-phone'), '3109998877'))
 
     expect(container.querySelector('#perfil-inquilino-phone-error')?.textContent).toBe(FRASE)
+    expect(campo('perfil-inquilino-phone').getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(campo('perfil-inquilino-phone'))
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un celular incompleto no sale: «El celular en Colombia tiene 10 dígitos.», en su campo y sin PATCH', async () => {
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-phone'), '300123'))
+    expect(updateProfileMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-inquilino-phone-error')?.textContent).toBe(
+      'El celular en Colombia tiene 10 dígitos.',
+    )
     expect(campo('perfil-inquilino-phone').getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(campo('perfil-inquilino-phone'))
     expect(toastError).not.toHaveBeenCalled()

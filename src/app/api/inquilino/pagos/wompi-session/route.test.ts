@@ -116,13 +116,17 @@ describe('POST /api/inquilino/pagos/wompi-session — no secret leak', () => {
 
 describe('POST /api/inquilino/pagos/wompi-session — period lock (no double-pay)', () => {
   it.each(['APPROVED', 'PENDING_VALIDATION'] as const)(
-    'returns 409 period_not_payable when currentPeriodStatus is %s',
+    'returns 409 PERIODO_NO_PAGABLE (in the envelope) when currentPeriodStatus is %s',
     async (status) => {
       globalThis.fetch = mockPaymentInfoFetch({ ...PAYMENT_INFO, currentPeriodStatus: status })
       const res = await POST(makeReq({ leaseId: 'lease-1' }))
       const json = await res.json()
       expect(res.status).toBe(409)
-      expect(json.error).toBe('period_not_payable')
+      expect(json).toEqual({
+        statusCode: 409,
+        code: 'PERIODO_NO_PAGABLE',
+        message: 'Este período ya está pagado o en verificación.',
+      })
     },
   )
 
@@ -143,14 +147,16 @@ describe('POST /api/inquilino/pagos/wompi-session — auth / config / validation
     expect(res.status).toBe(401)
   })
 
-  it('returns 500 wompi_not_configured when the server-only secret env is unset', async () => {
+  it('returns 500 PAGOS_SIN_CONFIGURAR when the server-only secret env is unset', async () => {
     delete process.env.WOMPI_INTEGRITY_SECRET
     delete process.env.WOMPI_PUBLIC_KEY
     globalThis.fetch = mockPaymentInfoFetch(PAYMENT_INFO)
     const res = await POST(makeReq({ leaseId: 'lease-1' }))
     const json = await res.json()
     expect(res.status).toBe(500)
-    expect(json.error).toBe('wompi_not_configured')
+    expect(json.code).toBe('PAGOS_SIN_CONFIGURAR')
+    expect(json.statusCode).toBe(500)
+    expect(json.message).toMatch(/de nuestro lado/)
   })
 
   it('returns 400 when leaseId is missing', async () => {
@@ -181,7 +187,8 @@ describe('POST /api/inquilino/pagos/wompi-session — auth / config / validation
     const res = await POST(makeReq({ leaseId: 'lease-1' }))
     const json = await res.json()
     expect(res.status).toBe(502)
-    expect(json.error).toBe('invalid_amount')
+    expect(json.code).toBe('MONTO_INVALIDO')
+    expect(json.message).toMatch(/^No pudimos calcular el valor del arriendo: algo falló de nuestro lado/)
   })
 
   // Auditoría de seguridad 23-09: el leaseId iba tal cual dentro de la ruta
@@ -197,4 +204,94 @@ describe('POST /api/inquilino/pagos/wompi-session — auth / config / validation
       expect(f).not.toHaveBeenCalled()
     },
   )
+})
+
+/**
+ * 🔴 02-10-2026 (Nico): la ruta pasa al sobre de error. Antes respondía
+ * `{ error: 'payment_info_failed' }` (y otros códigos en inglés) y el modal
+ * adivinaba por el status. Ahora: `{ statusCode, code, message }`, con
+ * `message` en español; un 4xx del back se reenvía con SU `code` y SU frase.
+ */
+describe('POST /api/inquilino/pagos/wompi-session — el sobre de error', () => {
+  const CLAVES_DEL_SOBRE = ['statusCode', 'code', 'message']
+  const sinIngles = (json: Record<string, unknown>) => {
+    expect(json).not.toHaveProperty('error')
+    expect(JSON.stringify(json.message)).not.toMatch(/required|invalid|failed|unauthorized|not_configured/i)
+  }
+
+  it('🔴 un 401 sin sesión: SESION_REQUERIDA, en español', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(PAYMENT_INFO)
+    const res = await POST(makeReq({ leaseId: 'lease-1' }, { auth: false }))
+    const json = await res.json()
+    expect(res.status).toBe(401)
+    expect(json).toEqual({
+      statusCode: 401,
+      code: 'SESION_REQUERIDA',
+      message: 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.',
+    })
+  })
+
+  it('un 400 sin leaseId trae `campos` con la ruta del cuerpo', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(PAYMENT_INFO)
+    const res = await POST(makeReq({}))
+    const json = await res.json()
+    expect(json.statusCode).toBe(400)
+    expect(json.code).toBe('DATOS_INVALIDOS')
+    expect(json.campos).toEqual([
+      { campo: 'leaseId', regla: 'requerido', mensaje: 'Falta el arriendo que vas a pagar. Recarga la página e intenta de nuevo.' },
+    ])
+    sinIngles(json)
+  })
+
+  it('un cuerpo que no es JSON: 400 DATOS_INVALIDOS en español', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(PAYMENT_INFO)
+    const req = new Request('http://localhost/api/inquilino/pagos/wompi-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authorization: 'Bearer tenant-jwt' },
+      body: '{not-json',
+    })
+    const json = await (await POST(req)).json()
+    expect(json.code).toBe('DATOS_INVALIDOS')
+    sinIngles(json)
+  })
+
+  it('🔴 el 403 del back se reenvía con SU code y SU frase', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(
+      { statusCode: 403, code: 'SIN_ACCESO_AL_ARRIENDO', message: 'No tienes acceso a este arriendo.' },
+      { ok: false, status: 403 },
+    )
+    const res = await POST(makeReq({ leaseId: 'lease-1' }))
+    const json = await res.json()
+    expect(res.status).toBe(403)
+    expect(json).toEqual({ statusCode: 403, code: 'SIN_ACCESO_AL_ARRIENDO', message: 'No tienes acceso a este arriendo.' })
+  })
+
+  it('un 404 de un back sin sobre: la frase nuestra, nunca «payment_info_failed»', async () => {
+    globalThis.fetch = mockPaymentInfoFetch({ error: 'Not Found' }, { ok: false, status: 404 })
+    const json = await (await POST(makeReq({ leaseId: 'lease-1' }))).json()
+    expect(Object.keys(json)).toEqual(CLAVES_DEL_SOBRE)
+    expect(json.code).toBe('NO_ENCONTRADO')
+    expect(json.message).toBe('No encontramos este arriendo a tu nombre. Recarga la página e intenta de nuevo.')
+  })
+
+  it('el 400 en inglés de `ParseUUIDPipe` no se reenvía', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(
+      { statusCode: 400, message: 'Validation failed (uuid is expected)' },
+      { ok: false, status: 400 },
+    )
+    const json = await (await POST(makeReq({ leaseId: 'lease-1' }))).json()
+    expect(json.code).toBe('DATOS_INVALIDOS')
+    expect(JSON.stringify(json)).not.toContain('uuid is expected')
+  })
+
+  it('un 5xx del back conserva la referencia y el servicio', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(
+      { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' },
+      { ok: false, status: 500 },
+    )
+    const res = await POST(makeReq({ leaseId: 'lease-1' }))
+    const json = await res.json()
+    expect(res.status).toBe(500)
+    expect(json).toMatchObject({ statusCode: 500, code: 'ERROR_INTERNO', referencia: 'ab12cd34' })
+  })
 })

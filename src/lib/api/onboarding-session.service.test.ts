@@ -444,3 +444,23 @@ describe('remaining write steps — happy path smoke tests', () => {
   })
 
 })
+
+describe('request — un 2xx que no se puede leer (02-10-2026)', () => {
+  it('🔴 no sube un SyntaxError crudo ni habla de la conexión: es nuestro (500, RESPUESTA_ILEGIBLE)', async () => {
+    mockFetchOnce({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError(`Unexpected token '<', "<!DOCTYPE "... is not valid JSON`)
+      },
+    } as unknown as Response)
+    const error = await catchSubmitAgency()
+    expect(error).toBeInstanceOf(OnboardingSessionError)
+    expect(error.kind).toBe('unknown')
+    expect(error.status).toBe(500)
+    expect(error.detalle).toMatchObject({ code: 'RESPUESTA_ILEGIBLE', statusRecibido: 200 })
+    expect(error.message).toMatch(/^No pudimos continuar con el registro: algo falló de nuestro lado/)
+    expect(error.message).not.toMatch(/Unexpected token|conexi[oó]n/i)
+  })
+})
+

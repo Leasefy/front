@@ -12,6 +12,14 @@ import type { AppliedCoupon } from '@/lib/types/coupon';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
+/**
+ * ¿Se muestran los cupones de prueba? Sólo en local o dev, con la misma
+ * variable que ya decide eso en el front (`NODE_ENV`, como el modo de
+ * demostración de `funnel.service.ts` y el `desarrollo` del middleware). Una
+ * función y no una constante: así la prueba puede cambiar el entorno.
+ */
+const MOSTRAR_CUPONES_DE_PRUEBA = () => process.env.NODE_ENV !== 'production';
+
 export interface CouponInputProps {
   /** Plan ID to validate coupon against */
   planId: PlanId;
@@ -162,10 +170,13 @@ export function CouponInput({
       </div>
       <ErrorDelCampo id="coupon-code-error" mensaje={error} className="mt-2" />
 
-      {/* Example coupon hint for testing */}
-      <p className="text-xs text-muted-foreground mt-2">
-        Prueba: LAUNCH100, VERANO20, GRATIS3
-      </p>
+      {/* Los cupones de prueba, sólo fuera de producción (Nico, 02-10-2026):
+          a una inmobiliaria real no se le regalan los códigos. */}
+      {MOSTRAR_CUPONES_DE_PRUEBA() && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Prueba: LAUNCH100, VERANO20, GRATIS3
+        </p>
+      )}
     </div>
   );
 }

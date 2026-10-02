@@ -133,6 +133,20 @@ describe('RestablecerSegundoFactorPorCorreo', () => {
     expect(onRestablecido).not.toHaveBeenCalled()
   })
 
+  it('🔴 accesibilidad: con un error, cada casilla lo nombra en aria-describedby', async () => {
+    api.confirmarRestablecimiento.mockRejectedValueOnce(
+      new ApiError(422, 'El código no es correcto. Te quedan 4 intentos.', 'codigo_invalido'),
+    )
+    await montar()
+    await pedirElCodigo()
+    const casilla0 = () => host.querySelector<HTMLInputElement>('[data-testid="casilla-0"]')!
+    expect(casilla0().hasAttribute('aria-describedby')).toBe(false)
+    await escribirCodigo('000000')
+
+    expect(casilla0().getAttribute('aria-describedby')).toBe('codigo-del-correo-error')
+    expect(document.getElementById('codigo-del-correo-error')?.textContent).toMatch(/Te quedan 4 intentos/)
+  })
+
   it('🔴 sin el secreto en el back (503): lo dice y manda a un administrador', async () => {
     api.solicitarRestablecimiento.mockRejectedValueOnce(
       new ApiError(503, 'x', 'restablecimiento_no_disponible'),

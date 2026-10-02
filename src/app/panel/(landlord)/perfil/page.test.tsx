@@ -259,9 +259,21 @@ describe('Perfil del propietario — guardar los datos', () => {
         campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }],
       }),
     )
-    await editarYGuardar(() => escribir(campo('perfil-propietario-phone'), '12345'))
+    // Un celular bien escrito que el back igual rechaza: el cliente lo deja salir.
+    await editarYGuardar(() => escribir(campo('perfil-propietario-phone'), '3109998877'))
 
     expect(container.querySelector('#perfil-propietario-phone-error')?.textContent).toBe(FRASE)
+    expect(document.activeElement).toBe(campo('perfil-propietario-phone'))
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un celular incompleto no sale: «El celular en Colombia tiene 10 dígitos.», en su campo y sin PATCH', async () => {
+    await editarYGuardar(() => escribir(campo('perfil-propietario-phone'), '300123'))
+    expect(updateProfileMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-propietario-phone-error')?.textContent).toBe(
+      'El celular en Colombia tiene 10 dígitos.',
+    )
+    expect(campo('perfil-propietario-phone').getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(campo('perfil-propietario-phone'))
     expect(toastError).not.toHaveBeenCalled()
   })
@@ -299,5 +311,48 @@ describe('Perfil del propietario — la zona de peligro', () => {
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('irreversibles')
     expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Nico): «que sólo quede lo que es verdad y lo que se guarda de
+ * verdad». La ficha decía «Verificado» en correo, teléfono, identidad y
+ * propiedad de TODO propietario, «Propietario desde Enero 2024» a todos, «5 de
+ * 5 pasos completados», y dejaba editar un correo que «Guardar» nunca mandaba.
+ */
+describe('Perfil del propietario — sólo lo que es verdad', () => {
+  it('no hay insignias «Verificado» ni la fecha inventada', async () => {
+    await renderPage()
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('Verificado')
+    expect(texto).not.toContain('Estado de verificación')
+    expect(texto).not.toContain('Propietario desde')
+  })
+
+  it('los pasos del perfil salen de lo guardado: sin dirección ni contacto, no está «completo»', async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u-1', email: 'pedro@example.com', firstName: 'Pedro', lastName: 'Ruiz', phone: '3001234567' },
+      updateProfile: vi.fn(),
+    })
+    await renderPage()
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('2 de 5 pasos completados')
+    expect(texto).not.toContain('Perfil completo')
+    expect(texto).not.toMatch(/Verificar (teléfono|identidad)/)
+  })
+
+  it('🔴 el correo sólo se lee: al editar no hay campo de correo, y «Guardar» no lo manda', async () => {
+    const updateProfile = vi.fn().mockResolvedValue(undefined)
+    useAuthMock.mockReturnValue({
+      user: { id: 'u-1', email: 'pedro@example.com', firstName: 'Pedro', lastName: 'Ruiz' },
+      updateProfile,
+    })
+    await renderPage()
+    act(() => { boton(container, 'Editar').click() })
+    expect(container.querySelector('input[type="email"]')).toBeNull()
+    expect(container.textContent).toContain('pedro@example.com')
+    await act(async () => { boton(container, 'Guardar').click() })
+    expect(updateProfile).toHaveBeenCalledTimes(1)
+    expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('email')
   })
 })

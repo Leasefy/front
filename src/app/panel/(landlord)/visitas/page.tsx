@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, CalendarCheck, CalendarX } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useVisits, useVisitActions } from '@/lib/hooks/useVisits';
-import { useLandlordProperties } from '@/lib/hooks/useLandlord';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
@@ -23,7 +22,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageHeader, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { ScheduleModal, RescheduleModal, formatTime } from '@/components/landlord/visitas/ModalesDeVisita';
+import { RescheduleModal, formatTime } from '@/components/landlord/visitas/ModalesDeVisita';
 
 type TabFunnel = 'all' | VisitStatus;
 
@@ -140,7 +139,6 @@ export default function VisitasPage() {
   const [tabFunnel, setTabFunnel] = useState<TabFunnel>('all');
   const { visits, stats, isLoading, error, refetch } = useVisits();
   const actions = useVisitActions();
-  const { properties: landlordProperties } = useLandlordProperties();
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { t, formatDate } = useI18n();
@@ -148,7 +146,6 @@ export default function VisitasPage() {
   // Modal state
   const [cancelTarget, setCancelTarget] = useState<Visit | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<Visit | null>(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Visit status labels using i18n
   const visitStatusLabels: Record<VisitStatus, string> = {
@@ -306,12 +303,6 @@ export default function VisitasPage() {
     refetch();
   };
 
-  // Si falla, lanza: `ScheduleModal` reparte el error en sus campos y queda abierto.
-  const handleCreateVisit = async (propertyId: string, date: string, time: string, notes?: string): Promise<void> => {
-    await actions.create({ propertyId, date, startTime: time, visitType: 'IN_PERSON', notes });
-    refetch();
-  };
-
   // ---- Quick actions ----
 
   const getQuickActions = (visit: Visit): QuickAction[] => {
@@ -455,17 +446,15 @@ export default function VisitasPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
+        {/* Header. «Agendar visita» no está (Nico, 02-10-2026): `POST /visits`
+            es sólo para inquilinos y al propietario SIEMPRE le respondía 403.
+            Las visitas las pide el inquilino desde el inmueble; acá se
+            confirman, se reprograman o se cancelan. `ScheduleModal` sigue en
+            `ModalesDeVisita` para cuando el back lo permita. */}
         <PageHeader
           className="mb-8"
           title={t('landlord.visits.title')}
           subtitle={t('landlord.visits.subtitle')}
-          actions={
-            <Button onClick={() => setShowScheduleModal(true)} hideArrow>
-              <CalendarPlus className="w-4 h-4" />
-              {t('landlord.visits.scheduleButton')}
-            </Button>
-          }
         />
 
         {/* Stats Cards */}
@@ -590,15 +579,6 @@ export default function VisitasPage() {
           visit={rescheduleTarget}
           onConfirm={confirmReschedule}
           onClose={() => setRescheduleTarget(null)}
-        />
-      )}
-
-      {/* Schedule Modal */}
-      {showScheduleModal && (
-        <ScheduleModal
-          onClose={() => setShowScheduleModal(false)}
-          properties={landlordProperties.map(p => ({ id: p.id, title: p.title }))}
-          onCreate={handleCreateVisit}
         />
       )}
     </div>

@@ -502,6 +502,7 @@ export function ActivarSegundoFactorPasoAPaso({
               }}
               onCompleto={(v) => void verificar(v)}
               hayError={Boolean(errorDelCodigo)}
+              aria-describedby={errorDelCodigo ? 'codigo-de-la-app-error' : undefined}
               disabled={verificando}
               autoFocus
             />

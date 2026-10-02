@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, SpinnerGap, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
 import { Progress } from '@leasefy/cadence';
@@ -7,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePublish } from '@/lib/context/PublishContext';
 import { PUBLISH_STEPS } from '@/lib/types/publish';
+import { enfocarElPrimerError, hayErroresNuevos } from './campos-con-error';
 
 interface PublishShellProps {
   children: React.ReactNode;
@@ -25,7 +27,25 @@ export function PublishShell({ children }: PublishShellProps) {
     isSubmitting,
     canProceed,
     submissionError,
+    erroresDelServidor,
   } = usePublish();
+
+  /*
+   * El foco al primer campo con error (02-10-2026). Tras un fallo al publicar,
+   * el contexto pone los errores y lleva a la persona al paso del primero; acá,
+   * con ese paso ya montado, el foco va a su primer control marcado (orden de la
+   * pantalla). Vive en el marco y no en cada paso porque el marco no se
+   * desmonta al cambiar de paso: así sabe si los errores son NUEVOS y no le
+   * roba el foco a nadie al volver a un paso, ni en cada render, ni cuando la
+   * persona corrige un campo y los demás siguen marcados.
+   */
+  const contenidoRef = useRef<HTMLDivElement>(null);
+  const erroresAntesRef = useRef(erroresDelServidor);
+  useEffect(() => {
+    const antes = erroresAntesRef.current;
+    erroresAntesRef.current = erroresDelServidor;
+    if (hayErroresNuevos(antes, erroresDelServidor)) enfocarElPrimerError(contenidoRef.current);
+  }, [erroresDelServidor]);
 
   const currentStepConfig = PUBLISH_STEPS[currentStep - 1];
   const isFirstStep = currentStep === 1;
@@ -214,7 +234,7 @@ export function PublishShell({ children }: PublishShellProps) {
               </div>
 
               {/* Form content */}
-              <div className="px-4 py-6 lg:px-6 lg:py-8">
+              <div ref={contenidoRef} className="px-4 py-6 lg:px-6 lg:py-8">
                 {children}
               </div>
 

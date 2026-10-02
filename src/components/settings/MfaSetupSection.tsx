@@ -472,6 +472,7 @@ export function MfaSetupSection({
                 }}
                 onCompleto={(v) => void handleQuitarConCodigo(v)}
                 hayError={Boolean(errorDelModal)}
+                aria-describedby={errorDelModal ? 'quitar-segundo-factor-error' : undefined}
                 disabled={isLoading}
                 autoFocus
               />

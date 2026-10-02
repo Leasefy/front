@@ -117,42 +117,50 @@ export default function PropietarioPerfilPage() {
   const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Propietario' : 'Landlord');
   const emergencyContactDisplay = [formData.emergencyContactName, formData.emergencyContactPhone].filter(Boolean).join(' - ');
 
-  // Setup steps
+  /*
+   * Los pasos del perfil salen de lo que la persona YA guardó (Nico,
+   * 02-10-2026: «que sólo quede lo que es verdad»). Antes eran cinco pasos
+   * fijos en `completed: true` —«Verificar teléfono», «Verificar identidad»,
+   * «Publicar propiedad»— y la tarjeta decía «5 de 5» y «¡Perfil completo!» a
+   * todo el mundo. No hay verificación de teléfono ni de identidad en el back,
+   * así que no se ofrece ningún «verificar»: son los mismos pasos que el
+   * perfil del inquilino.
+   */
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
-      description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
+      description: locale === 'es' ? 'Nombre y apellido' : 'First and last name',
       icon: User,
-      completed: true,
+      completed: !!(user?.firstName && user?.lastName),
     },
     {
-      id: 'phone-verify',
-      label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
-      description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
+      id: 'phone',
+      label: locale === 'es' ? 'Teléfono' : 'Phone',
+      description: locale === 'es' ? 'Agrega tu número de teléfono' : 'Add your phone number',
       icon: Phone,
-      completed: true,
+      completed: !!user?.phone,
     },
     {
-      id: 'identity-verify',
-      label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
-      description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
+      id: 'id-number',
+      label: t('landlordProfile.fields.cedula'),
+      description: locale === 'es' ? 'Tu documento de identidad' : 'Your ID number',
       icon: Shield,
-      completed: true,
+      completed: !!user?.rut,
     },
     {
-      id: 'property-verify',
-      label: locale === 'es' ? 'Publicar propiedad' : 'Publish property',
-      description: locale === 'es' ? 'Publica tu primera propiedad' : 'Publish your first property',
-      icon: Buildings,
-      completed: true,
+      id: 'address',
+      label: locale === 'es' ? 'Dirección' : 'Address',
+      description: locale === 'es' ? 'Agrega tu dirección' : 'Add your address',
+      icon: MapPin,
+      completed: !!user?.address,
     },
     {
       id: 'emergency-contact',
       label: locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact',
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: true,
+      completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
     },
   ];
 
@@ -571,9 +579,8 @@ export default function PropietarioPerfilPage() {
                 ) : (
                   <h2 className="text-xl font-semibold text-fg">{fullName}</h2>
                 )}
-                <p className="text-sm text-fg-muted mt-1">
-                  {locale === 'es' ? 'Propietario desde Enero 2024' : 'Landlord since January 2024'}
-                </p>
+                {/* «Propietario desde Enero 2024» era una fecha inventada, igual
+                    para todos (Nico, 02-10-2026): no se muestra. */}
 
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
@@ -619,29 +626,9 @@ export default function PropietarioPerfilPage() {
               </div>
             </div>
 
-            {/* Verification Status Card */}
-            <div className="rounded-lg border border-border bg-surface p-6">
-              <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-fg-subtle" />
-                {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
-              </h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'email', label: 'Email', verified: true },
-                  { key: 'phone', label: locale === 'es' ? 'Teléfono' : 'Phone', verified: true },
-                  { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
-                  { key: 'property', label: locale === 'es' ? 'Propiedad' : 'Property', verified: true },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface-muted border border-border-faint">
-                    <span className="text-sm font-medium text-fg-muted">{item.label}</span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2.5 py-1 rounded-full">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {locale === 'es' ? 'Verificado' : 'Verified'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* «Estado de verificación» decía «Verificado» en el correo, el
+                teléfono, la identidad y la propiedad de TODO propietario, sin
+                que nada lo verificara (Nico, 02-10-2026): se quitó. */}
           </motion.div>
 
           {/* Profile Form */}
@@ -698,16 +685,15 @@ export default function PropietarioPerfilPage() {
                   </div>
                 </div>
 
+                {/* El correo sólo se lee: «Guardar» no lo manda (`PATCH /users/me`
+                    no lo cambia; es el de la cuenta). Era un campo editable que
+                    se vaciaba al guardar (Nico, 02-10-2026). */}
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">Email</label>
-                  {editingSection === 'personal' ? (
-                    <Input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Envelope className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.email || notSet}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
+                    <Envelope className="w-4 h-4 text-fg-subtle" />
+                    <span className="text-sm text-fg">{formData.email || notSet}</span>
+                  </div>
                 </div>
 
                 <div>

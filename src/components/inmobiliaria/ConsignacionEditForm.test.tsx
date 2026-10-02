@@ -483,3 +483,84 @@ describe('<ConsignacionEditForm> — el cajón trae todo lo que se puede editar'
     vi.useRealTimers();
   });
 });
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): lo que el back rechaza va a SU
+ * campo (con el foco), los topes del DTO se atajan antes de mandar con la misma
+ * frase, un 5xx dice «de nuestro lado» con la referencia y sólo sin respuesta
+ * se habla de la conexión.
+ */
+describe('<ConsignacionEditForm> — los errores del back, en su campo', () => {
+  const AREA_ENTERA = 'El área debe ser un número entero de metros cuadrados.';
+  const errorDeCampos = (campos: Array<{ campo: string; mensaje: string }>) =>
+    new ApiError(400, campos.map((c) => c.mensaje), 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: campos.map((c) => c.mensaje),
+      campos: campos.map((c) => ({ ...c, regla: 'entero' })),
+    });
+
+  it('🔴 un 400 en el área: el error debajo del área, el foco ahí, sin toast y el cajón abierto', async () => {
+    propertiesUpdate.mockRejectedValueOnce(errorDeCampos([{ campo: 'area', mensaje: AREA_ENTERA }]));
+    const { onCerrar } = render();
+    escribir('editar-area', '71');
+    await guardar();
+
+    const error = q('#editar-campo-area-error')!;
+    expect(error.textContent).toBe(AREA_ENTERA);
+    expect(q('[data-testid="editar-area"]')!.getAttribute('aria-invalid')).toBe('true');
+    expect(q('[data-testid="editar-area"]')!.getAttribute('aria-describedby')).toBe('editar-campo-area-error');
+    expect(document.activeElement).toBe(q('[data-testid="editar-area"]'));
+    expect(toastMock.error).not.toHaveBeenCalled();
+    expect(onCerrar).not.toHaveBeenCalled();
+  });
+
+  it('el campo del MANDATO (propertyTitle) llega al título del cajón', async () => {
+    consigUpdate.mockRejectedValueOnce(
+      errorDeCampos([{ campo: 'propertyTitle', mensaje: 'El título puede tener hasta 200 caracteres.' }]),
+    );
+    render({ property: null, consignacion: makeConsignacion({ propertyId: undefined }) });
+    escribir('editar-title', 'Otro título del mandato');
+    await guardar();
+    expect(q('#editar-campo-title-error')!.textContent).toBe('El título puede tener hasta 200 caracteres.');
+  });
+
+  it('🔴 el tope se ataja antes de mandar: un canon de once cifras no viaja', async () => {
+    render();
+    escribir('editar-monthlyRent', '30000000000');
+    await guardar();
+    expect(propertiesUpdate).not.toHaveBeenCalled();
+    expect(q('#editar-campo-monthlyRent-error')!.textContent).toBe(
+      'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    );
+  });
+
+  it('un área con decimales se ataja con la frase del back', async () => {
+    render();
+    escribir('editar-area', '65.5');
+    await guardar();
+    expect(propertiesUpdate).not.toHaveBeenCalled();
+    expect(q('#editar-campo-area-error')!.textContent).toBe(AREA_ENTERA);
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, no el texto crudo ni la conexión', async () => {
+    propertiesUpdate.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
+    render();
+    escribir('editar-title', 'Otro título');
+    await guardar();
+    const [, opciones] = toastMock.error.mock.calls[0];
+    expect(opciones.description).toMatch(/^No pudimos guardar los cambios: algo falló de nuestro lado/);
+    expect(opciones.description).toContain('ab12cd34');
+    expect(opciones.description).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta: ahí sí, la conexión', async () => {
+    propertiesUpdate.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    render();
+    escribir('editar-title', 'Otro título');
+    await guardar();
+    expect(toastMock.error.mock.calls[0][1].description).toMatch(/conexión/);
+  });
+});

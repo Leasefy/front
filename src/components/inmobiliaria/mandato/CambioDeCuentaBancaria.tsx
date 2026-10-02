@@ -53,6 +53,9 @@ import {
   type CuentaDelReparto,
 } from '@/lib/api/mandato.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ESTADO_DEL_CAMBIO_DE_CUENTA } from '@/lib/mandato/textos';
 import { COLOMBIAN_BANKS, type BankCode } from '@/lib/types/payment-accounts';
@@ -237,6 +240,27 @@ function esReparto(c: CuentaBancaria): boolean {
   return !!c.reparto && c.reparto.length > 1;
 }
 
+/** Los campos de la cuenta única que pueden traer un error del servidor. */
+type CampoDelCambio = 'banco' | 'tipo' | 'numero' | 'certificacion';
+const CAMPOS_DEL_CAMBIO: readonly CampoDelCambio[] = ['banco', 'tipo', 'numero', 'certificacion'];
+/** El nombre del campo en `SolicitarCambioDeCuentaDto` → el del formulario. */
+const CAMPOS_DEL_CAMBIO_EN_EL_BACK: Record<string, CampoDelCambio> = {
+  bankCode: 'banco',
+  bankName: 'banco',
+  bankAccountType: 'tipo',
+  bankAccountNumber: 'numero',
+  certificacion: 'certificacion',
+};
+const ID_DEL_CAMPO_DEL_CAMBIO: Record<CampoDelCambio, string> = {
+  banco: 'banco-nuevo',
+  tipo: 'tipo-nuevo',
+  numero: 'numero-nuevo',
+  certificacion: 'certificacion',
+};
+/** Espejo de los topes del back (`mandato.dto.ts`). */
+const MAX_LARGO_DEL_NUMERO_DE_CUENTA = 40;
+const MAX_LARGO_DEL_MOTIVO_DE_CIERRE = 500;
+
 const ARCHIVOS_DE_CERTIFICACION = 'application/pdf,image/jpeg,image/png,image/webp';
 
 /** «2», «2 y 3», «2, 3 y 4». */
@@ -330,7 +354,9 @@ export function CambioDeCuentaBancaria({
       onCuentaCambiada();
       await cargar();
     } catch (e) {
-      toast.error('No se pudo confirmar.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      toast.error('No se pudo confirmar.', {
+        description: mensajeDelFallo(e, 'No pudimos confirmar el cambio con ese código.'),
+      });
       await cargar();
     } finally {
       setTrabajando(false);
@@ -642,6 +668,19 @@ function PedirCambioDeCuenta({
     .filter((i): i is number => i !== null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * Lo que el back rechazó POR CAMPO en la cuenta única (02-10-2026): un 400
+   * `DATOS_INVALIDOS` trae `campos[]` con los nombres del DTO y cada uno va
+   * bajo SU campo, con el foco en el primero. Lo que no tiene campo acá (el
+   * titular, un 5xx, la red) sigue en el aviso de abajo.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<CampoDelCambio, string>>>({});
+  const limpiarDelServidor = (campo: CampoDelCambio) =>
+    setErroresDelServidor((antes) => {
+      if (!antes[campo]) return antes;
+      const { [campo]: _quitado, ...resto } = antes;
+      return resto;
+    });
 
   const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
 
@@ -750,6 +789,7 @@ function PedirCambioDeCuenta({
     const tercero = titular.titular === 'TERCERO';
     setGuardando(true);
     setError(null);
+    setErroresDelServidor({});
     try {
       const r = await mandatoApi.solicitarCambioDeCuenta(propietarioId, {
         bankCode: mapBankCodeToWire(banco),
@@ -773,7 +813,18 @@ function PedirCambioDeCuenta({
       });
       onPedido(r.enlaceDePrueba);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo pedir el cambio.'));
+      const reparto = repartirErroresDelServidor<CampoDelCambio>(e, {
+        mapa: CAMPOS_DEL_CAMBIO_EN_EL_BACK,
+        campos: CAMPOS_DEL_CAMBIO,
+        porDefecto: 'No se pudo pedir el cambio.',
+      });
+      if (reparto.orden.length > 0) {
+        setErroresDelServidor(reparto.porCampo);
+        setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+        document.getElementById(ID_DEL_CAMPO_DEL_CAMBIO[reparto.orden[0]])?.focus();
+      } else {
+        setError(mensajeDelFallo(e, 'No se pudo pedir el cambio.'));
+      }
     } finally {
       setGuardando(false);
     }
@@ -878,7 +929,12 @@ function PedirCambioDeCuenta({
               id="banco-nuevo"
               className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
               value={banco}
-              onChange={(e) => setBanco(e.target.value as BankCode)}
+              aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
+              aria-describedby="banco-nuevo-error"
+              onChange={(e) => {
+                setBanco(e.target.value as BankCode);
+                limpiarDelServidor('banco');
+              }}
             >
               <option value="">Escoge el banco</option>
               {COLOMBIAN_BANKS.map((b) => (
@@ -887,11 +943,17 @@ function PedirCambioDeCuenta({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
           </div>
           <RadioGroup
             className="flex gap-x-5 gap-y-2"
             value={tipo}
-            onValueChange={(v) => setTipo(v as typeof tipo)}
+            onValueChange={(v) => {
+              setTipo(v as typeof tipo);
+              limpiarDelServidor('tipo');
+            }}
+            id="tipo-nuevo"
+            aria-describedby="tipo-nuevo-error"
           >
             {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
               <label
@@ -903,15 +965,24 @@ function PedirCambioDeCuenta({
               </label>
             ))}
           </RadioGroup>
+          <ErrorDelCampo id="tipo-nuevo-error" mensaje={erroresDelServidor.tipo} className="mt-0" />
           <div className="space-y-1.5">
             <Label htmlFor="numero-nuevo">Número de cuenta</Label>
             <Input
               id="numero-nuevo"
               inputMode="numeric"
               className="font-mono"
+              // El mismo tope que el DTO del back (`bankAccountNumber`, 40).
+              maxLength={MAX_LARGO_DEL_NUMERO_DE_CUENTA}
               value={numero}
-              onChange={(e) => setNumero(e.target.value.replace(/[^0-9]/g, ''))}
+              aria-invalid={Boolean(erroresDelServidor.numero) || undefined}
+              aria-describedby="numero-nuevo-error"
+              onChange={(e) => {
+                setNumero(e.target.value.replace(/[^0-9]/g, ''));
+                limpiarDelServidor('numero');
+              }}
             />
+            <ErrorDelCampo id="numero-nuevo-error" mensaje={erroresDelServidor.numero} className="mt-0" />
           </div>
           </>
           )}
@@ -922,9 +993,13 @@ function PedirCambioDeCuenta({
                 id="certificacion"
                 accept={ARCHIVOS_DE_CERTIFICACION}
                 archivo={archivo}
-                onElegir={setArchivo}
+                onElegir={(elegido) => {
+                  setArchivo(elegido);
+                  limpiarDelServidor('certificacion');
+                }}
                 testid="archivo-certificacion"
               />
+              <ErrorDelCampo id="certificacion-error" mensaje={erroresDelServidor.certificacion} className="mt-0" />
             </div>
           ) : null}
           {/* El botón apagado dice por qué: lo que falta, todo de una vez. */}
@@ -1081,17 +1156,26 @@ function CerrarCambio({
   const [motivo, setMotivo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   const rechazo = cambio.estado === 'CONFIRMADO';
 
   async function cerrar() {
     setGuardando(true);
     setError(null);
+    setErrorDelMotivo(null);
     try {
       await mandatoApi.cerrarCambioDeCuenta(propietarioId, cambio.id, motivo.trim());
       toast.success(rechazo ? 'Cambio rechazado: volvió la cuenta anterior.' : 'Cambio anulado.');
       onCerrado();
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo cerrar el cambio.'));
+      // Un motivo rechazado (400 con `campos`) va bajo el motivo, con el foco.
+      const delMotivo = camposDelError(e).find((c) => c.campo === 'motivo');
+      if (delMotivo) {
+        setErrorDelMotivo(delMotivo.mensaje);
+        document.getElementById('motivo-de-cierre')?.focus();
+      } else {
+        setError(mensajeDelFallo(e, 'No se pudo cerrar el cambio.'));
+      }
     } finally {
       setGuardando(false);
     }
@@ -1114,7 +1198,20 @@ function CerrarCambio({
         </DialogHeader>
         <div className="space-y-1.5">
           <Label htmlFor="motivo-de-cierre">Motivo</Label>
-          <Textarea id="motivo-de-cierre" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <Textarea
+            id="motivo-de-cierre"
+            rows={2}
+            value={motivo}
+            // El mismo tope que el DTO del back (`CerrarCambioDeCuentaDto.motivo`, 500).
+            maxLength={MAX_LARGO_DEL_MOTIVO_DE_CIERRE}
+            aria-invalid={Boolean(errorDelMotivo) || undefined}
+            aria-describedby="motivo-de-cierre-error"
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              setErrorDelMotivo(null);
+            }}
+          />
+          <ErrorDelCampo id="motivo-de-cierre-error" mensaje={errorDelMotivo} className="mt-0" />
         </div>
         {error ? (
           <p className="text-sm text-danger" role="alert">

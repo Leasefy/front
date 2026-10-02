@@ -35,6 +35,21 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  LARGOS_DEL_MANDATO,
+  MENSAJES_DEL_MANDATO,
+  MONTO_MENSUAL_MAXIMO_COP,
+  errorDeLaFechaDelMandato,
+  errorDeLaFecha,
+  errorDelLargo,
+  errorDelTermino,
+  erroresDelInmueble,
+  FECHA_DEL_MANDATO_DESDE,
+  FECHA_DEL_MANDATO_HASTA,
+} from '@/lib/inmuebles/limites-del-inmueble';
 import {
   Bed,
   Briefcase,
@@ -201,6 +216,36 @@ const mismaLista = (a: string[], b: string[]) =>
 /** `''` → null; cualquier otra cosa → número. Para los campos que pueden faltar. */
 const numeroONull = (v: string): number | null => (v.trim() === '' ? null : Number(v));
 
+/** Para los topes: vacío = «no se sabe» (no se opina); lo demás, el número. */
+const numeroOVacio = (v: string): number | undefined => (v.trim() === '' ? undefined : Number(v));
+
+/** El id del control de un campo del cajón; `${id}-error` es el de su error. */
+const idDelCampo = (campo: string) => `editar-campo-${campo}`;
+
+/*
+ * Sistema de errores (02-10-2026): el back responde `campos[]` con el nombre de
+ * su DTO. `PATCH /properties/:id` usa los mismos nombres que `Valores`; el
+ * mandato (`PUT /inmobiliaria/consignaciones/:id`), los suyos. Lo que el cajón
+ * no muestra (`null`) va al toast.
+ */
+const MAPA_DEL_SERVIDOR: Record<string, keyof Valores | null> = {
+  propertyTitle: 'title',
+  propertyAddress: 'address',
+  propertyCity: 'city',
+  propertyZone: 'neighborhood',
+  propertyType: 'type',
+  status: 'publicado',
+  latitude: null,
+  longitude: null,
+};
+
+const CAMPOS_DEL_CAJON: (keyof Valores)[] = [
+  'title', 'description', 'type', 'department', 'city', 'neighborhood', 'address', 'bedrooms',
+  'bathrooms', 'area', 'floor', 'parkingSpaces', 'stratum', 'yearBuilt', 'amenities', 'externalId',
+  'monthlyRent', 'salePrice', 'adminFee', 'deposit', 'consignedAt', 'commissionPercent',
+  'saleCommissionPercent', 'contractDate', 'contractEndDate', 'minimumTerm', 'agenteId', 'publicado',
+];
+
 function InputWrapper({
   label,
   required,
@@ -208,6 +253,7 @@ function InputWrapper({
   error,
   children,
   testId,
+  campo,
 }: {
   label: string;
   required?: boolean;
@@ -215,16 +261,23 @@ function InputWrapper({
   error?: string;
   children: React.ReactNode;
   testId?: string;
+  /** El campo: da el `htmlFor` de la etiqueta y el id del error (`aria-describedby`). */
+  campo?: string;
 }) {
+  const id = campo ? idDelCampo(campo) : undefined;
   return (
     <div className="space-y-1.5" data-testid={testId}>
-      <label className="text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor={id} className="text-sm font-medium text-fg dark:text-fg-subtle">
         {label}
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
-      {helper && !error && <p className="text-xs text-fg-muted dark:text-fg-subtle">{helper}</p>}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {/* El error entra suave y, si hay ayuda, la reemplaza con un cruce. */}
+      {id ? (
+        <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={helper} />
+      ) : (
+        helper && <p className="text-xs text-fg-muted dark:text-fg-subtle">{helper}</p>
+      )}
     </div>
   );
 }
@@ -361,6 +414,19 @@ export function ConsignacionEditForm({
   const [errores, setErrores] = useState<Partial<Record<keyof Valores, string>>>({});
   const [guardando, setGuardando] = useState(false);
   const [conflicto, setConflicto] = useState<{ titulo: string; detalle: string } | null>(null);
+  /** El primer campo con error del servidor: recibe el foco tras pintarse. */
+  const [enfocar, setEnfocar] = useState<keyof Valores | null>(null);
+
+  useEffect(() => {
+    if (!enfocar) return;
+    const el = document.getElementById(idDelCampo(enfocar));
+    const control =
+      el && el.matches('input, textarea, button, select, [tabindex]')
+        ? el
+        : el?.querySelector<HTMLElement>('input, textarea, button, select, [tabindex]');
+    control?.focus();
+    setEnfocar(null);
+  }, [enfocar]);
 
   // Cada apertura arranca de lo que hay. Si el inmueble llega DESPUÉS de abrir
   // (todavía cargaba) y nadie tocó nada, se vuelve a sembrar con él.
@@ -395,6 +461,16 @@ export function ConsignacionEditForm({
   const campo =
     (nombre: keyof Valores) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       poner(nombre, e.target.value as never);
+
+  /** El id del control y cómo nombra su error. */
+  const a11y = (nombre: keyof Valores) => {
+    const id = idDelCampo(nombre);
+    return {
+      id,
+      'aria-invalid': errores[nombre] ? true : undefined,
+      'aria-describedby': errores[nombre] ? `${id}-error` : undefined,
+    } as const;
+  };
 
   const tipos = useMemo(
     () => (tieneInmueble ? TIPOS_DE_INMUEBLE : TIPOS_DE_INMUEBLE.filter((x) => x.value !== 'room')),
@@ -448,7 +524,57 @@ export function ConsignacionEditForm({
         e.contractEndDate = tv('contractEndAfterStart');
       }
     }
+
+    // Los topes del back (`limites-del-inmueble.ts`, espejo de los DTOs): lo
+    // que el servidor rechazaría se dice acá, con la misma frase.
+    const topes: Partial<Record<keyof Valores, string | null>> = {};
+    if (inmuebleEditable) {
+      Object.assign(
+        topes,
+        erroresDelInmueble({
+          title: v.title.trim(),
+          address: v.address.trim(),
+          city: v.city.trim(),
+          neighborhood: v.neighborhood.trim(),
+          monthlyRent: esVenta ? undefined : numeroOVacio(v.monthlyRent),
+          adminFee: esVenta ? undefined : numeroOVacio(v.adminFee),
+          deposit: numeroOVacio(v.deposit),
+          bedrooms: numeroOVacio(v.bedrooms),
+          bathrooms: numeroOVacio(v.bathrooms),
+          area: numeroOVacio(v.area),
+          floor: numeroOVacio(v.floor),
+          parkingSpaces: numeroOVacio(v.parkingSpaces),
+          consignedAt: v.consignedAt,
+        }),
+      );
+    } else if (!tieneInmueble) {
+      // Sin inmueble detrás, la copia del mandato es la verdad: sus columnas.
+      topes.title = errorDelLargo(v.title.trim(), LARGOS_DEL_MANDATO.titulo, MENSAJES_DEL_MANDATO.tituloLargo);
+      topes.address = errorDelLargo(v.address.trim(), LARGOS_DEL_MANDATO.direccion, MENSAJES_DEL_MANDATO.direccionLarga);
+      topes.city = errorDelLargo(v.city.trim(), LARGOS_DEL_MANDATO.ciudad, MENSAJES_DEL_MANDATO.ciudadLarga);
+      topes.neighborhood = errorDelLargo(v.neighborhood.trim(), LARGOS_DEL_MANDATO.barrio, MENSAJES_DEL_MANDATO.barrioLargo);
+      if (!esVenta) {
+        if ((numeroOVacio(v.monthlyRent) ?? 0) > MONTO_MENSUAL_MAXIMO_COP) topes.monthlyRent = MENSAJES_DEL_MANDATO.canonMaximo;
+        if ((numeroOVacio(v.adminFee) ?? 0) > MONTO_MENSUAL_MAXIMO_COP) topes.adminFee = MENSAJES_DEL_MANDATO.administracionMaxima;
+      }
+    }
+    if (!mandatoTerminado) {
+      if (!esVenta) topes.minimumTerm = errorDelTermino(numeroOVacio(v.minimumTerm));
+      topes.contractDate = errorDeLaFechaDelMandato(v.contractDate);
+      topes.contractEndDate = errorDeLaFecha(v.contractEndDate, {
+        desde: FECHA_DEL_MANDATO_DESDE,
+        hasta: FECHA_DEL_MANDATO_HASTA,
+        noEsDia: MENSAJES_DEL_MANDATO.fechaDeFin,
+        fueraDeRango: MENSAJES_DEL_MANDATO.fechaDeFinFueraDeRango,
+      });
+    }
+    for (const [k, mensaje] of Object.entries(topes) as [keyof Valores, string | null][]) {
+      if (mensaje && !e[k]) e[k] = mensaje;
+    }
+
     setErrores(e);
+    const primero = (Object.keys(e) as (keyof Valores)[])[0];
+    if (primero) setEnfocar(primero);
     return Object.keys(e).length === 0;
   };
 
@@ -566,7 +692,12 @@ export function ConsignacionEditForm({
       onGuardado(fresca);
       onCerrar();
     } catch (err) {
-      const detalle = err instanceof Error ? err.message : '';
+      // Por el traductor (regla de oro): un 4xx dice qué está mal, un 5xx «de
+      // nuestro lado» con la referencia, y «conexión» sólo sin respuesta.
+      const detalle = mensajeParaLaPersona(err, {
+        porDefecto: t('inmobiliaria.portafolio.detail.toasts.updateError'),
+        accion: 'guardar los cambios',
+      });
       if (err instanceof ApiError && err.status === 409) {
         setConflicto({
           titulo: inmuebleGuardado
@@ -575,11 +706,28 @@ export function ConsignacionEditForm({
           detalle,
         });
       } else {
-        toast.error(t('inmobiliaria.portafolio.detail.toasts.updateError'), {
-          description: detalle || undefined,
+        // Un 400 con `campos`: cada error a su campo y el foco al primero; al
+        // toast SÓLO lo que no tiene dónde ir.
+        const reparto = repartirErroresDelServidor<keyof Valores>(err, {
+          mapa: MAPA_DEL_SERVIDOR,
+          campos: CAMPOS_DEL_CAJON,
+          porDefecto: t('inmobiliaria.portafolio.detail.toasts.updateError'),
+          accion: 'guardar los cambios',
         });
+        if (reparto.orden.length > 0) {
+          setErrores((prev) => ({ ...prev, ...reparto.porCampo }));
+          setEnfocar(reparto.orden[0]);
+        }
+        if (reparto.sueltos.length > 0) {
+          toast.error(t('inmobiliaria.portafolio.detail.toasts.updateError'), {
+            description: reparto.sueltos.join(' · '),
+          });
+        }
         if (inmuebleGuardado) {
-          setConflicto({ titulo: t('inmobiliaria.consignaciones.editForm.guardadoParcial'), detalle });
+          setConflicto({
+            titulo: t('inmobiliaria.consignaciones.editForm.guardadoParcial'),
+            detalle: reparto.sueltos.join(' · ') || detalle,
+          });
         }
       }
       // El cajón queda abierto con lo escrito: se corrige y se reintenta.
@@ -665,8 +813,9 @@ export function ConsignacionEditForm({
               </RadioCardGroup>
             </InputWrapper>
 
-            <InputWrapper label={tf('propertyTitle')} required error={errores.title}>
+            <InputWrapper label={tf('propertyTitle')} required error={errores.title} campo="title">
               <Input
+                {...a11y('title')}
                 name="title"
                 value={valores.title}
                 onChange={campo('title')}
@@ -682,8 +831,10 @@ export function ConsignacionEditForm({
                 label={tf('description')}
                 helper={tf('descriptionHelper')}
                 error={errores.description}
+                campo="description"
               >
                 <Textarea
+                  {...a11y('description')}
                   name="description"
                   value={valores.description}
                   onChange={campo('description')}
@@ -696,12 +847,12 @@ export function ConsignacionEditForm({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {inmuebleEditable && (
-                <InputWrapper label={tf('department')}>
+                <InputWrapper label={tf('department')} error={errores.department} campo="department">
                   <Select
                     value={valores.department || undefined}
                     onValueChange={(v) => poner('department', v)}
                   >
-                    <SelectTrigger className="w-full" data-testid="editar-department">
+                    <SelectTrigger {...a11y('department')} className="w-full" data-testid="editar-department">
                       <SelectValue placeholder={tf('selectDepartment')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -714,8 +865,9 @@ export function ConsignacionEditForm({
                   </Select>
                 </InputWrapper>
               )}
-              <InputWrapper label={tf('city')} required error={errores.city}>
+              <InputWrapper label={tf('city')} required error={errores.city} campo="city">
                 <Input
+                  {...a11y('city')}
                   name="city"
                   list="ciudades-sugeridas"
                   value={valores.city}
@@ -731,8 +883,9 @@ export function ConsignacionEditForm({
                   ))}
                 </datalist>
               </InputWrapper>
-              <InputWrapper label={tf('neighborhood')}>
+              <InputWrapper label={tf('neighborhood')} error={errores.neighborhood} campo="neighborhood">
                 <Input
+                  {...a11y('neighborhood')}
                   name="neighborhood"
                   value={valores.neighborhood}
                   onChange={campo('neighborhood')}
@@ -740,10 +893,11 @@ export function ConsignacionEditForm({
                   data-testid="editar-neighborhood"
                 />
               </InputWrapper>
-              <InputWrapper label={tf('address')} required error={errores.address}>
+              <InputWrapper label={tf('address')} required error={errores.address} campo="address">
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                   <Input
+                    {...a11y('address')}
                     name="address"
                     value={valores.address}
                     onChange={campo('address')}
@@ -785,8 +939,9 @@ export function ConsignacionEditForm({
                       ['parkingSpaces', 0, 10, 1],
                     ] as const
                   ).map(([k, min, max, step]) => (
-                    <InputWrapper key={k} label={tf(k)} error={errores[k]}>
+                    <InputWrapper key={k} label={tf(k)} error={errores[k]} campo={k}>
                       <Input
+                        {...a11y(k)}
                         type="number"
                         name={k}
                         min={min}
@@ -799,12 +954,12 @@ export function ConsignacionEditForm({
                       />
                     </InputWrapper>
                   ))}
-                  <InputWrapper label={tf('stratum')} error={errores.stratum}>
+                  <InputWrapper label={tf('stratum')} error={errores.stratum} campo="stratum">
                     <Select
                       value={valores.stratum || SIN_ESTRATO}
                       onValueChange={(v) => poner('stratum', v === SIN_ESTRATO ? '' : v)}
                     >
-                      <SelectTrigger className="w-full" data-testid="editar-stratum">
+                      <SelectTrigger {...a11y('stratum')} className="w-full" data-testid="editar-stratum">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -817,8 +972,9 @@ export function ConsignacionEditForm({
                       </SelectContent>
                     </Select>
                   </InputWrapper>
-                  <InputWrapper label={tf('yearBuilt')} error={errores.yearBuilt}>
+                  <InputWrapper label={tf('yearBuilt')} error={errores.yearBuilt} campo="yearBuilt">
                     <Input
+                      {...a11y('yearBuilt')}
                       type="number"
                       name="yearBuilt"
                       min={1900}
@@ -829,8 +985,9 @@ export function ConsignacionEditForm({
                       data-testid="editar-yearBuilt"
                     />
                   </InputWrapper>
-                  <InputWrapper label={tf('externalId')} error={errores.externalId} helper={tf('externalIdHelper')}>
+                  <InputWrapper label={tf('externalId')} error={errores.externalId} helper={tf('externalIdHelper')} campo="externalId">
                     <Input
+                      {...a11y('externalId')}
                       name="externalId"
                       value={valores.externalId}
                       onChange={campo('externalId')}
@@ -841,7 +998,7 @@ export function ConsignacionEditForm({
                   </InputWrapper>
                 </div>
 
-                <InputWrapper label={tf('amenities')}>
+                <InputWrapper label={tf('amenities')} error={errores.amenities} campo="amenities">
                   <SelectorDeAmenidades value={valores.amenities} onChange={(v) => poner('amenities', v)} />
                 </InputWrapper>
               </>
@@ -853,10 +1010,11 @@ export function ConsignacionEditForm({
             <Seccion icon={CurrencyDollar} titulo={tf('seccionPrecio')} testId="seccion-precio">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {esVenta ? (
-                  <InputWrapper label={tf('salePrice')} required error={errores.salePrice}>
+                  <InputWrapper label={tf('salePrice')} required error={errores.salePrice} campo="salePrice">
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                       <Input
+                        {...a11y('salePrice')}
                         type="number"
                         name="salePrice"
                         min={1000}
@@ -869,10 +1027,11 @@ export function ConsignacionEditForm({
                     </div>
                   </InputWrapper>
                 ) : (
-                  <InputWrapper label={tf('monthlyRent')} required error={errores.monthlyRent}>
+                  <InputWrapper label={tf('monthlyRent')} required error={errores.monthlyRent} campo="monthlyRent">
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                       <Input
+                        {...a11y('monthlyRent')}
                         type="number"
                         name="monthlyRent"
                         min={1000}
@@ -887,10 +1046,11 @@ export function ConsignacionEditForm({
                   </InputWrapper>
                 )}
                 {!esVenta && (
-                  <InputWrapper label={tf('administration')} helper={t('common.optional')}>
+                  <InputWrapper label={tf('administration')} helper={t('common.optional')} error={errores.adminFee} campo="adminFee">
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                       <Input
+                        {...a11y('adminFee')}
                         type="number"
                         name="adminFee"
                         min={0}
@@ -898,7 +1058,7 @@ export function ConsignacionEditForm({
                         value={valores.adminFee}
                         onChange={campo('adminFee')}
                         disabled={camposDelMandatoInactivos && !inmuebleEditable}
-                        className="pl-8"
+                        className={cn('pl-8', errores.adminFee && 'border-danger/30')}
                         data-testid="editar-adminFee"
                       />
                     </div>
@@ -906,23 +1066,25 @@ export function ConsignacionEditForm({
                 )}
                 {inmuebleEditable && (
                   <>
-                    <InputWrapper label={tf('deposit')} helper={t('common.optional')}>
+                    <InputWrapper label={tf('deposit')} helper={t('common.optional')} error={errores.deposit} campo="deposit">
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                         <Input
+                          {...a11y('deposit')}
                           type="number"
                           name="deposit"
                           min={0}
                           step={100000}
                           value={valores.deposit}
                           onChange={campo('deposit')}
-                          className="pl-8"
+                          className={cn('pl-8', errores.deposit && 'border-danger/30')}
                           data-testid="editar-deposit"
                         />
                       </div>
                     </InputWrapper>
-                    <InputWrapper label={tf('consignedAt')} helper={tf('consignedAtHelper')}>
+                    <InputWrapper label={tf('consignedAt')} helper={tf('consignedAtHelper')} error={errores.consignedAt} campo="consignedAt">
                       <Input
+                        {...a11y('consignedAt')}
                         type="date"
                         name="consignedAt"
                         value={valores.consignedAt}
@@ -941,9 +1103,10 @@ export function ConsignacionEditForm({
             <fieldset disabled={camposDelMandatoInactivos} className="space-y-4 min-w-0 disabled:opacity-60">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {esVenta ? (
-                  <InputWrapper label={tf('saleCommission')} required error={errores.saleCommissionPercent}>
+                  <InputWrapper label={tf('saleCommission')} required error={errores.saleCommissionPercent} campo="saleCommissionPercent">
                     <div className="relative">
                       <Input
+                        {...a11y('saleCommissionPercent')}
                         type="number"
                         name="saleCommissionPercent"
                         disabled={camposDelMandatoInactivos}
@@ -964,9 +1127,11 @@ export function ConsignacionEditForm({
                       label={tf('administrationCommission')}
                       required
                       error={errores.commissionPercent}
+                      campo="commissionPercent"
                     >
                       <div className="relative">
                         <Input
+                          {...a11y('commissionPercent')}
                           type="number"
                           name="commissionPercent"
                         disabled={camposDelMandatoInactivos}
@@ -981,15 +1146,16 @@ export function ConsignacionEditForm({
                         <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
                       </div>
                     </InputWrapper>
-                    <InputWrapper label={tf('minimumLeaseTerm')} helper={tf('inMonths')}>
+                    <InputWrapper label={tf('minimumLeaseTerm')} helper={tf('inMonths')} error={errores.minimumTerm} campo="minimumTerm">
                       <div className="relative">
                         <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                         <Input
+                          {...a11y('minimumTerm')}
                           type="number"
                           name="minimumTerm"
                         disabled={camposDelMandatoInactivos}
                           min={1}
-                          max={36}
+                          max={120}
                           placeholder="12"
                           value={valores.minimumTerm}
                           onChange={campo('minimumTerm')}
@@ -1000,8 +1166,9 @@ export function ConsignacionEditForm({
                     </InputWrapper>
                   </>
                 )}
-                <InputWrapper label={tf('contractStartDate')} required error={errores.contractDate}>
+                <InputWrapper label={tf('contractStartDate')} required error={errores.contractDate} campo="contractDate">
                   <Input
+                    {...a11y('contractDate')}
                     type="date"
                     name="contractDate"
                     disabled={camposDelMandatoInactivos}
@@ -1011,8 +1178,9 @@ export function ConsignacionEditForm({
                     data-testid="editar-contractDate"
                   />
                 </InputWrapper>
-                <InputWrapper label={tf('contractEndDate')} helper={t('common.optional')} error={errores.contractEndDate}>
+                <InputWrapper label={tf('contractEndDate')} helper={t('common.optional')} error={errores.contractEndDate} campo="contractEndDate">
                   <Input
+                    {...a11y('contractEndDate')}
                     type="date"
                     name="contractEndDate"
                     disabled={camposDelMandatoInactivos}

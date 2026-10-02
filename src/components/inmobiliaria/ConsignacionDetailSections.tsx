@@ -39,6 +39,7 @@ import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } fro
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // Bank name mapping
 const BANK_NAMES: Record<string, string> = {
@@ -767,8 +768,12 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
       onActualizado?.();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
+      // Por el traductor (sistema de errores, 02-10-2026). Antes un motivo de
+      // más de 160 caracteres se tiraba entero y un 5xx o la red no decían
+      // nada: ahora va el motivo del back, «de nuestro lado» con la referencia,
+      // o la conexión si no hubo respuesta.
       toast.error(t(k('consignmentContractUploadError')), {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'subir el contrato de consignación' }),
       });
     } finally {
       setSubiendo(false);

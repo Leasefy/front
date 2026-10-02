@@ -119,6 +119,14 @@ import { ProgresoDeLote } from "./ProgresoDeLote";
 import { FechaDeCorteDeLaMigracion } from "./FechaDeCorteDeLaMigracion";
 import { TablePagination } from "@/components/ui/pagination";
 import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
+import {
+  camposDelError,
+  mensajeParaLaPersona,
+} from "@/lib/errores/traductor-de-errores";
+import {
+  MAX_CONTRATOS_POR_ARCHIVO,
+  MENSAJES_DE_LA_MIGRACION,
+} from "@/components/migracion/limites-de-la-migracion";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
@@ -173,6 +181,60 @@ type Fila = Record<string, unknown>;
  * una con sus propios controles de resolución.
  */
 const POR_PAGINA = 25;
+
+/**
+ * El fallo de `preparar`, dicho para la persona (sistema de errores,
+ * 02-10-2026). Un 400 `DATOS_INVALIDOS` del archivo trae `campos` como
+ * `contratos.12.monthlyRent`: se dice EN QUÉ FILA del archivo está cada
+ * problema (+2: la primera fila de datos es la 2, como en la revisión), en
+ * vez de una lista de frases sin lugar. Lo demás —un 409, un 5xx con su
+ * referencia, la red— pasa por el traductor.
+ */
+export function mensajeDelPreparar(e: unknown): string {
+  const porFila = camposDelError(e).flatMap((c) => {
+    const m = /^contratos\.(\d+)\./.exec(c.campo);
+    return m ? [`Fila ${Number(m[1]) + 2}: ${c.mensaje}`] : [];
+  });
+  if (porFila.length > 0) {
+    const unicos = Array.from(new Set(porFila));
+    const primeros = unicos.slice(0, 5).join(" · ");
+    return unicos.length > 5
+      ? `${primeros} · y ${unicos.length - 5} más.`
+      : primeros;
+  }
+  return mensajeParaLaPersona(e, {
+    porDefecto: "No pudimos preparar la migración. Prueba de nuevo en un momento.",
+    accion: "preparar la migración",
+  });
+}
+
+/** Una fila que no se pudo consignar sola, y por qué (lo dice el back). */
+export type FallidaDeLaConsignacion = { fila: number; motivo: string };
+
+/**
+ * Las fallidas de la consignación automática, agrupadas por motivo: «Filas 4,
+ * 9 y 12: <motivo>». Antes la pantalla sólo contaba «quedaron N para
+ * revisar» sin decir por qué, y la persona revisaba a ciegas.
+ */
+export function motivosDeLaConsignacion(
+  fallidas: readonly FallidaDeLaConsignacion[],
+): string[] {
+  const porMotivo = new Map<string, number[]>();
+  for (const f of fallidas) {
+    const filas = porMotivo.get(f.motivo) ?? [];
+    filas.push(f.fila);
+    porMotivo.set(f.motivo, filas);
+  }
+  return Array.from(porMotivo, ([motivo, filas]) => {
+    const visibles = filas.slice(0, 8).map((n) => String(n + 2));
+    const resto = filas.length - visibles.length;
+    const lista =
+      visibles.length === 1
+        ? `Fila ${visibles[0]}`
+        : `Filas ${visibles.slice(0, -1).join(", ")}${resto > 0 ? `, ${visibles[visibles.length - 1]} y ${resto} más` : ` y ${visibles[visibles.length - 1]}`}`;
+    return `${lista}: ${motivo}`;
+  });
+}
 
 /** El propietario que trae una fila del archivo, si lo trae. */
 type DuenoDelArchivo = {
@@ -361,6 +423,8 @@ export function MigrarContratos({
   const [resumenAsociacion, setResumenAsociacion] = useState<{
     hechas: number;
     fallidas: number;
+    /** Por qué no pudo cada una: el motivo del back, por el traductor. */
+    motivos: string[];
   } | null>(null);
 
   /*
@@ -506,7 +570,11 @@ export function MigrarContratos({
       setMapeo(mapearColumnas(headers));
       setIdempotencyKey(generarIdempotencyKey());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos leer el archivo.");
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos leer el archivo. Revisa que sea un Excel o un CSV y vuelve a elegirlo.",
+        }),
+      );
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
@@ -630,7 +698,7 @@ export function MigrarContratos({
       }
       setAsociando({ hechas: 0, total: candidatas.length, fallidas: 0 });
       let hechas = 0;
-      let fallidas = 0;
+      const fallidas: FallidaDeLaConsignacion[] = [];
       for (const f of candidatas) {
         const d = duenos.get(f.fila)!;
         try {
@@ -641,17 +709,29 @@ export function MigrarContratos({
             telefono: d.telefono,
             comisionPorcentaje: f.datos.comisionPorcentaje,
           });
-        } catch {
-          fallidas += 1;
+        } catch (e) {
+          // El motivo de CADA una (sistema de errores, 02-10-2026): un 400
+          // del documento, un 409, un 5xx con su referencia — no un número.
+          fallidas.push({
+            fila: f.fila,
+            motivo: mensajeParaLaPersona(e, {
+              porDefecto: "No pudimos consignarlo.",
+              accion: "consignar al propietario",
+            }),
+          });
         }
         hechas += 1;
-        setAsociando({ hechas, total: candidatas.length, fallidas });
+        setAsociando({ hechas, total: candidatas.length, fallidas: fallidas.length });
       }
       setAsociando(null);
       // El resultado se queda EN la pantalla, arriba de la lista que hay que
       // revisar. Un toast de éxito que se va solo en tres segundos no le
       // sirve a nadie que esté por activar noventa contratos.
-      setResumenAsociacion({ hechas, fallidas });
+      setResumenAsociacion({
+        hechas,
+        fallidas: fallidas.length,
+        motivos: motivosDeLaConsignacion(fallidas),
+      });
       setConsignando(false);
       // Si el refresco falla, lo consignado ya está consignado: se avisa y
       // el paginador o recargar traen la lista fresca.
@@ -676,6 +756,11 @@ export function MigrarContratos({
      * dejaba pasar y el botón no hacía nada, sin decir por qué.
      */
     if (faltantesEsencialesConDatos(filas, mapeo).length > 0) return;
+    // El mismo tope que `MigrarContratosDto.contratos`: se dice antes de subir.
+    if (filas.length > MAX_CONTRATOS_POR_ARCHIVO) {
+      setError(MENSAJES_DE_LA_MIGRACION.demasiadosContratos);
+      return;
+    }
     setCargando(true);
     setError(null);
     try {
@@ -701,9 +786,7 @@ export function MigrarContratos({
       // cambia, no en cada refresco de página.
       setSeleccion(new Set());
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "No pudimos preparar la migración.",
-      );
+      setError(mensajeDelPreparar(e));
     } finally {
       setCargando(false);
     }
@@ -758,7 +841,10 @@ export function MigrarContratos({
       }
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "No pudimos volver a cruzar el lote.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos volver a cruzar el lote. Lo cruzado no se pierde: vuelve a intentarlo.",
+          accion: "volver a cruzar el lote",
+        }),
       );
     }
   }, [lote, cruzarConLoCargado, refrescar]);
@@ -804,7 +890,12 @@ export function MigrarContratos({
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos activar.");
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos activar los contratos. Lo activado quedó activado: toca «Activar» para seguir.",
+          accion: "activar los contratos",
+        }),
+      );
     } finally {
       setCargando(false);
       setProgresoDeActivacion(null);
@@ -836,10 +927,12 @@ export function MigrarContratos({
       await refrescar(lote);
       await consignarDesdeElArchivo(lote);
     } catch (e) {
+      // Un 409 del lote que sigue procesando trae su mensaje: se muestra.
       toast.error(
-        e instanceof Error
-          ? e.message
-          : "Todavía no está listo — seguimos trabajando del lado del servidor.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "Todavía no está listo — seguimos trabajando del lado del servidor.",
+          accion: "consultar el lote",
+        }),
       );
     } finally {
       setCargando(false);
@@ -887,7 +980,10 @@ export function MigrarContratos({
       setSeleccion(new Set());
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "No pudimos descartar el lote.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos descartar el lote.",
+          accion: "descartar el lote",
+        }),
       );
     } finally {
       setDescartandoLote(false);
@@ -920,7 +1016,10 @@ export function MigrarContratos({
       setResumenTarjeta({ lote: elLote, resumen: r });
     } catch (e) {
       setErrorTarjeta(
-        e instanceof Error ? e.message : "No pudimos abrir ese lote.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos abrir ese lote.",
+          accion: "abrir ese lote",
+        }),
       );
     } finally {
       setCargandoResumenDe(null);
@@ -942,7 +1041,10 @@ export function MigrarContratos({
       await contractsApi.migracion.descartarLote(resumenTarjeta.lote);
     } catch (e) {
       setErrorTarjeta(
-        e instanceof Error ? e.message : "No pudimos descartar el lote.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos descartar el lote.",
+          accion: "descartar el lote",
+        }),
       );
     } finally {
       setResumenTarjeta(null);
@@ -1014,7 +1116,10 @@ export function MigrarContratos({
         .then(() => consignarDesdeElArchivo(lote))
         .catch((e) => {
           setError(
-            e instanceof Error ? e.message : "No pudimos abrir ese lote.",
+            mensajeParaLaPersona(e, {
+              porDefecto: "No pudimos abrir ese lote.",
+              accion: "abrir ese lote",
+            }),
           );
         });
     }
@@ -1070,9 +1175,10 @@ export function MigrarContratos({
         onPaginaCambia={(p) =>
           refrescar(lote, p).catch((e) =>
             setError(
-              e instanceof Error
-                ? e.message
-                : "No pudimos traer esa página. Prueba de nuevo.",
+              mensajeParaLaPersona(e, {
+                porDefecto: "No pudimos traer esa página. Prueba de nuevo.",
+                accion: "traer esa página",
+              }),
             ),
           )
         }
@@ -1087,10 +1193,13 @@ export function MigrarContratos({
         }
         onFilaResuelta={() =>
           refrescar(lote, pagina).catch((e) =>
+            // Lo que falló fue RELEER, no guardar: decirlo así evita que la
+            // persona repita lo que ya quedó guardado.
             setError(
-              e instanceof Error
-                ? e.message
-                : "Se guardó, pero no pudimos refrescar la lista. Cambia de página para verla al día.",
+              `Se guardó, pero no pudimos refrescar la lista: ${mensajeParaLaPersona(e, {
+                porDefecto: "prueba de nuevo en un momento.",
+                accion: "refrescar la lista",
+              })} Cambia de página para verla al día.`,
             ),
           )
         }
@@ -1792,7 +1901,7 @@ function ListaDeTrabajo({
   filas: FilaDeMigracion[];
   total: number;
   asociando: { hechas: number; total: number; fallidas: number } | null;
-  resumenAsociacion: { hechas: number; fallidas: number } | null;
+  resumenAsociacion: { hechas: number; fallidas: number; motivos: string[] } | null;
   onFilaActualizada: (f: FilaDeMigracion) => void;
   pagina: number;
   seleccion: Set<string>;
@@ -1950,7 +2059,10 @@ function ListaDeTrabajo({
       );
     } catch (e) {
       setNotaSeleccion(
-        e instanceof Error ? e.message : "No pudimos seleccionar todo el lote.",
+        mensajeParaLaPersona(e, {
+          porDefecto: "No pudimos seleccionar todo el lote.",
+          accion: "seleccionar todo el lote",
+        }),
       );
     } finally {
       setSeleccionandoTodo(false);
@@ -2051,6 +2163,20 @@ function ListaDeTrabajo({
               </>
             )}
           </p>
+        ) : null}
+        {/* Por qué no pudo cada una, agrupado por motivo. */}
+        {!asociando &&
+        resumenAsociacion &&
+        !activacion &&
+        resumenAsociacion.motivos.length > 0 ? (
+          <ul
+            className="list-disc space-y-0.5 pl-5 text-caption text-muted-foreground"
+            data-testid="motivos-de-la-asociacion"
+          >
+            {resumenAsociacion.motivos.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
         ) : null}
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

@@ -42,10 +42,12 @@ import type {
   ListadoDeDeducciones,
 } from '@/lib/types/deducciones';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { AnularDeduccionDialog } from './AnularDeduccionDialog';
 import { DeudaDelPropietario } from './DeudaDelPropietario';
 import {
   RegistrarDescuentoDialog,
+  loSueltoAlRegistrar,
   type InmuebleParaElDescuento,
 } from './RegistrarDescuentoDialog';
 import { SoporteDeLaDeduccion } from './SoporteDeLaDeduccion';
@@ -57,10 +59,6 @@ const TONO: Record<EstadoDeLaDeduccion, 'warning' | 'default' | 'success' | 'sec
   ANULADA: 'secondary',
   PROYECTADA: 'default',
 };
-
-function mensajeDe(error: unknown): string | undefined {
-  return error instanceof Error ? error.message : undefined;
-}
 
 export function DeduccionesDelPropietario({
   propietarioId,
@@ -254,7 +252,13 @@ export function DeduccionesDelPropietario({
             await cargar();
             setVersionDeLaDeuda((v) => v + 1);
           } catch (e) {
-            toast.error(t(k('nuevo.noSeRegistro')), { description: mensajeDe(e) });
+            // Lo que el back rechazó por campo lo pinta el diálogo bajo su
+            // campo; acá sólo lo que no tiene campo (un 5xx con su referencia,
+            // la red), con la regla de oro del traductor.
+            const sueltos = loSueltoAlRegistrar(e);
+            if (sueltos.length > 0) {
+              toast.error(t(k('nuevo.noSeRegistro')), { description: sueltos.join(' · ') });
+            }
             throw e;
           }
         }}
@@ -274,7 +278,13 @@ export function DeduccionesDelPropietario({
             await cargar();
             setVersionDeLaDeuda((v) => v + 1);
           } catch (e) {
-            toast.error(t(k('anularDialogo.noSeAnulo')), { description: mensajeDe(e) });
+            // Un motivo rechazado va bajo el motivo (lo pinta el diálogo); lo
+            // demás, en el toast con la regla de oro del traductor.
+            if (!camposDelError(e).some((c) => c.campo === 'motivo')) {
+              toast.error(t(k('anularDialogo.noSeAnulo')), {
+                description: mensajeParaLaPersona(e, { porDefecto: '', accion: 'anular el descuento' }) || undefined,
+              });
+            }
             throw e;
           }
         }}

@@ -57,6 +57,7 @@ import {
   motivoAlEliminarPropietario,
   type ErrorAlGuardarPropietario,
 } from '@/lib/propietarios/errores-del-propietario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   FILTROS_INICIALES,
   conteosDePropietarios,
@@ -387,8 +388,12 @@ function PropietariosContent() {
     setAbriendoEdicion(propietario.id);
     try {
       setEditingPropietario(await propietariosApi.getById(propietario.id));
-    } catch {
-      toast.error(t('inmobiliaria.propietarios.toasts.loadForEditError'));
+    } catch (err) {
+      // Por qué no se pudo abrir, con la regla de oro: un 404 dice que ya no
+      // está, un 5xx «de nuestro lado» con la referencia, la red la conexión.
+      toast.error(t('inmobiliaria.propietarios.toasts.loadForEditError'), {
+        description: mensajeParaLaPersona(err, { porDefecto: '', accion: 'abrir la ficha' }) || undefined,
+      });
     } finally {
       setAbriendoEdicion(null);
     }
@@ -782,26 +787,24 @@ function PropietariosContent() {
           onCancel={cerrarAlta}
           mode="create"
           serverError={errorAlCrear?.campo ?? null}
+          serverErrors={errorAlCrear?.porCampo ?? null}
         />
       </Modal>
 
       {/* AI Capture Modal (v6-07 — additive; reuses the create handler).
-          Su formulario vive dentro de `TerceroIACapture` y no recibe el error
-          por campo: el motivo va arriba, completo. */}
+          Su formulario vive dentro de `TerceroIACapture`: el error por campo
+          va a SU campo (02-10-2026) y arriba sólo lo que no tiene campo. */}
       <Modal
         open={showIACapture && puedeCrear}
         onClose={cerrarCapturaIA}
         title={t('inmobiliaria.propietarios.addOwnerIA')}
         size="lg"
       >
-        {errorAlCrear && (errorAlCrear.general || errorAlCrear.campo) && (
-          <AvisoEnElDialogo>
-            {[errorAlCrear.campo?.message, errorAlCrear.general].filter(Boolean).join(' · ')}
-          </AvisoEnElDialogo>
-        )}
+        {errorAlCrear?.general && <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo>}
         <TerceroIACapture
           onCreated={handleCreateSubmit}
           onClose={cerrarCapturaIA}
+          errorDelServidor={errorAlCrear}
         />
       </Modal>
 
@@ -821,6 +824,7 @@ function PropietariosContent() {
               onCancel={cerrarEdicion}
               mode="edit"
               serverError={errorAlEditar?.campo ?? null}
+              serverErrors={errorAlEditar?.porCampo ?? null}
             />
           </>
         )}

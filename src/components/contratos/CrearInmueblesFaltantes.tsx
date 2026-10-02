@@ -40,7 +40,10 @@ import {
   type PrevisualizacionInmueblesFaltantes,
   type ResultadoInmueblesFaltantes,
 } from '@/lib/api/contracts.service'
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+
+const ID_DE_LA_CIUDAD = 'ciudad-inmuebles-faltantes'
 
 interface Props {
   lote: string
@@ -54,6 +57,15 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   const [ciudad, setCiudad] = useState('')
   const [corriendo, setCorriendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Lo que el back dijo de la ciudad (`CrearInmueblesFaltantesDto.ciudad`). */
+  const [errorDeLaCiudad, setErrorDeLaCiudad] = useState<string | null>(null)
+  /** La ciudad está apagada mientras corre: el foco va cuando termina. */
+  const [enfocarLaCiudad, setEnfocarLaCiudad] = useState(false)
+  useEffect(() => {
+    if (corriendo || !enfocarLaCiudad) return
+    document.getElementById(ID_DE_LA_CIUDAD)?.focus()
+    setEnfocarLaCiudad(false)
+  }, [corriendo, enfocarLaCiudad])
   const [resultado, setResultado] = useState<ResultadoInmueblesFaltantes | null>(null)
 
   const contar = useCallback(async () => {
@@ -72,6 +84,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   async function crear() {
     setCorriendo(true)
     setError(null)
+    setErrorDeLaCiudad(null)
     try {
       const r = await contractsApi.migracion.crearInmueblesFaltantes({ lote }, ciudad)
       setResultado(r)
@@ -79,12 +92,15 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
       await contar()
       onListo()
     } catch (e) {
-      setError(
-        mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos crear los inmuebles.',
-          accion: 'crear los inmuebles',
-        }),
-      )
+      // Un 400 de la ciudad va debajo de la ciudad; lo demás, al aviso.
+      const reparto = repartirErroresDelServidor(e, {
+        campos: ['ciudad'],
+        porDefecto: 'No pudimos crear los inmuebles.',
+        accion: 'crear los inmuebles',
+      })
+      setErrorDeLaCiudad(reparto.porCampo.ciudad ?? null)
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
+      if (reparto.porCampo.ciudad) setEnfocarLaCiudad(true)
     } finally {
       setCorriendo(false)
     }
@@ -158,20 +174,28 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
-            <label className="text-caption text-muted-foreground" htmlFor="ciudad-inmuebles-faltantes">
+            <label className="text-caption text-muted-foreground" htmlFor={ID_DE_LA_CIUDAD}>
               Ciudad para las filas que no la traen
             </label>
             <Input
-              id="ciudad-inmuebles-faltantes"
+              id={ID_DE_LA_CIUDAD}
               value={ciudad}
-              onChange={(e) => setCiudad(e.target.value)}
+              onChange={(e) => {
+                setCiudad(e.target.value)
+                setErrorDeLaCiudad(null)
+              }}
               placeholder="La de la inmobiliaria"
               disabled={corriendo}
+              invalid={Boolean(errorDeLaCiudad)}
+              aria-invalid={errorDeLaCiudad ? true : undefined}
+              aria-describedby={errorDeLaCiudad ? `${ID_DE_LA_CIUDAD}-error` : undefined}
               data-testid="crear-inmuebles-faltantes-ciudad"
             />
+            <ErrorDelCampo id={`${ID_DE_LA_CIUDAD}-error`} mensaje={errorDeLaCiudad} />
           </div>
+          {/* El aviso de la acción (no es de un campo): un 409, un 5xx, la red. */}
           {error ? (
-            <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <p className="flex items-center gap-1.5 text-sm text-destructive" role="alert">
               <WarningCircle className="h-4 w-4" />
               {error}
             </p>

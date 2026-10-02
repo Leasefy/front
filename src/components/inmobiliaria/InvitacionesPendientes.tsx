@@ -42,6 +42,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   invitacionesApi,
   type PersonaPendiente,
@@ -126,8 +127,22 @@ export function InvitacionesPendientes() {
             'Revisa que el correo del servidor esté configurado y vuelve a intentarlo.',
         });
       }
-    } catch {
-      toast.error('No se pudieron mandar las invitaciones');
+    } catch (e) {
+      /*
+       * Con la regla de oro (02-10-2026): un 4xx dice lo que dijo el back, un
+       * 5xx «de nuestro lado» con la referencia y la red, la conexión. Si ya
+       * habían salido algunas, se dice cuántas: «no se pudieron» sobre 300
+       * enviadas es mentir al revés.
+       */
+      toast.error(
+        salieron > 0
+          ? `Salieron ${salieron} ${salieron === 1 ? 'invitación' : 'invitaciones'} y se cortó el envío`
+          : 'No se pudieron mandar las invitaciones',
+        {
+          description:
+            mensajeParaLaPersona(e, { porDefecto: '', accion: 'mandar las invitaciones' }) || undefined,
+        },
+      );
     } finally {
       setMandando(false);
       void cargar();
@@ -146,8 +161,10 @@ export function InvitacionesPendientes() {
             description: r.resultados[0]?.motivo,
           });
         }
-      } catch {
-        toast.error(`No salió la invitación a ${persona.correo}`);
+      } catch (e) {
+        toast.error(`No salió la invitación a ${persona.correo}`, {
+          description: mensajeParaLaPersona(e, { porDefecto: '', accion: 'mandar la invitación' }) || undefined,
+        });
       } finally {
         setReenviando(null);
         void cargar();

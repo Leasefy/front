@@ -480,3 +480,88 @@ describe('<CompletarMandatoDialog> — smoke render', () => {
     expect(document.body.querySelector('[role="alert"]')).toBeNull();
   });
 });
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): lo que el back no acepta del
+ * mandato va a su campo (comisión o fecha) con el foco; lo demás, arriba del
+ * pie, por el traductor (5xx con la referencia, la conexión sólo sin red).
+ */
+describe('<CompletarMandatoDialog> — los errores del back, en su campo', () => {
+  const dueno = { id: 'p1', name: 'Ana Dueña', documentType: 'CC', documentNumber: '1', bankAccount: {} } as unknown as import('@/lib/types/inmobiliaria').Propietario;
+
+  function montar() {
+    act(() => {
+      root.render(
+        <CompletarMandatoDialog
+          inmueble={makeInmueble()}
+          onClose={vi.fn()}
+          propietarios={[dueno]}
+          agentes={[]}
+          propietarioInicial="p1"
+          onCompleted={vi.fn()}
+        />,
+      );
+    });
+  }
+  const confirmar = async () => {
+    const boton = Array.from(document.body.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('inmobiliaria.consignaciones.mandateDialog.confirm'),
+    ) as HTMLButtonElement;
+    await act(async () => {
+      boton.click();
+    });
+  };
+  const q = (sel: string) => document.body.querySelector<HTMLElement>(sel);
+
+  beforeEach(() => {
+    createMock.mockReset();
+    updatePropertyMock.mockReset().mockResolvedValue({});
+  });
+
+  it('🔴 un 400 en la fecha del mandato: el error debajo de la fecha y el foco ahí', async () => {
+    const frase = 'La fecha del mandato debe estar entre 1950 y 2100.';
+    createMock.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'contractDate', regla: 'fecha', mensaje: frase }],
+      }),
+    );
+    montar();
+    await confirmar();
+
+    expect(q('#mandato-fecha-error')?.textContent).toBe(frase);
+    expect(q('#mandato-fecha')?.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(q('#mandato-fecha'));
+    expect(q('[role="alert"].bg-danger-soft')).toBeNull();
+  });
+
+  it('una fecha fuera de rango se ataja antes de mandar, con la frase del back', async () => {
+    montar();
+    const fecha = q('#mandato-fecha') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(fecha, '1900-01-01');
+      fecha.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(q('#mandato-fecha-error')?.textContent).toBe('La fecha del mandato debe estar entre 1950 y 2100.');
+    await confirmar();
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    createMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
+    montar();
+    await confirmar();
+    const aviso = q('[role="alert"].bg-danger-soft')!;
+    expect(aviso.textContent).toMatch(/No pudimos crear la consignación: algo falló de nuestro lado/);
+    expect(aviso.textContent).toContain('ab12cd34');
+  });
+
+  it('sin respuesta: ahí sí, la conexión', async () => {
+    createMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    montar();
+    await confirmar();
+    expect(q('[role="alert"].bg-danger-soft')!.textContent).toMatch(/conexión/);
+  });
+});

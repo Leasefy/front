@@ -30,6 +30,7 @@
  */
 
 import { apiClient } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { anunciarProceso } from './procesos.service';
 
 // ============================================================================
@@ -657,8 +658,10 @@ export const inmueblesImportacionApi = {
         );
       } catch (e) {
         if (total.procesadas === 0) throw e;
+        // El motivo con la regla de oro: «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que fue nuestro, con la referencia (nunca `e.message` crudo).
         total.interrumpida = {
-          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+          motivo: mensajeParaLaPersona(e, { porDefecto: 'Se cortó a mitad.', accion: 'terminar el cambio' }),
         };
         return total;
       }

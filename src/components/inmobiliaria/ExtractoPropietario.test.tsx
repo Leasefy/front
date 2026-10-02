@@ -145,11 +145,34 @@ describe('<ExtractoPropietario>', () => {
     expect(toast.success).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.pdfDownloaded', expect.anything());
   });
 
-  it('si el PDF falla no dice «descargado»: dice qué pasó', async () => {
+  it('si el PDF falla no dice «descargado»: dice qué pasó, sin el status crudo', async () => {
     await render({ onDownloadPDF: vi.fn(async () => { throw new Error('503'); }) });
     await clickTestId('extracto-descargar');
     expect(toast.success).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.pdfError', { description: '503' });
+    const [titulo, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('inmobiliaria.propietario.extracto.pdfError');
+    expect(description).not.toBe('503');
+    expect(description).toMatch(/de nuestro lado|Leasefy/);
+  });
+
+  it('🔴 un 5xx al mandar el correo dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const onEmail = vi.fn(async () => {
+      throw new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' });
+    });
+    await render({ onEmail });
+    await clickTestId('extracto-enviar');
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/^No pudimos mandar el extracto por correo: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+    expect(description).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) al mandar el correo, habla de la conexión', async () => {
+    await render({ onEmail: vi.fn(async () => { throw new TypeError('Failed to fetch'); }) });
+    await clickTestId('extracto-enviar');
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/conexión/);
   });
 
   it('«Enviar por Email» manda de verdad y sólo dice «enviado» si el envío resolvió', async () => {

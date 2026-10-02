@@ -52,6 +52,7 @@ import {
   tipoDeDocumentoDe,
 } from '@/lib/migracion/ayuda-del-documento';
 import { placeholderDeEjemplo } from '@/lib/migracion/columnas-de-tercero';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
 
 /** Radix no admite `value=""` en un `<SelectItem>`. */
@@ -66,6 +67,12 @@ const SIN_VALOR = '__vacio__';
 export interface ResultadoDeAccion {
   ok: boolean;
   mensaje: string | null;
+  /**
+   * Sistema de errores (02-10-2026): lo que el back señaló por campo
+   * (`campos[]` de un 400), con el nombre de la columna de la plantilla. Va
+   * debajo de SU celda; `mensaje` queda para lo que no tiene celda.
+   */
+  porCampo?: Record<string, string>;
 }
 
 /**
@@ -94,20 +101,34 @@ export function valorEditable(valor: unknown): string {
  * los dos, el input y el trigger.
  */
 function CeldaEditable({
+  id,
   columna,
   valor,
   onCambia,
   conError = false,
+  mensaje = null,
 }: {
+  /** El id del control: el padre lo enfoca si el back rechazó esta celda. */
+  id: string;
   columna: ColumnaDePlantilla;
   valor: string;
   onCambia: (valor: string) => void;
   /** El back señaló esta celda: se resalta para que se vea dónde corregir. */
   conError?: boolean;
+  /**
+   * El error que mandó el back para esta celda al GUARDAR (un 400 con
+   * `campos`). Va debajo de la celda, con su entrada suave.
+   */
+  mensaje?: string | null;
 }) {
   const base = useId();
   const idEtiqueta = `${base}-etiqueta`;
   const idAyuda = `${base}-ayuda`;
+  const idError = `${id}-error`;
+  const invalida = conError || Boolean(mensaje);
+  const descritaPor =
+    [columna.ayuda ? idAyuda : null, mensaje ? idError : null].filter(Boolean).join(' ') ||
+    undefined;
 
   return (
     <div className="space-y-1">
@@ -122,12 +143,13 @@ function CeldaEditable({
           onValueChange={(v) => onCambia(v === SIN_VALOR ? '' : v)}
         >
           <SelectTrigger
-            aria-invalid={conError || undefined}
+            id={id}
+            aria-invalid={invalida || undefined}
             /* «Sin definir» es la AUSENCIA de dato, no un dato: con el color de
                un valor elegido se leía como lleno (Nico, 01-10). */
-            className={cn(conError && 'border-danger', !valor && 'text-fg-placeholder')}
+            className={cn(invalida && 'border-danger', !valor && 'text-fg-placeholder')}
             aria-labelledby={idEtiqueta}
-            aria-describedby={columna.ayuda ? idAyuda : undefined}
+            aria-describedby={descritaPor}
             data-testid={`campo-${columna.campo}`}
           >
             <SelectValue />
@@ -152,10 +174,15 @@ function CeldaEditable({
         </Select>
       ) : (
         <Input
+          id={id}
           value={valor}
           placeholder={placeholderDeEjemplo(columna.ejemplo)}
           aria-labelledby={idEtiqueta}
-          aria-describedby={columna.ayuda ? idAyuda : undefined}
+          aria-describedby={descritaPor}
+          // Antes sólo el select se marcaba: un input señalado por el back
+          // no se distinguía de los demás.
+          aria-invalid={invalida || undefined}
+          invalid={invalida}
           data-testid={`campo-${columna.campo}`}
           onChange={(e) => onCambia(e.target.value)}
         />
@@ -166,6 +193,7 @@ function CeldaEditable({
           {columna.ayuda}
         </span>
       ) : null}
+      <ErrorDelCampo id={idError} mensaje={mensaje} />
     </div>
   );
 }
@@ -276,6 +304,12 @@ export function FilaDeTercero({
    * manera más rápida de que alguien abandone una migración de 600 filas.
    */
   const [errorDeFila, setErrorDeFila] = useState<string | null>(null);
+  /**
+   * Lo que el back rechazó por celda en el último «Guardar» (un 400 con
+   * `campos`). Se borra la de una celda apenas se la vuelve a tocar.
+   */
+  const [erroresDeCelda, setErroresDeCelda] = useState<Record<string, string>>({});
+  const idDeCelda = (campo: string) => `tercero-${fila.id}-${campo}`;
   /*
    * Qué acción de la fila está esperando al back. «No traer esta fila» y
    * «Usar la ficha existente» no tenían estado de carga: se apretaba, no
@@ -287,9 +321,22 @@ export function FilaDeTercero({
 
   const guardar = async () => {
     setErrorDeFila(null);
+    setErroresDeCelda({});
     const r = await onCorregir(borrador as FilaTercero);
-    if (r.ok) setBorrador({});
-    else if (r.mensaje) {
+    if (r.ok) {
+      setBorrador({});
+      return;
+    }
+    const porCampo = r.porCampo ?? {};
+    const conCelda = Object.keys(porCampo);
+    if (conCelda.length > 0) {
+      // Las celdas rechazadas tienen que verse aunque la vista esté en «sólo
+      // lo que falta»: se abren todas y se enfoca la primera.
+      setErroresDeCelda(porCampo);
+      if (conCelda.some((c) => !camposConError.has(c))) setVerTodo(true);
+      requestAnimationFrame(() => document.getElementById(idDeCelda(conCelda[0]))?.focus());
+    }
+    if (r.mensaje) {
       setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintenta Guardar.`);
     }
   };
@@ -482,10 +529,20 @@ export function FilaDeTercero({
           {visibles.map((columna) => (
             <CeldaEditable
               key={columna.campo}
+              id={idDeCelda(columna.campo)}
               columna={conAyudaPorTipo(columna)}
               valor={valorDe(columna.campo)}
               conError={camposConError.has(columna.campo)}
-              onCambia={(v) => setBorrador((b) => ({ ...b, [columna.campo]: v }))}
+              mensaje={erroresDeCelda[columna.campo] ?? null}
+              onCambia={(v) => {
+                setBorrador((b) => ({ ...b, [columna.campo]: v }));
+                setErroresDeCelda((errores) => {
+                  if (!errores[columna.campo]) return errores;
+                  const { [columna.campo]: _quitado, ...resto } = errores;
+                  void _quitado;
+                  return resto;
+                });
+              }}
             />
           ))}
         </div>

@@ -30,6 +30,7 @@ import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { Agente } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** Los tres roles reales de `AgenteRole`. Escribe otros y salía la llave cruda. */
 const ROLE_LABELS: Record<string, string> = {
@@ -85,8 +86,11 @@ export function AsignarAgente({
       onAsignado();
       onCerrar();
     } catch (err) {
+      // Por el traductor (sistema de errores, 02-10-2026): el motivo del back
+      // si lo dio, un 5xx «de nuestro lado» con la referencia, y «conexión»
+      // sólo sin respuesta. Antes iba `err.message` crudo.
       toast.error('No pudimos asignar el agente', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'asignar el agente' }),
       });
     } finally {
       setGuardando(null);

@@ -10,6 +10,7 @@
 import type { InmuebleDesdeEnlace } from './leer-enlace';
 import type { ImportProperty } from '@/components/inmobiliaria/import/lib/importTypes';
 import { fetchConSesion } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface EnlaceLeido {
   url: string;
@@ -88,12 +89,26 @@ export async function leerEnlaces(
     const parcial = await Promise.all(
       tanda.map(async (url): Promise<ResultadoDeEnlace> => {
         try {
-          const res = await fetchConSesion('/api/inmuebles/desde-enlace', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          });
-          const datos = await res.json();
+          let res: Response;
+          try {
+            res = await fetchConSesion('/api/inmuebles/desde-enlace', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url }),
+            });
+          } catch (e) {
+            // El pedido no salió: ahí, y sólo ahí, se habla de la conexión
+            // (la regla de oro del traductor de errores, 02-10-2026).
+            return {
+              url,
+              ok: false,
+              motivo: 'no_responde',
+              mensaje: mensajeParaLaPersona(e, { porDefecto: 'No se pudo leer el enlace.', accion: 'leer el enlace' }),
+            };
+          }
+          // Un 5xx de la ruta puede venir sin JSON (una página de error): no es
+          // «no se pudo conectar», es que algo falló de nuestro lado.
+          const datos = await res.json().catch(() => null);
           if (datos?.ok) {
             return { url, ok: true, inmueble: datos.inmueble, falta: datos.falta ?? [] };
           }
@@ -101,14 +116,11 @@ export async function leerEnlaces(
             url,
             ok: false,
             motivo: datos?.motivo ?? 'no_responde',
-            mensaje: datos?.mensaje ?? 'No se pudo leer el enlace.',
-          };
-        } catch {
-          return {
-            url,
-            ok: false,
-            motivo: 'no_responde',
-            mensaje: 'No se pudo conectar para leer el enlace.',
+            mensaje:
+              datos?.mensaje ??
+              (res.status >= 500
+                ? 'No pudimos leer el enlace: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.'
+                : 'No se pudo leer el enlace.'),
           };
         } finally {
           listos += 1;

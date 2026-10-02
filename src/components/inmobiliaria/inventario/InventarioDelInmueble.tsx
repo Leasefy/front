@@ -41,10 +41,21 @@ import {
 } from '@/lib/hooks/use-inventarios-del-inmueble';
 import { useI18n } from '@/lib/i18n';
 import { avisoDeVigencia } from '@/lib/inventario/aviso-de-vigencia';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
 import type { InventariosDelInmueble } from '@/lib/types/inventario-del-inmueble';
 
 const B = 'inmobiliaria.inventarioDelInmueble';
+
+/**
+ * La descripción del toast de un fallo, con la regla de oro del traductor:
+ * lo que el back explica (un 4xx) se dice; un 5xx dice que fue nuestro con la
+ * referencia; «conexión» sólo si no hubo respuesta. Antes iba `err.message`
+ * crudo: un 500 llegaba como «Internal server error» o un volcado.
+ */
+function descripcionDelFallo(err: unknown, accion: string): string | undefined {
+  return mensajeParaLaPersona(err, { porDefecto: '', accion }) || undefined;
+}
 
 interface Props {
   consignacion: Pick<Consignacion, 'id' | 'contractDate' | 'inventoryItems'>;
@@ -159,7 +170,7 @@ function InventarioPorVersiones({
         })
         .catch((err: unknown) => {
           toast.error(t('inmobiliaria.acta.itemDialog.error'), {
-            description: err instanceof Error ? err.message : undefined,
+            description: descripcionDelFallo(err, 'guardar el ítem del inventario'),
           });
         })
         .finally(() => setGuardando(false));
@@ -174,7 +185,7 @@ function InventarioPorVersiones({
         .then(() => toast.success(t('inmobiliaria.acta.itemDialog.removed')))
         .catch((err: unknown) => {
           toast.error(t('inmobiliaria.acta.itemDialog.error'), {
-            description: err instanceof Error ? err.message : undefined,
+            description: descripcionDelFallo(err, 'quitar el ítem del inventario'),
           });
         });
     },
@@ -189,7 +200,7 @@ function InventarioPorVersiones({
       toast.success(t(`${B}.completado`, { version: nuevos.ultimoCompleto?.version ?? '' }));
     } catch (err) {
       toast.error(t(`${B}.errorAlCompletar`), {
-        description: err instanceof Error ? err.message : undefined,
+        description: descripcionDelFallo(err, 'completar el inventario'),
       });
     } finally {
       setCompletando(false);

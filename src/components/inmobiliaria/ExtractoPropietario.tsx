@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { motion } from 'framer-motion';
 import {
   Download,
@@ -44,6 +45,7 @@ import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobilia
 import { nombreDelMes } from '@/lib/utils/mes';
 import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
+import { useDesbordeHorizontal } from '@/components/ui/use-desborde-horizontal';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -191,6 +193,76 @@ const COLUMNA_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
 };
 
 /**
+ * ── Propiedad y Neto se quedan quietos al correr la tabla (02-10-2026) ──────
+ *
+ * Nico (pregunta 18): la tabla mide ~1.170 px en un cajón de 1024 y el NETO
+ * —lo que el propietario recibe, lo único que viene a mirar— quedaba detrás
+ * del scroll lateral. Ahora la primera columna (de qué inmueble es la fila) y
+ * la última (cuánto le queda) son `position: sticky`; lo del medio se corre
+ * entre las dos.
+ *
+ *  · Fondo OPACO en la celda fija, el mismo de su zona (cuerpo, cabecera o
+ *    pie): si no, lo que pasa por debajo se lee encima. El tinte de la fila
+ *    (que es translúcido: `muted/30` al pasar el ratón, `muted/50` en la
+ *    cabecera y el pie) va en un `::before` DETRÁS del texto, así la celda
+ *    fija se tiñe igual que el resto de la fila.
+ *  · Un filete de sombra en el borde interior de cada columna fija, SÓLO
+ *    mientras hay contenido escondido de ese lado (se mide en el contenedor
+ *    que se corre: `useDesbordeHorizontal`). Entra y sale con `opacity` y los
+ *    tokens de movimiento; con movimiento reducido, sin transición.
+ *  · Las sombras de borde que pone `Table` se esconden acá: en el borde de
+ *    afuera ya no hay nada escondido (lo tapa la columna fija); el filete
+ *    interior es el que dice dónde sigue la tabla.
+ *  · Al imprimir no hay columnas fijas ni filetes: el papel no se corre.
+ */
+const COLUMNA_FIJA = 'sticky z-[2] print:static';
+/** El ancho de la columna Propiedad: título y dirección (180 px) + el aire de la celda. */
+const ANCHO_PROPIEDAD = 'w-[13.25rem] min-w-[13.25rem]';
+const FONDO_DEL_CUERPO = 'bg-surface dark:bg-card';
+const FONDO_DE_CABECERA_Y_PIE = 'bg-bg dark:bg-surface-muted';
+const TINTE = 'before:pointer-events-none before:absolute before:inset-0 before:-z-10';
+const TINTE_DE_CABECERA_Y_PIE = `${TINTE} before:bg-muted/50`;
+const TINTE_DEL_CUERPO = `${TINTE} before:bg-muted/30 before:opacity-0 group-hover:before:opacity-100`;
+
+/** Las clases de una celda fija, según su lado y su zona. */
+function celdaFija(lado: 'izquierda' | 'derecha', zona: 'cuerpo' | 'cabecera-o-pie'): string {
+  return cn(
+    COLUMNA_FIJA,
+    lado === 'izquierda' ? 'left-0' : 'right-0',
+    zona === 'cuerpo' ? [FONDO_DEL_CUERPO, TINTE_DEL_CUERPO] : [FONDO_DE_CABECERA_Y_PIE, TINTE_DE_CABECERA_Y_PIE],
+  );
+}
+
+/**
+ * El filete de una columna fija: una sombra de 12 px pegada a su borde
+ * interior (a la derecha de Propiedad, a la izquierda de Neto). Visible sólo
+ * mientras queda tabla escondida de ese lado.
+ */
+function FileteDeColumnaFija({
+  columna,
+  visible,
+}: {
+  columna: 'propiedad' | 'neto';
+  visible: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid={`filete-${columna}`}
+      data-visible={visible ? 'true' : 'false'}
+      className={cn(
+        'pointer-events-none absolute inset-y-0 w-3 print:hidden',
+        'transition-opacity [transition-duration:var(--motion-duration-fast)] [transition-timing-function:var(--motion-ease-standard)] motion-reduce:transition-none',
+        columna === 'propiedad'
+          ? 'right-0 translate-x-full shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.65)]'
+          : 'left-0 -translate-x-full shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.65)]',
+        visible ? 'opacity-100' : 'opacity-0',
+      )}
+    />
+  );
+}
+
+/**
  * ExtractoPropietario - Owner statement view with printable styling
  * Shows property breakdown, commissions, and net amounts
  */
@@ -202,6 +274,18 @@ export function ExtractoPropietario({
   className,
 }: ExtractoPropietarioProps) {
   const { t, locale } = useI18n();
+  /*
+   * Qué queda escondido a cada lado de la tabla. `Table` pone su propio
+   * contenedor con scroll alrededor del `<table>`: se mide ESE (el padre de la
+   * tabla), que es el que se corre y contra el que se pegan las columnas fijas.
+   */
+  const desborde = useDesbordeHorizontal<HTMLElement>();
+  const refDeLaTabla = React.useCallback(
+    (tabla: HTMLTableElement | null) => {
+      desborde.ref.current = tabla?.parentElement ?? null;
+    },
+    [desborde.ref],
+  );
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
 
@@ -248,8 +332,10 @@ export function ExtractoPropietario({
         description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
       });
     } catch (error) {
+      // Con la regla de oro: un 5xx «de nuestro lado» con la referencia, la
+      // red con la conexión; nunca el `message` crudo de un `Error`.
       toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
-        description: error instanceof Error ? error.message : undefined,
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'armar el PDF' }) || undefined,
       });
     } finally {
       setIsDownloading(false);
@@ -277,7 +363,8 @@ export function ExtractoPropietario({
       });
     } catch (error) {
       toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
-        description: error instanceof Error ? error.message : undefined,
+        description:
+          mensajeParaLaPersona(error, { porDefecto: '', accion: 'mandar el extracto por correo' }) || undefined,
       });
     } finally {
       setIsSendingEmail(false);
@@ -404,14 +491,22 @@ export function ExtractoPropietario({
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
         {/* El marco y el scroll horizontal van en capas separadas: si el pie
-            viviera dentro del `overflow-x-auto`, se correría de lado con la
-            tabla en vez de quedarse quieto abajo. */}
+            viviera dentro del contenedor que se corre, se correría de lado con
+            la tabla en vez de quedarse quieto abajo. El scroll lo pone `Table`
+            (su propio contenedor): las columnas fijas se pegan a ése. */}
         <div className="rounded-md border border-border">
-          <div className="overflow-x-auto" data-lenis-prevent>
-            <Table>
+          <div
+            className="[&_[data-testid=sigue-a-la-derecha]]:hidden [&_[data-testid=sigue-a-la-izquierda]]:hidden"
+            data-lenis-prevent
+            data-testid="extracto-tabla"
+          >
+            <Table ref={refDeLaTabla}>
               <TableHeader>
                 <TableRow className="hover:bg-transparent bg-muted/50">
-                  <TableHead className="w-[25%]">{t('inmobiliaria.propietario.extracto.thProperty')}</TableHead>
+                  <TableHead className={cn(ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
+                    {t('inmobiliaria.propietario.extracto.thProperty')}
+                    <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
+                  </TableHead>
                   <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
@@ -420,7 +515,10 @@ export function ExtractoPropietario({
                   <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
                   <TableHead className="text-right">Conceptos</TableHead>
-                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thNet')}</TableHead>
+                  <TableHead className={cn('text-right', celdaFija('derecha', 'cabecera-o-pie'))}>
+                    {t('inmobiliaria.propietario.extracto.thNet')}
+                    <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -445,9 +543,10 @@ export function ExtractoPropietario({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="hover:bg-muted/30"
+                      className="group hover:bg-muted/30"
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className={cn('font-medium', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cuerpo'))}>
+                        <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
                         <div className="flex flex-col">
                           <span className="text-foreground text-sm truncate max-w-[180px]">
                             {prop.propertyTitle}
@@ -517,7 +616,10 @@ export function ExtractoPropietario({
                           aCargo={prop.conceptosACargo + (prop.ivaComisionAmount ?? 0)}
                         />
                       </TableCell>
-                      <TableCell className="text-right text-sm font-semibold text-success">
+                      <TableCell
+                        className={cn('text-right text-sm font-semibold text-success', celdaFija('derecha', 'cuerpo'))}
+                      >
+                        <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
                       </TableCell>
                     </motion.tr>
@@ -525,10 +627,15 @@ export function ExtractoPropietario({
                 })}
               </TableBody>
               <TableFooter>
-                <TableRow className="bg-muted/50 font-semibold">
-                  <TableCell colSpan={4} className="text-foreground">
+                {/* El rótulo del total va en la columna de Propiedad (fija) y no
+                    en una celda de cuatro columnas: una celda tan ancha, fija a
+                    la izquierda, taparía lo que se corre por debajo. */}
+                <TableRow className="bg-muted/50 hover:bg-muted/50 font-semibold">
+                  <TableCell className={cn('text-foreground', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
+                    <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
                     {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
                   </TableCell>
+                  <TableCell colSpan={3} />
                   <TableCell className="text-right text-foreground">
                     {formatCurrency(
                       extracto.totals.totalNet +
@@ -550,7 +657,8 @@ export function ExtractoPropietario({
                       aCargo={extracto.totals.totalConceptosACargo + (extracto.totals.totalIvaComision ?? 0)}
                     />
                   </TableCell>
-                  <TableCell className="text-right text-success">
+                  <TableCell className={cn('text-right text-success', celdaFija('derecha', 'cabecera-o-pie'))}>
+                    <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                     {formatCurrency(extracto.totals.totalNet)}
                   </TableCell>
                 </TableRow>

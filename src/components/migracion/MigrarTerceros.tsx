@@ -71,6 +71,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
@@ -148,9 +150,16 @@ const MENSAJE_CAMPO_NO_MASIVO =
   'Ese dato identifica a cada persona (documento, dígito de verificación, nombre, correo o id del sistema anterior) ' +
   'y no se puede poner igual en varias filas. Corrígelo fila por fila.';
 
-const mensaje = (e: unknown, respaldo: string) => {
+/**
+ * El fallo de una acción, dicho para la persona (sistema de errores,
+ * 02-10-2026): por el traductor — un 4xx dice qué está mal, un 5xx que fue de
+ * nuestro lado con su referencia, y «conexión» SÓLO si no hubo respuesta.
+ * Antes devolvía el `message` crudo de cualquier `Error` (un 5xx en inglés,
+ * un `TypeError`). `CAMPO_NO_MASIVO` conserva su texto propio.
+ */
+const mensaje = (e: unknown, respaldo: string, accion?: string) => {
   if (e instanceof ApiError && e.code === CODIGO_CAMPO_NO_MASIVO) return MENSAJE_CAMPO_NO_MASIVO;
-  return e instanceof Error && e.message ? e.message : respaldo;
+  return mensajeParaLaPersona(e, { porDefecto: respaldo, accion });
 };
 
 /**
@@ -220,8 +229,8 @@ const SOLO_EL_ADMINISTRADOR_DESCARTA =
   'Descartar una carga o una fila requiere permisos de administración y tu rol no los tiene. ' +
   'Pídele a un administrador de tu inmobiliaria que lo haga: mientras tanto, esta carga sigue pendiente.';
 
-const mensajeDeDescarte = (e: unknown, respaldo: string) =>
-  e instanceof ApiError && e.status === 403 ? SOLO_EL_ADMINISTRADOR_DESCARTA : mensaje(e, respaldo);
+const mensajeDeDescarte = (e: unknown, respaldo: string, accion?: string) =>
+  e instanceof ApiError && e.status === 403 ? SOLO_EL_ADMINISTRADOR_DESCARTA : mensaje(e, respaldo, accion);
 
 /**
  * El parte de una masiva parcial: TODOS los motivos distintos con sus filas,
@@ -563,7 +572,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         setLoteEnConflicto(lote.trim());
         refrescarLotesAbiertos();
       }
-      setError(mensaje(e, 'No pudimos preparar la carga.'));
+      setError(mensaje(e, 'No pudimos preparar la carga.', 'preparar la carga'));
       setCargando(false);
       return;
     }
@@ -728,7 +737,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         if (loteAbierto === l.lote) volverAEmpezar();
         else refrescarLotesAbiertos();
       } catch (e) {
-        setError(mensajeDeDescarte(e, 'No pudimos descartar esa carga.'));
+        setError(mensajeDeDescarte(e, 'No pudimos descartar esa carga.', 'descartar esa carga'));
       } finally {
         setCargando(false);
         setLotePorDescartar(null);
@@ -765,7 +774,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       try {
         await accion();
       } catch (e) {
-        const m = mensaje(e, respaldo);
+        /*
+         * Sistema de errores (02-10-2026): un 400 con `campos` del back
+         * (`CorregirFilaTerceroDto.campos.<campo>`) va a SU celda en la
+         * tarjeta de la fila; al aviso va sólo lo que no tiene celda.
+         */
+        const reparto = repartirErroresDelServidor(e, {
+          campos: columnas.map((c) => c.campo),
+          porDefecto: respaldo,
+        });
+        const porCampo = reparto.porCampo as Record<string, string>;
+        const conCampo = reparto.orden.length > 0;
+        const m = conCampo
+          ? reparto.sueltos.length > 0
+            ? reparto.sueltos.join(' · ')
+            : 'Revisa lo marcado en la fila.'
+          : // «No pudimos guardar la corrección.» → un 5xx dice «No pudimos
+            // guardar la corrección: algo falló de nuestro lado…».
+            mensaje(e, respaldo, /^No pudimos (.+?)\.?$/.exec(respaldo)?.[1]);
         /*
          * 🔴 «Otra pestaña guardó primero» es el único fallo donde SÍ se
          * relee: lo que la persona tiene en pantalla ya no es lo que hay, y
@@ -783,7 +809,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         }
         setError(m);
         setCargando(false);
-        return { ok: false, mensaje: m };
+        return { ok: false, mensaje: m, porCampo };
       }
       try {
         await refrescar(loteAbierto, paginaAlTerminar ?? pagina);
@@ -793,7 +819,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setCargando(false);
       return { ok: true, mensaje: null };
     },
-    [loteAbierto, pagina, refrescar],
+    [loteAbierto, pagina, refrescar, columnas],
   );
 
   /** Cambiar de página también puede fallar; que lo diga, no que se quede muda. */
@@ -856,8 +882,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
        * subir el archivo «por las dudas».
        */
       const hechas = e instanceof AplicacionInterrumpida ? e.parcial.aplicadas : 0;
+      // La causa de verdad (el `ApiError`) viaja en `causa`: el traductor la
+      // lee entera — con su referencia si fue un 5xx — en vez del texto copiado.
+      const causa = e instanceof AplicacionInterrumpida ? e.causa : e;
       setError(
-        `${mensaje(e, 'No pudimos crear las fichas.')} ` +
+        `${mensaje(causa, 'No pudimos crear las fichas.', 'crear las fichas')} ` +
           (hechas > 0
             ? `Alcanzaron a crearse ${hechas}: quedaron creadas. `
             : 'Lo que alcanzó a crearse quedó creado. ') +
@@ -1630,7 +1659,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               <span className="font-mono tabular-nums">
                 {MAX_FILAS_POR_LOTE.toLocaleString('es-CO')}
               </span>
-              . Partilo en dos archivos.
+              . Pártelo en dos archivos.
             </p>
           ) : null}
 
@@ -1912,7 +1941,7 @@ function ListaDeTrabajo({
 
         {error ? (
           <div className="flex flex-wrap items-center gap-3" data-testid="error-de-lista">
-            <p className="text-sm text-danger">{error}</p>
+            <p className="text-sm text-danger" role="alert">{error}</p>
             {/* Releer es un GET: siempre es seguro ofrecerlo. Es la salida
                 tanto del refresco caído como de la página que no llegó. */}
             <Button size="sm" variant="outline" hideArrow disabled={cargando} onClick={onActualizar}>

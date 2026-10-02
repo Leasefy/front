@@ -27,7 +27,7 @@ import { PaperPlaneTilt, UserCirclePlus } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 
 export interface InvitarAlPortalProps {
@@ -73,10 +73,17 @@ export function InvitarAlPortal({
         });
       }
     } catch (e) {
+      /*
+       * Con la regla de oro (02-10-2026): un 4xx dice lo que dijo el back (el
+       * correo que no sirve, la cuenta que ya existe); un 5xx, que fue de
+       * nuestro lado con la referencia; «conexión» sólo si no hubo respuesta.
+       * Antes cualquier fallo sin `messages[]` decía «Intenta de nuevo».
+       */
       toast.error(
-        e instanceof ApiError && e.messages
-          ? e.messages.join(' · ')
-          : 'No pudimos invitarlo. Intenta de nuevo.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos invitarlo. Prueba de nuevo en un momento.',
+          accion: 'invitarlo al portal',
+        }),
       );
     } finally {
       setEnviando(false);

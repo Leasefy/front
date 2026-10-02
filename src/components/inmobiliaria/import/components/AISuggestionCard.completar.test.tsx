@@ -153,15 +153,50 @@ describe('AISuggestionCard — completar lo que falta', () => {
     expect(container.querySelector('[data-testid="campo-propertyZone-0"]')).not.toBeNull()
   })
 
-  it('el canon no se esfuma al cruzar el mínimo: se puede escribir $1.500.000 entero', () => {
-    montar(base({ listingType: 'arriendo', salePrice: undefined, monthlyRent: undefined }))
-    const canon = () =>
-      container.querySelector<HTMLInputElement>('[data-testid="falta-monthlyRent-0"]')
-    expect(canon()).not.toBeNull()
-    for (const parcial of ['1', '15', '150', '1500', '15000', '150000', '1500000']) {
-      escribir(canon()!, parcial)
-      expect(canon(), `tras escribir ${parcial}`).not.toBeNull()
+  /**
+   * La regla de `useCamposQueSeQuedan` con un NÚMERO: el precio deja de
+   * «faltar» al cruzar el mínimo del DTO ($1.000), y el input no puede
+   * desmontarse ahí mientras la persona sigue escribiendo la cifra entera.
+   *
+   * 🔴 Antes se probaba con el canon de un arriendo. Desde T-0129
+   * (`34570618`, 01-10-2026) el canon ya NO falta: un arriendo sin canon se
+   * crea «con el canon por confirmar», así que ese input no aparece y la prueba
+   * fallaba buscándolo. El precio de una venta sí sigue frenando y ejerce la
+   * misma regla.
+   */
+  it('el precio de venta no se esfuma al cruzar el mínimo: se puede escribir $470.000.000 entero', () => {
+    montar(base({ salePrice: undefined }))
+    const precio = () =>
+      container.querySelector<HTMLInputElement>('[data-testid="falta-salePrice-0"]')
+    expect(precio()).not.toBeNull()
+    for (const parcial of ['4', '47', '470', '4700', '47000', '470000', '470000000']) {
+      escribir(precio()!, parcial)
+      expect(precio(), `tras escribir ${parcial}`).not.toBeNull()
     }
-    expect(canon()!.value).toBe('1500000')
+    expect(precio()!.value).toBe('470000000')
+  })
+
+  it('🔴 T-0129: un arriendo sin canon no lo reclama — entra marcado «por confirmar» y el canon se puede escribir igual', () => {
+    const vista = montar(
+      base({ listingType: 'arriendo', salePrice: undefined, monthlyRent: undefined, hasErrors: false }),
+    )
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Expandir"]')?.click()
+    })
+
+    // No es un error: ni «Completa esto», ni el input rojo del canon.
+    expect(container.querySelector('[data-testid="falta-monthlyRent-0"]')).toBeNull()
+    expect(container.querySelector('[data-testid="completar-0"]')).toBeNull()
+    // Sí la marca neutra.
+    expect(container.querySelector('[data-testid="sin-canon-0"]')?.textContent).toContain('canon por confirmar')
+
+    // Quien SÍ tiene el canon lo escribe en «Editar los datos», y la marca se va.
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-testid="editar-todo-0"]')!.click()
+    })
+    const canon = container.querySelector<HTMLInputElement>('[data-testid="campo-monthlyRent-0"]')!
+    escribir(canon, '1500000')
+    expect(vista.property.monthlyRent).toBe(1_500_000)
+    expect(container.querySelector('[data-testid="sin-canon-0"]')).toBeNull()
   })
 })

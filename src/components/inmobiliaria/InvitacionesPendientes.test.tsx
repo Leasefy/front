@@ -175,4 +175,51 @@ describe('InvitacionesPendientes', () => {
     expect(enviar).toHaveBeenCalledWith({ userIds: ['u-2'] });
     expect(toastOk).toHaveBeenCalledWith('Invitación enviada a persona2@correo.co');
   });
+
+  it('🔴 si el envío se corta a mitad, dice cuántas salieron y por qué se cortó (con la referencia)', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pendientes.mockResolvedValue({ total: 250, personas: [persona(1)] });
+    enviar
+      .mockResolvedValueOnce({ enviadas: 100, omitidas: 0, resultados: [], restantes: 150 })
+      .mockRejectedValueOnce(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+
+    await montar();
+    await clic('ver-invitaciones-pendientes');
+    await clic('enviar-todas-las-invitaciones');
+
+    const [titulo, { description }] = toastError.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('Salieron 100 invitaciones y se cortó el envío');
+    expect(description).toMatch(/^No pudimos mandar las invitaciones: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+  });
+
+  it('un 400 al reenviar una dice lo que dijo el back', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pendientes.mockResolvedValue({ total: 1, personas: [persona(1)] });
+    enviar.mockRejectedValue(new ApiError(400, 'Esa persona ya entró a su portal: no hace falta invitarla.'));
+
+    await montar();
+    await clic('ver-invitaciones-pendientes');
+    const boton = Array.from(host.querySelectorAll<HTMLElement>('button')).find((b) => b.textContent?.trim() === 'Enviar')!;
+    await act(async () => {
+      boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(toastError).toHaveBeenCalledWith('No salió la invitación a persona1@correo.co', {
+      description: 'Esa persona ya entró a su portal: no hace falta invitarla.',
+    });
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    pendientes.mockResolvedValue({ total: 30, personas: [persona(1)] });
+    enviar.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await montar();
+    await clic('ver-invitaciones-pendientes');
+    await clic('enviar-todas-las-invitaciones');
+
+    const [titulo, { description }] = toastError.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se pudieron mandar las invitaciones');
+    expect(description).toMatch(/conexión/);
+  });
 });

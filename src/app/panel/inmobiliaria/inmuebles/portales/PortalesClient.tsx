@@ -56,7 +56,7 @@
  * cambia de estado solo.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
@@ -82,6 +82,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import {
   Badge,
   Button,
@@ -124,14 +126,13 @@ const ROTULO: Record<
 /** Lo que todavía le falta a la inmobiliaria hacer con sus propias manos. */
 const PIDE_MANO: readonly EstadoDePublicacion[] = ['POR_EXPORTAR', 'POR_DESPUBLICAR']
 
-/** El 503 y el 400 del back traen su motivo redactado: vale más que un genérico. */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message
-    if (typeof m === 'string' && m.trim()) return m
-  }
-  return porDefecto
-}
+/**
+ * Los campos del diálogo de la cuenta que pueden traer un error del back
+ * (`GuardarCuentaDePortalDto`: etiqueta ≤ 120, identificador ≤ 120, notas ≤ 500,
+ * los mismos `maxLength` que tienen los campos).
+ */
+type CampoDeLaCuenta = 'etiqueta' | 'identificadorEnElPortal' | 'notas'
+const CAMPOS_DE_LA_CUENTA: readonly CampoDeLaCuenta[] = ['etiqueta', 'identificadorEnElPortal', 'notas']
 
 // ═══════════════════════════════════════════════════════════════════════════
 // El armazón de un modal, que los dos comparten
@@ -197,11 +198,20 @@ function DialogoDeCuenta({
   const [notas, setNotas] = useState(portal.cuenta?.notas ?? '')
   const [activa, setActiva] = useState(portal.cuenta?.activa ?? true)
   const [guardando, setGuardando] = useState(false)
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaCuenta, string>>>({})
+  const refs = {
+    etiqueta: useRef<HTMLInputElement>(null),
+    identificadorEnElPortal: useRef<HTMLInputElement>(null),
+    notas: useRef<HTMLTextAreaElement>(null),
+  }
   const conexion = comoSeConecta(portal.portal)
+  const sinError = (campo: CampoDeLaCuenta) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
     setGuardando(true)
+    setErrores({})
     try {
       const r = await publicacionApi.guardarCuenta({
         portal: portal.portal,
@@ -221,12 +231,17 @@ function DialogoDeCuenta({
       invalidar('portafolio')
       onGuardado()
     } catch (err) {
-      toast.error(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No se pudo guardar la cuenta',
-          accion: 'guardar la cuenta',
-        }),
-      )
+      // Un 400 con `campos` va debajo de su campo, con el foco en el primero;
+      // al toast sólo lo que no tiene dónde ir (un 5xx, la red, un 503).
+      const r = repartirErroresDelServidor<CampoDeLaCuenta>(err, {
+        campos: CAMPOS_DE_LA_CUENTA,
+        porDefecto: 'No se pudo guardar la cuenta',
+        accion: 'guardar la cuenta',
+      })
+      setErrores(r.porCampo)
+      const primero = r.orden[0]
+      if (primero) refs[primero].current?.focus()
+      if (r.sueltos.length > 0) toast.error(r.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -252,15 +267,28 @@ function DialogoDeCuenta({
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-etiqueta">Cómo la llamas</Label>
           <Input
+            ref={refs.etiqueta}
             id="cuenta-etiqueta"
             value={etiqueta}
-            onChange={(e) => setEtiqueta(e.target.value)}
+            onChange={(e) => {
+              setEtiqueta(e.target.value)
+              sinError('etiqueta')
+            }}
             maxLength={120}
             placeholder={`Plan ${portal.nombre} 2026`}
+            invalid={!!errores.etiqueta}
+            aria-invalid={errores.etiqueta ? true : undefined}
+            aria-describedby="cuenta-etiqueta-error"
           />
-          <p className="text-xs text-fg-subtle">
-            Para reconocerla si mañana tienes más de una. Opcional.
-          </p>
+          <ErrorDelCampo
+            id="cuenta-etiqueta-error"
+            mensaje={errores.etiqueta}
+            pista={
+              <span className="text-xs text-fg-subtle">
+                Para reconocerla si mañana tienes más de una. Opcional.
+              </span>
+            }
+          />
         </div>
 
         {/* 🔴 El identificador se llama como lo llama SU portal (Nico, 19-09:
@@ -272,17 +300,30 @@ function DialogoDeCuenta({
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-identificador">{conexion.rotuloDelIdentificador}</Label>
           <Input
+            ref={refs.identificadorEnElPortal}
             id="cuenta-identificador"
             value={identificador}
-            onChange={(e) => setIdentificador(e.target.value)}
+            onChange={(e) => {
+              setIdentificador(e.target.value)
+              sinError('identificadorEnElPortal')
+            }}
             maxLength={120}
             placeholder={conexion.ejemploDelIdentificador}
+            invalid={!!errores.identificadorEnElPortal}
+            aria-invalid={errores.identificadorEnElPortal ? true : undefined}
+            aria-describedby="cuenta-identificador-error"
             data-testid="cuenta-identificador"
           />
-          <p className="text-xs text-fg-subtle">
-            No guardamos contraseñas. Esto es sólo para que el equipo sepa con
-            qué usuario cargar el archivo.
-          </p>
+          <ErrorDelCampo
+            id="cuenta-identificador-error"
+            mensaje={errores.identificadorEnElPortal}
+            pista={
+              <span className="text-xs text-fg-subtle">
+                No guardamos contraseñas. Esto es sólo para que el equipo sepa con
+                qué usuario cargar el archivo.
+              </span>
+            }
+          />
           {conexion.cuidado && (
             <p className="text-xs text-warning" data-testid="cuidado-del-portal">
               {conexion.cuidado}
@@ -307,13 +348,20 @@ function DialogoDeCuenta({
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-notas">Notas</Label>
           <Textarea
+            ref={refs.notas}
             id="cuenta-notas"
             value={notas}
-            onChange={(e) => setNotas(e.target.value)}
+            onChange={(e) => {
+              setNotas(e.target.value)
+              sinError('notas')
+            }}
             maxLength={500}
             rows={3}
             placeholder="Cuántos avisos incluye el plan, cuándo se renueva, a quién llamar…"
+            aria-invalid={errores.notas ? true : undefined}
+            aria-describedby="cuenta-notas-error"
           />
+          <ErrorDelCampo id="cuenta-notas-error" mensaje={errores.notas} />
         </div>
 
         <label className="flex items-start gap-2.5 rounded-lg border border-border p-3">
@@ -992,7 +1040,12 @@ export function PortalesClient() {
       toast.success('Queda registrado que el aviso ya está arriba.')
       invalidar('portafolio')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar que el aviso ya está arriba.',
+          accion: 'registrar que el aviso ya está arriba',
+        }),
+      )
     } finally {
       setConfirmando(null)
     }
@@ -1010,7 +1063,12 @@ export function PortalesClient() {
       )
       invalidar('portafolio')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo despublicar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo despublicar',
+          accion: 'despublicar el aviso',
+        }),
+      )
     } finally {
       setBajando(null)
     }

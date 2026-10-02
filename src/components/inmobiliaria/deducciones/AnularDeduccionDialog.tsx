@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button, Input } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
 
 export interface AnularDeduccionDialogProps {
   abierto: boolean;
@@ -58,7 +60,14 @@ export function AnularDeduccionDialog({
     try {
       await onAnular(motivo.trim());
       onOpenChange(false);
-    } catch {
+    } catch (e) {
+      // Si el back rechazó el motivo (400 con `campos`), va bajo el motivo y
+      // con el foco ahí; lo demás lo dice quien anuló, en un toast.
+      const delMotivo = camposDelError(e).find((c) => c.campo === 'motivo');
+      if (delMotivo) {
+        setError(delMotivo.mensaje);
+        document.getElementById('anular-motivo')?.focus();
+      }
       setAnulando(false);
     }
   };
@@ -88,10 +97,14 @@ export function AnularDeduccionDialog({
               id="anular-motivo"
               value={motivo}
               maxLength={500}
-              onChange={(e) => setMotivo(e.target.value)}
-              aria-invalid={Boolean(error)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setError(null);
+              }}
+              aria-invalid={Boolean(error) || undefined}
+              aria-describedby="anular-motivo-error"
             />
-            {error && <p className="text-xs text-danger">{error}</p>}
+            <ErrorDelCampo id="anular-motivo-error" mensaje={error} className="mt-0" />
           </div>
         </div>
         <DialogFooter>

@@ -30,7 +30,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
+import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { MagnifyingGlass, ShieldWarning, UploadSimple, Warning } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { Badge, Button } from '@/components/ui'
+import { toast } from '@/components/ui/toast'
 import { captacionApi, type ConsultaDeListas } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
@@ -120,6 +121,11 @@ export function ListasClient() {
           : `Se revisaron ${r.revisados}: ${r.bloqueados} quedaron bloqueados y ${r.liberados} sin coincidencias.`,
       )
       invalidar('clientes')
+    } catch (e) {
+      // Era un try/finally sin catch: el rechazo quedaba sin atrapar y el botón
+      // volvía a «Volver a revisar» sin decir nada. Ahora se dice qué pasó, con
+      // la regla de oro (conexión sólo sin respuesta; 5xx con la referencia).
+      toast.error(errorEnCristiano(e, 'No se pudo volver a revisar a los terceros.'))
     } finally {
       setRevisando(false)
     }
@@ -244,7 +250,7 @@ export function ListasClient() {
             </div>
             {puedeRevisar ? (
               <Button
-                onClick={revisar}
+                onClick={() => void revisar()}
                 disabled={revisando}
                 hideArrow
                 data-testid="revisar-sin-verificar"

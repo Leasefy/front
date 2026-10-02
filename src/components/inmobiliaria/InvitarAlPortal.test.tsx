@@ -136,6 +136,38 @@ describe('<InvitarAlPortal>', () => {
     expect((q('invitar-propietario') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, y no culpa a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    invitarAlPortal.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
+    await pintar();
+    await invitar();
+    const texto = String(toastMock.error.mock.calls[0][0]);
+    expect(texto).toMatch(/^No pudimos invitarlo al portal: algo falló de nuestro lado/);
+    expect(texto).toContain('ab12cd34');
+    expect(texto).not.toMatch(/conexi[oó]n|Intenta de nuevo/);
+  });
+
+  it('un 400 dice lo que el back no aceptó, por sus campos', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    invitarAlPortal.mockRejectedValue(
+      new ApiError(400, 'El correo del propietario no es válido.', 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'email', regla: 'formato', mensaje: 'El correo del propietario no es válido.' }],
+      }),
+    );
+    await pintar();
+    await invitar();
+    expect(toastMock.error.mock.calls[0][0]).toBe('El correo del propietario no es válido.');
+  });
+
+  it('sin respuesta (la red), ahí sí se habla de la conexión', async () => {
+    invitarAlPortal.mockRejectedValue(new TypeError('Failed to fetch'));
+    await pintar();
+    await invitar();
+    expect(String(toastMock.error.mock.calls[0][0])).toMatch(/conexión/);
+  });
+
   it('sin correo el botón no se puede apretar', async () => {
     await pintar(null);
 

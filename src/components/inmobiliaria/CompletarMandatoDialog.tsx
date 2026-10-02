@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,11 @@ import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos
 import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 import { AvisoInmuebleSinCanon } from './CanonPorConfirmar';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { esSinRespuesta, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { errorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
+import { errorDeLaFechaDelMandato } from '@/lib/inmuebles/limites-del-inmueble';
 
 /**
  * The wire body for `POST /inmobiliaria/consignaciones` when completing a
@@ -168,10 +173,14 @@ export async function persistPropietarioIfNeeded(
   return propietarioId;
 }
 
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError && error.messages) return error.messages.join(' · ');
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
+/**
+ * El motivo, por el traductor (sistema de errores, 02-10-2026): un 4xx dice lo
+ * que mandó el back, un 5xx «de nuestro lado» con la referencia, y «conexión»
+ * sólo si no hubo respuesta. Antes era el `message` crudo: un 500 llegaba como
+ * «Error interno del servidor.» y un volcado, tal cual.
+ */
+function extractErrorMessage(error: unknown, fallback: string, accion?: string): string {
+  return mensajeParaLaPersona(error, { porDefecto: fallback, accion });
 }
 
 /**
@@ -213,6 +222,14 @@ export interface MandatoOutcome {
 export async function completeMandatoAndPublish(
   inmueble: InmuebleSinConsignacion,
   values: MandatoFormValues,
+  opciones: {
+    /**
+     * El error del mandato tal como llegó, para quien quiera poner cada
+     * `campos[]` en su campo (sistema de errores, 02-10-2026). El resultado
+     * sigue trayendo sólo el texto, igual para el lote.
+     */
+    alFallarElMandato?: (error: unknown) => void;
+  } = {},
 ): Promise<MandatoOutcome> {
   const base = { propertyId: inmueble.propertyId, propertyTitle: inmueble.propertyTitle };
 
@@ -237,11 +254,12 @@ export async function completeMandatoAndPublish(
       // A genuine mandate failure. Never publish a property whose mandate
       // call failed — that is the exact failure this whole task exists to
       // prevent.
+      opciones.alFallarElMandato?.(error);
       return {
         ...base,
         status: 'failed',
         published: false,
-        mandateErrorMessage: extractErrorMessage(error, 'Error desconocido'),
+        mandateErrorMessage: extractErrorMessage(error, 'No pudimos crear la consignación.', 'crear la consignación'),
       };
     }
   }
@@ -258,7 +276,7 @@ export async function completeMandatoAndPublish(
       ...base,
       status,
       published: false,
-      publishErrorMessage: extractErrorMessage(error, 'Error desconocido'),
+      publishErrorMessage: extractErrorMessage(error, 'No pudimos publicarlo.', 'publicarlo'),
     };
   }
 }
@@ -284,6 +302,10 @@ interface CompletarMandatoDialogProps {
 }
 
 const todayISO = () => new Date().toISOString().split('T')[0];
+
+/** Los campos del mandato que este diálogo muestra (nombres del DTO). */
+type CampoDelMandato = 'commissionPercent' | 'saleCommissionPercent' | 'contractDate';
+const CAMPOS_DEL_MANDATO: readonly CampoDelMandato[] = ['commissionPercent', 'saleCommissionPercent', 'contractDate'];
 
 /**
  * El envoltorio: sólo es dueño del `Dialog`.
@@ -344,6 +366,10 @@ function CuerpoDelMandato({
   const [agenteId, setAgenteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  /** Lo que el back no aceptó, en su campo (comisión, fecha). Editarlo lo borra. */
+  const [errorEnCampo, setErrorEnCampo] = useState<Partial<Record<CampoDelMandato, string>>>({});
+  const comisionRef = useRef<HTMLInputElement>(null);
+  const fechaRef = useRef<HTMLInputElement>(null);
   // Se entró desde la ficha de un propietario: ya sabemos de quién es.
   const [cambiandoDueno, setCambiandoDueno] = useState(false);
   // Los dueños de más. Vacío = un solo dueño, la forma de siempre.
@@ -364,6 +390,7 @@ function CuerpoDelMandato({
     setContractDate(todayISO());
     setAgenteId(null);
     setFormError(null);
+    setErrorEnCampo({});
     setCambiandoDueno(false);
     setCopropietarios([]);
   }, [inmueble, propietarioInicial]);
@@ -388,9 +415,14 @@ function CuerpoDelMandato({
   const nombreDe = (id: string) =>
     propietarios.find((p) => p.id === id)?.name ?? (pendiente?.id === id ? pendiente.data.name : id);
   const problemaCopropietarios = motivoInvalido(copropietarios, principalId);
+  // El tope del back (`@EsDiaDelCalendario` + `@FechaEntre`): se dice antes de mandar.
+  const fechaInvalida = errorDeLaFechaDelMandato(contractDate);
+  const errorDeLaComision = isSaleListing ? errorEnCampo.saleCommissionPercent : errorEnCampo.commissionPercent;
+  const errorDeLaFecha = fechaInvalida ?? errorEnCampo.contractDate;
   const isValid =
     Boolean(principalId) &&
     Boolean(contractDate) &&
+    !fechaInvalida &&
     !problemaCopropietarios &&
     // El mandato no se crea mientras el inmueble no tenga su canon (409 del back).
     !canonPorConfirmar &&
@@ -400,6 +432,7 @@ function CuerpoDelMandato({
     if (!isValid || isSubmitting) return;
     setIsSubmitting(true);
     setFormError(null);
+    setErrorEnCampo({});
 
     try {
       // El dueño nuevo (si lo hay) se crea primero y su id temporal se cambia
@@ -416,19 +449,35 @@ function CuerpoDelMandato({
         finalPropietarioId,
       );
 
-      const outcome = await completeMandatoAndPublish(inmueble, {
-        propietarioId: finalPropietarioId,
-        ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
-        commissionPercent,
-        contractDate,
-        agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
-        ...(isSaleListing ? { saleCommissionPercent } : {}),
-      });
+      let errorDelMandato: unknown;
+      const outcome = await completeMandatoAndPublish(
+        inmueble,
+        {
+          propietarioId: finalPropietarioId,
+          ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
+          commissionPercent,
+          contractDate,
+          agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
+          ...(isSaleListing ? { saleCommissionPercent } : {}),
+        },
+        { alFallarElMandato: (e) => (errorDelMandato = e) },
+      );
 
       if (outcome.status === 'failed') {
-        setFormError(
-          outcome.mandateErrorMessage ?? t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc'),
-        );
+        // Un 400 con `campos`: la comisión o la fecha en su campo, con el foco;
+        // lo demás (un 5xx con la referencia, la red, un dato sin campo acá),
+        // arriba del pie.
+        const reparto = repartirErroresDelServidor<CampoDelMandato>(errorDelMandato, {
+          campos: CAMPOS_DEL_MANDATO,
+          porDefecto: t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc'),
+          accion: 'crear la consignación',
+        });
+        if (reparto.orden.length > 0) {
+          setErrorEnCampo(reparto.porCampo);
+          const primero = reparto.orden[0];
+          (primero === 'contractDate' ? fechaRef : comisionRef).current?.focus();
+        }
+        setFormError(reparto.sueltos.join(' · ') || null);
         return;
       }
 
@@ -465,8 +514,16 @@ function CuerpoDelMandato({
       onClose();
     } catch (error) {
       // The propietario create/update step itself failed — nothing was
-      // submitted yet.
-      setFormError(extractErrorMessage(error, t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc')));
+      // submitted yet. El mismo traductor que la lista de propietarios: el
+      // documento repetido, el dato que el back no aceptó; sin respuesta, la
+      // conexión.
+      const { campo, general } = errorAlGuardarPropietario(error);
+      setFormError(
+        esSinRespuesta(error)
+          ? mensajeParaLaPersona(error)
+          : [campo?.message, general].filter(Boolean).join(' · ') ||
+              t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -568,7 +625,7 @@ function CuerpoDelMandato({
               grilla de dueños se queda con el alto. */}
           <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-fg-muted mb-2">
+            <label htmlFor="mandato-comision" className="block text-sm font-medium text-fg-muted mb-2">
               {isSaleListing
                 ? t('inmobiliaria.consignaciones.mandateDialog.saleCommissionLabel')
                 : t('inmobiliaria.consignaciones.mandateDialog.commissionLabel')}
@@ -576,6 +633,10 @@ function CuerpoDelMandato({
             {isSaleListing ? (
               <div className="relative">
                 <Input
+                  ref={comisionRef}
+                  id="mandato-comision"
+                  aria-invalid={errorDeLaComision ? true : undefined}
+                  aria-describedby={errorDeLaComision ? 'mandato-comision-error' : undefined}
                   type="number"
                   min="0"
                   max="100"
@@ -584,6 +645,7 @@ function CuerpoDelMandato({
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
                     if (!isNaN(value) && value >= 0 && value <= 100) setSaleCommissionPercent(value);
+                    setErrorEnCampo((prev) => ({ ...prev, saleCommissionPercent: undefined }));
                   }}
                   className="pr-10"
                 />
@@ -592,6 +654,10 @@ function CuerpoDelMandato({
             ) : (
               <div className="relative">
                 <Input
+                  ref={comisionRef}
+                  id="mandato-comision"
+                  aria-invalid={errorDeLaComision ? true : undefined}
+                  aria-describedby={errorDeLaComision ? 'mandato-comision-error' : undefined}
                   type="number"
                   min="0"
                   max="100"
@@ -600,23 +666,33 @@ function CuerpoDelMandato({
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
                     if (!isNaN(value) && value >= 0 && value <= 100) setCommissionPercent(value);
+                    setErrorEnCampo((prev) => ({ ...prev, commissionPercent: undefined }));
                   }}
                   className="pr-10"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted">%</span>
               </div>
             )}
+            <ErrorDelCampo id="mandato-comision-error" mensaje={errorDeLaComision} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-fg-muted mb-2">
+            <label htmlFor="mandato-fecha" className="block text-sm font-medium text-fg-muted mb-2">
               {t('inmobiliaria.consignaciones.mandateDialog.contractDateLabel')}
             </label>
             <Input
+              ref={fechaRef}
+              id="mandato-fecha"
+              aria-invalid={errorDeLaFecha ? true : undefined}
+              aria-describedby={errorDeLaFecha ? 'mandato-fecha-error' : undefined}
               type="date"
               value={contractDate}
-              onChange={(e) => setContractDate(e.target.value)}
+              onChange={(e) => {
+                setContractDate(e.target.value);
+                setErrorEnCampo((prev) => ({ ...prev, contractDate: undefined }));
+              }}
             />
+            <ErrorDelCampo id="mandato-fecha-error" mensaje={errorDeLaFecha} />
           </div>
           </div>
 

@@ -39,6 +39,7 @@ const {
   uploadPropertyPhotosMock,
   stepFivePhotosHolder,
   stepTwoOverridesHolder,
+  stepOneOverridesHolder,
   ubicarDireccionMock,
 } = vi.hoisted(() => ({
     authState: {
@@ -71,6 +72,8 @@ const {
     // override step 2's self-filled defaults (listingType/salePrice)
     // without a per-test vi.mock (T-0038).
     stepTwoOverridesHolder: { overrides: {} as Record<string, unknown> },
+    // Lo mismo para el paso 1: un dueño nuevo (sin guardar) en vez de uno de la lista.
+    stepOneOverridesHolder: { overrides: {} as Record<string, unknown> },
     ubicarDireccionMock: vi.fn(),
   }))
 
@@ -176,15 +179,38 @@ vi.mock('framer-motion', () => {
 // validation/navigation logic. Step 4 is left untouched (no agenteId) —
 // that's exactly the case under test.
 vi.mock('./ConsignacionWizardSteps', () => ({
-  StepSelectPropietario: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
+  StepSelectPropietario: ({
+    updateFormData,
+    ownerServerError,
+  }: {
+    updateFormData: (d: Record<string, unknown>) => void
+    ownerServerError?: { field: string; message: string } | null
+  }) => {
     React.useEffect(() => {
-      updateFormData({ propietarioId: 'prop-1' })
+      updateFormData({ propietarioId: 'prop-1', ...stepOneOverridesHolder.overrides })
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return React.createElement('div', { 'data-testid': 'step-1' })
+    return React.createElement(
+      'div',
+      { 'data-testid': 'step-1' },
+      ownerServerError
+        ? React.createElement('p', { 'data-testid': 'error-del-dueno', 'data-campo': ownerServerError.field }, ownerServerError.message)
+        : null,
+    )
   },
-  StepPropertyData: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
+  StepPropertyData: ({
+    formData,
+    updateFormData,
+    erroresDelServidor,
+  }: {
+    formData: Record<string, unknown>
+    updateFormData: (d: Record<string, unknown>) => void
+    erroresDelServidor?: Record<string, string>
+  }) => {
     React.useEffect(() => {
+      // Sólo la primera vez: volver al paso (tras un error del back) no
+      // reescribe lo que ya está, como el paso de verdad.
+      if (formData.propertyTitle) return
       updateFormData({
         propertyTitle: 'Depto Centro',
         propertyAddress: 'Calle 1',
@@ -205,9 +231,27 @@ vi.mock('./ConsignacionWizardSteps', () => ({
       })
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    return React.createElement('div', { 'data-testid': 'step-2' })
+    // Los controles con el id del asistente (para el foco) y sus errores.
+    return React.createElement(
+      'div',
+      { 'data-testid': 'step-2' },
+      React.createElement('input', {
+        id: 'asistente-monthlyRent',
+        'data-testid': 'canon',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => updateFormData({ monthlyRent: Number(e.target.value) }),
+      }),
+      React.createElement('input', { id: 'asistente-propertyTitle', 'data-testid': 'titulo' }),
+      React.createElement('p', { 'data-testid': 'error-monthlyRent' }, erroresDelServidor?.monthlyRent ?? ''),
+      React.createElement('p', { 'data-testid': 'error-propertyTitle' }, erroresDelServidor?.propertyTitle ?? ''),
+    )
   },
-  StepCommissionTerms: () => React.createElement('div', { 'data-testid': 'step-3' }),
+  StepCommissionTerms: ({ erroresDelServidor }: { erroresDelServidor?: Record<string, string> }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'step-3' },
+      React.createElement('input', { id: 'asistente-commissionPercent', 'data-testid': 'comision' }),
+      React.createElement('p', { 'data-testid': 'error-commissionPercent' }, erroresDelServidor?.commissionPercent ?? ''),
+    ),
   StepAssignAgent: ({ formData }: { formData: { agenteId?: string } }) =>
     React.createElement('div', { 'data-testid': 'step-4' }, formData.agenteId ?? 'no-agent'),
   StepActaEntrega: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
@@ -267,6 +311,7 @@ beforeEach(() => {
   uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
   stepFivePhotosHolder.photos = []
   stepTwoOverridesHolder.overrides = {}
+  stepOneOverridesHolder.overrides = {}
   ubicarDireccionMock
     .mockReset()
     .mockResolvedValue({ lat: 4.6097, lng: -74.0817, precision: 'direccion' })
@@ -845,13 +890,20 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
     expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
 
-  it('si el mandato falla también vuelve a donde se entró', async () => {
+  it('si el mandato falla se queda para reintentarlo, y al lograrlo vuelve a donde se entró', async () => {
+    // Sistema de errores (02-10-2026): antes salía de la pantalla con un
+    // genérico; ahora se queda y reintentar sólo crea la consignación.
     consignacionesApiMock.create.mockRejectedValueOnce(new Error('boom'))
     await renderDesdeLaFicha()
     for (let paso = 1; paso < 6; paso++) {
       await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
     }
     await enviar()
+    expect(pushMock).not.toHaveBeenCalled()
+
+    await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(2)
     expect(pushMock).toHaveBeenCalledWith(FICHA)
   })
 
@@ -947,5 +999,198 @@ describe('<ConsignacionWizard> — fallos a la mitad y publicar sin fotos (W1, W
     await enviar()
 
     expect(titulos(toast.error)).toEqual(['inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'])
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026). La receta: un 400 con `campos`
+ * lleva al paso del campo, con el error ahí y el foco puesto, y al toast va
+ * SÓLO lo que no tiene campo; un 5xx dice «de nuestro lado» con la referencia;
+ * sin respuesta, ahí sí, la conexión.
+ */
+describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
+  function errorDeCampos(campos: Array<{ campo: string; mensaje: string }>, extra: Record<string, unknown> = {}) {
+    return new ApiError(400, campos.map((c) => c.mensaje), 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: campos.map((c) => c.mensaje),
+      campos: campos.map((c) => ({ ...c, regla: 'maximo' })),
+      ...extra,
+    })
+  }
+  const CANON_MAXIMO = 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
+
+  async function llegarAlFinal() {
+    await renderWizard(AGENTE_LIST)
+    for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+  }
+
+  const porTestId = (id: string) => container.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+
+  it('🔴 un 400 en el canon al crear el inmueble: vuelve al paso 2, el error en el campo y el foco ahí, sin toast', async () => {
+    propertiesApiMock.create.mockRejectedValueOnce(errorDeCampos([{ campo: 'monthlyRent', mensaje: CANON_MAXIMO }]))
+
+    await llegarAlFinal()
+    await enviar()
+
+    expect(porTestId('step-2')).not.toBeNull()
+    expect(porTestId('error-monthlyRent')?.textContent).toBe(CANON_MAXIMO)
+    expect(document.activeElement).toBe(porTestId('canon'))
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('lo que no tiene campo en el asistente (las coordenadas) va al toast; lo que sí, a su campo', async () => {
+    propertiesApiMock.create.mockRejectedValueOnce(
+      errorDeCampos([
+        { campo: 'title', mensaje: 'El título no puede tener más de 100 caracteres.' },
+        { campo: 'latitude', mensaje: 'La latitud no tiene el formato esperado.' },
+      ]),
+    )
+
+    await llegarAlFinal()
+    await enviar()
+
+    expect(porTestId('error-propertyTitle')?.textContent).toBe('El título no puede tener más de 100 caracteres.')
+    expect(document.activeElement).toBe(porTestId('titulo'))
+    const [titulo, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(titulo).toBe('inmobiliaria.consignaciones.wizard.toasts.errorTitle')
+    expect(opciones.description).toBe('La latitud no tiene el formato esperado.')
+  })
+
+  it('al editar el campo, su error del servidor se va', async () => {
+    propertiesApiMock.create.mockRejectedValueOnce(errorDeCampos([{ campo: 'monthlyRent', mensaje: CANON_MAXIMO }]))
+    await llegarAlFinal()
+    await enviar()
+    expect(porTestId('error-monthlyRent')?.textContent).toBe(CANON_MAXIMO)
+
+    const canon = porTestId('canon') as HTMLInputElement
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(canon, '2000000')
+      canon.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(porTestId('error-monthlyRent')?.textContent ?? '').toBe('')
+  })
+
+  it('🔴 un 5xx al crear el inmueble dice «de nuestro lado» con la referencia, y no culpa a la conexión', async () => {
+    propertiesApiMock.create.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await llegarAlFinal()
+    await enviar()
+
+    const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(opciones.description).toMatch(/^No pudimos crear el inmueble: algo falló de nuestro lado/)
+    expect(opciones.description).toContain('ab12cd34')
+    expect(opciones.description).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (la red) al crear el inmueble: ahí sí se habla de la conexión', async () => {
+    propertiesApiMock.create.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await llegarAlFinal()
+    await enviar()
+
+    const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(opciones.description).toMatch(/conexión/)
+  })
+
+  it('🔴 un 400 del mandato con el inmueble ya creado: se queda, el error en su campo, y reintentar NO crea otro inmueble', async () => {
+    consignacionesApiMock.create
+      .mockRejectedValueOnce(
+        errorDeCampos([{ campo: 'commissionPercent', mensaje: 'La comisión no puede pasar de 100.' }]),
+      )
+      .mockResolvedValueOnce({ id: 'consignacion-1' })
+
+    await llegarAlFinal()
+    await enviar()
+
+    expect(porTestId('step-3')).not.toBeNull()
+    expect(porTestId('error-commissionPercent')?.textContent).toBe('La comisión no puede pasar de 100.')
+    expect(document.activeElement).toBe(porTestId('comision'))
+    const [titulo, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(titulo).toBe('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle')
+    expect(opciones.description).toContain('sólo se crea la consignación')
+    expect(pushMock).not.toHaveBeenCalled()
+
+    for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    // Sin volver a preguntar por las fotos: el inmueble ya existe.
+    await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(2)
+    expect(consignacionesApiMock.create.mock.calls[1][0].propertyId).toBe('property-1')
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('un 5xx del mandato dice «de nuestro lado» con la referencia y que el inmueble ya está', async () => {
+    consignacionesApiMock.create.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'cafe1234' }),
+    )
+    await llegarAlFinal()
+    await enviar()
+
+    const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(opciones.description).toMatch(/No pudimos crear la consignación: algo falló de nuestro lado/)
+    expect(opciones.description).toContain('cafe1234')
+    expect(opciones.description).toContain('El inmueble ya quedó creado')
+  })
+
+  it('publicar con un 5xx: el motivo trae la referencia, no el texto crudo', async () => {
+    propertiesApiMock.update.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'feed0001' }),
+    )
+    await llegarAlFinal()
+    await enviar()
+
+    const [titulo, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(titulo).toBe('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle')
+    expect(opciones.description).toContain('No pudimos publicarlo: algo falló de nuestro lado')
+    expect(opciones.description).toContain('feed0001')
+    expect(opciones.description).not.toContain('Error interno del servidor')
+  })
+
+  describe('el dueño nuevo, al pasar del paso 1', () => {
+    beforeEach(() => {
+      stepOneOverridesHolder.overrides = {
+        propietarioId: 'new-123',
+        duenoPendienteId: 'new-123',
+        newPropietarioData: { name: 'Ana Pérez', documentNumber: '123' },
+      }
+    })
+
+    it('un 400 con campos va al campo del dueño, no a un toast genérico', async () => {
+      propietariosApiMock.create.mockRejectedValueOnce(
+        errorDeCampos([{ campo: 'email', mensaje: 'Revisa el correo: debe tener la forma nombre@dominio.com.' }]),
+      )
+      await renderWizard(AGENTE_LIST)
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+
+      expect(porTestId('step-1')).not.toBeNull()
+      const error = porTestId('error-del-dueno')
+      expect(error?.dataset.campo).toBe('email')
+      expect(error?.textContent).toBe('Revisa el correo: debe tener la forma nombre@dominio.com.')
+      expect(toast.error).not.toHaveBeenCalled()
+    })
+
+    it('sin respuesta: habla de la conexión y no avanza', async () => {
+      propietariosApiMock.create.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      await renderWizard(AGENTE_LIST)
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+
+      expect(porTestId('step-1')).not.toBeNull()
+      const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(opciones.description).toMatch(/conexión/)
+    })
   })
 })

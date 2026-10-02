@@ -333,6 +333,11 @@ La «Revisión con IA» (espera inventada de 2 s) se eliminó.
   resumen; `LISTA` con `creacion.creadas > 0` (una fila corregida después de terminar) abre el paso 4 con «Crear las N que faltan».
   `GET lotes` deja una carga TERMINADA 24 h: `CargasAMedias` la dibuja aparte («Terminada: X creadas, Y fallidas»), no «a medias».
 - **409** `LOTE_INCOMPLETO` (aún se sube, ubica o revisa) y `NADA_PARA_CREAR` se traducen en `lib/mensajeDeCarga.ts`.
+- **Errores de la carga (02-10-2026)**: `mensajeDeCarga` deja SÓLO los códigos del lote con su frase; lo demás va por
+  `mensajeParaLaPersona` con su `accion` (5xx = «de nuestro lado» + referencia; «conexión» sólo sin respuesta). Los topes
+  de lo que una persona escribe (corregir una fila, el masivo) son el espejo `lib/limites-de-la-importacion.ts` del
+  `ResolverInmuebleDto` del back; una celda del ARCHIVO no se topa en el DTO (C13: una fila rara no tumba la tanda), la
+  aparta `valorQueNoCabe` al crear con su cifra y su campo.
 - `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
 - `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
 

@@ -39,6 +39,22 @@ import {
   type FilaDeMigracion,
   type ResultadoMasivo,
 } from '@/lib/api/contracts.service'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { errorDeLaComision } from '@/components/migracion/limites-de-la-migracion'
+
+/**
+ * Los campos de `ResolverMasivoDto` que este formulario muestra, con el nombre
+ * del back (`propietario.nombre` llega como su hoja, `nombre`).
+ */
+type CampoDeLaMasiva = 'usoInmueble' | 'nombre' | 'documento' | 'comisionPorcentaje'
+const CAMPOS_DE_LA_MASIVA: readonly CampoDeLaMasiva[] = [
+  'usoInmueble',
+  'nombre',
+  'documento',
+  'comisionPorcentaje',
+]
+const idDe = (campo: CampoDeLaMasiva) => `masiva-${campo}`
 
 /**
  * Frozen en contract.md §3.2.G2 — 1.365 filas ⇒ 14 requests secuenciales.
@@ -84,6 +100,19 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
   const [resultado, setResultado] = useState<ResultadoMasivo | null>(null)
   /** Cuántas filas ya pasaron por una tanda (aplicada, fallida u omitida). */
   const [hechas, setHechas] = useState(0)
+  /**
+   * El error de cada campo: el del cliente (la comisión, con la regla del
+   * back) o el que mandó el back en `campos`. Va DEBAJO del campo.
+   */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaMasiva, string>>>({})
+  const quitarError = (campo: CampoDeLaMasiva) =>
+    setErrores((e) => (e[campo] ? { ...e, [campo]: undefined } : e))
+  const propsDelCampo = (campo: CampoDeLaMasiva) => ({
+    id: idDe(campo),
+    invalid: Boolean(errores[campo]),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDe(campo)}-error` : undefined,
+  })
 
   /*
    * Cuántas de las seleccionadas (cargadas) todavía no tienen inmueble.
@@ -96,6 +125,15 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
   const sinInmueble = seleccionadas.filter((f) => !f.propertyId).length
 
   async function aplicar() {
+    if (modo === 'propietario') {
+      const m = errorDeLaComision(comision)
+      if (m) {
+        setErrores({ comisionPorcentaje: m })
+        document.getElementById(idDe('comisionPorcentaje'))?.focus()
+        return
+      }
+    }
+    setErrores({})
     setCorriendo(true)
     setError(null)
     setHechas(0)
@@ -125,8 +163,22 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
       // Una tanda puede fallar a mitad de camino: lo que las anteriores ya
       // aplicaron QUEDA en `resultado` (nunca se pisa acá) — el error dice
       // hasta dónde llegó, para que nunca sea "no sabemos qué pasó".
+      //
+      // Sistema de errores (02-10-2026): un 400 con `campos` se pinta en SU
+      // campo y le da el foco; el resto pasa por el traductor (nunca el
+      // `message` crudo, ni «conexión» si el servidor sí respondió).
+      const reparto = repartirErroresDelServidor<CampoDeLaMasiva>(e, {
+        campos: CAMPOS_DE_LA_MASIVA,
+        porDefecto: 'No pudimos aplicar el cambio.',
+        accion: 'aplicar el cambio',
+      })
+      setErrores(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) document.getElementById(idDe(primero))?.focus()
+      const motivo =
+        reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : 'Revisa lo marcado arriba.'
       setError(
-        `${e instanceof Error ? e.message : 'No se pudo aplicar'} — se alcanzaron a aplicar ${acumulado.aplicadas} de ${ids.length} antes de este error.`,
+        `${motivo} — se alcanzaron a aplicar ${acumulado.aplicadas} de ${ids.length} antes de este error.`,
       )
     } finally {
       setCorriendo(false)
@@ -174,11 +226,21 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
       {modo === 'uso' ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px]">
-            <label className="text-caption text-muted-foreground">
+            <label className="text-caption text-muted-foreground" htmlFor={idDe('usoInmueble')}>
               Uso para las {ids.length}
             </label>
-            <Select value={uso} onValueChange={(v) => setUso(v as 'VIVIENDA' | 'COMERCIAL')}>
-              <SelectTrigger>
+            <Select
+              value={uso}
+              onValueChange={(v) => {
+                setUso(v as 'VIVIENDA' | 'COMERCIAL')
+                quitarError('usoInmueble')
+              }}
+            >
+              <SelectTrigger
+                id={idDe('usoInmueble')}
+                aria-invalid={errores.usoInmueble ? true : undefined}
+                aria-describedby={errores.usoInmueble ? `${idDe('usoInmueble')}-error` : undefined}
+              >
                 <SelectValue placeholder="Elige el uso" />
               </SelectTrigger>
               <SelectContent>
@@ -186,6 +248,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
                 <SelectItem value="COMERCIAL">Comercial</SelectItem>
               </SelectContent>
             </Select>
+            <ErrorDelCampo id={`${idDe('usoInmueble')}-error`} mensaje={errores.usoInmueble} />
           </div>
         </div>
       ) : null}
@@ -200,21 +263,54 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
               registrar — aparecen listadas abajo con su fila.
             </p>
           ) : null}
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             <div className="min-w-[160px] flex-1">
-              <label className="text-caption text-muted-foreground">Nombre del propietario</label>
-              <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+              <label className="text-caption text-muted-foreground" htmlFor={idDe('nombre')}>
+                Nombre del propietario
+              </label>
+              <Input
+                {...propsDelCampo('nombre')}
+                value={nombre}
+                onChange={(e) => {
+                  setNombre(e.target.value)
+                  quitarError('nombre')
+                }}
+              />
+              <ErrorDelCampo id={`${idDe('nombre')}-error`} mensaje={errores.nombre} />
             </div>
             <div className="w-36">
-              <label className="text-caption text-muted-foreground">Documento</label>
-              <Input value={documento} onChange={(e) => setDocumento(e.target.value)} />
-            </div>
-            <div className="w-24">
-              <label className="text-caption text-muted-foreground">Comisión %</label>
+              <label className="text-caption text-muted-foreground" htmlFor={idDe('documento')}>
+                Documento
+              </label>
               <Input
+                {...propsDelCampo('documento')}
+                value={documento}
+                onChange={(e) => {
+                  setDocumento(e.target.value)
+                  quitarError('documento')
+                }}
+              />
+              <ErrorDelCampo id={`${idDe('documento')}-error`} mensaje={errores.documento} />
+            </div>
+            <div className="w-28">
+              <label
+                className="text-caption text-muted-foreground"
+                htmlFor={idDe('comisionPorcentaje')}
+              >
+                Comisión %
+              </label>
+              <Input
+                {...propsDelCampo('comisionPorcentaje')}
                 type="number"
                 value={comision}
-                onChange={(e) => setComision(e.target.value)}
+                onChange={(e) => {
+                  setComision(e.target.value)
+                  quitarError('comisionPorcentaje')
+                }}
+              />
+              <ErrorDelCampo
+                id={`${idDe('comisionPorcentaje')}-error`}
+                mensaje={errores.comisionPorcentaje}
               />
             </div>
           </div>
@@ -243,7 +339,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
       ) : null}
 
       {error ? (
-        <p className="text-sm text-destructive" data-testid="error-masivo">
+        <p className="text-sm text-destructive" data-testid="error-masivo" role="alert">
           {error}
         </p>
       ) : null}

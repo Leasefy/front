@@ -18,7 +18,7 @@ import { toast } from '@/components/ui/toast';
 import { Scales } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 
 type Campo = 'responsableIva' | 'agenteRetenedorRenta' | 'agenteRetenedorIva' | 'agenteRetenedorIca';
@@ -55,7 +55,9 @@ export function PerfilTributarioDelPropietario({
       onActualizado(actualizado);
     } catch (error) {
       toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
-        description: error instanceof ApiError ? (error.messages?.join(' · ') ?? error.message) : error instanceof Error ? error.message : '',
+        // Con la regla de oro: el motivo del back si se lee, «de nuestro lado»
+        // con la referencia en un 5xx y la conexión sólo sin respuesta.
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'guardar el perfil tributario' }),
       });
     } finally {
       setGuardando(null);

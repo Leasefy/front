@@ -44,6 +44,7 @@ import { SubidaDeFotos, filtrarFotos } from '@/components/inmobiliaria/inmueble/
 import { FotosDesdeEnlace } from '@/components/inmobiliaria/inmueble/FotosDesdeEnlace';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface Imagen {
   id: string;
@@ -126,7 +127,15 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           subidas += 1;
           setEnCamino((prev) => prev.filter((f) => f.clave !== clave));
         } catch (e) {
-          fallos.push(e instanceof Error ? e.message : archivos[i].name);
+          // Por el traductor: el rechazo del back («La foto pesa más de 5 MB»)
+          // tal cual, un 5xx «de nuestro lado» con la referencia y «conexión»
+          // sólo sin respuesta. Antes era `e.message` crudo.
+          fallos.push(
+            mensajeParaLaPersona(e, {
+              porDefecto: `No pudimos subir «${archivos[i].name}».`,
+              accion: `subir «${archivos[i].name}»`,
+            }),
+          );
           setEnCamino((prev) => prev.map((f) => (f.clave === clave ? { ...f, estado: 'fallo' } : f)));
         }
       }

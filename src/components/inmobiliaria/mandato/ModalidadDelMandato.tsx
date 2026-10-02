@@ -14,7 +14,7 @@
  * mismo que ver la ficha.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { enCristiano } from '@/lib/errores/en-cristiano';
 import { HandCoins, WarningCircle } from '@phosphor-icons/react';
@@ -38,6 +38,12 @@ import {
   type Modalidad,
 } from '@/lib/api/mandato.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  errorDelPorcentajeDelReparto,
+  leerPorcentaje,
+} from '@/lib/mandato/limites-de-la-modalidad-y-el-retiro';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   QUE_ES_LA_MODALIDAD,
@@ -187,17 +193,29 @@ function EditarModalidad({
     mandato.interesesAlPropietarioPct != null ? String(mandato.interesesAlPropietarioPct) : '',
   );
   const [guardando, setGuardando] = useState(false);
+  /** Lo que no es de un campo (un 409, un 5xx, la red): aviso de bloque. */
   const [error, setError] = useState<string | null>(null);
+  /** El error del porcentaje del reparto, debajo de su campo. */
+  const [errorDelPct, setErrorDelPct] = useState<string | null>(null);
+  const pctRef = useRef<HTMLInputElement>(null);
 
   const deLaCasa = mandato.inmobiliaria.modalidadDeMandato;
 
+  function marcarElPct(mensaje: string) {
+    setErrorDelPct(mensaje);
+    pctRef.current?.focus();
+  }
+
   async function guardar() {
     setError(null);
-    const porcentaje = destino === 'REPARTO' ? Number(pct.replace(',', '.')) : null;
-    if (destino === 'REPARTO' && (!Number.isFinite(porcentaje) || (porcentaje ?? 0) <= 0 || (porcentaje ?? 0) >= 100)) {
-      setError('El reparto necesita el porcentaje del propietario, mayor que 0 y menor que 100.');
+    setErrorDelPct(null);
+    // El mismo tope que el DTO (0,01 a 99,99, dos decimales), antes de mandar.
+    const delCliente = destino === 'REPARTO' ? errorDelPorcentajeDelReparto(pct) : null;
+    if (delCliente) {
+      marcarElPct(delCliente);
       return;
     }
+    const porcentaje = destino === 'REPARTO' ? leerPorcentaje(pct) : null;
     setGuardando(true);
     try {
       const m = await mandatoApi.guardarMandato(mandato.consignacionId, {
@@ -210,7 +228,17 @@ function EditarModalidad({
       });
       onGuardado(m);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo guardar la modalidad.'));
+      // Un 400 en `interesesAlPropietarioPct` va debajo del porcentaje (si se
+      // está mostrando); lo demás es un aviso del formulario, por el traductor.
+      const r = repartirErroresDelServidor<'pct'>(e, {
+        mapa: { interesesAlPropietarioPct: destino === 'REPARTO' ? 'pct' : null },
+        campos: ['pct'],
+        porDefecto: 'No se pudo guardar la modalidad.',
+        accion: 'guardar la modalidad del mandato',
+      });
+      if (r.porCampo.pct) marcarElPct(r.porCampo.pct);
+      if (r.delServidor.length === 0) setError(mensajeDelFallo(e, 'No se pudo guardar la modalidad.'));
+      else if (r.sueltos.length > 0) setError(r.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
@@ -268,7 +296,10 @@ function EditarModalidad({
           <select
             className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
             value={destino}
-            onChange={(e) => setDestino(e.target.value as OpcionDeDestino)}
+            onChange={(e) => {
+              setDestino(e.target.value as OpcionDeDestino);
+              setErrorDelPct(null);
+            }}
             data-testid="destino-de-los-intereses"
           >
             <option value="MODALIDAD">
@@ -282,12 +313,21 @@ function EditarModalidad({
             <div className="space-y-1.5">
               <Label htmlFor="pct-propietario">Porcentaje para el propietario</Label>
               <Input
+                ref={pctRef}
                 id="pct-propietario"
                 inputMode="decimal"
                 value={pct}
-                onChange={(e) => setPct(e.target.value)}
+                onChange={(e) => {
+                  setPct(e.target.value);
+                  setErrorDelPct(null);
+                }}
                 placeholder="50"
+                invalid={!!errorDelPct}
+                aria-invalid={errorDelPct ? true : undefined}
+                aria-describedby="pct-propietario-error"
+                data-testid="pct-propietario"
               />
+              <ErrorDelCampo id="pct-propietario-error" mensaje={errorDelPct} />
             </div>
           ) : null}
           <p className="text-xs text-muted-foreground">
@@ -296,8 +336,10 @@ function EditarModalidad({
           </p>
         </fieldset>
 
+        {/* Aviso de BLOQUE, no de un campo: un 409, un 5xx o la red. El error
+            del porcentaje va debajo de su campo. */}
         {error ? (
-          <p className="text-sm text-danger" role="alert">
+          <p className="text-sm text-danger" role="alert" data-testid="modalidad-error">
             {error}
           </p>
         ) : null}

@@ -5,6 +5,45 @@ import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/
 import { propertiesApi } from '@/lib/api/properties.service';
 import { resolvePropertyCoordinates } from '@/lib/constants/map';
 import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
+import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
+
+/** Un campo del borrador que el back puede rechazar (`CreatePropertyDto`). */
+type CampoDelBorrador = keyof PropertyDraft;
+
+/**
+ * En qué paso se corrige cada campo (sistema de errores, 02-10-2026): un 400
+ * con `campos` lleva a la persona a ese paso. Los nombres del DTO coinciden con
+ * los del borrador.
+ */
+const PASO_DEL_CAMPO: Partial<Record<CampoDelBorrador, number>> = {
+  type: 1,
+  city: 2,
+  neighborhood: 2,
+  address: 2,
+  bedrooms: 3,
+  bathrooms: 3,
+  area: 3,
+  floor: 3,
+  parkingSpaces: 3,
+  stratum: 3,
+  yearBuilt: 3,
+  amenities: 4,
+  monthlyRent: 6,
+  adminFee: 6,
+  deposit: 6,
+  title: 7,
+  description: 7,
+};
+const CAMPOS_CON_PASO = Object.keys(PASO_DEL_CAMPO) as CampoDelBorrador[];
+
+/** Una foto que no subió y por qué (para decirlo, no sólo a la consola). */
+export interface FotoQueNoSubio {
+  nombre: string;
+  motivo: string;
+}
 
 interface PublishContextTextT {
   // State
@@ -16,6 +55,13 @@ interface PublishContextTextT {
   isComplete: boolean;
   submissionError: string | null;
   createdPropertyId: string | null;
+  /**
+   * Lo que el back (o el tope del cliente, espejo del DTO) rechazó, por campo
+   * del borrador. Se vacía al editar ese campo.
+   */
+  erroresDelServidor: Partial<Record<CampoDelBorrador, string>>;
+  /** Las fotos que no subieron al publicar, con su motivo. Vacío = todas subieron. */
+  fotosQueNoSubieron: FotoQueNoSubio[];
 
   // Photo files (File objects for upload)
   photoFiles: File[];
@@ -46,6 +92,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
   const [isComplete, setIsComplete] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<CampoDelBorrador, string>>>({});
+  const [fotosQueNoSubieron, setFotosQueNoSubieron] = useState<FotoQueNoSubio[]>([]);
   const photoFilesRef = useRef<File[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
@@ -74,6 +122,13 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const updateDraft = useCallback((updates: Partial<PropertyDraft>) => {
     setDraft(prev => ({ ...prev, ...updates }));
+    setErroresDelServidor((prev) => {
+      const tocados = (Object.keys(updates) as CampoDelBorrador[]).filter((k) => prev[k] !== undefined);
+      if (tocados.length === 0) return prev;
+      const quedan = { ...prev };
+      for (const k of tocados) delete quedan[k];
+      return quedan;
+    });
   }, []);
 
   const isStepValid = useCallback((step: number): boolean => {
@@ -128,9 +183,49 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     }
   }, [currentStep, totalSteps, completedSteps]);
 
+  /** Los errores van a su campo, la persona a su paso, y el texto arriba del pie. */
+  const mostrarErrores = useCallback((porCampo: Partial<Record<CampoDelBorrador, string>>, orden: CampoDelBorrador[], sueltos: string[]) => {
+    setErroresDelServidor(porCampo);
+    const primero = orden[0];
+    const paso = primero ? PASO_DEL_CAMPO[primero] : undefined;
+    if (paso) setCurrentStep(paso);
+    // Los pasos todavía no pintan el error en el campo: el aviso del pie lo
+    // dice entero (los del campo primero, luego lo que no tiene campo).
+    const texto = Array.from(new Set([...orden.map((c) => porCampo[c]!).filter(Boolean), ...sueltos])).join(' · ');
+    setSubmissionError(texto || null);
+  }, []);
+
   const submitProperty = useCallback(async () => {
     setIsSubmitting(true);
     setSubmissionError(null);
+    setErroresDelServidor({});
+    setFotosQueNoSubieron([]);
+
+    // Los topes del back (`limites-del-inmueble.ts`, espejo del DTO): lo que el
+    // servidor rechazaría no se manda, y se dice con la misma frase.
+    const topes = erroresDelInmueble({
+      title: draft.title,
+      address: draft.address,
+      city: draft.city,
+      neighborhood: draft.neighborhood,
+      monthlyRent: draft.monthlyRent || undefined,
+      adminFee: draft.adminFee || undefined,
+      deposit: draft.deposit || undefined,
+      bedrooms: draft.bedrooms,
+      bathrooms: draft.bathrooms,
+      area: draft.area || undefined,
+      floor: draft.floor || undefined,
+      parkingSpaces: draft.parkingSpaces || undefined,
+    }) as Partial<Record<CampoDelBorrador, string>>;
+    const conTope = (Object.keys(topes) as CampoDelBorrador[]).sort(
+      (a, b) => (PASO_DEL_CAMPO[a] ?? 99) - (PASO_DEL_CAMPO[b] ?? 99),
+    );
+    if (conTope.length > 0) {
+      mostrarErrores(topes, conTope, []);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       /*
        * 1. Create property via API.
@@ -179,25 +274,52 @@ export function PublishProvider({ children }: { children: ReactNode }) {
       });
 
       // 2. Upload photos sequentially
+      //
+      // 🔴 Antes una foto que fallaba sólo iba a la consola: el inmueble salía
+      // publicado con menos fotos y nadie se enteraba. Ahora cada fallo queda
+      // con su motivo (por el traductor) y se avisa; el inmueble ya existe, así
+      // que no se aborta nada.
       const files = photoFilesRef.current;
+      const fallidas: FotoQueNoSubio[] = [];
       for (const file of files) {
         try {
           await propertiesApi.uploadImage(created.id, file);
-        } catch {
+        } catch (e) {
           // Continue uploading remaining photos even if one fails
-          console.error(`Failed to upload image: ${file.name}`);
+          fallidas.push({
+            nombre: file.name,
+            motivo: mensajeParaLaPersona(e, {
+              porDefecto: `No pudimos subir «${file.name}».`,
+              accion: `subir «${file.name}»`,
+            }),
+          });
         }
+      }
+      if (fallidas.length > 0) {
+        setFotosQueNoSubieron(fallidas);
+        toast.warning(
+          fallidas.length === 1
+            ? 'El inmueble quedó publicado, pero una foto no se subió'
+            : `El inmueble quedó publicado, pero ${fallidas.length} fotos no se subieron`,
+          { description: `${fallidas[0].motivo} Puedes agregarlas desde el inmueble.` },
+        );
       }
 
       setCreatedPropertyId(created.id);
       setIsComplete(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al publicar la propiedad';
-      setSubmissionError(message);
+      // Un 400 con `campos` lleva al paso del campo; un 5xx dice «de nuestro
+      // lado» con la referencia; «conexión», sólo sin respuesta.
+      const reparto = repartirErroresDelServidor<CampoDelBorrador>(err, {
+        campos: CAMPOS_CON_PASO,
+        porDefecto: 'No pudimos publicar el inmueble. Prueba de nuevo en un momento.',
+        accion: 'publicar el inmueble',
+      });
+      mostrarErrores(reparto.porCampo, reparto.orden, reparto.sueltos);
     } finally {
       setIsSubmitting(false);
     }
-  }, [draft]);
+  }, [draft, mostrarErrores]);
 
   const resetDraft = useCallback(() => {
     setDraft(initialPropertyDraft);
@@ -206,6 +328,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setSubmissionError(null);
     setCreatedPropertyId(null);
     setIsComplete(false);
+    setErroresDelServidor({});
+    setFotosQueNoSubieron([]);
     // Clean up blob URLs
     photoFilesRef.current = [];
     setPhotoFiles([]);
@@ -220,6 +344,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     isComplete,
     submissionError,
     createdPropertyId,
+    erroresDelServidor,
+    fotosQueNoSubieron,
     photoFiles,
     addPhotoFiles,
     removePhotoFile,

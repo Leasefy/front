@@ -38,11 +38,19 @@ import type {
   TerceroExtraido,
 } from '@/lib/api/terceros-extract.types';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
+import type { ErrorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface TerceroIACaptureProps {
   /** Reusa el handler de creación manual existente (TERC-04 sin cambios). */
   onCreated: (data: PropietarioFormData) => Promise<void>;
   onClose: () => void;
+  /**
+   * El error del último guardado (`errorAlGuardarPropietario`), para que cada
+   * error por campo vaya a SU campo del formulario de revisión (02-10-2026).
+   * Lo que no tiene campo lo pinta la pantalla que monta esto.
+   */
+  errorDelServidor?: ErrorAlGuardarPropietario | null;
 }
 
 type Step = 'upload' | 'extracting' | 'review' | 'error';
@@ -92,7 +100,7 @@ function IconoDeArchivo({ file }: { file: File }) {
  * es cada uno y lo devuelve (`documentos`), y una pista de un solo documento
  * era más un obstáculo («¿y si subo los dos?») que una ayuda.
  */
-export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) {
+export function TerceroIACapture({ onCreated, onClose, errorDelServidor }: TerceroIACaptureProps) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.terceroIA.${s}`;
 
@@ -145,7 +153,11 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       if (err instanceof TerceroExtractUnavailableError) {
         setErrorMsg(t(k('errorUnavailable')));
       } else {
-        setErrorMsg(err instanceof Error ? err.message : t(k('errorGeneric')));
+        // Con la regla de oro: un 400 dice qué documento no sirvió, un 5xx
+        // «de nuestro lado» con la referencia, y la red, la conexión.
+        setErrorMsg(
+          mensajeParaLaPersona(err, { porDefecto: t(k('errorGeneric')), accion: 'leer los documentos' }),
+        );
       }
       setStep('error');
     }
@@ -282,6 +294,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
           onSubmit={handleSave}
           onCancel={onClose}
           mode="create"
+          serverError={errorDelServidor?.campo ?? null}
+          serverErrors={errorDelServidor?.porCampo ?? null}
         />
       </div>
     );

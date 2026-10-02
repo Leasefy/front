@@ -43,7 +43,7 @@ import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilitySched
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
 import {
   type AvailabilitySchedule,
@@ -208,8 +208,14 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         // F12: el back explica por qué no (una franja que se cruza, una
         // modalidad que no aplica). Tragarlo dejaba a la persona reintentando
         // lo mismo; «intenta de nuevo» queda sólo para lo que no explica.
+        // 02-10: por el traductor. La función de antes callaba el 5xx (caía al
+        // «intenta de nuevo» sin referencia) y no listaba los `campos` de un
+        // 400 que llegaba sin `message` legible.
         toast.error('No pudimos guardar los horarios', {
-          description: descripcionDelError(e) ?? 'Intenta de nuevo en unos segundos.',
+          description: mensajeParaLaPersona(e, {
+            porDefecto: 'Intenta de nuevo en unos segundos.',
+            accion: 'guardar los horarios de visita',
+          }),
         });
       } finally {
         setGuardando(false);

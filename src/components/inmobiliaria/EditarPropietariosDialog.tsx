@@ -31,7 +31,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Warning } from '@phosphor-icons/react';
 
 import {
   Dialog,
@@ -51,6 +50,7 @@ import { SelectorDePropietarios, type PropietarioPendiente } from './SelectorDeP
 import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos';
 import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './CopropietariosField';
 import { persistPropietarioIfNeeded } from './CompletarMandatoDialog';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 /** Un dueño con su tajada, tal como viaja al back. */
 interface DuenoConParticipacion {
@@ -195,12 +195,14 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
               onPendiente={setPendiente}
             />
             <RepartoEntreDuenos seleccion={seleccion} nombreDe={nombreDe} filas={filas} onChange={setFilas} />
-            {seleccion.length === 0 ? (
-              <p role="alert" className="flex items-start gap-1.5 text-sm text-danger" data-testid="editar-propietarios-problema">
-                <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-                {problema}
-              </p>
-            ) : null}
+            {/* El error de la selección (sin dueño elegido) entra suave bajo
+                el selector, como todo error de campo (sistema de errores). */}
+            <div data-testid={seleccion.length === 0 ? 'editar-propietarios-problema' : undefined}>
+              <ErrorDelCampo
+                id="editar-propietarios-problema"
+                mensaje={seleccion.length === 0 ? problema : null}
+              />
+            </div>
             {error ? (
               <p role="alert" className="text-sm text-danger" data-testid="editar-propietarios-error">
                 {error}

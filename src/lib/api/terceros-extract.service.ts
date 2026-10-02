@@ -10,7 +10,8 @@
  * hace el flujo manual existente (TERC-04 sin cambios).
  */
 
-import { getAccessToken, ApiError } from './client';
+import { getAccessToken } from './client';
+import { errorDeLaExtraccion } from './error-de-la-extraccion';
 import {
   TERCERO_DOC_MEDIA_TYPE,
   TERCERO_DOCX_MEDIA_TYPE,
@@ -135,8 +136,8 @@ export async function extractTerceroFromFiles(
 
   if (!res.ok) {
     if (res.status === 401) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body?.error ?? `Error ${res.status}`);
+    // El sobre entero (code, campos, referencia) para el traductor de errores.
+    throw await errorDeLaExtraccion(res);
   }
 
   const json = (await res.json()) as TerceroExtractResponse;

@@ -80,7 +80,6 @@ import {
   useDispersiones,
 } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
-import { ApiError } from '@/lib/api/client';
 import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
@@ -91,13 +90,6 @@ import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
-
-/** Qué decirle a quien falló una llamada: el mensaje del back si vino, si no el genérico. */
-function mensajeDe(error: unknown, porDefecto: string): string {
-  if (error instanceof ApiError) return error.messages?.join(' · ') ?? error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return porDefecto;
-}
 
 /**
  * La cáscara de los tres diálogos de la ficha: editar, eliminar y notas.
@@ -624,7 +616,7 @@ function PropietarioDetailContent() {
       });
     } catch (error) {
       toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '' }),
       });
     } finally {
       setIsExporting(false);
@@ -1104,6 +1096,7 @@ function PropietarioDetailContent() {
           onCancel={cerrarEdicion}
           mode="edit"
           serverError={errorAlEditar?.campo ?? null}
+          serverErrors={errorAlEditar?.porCampo ?? null}
         />
       </Modal>
 

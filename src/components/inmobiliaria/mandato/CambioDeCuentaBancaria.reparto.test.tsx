@@ -572,3 +572,72 @@ describe('el catálogo completo de bancos', () => {
     expect(solicitud.bankCode).toBe('BANCO_AGRARIO');
   });
 });
+
+/**
+ * Sistema de errores (02-10-2026): en la cuenta única, lo que el back rechaza
+ * POR CAMPO va bajo su campo con el foco; lo demás, al aviso del diálogo con
+ * la regla de oro del traductor.
+ */
+describe('cuando el back rechaza el pedido de la cuenta única', () => {
+  async function pedirCon(error: unknown) {
+    h.cambiosDeCuenta.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      cambios: [],
+      cuentasVigentes: [],
+      repartoDisponible: true,
+      motivoDelReparto: null,
+    });
+    h.solicitarCambioDeCuenta.mockReset().mockRejectedValue(error);
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    await escribir(campo<HTMLSelectElement>('banco-nuevo'), 'agrario');
+    await escribir(campo('numero-nuevo'), '4000123456');
+    await adjuntar();
+    await clic(porTestId('enviar-cambio'));
+  }
+
+  it('🔴 un 400 con `campos` en el número: el error va bajo el número, con el foco', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const frase = 'El número de la cuenta puede tener hasta 40 caracteres.';
+    await pedirCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'bankAccountNumber', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    );
+    const numero = campo<HTMLInputElement>('numero-nuevo')!;
+    expect(document.getElementById('numero-nuevo-error')?.textContent).toBe(frase);
+    expect(numero.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(numero);
+    // Y no se repite arriba: el aviso del diálogo (el `role="alert"` sin id) no aparece.
+    expect(document.body.querySelectorAll('[data-testid="pedir-cambio"] [role="alert"]:not([id])')).toHaveLength(0);
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia, en el aviso del diálogo', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await pedirCon(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+    const aviso = Array.from(document.body.querySelectorAll('[data-testid="pedir-cambio"] [role="alert"]'))
+      .map((n) => n.textContent)
+      .join(' ');
+    expect(aviso).toMatch(/de nuestro lado/);
+    expect(aviso).toContain('ab12cd34');
+    expect(aviso).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    await pedirCon(new TypeError('Failed to fetch'));
+    const aviso = Array.from(document.body.querySelectorAll('[data-testid="pedir-cambio"] [role="alert"]'))
+      .map((n) => n.textContent)
+      .join(' ');
+    expect(aviso).toMatch(/conexión/);
+  });
+
+  it('el número de cuenta lleva el tope del back (40)', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      disponible: true, motivo: null, cambios: [], cuentasVigentes: [], repartoDisponible: true, motivoDelReparto: null,
+    });
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    expect(campo<HTMLInputElement>('numero-nuevo')!.maxLength).toBe(40);
+  });
+});

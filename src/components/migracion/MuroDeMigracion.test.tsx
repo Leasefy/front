@@ -202,9 +202,7 @@ async function pintar() {
     root = createRoot(container);
     root.render(
       <MuroDeMigracion>
-        <a href="/panel/inmobiliaria/reportes/resumen" data-testid="algo-del-panel">
-          Panel
-        </a>
+        <span data-testid="algo-del-panel">Panel</span>
       </MuroDeMigracion>,
     );
   });
@@ -2090,9 +2088,7 @@ describe('la llegada al panel: difuminado hasta saber si toca decidir', () => {
       root = createRoot(container);
       root.render(
         <MuroDeMigracion>
-          <a href="/panel/inmobiliaria/reportes/resumen" data-testid="algo-del-panel">
-            Panel
-          </a>
+          <span data-testid="algo-del-panel">Panel</span>
         </MuroDeMigracion>,
       );
     });
@@ -2179,5 +2175,109 @@ describe('la llegada al panel: difuminado hasta saber si toca decidir', () => {
     estadoMock.estado.mockRejectedValue(new ApiError(403, 'x', 'SEGUNDO_FACTOR_REQUERIDO'));
     await pintar();
     expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Sistema de errores (02-10-2026): ningún fallo del muro se calla ni culpa a
+// la conexión cuando el servidor sí respondió.
+// ══════════════════════════════════════════════════════════════════════════
+
+import { toast as toastDelMuro } from '@/components/ui/toast';
+
+describe('el muro y la regla de oro de los errores', () => {
+  const ERROR_500 = () =>
+    new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor.',
+      referencia: 'ab12cd34',
+    });
+  const qDoc = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+  async function clickDoc(testid: string) {
+    const el = qDoc(testid) as HTMLElement | null;
+    if (!el) throw new Error(`No existe [data-testid="${testid}"] en el documento`);
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('🔴 «arranco de cero» con un 5xx: de nuestro lado, con la referencia, sin el texto crudo', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    estadoMock.omitir.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    const t = q('muro-fallo')?.textContent ?? '';
+    expect(t).toContain('No pudimos dejar la migración para después: algo falló de nuestro lado');
+    expect(t).toContain('ab12cd34');
+    expect(t).not.toContain('Error interno del servidor');
+    expect(t).not.toMatch(/conexi[oó]n/);
+    expect(q('muro-fallo')?.getAttribute('role')).toBe('alert');
+  });
+
+  it('🔴 «En otro momento» que no pudo omitir lo DICE (antes el catch estaba vacío) y el muro se queda', async () => {
+    const error = vi.spyOn(toastDelMuro, 'error');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+
+    expect(error).toHaveBeenCalledWith(
+      'No pudimos dejar la migración para después',
+      expect.objectContaining({
+        description: expect.stringContaining('ab12cd34'),
+      }),
+    );
+    error.mockRestore();
+  });
+
+  it('la ✕ con la red caída habla de la conexión (ahí sí no hubo respuesta)', async () => {
+    const error = vi.spyOn(toastDelMuro, 'error');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    estadoMock.omitir.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await pintar();
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(error).toHaveBeenCalledWith(
+      'No pudimos dejar la migración para después',
+      expect.objectContaining({ description: expect.stringMatching(/conexión/) }),
+    );
+    expect(q('muro-migracion')).not.toBeNull();
+    error.mockRestore();
+  });
+
+  it('«No requiero migración» con el recordatorio caído avisa, y omite igual', async () => {
+    const aviso = vi.spyOn(toastDelMuro, 'warning');
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    estadoMock.recordatorio.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await clickDoc('no-requiero-migracion');
+    await act(async () => {});
+
+    expect(aviso).toHaveBeenCalledWith(
+      'No pudimos apagar el recordatorio de la migración',
+      expect.objectContaining({ description: expect.stringContaining('ab12cd34') }),
+    );
+    expect(estadoMock.omitir).toHaveBeenCalledWith('no_requiere_migracion');
+    aviso.mockRestore();
   });
 });

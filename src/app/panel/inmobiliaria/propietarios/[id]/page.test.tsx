@@ -189,9 +189,9 @@ vi.mock('@/components/inmobiliaria', () => ({
   // Sin `onEdit` la tarjeta real no dibuja el botón: el doble tampoco.
   PropietarioBankInfo: ({ onEdit }: { onEdit?: () => void }) =>
     onEdit ? React.createElement('button', { 'data-testid': 'editar-banco', onClick: onEdit }) : null,
-  // Publica el error por campo que recibió (`serverError`).
-  PropietarioForm: ({ onSubmit, serverError }: { onSubmit: (d: unknown) => void; serverError?: { field: string; message: string } | null }) =>
-    React.createElement('button', { 'data-testid': 'form-guardar', 'data-error-campo': serverError?.field ?? '', 'data-error-mensaje': serverError?.message ?? '', onClick: () => onSubmit({ name: 'Nuevo nombre', email: 'x@y.z', phone: '1', documentType: 'CC', documentNumber: '9', bankCode: '', accountType: '', accountNumber: '', accountHolder: '' }) }, 'guardar'),
+  // Publica el error por campo que recibió (`serverError`) y TODOS (`serverErrors`).
+  PropietarioForm: ({ onSubmit, serverError, serverErrors }: { onSubmit: (d: unknown) => void; serverError?: { field: string; message: string } | null; serverErrors?: Record<string, string> | null }) =>
+    React.createElement('button', { 'data-testid': 'form-guardar', 'data-error-campo': serverError?.field ?? '', 'data-error-mensaje': serverError?.message ?? '', 'data-errores': JSON.stringify(serverErrors ?? {}), onClick: () => onSubmit({ name: 'Nuevo nombre', email: 'x@y.z', phone: '1', documentType: 'CC', documentNumber: '9', bankCode: '', accountType: '', accountNumber: '', accountHolder: '' }) }, 'guardar'),
 }));
 // La sección tiene sus propias pruebas; acá sólo importa qué recibe.
 vi.mock('@/components/inmobiliaria/deducciones/DeduccionesDelPropietario', () => ({
@@ -397,15 +397,47 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('si el back rechaza la edición sin un campo (500), lo dice dentro del diálogo', async () => {
-    api.update.mockRejectedValueOnce(new Error('documento repetido'));
+  it('si el back rechaza la edición sin un campo (500), lo dice dentro del diálogo, «de nuestro lado» y con la referencia', async () => {
+    api.update.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
     await render();
     await click('editar-banco');
     await click('form-guardar');
-    expect(document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent).toContain(
-      'No pudimos guardar el propietario',
-    );
+    const aviso = document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent ?? '';
+    expect(aviso).toContain('No pudimos guardar el propietario: algo falló de nuestro lado');
+    expect(aviso).toContain('ab12cd34');
+    expect(aviso).not.toMatch(/conexi[oó]n/);
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('un 400 con `campos` pone CADA error en su campo del formulario, sin aviso arriba', async () => {
+    api.update.mockRejectedValueOnce(
+      new ApiError(400, ['Revisa el correo.', 'Revisa la cuenta.'], 'DATOS_INVALIDOS', {
+        campos: [
+          { campo: 'email', regla: 'formato', mensaje: 'Revisa el correo.' },
+          { campo: 'bankAccountNumber', regla: 'formato', mensaje: 'Revisa la cuenta.' },
+        ],
+      }),
+    );
+    await render();
+    await click('editar-banco');
+    await click('form-guardar');
+    const form = document.querySelector('[data-testid="form-guardar"]')!;
+    expect(form.getAttribute('data-error-campo')).toBe('email');
+    expect(JSON.parse(form.getAttribute('data-errores')!)).toEqual({
+      email: 'Revisa el correo.',
+      accountNumber: 'Revisa la cuenta.',
+    });
+    expect(document.querySelector('[data-testid="aviso-en-el-dialogo"]')).toBeNull();
+  });
+
+  it('sin respuesta (la red), el aviso habla de la conexión', async () => {
+    api.update.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await render();
+    await click('editar-banco');
+    await click('form-guardar');
+    expect(document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent).toMatch(/conexión/);
   });
 
   it('Eliminar abre el Dialog de la plataforma y dice, con el nombre, qué se borra', async () => {

@@ -166,3 +166,67 @@ describe('CrearInmueblesFaltantes', () => {
     expect(onListo).not.toHaveBeenCalled()
   })
 })
+
+/*
+ * Sistema de errores (02-10-2026): un 400 de la ciudad va debajo de la
+ * ciudad, con el foco; un 5xx al aviso del diálogo, con la referencia.
+ */
+describe('<CrearInmueblesFaltantes> — el error en su lugar', () => {
+  async function abrirYConfirmar(error: unknown) {
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 5,
+      activadas: 0,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    vi.mocked(contractsApi.migracion.crearInmueblesFaltantes).mockRejectedValue(error)
+    await render()
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-abrir')?.click()
+    })
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-confirmar')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {})
+  }
+
+  it('🔴 un 400 en `ciudad` va debajo de la ciudad, con aria y foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await abrirYConfirmar(
+      new ApiError(400, ['La ciudad no puede estar vacía.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La ciudad no puede estar vacía.'],
+        campos: [{ campo: 'ciudad', regla: 'requerido', mensaje: 'La ciudad no puede estar vacía.' }],
+      }),
+    )
+    const input = document.getElementById('ciudad-inmuebles-faltantes') as HTMLInputElement
+    expect(document.getElementById('ciudad-inmuebles-faltantes-error')?.textContent).toBe(
+      'La ciudad no puede estar vacía.',
+    )
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('🔴 un 5xx: de nuestro lado, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await abrirYConfirmar(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const t = document.querySelector('[role="alertdialog"]')?.textContent ?? ''
+    expect(t).toContain('No pudimos crear los inmuebles: algo falló de nuestro lado')
+    expect(t).toContain('ab12cd34')
+    expect(t).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    await abrirYConfirmar(new TypeError('Failed to fetch'))
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toMatch(/conexión/)
+  })
+})

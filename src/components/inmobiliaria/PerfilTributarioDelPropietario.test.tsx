@@ -63,4 +63,33 @@ describe('<PerfilTributarioDelPropietario>', () => {
     expect(onActualizado).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalled();
   });
+
+  async function fallaCon(error: unknown) {
+    updateMock.mockRejectedValue(error);
+    await act(async () => { root.render(<PerfilTributarioDelPropietario propietario={base} onActualizado={() => {}} />); });
+    await act(async () => { (container.querySelector('[data-testid="chip-reteica"]') as HTMLButtonElement).click(); await new Promise((r) => setTimeout(r, 0)); });
+    return String((toast.error.mock.calls[0][1] as { description: string }).description);
+  }
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const texto = await fallaCon(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+    expect(texto).toMatch(/^No pudimos guardar el perfil tributario: algo falló de nuestro lado/);
+    expect(texto).toContain('ab12cd34');
+    expect(texto).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('un 400 dice lo que el back no aceptó', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const texto = await fallaCon(
+      new ApiError(400, ['Indica si practica ReteICA con sí o no.'], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'agenteRetenedorIca', regla: 'tipo', mensaje: 'Indica si practica ReteICA con sí o no.' }],
+      }),
+    );
+    expect(texto).toBe('Indica si practica ReteICA con sí o no.');
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    expect(await fallaCon(new TypeError('Failed to fetch'))).toMatch(/conexión/);
+  });
 });

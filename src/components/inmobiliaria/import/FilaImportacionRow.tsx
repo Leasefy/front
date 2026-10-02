@@ -10,12 +10,16 @@
  * form field (see `candidatos`).
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { WarningCircle, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
+import { errorDelNumero } from './lib/limites-de-la-importacion';
 import {
   Select,
   SelectContent,
@@ -54,9 +58,40 @@ const TIPOS = [
 
 interface FilaImportacionRowProps {
   fila: FilaDeImportacion;
+  /**
+   * Guarda la corrección. Si el back responde un 400 con `campos`, la promesa
+   * se RECHAZA con ese error y la fila lo pinta debajo de cada campo (con el
+   * foco en el primero). Lo demás (un 409, un 5xx, la red) lo avisa quien
+   * llama y la promesa se resuelve.
+   */
   onResolver: (id: string, cambios: ResolverInmuebleDto) => Promise<void>;
   onDescartar: (id: string) => Promise<void>;
   isBusy: boolean;
+}
+
+/** Los campos que la fila deja corregir; los nombres son los del formulario. */
+type CampoDeLaFila = keyof FormularioFila;
+const CAMPOS_DE_LA_FILA: readonly CampoDeLaFila[] = [
+  'title',
+  'address',
+  'city',
+  'neighborhood',
+  'department',
+  'propertyType',
+  'listingType',
+  'monthlyRent',
+  'salePrice',
+  'area',
+];
+
+/** Un input con su error debajo, que entra suave (`ErrorDelCampo`). */
+function ConError({ id, error, children }: { id: string; error?: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      {children}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} />
+    </div>
+  );
 }
 
 export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: FilaImportacionRowProps) {
@@ -71,11 +106,69 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
     ...(canonPorConfirmar ? { monthlyRent: undefined } : {}),
   });
   const [form, setForm] = useState<FormularioFila>(formularioInicial);
+  /** El error de cada campo: el del cliente (los topes) o el que mandó el back. */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaFila, string>>>({});
 
   const esDuplicado = esPosibleDuplicado(fila.faltantes);
   const isSale = form.listingType === 'sale';
+  const idDe = (campo: CampoDeLaFila) => `fila-${fila.id}-${campo}`;
+
+  /** Escribir en un campo borra su error: el aviso no sobrevive a su arreglo. */
+  const escribir = (cambio: Partial<FormularioFila>) => {
+    setForm((f) => ({ ...f, ...cambio }));
+    setErrores((prev) => {
+      const siguiente = { ...prev };
+      for (const k of Object.keys(cambio) as CampoDeLaFila[]) delete siguiente[k];
+      return siguiente;
+    });
+  };
+
+  const enfocar = (campo: CampoDeLaFila | undefined) => {
+    if (!campo || typeof document === 'undefined') return;
+    document.getElementById(idDe(campo))?.focus();
+  };
+
+  /**
+   * Manda la corrección. Un 400 con `campos` llega acá (quien llama lo
+   * relanza): cada mensaje va a SU campo y el primero recibe el foco; lo que
+   * no tiene campo en la fila sale en un aviso.
+   */
+  const resolver = async (cambios: ResolverInmuebleDto): Promise<boolean> => {
+    try {
+      await onResolver(fila.id, cambios);
+      return true;
+    } catch (e) {
+      const reparto = repartirErroresDelServidor<CampoDeLaFila>(e, {
+        mapa: { type: 'propertyType' },
+        campos: CAMPOS_DE_LA_FILA,
+        porDefecto: 'No pudimos guardar los cambios.',
+        accion: 'guardar la fila',
+      });
+      setErrores(reparto.porCampo);
+      if (reparto.orden.length > 0) setEditando(true);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
+      // Tras pintar: el input tiene que existir para recibir el foco.
+      setTimeout(() => enfocar(reparto.orden[0]), 0);
+      return false;
+    }
+  };
 
   const handleGuardar = async () => {
+    // Los mismos topes que `ResolverInmuebleDto` (espejo en
+    // `lib/limites-de-la-importacion.ts`): se atajan antes de mandar.
+    const delCliente: Partial<Record<CampoDeLaFila, string>> = {};
+    const precio = isSale ? 'salePrice' : 'monthlyRent';
+    const errorDelPrecio = errorDelNumero(precio, form[precio]);
+    if (errorDelPrecio) delCliente[precio] = errorDelPrecio;
+    const errorDelArea = errorDelNumero('area', form.area);
+    if (errorDelArea) delCliente.area = errorDelArea;
+    const primero = CAMPOS_DE_LA_FILA.find((c) => delCliente[c]);
+    if (primero) {
+      setErrores(delCliente);
+      enfocar(primero);
+      return;
+    }
+
     // The domain -> wire translation lives in `./lib/datosDeFila`, tested
     // there. It is the mapping that produced F-2; keeping it out of the
     // component is what makes it testable at all.
@@ -87,7 +180,8 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
     for (const k of Object.keys(todos) as (keyof ResolverInmuebleDto)[]) {
       if (todos[k] !== antes[k]) (cambios as Record<string, unknown>)[k] = todos[k];
     }
-    if (Object.keys(cambios).length > 0) await onResolver(fila.id, cambios);
+    if (Object.keys(cambios).length > 0 && !(await resolver(cambios))) return;
+    setErrores({});
     setEditando(false);
   };
 
@@ -194,7 +288,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
             size="sm"
             hideArrow
             disabled={isBusy}
-            onClick={() => onResolver(fila.id, { permitirDuplicado: true })}
+            onClick={() => void resolver({ permitirDuplicado: true })}
           >
             Usar de todos modos
           </Button>
@@ -203,81 +297,111 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
 
       {editando && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border-faint">
-          <Input
-            placeholder="Título"
-            value={form.title ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          />
-          <Input
-            placeholder="Dirección"
-            value={form.address ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          />
-          <Input
-            placeholder="Ciudad"
-            value={form.city ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-          />
-          <Input
-            placeholder="Barrio"
-            value={form.neighborhood ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, neighborhood: e.target.value }))}
-          />
-          <Input
-            placeholder="Departamento"
-            value={form.department ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-          />
-          <Select
-            value={form.propertyType ?? undefined}
-            onValueChange={(v) => setForm((f) => ({ ...f, propertyType: v as PropertyType }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Tipo de inmueble" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS.map((t) => (
-                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={form.listingType ?? undefined}
-            onValueChange={(v) => setForm((f) => ({ ...f, listingType: v as ListingType }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Arriendo o venta" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="rent">Arriendo</SelectItem>
-              <SelectItem value="sale">Venta</SelectItem>
-            </SelectContent>
-          </Select>
+          {(
+            [
+              ['title', 'Título'],
+              ['address', 'Dirección'],
+              ['city', 'Ciudad'],
+              ['neighborhood', 'Barrio'],
+              ['department', 'Departamento'],
+            ] as const
+          ).map(([campo, etiqueta]) => (
+            <ConError key={campo} id={idDe(campo)} error={errores[campo]}>
+              <Input
+                id={idDe(campo)}
+                placeholder={etiqueta}
+                aria-label={etiqueta}
+                value={form[campo] ?? ''}
+                invalid={!!errores[campo]}
+                aria-invalid={errores[campo] ? true : undefined}
+                aria-describedby={errores[campo] ? `${idDe(campo)}-error` : undefined}
+                onChange={(e) => escribir({ [campo]: e.target.value } as Partial<FormularioFila>)}
+              />
+            </ConError>
+          ))}
+          <ConError id={idDe('propertyType')} error={errores.propertyType}>
+            <Select
+              value={form.propertyType ?? undefined}
+              onValueChange={(v) => escribir({ propertyType: v as PropertyType })}
+            >
+              <SelectTrigger
+                id={idDe('propertyType')}
+                aria-invalid={errores.propertyType ? true : undefined}
+                aria-describedby={errores.propertyType ? `${idDe('propertyType')}-error` : undefined}
+              >
+                <SelectValue placeholder="Tipo de inmueble" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </ConError>
+          <ConError id={idDe('listingType')} error={errores.listingType}>
+            <Select
+              value={form.listingType ?? undefined}
+              onValueChange={(v) => escribir({ listingType: v as ListingType })}
+            >
+              <SelectTrigger
+                id={idDe('listingType')}
+                aria-invalid={errores.listingType ? true : undefined}
+                aria-describedby={errores.listingType ? `${idDe('listingType')}-error` : undefined}
+              >
+                <SelectValue placeholder="Arriendo o venta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rent">Arriendo</SelectItem>
+                <SelectItem value="sale">Venta</SelectItem>
+              </SelectContent>
+            </Select>
+          </ConError>
           {isSale ? (
-            <Input
-              type="number"
-              placeholder="Precio de venta"
-              value={form.salePrice ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value ? Number(e.target.value) : undefined }))}
-            />
+            <ConError id={idDe('salePrice')} error={errores.salePrice}>
+              <Input
+                id={idDe('salePrice')}
+                type="number"
+                placeholder="Precio de venta"
+                aria-label="Precio de venta"
+                value={form.salePrice ?? ''}
+                invalid={!!errores.salePrice}
+                aria-invalid={errores.salePrice ? true : undefined}
+                aria-describedby={errores.salePrice ? `${idDe('salePrice')}-error` : undefined}
+                onChange={(e) => escribir({ salePrice: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            </ConError>
           ) : (
-            <Input
-              type="number"
-              placeholder={
-                canonPorConfirmar
-                  ? `Por confirmar${typeof fila.datos.monthlyRent === 'number' ? ` (valor por defecto $${fila.datos.monthlyRent.toLocaleString('es-CO')})` : ''}`
-                  : 'Canon mensual'
-              }
-              value={form.monthlyRent ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, monthlyRent: e.target.value ? Number(e.target.value) : undefined }))}
-            />
+            <ConError id={idDe('monthlyRent')} error={errores.monthlyRent}>
+              <Input
+                id={idDe('monthlyRent')}
+                type="number"
+                placeholder={
+                  canonPorConfirmar
+                    ? `Por confirmar${typeof fila.datos.monthlyRent === 'number' ? ` (valor por defecto $${fila.datos.monthlyRent.toLocaleString('es-CO')})` : ''}`
+                    : 'Canon mensual'
+                }
+                aria-label="Canon mensual"
+                value={form.monthlyRent ?? ''}
+                invalid={!!errores.monthlyRent}
+                aria-invalid={errores.monthlyRent ? true : undefined}
+                aria-describedby={errores.monthlyRent ? `${idDe('monthlyRent')}-error` : undefined}
+                onChange={(e) => escribir({ monthlyRent: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            </ConError>
           )}
-          <Input
-            type="number"
-            placeholder="Área (m²)"
-            value={form.area ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, area: e.target.value ? Number(e.target.value) : undefined }))}
-          />
+          <ConError id={idDe('area')} error={errores.area}>
+            <Input
+              id={idDe('area')}
+              type="number"
+              placeholder="Área (m²)"
+              aria-label="Área (m²)"
+              value={form.area ?? ''}
+              invalid={!!errores.area}
+              aria-invalid={errores.area ? true : undefined}
+              aria-describedby={errores.area ? `${idDe('area')}-error` : undefined}
+              onChange={(e) => escribir({ area: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </ConError>
           <div className="sm:col-span-2 flex justify-end">
             <Button type="button" hideArrow size="sm" disabled={isBusy} onClick={handleGuardar}>
               Guardar

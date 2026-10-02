@@ -36,7 +36,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ApiError } from '@/lib/api/client';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import {
   inquilinosApi,
   type Inquilino,
@@ -80,6 +82,17 @@ export const TIPOS_DE_DOCUMENTO: Array<{ value: TipoDeDocumento; label: string }
   { value: 'PASSPORT', label: 'Pasaporte' },
 ];
 
+/** Los campos del cajón: se llaman igual que en el DTO del back. */
+type CampoDelInquilino = keyof InquilinoForm;
+const CAMPOS_DEL_INQUILINO: readonly CampoDelInquilino[] = ['nombre', 'tipoDocumento', 'documento', 'correo', 'telefono'];
+const ID_DEL_CAMPO: Record<CampoDelInquilino, string> = {
+  nombre: 'inquilino-nombre',
+  tipoDocumento: 'inquilino-tipo-documento',
+  documento: 'inquilino-documento',
+  correo: 'inquilino-correo',
+  telefono: 'inquilino-telefono',
+};
+
 /** Qué falta. Vacío = se puede guardar. Mismas reglas que el back. */
 export function validarInquilino(f: InquilinoForm): Record<string, string> {
   const e: Record<string, string> = {};
@@ -100,18 +113,39 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
   const [form, setForm] = useState<InquilinoForm>(INQUILINO_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [tocado, setTocado] = useState(false);
+  /**
+   * Lo que el back rechazó POR CAMPO (02-10-2026): un 400 `DATOS_INVALIDOS`
+   * trae `campos[]` y cada uno va bajo SU campo hasta que se lo corrige.
+   */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelInquilino, string>>>({});
 
   useEffect(() => {
     if (abierto) {
       setForm(INQUILINO_VACIO);
       setTocado(false);
+      setDelServidor({});
     }
   }, [abierto]);
 
   const errores = validarInquilino(form);
   const valido = Object.keys(errores).length === 0 && !guardando;
-  const set = <K extends keyof InquilinoForm>(k: K, v: InquilinoForm[K]) =>
+  const set = <K extends keyof InquilinoForm>(k: K, v: InquilinoForm[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+    setDelServidor((antes) => {
+      if (!antes[k]) return antes;
+      const { [k]: _quitado, ...resto } = antes;
+      return resto;
+    });
+  };
+  /** El error que se ve en un campo: el del servidor, o el del cliente tras intentar guardar. */
+  const errorDe = (k: CampoDelInquilino): string | undefined =>
+    delServidor[k] ?? (tocado ? (errores[k] as string | undefined) : undefined);
+  /** `id`, `aria-invalid` y `aria-describedby` de un control con su error. */
+  const control = (k: CampoDelInquilino, tambien?: string) => ({
+    id: ID_DEL_CAMPO[k],
+    'aria-invalid': Boolean(errorDe(k)) || undefined,
+    'aria-describedby': [`${ID_DEL_CAMPO[k]}-error`, tambien].filter(Boolean).join(' '),
+  });
 
   const guardar = async () => {
     setTocado(true);
@@ -138,14 +172,23 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
       /*
-       * El 409 del back trae el nombre de quien ya está y con qué llave chocó.
-       * Se muestra tal cual: «no se pudo» sin decir con quién chocó deja a la
-       * persona cambiando el campo equivocado.
+       * Lo que el back rechazó por campo va bajo su campo, con el foco en el
+       * primero. Lo demás va al toast con la regla de oro del traductor: el
+       * 409 trae el nombre de quien ya está y con qué llave chocó, y se
+       * muestra ENTERO (antes se tiraba si pasaba de 200 caracteres); un 5xx
+       * dice «de nuestro lado» con la referencia; la red, la conexión.
        */
-      toast.error('No se pudo crear el inquilino', {
-        description:
-          err instanceof ApiError && err.message.length < 200 ? err.message : undefined,
+      const reparto = repartirErroresDelServidor<CampoDelInquilino>(err, {
+        campos: CAMPOS_DEL_INQUILINO,
+        accion: 'crear el inquilino',
       });
+      if (reparto.orden.length > 0) {
+        setDelServidor(reparto.porCampo);
+        document.getElementById(ID_DEL_CAMPO[reparto.orden[0]])?.focus();
+      }
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo crear el inquilino', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -160,8 +203,9 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
 
       <CajonCuerpo>
         <div className="space-y-4" data-testid="nuevo-inquilino">
-          <Campo label="Nombre completo" error={tocado && errores.nombre}>
+          <Campo id={ID_DEL_CAMPO.nombre} label="Nombre completo" error={errorDe('nombre')}>
             <Input
+              {...control('nombre')}
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
               placeholder="María Fernanda Ruiz"
@@ -170,12 +214,12 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
           </Campo>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,12rem)_1fr]">
-            <Campo label="Tipo de documento">
+            <Campo id={ID_DEL_CAMPO.tipoDocumento} label="Tipo de documento" error={errorDe('tipoDocumento')}>
               <Select
                 value={form.tipoDocumento}
                 onValueChange={(v) => set('tipoDocumento', v as TipoDeDocumento)}
               >
-                <SelectTrigger data-testid="inquilino-tipo-documento">
+                <SelectTrigger {...control('tipoDocumento')} data-testid="inquilino-tipo-documento">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -188,8 +232,9 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
               </Select>
             </Campo>
 
-            <Campo label="Número de documento">
+            <Campo id={ID_DEL_CAMPO.documento} label="Número de documento" error={errorDe('documento')}>
               <Input
+                {...control('documento', 'inquilino-llave-error')}
                 value={form.documento}
                 onChange={(e) => set('documento', e.target.value)}
                 placeholder="1020304050"
@@ -200,11 +245,13 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
           </div>
 
           <Campo
+            id={ID_DEL_CAMPO.correo}
             label="Correo"
             hint="Con el correo le creamos su cuenta del portal y le mandamos la invitación."
-            error={tocado && errores.correo}
+            error={errorDe('correo')}
           >
             <Input
+              {...control('correo', 'inquilino-llave-error')}
               type="email"
               value={form.correo}
               onChange={(e) => set('correo', e.target.value)}
@@ -213,8 +260,9 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
             />
           </Campo>
 
-          <Campo label="Teléfono" hint="Opcional">
+          <Campo id={ID_DEL_CAMPO.telefono} label="Teléfono" hint="Opcional" error={errorDe('telefono')}>
             <Input
+              {...control('telefono')}
               value={form.telefono}
               onChange={(e) => set('telefono', e.target.value)}
               placeholder="3001234567"
@@ -223,11 +271,11 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
             />
           </Campo>
 
-          {tocado && errores.llave ? (
-            <p className="text-xs text-danger" data-testid="inquilino-error-llave">
-              {errores.llave}
-            </p>
-          ) : null}
+          {/* Correo O documento: el error es de los dos campos, que lo nombran
+              en su `aria-describedby`. */}
+          <div data-testid="inquilino-error-llave">
+            <ErrorDelCampo id="inquilino-llave-error" mensaje={tocado ? errores.llave : undefined} className="mt-0" />
+          </div>
         </div>
       </CajonCuerpo>
 
@@ -257,26 +305,31 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
   );
 }
 
+/**
+ * Etiqueta, control y su error. El error entra suave con `ErrorDelCampo` y,
+ * si hay ayuda, la reemplaza con un cruce (02-10-2026). `id` es el del
+ * control: el error es `${id}-error`, el que nombra su `aria-describedby`.
+ */
 function Campo({
+  id,
   label,
   hint,
   error,
   children,
 }: {
+  id: string;
   label: string;
   hint?: string;
-  error?: string | false;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-fg">{label}</label>
+      <label htmlFor={id} className="block text-xs font-medium text-fg">
+        {label}
+      </label>
       {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-fg-muted">{hint}</p>
-      ) : null}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
     </div>
   );
 }

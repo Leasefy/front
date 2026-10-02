@@ -26,6 +26,7 @@
  */
 
 import { ApiError, apiClient } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** Descartar filas (PATCH filas / filas/masivo con `descartar`) exige `configuracion:delete`. */
 export const SOLO_UN_ADMINISTRADOR_DESCARTA = 'Solo un administrador puede descartar filas.';
@@ -667,8 +668,10 @@ export const migracionTercerosApi = {
           }
           throw e;
         }
+        // El motivo con la regla de oro: «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que fue nuestro, con la referencia (nunca `e.message` crudo).
         total.interrumpida = {
-          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+          motivo: mensajeParaLaPersona(e, { porDefecto: 'Se cortó a mitad.', accion: 'terminar el cambio' }),
         };
         return total;
       }

@@ -77,7 +77,7 @@ export function CargasAMedias({
         onCambio();
         onRetomar(r.lote);
       } catch (e) {
-        toast.error(mensajeDeCarga(e, 'No pudimos reintentar esta carga.'));
+        toast.error(mensajeDeCarga(e, 'No pudimos reintentar esta carga.', 'reintentar esta carga'));
         onCambio();
       } finally {
         setTrabajando(null);
@@ -99,7 +99,7 @@ export function CargasAMedias({
         });
       } catch (e) {
         // `LOTE_EN_PROCESO` NO es un fallo de la persona: es «espera», y se dice.
-        toast.error(mensajeDeCarga(e, 'No pudimos descartar esa carga.'));
+        toast.error(mensajeDeCarga(e, 'No pudimos descartar esa carga.', 'descartar esa carga'));
       } finally {
         setTrabajando(null);
         setADescartar(null);

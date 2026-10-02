@@ -117,11 +117,13 @@ vi.mock('@/components/inmobiliaria', () => ({
     mode,
     onSubmit,
     serverError,
+    serverErrors,
     initialData,
   }: {
     mode: string;
     onSubmit: (d: PropietarioFormData) => Promise<void>;
     serverError?: { field: string; message: string } | null;
+    serverErrors?: Record<string, string> | null;
     initialData?: Propietario;
   }) => (
     <button
@@ -129,6 +131,7 @@ vi.mock('@/components/inmobiliaria', () => ({
       data-cuenta={initialData?.bankAccount?.accountNumber ?? ''}
       data-error-campo={serverError?.field ?? ''}
       data-error-mensaje={serverError?.message ?? ''}
+      data-errores={JSON.stringify(serverErrors ?? {})}
       // El formulario real se traga el rechazo para quedarse abierto.
       onClick={() => void onSubmit(DATOS_DEL_FORM).catch(() => undefined)}
     />
@@ -276,7 +279,7 @@ describe('O1 — el motivo del back al eliminar se lee dentro del diálogo', () 
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it('un fallo de red no muestra el inglés del navegador', async () => {
+  it('un fallo de red habla de la conexión, sin el inglés del navegador', async () => {
     api.delete.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     estado.lista = [unPropietario()];
     await montar();
@@ -285,8 +288,23 @@ describe('O1 — el motivo del back al eliminar se lee dentro del diálogo', () 
     await clic($('confirmar-eliminar'));
 
     const aviso = $('motivo-al-eliminar')?.textContent ?? '';
-    expect(aviso).toContain('No pudimos eliminar el propietario');
+    expect(aviso).toMatch(/conexión/);
     expect(aviso).not.toContain('Failed to fetch');
+  });
+
+  it('un 5xx al eliminar dice «de nuestro lado» con la referencia', async () => {
+    api.delete.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'cafe1234' }),
+    );
+    estado.lista = [unPropietario()];
+    await montar();
+
+    await clic($('eliminar-p1'));
+    await clic($('confirmar-eliminar'));
+
+    const aviso = $('motivo-al-eliminar')?.textContent ?? '';
+    expect(aviso).toMatch(/^No pudimos eliminar el propietario: algo falló de nuestro lado/);
+    expect(aviso).toContain('cafe1234');
   });
 });
 
@@ -345,16 +363,45 @@ describe('O2 — el duplicado y el 400 van al lado del campo', () => {
     expect($('aviso-en-el-dialogo')).toBeNull();
   });
 
-  it('lo que no tiene campo (un 500) se dice arriba del formulario, dentro del diálogo', async () => {
-    api.update.mockRejectedValueOnce(new ApiError(500, 'Error interno del servidor.'));
+  it('lo que no tiene campo (un 500) se dice arriba del formulario, dentro del diálogo, con la referencia', async () => {
+    api.update.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
     estado.lista = [unPropietario()];
     await montar();
 
     await clic($('editar-p1'));
     await clic($('form-edit'));
 
-    expect($('aviso-en-el-dialogo')?.textContent).toContain('No pudimos guardar el propietario');
+    const aviso = $('aviso-en-el-dialogo')?.textContent ?? '';
+    expect(aviso).toContain('No pudimos guardar el propietario: algo falló de nuestro lado');
+    expect(aviso).toContain('ab12cd34');
+    expect(aviso).not.toMatch(/conexi[oó]n/);
     expect($('form-edit')).not.toBeNull();
+  });
+
+  it('🔴 al crear, un 400 con `campos` pone cada error en SU campo y nada arriba', async () => {
+    api.create.mockRejectedValueOnce(
+      new ApiError(400, ['Revisa el teléfono.', 'Revisa la cuenta.'], 'DATOS_INVALIDOS', {
+        campos: [
+          { campo: 'phone', regla: 'formato', mensaje: 'Revisa el teléfono.' },
+          { campo: 'bankAccountNumber', regla: 'formato', mensaje: 'Revisa la cuenta.' },
+        ],
+      }),
+    );
+    await montar();
+
+    await clic(botonConTexto('inmobiliaria.propietarios.addOwner'));
+    await clic($('form-create'));
+
+    const form = $('form-create')!;
+    expect(form.getAttribute('data-error-campo')).toBe('phone');
+    expect(JSON.parse(form.getAttribute('data-errores')!)).toEqual({
+      phone: 'Revisa el teléfono.',
+      accountNumber: 'Revisa la cuenta.',
+    });
+    expect($('aviso-en-el-dialogo')).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('cerrar el diálogo se lleva el error: al volver a abrir está limpio', async () => {
@@ -394,13 +441,16 @@ describe('🔴 editar pide la ficha: la lista ya no trae la cuenta entera (23-09
 
   it('si la ficha no llega, no se abre un formulario con la cuenta en blanco: se dice', async () => {
     estado.lista = [unPropietario()];
-    api.getById.mockRejectedValueOnce(new ApiError(500, 'caído'));
+    api.getById.mockRejectedValueOnce(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
     await montar();
 
     await clic($('editar-p1'));
 
     expect($('form-edit')).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.loadForEditError');
+    // Y dice por qué: un 5xx es «de nuestro lado», con la referencia.
+    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.loadForEditError', {
+      description: expect.stringMatching(/^No pudimos abrir la ficha: algo falló de nuestro lado.*ab12cd34/),
+    });
   });
 });
 

@@ -605,3 +605,90 @@ describe('las tarjetas de portal', () => {
     expect(t).not.toContain('necesitamos los datos de tu cuenta')
   })
 })
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): la cuenta del portal pinta el 400
+ * en su campo; confirmar y despublicar pasan por el traductor (antes, una
+ * copia local leía `err.message` crudo: un 500 decía «Internal server error»).
+ */
+describe('los errores de la pantalla de portales', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return new ApiError(status, cuerpo.message as string | string[], cuerpo.code as string, cuerpo)
+  }
+
+  async function guardarLaCuenta() {
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    await act(async () => {
+      enElModal('form-de-cuenta')!.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      )
+    })
+  }
+
+  it('🔴 un 400 en «identificadorEnElPortal» va debajo de su campo, con el foco y sin toast', async () => {
+    const MENSAJE = 'El identificador en el portal puede tener hasta 120 caracteres.'
+    h.api.guardarCuenta.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJE],
+        campos: [{ campo: 'identificadorEnElPortal', regla: 'longitud_maxima', mensaje: MENSAJE }],
+      }),
+    )
+    await montar()
+    await guardarLaCuenta()
+
+    expect(document.getElementById('cuenta-identificador-error')?.textContent).toBe(MENSAJE)
+    const campo = enElModal('cuenta-identificador') as HTMLInputElement
+    expect(campo.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(campo)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx al guardar la cuenta dice «de nuestro lado» con la referencia', async () => {
+    h.api.guardarCuenta.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'abcd1234' }),
+    )
+    await montar()
+    await guardarLaCuenta()
+
+    const dicho = String(h.toast.error.mock.calls[0][0])
+    expect(dicho).toMatch(/^No pudimos guardar la cuenta: algo falló de nuestro lado/)
+    expect(dicho).toContain('abcd1234')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta, guardar la cuenta habla de la conexión', async () => {
+    h.api.guardarCuenta.mockRejectedValue(new TypeError('Failed to fetch'))
+    await montar()
+    await guardarLaCuenta()
+    expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
+  })
+
+  it('🔴 confirmar que el aviso está arriba: un 500 no pinta «Internal server error»', async () => {
+    h.api.tablero.mockResolvedValue({ disponible: true, motivo: null, filas: [POR_SUBIR] })
+    h.api.confirmar.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'feed0001' }),
+    )
+    await montar()
+    await clic(porTestId('confirmar-f-1'))
+
+    const dicho = String(h.toast.error.mock.calls[0][0])
+    expect(dicho).toMatch(/de nuestro lado/)
+    expect(dicho).toContain('feed0001')
+    expect(dicho).not.toContain('Internal server error')
+  })
+
+  it('despublicar sin respuesta habla de la conexión; con un 409 dice lo que dijo el back', async () => {
+    h.api.tablero.mockResolvedValue({ disponible: true, motivo: null, filas: [PUBLICADA] })
+    h.api.despublicar.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await montar()
+    await clic(porTestId('bajar-f-2'))
+    expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
+
+    h.api.despublicar.mockRejectedValueOnce(
+      errorDelBack(409, { code: 'YA_DESPUBLICADA', message: 'Ese aviso ya estaba despublicado.' }),
+    )
+    await clic(porTestId('bajar-f-2'))
+    expect(String(h.toast.error.mock.calls[1][0])).toBe('Ese aviso ya estaba despublicado.')
+  })
+})

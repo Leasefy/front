@@ -388,6 +388,87 @@ describe('<DeduccionesDelPropietario> — en la ficha', () => {
   });
 });
 
+/**
+ * Sistema de errores (02-10-2026): lo que el back rechaza POR CAMPO va bajo su
+ * campo, con el foco; lo demás va al toast con la regla de oro del traductor.
+ */
+describe('<DeduccionesDelPropietario> — cuando el back rechaza', () => {
+  async function registrarCon(error: unknown) {
+    api.listar.mockResolvedValue(listado({ deducciones: [] }));
+    api.registrar.mockRejectedValue(error);
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+    await clic(porTestId('registrar-descuento-abrir'));
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!, 'Servicios de agosto');
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-valor')!, '120000');
+    await adjuntar(new File(['%PDF'], 'epm.pdf', { type: 'application/pdf' }));
+    await clic(porTestId('descuento-guardar'));
+  }
+
+  it('🔴 un 400 con `campos`: el error va bajo el valor, con el foco, y no hay toast', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const tope = 'El valor no puede pasar de $100.000.000.';
+    await registrarCon(
+      new ApiError(400, [tope], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'valorCop', regla: 'maximo', mensaje: tope }],
+      }),
+    );
+    const valor = document.body.querySelector<HTMLInputElement>('#descuento-valor')!;
+    expect(document.getElementById('descuento-valor-error')?.textContent).toBe(tope);
+    expect(valor.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(valor);
+    expect(toast.error).not.toHaveBeenCalled();
+    // El diálogo sigue abierto con lo escrito.
+    expect(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!.value).toBe('Servicios de agosto');
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await registrarCon(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/^No pudimos registrar el descuento: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+    expect(description).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    await registrarCon(new TypeError('Failed to fetch'));
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/conexión/);
+  });
+
+  async function anularCon(error: unknown) {
+    api.listar.mockResolvedValue(listado());
+    api.anular.mockRejectedValue(error);
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+    await clic(porTestId('anular-ded-1'));
+    await escribir(document.body.querySelector<HTMLInputElement>('#anular-motivo')!, 'Lo pagó el propietario');
+    const confirmar = [...porTestId('anular-deduccion').querySelectorAll('button')].find(
+      (b) => b.textContent === 'Anular descuento',
+    )!;
+    await clic(confirmar);
+  }
+
+  it('anular: un motivo rechazado va bajo el motivo, con el foco y sin toast', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const frase = 'El motivo puede tener hasta 500 caracteres.';
+    await anularCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', { campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje: frase }] }),
+    );
+    const motivo = document.body.querySelector<HTMLInputElement>('#anular-motivo')!;
+    expect(document.getElementById('anular-motivo-error')?.textContent).toBe(frase);
+    expect(document.activeElement).toBe(motivo);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('anular: un 5xx va al toast con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await anularCon(new ApiError(503, 'x', 'ERROR_INTERNO', { referencia: 'feed0001' }));
+    const [titulo, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se anuló el descuento');
+    expect(description).toContain('feed0001');
+  });
+});
+
 function bloque(extra: Partial<DeduccionesDeLaLiquidacion> = {}): DeduccionesDeLaLiquidacion {
   const d = deduccion({ estado: 'EN_LIQUIDACION' });
   return {

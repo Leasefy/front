@@ -6,9 +6,16 @@
  * LOTE, y la mayoría no son un fallo de la persona: son «esperá», «seguí
  * subiendo» o «esa carga ya no recibe». Mostrar el `message` crudo del back, o
  * un «No pudimos…» genérico, la dejaba sin saber qué botón tocar.
+ *
+ * Todo lo que NO es un código del lote pasa por el traductor de la
+ * plataforma (02-10-2026, `mensajeParaLaPersona`), con su regla de oro:
+ * «conexión» SÓLO sin respuesta; un 4xx dice qué está mal; un 5xx dice que
+ * falló de nuestro lado, con la referencia; un volcado o un texto en inglés
+ * no llega a la pantalla. Antes un 500 mostraba su `message` tal cual.
  */
 
 import { ApiError, esCodigoDeSesionMuerta } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const MENSAJES: Record<string, string> = {
   // Dos causas con el mismo código: todavía llegan filas, o faltan direcciones
@@ -49,14 +56,19 @@ export function esSesionMuerta(e: unknown): boolean {
 
 /** El `code` del lote, si el error trae uno de los que sabemos explicar. */
 export function codigoDeLote(e: unknown): string | null {
-  return e instanceof ApiError && e.code && e.code in MENSAJES ? e.code : null;
+  return e instanceof ApiError && e.code && Object.prototype.hasOwnProperty.call(MENSAJES, e.code)
+    ? e.code
+    : null;
 }
 
-export function mensajeDeCarga(e: unknown, porDefecto: string): string {
+/**
+ * @param porDefecto lo que se dice si el error no trae nada legible.
+ * @param accion lo que se estaba haciendo, en infinitivo («subir el archivo»):
+ *   un 5xx dice «No pudimos subir el archivo: algo falló de nuestro lado…».
+ */
+export function mensajeDeCarga(e: unknown, porDefecto: string, accion?: string): string {
   if (esSesionMuerta(e)) return MENSAJE_SESION_TERMINADA;
-  if (e instanceof ApiError) {
-    if (e.code && MENSAJES[e.code]) return MENSAJES[e.code];
-    if (e.messages && e.messages.length > 0) return e.messages.join(' · ');
-  }
-  return e instanceof Error && e.message ? e.message : porDefecto;
+  const codigo = codigoDeLote(e);
+  if (codigo) return MENSAJES[codigo];
+  return mensajeParaLaPersona(e, { porDefecto, accion });
 }

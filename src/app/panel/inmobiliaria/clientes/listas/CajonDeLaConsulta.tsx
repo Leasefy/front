@@ -23,7 +23,7 @@
  * decisión es la que hay que poder defender ante una auditoría.
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ShieldCheck, ShieldWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -34,9 +34,19 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { toast } from '@/components/ui/toast'
 import { captacionApi, type ConsultaDeListas } from '@/lib/api/crm.service'
 import { errorEnCristiano } from '@/lib/errores/en-cristiano'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import {
+  MOTIVO_DE_LA_REVISION_MAXIMO,
+  errorDelMotivoDeLaRevision,
+} from '@/lib/captacion/limites-de-la-captacion'
 
-/** El tope del back para el motivo. */
-export const MAX_MOTIVO = 500
+/**
+ * El tope del back para el motivo (`RevisarConsultaDto`: 5 a 2.000
+ * caracteres). Decía 500 y el back acepta 2.000: el espejo es el de
+ * `lib/captacion/limites-de-la-captacion.ts`.
+ */
+export const MAX_MOTIVO = MOTIVO_DE_LA_REVISION_MAXIMO
 
 export interface CajonDeLaConsultaProps {
   consulta: ConsultaDeListas | null
@@ -61,14 +71,28 @@ export function CajonDeLaConsulta({
 }: CajonDeLaConsultaProps) {
   const [motivo, setMotivo] = useState('')
   const [enviando, setEnviando] = useState<'LIBERADO' | 'CONFIRMADO' | null>(null)
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
+  const motivoRef = useRef<HTMLTextAreaElement>(null)
 
   const motivoLimpio = motivo.trim()
   // Sólo se revisa lo que está frenado: liberar algo que nunca coincidió no
   // significa nada, y volver a decidir sobre lo ya decidido tampoco.
   const seDecide = consulta?.estado === 'BLOQUEADO'
 
+  function marcarElMotivo(mensaje: string) {
+    setErrorDelMotivo(mensaje)
+    motivoRef.current?.focus()
+  }
+
   async function decidir(decision: 'LIBERADO' | 'CONFIRMADO') {
     if (!consulta || motivoLimpio === '' || enviando) return
+    // El mismo tope que el DTO, antes de mandar: «Ok» no es un motivo.
+    const delCliente = errorDelMotivoDeLaRevision(motivo)
+    if (delCliente) {
+      marcarElMotivo(delCliente)
+      return
+    }
+    setErrorDelMotivo(null)
     setEnviando(decision)
     try {
       await captacionApi.revisarConsulta(consulta.id, decision, motivoLimpio)
@@ -82,8 +106,19 @@ export function CajonDeLaConsulta({
       onCerrar()
     } catch (e) {
       // El cajón queda abierto con el motivo escrito: reintentar no obliga a
-      // volver a redactarlo.
-      toast.error(errorEnCristiano(e, 'No se pudo guardar la revisión.'))
+      // volver a redactarlo. Un 400 en `motivo` va debajo del campo; lo demás,
+      // al toast con la regla de oro.
+      const r = repartirErroresDelServidor<'motivo'>(e, {
+        campos: ['motivo'],
+        porDefecto: 'No se pudo guardar la revisión.',
+        accion: 'guardar la revisión',
+      })
+      if (r.porCampo.motivo) marcarElMotivo(r.porCampo.motivo)
+      if (r.delServidor.length === 0) {
+        toast.error(errorEnCristiano(e, 'No se pudo guardar la revisión.'))
+      } else if (r.sueltos.length > 0) {
+        toast.error(r.sueltos.join(' · '))
+      }
     } finally {
       setEnviando(null)
     }
@@ -96,6 +131,7 @@ export function CajonDeLaConsulta({
         if (!v && enviando) return
         if (!v) {
           setMotivo('')
+          setErrorDelMotivo(null)
           onCerrar()
         }
       }}
@@ -160,19 +196,31 @@ export function CajonDeLaConsulta({
               <div className="space-y-2">
                 <Label htmlFor="motivo-de-la-revision">Por qué</Label>
                 <Textarea
+                  ref={motivoRef}
                   id="motivo-de-la-revision"
                   value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
+                  onChange={(e) => {
+                    setMotivo(e.target.value)
+                    setErrorDelMotivo(null)
+                  }}
                   placeholder="Comparé la cédula: es un homónimo, no la persona de la lista."
                   rows={3}
                   maxLength={MAX_MOTIVO}
                   disabled={enviando !== null}
+                  aria-invalid={errorDelMotivo ? true : undefined}
+                  aria-describedby="motivo-de-la-revision-error"
                   data-testid="motivo-de-la-revision"
                 />
-                <p className="text-caption text-fg-muted">
-                  Obligatorio y queda guardado con la consulta: es la decisión
-                  que hay que poder defender en una auditoría.
-                </p>
+                <ErrorDelCampo
+                  id="motivo-de-la-revision-error"
+                  mensaje={errorDelMotivo}
+                  pista={
+                    <span className="text-caption text-fg-muted">
+                      Obligatorio y queda guardado con la consulta: es la decisión
+                      que hay que poder defender en una auditoría.
+                    </span>
+                  }
+                />
               </div>
             )}
           </CajonCuerpo>

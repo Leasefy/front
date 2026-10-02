@@ -230,4 +230,66 @@ describe('NuevoInquilinoDrawer', () => {
     expect(errores[0].descripcion).toContain('Carla Mesa');
     expect(creados).toEqual([]);
   });
+
+  it('🔴 un 409 largo se muestra ENTERO (antes se tiraba si pasaba de 200 caracteres)', async () => {
+    const largo =
+      'Ya tienes a Carla Mesa con el documento 1020304050, cargada el 12 de septiembre desde la migración de contratos, ' +
+      'con el contrato 1050 vigente en el Apartamento 301 de la Torre Alameda. Búscala en la lista y edítala desde ahí.';
+    expect(largo.length).toBeGreaterThan(200);
+    crearMock.mockRejectedValue(new ApiError(409, largo, 'INQUILINO_YA_EXISTE'));
+    montar();
+    escribir('inquilino-nombre', 'Carla M.');
+    escribir('inquilino-documento', '1020304050');
+    guardar();
+    await act(async () => {});
+    expect(errores[0].descripcion).toBe(largo);
+  });
+
+  it('🔴 un 400 con `campos`: el error va bajo SU campo, con el foco, y no al toast', async () => {
+    const frase = 'Revisa el correo: no parece un correo válido.';
+    crearMock.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'correo', regla: 'formato', mensaje: frase }],
+      }),
+    );
+    montar();
+    escribir('inquilino-nombre', 'Carla Mesa');
+    escribir('inquilino-correo', 'carla@ejemplo.co');
+    guardar();
+    await act(async () => {});
+
+    const correo = campo('inquilino-correo');
+    expect(document.getElementById(`${correo.id}-error`)?.textContent).toBe(frase);
+    expect(correo.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(correo);
+    expect(errores).toHaveLength(0);
+
+    // Al corregirlo, el error del servidor se va.
+    escribir('inquilino-correo', 'carla.mesa@ejemplo.co');
+    expect(correo.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    crearMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
+    montar();
+    escribir('inquilino-nombre', 'Carla Mesa');
+    escribir('inquilino-documento', '1020304050');
+    guardar();
+    await act(async () => {});
+    expect(errores[0].descripcion).toMatch(/^No pudimos crear el inquilino: algo falló de nuestro lado/);
+    expect(errores[0].descripcion).toContain('ab12cd34');
+    expect(errores[0].descripcion).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    crearMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    montar();
+    escribir('inquilino-nombre', 'Carla Mesa');
+    escribir('inquilino-documento', '1020304050');
+    guardar();
+    await act(async () => {});
+    expect(errores[0].descripcion).toMatch(/conexión/);
+  });
 });

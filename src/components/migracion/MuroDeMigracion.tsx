@@ -119,6 +119,7 @@ import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
 import { VeloDeEspera } from "./VeloDeEspera";
 import { toast } from "@/components/ui/toast";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import {
   muroAbajoRecordado,
   olvidarMuroAbajo,
@@ -134,6 +135,22 @@ import {
   MigracionContext,
   type ContextoDeMigracion,
 } from "./migracion-context";
+
+/**
+ * «En otro momento» / «No requiero migración» / la ✕ que no pudieron bajar el
+ * muro (omitir falló). El muro se queda —es lo correcto— y se dice por qué
+ * con el traductor (sistema de errores, 02-10-2026): la conexión sólo si no
+ * hubo respuesta. Antes el catch estaba vacío y el muro no se iba sin decir
+ * nada.
+ */
+function avisarQueNoSalio(e: unknown): void {
+  toast.error("No pudimos dejar la migración para después", {
+    description: mensajeParaLaPersona(e, {
+      porDefecto: "Prueba de nuevo en un momento.",
+      accion: "dejar la migración para después",
+    }),
+  });
+}
 
 export { MigracionContext, useMigracion } from "./migracion-context";
 export { useRanuraViva } from "./ranura-viva";
@@ -582,8 +599,15 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       if (elegida === "nunca") {
         try {
           await migracionEstadoApi.recordatorio(true);
-        } catch {
+        } catch (e) {
           // Sin esto el recordatorio sale en el menú: molesta, no encierra.
+          // Pero se DICE (sistema de errores, 02-10-2026): antes callaba.
+          toast.warning("No pudimos apagar el recordatorio de la migración", {
+            description: `${mensajeParaLaPersona(e, {
+              porDefecto: "Prueba de nuevo en un momento.",
+              accion: "apagar el recordatorio",
+            })} Puede seguir saliendo en el menú.`,
+          });
         }
       }
       let respuesta: EstadoDeMigracion | undefined;
@@ -591,8 +615,10 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         respuesta = await migracionEstadoApi.omitir(
           elegida === "luego" ? "en_otro_momento" : "no_requiere_migracion",
         );
-      } catch {
+      } catch (e) {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+        // Y se dice por qué: un muro que no se va sin explicación parece roto.
+        avisarQueNoSalio(e);
       }
       sesionRefrescandose.current = null;
       try {
@@ -625,8 +651,9 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     let respuesta: EstadoDeMigracion | undefined;
     try {
       respuesta = await migracionEstadoApi.omitir("en_otro_momento");
-    } catch {
+    } catch (e) {
       // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+      avisarQueNoSalio(e);
     }
     await refrescar(respuesta);
   }, [agencyId, puesto, refrescar]);
@@ -961,7 +988,14 @@ export function PanelDeMigracion({
       // Un error CON mensaje del back (el 409 de «todavía falta…») se
       // muestra tal cual; cualquier otra cosa (un bug, un throw raro) cae al
       // texto genérico — nunca un stack en inglés en la cara del usuario.
-      setFalloDetalle(e instanceof ApiError && e.message ? e.message : null);
+      // Sistema de errores (02-10-2026): por el traductor. Un 5xx dice que
+      // fue de nuestro lado con su referencia; «conexión» sólo sin respuesta.
+      setFalloDetalle(
+        mensajeParaLaPersona(e, {
+          porDefecto: t("migracion.muro.fallo"),
+          accion: via === "terminar" ? "terminar la migración" : "dejar la migración para después",
+        }),
+      );
       setEnviando(false);
     }
   }
@@ -1122,6 +1156,7 @@ export function PanelDeMigracion({
                 <p
                   className="mt-6 flex items-start gap-2 rounded-md bg-danger-soft p-3 text-sm text-danger"
                   data-testid="muro-fallo"
+                  role="alert"
                 >
                   <Warning className="mt-0.5 h-4 w-4 shrink-0" />
                   {falloDetalle ?? t("migracion.muro.fallo")}

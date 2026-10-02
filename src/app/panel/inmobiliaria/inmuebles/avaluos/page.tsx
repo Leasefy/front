@@ -62,6 +62,7 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
@@ -206,11 +207,19 @@ function AvaluosSala() {
       const { wizardUrl } = await avaluosApi.solicitar()
       return wizardUrl
     } catch (err) {
-      // El mensaje del back se muestra tal cual (incl. el 422 de agencia sin
-      // correo/nombre): lo escribe él en español y es más específico que
-      // cualquier texto nuestro. La clave sólo cubre lo que no es ApiError.
-      const message = err instanceof ApiError ? err.message : t(`${NS}.errorSolicitar`)
-      toast.error(message)
+      // El mensaje del back gana cuando se puede leer (el 422 de agencia sin
+      // correo/nombre lo escribe él en español y es más específico que
+      // cualquier texto nuestro). Pero no siempre: un 5xx traía «Internal
+      // server error» o un volcado, y el 502 del micro caído, «Avaluo service
+      // unreachable». El traductor aplica la regla de oro: conexión sólo sin
+      // respuesta, un 5xx dice que fue nuestro con la referencia, una caída
+      // dice qué se cayó.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t(`${NS}.errorSolicitar`),
+          accion: 'solicitar el avalúo',
+        }),
+      )
       return null
     }
   }

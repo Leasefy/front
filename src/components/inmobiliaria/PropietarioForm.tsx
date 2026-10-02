@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -12,7 +12,6 @@ import {
   Bank,
   Wallet,
   Check,
-  Warning,
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -20,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Chip } from '@leasefy/cadence';
 import {
   Select,
@@ -71,6 +71,12 @@ interface PropietarioFormProps {
    * through the existing error UI instead of a second error path.
    */
   serverError?: { field: keyof PropietarioFormData; message: string } | null;
+  /**
+   * TODOS los errores por campo del último guardado (02-10-2026, sistema de
+   * errores): un 400 del back trae `campos[]` y cada uno va bajo SU campo
+   * (`errorAlGuardarPropietario(e).porCampo`). El primero recibe el foco.
+   */
+  serverErrors?: Partial<Record<keyof PropietarioFormData, string>> | null;
 }
 
 const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
@@ -101,14 +107,21 @@ const ACCOUNT_TYPE_LABEL_KEYS: Record<AccountType, string> = {
 /**
  * InputWrapper - Reusable wrapper for form fields
  * Defined outside of PropietarioForm to prevent re-creation on each render
+ *
+ * El error va con `ErrorDelCampo` (02-10-2026): entra suave y, si el campo
+ * tiene ayuda, la reemplaza con un cruce sin que salte el alto. `id` es el del
+ * control: la etiqueta lo nombra y el error es `${id}-error`, el mismo que el
+ * control declara en `aria-describedby`.
  */
 function InputWrapper({
+  id,
   label,
   required,
   error,
   hint,
   children,
 }: {
+  id?: string;
   label: string;
   required?: boolean;
   error?: string;
@@ -117,16 +130,13 @@ function InputWrapper({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor={id} className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {label}
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
-      {error ? (
-        <p className="text-xs text-danger flex items-center gap-1">
-          <Warning className="w-3 h-3" />
-          {error}
-        </p>
+      {id ? (
+        <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
       ) : hint ? (
         <p className="text-xs text-fg-subtle">{hint}</p>
       ) : null}
@@ -145,8 +155,12 @@ export function PropietarioForm({
   onCancel,
   mode,
   serverError,
+  serverErrors,
 }: PropietarioFormProps) {
   const { t } = useI18n();
+  /** Prefijo de los ids de los controles: único aunque haya dos formularios. */
+  const uid = useId();
+  const idDe = (campo: keyof PropietarioFormData) => `propietario${uid}${campo}`;
   /*
    * 🔴 23-09 (auditoría de seguridad): el correo de un propietario es por
    * donde confirma los cambios de su cuenta bancaria y con el que entra a su
@@ -211,12 +225,32 @@ export function PropietarioForm({
       : [...COLOMBIAN_DEPARTMENTS];
 
   // Surface a persist error that happened outside this form (the wizard's
-  // "Siguiente" 409) through the same error UI as a local validation error.
+  // "Siguiente" 409, el 400 con `campos` del back) through the same error UI
+  // as a local validation error. El primero recibe el foco.
   useEffect(() => {
-    if (!serverError) return;
-    setErrors((prev) => ({ ...prev, [serverError.field]: serverError.message }));
-    setTouched((prev) => ({ ...prev, [serverError.field]: true }));
-  }, [serverError]);
+    const todos: Partial<Record<keyof PropietarioFormData, string>> = {
+      ...(serverError ? { [serverError.field]: serverError.message } : {}),
+      ...(serverErrors ?? {}),
+    };
+    const campos = Object.keys(todos) as (keyof PropietarioFormData)[];
+    if (campos.length === 0) return;
+    setErrors((prev) => ({ ...prev, ...(todos as Record<string, string>) }));
+    setTouched((prev) => ({ ...prev, ...Object.fromEntries(campos.map((c) => [c, true])) }));
+    const primero = serverError?.field ?? campos[0];
+    document.getElementById(idDe(primero))?.focus();
+    // `idDe` depende sólo de `uid`, que no cambia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverError, serverErrors]);
+
+  /** `id`, `aria-invalid` y `aria-describedby` de un control con su error. */
+  const controlDe = (campo: keyof PropietarioFormData) => {
+    const conError = Boolean(touched[campo] && errors[campo]);
+    return {
+      id: idDe(campo),
+      'aria-invalid': conError || undefined,
+      'aria-describedby': `${idDe(campo)}-error`,
+    } as const;
+  };
 
   /*
    * 🔴 «¿A quién pertenece la cuenta?» (22-09). La respuesta arranca en lo que
@@ -392,6 +426,7 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type */}
           <InputWrapper
+            id={idDe('documentType')}
             label={t('inmobiliaria.propietario.form.documentType')}
             required
             error={touched.documentType ? errors.documentType : undefined}
@@ -400,7 +435,7 @@ export function PropietarioForm({
               value={formData.documentType}
               onValueChange={(value) => updateField('documentType', value as DocumentType)}
             >
-              <SelectTrigger>
+              <SelectTrigger {...controlDe('documentType')}>
                 <SelectValue placeholder="Elige el tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -415,6 +450,7 @@ export function PropietarioForm({
 
           {/* Document Number */}
           <InputWrapper
+            id={idDe('documentNumber')}
             label={formData.documentType === 'NIT' ? 'NIT' : t('inmobiliaria.propietario.form.documentNumber')}
             required
             error={touched.documentNumber ? errors.documentNumber : undefined}
@@ -423,6 +459,7 @@ export function PropietarioForm({
             <div className="relative">
               <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('documentNumber')}
                 type="text"
                 value={formData.documentNumber}
                 onChange={(e) => updateField('documentNumber', e.target.value)}
@@ -439,6 +476,7 @@ export function PropietarioForm({
 
         {/* Name */}
         <InputWrapper
+          id={idDe('name')}
           label={isCompany ? t('inmobiliaria.propietario.form.businessName') : t('inmobiliaria.propietario.form.fullName')}
           required
           error={touched.name ? errors.name : undefined}
@@ -450,6 +488,7 @@ export function PropietarioForm({
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
             )}
             <Input
+              {...controlDe('name')}
               type="text"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
@@ -463,6 +502,7 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Email */}
           <InputWrapper
+            id={idDe('email')}
             label="Email"
             required
             error={touched.email ? errors.email : undefined}
@@ -471,6 +511,7 @@ export function PropietarioForm({
             <div className="relative">
               <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('email')}
                 type="email"
                 disabled={correoBloqueado}
                 data-testid="correo-del-propietario"
@@ -485,6 +526,7 @@ export function PropietarioForm({
 
           {/* Phone */}
           <InputWrapper
+            id={idDe('phone')}
             label={t('inmobiliaria.propietario.form.phone')}
             required
             error={touched.phone ? errors.phone : undefined}
@@ -492,6 +534,7 @@ export function PropietarioForm({
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('phone')}
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
@@ -504,10 +547,16 @@ export function PropietarioForm({
         </div>
 
         {/* Address */}
-        <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
+        <InputWrapper
+          id={idDe('address')}
+          label={t('inmobiliaria.propietario.form.address')}
+          hint={t('inmobiliaria.propietario.form.optional')}
+          error={touched.address ? errors.address : undefined}
+        >
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
             <Input
+              {...controlDe('address')}
               type="text"
               value={formData.address}
               onChange={(e) => updateField('address', e.target.value)}
@@ -519,8 +568,14 @@ export function PropietarioForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* City */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.city')} hint={t('inmobiliaria.propietario.form.optional')}>
+          <InputWrapper
+            id={idDe('city')}
+            label={t('inmobiliaria.propietario.form.city')}
+            hint={t('inmobiliaria.propietario.form.optional')}
+            error={touched.city ? errors.city : undefined}
+          >
             <Input
+              {...controlDe('city')}
               type="text"
               value={formData.city}
               onChange={(e) => updateField('city', e.target.value)}
@@ -529,12 +584,17 @@ export function PropietarioForm({
           </InputWrapper>
 
           {/* Department — la misma lista que el wizard de consignación (COLOMBIAN_DEPARTMENTS). */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.department')} hint={t('inmobiliaria.propietario.form.optional')}>
+          <InputWrapper
+            id={idDe('department')}
+            label={t('inmobiliaria.propietario.form.department')}
+            hint={t('inmobiliaria.propietario.form.optional')}
+            error={touched.department ? errors.department : undefined}
+          >
             <Select
               value={formData.department || undefined}
               onValueChange={(value) => updateField('department', value === SIN_DEPARTAMENTO ? '' : value)}
             >
-              <SelectTrigger data-testid="propietario-departamento">
+              <SelectTrigger {...controlDe('department')} data-testid="propietario-departamento">
                 <SelectValue placeholder={t('inmobiliaria.propietario.form.selectDepartment')} />
               </SelectTrigger>
               <SelectContent>
@@ -593,6 +653,7 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Bank */}
           <InputWrapper
+            id={idDe('bankCode')}
             label={t('inmobiliaria.propietario.form.bank')}
             required
             error={touched.bankCode ? errors.bankCode : undefined}
@@ -602,6 +663,7 @@ export function PropietarioForm({
               onValueChange={(value) => updateField('bankCode', value as BankCode)}
             >
               <SelectTrigger
+                {...controlDe('bankCode')}
                 className={cn(
                   'gap-2',
                   touched.bankCode && errors.bankCode && 'border-danger/30'
@@ -622,11 +684,19 @@ export function PropietarioForm({
 
           {/* Account Type */}
           <InputWrapper
+            id={idDe('accountType')}
             label={t('inmobiliaria.propietario.form.accountType')}
             required
             error={touched.accountType ? errors.accountType : undefined}
           >
-            <div className="flex gap-3">
+            <div
+              id={idDe('accountType')}
+              tabIndex={-1}
+              role="group"
+              aria-label={t('inmobiliaria.propietario.form.accountType')}
+              aria-describedby={`${idDe('accountType')}-error`}
+              className="flex gap-3 outline-none"
+            >
               {ACCOUNT_TYPE_VALUES.map((accType) => (
                 <Chip
                   key={accType}
@@ -643,12 +713,14 @@ export function PropietarioForm({
 
         {/* Account Number */}
         <InputWrapper
+          id={idDe('accountNumber')}
           label={t('inmobiliaria.propietario.form.accountNumber')}
           required
           error={touched.accountNumber ? errors.accountNumber : undefined}
           hint={t('inmobiliaria.propietario.form.hintDigitsOnly')}
         >
           <Input
+            {...controlDe('accountNumber')}
             type="text"
             value={formData.accountNumber}
             onChange={(e) => updateField('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
@@ -665,8 +737,14 @@ export function PropietarioForm({
 
       {/* Notes */}
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
-        <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
+        <InputWrapper
+          id={idDe('notes')}
+          label={t('inmobiliaria.propietario.form.internalNotes')}
+          hint={t('inmobiliaria.propietario.form.hintTeamOnly')}
+          error={touched.notes ? errors.notes : undefined}
+        >
           <Textarea
+            {...controlDe('notes')}
             value={formData.notes}
             onChange={(e) => updateField('notes', e.target.value)}
             placeholder="Agregar notas sobre este propietario..."

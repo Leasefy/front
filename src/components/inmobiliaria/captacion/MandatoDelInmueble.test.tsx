@@ -14,7 +14,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { api } = vi.hoisted(() => ({
+const { api, toastError } = vi.hoisted(() => ({
+  toastError: vi.fn(),
   api: {
     documentos: (() => Promise.resolve(null)) as () => Promise<unknown>,
     firmas: (() => Promise.resolve(null)) as () => Promise<unknown>,
@@ -52,7 +53,12 @@ vi.mock('@/lib/api/crm.service', async () => {
   }
 })
 
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
+
 import { MandatoDelInmueble } from './MandatoDelInmueble'
+import { ApiError } from '@/lib/api/client'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -120,6 +126,7 @@ beforeEach(() => {
     Promise.resolve({ disponible: true, motivo: null, firmas: [] }),
   )
   api.pedirFirma.mockClear()
+  toastError.mockClear()
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -268,5 +275,47 @@ describe('MandatoDelInmueble', () => {
     expect(aviso).not.toContain('20260918163000')
     expect(aviso).toContain('todavía no está disponible')
     expect($('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): «Pedir la firma» ya pasaba por
+ * `errorEnCristiano`, que delega en el traductor. Esto lo deja fijado.
+ */
+describe('MandatoDelInmueble — el error al pedir la firma', () => {
+  async function pedirLaFirma() {
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    return String(toastError.mock.calls[0]?.[0] ?? '')
+  }
+
+  it('un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.pedirFirma.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'f1f2f3f4',
+      }),
+    )
+    const dicho = await pedirLaFirma()
+    expect(dicho).toMatch(/de nuestro lado/)
+    expect(dicho).toContain('f1f2f3f4')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta habla de la conexión', async () => {
+    api.pedirFirma.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    expect(await pedirLaFirma()).toMatch(/conexión/)
+  })
+
+  it('un 409 del back se dice con sus palabras', async () => {
+    api.pedirFirma.mockRejectedValueOnce(
+      new ApiError(409, 'Ya hay una firma pendiente para este mandato.', 'FIRMA_PENDIENTE'),
+    )
+    expect(await pedirLaFirma()).toBe('Ya hay una firma pendiente para este mandato.')
   })
 })

@@ -61,7 +61,7 @@ vi.mock('./PropertyPhotoPicker', () => ({
     }),
 }))
 
-import { StepAssignAgent, StepConfirmation, StepActaEntrega } from './ConsignacionWizardSteps'
+import { StepAssignAgent, StepConfirmation, StepActaEntrega, StepPropertyData, StepCommissionTerms } from './ConsignacionWizardSteps'
 
 const AGENTE: Agente = {
   id: 'member-1',
@@ -386,5 +386,103 @@ describe('<StepActaEntrega> — photos-only rendering for a sale listing (T-0042
     expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
     expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeTruthy()
     expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): los errores del paso 2 son
+ * `ErrorDelCampo` (entran suaves, con `role="alert"`), el control los nombra en
+ * `aria-describedby`, y los topes del back se ven en el momento, sin esperar
+ * al blur ni al servidor.
+ */
+describe('<StepPropertyData> — errores en su campo', () => {
+  const BASE = {
+    propertyTitle: 'Apartamento en Laureles',
+    propertyAddress: 'Cra 80 # 33-10',
+    propertyCity: 'Medellín',
+    propertyZone: 'Laureles',
+    department: 'Antioquia',
+    propertyType: 'apartment' as const,
+    listingType: 'rent' as const,
+    monthlyRent: 1_800_000,
+    bedrooms: 2,
+    bathrooms: 1,
+    area: 60,
+    propertyDescription: 'Descripción suficientemente larga para el paso.',
+    consignedAt: '2026-10-02',
+  }
+
+  async function pintar(
+    formData: Record<string, unknown>,
+    erroresDelServidor?: Record<string, string>,
+  ) {
+    await act(async () => {
+      root.render(
+        React.createElement(StepPropertyData, {
+          formData,
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+          erroresDelServidor,
+        }),
+      )
+    })
+  }
+
+  const control = (campo: string) => container.querySelector<HTMLElement>(`#asistente-${campo}`)
+  const errorDe = (campo: string) => container.querySelector<HTMLElement>(`#asistente-${campo}-error`)
+
+  it('sin errores, ningún control se marca inválido', async () => {
+    await pintar(BASE)
+    expect(container.querySelectorAll('[aria-invalid="true"]')).toHaveLength(0)
+  })
+
+  it('🔴 un canon de once cifras se dice en el momento, con la frase del back', async () => {
+    await pintar({ ...BASE, monthlyRent: 30_000_000_000 })
+    expect(errorDe('monthlyRent')?.textContent).toBe(
+      'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    )
+    expect(control('monthlyRent')?.getAttribute('aria-invalid')).toBe('true')
+    expect(control('monthlyRent')?.getAttribute('aria-describedby')).toBe('asistente-monthlyRent-error')
+  })
+
+  it('un título de más de 100 caracteres y una administración de más se dicen en su campo', async () => {
+    await pintar({ ...BASE, propertyTitle: 'x'.repeat(101), adminFee: 200_000_000 })
+    expect(errorDe('propertyTitle')?.textContent).toBe('El título no puede tener más de 100 caracteres.')
+    expect(errorDe('adminFee')?.textContent).toBe(
+      'La administración no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    )
+  })
+
+  it('el error que mandó el servidor sale debajo de su campo', async () => {
+    await pintar(BASE, { area: 'El área debe ser un número entero de metros cuadrados.' })
+    expect(errorDe('area')?.textContent).toBe('El área debe ser un número entero de metros cuadrados.')
+    expect(errorDe('area')?.getAttribute('role')).toBe('alert')
+    expect(control('area')?.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('la fecha de consignación: el error reemplaza la ayuda', async () => {
+    await pintar({ ...BASE, consignedAt: '1900-01-01' })
+    expect(errorDe('consignedAt')?.textContent).toContain('La fecha de consignación debe estar entre 1950 y 2100.')
+  })
+})
+
+describe('<StepCommissionTerms> — el error del servidor en la comisión', () => {
+  it('sale en su campo, con la ayuda cruzada', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepCommissionTerms, {
+          formData: { listingType: 'rent', monthlyRent: 1_000_000, commissionPercent: 10 },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+          erroresDelServidor: { commissionPercent: 'La comisión no puede pasar de 100.' },
+        }),
+      )
+    })
+    expect(container.querySelector('#asistente-commissionPercent-error')?.textContent).toContain(
+      'La comisión no puede pasar de 100.',
+    )
+    expect(container.querySelector('#asistente-commissionPercent')?.getAttribute('aria-invalid')).toBe('true')
   })
 })

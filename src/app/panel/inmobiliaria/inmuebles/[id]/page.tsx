@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -319,12 +320,12 @@ function ConsignacionDetailContent() {
         description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
       });
     } catch (err) {
-      // F5: un 400 del back trae sus motivos sueltos y `ApiError` los pega con
-      // « · ». El pegote pasa el tope del toast y se perdía entero; acá se
-      // pinta el primero, que es el que dice qué hay que cambiar.
-      const motivos = motivosDelError(err);
+      // F5: un 400 del back trae sus motivos sueltos. Antes se pintaba sólo el
+      // primero; ahora van todos, por el traductor (sistema de errores,
+      // 02-10-2026): un 5xx dice «de nuestro lado» con la referencia y
+      // «conexión» sólo si no hubo respuesta.
       toast.error(t('inmobiliaria.portafolio.detail.toasts.statusChangeError'), {
-        description: motivos[0],
+        description: mensajeParaLaPersona(err, { accion: 'cambiar el estado del inmueble' }),
       });
     }
   }, [consignacion, t]);

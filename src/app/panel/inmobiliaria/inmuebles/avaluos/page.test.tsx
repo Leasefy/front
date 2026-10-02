@@ -84,7 +84,8 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+const toastError = vi.fn()
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn() } }))
 
 // ── La página, DESPUÉS de los mocks ───────────────────────────────────────
 import AvaluosSalaPage from './page'
@@ -258,5 +259,54 @@ describe('Avalúos — la pantalla no se contradice', () => {
     const titulos = [...container.querySelectorAll('h1, h2')].map((h) => h.textContent?.trim())
     expect(titulos).not.toContain('Mis solicitudes')
     expect(titulos).toContain('Avalúos de tu inmobiliaria')
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): «Solicitar avalúo» mostraba
+ * `err.message` crudo de cualquier `ApiError` — un 500 decía «Internal server
+ * error» y el 502 del micro caído, «Avaluo service unreachable». Ahora pasa
+ * por el traductor: lo que el back explica (el 422 de agencia sin correo) se
+ * dice; un 5xx dice que fue nuestro con la referencia; la red, la conexión.
+ */
+describe('Avalúos — el error al solicitar', () => {
+  async function solicitarConLink() {
+    _origen = 'http://localhost:3003'
+    await montar()
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(CTA_LINK)?.click()
+    })
+  }
+
+  it('el 422 que explica el back se muestra tal cual', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    solicitarMock.mockRejectedValueOnce(
+      new ApiError(422, 'Tu inmobiliaria no tiene correo: agrégalo en Configuración.', 'AGENCIA_INCOMPLETA'),
+    )
+    await solicitarConLink()
+    expect(toastError).toHaveBeenCalledWith('Tu inmobiliaria no tiene correo: agrégalo en Configuración.')
+  })
+
+  it('🔴 un 500 dice «de nuestro lado» con la referencia, no «Internal server error»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    solicitarMock.mockRejectedValueOnce(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO',
+        message: 'Internal server error',
+        referencia: '0a1b2c3d',
+      }),
+    )
+    await solicitarConLink()
+    const dicho = String(toastError.mock.calls[0][0])
+    expect(dicho).toMatch(/^No pudimos solicitar el avalúo: algo falló de nuestro lado/)
+    expect(dicho).toContain('0a1b2c3d')
+    expect(dicho).not.toContain('Internal server error')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta habla de la conexión', async () => {
+    solicitarMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await solicitarConLink()
+    expect(String(toastError.mock.calls[0][0])).toMatch(/conexión/)
   })
 })

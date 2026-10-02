@@ -43,8 +43,17 @@ vi.mock('@/lib/api/terceros-extract.service', async () => {
  * importa QUÉ le llega como base. Se cambia por un volcado de `initialData`.
  */
 vi.mock('./PropietarioForm', () => ({
-  PropietarioForm: ({ initialData }: { initialData?: Record<string, unknown> }) => (
-    <pre data-testid="prefill">{JSON.stringify(initialData ?? null)}</pre>
+  PropietarioForm: ({
+    initialData,
+    serverErrors,
+  }: {
+    initialData?: Record<string, unknown>;
+    serverErrors?: Record<string, string> | null;
+  }) => (
+    <>
+      <pre data-testid="prefill">{JSON.stringify(initialData ?? null)}</pre>
+      <pre data-testid="errores-del-servidor">{JSON.stringify(serverErrors ?? {})}</pre>
+    </>
   ),
 }));
 
@@ -249,5 +258,57 @@ describe('<TerceroIACapture> varios documentos', () => {
       (container.querySelector('[data-testid="tercero-ia-extraer"]') as HTMLButtonElement).click();
     });
     expect(container.textContent).toContain('«rut.pdf» tiene 40 páginas');
+  });
+
+  async function extraerCon(error: unknown) {
+    extractMock.mockRejectedValue(error);
+    await montar();
+    await elegir([archivo('cedula.jpg', 'image/jpeg')]);
+    await act(async () => {
+      (container.querySelector('[data-testid="tercero-ia-extraer"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('un 5xx del agente dice «de nuestro lado» con la referencia, no su volcado', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await extraerCon(
+      new ApiError(500, 'Internal Server Error', 'ERROR_INTERNO', { code: 'ERROR_INTERNO', referencia: '9f8e7d6c' }),
+    );
+    expect(container.textContent).toContain('No pudimos leer los documentos: algo falló de nuestro lado');
+    expect(container.textContent).toContain('9f8e7d6c');
+    expect(container.textContent).not.toContain('Internal Server Error');
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    await extraerCon(new TypeError('Failed to fetch'));
+    expect(container.textContent).toMatch(/conexión/);
+    expect(container.textContent).not.toContain('Failed to fetch');
+  });
+});
+
+describe('<TerceroIACapture> el error del guardado', () => {
+  it('🔴 los errores por campo del back llegan al formulario de revisión, no a un aviso', async () => {
+    extractMock.mockResolvedValue(respuesta());
+    const onCreated = vi.fn();
+    await act(async () => {
+      root.render(
+        <TerceroIACapture
+          onCreated={onCreated}
+          onClose={vi.fn()}
+          errorDelServidor={{
+            campo: { field: 'phone', message: 'Revisa el teléfono.' },
+            porCampo: { phone: 'Revisa el teléfono.', accountNumber: 'Revisa la cuenta.' },
+            general: null,
+          }}
+        />,
+      );
+    });
+    await elegir([archivo('cedula.jpg', 'image/jpeg')]);
+    await act(async () => {
+      (container.querySelector('[data-testid="tercero-ia-extraer"]') as HTMLButtonElement).click();
+    });
+    expect(
+      JSON.parse(container.querySelector('[data-testid="errores-del-servidor"]')!.textContent!),
+    ).toEqual({ phone: 'Revisa el teléfono.', accountNumber: 'Revisa la cuenta.' });
   });
 });

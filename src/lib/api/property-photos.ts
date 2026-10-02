@@ -13,6 +13,7 @@
  */
 
 import { propertiesApi } from './properties.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export const PROPERTY_PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const PROPERTY_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -55,9 +56,15 @@ export async function uploadPropertyPhotos(
       await propertiesApi.uploadImage(propertyId, file);
       result.uploaded += 1;
     } catch (err) {
+      // Por el traductor (sistema de errores, 02-10-2026): el rechazo del back
+      // tal cual, un 5xx «de nuestro lado» con la referencia, y «conexión»
+      // sólo sin respuesta. Antes era `err.message` crudo.
       result.failed.push({
         name: file.name,
-        reason: err instanceof Error ? err.message : 'Error al subir la foto',
+        reason: mensajeParaLaPersona(err, {
+          porDefecto: 'Error al subir la foto',
+          accion: `subir «${file.name}»`,
+        }),
       });
     }
   }

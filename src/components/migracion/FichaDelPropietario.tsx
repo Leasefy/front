@@ -215,6 +215,9 @@ export function CuerpoDeLaFicha({ fila }: { fila: Propietario }) {
                 setErrorAlGuardar(null);
               }}
               serverError={errorAlGuardar?.campo ?? null}
+              // Sistema de errores (02-10-2026): TODOS los campos que el back
+              // señaló, cada uno bajo el suyo (no sólo el primero).
+              serverErrors={errorAlGuardar?.porCampo ?? null}
             />
           </div>
         ) : (

@@ -35,6 +35,7 @@ import {
   type BorradorDeInventario,
 } from '@/lib/inventario/borrador-de-inventario';
 import { haySenal } from '@/lib/inventario/hay-senal';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { subirBorrador, type AvanceDeSubida } from '@/lib/inventario/subir-borrador';
 import type { Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -182,7 +183,16 @@ export function useBorradorDeInventario({
         // están pendientes.
         const quedo = await almacen.leer(deBorrador.consignacionId);
         setBorrador(quedo);
-        setErrorDeSubida(err instanceof Error ? err.message : 'No se pudo subir');
+        // Por el traductor: la barra decía `err.message` crudo, así que un 5xx
+        // se leía «Internal server error» y un fallo de red, «Failed to fetch».
+        // Ahora: lo que el back explica (4xx), «falló de nuestro lado» con la
+        // referencia (5xx), o la conexión si no hubo respuesta.
+        setErrorDeSubida(
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No se pudo subir el inventario. Lo tuyo sigue guardado en este teléfono.',
+            accion: 'subir el inventario',
+          }),
+        );
         await revisarSenal();
       } finally {
         setAvance(null);

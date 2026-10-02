@@ -21,6 +21,17 @@ const iniciar = vi.fn();
 const cancelar = vi.fn();
 const reenviar = vi.fn();
 const documento = vi.fn();
+const toastError = vi.fn();
+const toastSuccess = vi.fn();
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: {
+    error: (...a: unknown[]) => toastError(...a),
+    success: (...a: unknown[]) => toastSuccess(...a),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
 
 vi.mock('@/lib/api/consignacion-firma.service', () => ({
   firmaDeConsignacionApi: {
@@ -56,6 +67,8 @@ beforeEach(() => {
   cancelar.mockReset();
   reenviar.mockReset();
   documento.mockReset();
+  toastError.mockReset();
+  toastSuccess.mockReset();
 });
 
 afterEach(() => {
@@ -146,5 +159,87 @@ describe('<FirmaElectronicaDeConsignacionSection>', () => {
     await montar();
     expect(container.querySelector('[data-testid="firma-electronica-consignacion"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull();
+  });
+});
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): iniciar la firma electrónica.
+ * El PDF equivocado era un toast que se iba; ahora es el error del campo del
+ * PDF. Un 400 en `mensaje` va debajo del mensaje; lo demás, al toast con la
+ * regla de oro.
+ */
+describe('<FirmaElectronicaDeConsignacionSection> — los errores al iniciar', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return new ApiError(status, cuerpo.message as string | string[], cuerpo.code as string, cuerpo);
+  }
+
+  async function elegir(archivo: File) {
+    const input = container.querySelector<HTMLInputElement>('[data-testid="iniciar-firma-electronica-input"]')!;
+    Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  async function iniciarFirma() {
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="iniciar-firma-electronica-boton"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+  }
+
+  const PDF = () => new File(['%PDF'], 'mandato.pdf', { type: 'application/pdf' });
+
+  it('🔴 un archivo que no es PDF es el error del campo del PDF, no un toast', async () => {
+    obtener.mockResolvedValueOnce({ proceso: null });
+    await montar();
+    await elegir(new File(['x'], 'foto.png', { type: 'image/png' }));
+
+    expect(container.querySelector('#firma-electronica-pdf-error')?.textContent).toBe(
+      'El documento debe ser un PDF de hasta 10 MB.',
+    );
+    const boton = container.querySelector('[data-testid="elegir-pdf"]')!;
+    expect(boton.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(boton);
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 400 en `mensaje` va debajo del mensaje, sin toast', async () => {
+    obtener.mockResolvedValueOnce({ proceso: null });
+    iniciar.mockRejectedValueOnce(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: ['El mensaje puede tener hasta 500 caracteres.'],
+        campos: [{ campo: 'mensaje', regla: 'longitud_maxima', mensaje: 'El mensaje puede tener hasta 500 caracteres.' }],
+      }),
+    );
+    await montar();
+    await elegir(PDF());
+    await iniciarFirma();
+
+    expect(container.querySelector('#firma-electronica-mensaje-error')?.textContent).toBe(
+      'El mensaje puede tener hasta 500 caracteres.',
+    );
+    expect(document.activeElement).toBe(container.querySelector('[data-testid="firma-electronica-mensaje"]'));
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia; sin respuesta, la conexión', async () => {
+    obtener.mockResolvedValueOnce({ proceso: null });
+    iniciar.mockRejectedValueOnce(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'dd00ee11' }),
+    );
+    await montar();
+    await elegir(PDF());
+    await iniciarFirma();
+    const primera = toastError.mock.calls[0][1] as { description: string };
+    expect(primera.description).toMatch(/de nuestro lado/);
+    expect(primera.description).toContain('dd00ee11');
+
+    iniciar.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await iniciarFirma();
+    expect((toastError.mock.calls[1][1] as { description: string }).description).toMatch(/conexión/);
   });
 });

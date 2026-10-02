@@ -11,11 +11,14 @@ const estadoInventarios = vi.fn();
 const estadoBorrador = vi.fn();
 const completar = vi.fn();
 const reemplazar = vi.fn();
+const toastError = vi.fn();
 let destinoRecibido: { guardar: (id: string, items: unknown[]) => Promise<void> } | undefined;
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
-vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a) },
+}));
 vi.mock('@/lib/hooks/use-inventarios-del-inmueble', () => ({
   useInventariosDelInmueble: () => estadoInventarios(),
 }));
@@ -149,6 +152,49 @@ describe('InventarioDelInmueble', () => {
     await montar(datos({ versiones: [borrador], borrador }), { hayPendientes: true });
     expect((q('completar-inventario-boton') as HTMLButtonElement).disabled).toBe(true);
     expect(q('completar-inventario')?.textContent).toContain('Sube lo pendiente antes de completar');
+  });
+
+  /**
+   * Sistema de errores, tanda 2 (02-10-2026): la descripción del toast era
+   * `err.message` crudo. Un 500 decía «Internal server error» y la red,
+   * «Failed to fetch».
+   */
+  describe('el error al completar', () => {
+    async function completarConError(error: unknown) {
+      const borrador = version({ id: 'v2', version: 2, estado: 'BORRADOR', completadoEn: null, items: [{ id: 'a' }] });
+      completar.mockRejectedValue(error);
+      await montar(datos({ versiones: [borrador], borrador }));
+      await act(async () => {
+        (q('completar-inventario-boton') as HTMLButtonElement).click();
+      });
+      return (toastError.mock.calls[0]?.[1] as { description?: string } | undefined)?.description ?? '';
+    }
+
+    it('🔴 un 5xx dice «de nuestro lado» con la referencia, nunca «Internal server error»', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const descripcion = await completarConError(
+        new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+          code: 'ERROR_INTERNO', message: 'Internal server error', referencia: '77aa77aa',
+        }),
+      );
+      expect(descripcion).toMatch(/^No pudimos completar el inventario: algo falló de nuestro lado/);
+      expect(descripcion).toContain('77aa77aa');
+      expect(descripcion).not.toContain('Internal server error');
+    });
+
+    it('un 409 que explica el back se dice tal cual', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const descripcion = await completarConError(
+        new ApiError(409, 'El borrador cambió mientras lo completabas: vuelve a abrirlo.', 'BORRADOR_CAMBIO'),
+      );
+      expect(descripcion).toBe('El borrador cambió mientras lo completabas: vuelve a abrirlo.');
+    });
+
+    it('sin respuesta habla de la conexión, no «Failed to fetch»', async () => {
+      const descripcion = await completarConError(new TypeError('Failed to fetch'));
+      expect(descripcion).toMatch(/conexión/);
+      expect(descripcion).not.toContain('Failed to fetch');
+    });
   });
 
   it('el borrador sin señal sube al inventario por versiones, no a la consignación', async () => {

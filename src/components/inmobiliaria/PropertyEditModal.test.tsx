@@ -36,6 +36,7 @@ import { PropertyEditModal } from './PropertyEditModal'
 import { propertiesApi } from '@/lib/api/properties.service'
 import { uploadPropertyPhotos } from '@/lib/api/property-photos'
 import { toast } from '@/components/ui/toast'
+import { ApiError } from '@/lib/api/client'
 import type { AgencyProperty } from '@/lib/types/property'
 
 const update = propertiesApi.update as unknown as ReturnType<typeof vi.fn>
@@ -305,5 +306,57 @@ describe('<PropertyEditModal> photos', () => {
       expect.objectContaining({ description: 'Upload failed: 500' }),
     )
     expect(props.onSuccess).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): un 400 con `campos` va bajo su
+ * campo con el foco; los topes del DTO se dicen antes de mandar; un 5xx dice
+ * «de nuestro lado» con la referencia.
+ */
+describe('<PropertyEditModal> — los errores, en su campo', () => {
+  it('🔴 un 400 en el área: el error bajo el área, el foco ahí y sin aviso suelto', async () => {
+    const frase = 'El área debe ser un número entero de metros cuadrados.'
+    update.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'area', regla: 'entero', mensaje: frase }],
+      }),
+    )
+    render()
+    await submit()
+
+    expect(dialogo().querySelector('#edit-campo-area-error')?.textContent).toBe(frase)
+    expect(input('edit-area').getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input('edit-area'))
+    expect(dialogo().querySelector('[data-testid="edit-error"]')).toBeNull()
+  })
+
+  it('🔴 un canon de once cifras se dice en el momento y no deja guardar', async () => {
+    render()
+    act(() => setValue(input('edit-rent'), '30000000000'))
+    expect(dialogo().querySelector('#edit-campo-monthlyRent-error')?.textContent).toBe(
+      'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    )
+    await submit()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia', async () => {
+    update.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    )
+    render()
+    await submit()
+    const aviso = dialogo().querySelector('[data-testid="edit-error"]')!
+    expect(aviso.textContent).toMatch(/No pudimos actualizar la propiedad: algo falló de nuestro lado/)
+    expect(aviso.textContent).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    update.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    render()
+    await submit()
+    expect(dialogo().querySelector('[data-testid="edit-error"]')!.textContent).toMatch(/conexión/)
   })
 })

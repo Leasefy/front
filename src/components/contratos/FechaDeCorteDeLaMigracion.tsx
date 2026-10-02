@@ -19,6 +19,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { leerFallo, mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
+import { errorDeLaFechaDeCorte } from "@/components/migracion/limites-de-la-migracion";
 import {
   contractsApi,
   type FechaDeCorteDeLaMigracion as Estado,
@@ -59,6 +62,13 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * El error DE LA FECHA (el cliente con las reglas del back, o un 400 del
+   * back): va debajo del campo. `error` queda para lo que no es de la fecha
+   * —un 409 porque ya hay cuotas, un 5xx, la red—.
+   */
+  const [errorDeLaFecha, setErrorDeLaFecha] = useState<string | null>(null);
+  const idDelCampo = "fecha-de-corte-campo";
 
   const aplicar = useCallback(
     (e: Estado) => {
@@ -79,9 +89,10 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
       .catch((e: unknown) => {
         if (vivo) {
           setError(
-            e instanceof Error
-              ? e.message
-              : "No pudimos leer la fecha de corte.",
+            mensajeParaLaPersona(e, {
+              porDefecto: "No pudimos leer la fecha de corte.",
+              accion: "leer la fecha de corte",
+            }),
           );
           onCambio(null);
         }
@@ -96,14 +107,31 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
 
   const guardar = async () => {
     if (!borrador) return;
-    setGuardando(true);
     setError(null);
+    // Las mismas reglas y frases que el back, antes de mandar nada.
+    const delCliente = errorDeLaFechaDeCorte(borrador);
+    if (delCliente) {
+      setErrorDeLaFecha(delCliente);
+      document.getElementById(idDelCampo)?.focus();
+      return;
+    }
+    setErrorDeLaFecha(null);
+    setGuardando(true);
     try {
       aplicar(await contractsApi.migracion.fijarFechaDeCorte(borrador));
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "No pudimos guardar la fecha de corte.",
-      );
+      const mensaje = mensajeParaLaPersona(e, {
+        porDefecto: "No pudimos guardar la fecha de corte.",
+        accion: "guardar la fecha de corte",
+      });
+      // Un 400 es de la fecha (`FECHA_DE_CORTE_INVALIDA`, `…_FUERA_DE_RANGO`,
+      // o `campos` en `fecha`): va al campo y le da el foco.
+      if (leerFallo(e).tipo === "datos") {
+        setErrorDeLaFecha(mensaje);
+        document.getElementById(idDelCampo)?.focus();
+      } else {
+        setError(mensaje);
+      }
     } finally {
       setGuardando(false);
     }
@@ -140,16 +168,28 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
         </p>
       ) : (
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-caption text-muted-foreground">
-            Fecha de corte
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor={idDelCampo}
+              className="text-caption text-muted-foreground"
+            >
+              Fecha de corte
+            </label>
             <Input
+              id={idDelCampo}
               type="date"
               value={borrador}
-              onChange={(e) => setBorrador(e.target.value)}
+              aria-invalid={errorDeLaFecha ? true : undefined}
+              invalid={Boolean(errorDeLaFecha)}
+              aria-describedby={errorDeLaFecha ? `${idDelCampo}-error` : undefined}
+              onChange={(e) => {
+                setBorrador(e.target.value);
+                setErrorDeLaFecha(null);
+              }}
               className="w-44"
               data-testid="fecha-de-corte-input"
             />
-          </label>
+          </div>
           <Button
             type="button"
             size="sm"
@@ -173,8 +213,12 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
         </div>
       )}
 
+      {/* El error de la fecha va debajo de la fila del campo y su botón. */}
+      <ErrorDelCampo id={`${idDelCampo}-error`} mensaje={errorDeLaFecha} />
+
+      {/* Lo que no es de la fecha: un aviso del bloque, no de un campo. */}
       {error ? (
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-sm text-danger" role="alert" data-testid="fecha-de-corte-error">
           {error}
         </p>
       ) : null}

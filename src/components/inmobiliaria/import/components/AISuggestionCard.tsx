@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import {
   Check,
   X,
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { faltantesParaElBack, requisitoDe, sinCanon } from '../lib/requisitosDelBack';
 import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
 import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
@@ -83,31 +84,44 @@ function CampoEditable({
   onCambiar: (valor: string) => void;
   testId?: string;
 }) {
+  const id = useId();
   const mostrado =
     valor === undefined || valor === null || (typeof valor === 'number' && Number.isNaN(valor))
       ? ''
       : String(valor);
 
+  /*
+   * El error del campo (02-10-2026): la ayuda gris («Mínimo $1.000.») y el
+   * error se cruzan con la entrada suave de Cadence (`ErrorDelCampo` con
+   * `pista`) en vez de cambiar de color de golpe, y el input lo nombra en
+   * `aria-describedby`. El texto es el mismo: lo que falta y con qué regla.
+   */
   return (
-    <label className="block">
-      <span className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
+    <div className="block">
+      <label htmlFor={id} className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
         {etiqueta}
         {sufijo && <span className="text-fg-subtle"> ({sufijo})</span>}
-      </span>
+      </label>
       <Input
+        id={id}
         value={mostrado}
         inputMode={tipo === 'numero' ? 'numeric' : 'text'}
         onChange={(e) => onCambiar(e.target.value)}
-        className={cn('h-8 text-sm', invalido && 'border-danger')}
+        className="h-8 text-sm"
+        invalid={invalido}
         data-testid={testId}
         aria-invalid={invalido || undefined}
+        aria-describedby={invalido && ayuda ? `${id}-error` : undefined}
       />
-      {ayuda && (
-        <span className={cn('block text-xs mt-1', invalido ? 'text-danger' : 'text-fg-subtle')}>
-          {ayuda}
-        </span>
-      )}
-    </label>
+      {ayuda ? (
+        <ErrorDelCampo
+          id={`${id}-error`}
+          className="mt-1"
+          mensaje={invalido ? ayuda : null}
+          pista={ayuda}
+        />
+      ) : null}
+    </div>
   );
 }
 

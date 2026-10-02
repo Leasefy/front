@@ -98,7 +98,7 @@ export function UbicarEnElMapaDialog({
       onCerrar();
     } catch (e) {
       toast.error(t('inmobiliaria.inmuebles.ubicacion.dialogo.errorAlGuardar'), {
-        description: mensajeParaLaPersona(e),
+        description: mensajeParaLaPersona(e, { accion: 'guardar la ubicación' }),
       });
     } finally {
       setGuardando(false);

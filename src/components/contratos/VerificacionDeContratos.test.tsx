@@ -248,3 +248,49 @@ describe('VerificacionDeContratos', () => {
     expect(deLaActivacion(undefined)).toBeNull()
   })
 })
+
+/*
+ * Sistema de errores (02-10-2026): el texto ya no es fijo para todo. El
+ * motivo sale del traductor y la coletilla «no cambiaron» se queda.
+ */
+describe('<VerificacionDeContratos> — por qué no se pudo verificar', () => {
+  async function verificarCon(error: unknown) {
+    vi.mocked(contractsApi.migracion.verificar).mockRejectedValue(error)
+    render({ lote: 'lote-1' })
+    await act(async () => {
+      boton('Verificar el lote completo')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    return texto('error-verificacion')
+  }
+
+  it('🔴 un 5xx: de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const t = await verificarCon(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    expect(t).toMatch(/^No pudimos contrastar los contratos contra el archivo: algo falló de nuestro lado/)
+    expect(t).toContain('ab12cd34')
+    expect(t).toContain('no cambiaron')
+    expect(t).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('un 409 dice lo que dijo el back', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const t = await verificarCon(
+      new ApiError(409, 'El lote todavía se está activando: verifica cuando termine.', 'LOTE_EN_PROCESO'),
+    )
+    expect(t).toContain('El lote todavía se está activando')
+    expect(t).toContain('no cambiaron')
+  })
+
+  it('sin respuesta: ahí sí la conexión', async () => {
+    const t = await verificarCon(new TypeError('Failed to fetch'))
+    expect(t).toMatch(/conexión/)
+  })
+})

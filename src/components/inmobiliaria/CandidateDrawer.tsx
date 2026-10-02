@@ -1032,7 +1032,68 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
     return (
       <div className="rounded-lg bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
         <p className="text-xs text-fg-muted">
-          Este candidato no tiene un estudio de preescoring registrado para esta postulación.
+          El candidato se postuló sin un estudio de preescoring registrado para esta postulación.
+        </p>
+      </div>
+    );
+  }
+
+  // T-0132 (contract §3.2, display rule 2): the application now pins ANY
+  // vigent order, including a REJECTED one — `maxAsegurableCop === 0` is the
+  // same predicate the back uses for `NO_ASEGURABLE`
+  // (`pre-scoring-eligibility.service.ts`). Checked before `status`, because
+  // a rejected study can be `PAID | STUDY_STARTED | COMPLETED` and must
+  // still read as "rejected", never as "in progress" or "full result". MUST
+  // NOT render a "$0" ceiling, and MUST NOT render the D13 "tope
+  // informativo" note (that note exists to say a canon above the ceiling is
+  // still negotiable — there is no ceiling to negotiate above here).
+  if (study.maxAsegurableCop === 0) {
+    const carriers = study.carriers ?? [];
+    return (
+      <div className="space-y-3" data-testid="prescoring-panel-rejected">
+        <div
+          className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2 flex items-start gap-2"
+          data-testid="prescoring-rejected-note"
+        >
+          <XCircle className="w-3.5 h-3.5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-xs text-danger">
+            Este estudio no encontró ninguna aseguradora que respalde al candidato.
+          </p>
+        </div>
+        {carriers.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">Aseguradoras evaluadas</p>
+            {carriers.map((carrier) => (
+              <div
+                key={carrier.name}
+                className="flex items-center justify-between gap-3 rounded-md bg-surface-muted p-2.5 border border-border"
+                data-testid="prescoring-carrier-row"
+              >
+                <span className="text-xs text-foreground truncate">{carrier.name}</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-danger">
+                  <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  No viable
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // T-0132 (contract §3.2, display rule 3): a tier-1 order that is still
+  // being worked (no verdict yet) — new state, distinct from both "no
+  // study" and the full result.
+  if (study.status === 'PAID' || study.status === 'STUDY_STARTED') {
+    return (
+      <div
+        className="rounded-lg bg-surface-muted p-3 border border-border flex items-start gap-2"
+        data-testid="prescoring-panel-in-progress"
+      >
+        <Info className="w-3.5 h-3.5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <p className="text-xs text-fg-muted">
+          El estudio de preescoring de este candidato está en curso. Todavía no hay resultado.
         </p>
       </div>
     );

@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Info } from '@phosphor-icons/react'
+import { Info, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -182,11 +182,11 @@ const PASOS = [
   {
     n: '03',
     title: 'El propietario decide',
-    desc: 'Te postulas a las que quieras con el mismo estudio, sin volver a pagar.',
+    desc: 'Te postulas a las que quieras con la misma aprobación, sin volver a pagar.',
   },
 ]
 
-function AntesDePostularte({
+export function AntesDePostularte({
   open,
   onClose,
   motivo,
@@ -217,6 +217,15 @@ function AntesDePostularte({
    * El destino es la acción que pidió, no el lugar donde estaba parada.
    */
   const volverA = `/aplicar/${propertyId}`
+
+  /*
+   * T-0132 (owner decision, ledger §2.4): la aprobación ya NUNCA bloquea
+   * postularse — el back no vuelve a rechazar con 409 por esto. Todo
+   * motivo salvo `sin_sesion` (O-1, fuera de alcance, sin cambios: sin
+   * sesión no sabemos si la persona ya tiene cuenta y aprobación) gana una
+   * salida para seguir sin este dato.
+   */
+  const puedeContinuarSinAprobacion = motivo !== 'sin_sesion'
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -251,12 +260,67 @@ function AntesDePostularte({
           </div>
         )}
 
+        {/*
+          T-0132, contract §3.3: `rechazado` gana una alerta de advertencia
+          (probable rechazo) en vez de la nota neutral — es la única de las
+          cuatro que SÍ tiene un veredicto desfavorable conocido.
+        */}
+        {motivo === 'rechazado' && (
+          <div
+            className="flex items-start gap-2 rounded-lg bg-danger-soft border border-danger/30 p-3"
+            data-testid="antes-de-postularte-alerta-rechazo"
+          >
+            <WarningCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="text-sm text-danger">
+              Es probable que no te aprueben: tu última consulta no fue favorable. Aun así, la
+              decisión final siempre es de la inmobiliaria y puedes intentarlo.
+            </p>
+          </div>
+        )}
+
+        {/*
+          T-0132, contract §3.3 (A-1): nota neutral, SIN alerta — `sin_aprobacion`,
+          `vencida` y `en_proceso` se tratan igual que "sin aprobación": la
+          inmobiliaria podría rechazar porque no conoce el tope aprobado, pero
+          nada acá dice que vaya a pasar.
+        */}
+        {puedeContinuarSinAprobacion && motivo !== 'rechazado' && (
+          <div
+            className="rounded-lg bg-surface-muted p-3"
+            data-testid="antes-de-postularte-nota-neutral"
+          >
+            <p className="text-sm text-fg-muted">
+              Si te postulas sin esto, la inmobiliaria no sabrá hasta cuánto te respaldamos y
+              podría rechazarte por eso.
+            </p>
+          </div>
+        )}
+
         {/* Apilados a propósito: el diálogo es `max-w-md` y los dos botones en
             fila hacían que el min-content del contenido superara el ancho de la
             caja — se cortaba el texto de los pasos y "Ahora no" quedaba fuera. */}
         <div className="flex flex-col gap-2 pt-1">
+          {/*
+            T-0132: la salida de "continuar sin conocer mi aprobación" pasa a
+            ser la PRIMARIA — el CTA que antes abría el camino (aprobarse) baja
+            a secundario. El texto varía solo para `rechazado`, donde "de todas
+            formas" reconoce el veredicto en vez de sonar a que no hay uno.
+          */}
+          {puedeContinuarSinAprobacion && (
+            <Button asChild>
+              <Link href={volverA}>
+                {motivo === 'rechazado'
+                  ? 'Postularme de todas formas'
+                  : 'Continuar sin conocer mi aprobación'}
+              </Link>
+            </Button>
+          )}
           {/* Sin ArrowRight manual: el Button ya pone su flecha (hideArrow la apaga). */}
-          <Button asChild>
+          <Button
+            asChild
+            variant={puedeContinuarSinAprobacion ? 'secondary' : undefined}
+            hideArrow={puedeContinuarSinAprobacion}
+          >
             <Link href={copy.href}>{copy.cta}</Link>
           </Button>
           {/* La segunda puerta, sólo cuando no hay sesión: quien ya tiene

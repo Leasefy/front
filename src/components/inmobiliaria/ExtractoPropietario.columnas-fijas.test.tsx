@@ -180,4 +180,23 @@ describe('ExtractoPropietario — columnas fijas', () => {
     const [propiedad] = filetes('propiedad');
     expect(propiedad.className).toMatch(/\bopacity-0\b/);
   });
+
+  /*
+   * 02-10 · Las sombras de borde de `Table` no van en el extracto: las tapa la
+   * columna fija y el filete interior ya dice dónde sigue la tabla. Antes se
+   * escondían con un selector por `data-testid` en el `className`; ahora el
+   * extracto pide `sombrasDeBorde={false}` y no están en el DOM (no basta con
+   * que una clase las oculte).
+   */
+  it('🔴 con la tabla corrida a la mitad, las sombras de borde de `Table` no existen; los filetes sí', async () => {
+    await render();
+    await medir({ ancho: 1170, visible: 900, corrido: 120 });
+    const tabla = container.querySelector('[data-testid="extracto-tabla"]')!;
+    expect(tabla.querySelector('[data-testid="sigue-a-la-derecha"]')).toBeNull();
+    expect(tabla.querySelector('[data-testid="sigue-a-la-izquierda"]')).toBeNull();
+    expect(visibles('propiedad').every((v) => v === 'true')).toBe(true);
+    expect(visibles('neto').every((v) => v === 'true')).toBe(true);
+    // Y el contenedor ya no carga el selector que las escondía.
+    expect(tabla.className).not.toContain('sigue-a-la');
+  });
 });

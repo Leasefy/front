@@ -42,6 +42,8 @@ import {
   LARGOS_DEL_MANDATO,
   MENSAJES_DEL_MANDATO,
   MONTO_MENSUAL_MAXIMO_COP,
+  errorDeLaComision,
+  errorDeLaComisionDeVenta,
   errorDeLaFechaDelMandato,
   errorDeLaFecha,
   errorDelLargo,
@@ -554,11 +556,22 @@ export function ConsignacionEditForm({
       topes.city = errorDelLargo(v.city.trim(), LARGOS_DEL_MANDATO.ciudad, MENSAJES_DEL_MANDATO.ciudadLarga);
       topes.neighborhood = errorDelLargo(v.neighborhood.trim(), LARGOS_DEL_MANDATO.barrio, MENSAJES_DEL_MANDATO.barrioLargo);
       if (!esVenta) {
-        if ((numeroOVacio(v.monthlyRent) ?? 0) > MONTO_MENSUAL_MAXIMO_COP) topes.monthlyRent = MENSAJES_DEL_MANDATO.canonMaximo;
-        if ((numeroOVacio(v.adminFee) ?? 0) > MONTO_MENSUAL_MAXIMO_COP) topes.adminFee = MENSAJES_DEL_MANDATO.administracionMaxima;
+        const canon = numeroOVacio(v.monthlyRent);
+        const administracion = numeroOVacio(v.adminFee);
+        // Sólo pesos enteros, con la frase del back (`@IsInt` del mandato).
+        if (canon != null && !Number.isInteger(canon)) topes.monthlyRent = MENSAJES_DEL_MANDATO.canonEntero;
+        else if ((canon ?? 0) > MONTO_MENSUAL_MAXIMO_COP) topes.monthlyRent = MENSAJES_DEL_MANDATO.canonMaximo;
+        if (administracion != null && !Number.isInteger(administracion)) {
+          topes.adminFee = MENSAJES_DEL_MANDATO.administracionEntera;
+        } else if ((administracion ?? 0) > MONTO_MENSUAL_MAXIMO_COP) {
+          topes.adminFee = MENSAJES_DEL_MANDATO.administracionMaxima;
+        }
       }
     }
     if (!mandatoTerminado) {
+      // La comisión es un porcentaje: 0 a 100 (`@Max(100)` del back, misma frase).
+      if (esVenta) topes.saleCommissionPercent = errorDeLaComisionDeVenta(numeroOVacio(v.saleCommissionPercent));
+      else topes.commissionPercent = errorDeLaComision(numeroOVacio(v.commissionPercent));
       if (!esVenta) topes.minimumTerm = errorDelTermino(numeroOVacio(v.minimumTerm));
       topes.contractDate = errorDeLaFechaDelMandato(v.contractDate);
       topes.contractEndDate = errorDeLaFecha(v.contractEndDate, {

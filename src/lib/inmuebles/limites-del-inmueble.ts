@@ -23,6 +23,8 @@ export const AREA_MAXIMA_M2 = 10_000
 export const PISO_MAXIMO = 100
 export const PARQUEADEROS_MAXIMOS = 10
 export const TERMINO_MINIMO_MAXIMO_MESES = 120
+/** La comisión del mandato (administración o venta) es un porcentaje: 0 a 100 (Nico, 02-10-2026). */
+export const COMISION_MAXIMA_PORCENTAJE = 100
 
 export const LARGO_DEL_TITULO = 100
 export const LARGO_DE_LA_DIRECCION = 200
@@ -44,7 +46,7 @@ export const FECHA_DEL_MANDATO_DESDE = '1950-01-01'
 export const FECHA_DEL_MANDATO_HASTA = '2100-12-31'
 
 export const MENSAJES_DEL_INMUEBLE = {
-  canonEntero: 'El canon debe ser un número entero de pesos, sin decimales.',
+  canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMinimo: 'El canon mínimo es de $1.000.',
   canonMaximo: 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
   administracionEntera: 'La administración debe ser un número entero de pesos, sin decimales.',
@@ -79,10 +81,16 @@ export const MENSAJES_DEL_MANDATO = {
   direccionLarga: 'La dirección puede tener hasta 300 caracteres.',
   ciudadLarga: 'La ciudad puede tener hasta 50 caracteres.',
   barrioLargo: 'El barrio puede tener hasta 100 caracteres.',
+  canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMaximo: 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+  administracionEntera: 'La administración debe ser un número entero de pesos, sin decimales.',
   administracionMaxima:
     'La administración no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
   terminoMaximo: 'El término mínimo no puede pasar de 120 meses.',
+  comisionNegativa: 'La comisión no puede ser negativa.',
+  comisionMaxima: 'La comisión no puede pasar del 100 %.',
+  comisionDeVentaNegativa: 'La comisión de venta no puede ser negativa.',
+  comisionDeVentaMaxima: 'La comisión de venta no puede pasar del 100 %.',
   fechaDelMandato: 'La fecha del mandato no es un día real del calendario (usa AAAA-MM-DD).',
   fechaDelMandatoFueraDeRango: 'La fecha del mandato debe estar entre 1950 y 2100.',
   fechaDeFin: 'La fecha de fin del mandato no es un día real del calendario (usa AAAA-MM-DD).',
@@ -177,6 +185,20 @@ export function errorDelArea(n: Numero): string | null {
 export function errorDelTermino(n: Numero): string | null {
   if (vacio(n)) return null
   return n > TERMINO_MINIMO_MAXIMO_MESES ? MENSAJES_DEL_MANDATO.terminoMaximo : null
+}
+
+/** La comisión de administración del mandato: 0 a 100 %. Vacía = bien (la exige el formulario). */
+export function errorDeLaComision(n: Numero): string | null {
+  if (vacio(n)) return null
+  if (n < 0) return MENSAJES_DEL_MANDATO.comisionNegativa
+  return n > COMISION_MAXIMA_PORCENTAJE ? MENSAJES_DEL_MANDATO.comisionMaxima : null
+}
+
+/** La comisión de venta del mandato: 0 a 100 %. */
+export function errorDeLaComisionDeVenta(n: Numero): string | null {
+  if (vacio(n)) return null
+  if (n < 0) return MENSAJES_DEL_MANDATO.comisionDeVentaNegativa
+  return n > COMISION_MAXIMA_PORCENTAJE ? MENSAJES_DEL_MANDATO.comisionDeVentaMaxima : null
 }
 
 /** `texto` más largo que `maximo` → la frase; vacío o en el tope = bien. */

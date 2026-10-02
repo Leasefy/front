@@ -210,9 +210,10 @@ const COLUMNA_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
  *    mientras hay contenido escondido de ese lado (se mide en el contenedor
  *    que se corre: `useDesbordeHorizontal`). Entra y sale con `opacity` y los
  *    tokens de movimiento; con movimiento reducido, sin transición.
- *  · Las sombras de borde que pone `Table` se esconden acá: en el borde de
- *    afuera ya no hay nada escondido (lo tapa la columna fija); el filete
- *    interior es el que dice dónde sigue la tabla.
+ *  · Las sombras de borde que pone `Table` se apagan acá, con
+ *    `sombrasDeBorde={false}`: en el borde de afuera ya no hay nada escondido
+ *    (lo tapa la columna fija); el filete interior es el que dice dónde sigue
+ *    la tabla.
  *  · Al imprimir no hay columnas fijas ni filetes: el papel no se corre.
  */
 const COLUMNA_FIJA = 'sticky z-[2] print:static';
@@ -495,12 +496,8 @@ export function ExtractoPropietario({
             la tabla en vez de quedarse quieto abajo. El scroll lo pone `Table`
             (su propio contenedor): las columnas fijas se pegan a ése. */}
         <div className="rounded-md border border-border">
-          <div
-            className="[&_[data-testid=sigue-a-la-derecha]]:hidden [&_[data-testid=sigue-a-la-izquierda]]:hidden"
-            data-lenis-prevent
-            data-testid="extracto-tabla"
-          >
-            <Table ref={refDeLaTabla}>
+          <div data-lenis-prevent data-testid="extracto-tabla">
+            <Table ref={refDeLaTabla} sombrasDeBorde={false}>
               <TableHeader>
                 <TableRow className="hover:bg-transparent bg-muted/50">
                   <TableHead className={cn(ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>

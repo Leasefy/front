@@ -44,7 +44,7 @@ async function montar(nodo: React.ReactElement) {
   return { caja, host: host! };
 }
 
-function unaTabla(props: { avisoDeDesborde?: boolean } = {}) {
+function unaTabla(props: { avisoDeDesborde?: boolean; sombrasDeBorde?: boolean } = {}) {
   return montar(
     <Table {...props}>
       <TableBody>
@@ -141,5 +141,42 @@ describe('Table · el aviso de que no cabe', () => {
 
     expect(host.querySelector('[data-testid="aviso-de-desborde"]')).toBeNull();
     expect(host.querySelector('[data-testid="sigue-a-la-derecha"]')).not.toBeNull();
+  });
+
+  /*
+   * 02-10 · El extracto del propietario fija Propiedad y Neto y pinta su
+   * propio filete en el borde interior de esas columnas; las sombras de afuera
+   * le sobraban y las escondía con un selector por `data-testid` en su
+   * `className`. Ahora lo pide con la prop y las sombras no se pintan.
+   */
+  it('`sombrasDeBorde={false}` no pinta las sombras aunque la tabla no quepa, por ningún lado', async () => {
+    const { caja, host } = await unaTabla({ sombrasDeBorde: false });
+    const derecha = () => host.querySelector('[data-testid="sigue-a-la-derecha"]');
+    const izquierda = () => host.querySelector('[data-testid="sigue-a-la-izquierda"]');
+
+    fingirAnchos(caja, 800, 1200, 0);
+    await remedir(caja);
+    expect(derecha()).toBeNull();
+    expect(izquierda()).toBeNull();
+
+    // A la mitad, que es cuando por defecto salen las dos.
+    fingirAnchos(caja, 800, 1200, 200);
+    await remedir(caja);
+    expect(derecha()).toBeNull();
+    expect(izquierda()).toBeNull();
+
+    // El resto del desborde sigue igual: el aviso escrito y el teclado.
+    expect(host.querySelector('[data-testid="aviso-de-desborde"]')).not.toBeNull();
+    expect(caja.getAttribute('tabindex')).toBe('0');
+    expect(caja.className).toContain('overflow-auto');
+  });
+
+  it('por defecto las sombras siguen saliendo (la prop no cambia ninguna otra tabla)', async () => {
+    const { caja, host } = await unaTabla();
+    fingirAnchos(caja, 800, 1200, 200);
+    await remedir(caja);
+
+    expect(host.querySelector('[data-testid="sigue-a-la-derecha"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="sigue-a-la-izquierda"]')).not.toBeNull();
   });
 });

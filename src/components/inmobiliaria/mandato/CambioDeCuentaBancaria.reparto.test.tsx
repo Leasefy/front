@@ -142,10 +142,19 @@ describe('repartir en varias cuentas', () => {
     await escribir(campo('reparto-1-porcentaje'), '20');
     await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
 
-    expect(porTestId('suma-del-reparto')?.textContent).toBe('Los porcentajes suman 70 %: falta repartir 30 %.');
+    // 02-10: con los dos porcentajes escritos, la suma que no da 100 es un
+    // error y va EN el porcentaje de la última cuenta, no abajo en un bloque.
+    expect(document.getElementById('reparto-1-porcentaje-error')?.textContent).toBe(
+      'Los porcentajes suman 70 %: falta repartir 30 %.',
+    );
+    expect(porTestId('suma-del-reparto')).toBeNull();
     expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
 
     await clic(porTestId('agregar-cuenta-al-reparto'));
+    // Con una cuenta nueva sin porcentaje todavía no es un error: la frase de
+    // abajo dice cuánto falta, sin marcar ningún campo.
+    expect(porTestId('suma-del-reparto')?.textContent).toBe('Los porcentajes suman 70 %: falta repartir 30 %.');
+    expect(document.getElementById('reparto-1-porcentaje-error')).toBeNull();
     await escribir(campo('reparto-2-banco'), 'occidente');
     await escribir(campo('reparto-2-numero'), '990001234');
     await escribir(campo('reparto-2-porcentaje'), '30');
@@ -639,5 +648,314 @@ describe('cuando el back rechaza el pedido de la cuenta única', () => {
     await pintar();
     await clic(porTestId('pedir-cambio-de-cuenta'));
     expect(campo<HTMLInputElement>('numero-nuevo')!.maxLength).toBe(40);
+  });
+});
+
+/**
+ * 🔴 02-10-2026, Nico: el error del reparto va EN SU CAMPO —debajo del input
+ * que está mal, con `aria-invalid` y `aria-describedby` a su mensaje—, no en
+ * un aviso de bloque. Los del conjunto (la suma, la cuenta repetida) van en el
+ * campo que los resuelve; lo que no tiene campo (un 5xx, la red) sigue en el
+ * aviso del diálogo.
+ */
+describe('el error del reparto, en su campo', () => {
+  const SIN_CAMBIOS = {
+    disponible: true,
+    motivo: null,
+    cambios: [],
+    cuentasVigentes: [{ ...FICHA, porcentaje: 100 }],
+    repartoDisponible: true,
+    motivoDelReparto: null,
+  };
+
+  /** Un reparto de tres listo para pedir: Bancolombia 50, Nubank 20, Occidente 30. */
+  async function repartoListo() {
+    h.cambiosDeCuenta.mockResolvedValue(SIN_CAMBIOS);
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    await clic(porTestId('modo-varias-cuentas'));
+    await escribir(campo('reparto-0-porcentaje'), '50');
+    await escribir(campo('reparto-1-banco'), 'nu');
+    await escribir(campo('reparto-1-numero'), '77001234');
+    await escribir(campo('reparto-1-porcentaje'), '20');
+    await clic(porTestId('agregar-cuenta-al-reparto'));
+    await escribir(campo('reparto-2-banco'), 'occidente');
+    await escribir(campo('reparto-2-numero'), '990001234');
+    await escribir(campo('reparto-2-porcentaje'), '30');
+    await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
+    await adjuntar('certificacion-cuenta-2', 'occidente.pdf');
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(false);
+  }
+
+  async function pedirYQueElBackDiga(error: unknown) {
+    await repartoListo();
+    h.solicitarCambioDeCuenta.mockReset().mockRejectedValue(error);
+    await clic(porTestId('enviar-cambio'));
+  }
+
+  /**
+   * Los `role="alert"` del diálogo que no son el error de un campo: los de un
+   * campo tienen `id` (el de `aria-describedby`) o viven dentro de su cuenta
+   * (el titular). Lo que queda es el aviso de bloque de abajo.
+   */
+  const alertasSueltas = () =>
+    Array.from(document.body.querySelectorAll<HTMLElement>('[data-testid="pedir-cambio"] [role="alert"]')).filter(
+      (n) => !n.id && !n.closest('[data-testid^="cuenta-del-reparto-"]'),
+    );
+  const avisoDeBloque = (): HTMLElement | null => alertasSueltas()[0] ?? null;
+
+  /** El campo marca el error y apunta a su mensaje. */
+  function marcado(id: string, mensaje: string) {
+    const control = document.getElementById(id)!;
+    expect(document.getElementById(`${id}-error`)?.textContent).toBe(mensaje);
+    expect(control.getAttribute('aria-invalid')).toBe('true');
+    expect(control.getAttribute('aria-describedby')).toContain(`${id}-error`);
+  }
+
+  describe('lo que se revisa en el navegador', () => {
+    it('un porcentaje escrito que no vale va debajo de ESE porcentaje', async () => {
+      h.cambiosDeCuenta.mockResolvedValue(SIN_CAMBIOS);
+      await pintar();
+      await clic(porTestId('pedir-cambio-de-cuenta'));
+      await clic(porTestId('modo-varias-cuentas'));
+      await escribir(campo('reparto-1-porcentaje'), '0');
+
+      marcado('reparto-1-porcentaje', 'Un número entero entre 1 y 100.');
+      // El de la cuenta 1, vacío, no se marca antes de tiempo.
+      expect(campo('reparto-0-porcentaje')!.getAttribute('aria-invalid')).toBeNull();
+      expect(document.getElementById('reparto-0-porcentaje-error')).toBeNull();
+      expect(alertasSueltas()).toHaveLength(0);
+    });
+
+    it('🔴 la suma que no da 100 va en el porcentaje de la última cuenta, no en un bloque', async () => {
+      await repartoListo();
+      await escribir(campo('reparto-2-porcentaje'), '20');
+
+      marcado('reparto-2-porcentaje', 'Los porcentajes suman 90 %: falta repartir 10 %.');
+      expect(campo('reparto-0-porcentaje')!.getAttribute('aria-invalid')).toBeNull();
+      expect(campo('reparto-1-porcentaje')!.getAttribute('aria-invalid')).toBeNull();
+      // Lo dice una vez: la frase de abajo no lo repite.
+      expect(porTestId('suma-del-reparto')).toBeNull();
+      expect(document.body.textContent!.split('falta repartir 10 %').length - 1).toBe(1);
+      expect(alertasSueltas()).toHaveLength(0);
+      expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+
+      // Corregido, se va y vuelve la frase de que suman 100.
+      await escribir(campo('reparto-2-porcentaje'), '30');
+      expect(campo('reparto-2-porcentaje')!.getAttribute('aria-invalid')).toBeNull();
+      expect(porTestId('suma-del-reparto')?.textContent).toBe('Suman 100 %.');
+    });
+
+    it('lo que ya pasa de 100 es error aunque falte un porcentaje, en el último escrito', async () => {
+      h.cambiosDeCuenta.mockResolvedValue(SIN_CAMBIOS);
+      await pintar();
+      await clic(porTestId('pedir-cambio-de-cuenta'));
+      await clic(porTestId('modo-varias-cuentas'));
+      await escribir(campo('reparto-0-porcentaje'), '80');
+      await clic(porTestId('agregar-cuenta-al-reparto'));
+      await escribir(campo('reparto-1-porcentaje'), '30');
+
+      marcado('reparto-1-porcentaje', 'Los porcentajes suman 110 %: sobran 10 %.');
+      expect(campo('reparto-2-porcentaje')!.getAttribute('aria-invalid')).toBeNull();
+    });
+
+    it('la cuenta repetida va en el número de la que repite', async () => {
+      await repartoListo();
+      await escribir(campo('reparto-2-banco'), 'nu');
+      await escribir(campo('reparto-2-numero'), '77001234');
+
+      marcado('reparto-2-numero', 'La cuenta 3 es la misma que la cuenta 2: súmales el porcentaje en una sola.');
+      expect(campo('reparto-1-numero')!.getAttribute('aria-invalid')).toBeNull();
+      expect(alertasSueltas()).toHaveLength(0);
+      expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    });
+  });
+
+  describe('lo que rechaza el back', () => {
+    it('🔴 el 400 del cambio de cuenta (`cuenta` + `campo`) va debajo de ese campo de esa cuenta, con el foco', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'Escribe el número de la cuenta 2 (entre 4 y 40 caracteres).';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'NUMERO_DE_CUENTA_INVALIDO', {
+          statusCode: 400,
+          code: 'NUMERO_DE_CUENTA_INVALIDO',
+          cuenta: 1,
+          campo: 'bankAccountNumber',
+          message: frase,
+        }),
+      );
+
+      marcado('reparto-1-numero', frase);
+      expect(document.activeElement).toBe(campo('reparto-1-numero'));
+      // Ni en la cuenta de al lado ni en el aviso de bloque.
+      expect(document.getElementById('reparto-2-numero-error')).toBeNull();
+      expect(avisoDeBloque()).toBeNull();
+      expect(alertasSueltas()).toHaveLength(0);
+    });
+
+    it('con `campos[]` y la ruta del reparto, a la cuenta y al campo de la ruta', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'El porcentaje de la cuenta 3 tiene que ser un número entero entre 1 y 100.';
+      await pedirYQueElBackDiga(
+        new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+          campos: [{ campo: 'reparto.2.porcentaje', regla: 'entero', mensaje: frase }],
+        }),
+      );
+
+      marcado('reparto-2-porcentaje', frase);
+      expect(document.activeElement).toBe(campo('reparto-2-porcentaje'));
+      expect(avisoDeBloque()).toBeNull();
+    });
+
+    it('la certificación que falta va debajo del archivo de ESA cuenta', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'Falta la certificación de la cuenta 3 (Banco de Occidente ····1234): adjunta el PDF o la foto.';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'CERTIFICACION_OBLIGATORIA', {
+          statusCode: 400,
+          code: 'CERTIFICACION_OBLIGATORIA',
+          cuenta: 2,
+          message: frase,
+        }),
+      );
+
+      expect(document.getElementById('reparto-2-certificacion-error')?.textContent).toBe(frase);
+      expect(document.activeElement).toBe(campo('reparto-2-certificacion'));
+      expect(avisoDeBloque()).toBeNull();
+
+      // Al elegir otro archivo, el error se va.
+      await adjuntar('certificacion-cuenta-2', 'occidente-nueva.pdf');
+      expect(document.getElementById('reparto-2-certificacion-error')).toBeNull();
+    });
+
+    it('el titular de otra persona: el error va en su campo dentro de la cuenta, con el foco', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      // La cuenta 2 ya recibe y es de Carlos Restrepo: el formulario arranca
+      // con sus datos y se puede pedir sin tocar el selector del tipo.
+      h.cambiosDeCuenta.mockResolvedValue({
+        ...SIN_CAMBIOS,
+        cuentasVigentes: [
+          { ...FICHA, porcentaje: 60 },
+          {
+            ...FICHA,
+            bankName: 'Banco de Occidente',
+            bankAccountNumber: '990001234',
+            bankAccountHolder: 'Carlos Restrepo',
+            bankAccountHolderDocument: '80012345',
+            bankAccountHolderDocumentType: 'CC',
+            porcentaje: 40,
+          },
+        ],
+      });
+      await pintar();
+      await clic(porTestId('pedir-cambio-de-cuenta'));
+      await adjuntar('certificacion-cuenta-1', 'occidente.pdf');
+      const frase =
+        'Cuenta 2: Escribe el nombre completo de la persona dueña de la cuenta, como aparece en el banco.';
+      h.solicitarCambioDeCuenta.mockReset().mockRejectedValue(
+        new ApiError(400, frase, 'TITULAR_SIN_NOMBRE', {
+          statusCode: 400,
+          code: 'TITULAR_SIN_NOMBRE',
+          cuenta: 1,
+          campo: 'bankAccountHolder',
+          message: frase,
+        }),
+      );
+      await clic(porTestId('enviar-cambio'));
+
+      expect(porTestId('cuenta-del-reparto-1')?.textContent).toContain(frase);
+      expect(porTestId('cuenta-del-reparto-0')?.textContent).not.toContain(frase);
+      expect(document.activeElement).toBe(campo('reparto-1-titular-nombre'));
+      expect(avisoDeBloque()).toBeNull();
+      expect(alertasSueltas()).toHaveLength(0);
+    });
+
+    it('la suma que no da 100 según el back (sin `cuenta`) va en el porcentaje de la última', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'Los porcentajes suman 90 %: falta repartir 10 %.';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'REPARTO_NO_SUMA_100', {
+          statusCode: 400,
+          code: 'REPARTO_NO_SUMA_100',
+          campo: 'porcentaje',
+          message: frase,
+        }),
+      );
+
+      marcado('reparto-2-porcentaje', frase);
+      expect(document.activeElement).toBe(campo('reparto-2-porcentaje'));
+      expect(avisoDeBloque()).toBeNull();
+
+      // Al tocar cualquier porcentaje el del back deja de valer (la suma es de
+      // todas): lo que queda es la cuenta en vivo de lo escrito.
+      await escribir(campo('reparto-0-porcentaje'), '45');
+      expect(document.getElementById('reparto-2-porcentaje-error')?.textContent).toBe(
+        'Los porcentajes suman 95 %: falta repartir 5 %.',
+      );
+      await escribir(campo('reparto-0-porcentaje'), '50');
+      expect(document.getElementById('reparto-2-porcentaje-error')).toBeNull();
+      expect(porTestId('suma-del-reparto')?.textContent).toBe('Suman 100 %.');
+    });
+
+    it('al corregir el campo, su error del back se va (y el de las otras cuentas no)', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'Escoge el banco de la cuenta 2.';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'BANCO_OBLIGATORIO', {
+          statusCode: 400,
+          code: 'BANCO_OBLIGATORIO',
+          cuenta: 1,
+          campo: 'bankCode',
+          message: frase,
+        }),
+      );
+      marcado('reparto-1-banco', frase);
+
+      await escribir(campo('reparto-2-numero'), '990001235');
+      expect(document.getElementById('reparto-1-banco-error')?.textContent).toBe(frase);
+      await escribir(campo('reparto-1-banco'), 'bbva');
+      expect(document.getElementById('reparto-1-banco-error')).toBeNull();
+      expect(campo('reparto-1-banco')!.getAttribute('aria-invalid')).toBeNull();
+    });
+
+    it('quitar una cuenta no le pasa su error del back a la siguiente', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'Escribe el número de la cuenta 2 (entre 4 y 40 caracteres).';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'NUMERO_DE_CUENTA_INVALIDO', { cuenta: 1, campo: 'bankAccountNumber', message: frase }),
+      );
+      marcado('reparto-1-numero', frase);
+      await clic(document.body.querySelector<HTMLElement>('[aria-label="Quitar la cuenta 2"]'));
+      // Occidente pasa a ser la cuenta 2: sin el error de Nubank.
+      expect(campo<HTMLSelectElement>('reparto-1-banco')?.value).toBe('occidente');
+      expect(document.getElementById('reparto-1-numero-error')).toBeNull();
+    });
+
+    it('un 5xx sigue en el aviso del diálogo, «de nuestro lado» y con la referencia; ningún campo marcado', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      await pedirYQueElBackDiga(
+        new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+      );
+
+      const aviso = avisoDeBloque()?.textContent ?? '';
+      expect(aviso).toMatch(/de nuestro lado/);
+      expect(aviso).toContain('ab12cd34');
+      expect(document.body.querySelectorAll('[data-testid="reparto-de-cuentas"] [aria-invalid="true"]')).toHaveLength(0);
+    });
+
+    it('sin respuesta (la red) habla de la conexión, en el aviso del diálogo', async () => {
+      await pedirYQueElBackDiga(new TypeError('Failed to fetch'));
+      expect(avisoDeBloque()?.textContent).toMatch(/conexión/);
+    });
+
+    it('un problema del pedido entero (sin cuenta) queda en el aviso del diálogo', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const frase = 'El reparto no llegó bien armado. Vuelve a intentarlo.';
+      await pedirYQueElBackDiga(
+        new ApiError(400, frase, 'REPARTO_ILEGIBLE', { statusCode: 400, code: 'REPARTO_ILEGIBLE', message: frase }),
+      );
+      expect(avisoDeBloque()?.textContent).toContain(frase);
+      expect(document.body.querySelectorAll('[data-testid="reparto-de-cuentas"] [aria-invalid="true"]')).toHaveLength(0);
+    });
   });
 });

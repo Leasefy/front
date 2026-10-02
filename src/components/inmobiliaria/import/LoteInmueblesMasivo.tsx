@@ -16,6 +16,7 @@
  */
 import { mensajeDeCarga } from './lib/mensajeDeCarga';
 import { errorDelNumero } from './lib/limites-de-la-importacion';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -253,10 +254,15 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
       } else if (e instanceof ApiError && e.code === 'SIN_CAMBIOS') {
         setError('No hay nada que aplicar.');
       } else if (e instanceof ApiError && e.code === 'CAMPO_INVALIDO' && cambios.campos) {
-        // El back dice el campo en inglés («Valores que no sirven: monthlyRent»):
-        // acá se sabe cuál se mandó, y el error va debajo de SU input.
+        // Desde el 02-10-2026 el back dice cada valor que no sirve en `campos[]`,
+        // con su frase en español (la misma de `limites-de-la-importacion`): va
+        // debajo de SU input. Un back viejo sólo nombraba el campo en inglés;
+        // ahí queda la frase de acá.
         quedaAbierto = true;
-        setErrorDelValor(`Ese valor no sirve para «${campo.etiqueta.toLowerCase()}». Revísalo y vuelve a aplicarlo.`);
+        const delCampo = camposDelError(e).find((c) => c.campo === campo.clave)?.mensaje;
+        setErrorDelValor(
+          delCampo ?? `Ese valor no sirve para «${campo.etiqueta.toLowerCase()}». Revísalo y vuelve a aplicarlo.`,
+        );
       } else {
         setError(mensajeDeCarga(e, 'No pudimos aplicar el cambio.', 'aplicar el cambio'));
       }

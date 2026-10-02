@@ -102,7 +102,23 @@ describe('LoteInmueblesMasivo — el error del valor y los del servidor', () => 
     expect(valor().getAttribute('aria-invalid')).toBeNull();
   });
 
-  it('`CAMPO_INVALIDO` del back va al campo y en español (el back lo dice con el nombre en inglés)', async () => {
+  it('🔴 `CAMPO_INVALIDO` con `campos[]` (back del 02-10): la frase del back va debajo del valor', async () => {
+    const frase = 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.';
+    api.resolverPorFiltro.mockRejectedValue(
+      new ApiError(400, frase, 'CAMPO_INVALIDO', {
+        statusCode: 400,
+        code: 'CAMPO_INVALIDO',
+        message: frase,
+        campos: [{ campo: 'monthlyRent', regla: 'maximo', mensaje: frase, valor: 100_000_001 }],
+      }),
+    );
+    escribir('1');
+    await aplicar();
+    expect(errorDelValor()?.textContent).toBe(frase);
+    expect(valor().getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('`CAMPO_INVALIDO` de un back viejo (sin `campos`) va al campo y en español', async () => {
     api.resolverPorFiltro.mockRejectedValue(
       new ApiError(400, 'Valores que no sirven: monthlyRent.', 'CAMPO_INVALIDO'),
     );

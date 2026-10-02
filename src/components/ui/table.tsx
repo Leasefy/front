@@ -45,10 +45,22 @@ export interface TableProps
    * libro mayor dice cuántos meses hay— donde el aviso genérico sobra.
    */
   avisoDeDesborde?: boolean
+  /**
+   * Apagar las sombras de los bordes (`sigue-a-la-izquierda` /
+   * `sigue-a-la-derecha`); el scroll y el aviso escrito quedan igual. Para
+   * las tablas que marcan por su cuenta dónde sigue la tabla: el extracto del
+   * propietario fija Propiedad y Neto y pinta su filete en el borde INTERIOR
+   * de esas columnas; la sombra de afuera caería encima de la columna fija,
+   * donde ya no hay nada escondido.
+   */
+  sombrasDeBorde?: boolean
 }
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, stickyHeader = false, avisoDeDesborde = true, ...props }, ref) => {
+  (
+    { className, stickyHeader = false, avisoDeDesborde = true, sombrasDeBorde = true, ...props },
+    ref,
+  ) => {
     const { ref: caja, desborda, haciaLaIzquierda, haciaLaDerecha } =
       useDesbordeHorizontal<HTMLDivElement>()
     return (
@@ -91,15 +103,17 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
           `bg-surface` como sobre `bg-bg`, y un degradado «hacia blanco» se ve
           como una mancha en la mitad de los casos. La sombra funciona sobre
           cualquier fondo y no tapa el dato: `pointer-events-none` y 12 px.
+          Con `sombrasDeBorde={false}` no se pintan: la tabla marca sus bordes
+          por su cuenta.
         */}
-        {haciaLaIzquierda ? (
+        {sombrasDeBorde && haciaLaIzquierda ? (
           <div
             aria-hidden="true"
             data-testid="sigue-a-la-izquierda"
             className="pointer-events-none absolute inset-y-0 left-0 w-3 shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.65)]"
           />
         ) : null}
-        {haciaLaDerecha ? (
+        {sombrasDeBorde && haciaLaDerecha ? (
           <div
             aria-hidden="true"
             data-testid="sigue-a-la-derecha"

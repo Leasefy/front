@@ -535,6 +535,31 @@ describe('<ConsignacionEditForm> — los errores del back, en su campo', () => {
     );
   });
 
+  it('🔴 una comisión de más del 100 % se ataja en su campo con la frase del back (Nico, 02-10)', async () => {
+    render();
+    escribir('editar-commissionPercent', '120');
+    await guardar();
+    expect(consigUpdate).not.toHaveBeenCalled();
+    expect(propertiesUpdate).not.toHaveBeenCalled();
+    expect(q('#editar-campo-commissionPercent-error')!.textContent).toBe('La comisión no puede pasar del 100 %.');
+    expect(q('[data-testid="editar-commissionPercent"]')!.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('el 100 % sí viaja al mandato', async () => {
+    render();
+    escribir('editar-commissionPercent', '100');
+    await guardar();
+    expect(consigUpdate).toHaveBeenCalledWith('cons-1', expect.objectContaining({ commissionPercent: 100 }));
+  });
+
+  it('🔴 sin inmueble detrás, un canon con centavos se ataja con la frase que pide ir sin centavos', async () => {
+    render({ property: null, consignacion: makeConsignacion({ propertyId: undefined }) });
+    escribir('editar-monthlyRent', '2500000.5');
+    await guardar();
+    expect(consigUpdate).not.toHaveBeenCalled();
+    expect(q('#editar-campo-monthlyRent-error')!.textContent).toBe('Escribe el canon en pesos enteros, sin centavos.');
+  });
+
   it('un área con decimales se ataja con la frase del back', async () => {
     render();
     escribir('editar-area', '65.5');

@@ -74,6 +74,9 @@ import {
 import {
   RepartoDeCuentasCampos,
   cuentaVacia,
+  enfocarCampoDeLaCuenta,
+  erroresDelServidorEnElReparto,
+  idDelCampoDeLaCuenta,
   type CuentaDelFormulario,
   type ErroresDeLaCuenta,
 } from '@/components/inmobiliaria/mandato/RepartoDeCuentasCampos';
@@ -272,11 +275,12 @@ function enumerar(partes: readonly string[], y: string): string {
 /**
  * De los errores en vivo, los que se marcan EN el campo: lo escrito que está
  * mal. Lo vacío no se pinta en rojo antes de que la persona llegue a él; lo
- * nombra la frase de al lado del botón.
+ * nombra la frase de al lado del botón (y el porcentaje vacío, la suma de
+ * abajo del reparto).
  */
 function loEscritoQueEstaMal(
   e: ErroresDeLaCuenta,
-  c: { titular: ValorDelTitular; numero?: string },
+  c: { titular: ValorDelTitular; numero?: string; porcentaje?: string },
 ): ErroresDeLaCuenta {
   const titular: ErroresDelTitular = {};
   if (e.titular?.numero && c.titular.numero.trim()) titular.numero = e.titular.numero;
@@ -284,7 +288,58 @@ function loEscritoQueEstaMal(
   return {
     ...(Object.keys(titular).length > 0 ? { titular } : {}),
     ...(e.numero && c.numero?.trim() ? { numero: e.numero } : {}),
+    ...(e.porcentaje && c.porcentaje?.trim() ? { porcentaje: e.porcentaje } : {}),
   };
+}
+
+/** Lo del servidor gana sobre lo del cliente, campo por campo (el titular, por sub-campo). */
+function fusionarErrores(delServidor: ErroresDeLaCuenta | undefined, enVivo: ErroresDeLaCuenta): ErroresDeLaCuenta {
+  if (!delServidor) return enVivo;
+  const titular = { ...enVivo.titular, ...delServidor.titular };
+  return {
+    ...enVivo,
+    ...delServidor,
+    ...(Object.keys(titular).length > 0 ? { titular } : {}),
+  };
+}
+
+/**
+ * Los errores del servidor que dejan de valer porque la persona tocó el campo:
+ * cada campo cambiado borra el suyo en esa cuenta. Un porcentaje cambiado los
+ * borra en TODAS (la suma es de todas), y una cuenta que se va se lleva los suyos.
+ */
+function sinLoQueSeCorrigio(
+  errores: Record<string, ErroresDeLaCuenta>,
+  antes: readonly CuentaDelFormulario[],
+  despues: readonly CuentaDelFormulario[],
+): Record<string, ErroresDeLaCuenta> {
+  const anterior = new Map(antes.map((c) => [c.llave, c]));
+  const cambioUnPorcentaje = despues.some((c) => anterior.get(c.llave)?.porcentaje !== c.porcentaje);
+  const quedan: Record<string, ErroresDeLaCuenta> = {};
+  for (const c of despues) {
+    const e = errores[c.llave];
+    const a = anterior.get(c.llave);
+    if (!e || !a) continue;
+    const { titular, banco, tipo, numero, porcentaje, certificacion } = e;
+    const delTitular =
+      titular && a.titular.titular === c.titular.titular
+        ? {
+            ...(titular.nombre && a.titular.nombre === c.titular.nombre ? { nombre: titular.nombre } : {}),
+            ...(titular.tipo && a.titular.tipo === c.titular.tipo ? { tipo: titular.tipo } : {}),
+            ...(titular.numero && a.titular.numero === c.titular.numero ? { numero: titular.numero } : {}),
+          }
+        : {};
+    const sigue: ErroresDeLaCuenta = {
+      ...(Object.keys(delTitular).length > 0 ? { titular: delTitular } : {}),
+      ...(banco && a.banco === c.banco ? { banco } : {}),
+      ...(tipo && a.tipo === c.tipo ? { tipo } : {}),
+      ...(numero && a.numero === c.numero ? { numero } : {}),
+      ...(porcentaje && !cambioUnPorcentaje ? { porcentaje } : {}),
+      ...(certificacion ? { certificacion } : {}),
+    };
+    if (Object.keys(sigue).length > 0) quedan[c.llave] = sigue;
+  }
+  return quedan;
 }
 
 export function CambioDeCuentaBancaria({
@@ -681,6 +736,26 @@ function PedirCambioDeCuenta({
       const { [campo]: _quitado, ...resto } = antes;
       return resto;
     });
+  /*
+   * Lo que el back rechazó del REPARTO (02-10-2026, Nico: el error va en su
+   * campo, no en un aviso de bloque). Por la llave estable de la cuenta, no
+   * por la posición: quitar la cuenta 2 no le pasa su error a la 3.
+   */
+  const [rechazosDelReparto, setRechazosDelReparto] = useState<
+    Record<string, ErroresDeLaCuenta>
+  >({});
+  const cambiarCuentas = (nuevas: CuentaDelFormulario[]) => {
+    setRechazosDelReparto((antes) =>
+      Object.keys(antes).length > 0 ? sinLoQueSeCorrigio(antes, cuentas, nuevas) : antes,
+    );
+    setCuentas(nuevas);
+  };
+  const limpiarCertificacionDelServidor = (llave: string) =>
+    setRechazosDelReparto((antes) => {
+      if (!antes[llave]?.certificacion) return antes;
+      const { certificacion: _quitada, ...resto } = antes[llave];
+      return { ...antes, [llave]: resto };
+    });
 
   const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
 
@@ -746,6 +821,7 @@ function PedirCambioDeCuenta({
     if (!listo) return;
     setGuardando(true);
     setError(null);
+    setRechazosDelReparto({});
     try {
       const r = await mandatoApi.solicitarCambioDeCuenta(propietarioId, {
         reparto: cuentas.map((c) => {
@@ -777,7 +853,20 @@ function PedirCambioDeCuenta({
       });
       onPedido(r.enlaceDePrueba);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo pedir el reparto.'));
+      // Cada error a su cuenta y su campo, con el foco en el primero; lo que no
+      // tiene campo (un 5xx, la red) sigue en el aviso del diálogo.
+      const reparto = erroresDelServidorEnElReparto(e, cuentas.length, {
+        porDefecto: 'No se pudo pedir el reparto.',
+      });
+      setRechazosDelReparto(
+        Object.fromEntries(
+          cuentas.flatMap((c, i) =>
+            Object.keys(reparto.porCuenta[i]).length > 0 ? [[c.llave, reparto.porCuenta[i]]] : [],
+          ),
+        ),
+      );
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+      if (reparto.primero) enfocarCampoDeLaCuenta(reparto.primero.indice, reparto.primero.campo);
     } finally {
       setGuardando(false);
     }
@@ -883,11 +972,15 @@ function PedirCambioDeCuenta({
           {modo === 'VARIAS' ? (
             <RepartoDeCuentasCampos
               cuentas={cuentas}
-              onCambiar={setCuentas}
-              errores={cuentas.map((c, i) => loEscritoQueEstaMal(erroresDelReparto[i], c))}
+              onCambiar={cambiarCuentas}
+              errores={cuentas.map((c, i) =>
+                fusionarErrores(rechazosDelReparto[c.llave], loEscritoQueEstaMal(erroresDelReparto[i], c)),
+              )}
               nombreDelPropietario={propietario?.nombre ?? ''}
               pieDeCuenta={(c, i) => {
                 const opcional = requisito(c) === 'OPCIONAL';
+                const idDelArchivo = idDelCampoDeLaCuenta(i, 'certificacion');
+                const errorDelArchivo = rechazosDelReparto[c.llave]?.certificacion;
                 return (
                   <div className="space-y-1.5">
                     {opcional ? (
@@ -896,7 +989,7 @@ function PedirCambioDeCuenta({
                         {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
                       </p>
                     ) : null}
-                    <Label htmlFor={`reparto-${i}-certificacion`}>
+                    <Label htmlFor={idDelArchivo}>
                       {opcional
                         ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
                         : c.titular.titular === 'TERCERO'
@@ -904,12 +997,17 @@ function PedirCambioDeCuenta({
                           : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
                     </Label>
                     <SelectorDeArchivo
-                      id={`reparto-${i}-certificacion`}
+                      id={idDelArchivo}
                       accept={ARCHIVOS_DE_CERTIFICACION}
                       archivo={certificaciones[c.llave] ?? null}
-                      onElegir={(elegido) => setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }))}
+                      invalido={Boolean(errorDelArchivo)}
+                      onElegir={(elegido) => {
+                        setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
+                        limpiarCertificacionDelServidor(c.llave);
+                      }}
                       testid={`certificacion-cuenta-${i}`}
                     />
+                    <ErrorDelCampo id={`${idDelArchivo}-error`} mensaje={errorDelArchivo} className="mt-0" />
                   </div>
                 );
               }}

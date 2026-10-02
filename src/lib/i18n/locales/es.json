@@ -12831,5 +12831,406 @@
     "pagoLaAseguradora": "Pagó {{nombre}}",
     "deudaSubrogada": "Deuda subrogada a la aseguradora",
     "deudaSubrogadaAyuda": "Estas cuotas quedaron pagadas para la inmobiliaria y el propietario porque las pagó una aseguradora. El inquilino le debe ese valor a ella, no a la inmobiliaria."
+  },
+  "agentes": {
+    "equipo": {
+      "titulo": "El equipo de tu inmobiliaria",
+      "resumen": "{{agentes}} agentes en {{frentes}} frentes",
+      "activosHoy": "{{n}} activos hoy",
+      "losLlama": "{{orquestador}} llama a cada uno según lo que pidas",
+      "buscar": "Buscar por nombre o tarea",
+      "buscarAria": "Buscar en el equipo",
+      "sinResultados": "Nadie del equipo coincide con «{{q}}».",
+      "limpiar": "Limpiar la búsqueda",
+      "volver": "El equipo",
+      "abrir": "Conoce al equipo",
+      "abrirAria": "Abrir el equipo de agentes",
+      "frenteActivos": "{{n}} activos",
+      "frenteActivo": "1 activo",
+      "frenteSinActivos": "0 activos",
+      "hace": "Hace",
+      "noHace": "No hace",
+      "esoLoHace": "eso lo hace {{nombre}}",
+      "herramientas": "Herramientas y accesos",
+      "reportaA": "Reporta a",
+      "trabajaCon": "Trabaja con",
+      "tuEquipo": "Tu equipo",
+      "hoy": "Hoy, en {{modo}}",
+      "trabajoReciente": "Su trabajo reciente en tu inmobiliaria",
+      "enEstaConversacion": "En esta conversación",
+      "sinTrabajo": "Todavía no hay trabajo suyo registrado en tu inmobiliaria.",
+      "trabajoNoDisponible": "No pudimos leer su trabajo reciente. Lo que ya hizo sigue guardado.",
+      "cargando": "Cargando…",
+      "modo": {
+        "sombra": "Manual",
+        "copiloto": "Copiloto",
+        "autonomo": "Automático"
+      },
+      "estado": {
+        "activo": "Activo en tu inmobiliaria",
+        "aPedido": "Disponible cuando lo pides",
+        "apagado": "Apagado",
+        "enElChat": "Disponible en el chat",
+        "fueraDelPiloto": "Fuera del piloto automático",
+        "sinDato": "Sin dato de su estado"
+      },
+      "notaChat": "En el chat, {{orquestador}} lo llama cuando tu pregunta es de su tema.",
+      "notaNoChat": "Hoy el chat no lo llama: trabaja desde su pantalla y en el piloto automático.",
+      "notaOrquestador": "Es quien habla contigo en el chat; nadie más del equipo te contesta ahí. El piloto automático es otra cosa: el modo en que los agentes trabajan solos.",
+      "notaInspeccion": "Todavía no está en el piloto automático: se enciende desde Leasefy."
+    },
+    "frentes": {
+      "direccion": "Dirección",
+      "cartera": "Cartera y cobros",
+      "contratos": "Contratos y propietarios",
+      "contabilidad": "Facturación y contabilidad",
+      "comercial": "Comercial e inmuebles",
+      "riesgo": "Candidatos y riesgo",
+      "mantenimiento": "Mantenimiento e inspección",
+      "consultas": "Consultas en el chat"
+    },
+    "herramientas": {
+      "busqueda": "Búsqueda en la plataforma",
+      "ficha": "Ficha de personas, contratos e inmuebles",
+      "cartera": "Cartera",
+      "especialistas": "Los especialistas del equipo",
+      "confirmacion": "Acciones con tu confirmación",
+      "voz": "Llamadas",
+      "whatsapp": "WhatsApp",
+      "correo": "Correo",
+      "bandeja": "Bandeja",
+      "wompi": "Links de pago Wompi",
+      "extractos": "Extractos bancarios",
+      "recibos": "Recibos de caja",
+      "portal": "Portal del inquilino y del propietario",
+      "unClic": "Aprobación en un clic",
+      "centroDeProcesos": "Centro de procesos",
+      "inventario": "Inventario de inmuebles",
+      "agenda": "Agenda de visitas",
+      "pipeline": "Pipeline comercial",
+      "portales": "Portales",
+      "documentos": "Documentos del candidato",
+      "aseguradoras": "Sura, Mapfre, Bolívar y Fianly",
+      "avaluos": "Servicio de avalúos",
+      "vision": "Análisis de fotos",
+      "firma": "Firma electrónica",
+      "tusDocumentos": "Tus documentos",
+      "consultas": "Tus datos, sólo lectura"
+    },
+    "orbe": {
+      "quieto": "{{nombre}}",
+      "pensando": "{{nombre}} está pensando",
+      "trabajando": "{{nombre}} está trabajando",
+      "hablando": "{{nombre}} está respondiendo",
+      "listo": "{{nombre}} terminó",
+      "fallo": "{{nombre}} no pudo terminar",
+      "apagado": "{{nombre}} está apagado"
+    },
+    "turno": {
+      "llamoA": "{{orquestador}} le pidió a {{nombre}}",
+      "comoLoPenso": "Cómo lo pensó",
+      "loQueHizo": "Lo que hizo"
+    },
+    "orquestador": {
+      "rol": "Orquestador",
+      "historia": "Es quien habla contigo en el chat. Entiende lo que pides, llama al especialista que sabe del tema y te cuenta lo que hizo cada uno.",
+      "hace": {
+        "contesta": "Te contesta con los datos de tu inmobiliaria, y cada cifra lleva su fuente",
+        "reparte": "Decide a qué especialista llamar y le escribe la tarea",
+        "busca": "Busca personas, contratos e inmuebles y te muestra su ficha",
+        "prepara": "Te deja lista una acción para que la confirmes",
+        "analiza": "En las preguntas de análisis consulta varias veces antes de contestar"
+      },
+      "noHace": {
+        "sinClic": "No mueve plata ni le escribe a otra persona sin tu clic",
+        "deudores": "No llama ni le escribe a los deudores",
+        "otraInmobiliaria": "No ve datos de otra inmobiliaria",
+        "cifras": "No te da una cifra sin fuente"
+      }
+    },
+    "cobranza": {
+      "rol": "Cobranza por voz y WhatsApp",
+      "historia": "Llama y escribe a quien tiene el arriendo atrasado, propone un acuerdo dentro de tus reglas y deja constancia de cada contacto.",
+      "hace": {
+        "llama": "Llama por teléfono a quien tiene saldo vencido y se presenta en nombre de tu inmobiliaria",
+        "whatsapp": "Escribe y contesta por WhatsApp",
+        "acuerdos": "Propone acuerdos y planes de cuotas dentro de los topes de tu inmobiliaria",
+        "identidad": "Verifica la identidad antes de hablar de la deuda",
+        "resume": "Resume cada llamada y le pone nota de calidad"
+      },
+      "noHace": {
+        "horario": "No llama fuera del horario de ley ni más de una vez al día por persona (Ley 2300)",
+        "t323": "No aprueba sola más de $5.000.000, más de 6 meses de plazo ni más de 20% de descuento",
+        "verifica": "No confirma pagos: verificarlos es trabajo de una persona de tu equipo"
+      }
+    },
+    "pagos": {
+      "rol": "Cobros con link de pago",
+      "historia": "Arma el cobro de cada cuota con su link de pago y se lo manda al inquilino; vigila lo que falla y prepara la liquidación de cada propietario.",
+      "hace": {
+        "cobro": "Genera el cobro de la cuota y pide su link de pago",
+        "envia": "Envía el cobro por WhatsApp o correo",
+        "fallidos": "Vigila los pagos fallidos y sugiere qué hacer con cada uno",
+        "liquidacion": "Calcula la liquidación de cada propietario y dice si puede aprobarse o necesita revisión",
+        "cierre": "Avisa de los pagos recibidos y arma el cierre del día"
+      },
+      "noHace": {
+        "link": "Nunca inventa un link: sólo usa Wompi real a través de Leasefy",
+        "aprueba": "No aprueba liquidaciones: las recomienda",
+        "masivo": "No ejecuta acciones masivas sin tu confirmación"
+      }
+    },
+    "conciliacion": {
+      "nombre": "Conciliación",
+      "rol": "Conciliación bancaria",
+      "historia": "Cruza cada movimiento del banco con lo que esperabas recibir o pagar y te dice cuál cuadra con qué.",
+      "hace": {
+        "candidatos": "Busca para cada movimiento sus candidatos: promesas, pagos, giros y facturas",
+        "referencia": "Lee la referencia del movimiento para saber de quién es",
+        "exacto": "En Automático concilia sola lo exacto y emite el recibo; lo dudoso te lo deja en la Bandeja",
+        "diagnostico": "En el chat te dice si un movimiento cuadra, cuadra a medias o hay que agruparlo"
+      },
+      "noHace": {
+        "giro": "No aprueba lotes de giro al propietario",
+        "aplica": "En el chat no aplica el cruce ni escribe en tus libros"
+      }
+    },
+    "contratos": {
+      "nombre": "Contratos",
+      "rol": "La vida de cada contrato",
+      "historia": "Cuida cada contrato de punta a punta: la firma, la prórroga, los avisos de vencimiento y la renovación.",
+      "hace": {
+        "prorroga": "Prorroga el contrato que venció sin aviso de no renovación (Ley 820)",
+        "firma": "Recuerda firmar por correo y vence la invitación a los 7 días",
+        "portal": "Invita al inquilino y al propietario a su portal",
+        "vencimiento": "Avisa 30 días antes de que el contrato venza",
+        "renovacion": "Prepara la renovación y la carta del incremento para que las revises"
+      },
+      "noHace": {
+        "termina": "No termina un contrato vivo: lo prorroga la ley o lo termina una persona",
+        "propuesta": "No envía la propuesta de renovación ni la carta del incremento sin una persona"
+      }
+    },
+    "propietarios": {
+      "nombre": "Propietarios",
+      "rol": "Extractos y liquidaciones",
+      "historia": "Le rinde cuentas a cada propietario: su extracto del mes y la liquidación de lo que le toca.",
+      "hace": {
+        "extracto": "Le manda a cada propietario el extracto del mes que cerró",
+        "liquidacion": "Deja lista la liquidación del mes en tu fecha fija"
+      },
+      "noHace": {
+        "giro": "No aprueba el lote de giro ni lo marca girado: siempre lo hace un funcionario"
+      }
+    },
+    "retencion": {
+      "rol": "Retención de propietarios",
+      "historia": "Detecta a los propietarios que se podrían ir, explica por qué y te propone un plan para que se queden.",
+      "hace": {
+        "riesgo": "Mide el riesgo de que un propietario se vaya y su causa",
+        "prioriza": "Prioriza por la comisión que está en riesgo",
+        "plan": "Arma un plan de retención y redacta el mensaje como borrador",
+        "vallas": "Revisa las reglas de cumplimiento antes de proponer",
+        "barrido": "En Automático, su barrido arma el plan con un aviso interno"
+      },
+      "noHace": {
+        "escribe": "Nunca le escribe solo al propietario: todo mensaje es un borrador que revisa una persona",
+        "presiona": "No presiona ni promete montos",
+        "inquilino": "No revela datos del inquilino"
+      }
+    },
+    "aprobaciones": {
+      "rol": "Aprobaciones del propietario",
+      "historia": "Convierte cada decisión que espera al propietario —una reparación, un descuento, una rebaja— en una solicitud clara con su impacto en plata.",
+      "hace": {
+        "impacto": "Calcula cuánto cuesta decidir y cuánto cuesta no decidir",
+        "solicitud": "Arma la solicitud con su contexto y sus opciones",
+        "cadencia": "Le hace seguimiento sin acoso y escala al asesor",
+        "cola": "Te muestra la cola de solicitudes abiertas"
+      },
+      "noHace": {
+        "ejecuta": "No ejecuta la decisión ni cambia el inmueble o el contrato",
+        "canal": "Hoy no le escribe al propietario: el canal para hacerlo todavía no existe"
+      }
+    },
+    "facturacion": {
+      "nombre": "Facturación y caja",
+      "rol": "Facturas y recibos",
+      "historia": "Genera la factura de cada mes y lleva la caja: anticipos y recibos.",
+      "hace": {
+        "facturas": "Genera el día 1 la factura del mes y su recordatorio de cobro",
+        "anticipo": "Descuenta del anticipo la cuota del mes con un recibo de caja",
+        "sinEmitir": "Te avisa de las facturas que siguen sin emitir"
+      },
+      "noHace": {
+        "dian": "No emite ante la DIAN: eso sale con tu clic en «Emitir»"
+      }
+    },
+    "contabilidad": {
+      "nombre": "Contabilidad",
+      "rol": "Egresos y libro contable",
+      "historia": "Registra los egresos, causa las facturas de proveedores y te arma el libro contable.",
+      "hace": {
+        "egreso": "Registra un egreso de la inmobiliaria",
+        "libro": "Arma el libro contable del año en el centro de procesos",
+        "causa": "Causa la factura de un proveedor con su IVA y sus retenciones"
+      },
+      "noHace": {
+        "lote": "No aprueba el lote de egresos: lo arma una persona y lo aprueba otra",
+        "causaSola": "No causa una factura sin tu clic"
+      }
+    },
+    "prospectos": {
+      "rol": "Prospectos y seguimiento comercial",
+      "historia": "Atiende a quien pregunta por un arriendo, le muestra lo disponible y agenda la visita; a tu equipo le dice qué prospecto atender primero.",
+      "hace": {
+        "inventario": "Busca en tu inventario y verifica que el inmueble siga disponible",
+        "similares": "Propone inmuebles parecidos cuando el presupuesto no alcanza",
+        "visita": "Propone horarios y agenda la visita",
+        "pipeline": "Prioriza tu pipeline y avisa de los prospectos que se enfrían",
+        "asesores": "Mide qué tan rápido responde cada asesor"
+      },
+      "noHace": {
+        "precio": "No negocia el precio",
+        "escribe": "En Manual y Copiloto no le escribe a ningún prospecto",
+        "protegidos": "No usa datos protegidos para ordenar el inventario"
+      }
+    },
+    "calidad": {
+      "rol": "Calidad de publicación",
+      "historia": "Revisa cada publicación —datos, precio, fotos y disponibilidad— y te dice qué corregir antes de que se pierda un interesado.",
+      "hace": {
+        "audita": "Revisa que cada inmueble esté completo, coherente, con buen precio, sin duplicados y disponible",
+        "prioriza": "Prioriza las correcciones para el asesor",
+        "propone": "Te propone cada corrección para que la apruebes"
+      },
+      "noHace": {
+        "edita": "No cambia el inmueble: todo cambio espera el clic de una persona",
+        "propietario": "No le escribe al propietario: todavía no tiene canal de envío"
+      }
+    },
+    "matching": {
+      "nombre": "Matching",
+      "rol": "Un inmueble para cada candidato",
+      "historia": "Cuando un candidato se queda sin inmueble, busca las opciones que le encajan y se las propone.",
+      "hace": {
+        "compatibilidad": "Calcula qué tan compatible es cada inmueble con lo que busca",
+        "correo": "Prepara el correo con las opciones compatibles",
+        "envia": "En Automático lo envía, máximo un correo al día"
+      },
+      "noHace": {
+        "unSolo": "Con un solo inmueble compatible no envía: te lo deja en la cola",
+        "sinVistoBueno": "En Manual y Copiloto no envía sin tu visto bueno"
+      }
+    },
+    "estudio": {
+      "nombre": "Evaluación de candidatos",
+      "rol": "Estudio del inquilino",
+      "historia": "Lee los documentos del candidato y calcula su puntaje para que decidas con datos.",
+      "hace": {
+        "documentos": "Extrae los datos de los documentos del candidato",
+        "puntaje": "Calcula su puntaje de riesgo"
+      },
+      "noHace": {
+        "t323": "No decide sola sobre una persona: lo que pasa los límites de la T-323 lo aprueba alguien de tu equipo",
+        "solo": "Todavía no actúa solo: corre cuando alguien lo pide"
+      }
+    },
+    "cotizador": {
+      "nombre": "Asegurabilidad",
+      "rol": "Cotiza la póliza de arrendamiento",
+      "historia": "Le pide la póliza de arrendamiento a varias aseguradoras a la vez y te dice cuál conviene y por qué.",
+      "hace": {
+        "cotiza": "Pide la cotización a cada aseguradora conectada, al mismo tiempo",
+        "revisa": "Revisa al candidato antes de cotizar",
+        "explica": "Explica por qué recomienda una y qué cambiaría el resultado"
+      },
+      "noHace": {
+        "solo": "Todavía no actúa solo: cotiza cuando se lo pides",
+        "chat": "En el chat sólo orienta: la cotización en firme se hace en Asegurabilidad"
+      }
+    },
+    "avaluos": {
+      "nombre": "Avalúos",
+      "rol": "Valor y canon",
+      "historia": "Estima el valor comercial y el canon de arrendamiento de un inmueble.",
+      "hace": {
+        "solicitud": "Abre la solicitud de avalúo desde el chat con los datos que le das",
+        "orienta": "Si el servicio de avalúos no responde, te orienta con el rango del mercado"
+      },
+      "noHace": {
+        "vinculante": "No entrega el avalúo en firme en el chat: ese informe sale del servicio de avalúos",
+        "solo": "Todavía no actúa solo: avalúa cuando se lo pides"
+      }
+    },
+    "mantenimiento": {
+      "rol": "Mantenimiento",
+      "historia": "Recibe cada solicitud de mantenimiento, entiende qué pasó y te dice qué tan urgente es y quién probablemente responde.",
+      "hace": {
+        "clasifica": "Clasifica la solicitud y calcula su prioridad",
+        "fotos": "Analiza las fotos del daño",
+        "responsable": "Propone quién responde probablemente, como hipótesis",
+        "costo": "Estima el costo y si necesita aprobación"
+      },
+      "noHace": {
+        "veredicto": "No da un veredicto de quién responde: es una hipótesis",
+        "solo": "Todavía no actúa solo: clasifica cuando se lo pides",
+        "proveedores": "No coordina proveedores"
+      }
+    },
+    "inspeccion": {
+      "rol": "Inspección del inmueble",
+      "historia": "Guía la toma de fotos del inmueble, arma el acta de entrada y compara la entrada con la salida.",
+      "hace": {
+        "fotos": "Guía la toma de fotos y revisa que no falte ninguna",
+        "acta": "Genera el acta de entrada",
+        "compara": "Compara la entrada con la salida y separa daño, desgaste y faltantes",
+        "evidencia": "Arma el paquete de evidencia firmado"
+      },
+      "noHace": {
+        "cobra": "No cobra ni descuenta nada: sólo recomienda"
+      }
+    },
+    "documentos": {
+      "nombre": "Documentos",
+      "rol": "Lee tus documentos",
+      "historia": "Lee tus contratos, actas, inventarios y plantillas, y te contesta citando el documento y la cláusula.",
+      "hace": {
+        "encuentra": "Encuentra el contrato por nombre, documento, consecutivo o Nui",
+        "cita": "Cita el documento y la cláusula en cada respuesta",
+        "sinTexto": "Te dice con todas las letras cuando un contrato no tiene texto"
+      },
+      "noHace": {
+        "completa": "No completa lo que el documento no dice",
+        "juridico": "No da opinión jurídica"
+      }
+    },
+    "reportes": {
+      "nombre": "Reportes",
+      "rol": "Consultas a tus datos",
+      "historia": "Convierte tu pregunta en una consulta a los datos de tu inmobiliaria y te dice cómo contó cada cifra.",
+      "hace": {
+        "consulta": "Escribe una consulta de sólo lectura sobre los datos de tu inmobiliaria",
+        "busca": "Busca en la plataforma",
+        "explica": "Te dice cómo contó cada cifra"
+      },
+      "noHace": {
+        "cambia": "No cambia ningún dato: sólo lee",
+        "rol": "Sólo ve lo que tu rol puede ver"
+      }
+    },
+    "comunicacion": {
+      "nombre": "Comunicación",
+      "rol": "Prepara envíos",
+      "historia": "Te deja listo un recordatorio de pago, un mensaje o una PQRS para que lo confirmes.",
+      "hace": {
+        "prepara": "Prepara recordatorios de pago, mensajes directos y PQRS",
+        "destinatarios": "Te dice a quién le llegaría y por qué canal"
+      },
+      "noHace": {
+        "sinConfirmar": "No manda nada sin tu confirmación: la propuesta vence a los 10 minutos",
+        "plata": "No mueve plata"
+      }
+    }
   }
 }

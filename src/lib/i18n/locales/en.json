@@ -12797,5 +12797,406 @@
     "pagoLaAseguradora": "Paid by {{nombre}}",
     "deudaSubrogada": "Debt subrogated to the insurer",
     "deudaSubrogadaAyuda": "These instalments are settled for the agency and the owner because an insurer paid them. The tenant owes that amount to the insurer, not to the agency."
+  },
+  "agentes": {
+    "equipo": {
+      "titulo": "Your agency's team",
+      "resumen": "{{agentes}} agents across {{frentes}} areas",
+      "activosHoy": "{{n}} active today",
+      "losLlama": "{{orquestador}} calls each one based on what you ask",
+      "buscar": "Search by name or task",
+      "buscarAria": "Search the team",
+      "sinResultados": "No one on the team matches “{{q}}”.",
+      "limpiar": "Clear search",
+      "volver": "The team",
+      "abrir": "Meet the team",
+      "abrirAria": "Open the agent team",
+      "frenteActivos": "{{n}} active",
+      "frenteActivo": "1 active",
+      "frenteSinActivos": "0 active",
+      "hace": "Does",
+      "noHace": "Doesn't",
+      "esoLoHace": "{{nombre}} does that",
+      "herramientas": "Tools and access",
+      "reportaA": "Reports to",
+      "trabajaCon": "Works with",
+      "tuEquipo": "Your team",
+      "hoy": "Today, in {{modo}}",
+      "trabajoReciente": "Recent work at your agency",
+      "enEstaConversacion": "In this conversation",
+      "sinTrabajo": "No work of theirs has been recorded at your agency yet.",
+      "trabajoNoDisponible": "We couldn't load their recent work. What they already did is still saved.",
+      "cargando": "Loading…",
+      "modo": {
+        "sombra": "Manual",
+        "copiloto": "Copilot",
+        "autonomo": "Automatic"
+      },
+      "estado": {
+        "activo": "Active at your agency",
+        "aPedido": "Available when you ask",
+        "apagado": "Off",
+        "enElChat": "Available in the chat",
+        "fueraDelPiloto": "Not in autopilot",
+        "sinDato": "No status data"
+      },
+      "notaChat": "In the chat, {{orquestador}} calls them when your question is about their area.",
+      "notaNoChat": "The chat doesn't call them yet: they work from their own screen and in autopilot.",
+      "notaOrquestador": "The only one who talks with you in the chat. Autopilot is something else: the mode in which agents work on their own.",
+      "notaInspeccion": "Not in autopilot yet: Leasefy turns it on."
+    },
+    "frentes": {
+      "direccion": "Lead",
+      "cartera": "Collections and payments",
+      "contratos": "Leases and owners",
+      "contabilidad": "Billing and accounting",
+      "comercial": "Sales and listings",
+      "riesgo": "Applicants and risk",
+      "mantenimiento": "Maintenance and inspection",
+      "consultas": "Chat lookups"
+    },
+    "herramientas": {
+      "busqueda": "Platform search",
+      "ficha": "People, lease and property records",
+      "cartera": "Receivables",
+      "especialistas": "The team's specialists",
+      "confirmacion": "Actions you confirm",
+      "voz": "Phone calls",
+      "whatsapp": "WhatsApp",
+      "correo": "Email",
+      "bandeja": "Inbox",
+      "wompi": "Wompi payment links",
+      "extractos": "Bank statements",
+      "recibos": "Cash receipts",
+      "portal": "Tenant and owner portal",
+      "unClic": "One-click approval",
+      "centroDeProcesos": "Process center",
+      "inventario": "Property inventory",
+      "agenda": "Viewing calendar",
+      "pipeline": "Sales pipeline",
+      "portales": "Listing portals",
+      "documentos": "Applicant documents",
+      "aseguradoras": "Sura, Mapfre, Bolívar and Fianly",
+      "avaluos": "Appraisal service",
+      "vision": "Photo analysis",
+      "firma": "Electronic signature",
+      "tusDocumentos": "Your documents",
+      "consultas": "Your data, read-only"
+    },
+    "orbe": {
+      "quieto": "{{nombre}}",
+      "pensando": "{{nombre}} is thinking",
+      "trabajando": "{{nombre}} is working",
+      "hablando": "{{nombre}} is replying",
+      "listo": "{{nombre}} is done",
+      "fallo": "{{nombre}} couldn't finish",
+      "apagado": "{{nombre}} is off"
+    },
+    "turno": {
+      "llamoA": "{{orquestador}} asked {{nombre}}",
+      "comoLoPenso": "How they thought it through",
+      "loQueHizo": "What they did"
+    },
+    "orquestador": {
+      "rol": "Orchestrator",
+      "historia": "The only one who talks with you in the chat. Understands what you ask, calls the specialist who knows the subject and tells you what each one did.",
+      "hace": {
+        "contesta": "Answers with your agency's data, and every figure has a source",
+        "reparte": "Decides which specialist to call and writes them the task",
+        "busca": "Finds people, leases and properties and shows their record",
+        "prepara": "Gets an action ready for you to confirm",
+        "analiza": "For analysis questions, looks things up several times before answering"
+      },
+      "noHace": {
+        "sinClic": "Doesn't move money or message anyone without your click",
+        "deudores": "Doesn't call or message debtors",
+        "otraInmobiliaria": "Doesn't see another agency's data",
+        "cifras": "Doesn't give you a figure without a source"
+      }
+    },
+    "cobranza": {
+      "rol": "Collections by phone and WhatsApp",
+      "historia": "Calls and messages whoever is behind on rent, proposes an agreement within your rules and records every contact.",
+      "hace": {
+        "llama": "Calls whoever has an overdue balance, on behalf of your agency",
+        "whatsapp": "Writes and replies on WhatsApp",
+        "acuerdos": "Proposes agreements and installment plans within your agency's limits",
+        "identidad": "Verifies identity before talking about the debt",
+        "resume": "Summarizes every call and scores its quality"
+      },
+      "noHace": {
+        "horario": "Doesn't call outside legal hours or more than once a day per person (Ley 2300)",
+        "t323": "Doesn't approve on her own more than $5,000,000, more than 6 months or more than a 20% discount",
+        "verifica": "Doesn't confirm payments: verifying them is a job for someone on your team"
+      }
+    },
+    "pagos": {
+      "rol": "Payment-link collections",
+      "historia": "Builds each installment's charge with its payment link and sends it to the tenant; watches what fails and prepares each owner's statement.",
+      "hace": {
+        "cobro": "Creates the installment charge and requests its payment link",
+        "envia": "Sends the charge by WhatsApp or email",
+        "fallidos": "Watches failed payments and suggests what to do with each",
+        "liquidacion": "Computes each owner's settlement and says whether it can be approved or needs review",
+        "cierre": "Reports received payments and builds the end-of-day close"
+      },
+      "noHace": {
+        "link": "Never makes up a link: only real Wompi links through Leasefy",
+        "aprueba": "Doesn't approve settlements: recommends them",
+        "masivo": "Doesn't run bulk actions without your confirmation"
+      }
+    },
+    "conciliacion": {
+      "nombre": "Reconciliation",
+      "rol": "Bank reconciliation",
+      "historia": "Matches every bank movement with what you expected to receive or pay and tells you what matches what.",
+      "hace": {
+        "candidatos": "Finds candidates for each movement: promises, payments, payouts and invoices",
+        "referencia": "Reads the movement's reference to tell whose it is",
+        "exacto": "In Automatic, reconciles exact matches and issues the receipt; doubtful ones go to your Inbox",
+        "diagnostico": "In the chat, tells you if a movement matches, partially matches or needs grouping"
+      },
+      "noHace": {
+        "giro": "Doesn't approve owner payout batches",
+        "aplica": "In the chat, doesn't apply the match or write to your books"
+      }
+    },
+    "contratos": {
+      "nombre": "Leases",
+      "rol": "The life of each lease",
+      "historia": "Looks after each lease end to end: signing, extension, expiry notices and renewal.",
+      "hace": {
+        "prorroga": "Extends a lease that ended without a non-renewal notice (Ley 820)",
+        "firma": "Sends signing reminders by email and expires the invitation after 7 days",
+        "portal": "Invites the tenant and the owner to their portal",
+        "vencimiento": "Gives notice 30 days before the lease ends",
+        "renovacion": "Prepares the renewal and the rent-increase letter for you to review"
+      },
+      "noHace": {
+        "termina": "Doesn't end a live lease: the law extends it or a person ends it",
+        "propuesta": "Doesn't send the renewal proposal or the increase letter without a person"
+      }
+    },
+    "propietarios": {
+      "nombre": "Owners",
+      "rol": "Statements and settlements",
+      "historia": "Reports to each owner: the month's statement and the settlement of what they're owed.",
+      "hace": {
+        "extracto": "Sends each owner the statement for the month that closed",
+        "liquidacion": "Has the month's settlement ready on your fixed date"
+      },
+      "noHace": {
+        "giro": "Doesn't approve the payout batch or mark it paid: a staff member always does"
+      }
+    },
+    "retencion": {
+      "rol": "Owner retention",
+      "historia": "Spots owners who might leave, explains why and proposes a plan to keep them.",
+      "hace": {
+        "riesgo": "Measures the risk of an owner leaving and its cause",
+        "prioriza": "Prioritizes by the commission at risk",
+        "plan": "Builds a retention plan and drafts the message",
+        "vallas": "Checks the compliance rules before proposing",
+        "barrido": "In Automatic, its sweep builds the plan with an internal notice"
+      },
+      "noHace": {
+        "escribe": "Never messages the owner on his own: every message is a draft a person reviews",
+        "presiona": "Doesn't pressure or promise amounts",
+        "inquilino": "Doesn't reveal tenant data"
+      }
+    },
+    "aprobaciones": {
+      "rol": "Owner approvals",
+      "historia": "Turns each decision waiting on the owner —a repair, a discount, a rent cut— into a clear request with its money impact.",
+      "hace": {
+        "impacto": "Computes what deciding costs and what not deciding costs",
+        "solicitud": "Builds the request with its context and options",
+        "cadencia": "Follows up without harassing and escalates to the agent",
+        "cola": "Shows the queue of open requests"
+      },
+      "noHace": {
+        "ejecuta": "Doesn't carry out the decision or change the property or the lease",
+        "canal": "Doesn't message the owner yet: the channel to do it doesn't exist yet"
+      }
+    },
+    "facturacion": {
+      "nombre": "Billing and cash",
+      "rol": "Invoices and receipts",
+      "historia": "Generates each month's invoice and keeps the cash: advances and receipts.",
+      "hace": {
+        "facturas": "Generates the month's invoice and its payment reminder on day 1",
+        "anticipo": "Takes the month's installment from the advance with a cash receipt",
+        "sinEmitir": "Tells you about invoices still not issued"
+      },
+      "noHace": {
+        "dian": "Doesn't issue to the DIAN: that happens with your click on “Issue”"
+      }
+    },
+    "contabilidad": {
+      "nombre": "Accounting",
+      "rol": "Expenses and ledger",
+      "historia": "Records expenses, books supplier invoices and builds your ledger.",
+      "hace": {
+        "egreso": "Records an agency expense",
+        "libro": "Builds the year's ledger in the process center",
+        "causa": "Books a supplier invoice with its VAT and withholdings"
+      },
+      "noHace": {
+        "lote": "Doesn't approve the expense batch: one person builds it and another approves it",
+        "causaSola": "Doesn't book an invoice without your click"
+      }
+    },
+    "prospectos": {
+      "rol": "Leads and sales follow-up",
+      "historia": "Answers whoever asks about a rental, shows what's available and books the viewing; tells your team which lead to handle first.",
+      "hace": {
+        "inventario": "Searches your inventory and checks the property is still available",
+        "similares": "Suggests similar properties when the budget falls short",
+        "visita": "Proposes times and books the viewing",
+        "pipeline": "Prioritizes your pipeline and flags leads going cold",
+        "asesores": "Measures how fast each agent responds"
+      },
+      "noHace": {
+        "precio": "Doesn't negotiate the price",
+        "escribe": "In Manual and Copilot, doesn't message any lead",
+        "protegidos": "Doesn't use protected data to rank the inventory"
+      }
+    },
+    "calidad": {
+      "rol": "Listing quality",
+      "historia": "Reviews each listing —data, price, photos and availability— and tells you what to fix before a lead is lost.",
+      "hace": {
+        "audita": "Checks each property is complete, consistent, well priced, not duplicated and available",
+        "prioriza": "Prioritizes fixes for the agent",
+        "propone": "Proposes each fix for you to approve"
+      },
+      "noHace": {
+        "edita": "Doesn't change the property: every change waits for a person's click",
+        "propietario": "Doesn't message the owner: there's no sending channel yet"
+      }
+    },
+    "matching": {
+      "nombre": "Matching",
+      "rol": "A property for each applicant",
+      "historia": "When an applicant is left without a property, finds the options that fit and proposes them.",
+      "hace": {
+        "compatibilidad": "Computes how well each property fits what they're looking for",
+        "correo": "Prepares the email with the matching options",
+        "envia": "In Automatic, sends it, at most one email a day"
+      },
+      "noHace": {
+        "unSolo": "With only one matching property it doesn't send: it leaves it in your queue",
+        "sinVistoBueno": "In Manual and Copilot it doesn't send without your approval"
+      }
+    },
+    "estudio": {
+      "nombre": "Applicant screening",
+      "rol": "Tenant assessment",
+      "historia": "Reads the applicant's documents and computes their score so you decide with data.",
+      "hace": {
+        "documentos": "Extracts the data from the applicant's documents",
+        "puntaje": "Computes their risk score"
+      },
+      "noHace": {
+        "t323": "Doesn't decide about a person on its own: anything beyond the T-323 limits is approved by your team",
+        "solo": "Doesn't act on its own yet: runs when someone asks"
+      }
+    },
+    "cotizador": {
+      "nombre": "Insurability",
+      "rol": "Quotes the rental policy",
+      "historia": "Requests the rental insurance policy from several insurers at once and tells you which one fits and why.",
+      "hace": {
+        "cotiza": "Requests a quote from each connected insurer, at the same time",
+        "revisa": "Screens the applicant before quoting",
+        "explica": "Explains why it recommends one and what would change the result"
+      },
+      "noHace": {
+        "solo": "Doesn't act on its own yet: quotes when you ask",
+        "chat": "In the chat it only guides: the binding quote is done in Insurability"
+      }
+    },
+    "avaluos": {
+      "nombre": "Appraisals",
+      "rol": "Value and rent",
+      "historia": "Estimates a property's market value and rent.",
+      "hace": {
+        "solicitud": "Opens the appraisal request from the chat with the data you give",
+        "orienta": "If the appraisal service doesn't respond, guides you with the market range"
+      },
+      "noHace": {
+        "vinculante": "Doesn't deliver the binding appraisal in the chat: that report comes from the appraisal service",
+        "solo": "Doesn't act on its own yet: appraises when you ask"
+      }
+    },
+    "mantenimiento": {
+      "rol": "Maintenance",
+      "historia": "Takes each maintenance request, understands what happened and tells you how urgent it is and who is probably responsible.",
+      "hace": {
+        "clasifica": "Classifies the request and computes its priority",
+        "fotos": "Analyzes photos of the damage",
+        "responsable": "Proposes who is probably responsible, as a hypothesis",
+        "costo": "Estimates the cost and whether it needs approval"
+      },
+      "noHace": {
+        "veredicto": "Doesn't give a verdict on who is responsible: it's a hypothesis",
+        "solo": "Doesn't act on its own yet: classifies when you ask",
+        "proveedores": "Doesn't coordinate suppliers"
+      }
+    },
+    "inspeccion": {
+      "rol": "Property inspection",
+      "historia": "Guides the property photos, builds the move-in report and compares move-in with move-out.",
+      "hace": {
+        "fotos": "Guides the photos and checks none is missing",
+        "acta": "Generates the move-in report",
+        "compara": "Compares move-in with move-out and separates damage, wear and missing items",
+        "evidencia": "Builds the signed evidence package"
+      },
+      "noHace": {
+        "cobra": "Doesn't charge or deduct anything: it only recommends"
+      }
+    },
+    "documentos": {
+      "nombre": "Documents",
+      "rol": "Reads your documents",
+      "historia": "Reads your leases, reports, inventories and templates, and answers quoting the document and the clause.",
+      "hace": {
+        "encuentra": "Finds the lease by name, ID, number or Nui",
+        "cita": "Quotes the document and clause in every answer",
+        "sinTexto": "Tells you plainly when a lease has no text"
+      },
+      "noHace": {
+        "completa": "Doesn't fill in what the document doesn't say",
+        "juridico": "Doesn't give legal opinions"
+      }
+    },
+    "reportes": {
+      "nombre": "Reports",
+      "rol": "Questions about your data",
+      "historia": "Turns your question into a query on your agency's data and tells you how it counted each figure.",
+      "hace": {
+        "consulta": "Writes a read-only query on your agency's data",
+        "busca": "Searches the platform",
+        "explica": "Tells you how it counted each figure"
+      },
+      "noHace": {
+        "cambia": "Doesn't change any data: only reads",
+        "rol": "Only sees what your role can see"
+      }
+    },
+    "comunicacion": {
+      "nombre": "Messaging",
+      "rol": "Prepares messages",
+      "historia": "Gets a payment reminder, a message or a request ready for you to confirm.",
+      "hace": {
+        "prepara": "Prepares payment reminders, direct messages and requests",
+        "destinatarios": "Tells you who it would reach and through which channel"
+      },
+      "noHace": {
+        "sinConfirmar": "Doesn't send anything without your confirmation: the proposal expires in 10 minutes",
+        "plata": "Doesn't move money"
+      }
+    }
   }
 }

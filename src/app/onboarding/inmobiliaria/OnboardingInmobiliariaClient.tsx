@@ -250,11 +250,16 @@ function OnboardingWizard({
     // 🔴 Si no se le puede preguntar al back, se le pide la invitación de
     // TODOS y el back decide (02-10-2026, Alexis: «siempre falla la primera
     // vez»). El respaldo era el borrador del micro, y el borrador NO dice quién
-    // quedó invitado: con el fundador sin segundo factor el back rechaza las
-    // dos llamadas (GET y POST /inmobiliaria/agency/members, 403
-    // `SEGUNDO_FACTOR_REQUERIDO`), el segundo intento tomaba a la persona del
-    // borrador por invitada y el paso «funcionaba» sin invitar a nadie. A lo
-    // sumo, una invitación vigente vuelve con el 409 del back que lo dice.
+    // quedó invitado: cuando el back rechaza las dos llamadas (GET y POST
+    // /inmobiliaria/agency/members, 403 `SEGUNDO_FACTOR_REQUERIDO`), el
+    // segundo intento tomaba a la persona del borrador por invitada y el paso
+    // «funcionaba» sin invitar a nadie. A lo sumo, una invitación vigente
+    // vuelve con el 409 del back que lo dice.
+    //
+    // Desde el 02-10 (Nico) el back deja al FUNDADOR invitar y listar sin
+    // segundo factor mientras dura el registro (`invitar-desde-el-registro.ts`
+    // del back), así que el paso invita normal. El 403 queda de respaldo: un
+    // back anterior, o alguien que no es el fundador o ya salió de esa ventana.
     const yaInvitados = (await correosConInvitacion()) ?? new Set<string>()
     const nuevos = values.members.filter((m) => !yaInvitados.has(m.email.trim().toLowerCase()))
     if (nuevos.length === 0) return result

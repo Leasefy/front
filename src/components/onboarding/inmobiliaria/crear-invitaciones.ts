@@ -64,6 +64,11 @@ export interface InvitacionCreada {
  * exige al administrador para invitar (`AgencyMemberGuard`, 403
  * `SEGUNDO_FACTOR_REQUERIDO`). Reintentar en el asistente no lo arregla:
  * se dice qué falta y dónde se hace.
+ *
+ * Desde el 02-10 (Nico) el back deja al fundador invitar y listar sin segundo
+ * factor mientras dura el registro (`invitar-desde-el-registro.ts` del back).
+ * Este aviso queda de RESPALDO: un back anterior, o quien no es el fundador o
+ * ya salió de esa ventana.
  */
 export const MOTIVO_SIN_SEGUNDO_FACTOR =
   'Para invitar a tu equipo, Leasefy te pide el segundo factor y todavía no lo tienes activo. Cuando lo actives (Configuración → Seguridad), invita a esta persona desde Configuración → Equipo.'

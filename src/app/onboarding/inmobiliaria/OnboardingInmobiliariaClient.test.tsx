@@ -1074,6 +1074,8 @@ describe('<OnboardingInmobiliariaClient> — Miembros, primer intento (Alexis 02
     })
   }
 
+  // Desde el 02-10 (Nico) el back deja al fundador invitar Y listar sin
+  // segundo factor mientras dura el registro: las dos llamadas responden.
   it('el PRIMER intento invita en el back y muestra la invitación, sin error', async () => {
     mockInviteUser.mockReset()
     mockInviteUser.mockResolvedValue({
@@ -1089,17 +1091,21 @@ describe('<OnboardingInmobiliariaClient> — Miembros, primer intento (Alexis 02
     expect(submitMembers).toHaveBeenCalledWith({
       members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER' }],
     })
+    // Quién ya está invitado se le preguntó al back, no al borrador.
+    expect(mockGetUsers).toHaveBeenCalled()
     expect(mockInviteUser).toHaveBeenCalledTimes(1)
     expect(mockInviteUser).toHaveBeenCalledWith({ email: 'alex.dev+9@leasefy.co', name: '', role: 'viewer' })
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeFalsy()
+    expect(container.innerHTML).not.toContain('segundo factor')
     expect(container.innerHTML).toContain('/invitacion/tok-9')
   })
 
   it('🔴 si el back no deja ni preguntar quién está invitado (403 del segundo factor), NADIE del borrador se da por invitado', async () => {
-    // El fundador llega al asistente sin segundo factor (el registro no lo
-    // pide, ProtectedRoute `enElRegistro`), y `AgencyMemberGuard` se lo exige
-    // al ADMIN en GET y POST /inmobiliaria/agency/members.
+    // RESPALDO: un back anterior al 02-10 (o quien no es el fundador o ya
+    // salió de la ventana del registro) le exige el segundo factor al ADMIN en
+    // GET y POST /inmobiliaria/agency/members (`AgencyMemberGuard`), y el
+    // fundador llega al asistente sin él (ProtectedRoute `enElRegistro`).
     const sinSegundoFactor = Object.assign(
       new Error('Tu rol exige segundo factor. Actívalo en Configuración → Seguridad y vuelve a entrar.'),
       { status: 403, code: 'SEGUNDO_FACTOR_REQUERIDO' },

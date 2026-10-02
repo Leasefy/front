@@ -181,7 +181,7 @@ describe('/auth/mfa-enroll', () => {
     await render()
     expect(container.textContent).toContain('Cerrar sesión')
     expect(container.textContent).toContain('Activa tu segundo factor')
-    expect(container.textContent).toContain('Tu rol maneja plata')
+    expect(container.textContent).toContain('aunque tenga tu contraseña')
     expect(container.textContent).not.toContain('Protege tu cuenta')
   })
 

@@ -11,7 +11,7 @@ import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/pla
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button, Input, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Card, Badge } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageHeader, KpiCard, IconButton, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 
@@ -660,8 +660,9 @@ export default function VisitasPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }

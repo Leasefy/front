@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 
 export default function RetencionLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +10,8 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <CargaDeMarca />
+        {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <Spinner size="md" variant="muted" label="Cargando" />
       </div>
     );
   }

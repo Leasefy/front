@@ -22,7 +22,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 
 // ============================================================================
 // Helpers
@@ -157,8 +157,9 @@ export default function CompletarPage({ params }: CompletarPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-muted">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-surface-muted">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="wizard" className="mx-auto max-w-7xl" />
       </div>
     );
   }

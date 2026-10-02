@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -76,8 +76,9 @@ export default function ContratosPage() {
 
   if (isLoading || (allContracts.length === 0 && administrados.cargando)) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }

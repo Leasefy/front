@@ -524,3 +524,16 @@ export function nombreDeLoteSugerido(tipo: 'PROPIETARIO' | 'INQUILINO', ahora = 
     `-${hora}${partes.get('minute')}`;
   return `${base}-${sello}`.slice(0, 60);
 }
+
+/**
+ * El ejemplo de la plantilla, listo para el placeholder: «Ej: 050».
+ *
+ * Pelado, un «050» o un «7» en un campo vacío se leían como un valor ya
+ * escrito (Nico, 01-10: «se ven como si estuvieran llenos»). Con el «Ej:»
+ * delante no hay forma de confundirlo — es la misma convención del campo de
+ * teléfono (`phone-field.tsx`). Sin ejemplo, no hay placeholder.
+ */
+export function placeholderDeEjemplo(ejemplo: string | null | undefined): string | undefined {
+  const limpio = ejemplo?.trim();
+  return limpio ? `Ej: ${limpio}` : undefined;
+}

@@ -23,7 +23,7 @@ import { CargaDeMarca } from '@/components/ui/carga-de-marca';
  *      loop; those pages carry their own guards).
  *   2. Indeterminate (loading || error || plan undefined) → render children.
  *   3. Has panel access (active plan, free or paid) → render children.
- *   4. Suspended/cancelled + admin → redirect to /upgrade + lightweight spinner.
+ *   4. Suspended/cancelled + admin → redirect to /upgrade + full-screen brand loader.
  *   5. Suspended/cancelled + non-admin → full-screen blocking screen (no redirect).
  *
  * Intentionally does NOT depend on PermissionsProvider — it wraps the entire
@@ -58,11 +58,14 @@ export function AgencySubscriptionGuard({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  // No paid plan, admin → redirecting; show a lightweight spinner (mirrors PageGuard).
+  // No paid plan, admin → redirecting. Este guard envuelve el panel ENTERO (el
+  // menú y la cabecera todavía no existen), así que es una transición de
+  // pantalla completa: va el logo, centrado (Nico, 01-10: «el logo sólo en
+  // cargas de pantalla completa»).
   if (isAdmin) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <CargaDeMarca />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

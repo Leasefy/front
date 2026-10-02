@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CaretLeft, ChatCircleText } from '@phosphor-icons/react';
 import { Button, Card, Spinner } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -61,8 +61,9 @@ export default function NuevaSolicitudPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="wizard" className="mx-auto max-w-2xl" />
       </div>
     );
   }

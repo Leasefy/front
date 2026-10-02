@@ -429,7 +429,7 @@ export function PlanHeader({
               className={cn(
                 'w-full h-10 pl-10 pr-4',
                 'bg-surface-muted border border-border rounded-full',
-                'text-[14px] text-fg placeholder:text-fg-subtle',
+                'text-[14px] text-fg placeholder:text-fg-placeholder',
                 'focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 focus:bg-surface',
                 'transition-colors'
               )}

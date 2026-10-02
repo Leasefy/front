@@ -39,6 +39,22 @@ const { api } = vi.hoisted(() => ({
   },
 }));
 
+/*
+ * El paso con tipo fijo abre en «lo ya cargado» cuando la inmobiliaria ya
+ * tiene personas (Nico, 01-10). Estas pruebas son de la SUBIDA: arrancan sin
+ * nadie cargado, que es cuando la subida va abierta. Lo ya cargado se prueba
+ * en `MigrarTerceros.ya-cargados.test.tsx`.
+ */
+vi.mock('./TercerosYaCargados', async () => {
+  const { useEffect } = await import('react');
+  return {
+    TercerosYaCargados: ({ onEstado }: { onEstado: (e: unknown) => void }) => {
+      useEffect(() => onEstado({ cargando: false, fallo: false, total: 0 }), [onEstado]);
+      return null;
+    },
+  };
+});
+
 vi.mock('@/lib/api/migracion-terceros.service', async () => {
   const actual = await vi.importActual<
     typeof import('@/lib/api/migracion-terceros.service')

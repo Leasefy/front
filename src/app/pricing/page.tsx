@@ -685,7 +685,7 @@ export default function PricingPage() {
                         }}
                         placeholder="2.000.000"
                         aria-label="Valor del arriendo mensual"
-                        className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border-faint focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border-faint focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-fg-placeholder"
                       />
                     </div>
                     <span className="text-[12px] text-muted-foreground">/mes</span>

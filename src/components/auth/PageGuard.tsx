@@ -4,7 +4,7 @@ import { type ReactNode } from 'react';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAcceso } from '@/components/auth/acceso-de-la-pantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -111,7 +111,8 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <CargaDeMarca />
+        {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <Spinner size="md" variant="muted" label="Cargando" />
       </div>
     );
   }

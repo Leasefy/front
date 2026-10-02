@@ -97,7 +97,7 @@ export function AISearchInput({
           disabled={isMagnifyingGlassing}
           enterKeyHint="search"
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted disabled:cursor-not-allowed"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-placeholder disabled:cursor-not-allowed"
         />
 
         {value.trim() && !isMagnifyingGlassing && (

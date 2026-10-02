@@ -455,7 +455,7 @@ export function DispersionDetail({
                   if (errorDeReferencia) setErrorDeReferencia(null);
                 }}
                 placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm font-mono text-foreground placeholder:text-fg-placeholder focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
               />
               {!esQuienAprobo && (
                 <p id="dispersion-referencia-ayuda" className="text-caption text-muted-foreground">

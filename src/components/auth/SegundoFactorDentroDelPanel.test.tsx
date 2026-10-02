@@ -191,11 +191,12 @@ describe('SegundoFactorDentroDelPanel — con mfaEnrollRequired', () => {
     expect(modal.getAttribute('aria-labelledby')).toBe(titulo.id)
     const obligatorio = document.querySelector('[data-testid="segundo-factor-dentro-obligatorio"]')!
     expect(modal.getAttribute('aria-describedby')).toBe(obligatorio.id)
-    expect(obligatorio.textContent).toMatch(/último paso antes de entrar/)
-    expect(obligatorio.textContent).toMatch(/obligatorio/)
+    // Nico, 01-10: el PORQUÉ, corto — se lo exigimos, que sepa por qué.
+    expect(obligatorio.textContent).toMatch(/la plata de tus propietarios e inquilinos/)
+    expect(obligatorio.textContent).toMatch(/aunque tenga tu contraseña/)
     // El porqué se dice UNA vez: el paso a paso va sin su encabezado.
     expect(document.querySelector('[data-testid="paso-a-paso"]')!.getAttribute('data-sin-encabezado')).toBe('si')
-    expect(modal.textContent?.match(/maneja plata/g)).toHaveLength(1)
+    expect(modal.textContent?.match(/aunque tenga tu contraseña/g)).toHaveLength(1)
     // La cáscara de la decisión de migrar: dos columnas con la foto, 880 px, 20 px de radio.
     expect(modal.className).toContain('max-w-[880px]')
     expect(modal.className).toContain('rounded-[20px]')

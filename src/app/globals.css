@@ -1616,6 +1616,9 @@ select:-webkit-autofill:active {
   --fg: #14130f;
   --fg-muted: #6e6a63;
   --fg-subtle: #726e68;
+  /* El placeholder: ver «El placeholder es un ejemplo» al final del archivo.
+     2.66:1 sobre blanco — a propósito por debajo de cualquier texto real. */
+  --fg-placeholder: #a39e96;
   --primary-hover: #1533d6;
   --primary-fg: #ffffff;
   --accent-soft: #edf1ff;
@@ -1660,6 +1663,8 @@ select:-webkit-autofill:active {
      mínimo que cumple: 4.54:1. En claro el token ya cumplía; esto era un
      defecto sólo del tema oscuro. */
   --fg-subtle: #8d8980;
+  /* 3.26:1 sobre el negro de los campos; el valor escrito va a 19:1. */
+  --fg-placeholder: #66625a;
   --primary-hover: #3b5bff;
   /* Dark primary = light periwinkle fill → text must be dark ink (not white).
      Was missing here, so it inherited :root's #fff → white text on periwinkle. */
@@ -1836,4 +1841,41 @@ button[role='radio'][data-state='checked'].group {
   /* `--primary` acá es un triplete HSL (230 100% 55%), no un color: va envuelto en hsl(). */
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.14);
+}
+
+/*
+ * El placeholder es un EJEMPLO, no un dato (Nico, 01-10: «esos inputs como el
+ * de código de tu sistema y dígito de verificación se ven como si estuvieran
+ * llenos; eso nos generó confusión a nosotros, y al usuario me imagino»).
+ *
+ * El placeholder vestía `fg-subtle`, el MISMO gris de las ayudas y de las
+ * cabeceras de tabla — subido a 4.5:1 en oscuro para que esos textos se lean.
+ * Con ese contraste un «050» en un campo vacío se leía como un valor escrito.
+ * Ahora tiene su token, `--fg-placeholder`, más claro que cualquier texto real.
+ *
+ * Por qué acá y no en cada campo: el Input, el Textarea, el buscador, el
+ * campo de fecha y el de teléfono de @leasefy/cadence traen horneado
+ * `placeholder:text-fg-subtle`, y cadence es otro repo. Estas reglas van
+ * DESPUÉS de `@tailwind utilities` y con la misma especificidad, así que
+ * ganan por orden. Lo nuevo se escribe `placeholder:text-fg-placeholder`.
+ * Los placeholders de superficies oscuras de marca (`placeholder:text-white/40`,
+ * `text-plan-muted`) no se tocan: son otra superficie.
+ */
+::placeholder {
+  color: var(--fg-placeholder);
+  opacity: 1; /* Firefox le baja la opacidad por su cuenta */
+}
+
+/* Dos reglas y no una lista: un navegador que no conoce `::-moz-placeholder`
+   tira la lista ENTERA, y la regla buena se iría con ella. */
+.placeholder\:text-fg-subtle::placeholder {
+  color: var(--fg-placeholder);
+}
+.placeholder\:text-fg-subtle::-moz-placeholder {
+  color: var(--fg-placeholder);
+}
+
+/* El «Selecciona…» de un Select sin valor (Radix marca el span con `data-placeholder`). */
+[role='combobox'] > span[data-placeholder] {
+  color: var(--fg-placeholder);
 }

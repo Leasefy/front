@@ -32,7 +32,7 @@ import {
   todayISO,
 } from './fechas-y-topes';
 import { Spinner } from '@/components/ui/spinner';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import {
   Select,
   SelectContent,
@@ -587,9 +587,8 @@ function NuevoContratoContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <CargaDeMarca tamano="md" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="wizard" className="mx-auto max-w-3xl" />
     );
   }
 

@@ -51,6 +51,7 @@ import {
   ayudaDelNumeroDeDocumento,
   tipoDeDocumentoDe,
 } from '@/lib/migracion/ayuda-del-documento';
+import { placeholderDeEjemplo } from '@/lib/migracion/columnas-de-tercero';
 
 /** Radix no admite `value=""` en un `<SelectItem>`. */
 const SIN_VALOR = '__vacio__';
@@ -125,6 +126,9 @@ function CeldaEditable({
             aria-labelledby={idEtiqueta}
             aria-describedby={columna.ayuda ? idAyuda : undefined}
             data-testid={`campo-${columna.campo}`}
+            /* «Sin definir» es la AUSENCIA de dato, no un dato: con el color de
+               un valor elegido se leía como lleno (Nico, 01-10). */
+            className={valor ? undefined : 'text-fg-placeholder'}
           >
             <SelectValue />
           </SelectTrigger>
@@ -149,9 +153,7 @@ function CeldaEditable({
       ) : (
         <Input
           value={valor}
-          aria-invalid={conError || undefined}
-          className={conError ? 'border-danger' : undefined}
-          placeholder={columna.ejemplo}
+          placeholder={placeholderDeEjemplo(columna.ejemplo)}
           aria-labelledby={idEtiqueta}
           aria-describedby={columna.ayuda ? idAyuda : undefined}
           data-testid={`campo-${columna.campo}`}

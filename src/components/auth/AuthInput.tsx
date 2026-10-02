@@ -66,7 +66,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
               // como un lugar donde escribir, no como una caja. Al enfocar se
               // vuelve blanco con el azul de la marca y un halo suave.
               'h-12 w-full rounded-lg border bg-surface-muted/70 px-4 text-base md:text-[14px] text-fg',
-              'transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-fg-subtle',
+              'transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-fg-placeholder',
               'focus:outline-none focus:bg-surface focus:border-[#1A40FF] focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',

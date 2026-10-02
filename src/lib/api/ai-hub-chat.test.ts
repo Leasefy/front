@@ -478,3 +478,40 @@ describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', 
     }
   });
 });
+
+describe('mapBackendBriefing — la forma de hoy del micro (`armarBriefing`)', () => {
+  const DEL_MICRO = {
+    fecha: '2026-10-01',
+    saludo: 'Buenos días',
+    resumen: ['Hay 3 decisiones de cobranza.', 'Hoy los agentes llevan 12 llamadas.'],
+    necesitanDeTi: [{ titulo: 'Aprobar acuerdo de pago', href: '/panel/inmobiliaria/piloto' }],
+    numeros: { pendientes: 3, altas: 1, llamadasHoy: 12, promesasCreadasHoy: 0, recuperadoMesCop: 4_500_000 },
+  };
+
+  it('ya no se pierde: trae saludo, resumen y las cifras', () => {
+    const b = mapBackendBriefing(DEL_MICRO);
+    expect(b).not.toBeNull();
+    expect(b!.id).toBe('brief_real_2026-10-01');
+    expect(b!.date.getDate()).toBe(1);
+    expect(b!.greeting).toBe('Buenos días, este es el resumen de tu inmobiliaria hoy.');
+    expect(b!.overallSummary).toBe('Hay 3 decisiones de cobranza. Hoy los agentes llevan 12 llamadas.');
+    expect(b!.numeros).toEqual({ pendientes: 3, altas: 1, llamadasHoy: 12, promesasCreadasHoy: 0, recuperadoMesCop: 4_500_000 });
+    // Los enlaces del panel no se vuelven botones: en el chat nada navega.
+    expect(b!.sections).toEqual([]);
+  });
+
+  it('sin `recuperadoMesCop` (el micro no lo manda si es 0) no aparece: ausente, no cero', () => {
+    const { recuperadoMesCop: _fuera, ...sinRecuperado } = DEL_MICRO.numeros;
+    const b = mapBackendBriefing({ ...DEL_MICRO, numeros: sinRecuperado });
+    expect(b!.numeros).not.toHaveProperty('recuperadoMesCop');
+  });
+
+  it('descarta números que no son números', () => {
+    const b = mapBackendBriefing({ saludo: 'Hola', numeros: { pendientes: '3', llamadasHoy: Number.NaN, altas: -1, promesasCreadasHoy: 2 } });
+    expect(b!.numeros).toEqual({ promesasCreadasHoy: 2 });
+  });
+
+  it('sin cifras ni resumen no hay briefing', () => {
+    expect(mapBackendBriefing({ saludo: 'Hola', resumen: [], numeros: {} })).toBeNull();
+  });
+});

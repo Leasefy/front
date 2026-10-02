@@ -43,6 +43,7 @@ import type {
   AgentExecution,
   ResponseAction,
   DailyBriefing,
+  NumerosDelBriefing,
   BriefingSection,
   Reintentable,
 } from '@/lib/types/beta-chat';
@@ -884,11 +885,79 @@ export function sectionsFromSnapshot(snapshot: BackendSnapshot): BriefingSection
 }
 
 /**
+ * 🔴 La forma que de verdad devuelve el micro (`piloto/briefing.ts` →
+ * `armarBriefing`, desde el 24-09-2026): `{ fecha, saludo, resumen[],
+ * necesitanDeTi[], numeros, narrativa? }`. Este mapeo sólo entendía la forma
+ * vieja (`sections` / `snapshot`), así que con el micro de hoy devolvía `null`
+ * y `currentBriefing` nunca llegaba (encontrado el 02-10-2026 al rediseñar la
+ * llegada del chat). Las dos formas se siguen entendiendo.
+ */
+export interface BackendBriefingDelMicro {
+  fecha?: string;
+  saludo?: string;
+  resumen?: unknown[];
+  necesitanDeTi?: Array<{ titulo?: string; href?: string }>;
+  numeros?: Record<string, unknown>;
+  narrativa?: unknown[];
+}
+
+const CLAVES_DE_NUMEROS = ['pendientes', 'altas', 'llamadasHoy', 'promesasCreadasHoy', 'recuperadoMesCop'] as const;
+
+/** Sólo los números que llegaron como números finitos y no negativos. Nada se rellena. */
+export function leerNumerosDelBriefing(raw: unknown): NumerosDelBriefing | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const numeros: NumerosDelBriefing = {};
+  for (const clave of CLAVES_DE_NUMEROS) {
+    const v = r[clave];
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) numeros[clave] = v;
+  }
+  return Object.keys(numeros).length > 0 ? numeros : null;
+}
+
+function esBriefingDelMicro(raw: Record<string, unknown>): boolean {
+  return 'numeros' in raw || 'saludo' in raw || Array.isArray(raw.resumen);
+}
+
+function mapBriefingDelMicro(briefing: BackendBriefingDelMicro): DailyBriefing | null {
+  const numeros = leerNumerosDelBriefing(briefing.numeros);
+  const lineas = [
+    ...(Array.isArray(briefing.resumen) ? briefing.resumen : []),
+    ...(Array.isArray(briefing.narrativa) ? briefing.narrativa : []),
+  ].filter((l): l is string => typeof l === 'string' && l.trim().length > 0);
+  if (!numeros && lineas.length === 0) return null;
+
+  // `fecha` es el día de Bogotá («2026-10-01»): a mediodía local para que no
+  // caiga en el día anterior por la zona horaria.
+  const fecha = typeof briefing.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(briefing.fecha) ? briefing.fecha : null;
+  const parsed = fecha ? new Date(`${fecha}T12:00:00`) : new Date();
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  const saludo = typeof briefing.saludo === 'string' && briefing.saludo.trim() ? briefing.saludo.trim() : null;
+
+  return {
+    id: `brief_real_${fecha ?? date.toISOString().slice(0, 10)}`,
+    date,
+    greeting: saludo
+      ? `${saludo}, este es el resumen de tu inmobiliaria hoy.`
+      : `${greetingForHour(date)}, este es el resumen de tu inmobiliaria hoy.`,
+    overallSummary: lineas.join(' '),
+    // `necesitanDeTi` trae enlaces del panel (`href`): en el chat nada navega
+    // (`chat-sin-salidas`), así que no se convierten en secciones con botón.
+    sections: [],
+    isNew: true,
+    ...(numeros ? { numeros } : {}),
+  };
+}
+
+/**
  * Tolerant backend → `DailyBriefing` mapper. Returns `null` when the payload
  * has neither usable sections nor a snapshot (caller keeps the mock briefing).
  */
 export function mapBackendBriefing(raw: unknown): DailyBriefing | null {
   if (!raw || typeof raw !== 'object') return null;
+  if (esBriefingDelMicro(raw as Record<string, unknown>)) {
+    return mapBriefingDelMicro(raw as BackendBriefingDelMicro);
+  }
   const briefing = raw as BackendBriefing;
 
   const mappedSections = Array.isArray(briefing.sections)

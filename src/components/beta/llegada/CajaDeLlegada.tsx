@@ -9,7 +9,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUp, Cards, Microphone } from '@phosphor-icons/react';
 import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,8 @@ import { useEjemploQueSeEscribe } from './use-ejemplo-que-se-escribe';
  *   (`.llegada-lavado`) que también se enciende con el foco.
  * - **Bandeja** (opcional): la franja de estado que asoma debajo del marco.
  *   Sólo se dibuja con un dato real (la pasa `BetaWelcome`).
+ * - **Aviso** (opcional): la franja de arriba, dentro de la caja
+ *   (`FranjaDeMigracion`).
  *
  * Qué NO tiene, a propósito: «+» (el chat no recibe adjuntos: el back sólo
  * recibe mensaje e historial) ni selector de modelo. «Voz» sólo donde el
@@ -48,6 +50,11 @@ interface CajaDeLlegadaProps {
   ejemplos: readonly string[];
   /** La franja de estado debajo del marco. `null` = sin bandeja. */
   bandeja?: ReactNode;
+  /**
+   * La franja de aviso arriba, DENTRO de la caja (`FranjaDeMigracion`).
+   * `null` = sin aviso; al pasar a `null` sale con su animación.
+   */
+  aviso?: ReactNode;
   className?: string;
 }
 
@@ -60,6 +67,7 @@ export function CajaDeLlegada({
   plantillasAbiertas,
   ejemplos,
   bandeja,
+  aviso,
   className,
 }: CajaDeLlegadaProps) {
   const { t } = useI18n();
@@ -137,6 +145,8 @@ export function CajaDeLlegada({
               <i />
               <i />
             </span>
+
+            <AnimatePresence initial={false}>{aviso ? <div key="aviso">{aviso}</div> : null}</AnimatePresence>
 
             <div className="relative px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
               <label htmlFor={idCampo} className="sr-only">

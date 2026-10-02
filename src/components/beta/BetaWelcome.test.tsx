@@ -19,11 +19,14 @@ import { act } from 'react';
 const { contexto } = vi.hoisted(() => ({
   contexto: {
     filteredSummaries: [] as Array<Record<string, unknown>>,
+    currentBriefing: null as null | { numeros?: Record<string, number> },
     switchConversation: vi.fn(),
     deleteConversation: vi.fn(),
   },
 }));
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+const { recordatorio } = vi.hoisted(() => ({ recordatorio: vi.fn() }));
+vi.mock('@/lib/api/migracion-estado.service', () => ({ migracionEstadoApi: { recordatorio } }));
 vi.mock('@/lib/context/BetaChatContext', () => ({
   useBetaChatContext: () => contexto,
   useBetaChatOpcional: () => contexto,
@@ -39,6 +42,9 @@ let root: Root;
 
 beforeEach(() => {
   contexto.filteredSummaries = [];
+  contexto.currentBriefing = null;
+  recordatorio.mockReset();
+  recordatorio.mockResolvedValue({});
   contexto.switchConversation.mockReset();
   contexto.deleteConversation.mockReset();
   container = document.createElement('div');
@@ -50,13 +56,16 @@ afterEach(() => {
   container.remove();
 });
 
+let ctxMigracion: ContextoDeMigracion;
+
 function pintar(
   ui: React.ReactElement,
   { agencia, migracion }: { agencia?: string | null; migracion?: EstadoDeMigracion | null } = {}
 ) {
   let arbol = ui;
   if (migracion !== undefined) {
-    const valor: ContextoDeMigracion = { estado: migracion, abrir: vi.fn(), recargar: vi.fn() };
+    const valor: ContextoDeMigracion = { estado: migracion, abrir: vi.fn(), recargar: vi.fn(async () => {}) };
+    ctxMigracion = valor;
     arbol = <MigracionContext.Provider value={valor}>{arbol}</MigracionContext.Provider>;
   }
   if (agencia !== undefined) {
@@ -99,7 +108,7 @@ function migracion(listos: number, extra: Partial<EstadoDeMigracion> = {}): Esta
 describe('la llegada del chat', () => {
   it('dice el título y la línea de apoyo nuevos', () => {
     pintar(<BetaWelcome />);
-    expect(container.querySelector('h1')?.textContent).toBe('¿Qué movemos hoy?');
+    expect(container.querySelector('h1')?.textContent).toBe('¿Qué revisamos hoy?');
     expect(container.textContent).toContain(
       'Pregúntale a tu inmobiliaria por cartera, contratos, inmuebles y pagos.'
     );
@@ -202,12 +211,53 @@ describe('la bandeja: sólo datos reales', () => {
     expect(bandeja()).toBeNull();
   });
 
-  it('con la migración empezada y sin terminar, dice en qué paso va', () => {
-    pintar(<BetaWelcome />, { agencia: 'Portofino', migracion: migracion(2) });
-    expect(bandeja()?.textContent).toContain('Migración: paso 3 de 6');
+  it('las cifras del día salen del briefing, con formato COP, y nunca un cero', () => {
+    contexto.currentBriefing = { numeros: { recuperadoMesCop: 12_400_000, pendientes: 3, llamadasHoy: 0 } };
+    pintar(<BetaWelcome />, { agencia: 'Portofino' });
+    const cifras = container.querySelector('[data-testid="cifras-de-la-bandeja"]')!.textContent!.replace(/\s+/g, ' ');
+    expect(cifras).toContain('12,4 M recuperados este mes');
+    expect(cifras).toContain('3 decisiones pendientes');
+    expect(cifras).not.toContain('llamada');
   });
 
-  it('migración sin empezar, terminada, bloqueando o con el recordatorio cerrado: no se menciona', () => {
+  it('sin briefing (o sólo con ceros) la bandeja queda como estaba', () => {
+    contexto.currentBriefing = { numeros: { pendientes: 0, llamadasHoy: 0 } };
+    pintar(<BetaWelcome />, { agencia: 'Portofino' });
+    expect(container.querySelector('[data-testid="cifras-de-la-bandeja"]')).toBeNull();
+    expect(bandeja()?.textContent).toBe('Responde con los datos de Portofino');
+  });
+
+  it('la migración ya no va en la bandeja: va en la franja', () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino', migracion: migracion(2) });
+    expect(bandeja()?.textContent).not.toContain('Migración');
+  });
+});
+
+describe('la franja de la migración', () => {
+  const franja = () => container.querySelector('[data-testid="franja-de-migracion"]');
+
+  it('con la migración empezada y sin terminar: paso, qué sigue, «Continuar» y ✕', () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino', migracion: migracion(2) });
+    expect(franja()?.textContent).toContain('Paso 3 de 6');
+    expect(franja()?.textContent).toContain('Termina tu migración: sigue con');
+    act(() => container.querySelector<HTMLButtonElement>('[data-testid="franja-de-migracion-continuar"]')!.click());
+    expect(ctxMigracion.abrir).toHaveBeenCalledTimes(1);
+  });
+
+  it('la ✕ la oculta y guarda el «descartado» de la cuenta', async () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino', migracion: migracion(2) });
+    const cerrar = container.querySelector<HTMLButtonElement>('[data-testid="franja-de-migracion-cerrar"]')!;
+    expect(cerrar.getAttribute('aria-label')).toBe('Cerrar el aviso de la migración');
+    await act(async () => {
+      cerrar.click();
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    expect(recordatorio).toHaveBeenCalledWith(true);
+    expect(ctxMigracion.recargar).toHaveBeenCalled();
+    expect(franja()).toBeNull();
+  });
+
+  it('sin empezar, terminada, bloqueando o con el recordatorio cerrado: no hay franja', () => {
     for (const estado of [
       migracion(0),
       migracion(6),
@@ -216,7 +266,12 @@ describe('la bandeja: sólo datos reales', () => {
       migracion(2, { resuelta: 'completada' }),
     ]) {
       pintar(<BetaWelcome />, { agencia: 'Portofino', migracion: estado });
-      expect(bandeja()?.textContent).not.toContain('Migración');
+      expect(franja()).toBeNull();
     }
+  });
+
+  it('fuera del panel (sin contexto de migración): no hay franja', () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino' });
+    expect(franja()).toBeNull();
   });
 });

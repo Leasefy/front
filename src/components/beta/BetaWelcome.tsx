@@ -4,7 +4,7 @@ import { useContext, useMemo, useState } from 'react';
 import { motion, MotionConfig } from 'framer-motion';
 import {
   ArrowRight,
-  ArrowsClockwise,
+  ChartLineUp,
   ArrowsLeftRight,
   Bank,
   Buildings,
@@ -27,6 +27,9 @@ import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { LeasefyMark } from './LeasefyMark';
 import { CHAT_TEMPLATES, ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { FranjaDeMigracion } from './llegada/FranjaDeMigracion';
+import { cifrasDeLaBandeja } from './llegada/cifras-de-la-bandeja';
+import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
 
 // ============================================================================
 // Types
@@ -104,13 +107,14 @@ function entrada(paso: number) {
  * abrir y borrar con confirmación en línea; el vacío sigue llevando a las
  * plantillas.
  *
- * Regla de la casa: nada de números inventados. La bandeja sólo dice el nombre
- * de la inmobiliaria (los datos con los que responde el chat) y, si la
- * migración está a medias, en qué paso va — las dos cosas salen del panel.
+ * Regla de la casa: nada de números inventados. La bandeja dice el nombre de
+ * la inmobiliaria (los datos con los que responde el chat) y las cifras del
+ * día que trae el briefing del micro (sólo las mayores que cero). La franja de
+ * arriba aparece sólo con la migración a medias (ajustes de Nico, 02-10-2026).
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
-  const { filteredSummaries, switchConversation, deleteConversation } = useBetaChatContext();
+  const { filteredSummaries, switchConversation, deleteConversation, currentBriefing } = useBetaChatContext();
   const [borrando, setBorrando] = useState<string | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const ahora = new Date();
@@ -123,7 +127,9 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   // guardado no lo trae: no es el nombre de nadie.
   const nombre = useContext(AuthContext)?.agency?.name?.trim() ?? '';
   const agencia = nombre && nombre !== 'Agency' ? nombre : null;
-  const estadoMigracion = useMigracion()?.estado ?? null;
+  const migracion = useMigracion();
+  const estadoMigracion = migracion?.estado ?? null;
+  const [avisoCerrado, setAvisoCerrado] = useState(false);
   const progreso =
     estadoMigracion &&
     !estadoMigracion.bloquea &&
@@ -133,11 +139,39 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
       : null;
   // Empezada y no terminada: «paso 3 de 6». Sin empezar no se dice nada (eso
   // es decisión de la inmobiliaria, y ya lo recuerda la barra lateral); quien
-  // cerró ese recordatorio (`recordatorioDescartado`) tampoco lo ve acá.
+  // cerró el recordatorio (`recordatorioDescartado`) tampoco lo ve acá.
   const migrando = progreso && progreso.total > 0 && progreso.hechos > 0 ? progreso : null;
 
+  // La ✕ de la franja usa el MISMO «descartado» del recordatorio de la
+  // migración: es de la cuenta (`POST /inmobiliaria/migracion/recordatorio`),
+  // no del navegador, así que no reaparece en otro equipo. Se oculta al
+  // instante; si el back no lo guarda, vuelve a salir en la próxima visita
+  // (molesta, no encierra).
+  const cerrarAviso = () => {
+    setAvisoCerrado(true);
+    void migracionEstadoApi
+      .recordatorio(true)
+      .then(() => migracion?.recargar())
+      .catch(() => {});
+  };
+  const aviso =
+    migrando && migracion && !avisoCerrado ? (
+      <FranjaDeMigracion
+        paso={Math.min(migrando.hechos + 1, migrando.total)}
+        total={migrando.total}
+        siguiente={migrando.siguiente ? t(`migracion.pasos.${migrando.siguiente.id}.corto`) : null}
+        // Abre la migración a pantalla completa (no navega): la única salida
+        // del chat que hay acá, autorizada por Nico el 02-10-2026.
+        onContinuar={migracion.abrir}
+        onCerrar={cerrarAviso}
+      />
+    ) : null;
+
+  // Cifras del día, SÓLO del briefing del micro y sólo las mayores que cero.
+  const cifras = cifrasDeLaBandeja(currentBriefing?.numeros, t);
+
   const bandeja =
-    agencia || migrando ? (
+    agencia || cifras.length > 0 ? (
       <div
         data-testid="bandeja-de-llegada"
         className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-fg-muted"
@@ -153,15 +187,25 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             </span>
           </span>
         )}
-        {migrando && (
-          <span className="inline-flex items-center gap-2">
+        {cifras.length > 0 && (
+          <span className="flex min-w-0 max-w-full items-start gap-2" data-testid="cifras-de-la-bandeja">
             <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-fg-muted">
-              <ArrowsClockwise size={13} />
+              <ChartLineUp size={13} />
             </span>
-            {t('beta.welcome.bandeja.migracion', {
-              n: Math.min(migrando.hechos + 1, migrando.total),
-              total: migrando.total,
-            })}
+            {/* Cada cifra entera en su renglón si no cabe: en el celular se
+                partían a media palabra. */}
+            <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 pt-[3px]">
+              {cifras.map((cifra, i) => (
+                <span key={cifra} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  {i > 0 && (
+                    <span aria-hidden className="text-fg-subtle">
+                      ·
+                    </span>
+                  )}
+                  <span className="font-medium text-fg">{cifra}</span>
+                </span>
+              ))}
+            </span>
           </span>
         )}
       </div>
@@ -185,7 +229,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
           {/* Título + apoyo */}
           <motion.h1
             {...entrada(0)}
-            className="text-center font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.4rem,6vw,3.75rem)] [text-wrap:balance]"
+            className="text-center font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.75rem)] [text-wrap:balance]"
           >
             {t('beta.welcome.heroTitle')}
           </motion.h1>
@@ -204,6 +248,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
               plantillasAbiertas={templatesOpen}
               ejemplos={ejemplos}
               bandeja={bandeja}
+              aviso={aviso}
             />
             <ChatTemplatesMenu
               open={templatesOpen}

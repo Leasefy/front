@@ -11350,7 +11350,7 @@
       "greeting_morning": "Good morning",
       "greeting_afternoon": "Good afternoon",
       "greeting_evening": "Good evening",
-      "heroTitle": "What are we moving today?",
+      "heroTitle": "What should we review today?",
       "subtitle": "I'm your rental management assistant. Select a topic or ask me anything you need.",
       "suggestionsLabel": "Suggestions · Leasefy Agents",
       "prompts": {
@@ -11386,7 +11386,21 @@
       "atajosLabel": "Shortcuts",
       "bandeja": {
         "datosDe": "Answers with the data of",
-        "migracion": "Migration: step {{n}} of {{total}}"
+        "recuperadoMes": "{{valor}} recovered this month",
+        "decisionUna": "1 pending decision",
+        "decisiones": "{{n}} pending decisions",
+        "llamadaUna": "1 call today",
+        "llamadas": "{{n}} calls today",
+        "promesaUna": "1 payment promise today",
+        "promesas": "{{n}} payment promises today"
+      },
+      "aviso": {
+        "region": "Migration notice",
+        "pastilla": "Step {{n}} of {{total}}",
+        "termina": "Finish your migration",
+        "sigueCon": "continue with",
+        "continuar": "Continue",
+        "cerrar": "Close the migration notice"
       },
       "especialistas": "Depending on what you ask, the chat calls its specialist: reports, collections, payments, reconciliation and more.",
       "historyLocal": "Saved in this browser",

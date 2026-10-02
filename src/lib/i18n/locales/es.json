@@ -11384,7 +11384,7 @@
       "greeting_morning": "Buenos dias",
       "greeting_afternoon": "Buenas tardes",
       "greeting_evening": "Buenas noches",
-      "heroTitle": "¿Qué movemos hoy?",
+      "heroTitle": "¿Qué revisamos hoy?",
       "subtitle": "Soy tu asistente de administracion de arriendos. Selecciona un tema o preguntame lo que necesites.",
       "suggestionsLabel": "Sugerencias · Agentes Leasefy",
       "prompts": {
@@ -11420,7 +11420,21 @@
       "atajosLabel": "Atajos",
       "bandeja": {
         "datosDe": "Responde con los datos de",
-        "migracion": "Migración: paso {{n}} de {{total}}"
+        "recuperadoMes": "{{valor}} recuperados este mes",
+        "decisionUna": "1 decisión pendiente",
+        "decisiones": "{{n}} decisiones pendientes",
+        "llamadaUna": "1 llamada hoy",
+        "llamadas": "{{n}} llamadas hoy",
+        "promesaUna": "1 promesa de pago hoy",
+        "promesas": "{{n}} promesas de pago hoy"
+      },
+      "aviso": {
+        "region": "Aviso de la migración",
+        "pastilla": "Paso {{n}} de {{total}}",
+        "termina": "Termina tu migración",
+        "sigueCon": "sigue con",
+        "continuar": "Continuar",
+        "cerrar": "Cerrar el aviso de la migración"
       },
       "especialistas": "Según lo que pidas, el chat llama a su especialista: reportes, cobranza, pagos, conciliación y más.",
       "historyLocal": "Se guardan en este navegador",

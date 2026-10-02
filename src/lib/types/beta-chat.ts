@@ -478,6 +478,24 @@ export interface BriefingSection {
   actionContext?: string;
 }
 
+/**
+ * Las cifras del día que manda el micro en el briefing (`piloto/briefing.ts` →
+ * `numeros`). Cada una está SÓLO si llegó como número: ausente = no se sabe,
+ * nunca cero. Ojo: el micro rellena con 0 un conteo que falló, así que quien
+ * las pinte no debe pintar ceros.
+ */
+export interface NumerosDelBriefing {
+  /** Decisiones de la bandeja que esperan a una persona. */
+  pendientes?: number;
+  /** De esas, cuántas son de prioridad alta. */
+  altas?: number;
+  llamadasHoy?: number;
+  /** Promesas de pago CREADAS hoy (no las que vencen hoy). */
+  promesasCreadasHoy?: number;
+  /** Lo recuperado por cobranza en el mes (COP). El micro sólo lo manda si es > 0. */
+  recuperadoMesCop?: number;
+}
+
 /** A complete daily briefing with greeting and sectioned overview */
 export interface DailyBriefing {
   id: string;
@@ -487,6 +505,8 @@ export interface DailyBriefing {
   sections: BriefingSection[];
   /** Whether this briefing has been viewed yet */
   isNew: boolean;
+  /** Las cifras del día, cuando el micro las mandó (forma de `armarBriefing`). */
+  numeros?: NumerosDelBriefing;
 }
 
 // ============================================================================

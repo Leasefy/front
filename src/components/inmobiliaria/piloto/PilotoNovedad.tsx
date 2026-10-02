@@ -21,7 +21,11 @@
  *   · «Entendido» la deja `completo`; Esc, el fondo o la ✕, `omitido`.
  *   · Mientras no se sabe si ya la vio (`estaVista` → `null`) no sale.
  *   · Se vuelve a ver desde «¿Cómo funciona?» (`forzada`), sin tocar la marca.
- *   · El halo va limpio, sin la píldora «L Leasefy» (`brand={false}`).
+ *   · El héroe es el ORBE de Ori, no la aurora (Nico, 02-10-2026: la
+ *     presentación de cada agente usa su orbe grande): el mismo
+ *     `PresentacionConOrbe` de `AgentIntroModal`. El orbe entra y despierta
+ *     —quieto → trabajando → listo— mientras aparece el texto. Sin la píldora
+ *     «L Leasefy».
  *
  * ── Nunca encima de otra bienvenida (coordinación, 30-09) ────────────────
  * El Inicio es donde también abre el recorrido del panel, y el orden de Nico
@@ -45,8 +49,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Robot, SlidersHorizontal, Tray, X } from '@phosphor-icons/react'
-import { FeatureAnnouncement } from '@leasefy/cadence'
 
+import { PresentacionConOrbe } from '@/components/agentes/PresentacionConOrbe'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext'
@@ -191,13 +195,11 @@ export function PilotoNovedad({ forzada = false, onCerrarForzada }: PilotoNoveda
           <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
           {/*
-            Sin la píldora «L Leasefy» sobre el halo (Nico, 30-09: «quitale
-            eso a las imágenes»). `brand` reemplaza la píldora entera, y
-            cadence la pinta con `brand ?? …`: `false` —no `null`, que caería
-            a la píldora— no pinta nada, sin tocar el sistema de diseño.
+            El orbe de Ori en lugar de la aurora (Nico, 02-10), y sin la
+            píldora «L Leasefy» (Nico, 30-09: «quitale eso a las imágenes»).
           */}
-          <FeatureAnnouncement
-            brand={false}
+          <PresentacionConOrbe
+            agente="orquestador"
             title={titulo}
             description={descripcion}
             items={[
@@ -219,7 +221,6 @@ export function PilotoNovedad({ forzada = false, onCerrarForzada }: PilotoNoveda
             ]}
             ctaLabel={t(`${NS}.cta`)}
             onCta={() => cerrar('completo')}
-            className="w-full"
           />
           <DialogPrimitive.Close
             aria-label={t('common.close')}

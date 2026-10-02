@@ -11,6 +11,8 @@ import {
 
 import { EquipoDeAgentes } from '@/components/agentes/EquipoDeAgentes'
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente'
+import { PilotoNovedad } from '@/components/inmobiliaria/piloto/PilotoNovedad'
+import { AGENT_INTROS, PresentacionDelAgente } from '@/components/tour/AgentIntroModal'
 import type { EstadoDelOrbe } from '@/lib/agentes/agente-que-habla'
 import { agentePorId, nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo'
 import type { ActivityItem, PilotoFlotaResponse } from '@/lib/api/piloto'
@@ -24,7 +26,12 @@ import { cn } from '@/lib/utils'
  * en claro. Los botones de arriba pasan a «quien habla» por todos los
  * estados: las transiciones se funden, no saltan.
  *
- * Para capturas: `?estado=pensando&quietos=1&equipo=silk-oscuro`.
+ * Abajo, la PRESENTACIÓN de cada agente (la primera vez que se entra a su
+ * espacio) y la del Piloto con Ori: el orbe grande en lugar de la aurora, que
+ * entra y despierta. Se abre la vista de verdad, sin la marca de la agencia.
+ *
+ * Para capturas: `?estado=pensando&quietos=1&equipo=silk-oscuro` ·
+ * `?presentacion=cobranza&tema=oscuro` (`ori` = la del Piloto).
  */
 
 type Tema = 'oscuro' | 'claro'
@@ -51,6 +58,10 @@ const FILA: Array<{ id: IdDeAgente; habla?: boolean; apagado?: boolean }> = [
 ]
 
 const LABEL = 'font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle'
+
+/** `ori` = la presentación del Piloto automático (`PilotoNovedad`). */
+type IdDePresentacion = (typeof AGENT_INTROS)[number]['id'] | 'ori'
+const PRESENTACIONES: IdDePresentacion[] = ['ori', ...AGENT_INTROS.map((a) => a.id)]
 
 // Datos de muestra para el modal real (no se pide nada a la red).
 const FLOTA: PilotoFlotaResponse = {
@@ -84,9 +95,12 @@ export function VistaDeLosOrbes() {
 }
 
 function Vista() {
+  const { t } = useI18n()
   const [estado, setEstado] = useState<EstadoDelOrbe>('quieto')
   const [quietos, setQuietos] = useState(false)
   const [equipo, setEquipo] = useState<{ look: AgentOrbLook; tema: Tema } | null>(null)
+  const [temaDeLaPresentacion, setTemaDeLaPresentacion] = useState<Tema>('oscuro')
+  const [presentacion, setPresentacion] = useState<IdDePresentacion | null>(null)
 
   // La query manda al montar (capturas automáticas).
   useEffect(() => {
@@ -98,24 +112,29 @@ function Vista() {
     if (eq && LOOKS.includes(eq[0] as AgentOrbLook) && TEMAS.includes(eq[1] as Tema)) {
       setEquipo({ look: eq[0] as AgentOrbLook, tema: eq[1] as Tema })
     }
+    const tema = q.get('tema')
+    if (TEMAS.includes(tema as Tema)) setTemaDeLaPresentacion(tema as Tema)
+    const p = q.get('presentacion')
+    if (PRESENTACIONES.includes(p as IdDePresentacion)) setPresentacion(p as IdDePresentacion)
   }, [])
 
   // La página es clara (las secciones oscuras llevan `.dark`); el modal real
   // va a <body>, así que para verlo en oscuro se pone `.dark` en <html> sólo
   // mientras está abierto. Al salir, <html> queda como estaba.
+  const temaDelModal = equipo?.tema ?? (presentacion ? temaDeLaPresentacion : null)
   useEffect(() => {
     const html = document.documentElement
     const eraOscuro = html.classList.contains('dark')
-    html.classList.toggle('dark', equipo?.tema === 'oscuro')
+    html.classList.toggle('dark', temaDelModal === 'oscuro')
     return () => {
       html.classList.toggle('dark', eraOscuro)
     }
-  }, [equipo])
+  }, [temaDelModal])
 
   return (
     <main className="min-h-dvh bg-bg text-fg" data-testid="vista-de-los-orbes">
       <header className="mx-auto max-w-[1360px] space-y-5 px-6 pb-8 pt-10">
-        <p className={LABEL}>Cadence v1.2.0 · vista previa</p>
+        <p className={LABEL}>Cadence v1.2.1 · vista previa</p>
         <h1 className="text-h1 font-semibold tracking-[-0.02em]">Los orbes del equipo</h1>
         <p className="max-w-[72ch] text-body text-fg-muted">
           Tres looks del mismo motor: un fluido que emite luz, con un solo contexto WebGL para todos los orbes de la página.
@@ -169,6 +188,57 @@ function Vista() {
           </div>
         </section>
       ))}
+
+      <section className="bg-bg py-10 text-fg" aria-labelledby="titulo-presentaciones" data-testid="presentaciones">
+        <div className="mx-auto max-w-[1360px] space-y-5 px-6">
+          <div className="space-y-1.5">
+            <h2 id="titulo-presentaciones" className="text-h3 font-semibold">
+              La presentación de cada agente
+            </h2>
+            <p className="max-w-[72ch] text-body-sm text-fg-muted">
+              La primera vez que la inmobiliaria entra al espacio de un agente (y al Piloto, con Ori). El orbe grande
+              reemplaza la aurora: entra y despierta —quieto, trabajando, listo— mientras aparece el texto.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Segmentado
+              id="tema-de-la-presentacion"
+              etiqueta="Tema de la presentación"
+              valor={temaDeLaPresentacion}
+              opciones={[
+                { valor: 'oscuro', texto: 'Oscuro' },
+                { valor: 'claro', texto: 'Claro' },
+              ]}
+              onCambio={(v) => setTemaDeLaPresentacion(v as Tema)}
+            />
+          </div>
+          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-4 lg:grid-cols-8">
+            {PRESENTACIONES.map((id) => {
+              const a = agentePorId(id === 'ori' ? 'orquestador' : id)
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => setPresentacion(id)}
+                    className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2.5 text-left text-body-sm font-medium text-fg transition-colors hover:border-border-strong hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    data-testid={`abrir-presentacion-${id}`}
+                  >
+                    <OrbeDeAgente agente={a} tamano={20} quieto decorativo />
+                    <span className="min-w-0 truncate">{id === 'ori' ? 'Piloto · Ori' : nombreDelAgente(a, t)}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </section>
+
+      {presentacion === 'ori' && <PilotoNovedad forzada onCerrarForzada={() => setPresentacion(null)} />}
+      <PresentacionDelAgente
+        agente={presentacion && presentacion !== 'ori' ? (AGENT_INTROS.find((a) => a.id === presentacion) ?? null) : null}
+        abierta={presentacion !== null && presentacion !== 'ori'}
+        onCerrar={() => setPresentacion(null)}
+      />
 
       {equipo && (
         <AgentOrbLookProvider look={equipo.look}>
@@ -309,11 +379,13 @@ function Bloque({ titulo, children }: { titulo: string; children: ReactNode }) {
 /** Control segmentado con la píldora que se desliza (framer `layoutId`). */
 function Segmentado({
   id,
+  etiqueta = 'Estado de quien habla',
   valor,
   opciones,
   onCambio,
 }: {
   id: string
+  etiqueta?: string
   valor: string
   opciones: Array<{ valor: string; texto: string }>
   onCambio: (v: string) => void
@@ -321,7 +393,7 @@ function Segmentado({
   const reducir = useReducedMotion()
   return (
     <LayoutGroup id={id}>
-      <div role="radiogroup" aria-label="Estado de quien habla" className="inline-flex flex-wrap rounded-full border border-border bg-surface p-1">
+      <div role="radiogroup" aria-label={etiqueta} className="inline-flex flex-wrap rounded-full border border-border bg-surface p-1">
         {opciones.map((o) => {
           const activo = o.valor === valor
           return (
@@ -335,11 +407,11 @@ function Segmentado({
                 'relative rounded-full px-3.5 py-1.5 text-body-sm font-medium transition-colors',
                 activo ? 'text-bg' : 'text-fg-muted hover:text-fg',
               )}
-              data-testid={`boton-estado-${o.valor}`}
+              data-testid={`boton-${id}-${o.valor}`}
             >
               {activo && (
                 <motion.span
-                  layoutId={reducir ? undefined : 'pildora'}
+                  layoutId={reducir ? undefined : `${id}-pildora`}
                   className="absolute inset-0 rounded-full bg-fg"
                   transition={{ type: 'spring', stiffness: 520, damping: 42 }}
                   aria-hidden="true"

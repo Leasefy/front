@@ -1348,7 +1348,7 @@ falla:
 Más `data-sample="true"` en el `<article>` y `robots: { index: false, follow: false }`.
 El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agua diagonal.
 
-## 21b. El orbe de los agentes (Cadence v1.2.0, 02-10-2026)
+## 21b. El orbe de los agentes (Cadence v1.2.1, 02-10-2026)
 
 Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" tamano={28} />`**
 (`src/components/agentes/OrbeDeAgente.tsx`): paleta, semilla y variante salen del registro
@@ -1361,15 +1361,27 @@ Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" ta
 - **Estados** (`EstadoDelOrbe`): `quieto` respira · `pensando` gira y brilla · `trabajando` /
   `hablando` late con una onda · `listo` se asienta · `fallo` sin color y tenue · `apagado` sin
   color, menos tenue. Cambiar de estado se funde; no hay que animar nada por fuera.
-- **Look**: `silk` (Seda, el de por defecto), `mist` (Bruma), `nebula` (Nebulosa). El de por
-  defecto es `AGENT_ORB_DEFAULT_LOOK` en Cadence; una zona se cambia con
-  `<AgentOrbLookProvider look="…">`. Vista previa: `/agentes-preview` (sólo en desarrollo).
+- **Look**: `nebula` (Nebulosa, **el de por defecto desde v1.2.1**: Nico, 02-10), `silk` (Seda),
+  `mist` (Bruma). El de por defecto es `AGENT_ORB_DEFAULT_LOOK` en Cadence; una zona se cambia
+  con `<AgentOrbLookProvider look="…">`. Vista previa: `/agentes-preview` (sólo en desarrollo).
+  Nebulosa se adapta al lado: de 16 a ~32 px (lista de «El equipo», chips, la cabecera del
+  chat) baja el detalle —sin polvo, velos ni motas— y sube núcleo y halo; desde 44 px es
+  completa (nubes de color suaves, hondura, pocas motas; sin filamentos «de plasma»). No hay
+  que pasarle nada: el motor le da el tamaño al shader.
 - **Tamaño**: la caja mide `tamano`; el halo sale de ella sin mover el layout (deja ~½ lado de
   aire si el padre recorta con `overflow`).
 - **`quieto`** (still) = un cuadro fijo: para chips de 16–18 px y listas de decenas. Una lista
   como «El equipo» (≈20) puede ir viva. `prefers-reduced-motion` ya deja todo en cuadro fijo.
 - En pruebas (happy-dom no tiene WebGL) se pinta el SVG con `data-renderer="svg"`; no hay que
   mockear nada.
+- **Presentación de un agente** (la primera vez en su espacio, y la del Piloto con Ori): el héroe
+  de la tarjeta §Novedades es el **orbe grande** del agente, no la aurora. Se arma con
+  **`<PresentacionConOrbe agente="cobranza" title description ctaLabel onCta />`**
+  (`src/components/agentes/PresentacionConOrbe.tsx`, sobre `FeatureAnnouncement` sin tocarlo):
+  orbe de 120 px centrado sobre el fondo de la tarjeta, que entra (fundido + escala, `reveal` /
+  `enter`) y despierta quieto → trabajando → listo mientras el texto sube escalonado (`sm`,
+  `motionStagger.step`). Movimiento reducido: sólo fundidos y el orbe `listo` de una. Lo usan
+  `AgentIntroModal` (vista: `PresentacionDelAgente`) y `PilotoNovedad`.
 
 ---
 

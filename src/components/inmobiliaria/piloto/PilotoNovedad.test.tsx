@@ -92,6 +92,31 @@ describe('PilotoNovedad', () => {
     expect(monogramas).toHaveLength(0)
   })
 
+  it('🔴 el héroe es el orbe de Ori, no la aurora (Nico, 02-10), y despierta', async () => {
+    await montar(<PilotoNovedad />)
+    // La aurora era un `background: url(data:…)` en el héroe: ya no hay ninguno.
+    const conImagen = [...(modal()?.querySelectorAll<HTMLElement>('[style]') ?? [])].filter((el) =>
+      el.style.background.includes('url('),
+    )
+    expect(conImagen).toHaveLength(0)
+    const orbe = modal()?.querySelector('[data-escenario-del-orbe] .cdc-orb') as HTMLElement
+    expect(orbe).not.toBeNull()
+    expect(orbe.dataset.agente).toBe('orquestador')
+    expect(orbe.dataset.variant).toBe('orchestrator')
+    expect(orbe.style.width).toBe('120px')
+    // Recién montada (el `act` de `montar` la pinta al cerrar): todavía
+    // quieta; a los 450 ms late y a los 1900 se asienta.
+    expect(orbe.dataset.estado).toBe('quieto')
+    await act(async () => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(orbe.dataset.estado).toBe('trabajando')
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+    })
+    expect(orbe.dataset.estado).toBe('listo')
+  })
+
   it('«Entendido» la cierra y la deja vista, por persona, como completa', async () => {
     await montar(<PilotoNovedad />)
     const cta = [...(modal()?.querySelectorAll('button') ?? [])].find((b) =>

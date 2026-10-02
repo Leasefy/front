@@ -2,10 +2,14 @@
 
 /**
  * AgentIntroModal — per-agent presentation card, rendered with the cadence
- * §Novedades `<FeatureAnnouncement>` (grainy aurora hero + intro copy +
- * "Empezar" CTA). Brand-photo hero was retired in favour of the cadence aurora
- * (Nico's call). Sin la píldora «L Leasefy» sobre el halo (Nico, 02-10, igual
- * que en `PilotoNovedad`): `brand={false}`.
+ * §Novedades `<FeatureAnnouncement>`. Desde el 02-10-2026 el héroe ya no es la
+ * aurora: es el ORBE GRANDE del agente (Nico: «la presentación de cada agente
+ * usa su orbe grande en vez de la aurora»), con su paleta del registro
+ * (`equipo.ts`), centrado sobre el fondo de la tarjeta, que entra y despierta
+ * —quieto → trabajando → listo— mientras aparece el texto. Lo arma
+ * `PresentacionConOrbe` (`src/components/agentes/`), el mismo de la
+ * presentación del Piloto (`PilotoNovedad`, con Ori). Sin la píldora
+ * «L Leasefy» (Nico, 02-10).
  *
  * The FIRST time the user enters an agent's workspace
  * (el workspace del agente dentro de su módulo) a centered announcement presents that
@@ -25,18 +29,21 @@
  * modal: el `Dialog` de Radix (foco atrapado y devuelto, Esc, velo, capa
  * `z-[300]` de los modales) con un Content transparente, y adentro la tarjeta
  * TAL CUAL la pinta `FeatureAnnouncement` —que trae su propio fondo, radio y
- * sombra— más la ✕ del producto (`ASPA_DE_CIERRE`). Antes era una cáscara
- * a mano (un portal con su capa en `z-[1000]`, sin ✕) con su propio Esc y su
- * propio manejo del foco. `FeatureAnnouncement` no se toca.
+ * sombra— más la ✕ del producto (`ASPA_DE_CIERRE`). `FeatureAnnouncement` no
+ * se toca. La vista es `PresentacionDelAgente` (abierta o no, y qué hacer al
+ * cerrar); `AgentIntroModal` sólo decide CUÁNDO sale. La vista previa
+ * `/agentes-preview` abre la vista sola, sin la marca de la agencia.
  *
  * A11y: título y descripción anunciados (sr-only: la tarjeta los pinta); el
- * foco vuelve a donde estaba al abrirse.
+ * foco vuelve a donde estaba al abrirse. El orbe es decorativo (el título ya
+ * nombra al agente).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from '@phosphor-icons/react'
-import { FeatureAnnouncement } from '@leasefy/cadence'
+import { PresentacionConOrbe } from '@/components/agentes/PresentacionConOrbe'
+import type { IdDeAgente } from '@/lib/agentes/equipo'
 import { useI18n } from '@/lib/i18n'
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
@@ -47,17 +54,24 @@ import {
 } from '@/lib/api/onboarding-visto.service'
 
 export interface AgentIntroConfig {
-  /** Agent id — the `agente:<id>` key of the agency's «ya la vio» + i18n block name. */
-  id: string
+  /**
+   * Agent id — the `agente:<id>` key of the agency's «ya la vio» + i18n block
+   * name, y el agente del registro cuyo orbe se presenta.
+   */
+  id: IdDeAgente
   /** Route prefix under which this agent's workspace lives. */
   /** Slug del workspace en `agentWorkspaceNav.ts` (findAgentWorkspace decide cuál aplica). */
   slug: string
   titleKey: string
   descriptionKey: string
+  /**
+   * @deprecated Desde el 02-10-2026 el héroe es el orbe del agente; la foto de
+   * la marca ya no se pinta. Queda para no romper a quien la lea.
+   */
   image: string
 }
 
-// One DISTINCT brand image per agent (tour uses 02/09/15; free: 10-14, 16).
+// Una foto de la marca por agente (retirada del héroe el 02-10: ver `image`).
 export const AGENT_INTROS: AgentIntroConfig[] = [
   {
     id: 'cobranza',
@@ -130,7 +144,6 @@ export interface AgentIntroModalProps {
 const ESPERA_AL_ENTRAR_MS = 600
 
 export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModalProps) {
-  const { t } = useI18n()
   const { estaVista, marcarVista } = usePanelPrefs()
   const [visibleId, setVisibleId] = useState<string | null>(null)
   /**
@@ -179,35 +192,59 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   }, [])
 
   const abierta = Boolean(agent && visibleId === agent.id)
-  const titulo = agent ? t(agent.titleKey) : ''
-  const descripcion = agent ? t(agent.descriptionKey) : ''
+
+  return (
+    <PresentacionDelAgente
+      agente={agent}
+      abierta={abierta}
+      onCerrar={cerrar}
+      onCloseAutoFocus={devolverElFoco}
+    />
+  )
+}
+
+export interface PresentacionDelAgenteProps {
+  /** El agente que se presenta (sin agente no se pinta nada). */
+  agente: AgentIntroConfig | null
+  abierta: boolean
+  /** El fondo, Esc y la ✕: `omitido` · «Entendido»: `completo`. */
+  onCerrar: (estado: EstadoDelOnboarding) => void
+  /** Para devolver el foco a donde estaba (Radix lo devolvería al `body`). */
+  onCloseAutoFocus?: (e: Event) => void
+}
+
+/**
+ * La presentación de un agente, sin decidir cuándo sale: el `Dialog` con la
+ * tarjeta de su orbe. La usa `AgentIntroModal` y la vista previa.
+ */
+export function PresentacionDelAgente({ agente, abierta, onCerrar, onCloseAutoFocus }: PresentacionDelAgenteProps) {
+  const { t } = useI18n()
+  const titulo = agente ? t(agente.titleKey) : ''
+  const descripcion = agente ? t(agente.descriptionKey) : ''
 
   return (
     // El fondo, Esc y la ✕ la dejan de lado; «Entendido» es haberla leído.
-    <DialogPrimitive.Root open={abierta} onOpenChange={(o) => !o && cerrar('omitido')}>
+    <DialogPrimitive.Root open={Boolean(agente) && abierta} onOpenChange={(o) => !o && onCerrar('omitido')}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-[300] bg-black/60 motion-safe:animate-in motion-safe:fade-in-0" />
         <DialogPrimitive.Content
           className="fixed left-1/2 top-1/2 z-[300] max-h-[90dvh] w-[calc(100vw-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[20px] outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95"
           data-lenis-prevent
           data-testid="presentacion-del-agente"
-          onCloseAutoFocus={devolverElFoco}
+          data-agente={agente?.id}
+          onCloseAutoFocus={onCloseAutoFocus}
         >
           <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
-          {/*
-            Sin la píldora «L Leasefy» sobre el halo (Nico, 02-10): `brand`
-            reemplaza la píldora entera y cadence la pinta con `brand ?? …`, así
-            que `false` —no `null`, que caería a la píldora— no pinta nada.
-          */}
-          <FeatureAnnouncement
-            brand={false}
-            title={titulo}
-            description={descripcion}
-            ctaLabel={t('inmobiliaria.ai.tour.finish')}
-            onCta={() => cerrar('completo')}
-            className="w-full"
-          />
+          {agente && (
+            <PresentacionConOrbe
+              agente={agente.id}
+              title={titulo}
+              description={descripcion}
+              ctaLabel={t('inmobiliaria.ai.tour.finish')}
+              onCta={() => onCerrar('completo')}
+            />
+          )}
           <DialogPrimitive.Close
             aria-label={t('common.close')}
             className={`${ASPA_DE_CIERRE} absolute right-3 top-3`}

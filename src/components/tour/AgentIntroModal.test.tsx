@@ -11,13 +11,15 @@
  *
  * Desde el 02-10 es el `Dialog` de Radix, como `PilotoNovedad`: la tarjeta de
  * `FeatureAnnouncement` adentro de un Content transparente, con la ✕ del
- * producto.
+ * producto. Y el héroe ya no es la aurora: es el orbe grande del agente
+ * (`PresentacionConOrbe`), que despierta quieto → trabajando → listo.
  */
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { MotionConfig } from 'framer-motion'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -39,25 +41,39 @@ vi.mock('@/lib/i18n', () => ({
 }))
 
 // La tarjeta de la marca no es lo que se prueba acá: un doble con su CTA que
-// además deja ver la píldora de la marca (`brand`) tal como la pinta cadence:
-// `brand ?? <píldora con appName>`.
-vi.mock('@leasefy/cadence', () => ({
+// además deja ver el héroe tal como lo pinta cadence (`brand ?? <píldora>`,
+// sobre `heroGradient ?? heroImage`). El orbe (`AgentOrb`) es el de verdad:
+// en happy-dom no hay WebGL y pinta su respaldo SVG.
+vi.mock('@leasefy/cadence', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@leasefy/cadence')>()),
   FeatureAnnouncement: ({
     title,
     ctaLabel,
     onCta,
     brand,
     appName = 'Cadence',
+    heroGradient,
+    heroImage,
+    className,
   }: {
     title: string
     ctaLabel: string
     onCta: () => void
     brand?: React.ReactNode
     appName?: string
+    heroGradient?: string
+    heroImage?: string
+    className?: string
   }) => (
-    <div>
-      <div data-testid="presentacion-heroe">{brand ?? <span data-testid="presentacion-pildora">{appName}</span>}</div>
-      <p>{title}</p>
+    <div className={className} data-testid="presentacion-tarjeta">
+      <div
+        data-testid="presentacion-heroe"
+        data-hero-gradient={heroGradient ?? ''}
+        data-hero-image={heroImage ?? ''}
+      >
+        {brand ?? <span data-testid="presentacion-pildora">{appName}</span>}
+      </div>
+      <h3>{title}</h3>
       <button type="button" data-testid="presentacion-cta" onClick={onCta}>
         {ctaLabel}
       </button>
@@ -73,9 +89,13 @@ const CLAVE = 'agente:cobranza'
 let contenedor: HTMLDivElement
 let root: Root
 
-function pintar(suppressed = false) {
+function pintar(suppressed = false, reducido = false) {
   act(() => {
-    root.render(<AgentIntroModal pathname={RUTA_DE_COBRANZA} suppressed={suppressed} />)
+    root.render(
+      <MotionConfig reducedMotion={reducido ? 'always' : 'never'}>
+        <AgentIntroModal pathname={RUTA_DE_COBRANZA} suppressed={suppressed} />
+      </MotionConfig>,
+    )
   })
   act(() => {
     vi.advanceTimersByTime(700)
@@ -187,6 +207,58 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
     expect(heroe).not.toBeNull()
     expect(heroe.querySelector('[data-testid="presentacion-pildora"]')).toBeNull()
     expect(heroe.textContent).toBe('')
+  })
+
+  it('🔴 el héroe es el ORBE grande del agente, no la aurora (Nico, 02-10)', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    const heroe = document.querySelector('[data-testid="presentacion-heroe"]') as HTMLElement
+    // Sin la foto ni la aurora: el fondo de la tarjeta.
+    expect(heroe.dataset.heroGradient).toBe('transparent')
+    expect(heroe.dataset.heroImage).toBe('')
+    // El orbe del agente de ESTA presentación, con su paleta del registro.
+    const orbe = heroe.querySelector('.cdc-orb') as HTMLElement
+    expect(orbe).not.toBeNull()
+    expect(orbe.dataset.agente).toBe('cobranza')
+    expect(orbe.style.width).toBe('120px')
+    // Decorativo: el título ya nombra al agente.
+    expect(orbe.getAttribute('aria-hidden')).toBe('true')
+    // El héroe crece a su alto sólo si contiene el escenario del orbe.
+    expect(heroe.querySelector('[data-escenario-del-orbe]')).not.toBeNull()
+    const tarjeta = document.querySelector('[data-testid="presentacion-tarjeta"]') as HTMLElement
+    expect(tarjeta.className).toContain('[&>div:has([data-escenario-del-orbe])]:h-auto')
+  })
+
+  it('el orbe despierta mientras aparece el texto: quieto → trabajando → listo', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    const estado = () => (document.querySelector('[data-testid="presentacion-heroe"] .cdc-orb') as HTMLElement).dataset.estado
+    expect(estado()).toBe('quieto')
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(estado()).toBe('trabajando')
+    act(() => {
+      vi.advanceTimersByTime(1500)
+    })
+    expect(estado()).toBe('listo')
+    // Y se queda listo mientras la presentación esté abierta.
+    act(() => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(estado()).toBe('listo')
+    expect(dialogo()?.textContent).toContain('inmobiliaria.ai.intro.cobranza.title')
+  })
+
+  it('con movimiento reducido el orbe queda listo de una, sin la secuencia', () => {
+    prefs.vistas[CLAVE] = false
+    pintar(false, true)
+    const orbe = document.querySelector('[data-testid="presentacion-heroe"] .cdc-orb') as HTMLElement
+    expect(orbe.dataset.estado).toBe('listo')
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+    expect(orbe.dataset.estado).toBe('listo')
   })
 
   it('al cerrarse devuelve el foco a donde estaba', () => {

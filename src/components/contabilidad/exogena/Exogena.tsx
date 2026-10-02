@@ -520,7 +520,11 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           if (!a && ocupado === null) setAprobando(null);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-visto-bueno">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<SealCheck weight="bold" />}
+          data-testid="dialogo-de-visto-bueno"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Visto bueno del formato {aprobando}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -546,7 +550,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                 e.preventDefault();
                 void aprobar();
               }}
-              disabled={ocupado !== null}
+              loading={ocupado !== null}
               data-testid="confirmar-visto-bueno"
             >
               {ocupado !== null ? 'Guardando…' : 'Dar el visto bueno'}
@@ -564,7 +568,11 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar el visto bueno del {anulando}?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -589,7 +597,8 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                 e.preventDefault();
                 void anular();
               }}
-              disabled={ocupado !== null || motivo.trim().length === 0}
+              disabled={motivo.trim().length === 0}
+              loading={ocupado !== null}
               data-testid="confirmar-anulacion"
             >
               Quitar el visto bueno

@@ -309,6 +309,8 @@ describe('no renovar', () => {
     await montar({ onTerminate });
     await clic(porTestId('renovacion-no-renovar'));
     expect(porTestId('dialogo-no-renovar')).not.toBeNull();
+    // Cierra la renovación: es destructivo (medallón y botón rojos, DESIGN.md §17).
+    expect(porTestId('dialogo-no-renovar')?.getAttribute('data-variant')).toBe('destructive');
     expect(porTestId<HTMLButtonElement>('no-renovar-confirmar')?.disabled).toBe(true);
 
     await escribir(porTestId<HTMLTextAreaElement>('no-renovar-motivo'), 'Se muda en diciembre.');

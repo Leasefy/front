@@ -83,6 +83,7 @@ export function PresupuestoPanel() {
   const [fallo, setFallo] = useState<unknown>(null);
   const [abriendo, setAbriendo] = useState(false);
   const [borrando, setBorrando] = useState<PresupuestoCargado | null>(null);
+  const [quitando, setQuitando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -111,6 +112,7 @@ export function PresupuestoPanel() {
 
   const confirmarBorrado = useCallback(async () => {
     if (!borrando) return;
+    setQuitando(true);
     try {
       await finanzasApi.borrarPresupuesto(borrando.id);
       toast.success('Se quitó el presupuesto de ese rubro.');
@@ -118,6 +120,8 @@ export function PresupuestoPanel() {
       await cargar();
     } catch (error) {
       toast.error(mensajeDelFallo(error, 'No se pudo quitar el presupuesto.'));
+    } finally {
+      setQuitando(false);
     }
   }, [borrando, cargar]);
 
@@ -183,18 +187,32 @@ export function PresupuestoPanel() {
         onGuardado={cargar}
       />
 
-      <AlertDialog open={borrando !== null} onOpenChange={(v) => !v && setBorrando(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={borrando !== null} onOpenChange={(v) => !v && !quitando && setBorrando(null)}>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar el presupuesto de este rubro?</AlertDialogTitle>
             <AlertDialogDescription>
-              La comparación de {borrando?.rubro.replace(/_/g, ' ')} de {borrando?.mes} deja de
-              tener con qué medirse. El real no cambia: sólo se borra lo que se había planeado.
+              Se borran los{' '}
+              <span className="font-mono tabular-nums">
+                {formatCurrency(borrando?.valorCop ?? 0)}
+              </span>{' '}
+              presupuestados para {borrando?.rubro.replace(/_/g, ' ')} en {borrando?.mes}, y la
+              comparación de ese rubro deja de tener con qué medirse. El real no cambia: sólo se
+              borra lo que se había planeado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Dejarlo</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmarBorrado()}>Quitarlo</AlertDialogAction>
+            <AlertDialogCancel disabled={quitando}>Dejarlo</AlertDialogCancel>
+            <AlertDialogAction
+              // Abierto hasta que el back conteste: se cierra sólo si salió bien.
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarBorrado();
+              }}
+              loading={quitando}
+            >
+              Quitarlo
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -446,12 +464,13 @@ function DialogoDeCarga({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCerrar}>
+          <Button variant="outline" onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
             onClick={() => void guardar()}
-            disabled={guardando || !rubro.trim() || valor === ''}
+            disabled={!rubro.trim() || valor === ''}
+            isLoading={guardando}
             data-testid="guardar-presupuesto"
           >
             {guardando ? 'Guardando…' : 'Guardar'}

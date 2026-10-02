@@ -1,23 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import {
-  X,
   CheckCircle,
   Clock,
   Warning,
-  FileText,
-  MagnifyingGlass,
-  Brain,
-  Bell,
   ShieldCheck,
   GitMerge,
 } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import type { AgentActivity } from '@/lib/types/ai-agents';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 
 /**
  * Lo que de esta ejecución quedó guardado, que es bastante menos de lo que la
@@ -146,46 +139,27 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
   const errorContext = getErrorContext(activity);
   const isScoring = activity.agentId === 'tenant-scoring';
   const AgentIcon = isScoring ? ShieldCheck : GitMerge;
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [isClosing, setIsClosing] = useState(false);
-  const { stop, start } = useLenis();
+  /*
+   * El padre lo monta mientras haya una actividad elegida. Cerrar primero
+   * apaga `abierto` —Radix anima la salida con el contenido montado— y recién
+   * cuando el cajón terminó de irse (`onCloseAutoFocus`) se le avisa al padre,
+   * que lo desmonta. Esc, el velo y la ✕ los pone el `Sheet`; Lenis lo frena
+   * `SmoothScroll` mientras haya un diálogo abierto.
+   */
+  const [abierto, setAbierto] = useState(true);
 
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      start();
-      onClose();
-    }, 350);
-  }, [onClose, start]);
-
-  useEffect(() => {
-    stop();
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') handleClose();
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [handleClose, stop]);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[60]" style={{ pointerEvents: 'auto' }}>
-      {/* Backdrop */}
-      <div className={cn('absolute inset-0 bg-black/10 backdrop-blur-[2px]', isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in')} onClick={handleClose} />
-
-      {/* Panel — single scrollable container */}
-      <div
-        ref={panelRef}
-        data-lenis-prevent
-        className={cn('absolute top-0 right-0 bottom-0 w-full max-w-lg bg-surface border-l border-border shadow-black/10', isClosing ? 'animate-panel-out' : 'animate-panel-in')}
-        style={{ overflowY: 'auto', overscrollBehavior: 'none' }}
+  return (
+    <Sheet open={abierto} onOpenChange={(o) => !o && setAbierto(false)}>
+      <SheetContent
+        side="right"
+        size="md"
+        aria-describedby={undefined}
+        onCloseAutoFocus={() => onClose()}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-surface border-b border-border-faint px-6 py-4 flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
+        <SheetHeader
+          leading={
             <div className={cn(
-              'rounded-md p-2 flex-shrink-0 mt-0.5',
+              'rounded-md p-2 flex-shrink-0',
               isScoring ? 'bg-primary-soft' : 'bg-surface-muted',
             )}>
               <AgentIcon weight="duotone" className={cn(
@@ -193,23 +167,12 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                 isScoring ? 'text-primary' : 'text-fg-muted',
               )} />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-fg truncate">{activity.title}</p>
-              <p className="text-xs text-fg-subtle mt-0.5">
-                {activity.agentName} · {timeAgo(activity.timestamp)}
-              </p>
-            </div>
-          </div>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            icon={<X className="h-4 w-4" />}
-            onClick={handleClose}
-            aria-label="Cerrar"
-            className="flex-shrink-0"
-          />
-        </div>
+          }
+          title={activity.title}
+          description={`${activity.agentName} · ${timeAgo(activity.timestamp)}`}
+        />
 
+        <SheetBody className="px-0 py-0">
         {/* Result summary */}
         {activity.metadata?.score !== undefined && (
           <div className="mx-6 mt-5 rounded-lg border border-border bg-surface-muted p-4 animate-content-reveal" style={{ animationDelay: '0.15s' }}>
@@ -357,8 +320,8 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
             </div>
           </div>
         )}
-      </div>
-    </div>,
-    document.body,
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

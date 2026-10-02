@@ -22,7 +22,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Gavel } from '@phosphor-icons/react';
+import { Gavel, Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -483,13 +483,18 @@ export function CobroJuridico() {
         <AlertDialog
           open={cerrando !== null}
           onOpenChange={(abierto) => {
-            if (!abierto) {
+            if (!abierto && !ocupado) {
               setCerrando(null);
               setSinCobro(false);
             }
           }}
         >
-          <AlertDialogContent>
+          {/* Cerrar el caso es una confirmación; «sin cobro» anula los honorarios
+              del estado de cuenta, y ahí pasa a destructiva (medallón y botón rojos). */}
+          <AlertDialogContent
+            variant={sinCobro ? 'destructive' : 'confirm'}
+            icon={sinCobro ? <Prohibit weight="bold" /> : <Gavel weight="bold" />}
+          >
             <AlertDialogHeader>
               <AlertDialogTitle>Cerrar el caso</AlertDialogTitle>
               <AlertDialogDescription>
@@ -524,7 +529,8 @@ export function CobroJuridico() {
                   e.preventDefault();
                   void cerrar();
                 }}
-                disabled={ocupado || motivoDeCierre.trim().length < 5}
+                disabled={motivoDeCierre.trim().length < 5}
+                loading={ocupado}
                 data-testid="confirmar-cerrar-caso"
               >
                 Cerrar el caso

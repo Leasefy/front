@@ -30,7 +30,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Warning, CheckCircle, SealWarning, ArrowSquareOut } from '@phosphor-icons/react'
+import { Warning, CheckCircle, SealWarning, ArrowSquareOut, Receipt } from '@phosphor-icons/react'
 
 import {
   Dialog,
@@ -213,31 +213,63 @@ export function GenerarCobrosDialog({
     onOpenChange(siguiente)
   }
 
+  const omitidos = resultado?.omitidosPorContratoVencido
+  /*
+   * La variante sigue al estado (DESIGN.md §17): pregunta → corrida terminada
+   * (o terminada SIN poder verificar los vencidos, que es una advertencia: la
+   * corrida no excluyó a nadie) → fallo. El medallón dice el estado; por eso el
+   * ✓ verde que iba a mano en el cuerpo ya no está.
+   */
+  const variante = omitidos
+    ? omitidos.consultado
+      ? 'success'
+      : 'warning'
+    : error
+      ? 'error'
+      : 'confirm'
+
   return (
     <Dialog open={open} onOpenChange={cambiarApertura}>
-      <DialogContent className="sm:max-w-lg" data-testid="generar-cobros-dialog">
+      <DialogContent
+        size="md"
+        variant={variante}
+        icon={variante === 'confirm' ? <Receipt weight="bold" /> : undefined}
+        data-testid="generar-cobros-dialog"
+      >
         <DialogHeader>
-          <DialogTitle>
-            {t('inmobiliaria.ai.pagos_home.resumen.generar.titulo', { mes: titulo })}
-          </DialogTitle>
-          <DialogDescription>
-            {t('inmobiliaria.ai.pagos_home.resumen.generar.descripcion', { mes: titulo })}
-          </DialogDescription>
+          {resultado && omitidos ? (
+            <>
+              <DialogTitle>La corrida de {titulo} terminó</DialogTitle>
+              {typeof resultado.created === 'number' ? (
+                <DialogDescription>
+                  <span className="tabular-nums">{resultado.created.toLocaleString('es-CO')}</span>{' '}
+                  {resultado.created === 1 ? 'cobro generado.' : 'cobros generados.'}
+                </DialogDescription>
+              ) : null}
+            </>
+          ) : error ? (
+            <>
+              <DialogTitle>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.errorTitulo', { mes: titulo })}
+              </DialogTitle>
+              <DialogDescription>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.errorDescripcion')}
+              </DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.titulo', { mes: titulo })}
+              </DialogTitle>
+              <DialogDescription>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.descripcion', { mes: titulo })}
+              </DialogDescription>
+            </>
+          )}
         </DialogHeader>
 
-        {resultado?.omitidosPorContratoVencido ? (
-          <div className="space-y-3">
-            <p className="flex items-start gap-2 text-sm text-fg-muted">
-              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="duotone" aria-hidden="true" />
-              <span>
-                La corrida de {titulo} terminó
-                {typeof resultado.created === 'number'
-                  ? `: ${resultado.created.toLocaleString('es-CO')} ${resultado.created === 1 ? 'cobro generado' : 'cobros generados'}.`
-                  : '.'}
-              </span>
-            </p>
-            <OmitidosPorVencido omitidos={resultado.omitidosPorContratoVencido} />
-          </div>
+        {omitidos ? (
+          <OmitidosPorVencido omitidos={omitidos} />
         ) : error ? (
           <FalloDeCarga
             error={error}
@@ -248,7 +280,7 @@ export function GenerarCobrosDialog({
         ) : (
           <div className="space-y-3">
             {/* El alcance, en hechos: sobre qué mes y qué hay hoy. */}
-            <dl className="rounded-lg border border-border bg-surface-muted/40 divide-y divide-border">
+            <dl className="rounded-lg border border-border divide-y divide-border">
               <div className="flex items-baseline justify-between gap-4 px-4 py-3">
                 <dt className="text-sm text-fg-muted">
                   {t('inmobiliaria.ai.pagos_home.resumen.generar.mesLabel')}
@@ -300,29 +332,36 @@ export function GenerarCobrosDialog({
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={() => cambiarApertura(false)} data-testid="generar-cerrar">
+            // Terminado, la salida es blanca (DESIGN.md §17: «Listo» blanco).
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => cambiarApertura(false)}
+              data-testid="generar-cerrar"
+            >
               Cerrar
             </Button>
           ) : (
             <>
-          <Button
-            variant="secondary"
-            hideArrow
-            onClick={() => cambiarApertura(false)}
-            disabled={enviando}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            hideArrow
-            onClick={confirmar}
-            disabled={enviando}
-            data-testid="generar-confirmar"
-          >
-            {enviando
-              ? t('inmobiliaria.ai.pagos_home.resumen.generar.enviando')
-              : t('inmobiliaria.ai.pagos_home.resumen.generar.confirmar', { mes: titulo })}
-          </Button>
+              <Button
+                variant="secondary"
+                hideArrow
+                onClick={() => cambiarApertura(false)}
+                disabled={enviando}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                hideArrow
+                onClick={confirmar}
+                disabled={enviando}
+                isLoading={enviando}
+                data-testid="generar-confirmar"
+              >
+                {enviando
+                  ? t('inmobiliaria.ai.pagos_home.resumen.generar.enviando')
+                  : t('inmobiliaria.ai.pagos_home.resumen.generar.confirmar', { mes: titulo })}
+              </Button>
             </>
           )}
         </DialogFooter>

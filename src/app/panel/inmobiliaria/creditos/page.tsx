@@ -6,7 +6,6 @@ import {
   Coin,
   ShoppingCart,
   WarningCircle,
-  X,
   Info,
   Calendar,
   Lock,
@@ -16,6 +15,14 @@ import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { BackButton } from '@/components/ui/back-button';
 import { Button, Badge, Input, Spinner } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   Select,
@@ -27,6 +34,7 @@ import {
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
 import { useAuth } from '@/lib/auth';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type {
   AgentCreditsBalance,
   AgentCreditPack,
@@ -356,48 +364,35 @@ function PurchaseModal({
       );
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'No se pudo iniciar el pago por PSE.'
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo iniciar el pago por PSE.',
+          accion: 'iniciar el pago por PSE',
+        })
       );
     }
     setIsSubmitting(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={isSubmitting ? undefined : onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="comprar-creditos-titulo"
-        className="relative bg-background rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-          <div>
-            <h3 id="comprar-creditos-titulo" className="text-base font-semibold text-fg">
-              Comprar créditos
-            </h3>
-            <p className="text-sm text-fg-muted">
-              <span className="font-mono">{pack.packSize}</span> créditos ·{' '}
-              <span className="font-mono">{formatCurrency(pack.price)}</span>
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            disabled={isSubmitting}
-            hideArrow
-            aria-label="Cerrar"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se inicia el pago no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !isSubmitting) onClose();
+      }}
+    >
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Comprar créditos</DialogTitle>
+          <DialogDescription>
+            <span className="font-mono tabular-nums">{pack.packSize}</span> créditos ·{' '}
+            <span className="font-mono tabular-nums">{formatCurrency(pack.price)}</span>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de pagar lo apunta con `form=`. */}
+        <form id={ID_DE_LA_COMPRA} onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="creditos-banco" className="block text-sm font-medium text-foreground mb-1">
               Banco
@@ -517,34 +512,35 @@ function PurchaseModal({
             Pago por PSE. Te llevamos al sitio de tu banco; los créditos llegan cuando el banco
             confirme el pago.
           </p>
-
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={isSubmitting}
-              disabled={isSubmitting || !datosCompletos}
-              title={!datosCompletos ? 'Completa los datos del pagador' : undefined}
-              className="flex-1"
-            >
-              Pagar <span className="font-mono">{formatCurrency(pack.price)}</span>
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DE_LA_COMPRA}
+            hideArrow
+            isLoading={isSubmitting}
+            disabled={isSubmitting || !datosCompletos}
+            title={!datosCompletos ? 'Completa los datos del pagador' : undefined}
+          >
+            Pagar <span className="font-mono tabular-nums">{formatCurrency(pack.price)}</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DE_LA_COMPRA = 'form-comprar-creditos';
 
 // ============================================================================
 // Default export

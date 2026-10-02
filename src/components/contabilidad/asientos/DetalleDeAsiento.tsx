@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -83,26 +83,12 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
 
   return (
     <Sheet open={abierto} onOpenChange={(open) => !open && onCerrar()}>
-      <SheetContent
-        className="flex w-full flex-col p-0 sm:max-w-xl"
-        data-testid="detalle-de-asiento"
-      >
+      <SheetContent size="md" data-testid="detalle-de-asiento" aria-describedby={undefined}>
         {asiento ? (
           <>
-            <SheetHeader className="sticky top-0 z-10 border-b border-border bg-surface p-6 pb-4">
-              <div className="flex flex-wrap items-start justify-between gap-3 pr-10">
-                <div className="space-y-1">
-                  <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">
-                    Asiento n.º {asiento.numero}
-                  </p>
-                  <SheetTitle className="text-lg font-semibold text-fg">
-                    {asiento.descripcion}
-                  </SheetTitle>
-                  <p className="font-mono text-sm tabular-nums text-fg-muted">
-                    {diaLegible(asiento.fecha)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
+            <SheetHeader
+              actions={
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <Badge variant="secondary">{NOMBRE_DE_ORIGEN[asiento.origen] ?? asiento.origen}</Badge>
                   {asiento.cerrado ? (
                     <Badge variant="outline" className="gap-1">
@@ -111,14 +97,18 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                     </Badge>
                   ) : null}
                 </div>
-              </div>
+              }
+            >
+              <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">
+                Asiento n.º {asiento.numero}
+              </p>
+              <SheetTitle>{asiento.descripcion}</SheetTitle>
+              <p className="font-mono text-sm tabular-nums text-fg-muted">
+                {diaLegible(asiento.fecha)}
+              </p>
             </SheetHeader>
 
-            <div
-              className="flex-1 space-y-6 overflow-y-auto p-6"
-              data-lenis-prevent
-              style={{ overscrollBehavior: 'contain' }}
-            >
+            <SheetBody className="space-y-6">
               <div className="overflow-x-auto rounded-md border border-border">
                 <Table>
                   <TableHeader>
@@ -196,22 +186,21 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted p-4">
-                <p className="max-w-sm text-sm text-fg-muted">
-                  Un asiento no se edita ni se borra. Si está mal, se reversa: se crea su espejo y
-                  los dos quedan en el libro.
-                </p>
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setReversando(true)}
-                  data-testid="abrir-reversar"
-                >
-                  <ArrowUUpLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                  Reversar
-                </Button>
-              </div>
-            </div>
+            </SheetBody>
+
+            <SheetFooter
+              note="Un asiento no se edita ni se borra. Si está mal, se reversa: se crea su espejo y los dos quedan en el libro."
+            >
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={() => setReversando(true)}
+                data-testid="abrir-reversar"
+              >
+                <ArrowUUpLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Reversar
+              </Button>
+            </SheetFooter>
 
             <ReversarDialogo
               asiento={asiento}
@@ -274,11 +263,13 @@ function ReversarDialogo({
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      {/* Destructiva: no borra nada, pero anula el efecto del asiento en el libro. */}
+      <DialogContent variant="destructive" icon={<ArrowUUpLeft weight="bold" />} size="sm">
         <DialogHeader>
           <DialogTitle>Reversar el asiento n.º {asiento.numero}</DialogTitle>
           <DialogDescription>
-            Se crea un asiento espejo con los mismos montos al revés. El original no se toca.
+            Se crea un asiento espejo con los mismos montos al revés. El original no se toca: los
+            dos quedan en el libro y se anulan entre sí.
           </DialogDescription>
         </DialogHeader>
 
@@ -320,10 +311,11 @@ function ReversarDialogo({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={cerrar} disabled={enviando}>
+          <Button variant="outline" hideArrow onClick={cerrar} disabled={enviando}>
             Cancelar
           </Button>
           <Button
+            variant="destructive"
             hideArrow
             onClick={() => void confirmar()}
             isLoading={enviando}

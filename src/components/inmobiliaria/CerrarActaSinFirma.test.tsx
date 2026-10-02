@@ -66,9 +66,18 @@ async function montar(a: ActaEntrega) {
   })
 }
 
-const campos = () => Array.from(contenedor.querySelectorAll<HTMLInputElement>('input'))
+/**
+ * El diálogo es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `contenedor`. Se busca en el diálogo mismo.
+ */
+const dialogo = () => {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo no está abierto')
+  return d
+}
+const campos = () => Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
 const botonCerrar = () =>
-  Array.from(contenedor.querySelectorAll('button')).find(
+  Array.from(dialogo().querySelectorAll('button')).find(
     (b) => b.textContent?.trim() === 'Cerrar el acta',
   )
 
@@ -124,7 +133,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
 
   it('A3 — las condiciones se ven ANTES de intentar', async () => {
     await montar(acta({ fotosPorEspacio: {} } as Partial<ActaEntrega>))
-    const lista = contenedor.querySelector('[data-testid="condiciones-del-cierre"]')
+    const lista = dialogo().querySelector('[data-testid="condiciones-del-cierre"]')
     expect(lista).not.toBeNull()
     expect(lista!.textContent).toContain('Faltan las fotos por espacio')
     // Y el formulario queda cerrado: no se pide un testigo que no va a servir.
@@ -132,7 +141,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     // un navegador real lo propaga a sus controles, pero happy-dom no refleja
     // eso en la propiedad `.disabled` de cada input.
     expect(
-      contenedor.querySelector('fieldset')?.hasAttribute('disabled'),
+      dialogo().querySelector('fieldset')?.hasAttribute('disabled'),
     ).toBe(true)
     expect(botonCerrar()!.hasAttribute('disabled')).toBe(true)
     expect(h.actasApi.cerrarSinFirma).not.toHaveBeenCalled()
@@ -164,7 +173,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
 
   it('dice los 5 días para objetar, antes y después', async () => {
     await montar(acta())
-    expect(contenedor.textContent).toContain('5 días para objetar')
+    expect(dialogo().textContent).toContain('5 días para objetar')
 
     await escribir(campos()[0], 'Pedro Ruiz')
     await escribir(campos()[1], '71234567')
@@ -186,7 +195,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     await act(async () => {
       botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(contenedor.querySelector('[role="alert"]')?.textContent).toContain(
+    expect(dialogo().querySelector('[role="alert"]')?.textContent).toContain(
       'se cierra por el camino normal',
     )
   })

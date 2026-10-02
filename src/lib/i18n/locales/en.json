@@ -849,8 +849,8 @@
           "saving": "Saving..."
         },
         "deleteAccount": {
-          "title": "Delete account",
-          "confirmMessage": "Are you sure you want to delete this account?",
+          "title": "Delete this payout account?",
+          "confirmMessage": "Its details are deleted from Leasefy and can't be recovered: if you need it again, you'll have to add it again. If it was your default account, your oldest remaining account becomes the default.",
           "warningWithProperties": "This account has {{count}} assigned property(ies). You must reassign them before deleting.",
           "warningDefault": "This is your default account. You must set another account as default before deleting.",
           "deleteButton": "Delete account",
@@ -1941,8 +1941,8 @@
           "saveChange": "Save Change"
         },
         "deleteModal": {
-          "description": "This action is permanent and cannot be undone.",
-          "confirmMessage": "The access for {{name}} will be permanently removed from the platform.",
+          "description": "Their Leasefy account and what they did here are not deleted, and you can invite them again.",
+          "confirmMessage": "{{name}} loses access to this agency's panel right away and leaves the team list.",
           "deleting": "Deleting..."
         }
       },
@@ -2003,7 +2003,7 @@
         "confirmDescription": "Permission changes will immediately affect all users with these roles.",
         "cancel": "Cancel",
         "resetTitle": "Reset permissions",
-        "resetDescription": "This will reset permissions for all roles to their default values.",
+        "resetDescription": "Permissions for every role go back to the defaults and the changes you made to them are lost. This can't be undone.",
         "resetWarning": "All custom changes will be lost. This action cannot be undone.",
         "adminNote": "Admins have all permissions by default and cannot be modified.",
         "memberOverrideNote": "If someone in this role has their own permissions, they keep them: saving only changes what the role gives. «Reset» does erase everyone's own permissions."
@@ -2143,7 +2143,7 @@
       "addOwnerIA": "Create with AI",
       "editOwner": "Edit owner",
       "deleteOwner": "Delete owner",
-      "deleteConfirm": "Are you sure you want to delete {{name}}?",
+      "deleteConfirm": "Deleting {{name}} erases their record: contact details, bank account, tax profile and internal notes. This can't be undone.",
       "deleteWarningProperties": "This owner has {{count}} consigned property(ies).",
       "deleteBloqueado": {
         "titulo": "Cannot delete: {{count}} consigned unit(s)",
@@ -3433,7 +3433,7 @@
         },
         "terminateDialog": {
           "title": "Terminate consignment?",
-          "body": "\"{{property}}\" will move to Terminated status and leave the active portfolio. This action cannot be undone.",
+          "body": "\"{{property}}\" moves to Terminated and leaves your active portfolio. The mandate's terms (rent and commission) stay as history and can no longer be edited; the property itself can still be edited from its page. This action cannot be undone.",
           "confirm": "Terminate consignment"
         }
       },
@@ -3527,7 +3527,8 @@
         "mobileProgress": "Step {{current}} of {{total}}: {{label}}",
         "cancelDialog": {
           "title": "Cancel import?",
-          "description": "You will lose the progress of this import.",
+          "description": "You haven't uploaded anything yet: if you leave, what you have on this screen is lost.",
+          "descriptionLoteGuardado": "What you already uploaded stays saved and you can resume it from «Tienes una carga a medias». If the upload hadn't finished, you'll need to choose the same file again to continue.",
           "continueEditing": "Continue",
           "yesCancel": "Yes, cancel"
         }
@@ -4023,8 +4024,8 @@
         "uploadingPhotos": "Uploading photos...",
         "confirmConsignment": "Confirm Consignment",
         "cancelDialog": {
-          "title": "Cancel consignment?",
-          "description": "All entered information will be lost",
+          "title": "Cancel the consignment?",
+          "description": "What you've entered for this property is lost, photos included, and the draft saved in this browser is deleted. This can't be undone.",
           "continueEditing": "Continue editing",
           "yesCancel": "Yes, cancel"
         },
@@ -5089,7 +5090,7 @@
       "addNoteDesc": "Add a note or update to this maintenance request",
       "notePlaceholder": "Type your note here...",
       "saveNote": "Save note",
-      "cancelConfirm": "Are you sure you want to cancel this request?",
+      "cancelConfirm": "The request becomes “Cancelled”: it is not deleted, but from here you can no longer add quotes or notes to it, or mark it as completed.",
       "noKeep": "No, keep it",
       "yesCancel": "Yes, cancel",
       "markAsCompleted": "Mark as completed",
@@ -9246,7 +9247,9 @@
             "avisoYaHay": "There are already {{n}} charges for {{mes}}. Check the table before generating again.",
             "avisoLimpio": "There are no charges for {{mes}} yet.",
             "confirmar": "Generate the charges for {{mes}}",
-            "enviando": "Generating…"
+            "enviando": "Generating…",
+            "errorTitulo": "We couldn't generate the charges for {{mes}}",
+            "errorDescripcion": "Below is what happened and whether you can try again."
           },
           "actividad": {
             "aria": "Recent activity",
@@ -9438,7 +9441,7 @@
       "toastReversed": "Reconciliation reversed.",
       "toastActionError": "Could not complete the action.",
       "rejectDialogTitle": "Reject suggestion",
-      "rejectDialogDesc": "Enter the rejection reason. This field is required and will be recorded in the audit log.",
+      "rejectDialogDesc": "The suggestion is discarded and the movement goes back to unidentified. Enter the reason: it's required and is recorded in the audit log.",
       "rejectReasonPlaceholder": "Rejection reason…",
       "rejectConfirm": "Reject",
       "cancel": "Cancel",
@@ -10792,6 +10795,7 @@
       "cancelModalTitle": "Cancel visit",
       "cancelModalVisitWith": "Visit with",
       "cancelModalDateAt": "on {{date}} at {{time}}",
+      "cancelModalWhatHappens": "The visit isn't deleted: it stays in your list as cancelled, with the reason you choose, and {{name}} gets notified.",
       "cancelReasonLabel": "Cancellation reason",
       "cancelReason1": "I am not available on that date",
       "cancelReason2": "The property is no longer available",

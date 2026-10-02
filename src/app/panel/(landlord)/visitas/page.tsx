@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, X, CalendarCheck, CalendarX } from '@phosphor-icons/react';
+import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, CalendarCheck, CalendarX } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useVisits, useVisitActions } from '@/lib/hooks/useVisits';
 import { useLandlordProperties } from '@/lib/hooks/useLandlord';
@@ -11,8 +11,17 @@ import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/pla
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button, Input, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Card, Badge } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogSection,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { PageHeader, KpiCard, IconButton, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { PageHeader, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 
 type TabFunnel = 'all' | VisitStatus;
@@ -63,61 +72,55 @@ function CancelModal({
   const canSubmit = finalReason.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.cancelModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      {/* Destructiva con formulario: se elige el motivo antes de cancelar. */}
+      <DialogContent size="sm" variant="destructive" icon={<CalendarX weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>{t('landlord.visits.cancelModalTitle')}</DialogTitle>
+          <DialogDescription>
+            {t('landlord.visits.cancelModalVisitWith')} <span className="font-medium text-fg">{visit.candidateName}</span> {t('landlord.visits.cancelModalDateAt', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}.{' '}
+            {t('landlord.visits.cancelModalWhatHappens', { name: visit.candidateName })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <label className="text-sm font-medium text-fg block mb-3">
+            {t('landlord.visits.cancelReasonLabel')}
+          </label>
+          <RadioCardGroup
+            orientation="vertical"
+            value={selectedReason}
+            onValueChange={setSelectedReason}
+            aria-label={t('landlord.visits.cancelReasonLabel')}
+          >
+            {CANCEL_REASONS.map((reason) => (
+              <RadioCard
+                key={reason.key}
+                value={reason.value}
+                className="w-full"
+                label={reason.value}
+              />
+            ))}
+          </RadioCardGroup>
+        </div>
+
+        {isOtherReason && (
+          <Textarea
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+            placeholder={t('landlord.visits.cancelReasonPlaceholder')}
+            rows={3}
+            className="rounded-lg resize-none"
           />
-        </div>
+        )}
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <p className="text-sm text-fg-muted">
-            {t('landlord.visits.cancelModalVisitWith')} <span className="font-medium text-fg">{visit.candidateName}</span> {t('landlord.visits.cancelModalDateAt', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
-          </p>
-
-          <div>
-            <label className="text-sm font-medium text-fg block mb-3">
-              {t('landlord.visits.cancelReasonLabel')}
-            </label>
-            <RadioCardGroup
-              orientation="vertical"
-              value={selectedReason}
-              onValueChange={setSelectedReason}
-              aria-label={t('landlord.visits.cancelReasonLabel')}
-            >
-              {CANCEL_REASONS.map((reason) => (
-                <RadioCard
-                  key={reason.key}
-                  value={reason.value}
-                  className="w-full"
-                  label={reason.value}
-                />
-              ))}
-            </RadioCardGroup>
-          </div>
-
-          {isOtherReason && (
-            <Textarea
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-              placeholder={t('landlord.visits.cancelReasonPlaceholder')}
-              rows={3}
-              className="rounded-lg resize-none"
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onClose}>
             {t('landlord.visits.cancelBack')}
           </Button>
           <Button
@@ -128,9 +131,9 @@ function CancelModal({
           >
             {t('landlord.visits.cancelConfirm')}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -159,65 +162,55 @@ function RescheduleModal({
   const minDate = tomorrow.toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.rescheduleModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
-          />
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>{t('landlord.visits.rescheduleModalTitle')}</DialogTitle>
+          <DialogDescription>{t('landlord.visits.rescheduleExplanation')}</DialogDescription>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <div className="p-4 bg-surface-muted rounded-lg">
-            <p className="text-sm text-fg-muted">
-              {t('landlord.visits.rescheduleOriginal')} <span className="font-medium text-fg">{visit.candidateName}</span>
-            </p>
-            <p className="text-sm text-fg-subtle mt-0.5">
-              {t('landlord.visits.rescheduleOriginalDate', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
-            </p>
-          </div>
-
+        <DialogSection>
           <p className="text-sm text-fg-muted">
-            {t('landlord.visits.rescheduleExplanation')}
+            {t('landlord.visits.rescheduleOriginal')} <span className="font-medium text-fg">{visit.candidateName}</span>
           </p>
+          <p className="text-sm text-fg-subtle mt-0.5">
+            {t('landlord.visits.rescheduleOriginalDate', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
+          </p>
+        </DialogSection>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">
-                {t('landlord.visits.rescheduleNewDate')}
-              </label>
-              <Input
-                type="date"
-                value={newDate}
-                min={minDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">
-                {t('landlord.visits.rescheduleNewTime')}
-              </label>
-              <Input
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-fg block mb-2">
+              {t('landlord.visits.rescheduleNewDate')}
+            </label>
+            <Input
+              type="date"
+              value={newDate}
+              min={minDate}
+              onChange={(e) => setNewDate(e.target.value)}
+              className="rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-fg block mb-2">
+              {t('landlord.visits.rescheduleNewTime')}
+            </label>
+            <Input
+              type="time"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+              className="rounded-lg"
+            />
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onClose}>
             {t('landlord.visits.rescheduleBack')}
           </Button>
           <Button
@@ -228,9 +221,9 @@ function RescheduleModal({
           >
             {t('landlord.visits.rescheduleConfirm')}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -282,90 +275,84 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.scheduleModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
-          />
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent size="sm" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>{t('landlord.visits.scheduleModalTitle')}</DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleDateLabel')}</label>
-              <Input
-                type="date"
-                value={fecha}
-                min={minDate}
-                onChange={(e) => setFecha(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleTimeLabel')}</label>
-              <Select value={hora} onValueChange={setHora}>
-                <SelectTrigger className="h-11 rounded-lg">
-                  <SelectValue placeholder={t('landlord.visits.scheduleTimeSelect')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHEDULE_HOURS.map((h) => (
-                    <SelectItem key={h} value={h}>{h}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.schedulePropertyLabel')}</label>
-            <Select value={propiedad} onValueChange={setPropiedad}>
+            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleDateLabel')}</label>
+            <Input
+              type="date"
+              value={fecha}
+              min={minDate}
+              onChange={(e) => setFecha(e.target.value)}
+              className="rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleTimeLabel')}</label>
+            <Select value={hora} onValueChange={setHora}>
               <SelectTrigger className="h-11 rounded-lg">
-                <SelectValue placeholder={t('landlord.visits.schedulePropertySelect')} />
+                <SelectValue placeholder={t('landlord.visits.scheduleTimeSelect')} />
               </SelectTrigger>
               <SelectContent>
-                {properties.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                {SCHEDULE_HOURS.map((h) => (
+                  <SelectItem key={h} value={h}>{h}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          <div>
-            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleNotesLabel')}</label>
-            <Textarea
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
-              rows={3}
-              className="rounded-lg resize-none"
-            />
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
+        <div>
+          <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.schedulePropertyLabel')}</label>
+          <Select value={propiedad} onValueChange={setPropiedad}>
+            <SelectTrigger className="h-11 rounded-lg">
+              <SelectValue placeholder={t('landlord.visits.schedulePropertySelect')} />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleNotesLabel')}</label>
+          <Textarea
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
+            rows={3}
+            className="rounded-lg resize-none"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onClose}>
             {t('landlord.visits.scheduleCancel')}
           </Button>
           <Button
             variant="default"
             hideArrow
             onClick={handleConfirm}
+            isLoading={submitting}
             disabled={!canSubmit}
           >
             {t('landlord.visits.scheduleConfirm')}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

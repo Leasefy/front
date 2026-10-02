@@ -22,16 +22,23 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Scroll, Plus, WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
+import { Scroll, Plus, WarningCircle, CheckCircle } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import {
   clausulasPropiasApi,
@@ -230,12 +237,6 @@ function EditorDeClausula({
   onCerrar: () => void;
   onGuardada: () => void;
 }) {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-
   const [form, setForm] = useState<GuardarClausulaPropia>({
     titulo: clausula?.titulo ?? '',
     resumen: clausula?.resumen ?? '',
@@ -309,7 +310,12 @@ function EditorDeClausula({
       toast.success(clausula ? 'Cláusula actualizada' : 'Cláusula agregada');
       onGuardada();
     } catch (err) {
-      setFalla(mensajeDeError(err, 'No se pudo guardar la cláusula'));
+      setFalla(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar la cláusula',
+          accion: 'guardar la cláusula',
+        }),
+      );
       // El back manda sus motivos en el error: se muestran igual que los del
       // validador en vivo, porque son los mismos.
       const conMotivos = (err as { motivos?: MotivoDeRechazo[] })?.motivos;
@@ -322,33 +328,23 @@ function EditorDeClausula({
   const rechazada = (motivos?.length ?? 0) > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="lg" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>
             {clausula ? `Editar «${clausula.titulo}»` : 'Escribir una cláusula'}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_EDITOR} onSubmit={enviar} className="space-y-4">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-foreground">
               Título<span className="ml-0.5 text-danger">*</span>
@@ -451,33 +447,34 @@ function EditorDeClausula({
               {falla}
             </div>
           )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!completo || rechazada || guardando}
-              className="flex-1"
-            >
-              {clausula ? 'Guardar' : 'Agregar'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_EDITOR}
+            hideArrow
+            isLoading={guardando}
+            disabled={!completo || rechazada || guardando}
+          >
+            {clausula ? 'Guardar' : 'Agregar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DEL_EDITOR = 'form-editor-de-clausula';
 
 function mensajeDeError(e: unknown, porDefecto: string): string {
   if (e && typeof e === 'object' && 'message' in e) {

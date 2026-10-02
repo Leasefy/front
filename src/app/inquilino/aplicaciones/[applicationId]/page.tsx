@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -1050,7 +1050,7 @@ export default function ApplicationDetailPage() {
 
       {/* Withdraw confirmation */}
       <AlertDialog open={confirmWithdrawOpen} onOpenChange={setConfirmWithdrawOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<SignOut weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {locale === 'es' ? '¿Retirar tu aplicación?' : 'Withdraw your application?'}
@@ -1070,8 +1070,7 @@ export default function ApplicationDetailPage() {
                 e.preventDefault();
                 void handleWithdraw();
               }}
-              disabled={isWithdrawing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/85"
+              loading={isWithdrawing}
             >
               {isWithdrawing
                 ? locale === 'es'

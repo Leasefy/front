@@ -837,7 +837,14 @@ export function DialogoNoRenovar({
   const [motivo, setMotivo] = useState('');
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md" data-testid="dialogo-no-renovar">
+      {/* Destructiva: cierra la renovación. El ícono es el mismo del paso
+          «No se renueva» (no la papelera: no se borra nada). */}
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={<XCircle weight="bold" />}
+        data-testid="dialogo-no-renovar"
+      >
         <DialogHeader>
           <DialogTitle>No renovar este contrato</DialogTitle>
           <DialogDescription>
@@ -856,7 +863,7 @@ export function DialogoNoRenovar({
           />
         </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" hideArrow onClick={onCerrar}>
+          <Button type="button" variant="outline" hideArrow onClick={onCerrar} disabled={confirmando}>
             Cancelar
           </Button>
           <Button

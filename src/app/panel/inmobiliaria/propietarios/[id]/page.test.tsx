@@ -408,6 +408,19 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
     expect(toast.success).not.toHaveBeenCalled();
   });
 
+  it('Eliminar abre el Dialog de la plataforma y dice, con el nombre, qué se borra', async () => {
+    await render();
+    await click('accion-eliminar');
+    const dialogo = document.body.querySelector('[role="dialog"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.querySelector('h2')?.textContent).toBe('inmobiliaria.propietarios.deleteOwner');
+    expect(dialogo!.textContent).toContain(
+      'inmobiliaria.propietarios.deleteConfirm(NICOLAS EDUARDO GARCIA ARDILA)',
+    );
+    // Una sola ✕, la de la primitiva.
+    expect(dialogo!.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1);
+  });
+
   it('Eliminar borra por la API y vuelve a la lista', async () => {
     await render();
     await click('accion-eliminar');

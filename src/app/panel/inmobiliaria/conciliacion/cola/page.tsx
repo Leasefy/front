@@ -575,7 +575,7 @@ function ConciliacionCola() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent variant="destructive" icon={<XCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>Rechazar el cruce</DialogTitle>
             <DialogDescription>
@@ -585,7 +585,7 @@ function ConciliacionCola() {
               El movimiento vuelve a quedar sin identificar y el motivo queda registrado.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 px-6 py-4">
+          <div className="space-y-2">
             <Textarea
               id="motivo-rechazo"
               value={motivo}
@@ -601,6 +601,7 @@ function ConciliacionCola() {
             <Button
               variant="outline"
               hideArrow
+              disabled={busyRow !== null}
               onClick={() => {
                 setRechazando(null)
                 setMotivo('')
@@ -611,6 +612,7 @@ function ConciliacionCola() {
             <Button
               hideArrow
               variant="destructive"
+              isLoading={rechazando !== null && busyRow === rechazando.id}
               disabled={motivo.trim().length < 5 || busyRow !== null}
               onClick={() => void rechazar()}
               data-testid="conciliacion-confirmar-rechazo"

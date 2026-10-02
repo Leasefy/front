@@ -31,7 +31,7 @@
  *      desconfiar de la pantalla.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import {
@@ -39,7 +39,6 @@ import {
   Lock,
   Plus,
   Trash,
-  X,
   FileArrowUp,
   TextAa,
   Handshake,
@@ -48,8 +47,26 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   Badge,
   Button,
@@ -98,18 +115,6 @@ function mensajeDeError(e: unknown, porDefecto: string): string {
   return porDefecto
 }
 
-/**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar. El contenedor que scrollea lleva `data-lenis-prevent`.
- */
-function useLenisQuieto() {
-  const lenis = useLenis()
-  useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Agregar un requisito propio
 // ═══════════════════════════════════════════════════════════════════════════
@@ -125,7 +130,6 @@ function DialogoDeRequisito({
   onCerrar: () => void
   onCreado: () => void
 }) {
-  useLenisQuieto()
   const [perfil, setPerfil] = useState(
     perfilSugerido ?? perfiles[0]?.perfil ?? '',
   )
@@ -151,45 +155,41 @@ function DialogoDeRequisito({
       invalidar('postulaciones')
       onCreado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo agregar el requisito'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo agregar el requisito',
+          accion: 'agregar el requisito',
+        }),
+      )
     } finally {
       setGuardando(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-4">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-semibold text-fg">
-              Agregar un requisito
-            </h2>
-            <p className="text-sm text-fg-muted">
-              Lo va a ver quien se postule con ese perfil, al momento de aplicar.
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar()
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Agregar un requisito</DialogTitle>
+          <DialogDescription>
+            Lo va a ver quien se postule con ese perfil, al momento de aplicar.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6" data-testid="form-requisito">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de agregar lo apunta con `form=`. */}
+        <form
+          id={ID_DEL_FORM_DE_REQUISITO}
+          onSubmit={enviar}
+          className="space-y-4"
+          data-testid="form-requisito"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="req-perfil">¿A qué perfil se lo pides?</Label>
             <select
@@ -281,23 +281,33 @@ function DialogoDeRequisito({
             </span>
           </label>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onCerrar} disabled={guardando}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={guardando || !etiqueta.trim()}
-              data-testid="guardar-requisito"
-            >
-              {guardando ? 'Agregando…' : 'Agregar'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORM_DE_REQUISITO}
+            disabled={guardando || !etiqueta.trim()}
+            data-testid="guardar-requisito"
+          >
+            {guardando ? 'Agregando…' : 'Agregar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
+
+const ID_DEL_FORM_DE_REQUISITO = 'form-agregar-requisito'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Un requisito
@@ -502,7 +512,12 @@ export function RequisitosClient() {
       invalidar('postulaciones')
       setPorBorrar(null)
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo quitar el requisito'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo quitar el requisito',
+          accion: 'quitar el requisito',
+        }),
+      )
     } finally {
       setTocando(null)
     }
@@ -718,42 +733,39 @@ function ConfirmarBorrado({
   onCerrar: () => void
   onConfirmar: () => void
 }) {
-  useLenisQuieto()
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={ocupado ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative w-full max-w-md overflow-y-auto rounded-lg bg-background p-6"
-        role="alertdialog"
-        aria-modal="true"
-        data-testid="confirmar-borrado"
-      >
-        <h2 className="text-base font-semibold text-fg">
-          ¿Dejar de pedir «{requisito.etiqueta}»?
-        </h2>
-        <p className="mt-2 text-sm text-fg-muted">
-          Quien se postule con ese perfil ya no va a mandarlo, y nadie lo va a
-          echar de menos al revisar. Puedes volver a agregarlo cuando quieras.
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCerrar} disabled={ocupado}>
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirmar}
-            disabled={ocupado}
+    <AlertDialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se quita no se sale (ni con Esc ni con Cancelar).
+        if (!abierto && !ocupado) onCerrar()
+      }}
+    >
+      {/* Destructiva: medallón rojo y el botón de la acción sale rojo solo. */}
+      <AlertDialogContent variant="destructive" data-testid="confirmar-borrado">
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Dejar de pedir «{requisito.etiqueta}»?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Quien se postule con ese perfil ya no va a mandarlo, y nadie lo va a
+            echar de menos al revisar. Puedes volver a agregarlo cuando quieras.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            loading={ocupado}
+            onClick={(e) => {
+              // El diálogo se cierra cuando el back confirma (`borrar` limpia
+              // `porBorrar`); si falla, se queda abierto para reintentar.
+              e.preventDefault()
+              onConfirmar()
+            }}
             data-testid="confirmar-borrado-si"
           >
             {ocupado ? 'Quitando…' : 'Dejar de pedirlo'}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

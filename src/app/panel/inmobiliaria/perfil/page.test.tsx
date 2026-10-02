@@ -82,10 +82,11 @@ vi.mock('@/components/ui', () => ({
     size,
     hideArrow,
     asChild,
+    isLoading,
     ...props
   }: Record<string, unknown> & { children?: React.ReactNode }) => {
     void variant; void size; void hideArrow; void asChild
-    return React.createElement('button', props, children)
+    return React.createElement('button', { ...props, 'aria-busy': isLoading ? true : undefined }, children)
   },
   Input: (props: Record<string, unknown>) => React.createElement('input', props),
   Spinner: () => React.createElement('span', { 'data-testid': 'spinner' }),
@@ -94,6 +95,8 @@ vi.mock('@/components/ui', () => ({
 // ── Import page AFTER mocks ───────────────────────────────────────────────
 import InmobiliariaPerfilPage from './page'
 import { datosDelUsuario, oNulo } from './datos-del-perfil'
+import { settingsApi } from '@/lib/api/settings.service'
+import { toast } from '@/components/ui/toast'
 
 const USUARIO = {
   id: 'u-1',
@@ -114,7 +117,9 @@ function conUsuario(overrides: Partial<typeof USUARIO> = {}) {
     user: { ...USUARIO, ...overrides },
     agency: { name: 'Leasefy', nit: '900123456' },
     updateProfile: updateProfileMock,
-    logout: vi.fn(),
+    // Nunca resuelve: la despedida cierra la sesión a los 2 s y redirige; en
+    // la prueba no se navega a ningún lado.
+    logout: vi.fn(() => new Promise<void>(() => {})),
   })
 }
 
@@ -163,6 +168,40 @@ function escribirEn(valorActual: string, nuevo: string) {
   act(() => {
     setter.call(input!, nuevo)
     input!.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+// ── El modal de baja (portal de Radix en document.body) ─────────────────────
+
+function dialogo(): HTMLElement | null {
+  return document.body.querySelector<HTMLElement>('[role="dialog"]')
+}
+
+function textoDelModal(): string {
+  return dialogo()?.textContent ?? ''
+}
+
+function botonDelModal(texto: string): HTMLButtonElement {
+  const boton = Array.from(dialogo()?.querySelectorAll('button') ?? []).find(
+    (b) => b.textContent?.trim() === texto,
+  )
+  expect(boton, `no encontré el botón «${texto}» en el modal`).toBeDefined()
+  return boton as HTMLButtonElement
+}
+
+function escribirEnElModal(valor: string) {
+  const input = dialogo()?.querySelector('input')
+  expect(input, 'no encontré el campo de la palabra').toBeTruthy()
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+  act(() => {
+    setter.call(input!, valor)
+    input!.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+function escape() {
+  act(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
   })
 }
 
@@ -248,11 +287,14 @@ describe('Perfil — «Cancelar» descarta de verdad', () => {
 })
 
 describe('Perfil — el modal de baja no promete un borrado que no ocurre', () => {
+  // El modal es el `Dialog` del DS: Radix lo pinta en un portal en
+  // `document.body`, fuera del contenedor de la página.
   it('no dice que se eliminan los datos de la agencia, sus contratos ni sus cobros', async () => {
     await renderPage()
     act(() => { botonPorTexto('Eliminar mi cuenta').click() })
 
-    const texto = container.textContent ?? ''
+    const texto = textoDelModal()
+    expect(texto).toContain('¿Eliminar tu cuenta?')
     expect(texto).not.toContain('Se eliminará permanentemente')
     expect(texto).not.toContain('Datos de la agencia y configuración')
     expect(texto).not.toContain('Historial de propiedades y contratos')
@@ -263,7 +305,7 @@ describe('Perfil — el modal de baja no promete un borrado que no ocurre', () =
     await renderPage()
     act(() => { botonPorTexto('Eliminar mi cuenta').click() })
 
-    const texto = container.textContent ?? ''
+    const texto = textoDelModal()
     expect(texto).toContain('Perderás:')
     expect(texto).toContain('El acceso al panel de la inmobiliaria')
     expect(texto).toContain('No se elimina:')
@@ -283,11 +325,76 @@ describe('Perfil — el modal de baja no promete un borrado que no ocurre', () =
   it('Escape cierra el modal — el foco queda en el botón que lo abrió, fuera del overlay', async () => {
     await renderPage()
     act(() => { botonPorTexto('Eliminar mi cuenta').click() })
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(dialogo()).not.toBeNull()
 
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    })
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    escape()
+    expect(dialogo()).toBeNull()
+  })
+})
+
+describe('Perfil — la baja es un Dialog destructivo de tres pasos', () => {
+  it('es un diálogo con nombre, medallón rojo y su ✕', async () => {
+    await renderPage()
+    act(() => { botonPorTexto('Eliminar mi cuenta').click() })
+
+    const d = dialogo()!
+    const titulo = document.getElementById(d.getAttribute('aria-labelledby') ?? '')
+    expect(titulo?.textContent).toBe('¿Eliminar tu cuenta?')
+    expect(d.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
+    // Ni la banda roja ni la ✕ propia del modal a mano.
+    expect(d.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
+  })
+
+  it('«Continuar» lleva a escribir la palabra; el botón rojo sólo se habilita con ELIMINAR', async () => {
+    await renderPage()
+    act(() => { botonPorTexto('Eliminar mi cuenta').click() })
+    act(() => { botonDelModal('Continuar').click() })
+
+    await vi.waitFor(() => expect(textoDelModal()).toContain('Confirmar eliminación'))
+    const borrar = botonDelModal('Eliminar cuenta')
+    expect(borrar.disabled).toBe(true)
+
+    escribirEnElModal('eliminar')
+    expect(botonDelModal('Eliminar cuenta').disabled).toBe(false)
+  })
+
+  it('mientras borra no se sale (ni Escape ni ✕); la despedida tampoco se cierra', async () => {
+    let terminar: () => void = () => {}
+    vi.mocked(settingsApi.deleteAccount).mockImplementationOnce(
+      () => new Promise((r) => { terminar = () => r({ success: true, message: 'ok' }) }),
+    )
+    await renderPage()
+    act(() => { botonPorTexto('Eliminar mi cuenta').click() })
+    act(() => { botonDelModal('Continuar').click() })
+    await vi.waitFor(() => expect(textoDelModal()).toContain('Confirmar eliminación'))
+    escribirEnElModal('ELIMINAR')
+
+    await act(async () => { botonDelModal('Eliminar cuenta').click() })
+    expect(settingsApi.deleteAccount).toHaveBeenCalledTimes(1)
+    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).toBeNull()
+    escape()
+    expect(dialogo()).not.toBeNull()
+
+    await act(async () => { terminar() })
+    await vi.waitFor(() => expect(textoDelModal()).toContain('Cuenta eliminada'))
+    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).toBeNull()
+    escape()
+    expect(dialogo()).not.toBeNull()
+  })
+
+  it('si el backend la bloquea, dice por qué y el modal sigue en el paso de confirmar', async () => {
+    vi.mocked(settingsApi.deleteAccount).mockRejectedValueOnce(
+      new Error('No puedes eliminar tu cuenta: eres el único administrador de la inmobiliaria.'),
+    )
+    await renderPage()
+    act(() => { botonPorTexto('Eliminar mi cuenta').click() })
+    act(() => { botonDelModal('Continuar').click() })
+    await vi.waitFor(() => expect(textoDelModal()).toContain('Confirmar eliminación'))
+    escribirEnElModal('ELIMINAR')
+
+    await act(async () => { botonDelModal('Eliminar cuenta').click() })
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('único administrador'))
+    expect(textoDelModal()).toContain('Confirmar eliminación')
+    expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
   })
 })

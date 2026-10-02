@@ -76,6 +76,20 @@ const boton = (texto: string) =>
     b.textContent?.trim().includes(texto),
   )
 
+/**
+ * El descarte es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `contenedor`.
+ */
+const dialogo = () => {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo de descarte no está abierto')
+  return d
+}
+const botonDelDialogo = (texto: string) =>
+  Array.from(dialogo().querySelectorAll('button')).find((b) =>
+    b.textContent?.trim().includes(texto),
+  )
+
 beforeEach(() => {
   vi.clearAllMocks()
   h.canAccess.mockReturnValue(true)
@@ -127,11 +141,11 @@ describe('Bandeja de propuestas del agente', () => {
     await act(async () => {
       boton('No era')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    const descartar = boton('Descartar')!
+    const descartar = botonDelDialogo('Descartar')!
     expect(descartar.hasAttribute('disabled')).toBe(true)
     expect(h.api.descartar).not.toHaveBeenCalled()
 
-    const campo = contenedor.querySelector<HTMLInputElement>('input')!
+    const campo = dialogo().querySelector<HTMLInputElement>('input')!
     const setter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
@@ -140,9 +154,9 @@ describe('Bandeja de propuestas del agente', () => {
       setter.call(campo, 'Era una consulta de horarios')
       campo.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    expect(boton('Descartar')!.hasAttribute('disabled')).toBe(false)
+    expect(botonDelDialogo('Descartar')!.hasAttribute('disabled')).toBe(false)
     await act(async () => {
-      boton('Descartar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      botonDelDialogo('Descartar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(h.api.descartar).toHaveBeenCalledWith('pr-1', 'Era una consulta de horarios')
   })

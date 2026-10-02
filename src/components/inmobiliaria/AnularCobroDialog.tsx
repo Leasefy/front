@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Prohibit } from '@phosphor-icons/react';
 
 import {
   Dialog,
@@ -86,15 +87,20 @@ export function AnularCobroDialog({ cobro, onOpenChange, onAnulado }: AnularCobr
   };
 
   return (
-    <Dialog open={abierto} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="anular-cobro">
+    <Dialog open={abierto} onOpenChange={(o) => !anulando && onOpenChange(o)}>
+      <DialogContent
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        size="sm"
+        data-testid="anular-cobro"
+      >
         <DialogHeader>
           <DialogTitle>{t(k('titulo'))}</DialogTitle>
           <DialogDescription>{t(k('descripcion'))}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {cobro && (
-            <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-fg-muted">
+            <p className="rounded-[14px] border border-border px-3 py-2 text-sm text-fg-muted">
               {cobro.propertyTitle} · {cobro.tenantName} · {cobro.month}
             </p>
           )}
@@ -124,7 +130,7 @@ export function AnularCobroDialog({ cobro, onOpenChange, onAnulado }: AnularCobr
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={anulando}>
             {t(k('cancelar'))}
           </Button>
-          <Button variant="destructive" hideArrow onClick={() => void anular()} disabled={anulando}>
+          <Button variant="destructive" hideArrow onClick={() => void anular()} isLoading={anulando}>
             {anulando ? t(k('anulando')) : t(k('confirmar'))}
           </Button>
         </DialogFooter>

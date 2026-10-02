@@ -26,7 +26,7 @@ import {
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from '@/components/ui/toast';
 import type {
   Renovacion,
@@ -102,7 +102,9 @@ export function RenovacionWorkflow({ open = false, onClose, ...resto }: Renovaci
     <Sheet open={open} onOpenChange={(abierto) => !abierto && onClose?.()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-4xl"
+        size="xl"
+        // Cabecera, cuerpo y pie viven en `CuerpoDeRenovacion`.
+        layout="manual"
         aria-describedby={undefined}
         data-testid="renovacion-cajon"
       >
@@ -312,8 +314,8 @@ export function CuerpoDeRenovacion({
   return (
     <>
       {/* Cabecera: qué contrato es, en qué va y cuánto falta. */}
-      <div className="flex-none border-b border-border px-6 py-5">
-        <div className="flex items-start gap-3 pr-14">
+      <SheetHeader>
+        <div className="flex items-start gap-3">
           <span
             aria-hidden="true"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
@@ -346,13 +348,10 @@ export function CuerpoDeRenovacion({
             data-testid="renovacion-pasos"
           />
         ) : null}
-      </div>
+      </SheetHeader>
 
       {/* Cuerpo: el paso a la izquierda, el contrato y la actividad a la derecha. */}
-      <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-        data-lenis-prevent
-      >
+      <SheetBody>
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:gap-8">
           <div className="min-w-0">
             {terminada ? (
@@ -404,11 +403,12 @@ export function CuerpoDeRenovacion({
             />
           </div>
         </div>
-      </div>
+      </SheetBody>
 
       {/* Pie: lo que sigue, a la derecha; volver y no renovar, a la izquierda. */}
-      <div className="flex flex-none flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
-        <div className="flex items-center gap-1">
+      <SheetFooter
+        start={
+        <>
           {!terminada && paso > 0 && paso < 3 ? (
             <Button
               type="button"
@@ -435,8 +435,9 @@ export function CuerpoDeRenovacion({
               No renovar
             </Button>
           ) : null}
-        </div>
-        <div className="flex items-center gap-2">
+        </>
+        }
+      >
           {!terminada && paso === 0 ? (
             <>
               {renovacion.status === 'pending' ? (
@@ -503,8 +504,7 @@ export function CuerpoDeRenovacion({
               Cerrar
             </Button>
           ) : null}
-        </div>
-      </div>
+      </SheetFooter>
 
       <DialogoNoRenovar
         abierto={terminarAbierto}

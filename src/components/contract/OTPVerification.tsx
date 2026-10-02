@@ -3,7 +3,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
 import { contractsApi } from '@/lib/api/contracts.service';
@@ -276,11 +283,18 @@ export function OTPVerification({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className={cn('sm:max-w-md', className)}>
+      {/* La variante sigue al estado (DESIGN.md §17): el sobre mientras se pide
+          el código y el ✓ de éxito al verificar. Un error del código se queda
+          en el cuerpo, junto a los dígitos: el modal sigue siendo para escribir. */}
+      <DialogContent
+        size="sm"
+        variant={status === 'verified' ? 'success' : undefined}
+        icon={status === 'verified' ? undefined : <EnvelopeSimple weight="bold" />}
+        className={className}
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <EnvelopeSimple className="h-5 w-5 text-primary" />
-            Verificación de identidad
+          <DialogTitle>
+            {status === 'verified' ? 'Verificación exitosa' : 'Verificación de identidad'}
           </DialogTitle>
           <DialogDescription>
             {/* T-0109 — con `channels` (back WU-1+) el detalle por canal de
@@ -294,7 +308,7 @@ export function OTPVerification({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6">
           {/* Detalle por canal (T-0109 contract.md §3.0.1/§3.3 — SendOtpResponse.channels
               / CODIGO_NO_ENTREGADO.details.channels). Ausente en un back anterior a WU-1. */}
           {channels.length > 0 && (
@@ -371,13 +385,6 @@ export function OTPVerification({
             </div>
           )}
 
-          {status === 'verified' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-success">
-              <CheckCircle className="h-4 w-4" />
-              Verificación exitosa
-            </div>
-          )}
-
           {error && (
             <div className="flex items-center justify-center gap-2 text-sm text-danger">
               <WarningCircle className="h-4 w-4" />
@@ -408,7 +415,7 @@ export function OTPVerification({
           )}
 
           {/* Help text */}
-          <div className="rounded-[14px] bg-surface-muted p-3 text-xs text-fg-muted">
+          <div className="rounded-[14px] border border-border p-3 text-xs text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
               solo tú puedes firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
@@ -417,15 +424,16 @@ export function OTPVerification({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <DialogFooter>
           <Button
             variant="outline"
+            hideArrow
             onClick={onCancel}
             disabled={status === 'verifying' || status === 'verified'}
           >
             Cancelar
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

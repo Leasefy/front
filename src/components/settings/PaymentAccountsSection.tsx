@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
+import { Bank, Wallet, House, Star, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
@@ -10,7 +10,7 @@ import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   Select,
   SelectTrigger,
@@ -208,8 +208,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
       setShowAddAccountModal(false);
       resetForms();
       toast.success(t('landlordSettings.toasts.accountAdded'));
-    } catch {
-      toast.error(t('landlordSettings.toasts.errorAddingAccount'));
+    } catch (err) {
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t('landlordSettings.toasts.errorAddingAccount'),
+          accion: 'agregar la cuenta',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -250,8 +255,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
       setShowDeleteAccountModal(false);
       setEditingAccount(null);
       toast.success(t('landlordSettings.toasts.accountDeleted'));
-    } catch {
-      toast.error(t('landlordSettings.toasts.errorDeletingAccount'));
+    } catch (err) {
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t('landlordSettings.toasts.errorDeletingAccount'),
+          accion: 'eliminar la cuenta',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -391,6 +401,30 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         open={showAddAccountModal}
         onClose={() => { setShowAddAccountModal(false); resetForms(); }}
         title={t('landlordSettings.paymentAccounts.modals.addAccount.title')}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={isLoading}
+              onClick={() => { setShowAddAccountModal(false); resetForms(); }}
+            >
+              {t('landlordSettings.modals.cancel')}
+            </Button>
+            <Button
+              hideArrow
+              onClick={handleAddAccount}
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {!isLoading &&
+                (accountMethodType === 'bank' ? <Bank className="w-4 h-4" /> : <Wallet className="w-4 h-4" />)}
+              {isLoading
+                ? t('landlordSettings.paymentAccounts.modals.addAccount.adding')
+                : t('landlordSettings.paymentAccounts.modals.addAccount.addButton')}
+            </Button>
+          </>
+        }
       >
         <div className="space-y-5">
           {/* Segmented Control: Banco | Billetera Digital */}
@@ -707,55 +741,58 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
             </span>
           </label>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => { setShowAddAccountModal(false); resetForms(); }}
-              className="flex-1 rounded-lg"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </Button>
-            <Button
-              hideArrow
-              onClick={handleAddAccount}
-              disabled={isLoading}
-              className="flex-1 rounded-lg"
-            >
-              {isLoading ? (
-                <Spinner size="xs" variant="current" />
-              ) : (
-                accountMethodType === 'bank' ? <Bank className="w-4 h-4" /> : <Wallet className="w-4 h-4" />
-              )}
-              {isLoading
-                ? t('landlordSettings.paymentAccounts.modals.addAccount.adding')
-                : t('landlordSettings.paymentAccounts.modals.addAccount.addButton')}
-            </Button>
-          </div>
         </div>
       </SettingsModal>
 
       {/* Delete Payment Account Modal */}
-      <SettingsModal open={showDeleteAccountModal} onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }} title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}>
+      <SettingsModal
+        open={showDeleteAccountModal}
+        onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
+        title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}
+        variant="destructive"
+        description={t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
+        footer={
+          editingAccount ? (
+            <>
+              <Button
+                variant="outline"
+                hideArrow
+                disabled={isLoading}
+                onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
+              >
+                {t('landlordSettings.modals.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                onClick={handleDeletePaymentAccount}
+                isLoading={isLoading}
+                disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
+              >
+                {!isLoading && <TrashSimple className="w-4 h-4" />}
+                {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
+              </Button>
+            </>
+          ) : null
+        }
+      >
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-danger" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-danger">
-                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
-                  </p>
-                  <p className="text-xs text-danger mt-1">
+              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                {isBankAccount(editingAccount) ? (
+                  <Bank className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
+                ) : (
+                  <Wallet className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
+                )}
+                <p className="text-sm text-fg">
+                  {isBankAccount(editingAccount) ? editingAccount.bankName : editingAccount.walletName}{' '}
+                  <span className="font-mono tabular-nums text-fg-muted">
                     {isBankAccount(editingAccount)
-                      ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
-                      : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
-                  </p>
-                </div>
+                      ? maskAccountNumber(editingAccount.accountNumber)
+                      : maskPhoneNumber(editingAccount.phoneNumber)}
+                  </span>
+                </p>
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
                 <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
@@ -771,26 +808,6 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   </p>
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
-                  className="flex-1 rounded-lg"
-                >
-                  {t('landlordSettings.modals.cancel')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={handleDeletePaymentAccount}
-                  disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 rounded-lg"
-                >
-                  {isLoading ? <Spinner size="xs" variant="current" /> : <TrashSimple className="w-4 h-4" />}
-                  {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
-                </Button>
-              </div>
             </>
           )}
         </div>

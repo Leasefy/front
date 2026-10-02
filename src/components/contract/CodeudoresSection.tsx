@@ -47,6 +47,7 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [editando, setEditando] = useState<CodeudorResponse | null>(null);
   const [porBorrar, setPorBorrar] = useState<CodeudorResponse | null>(null);
+  const [borrando, setBorrando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -74,7 +75,8 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
   };
 
   const confirmarBorrado = async () => {
-    if (!porBorrar) return;
+    if (!porBorrar || borrando) return;
+    setBorrando(true);
     try {
       await codeudoresApi.remove(contractId, porBorrar.id);
       toast.success(`${porBorrar.nombre} eliminado.`);
@@ -82,6 +84,8 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
       void cargar();
     } catch (err) {
       toast.error('No se pudo eliminar.', { description: mensajeDelFallo(err, '') });
+    } finally {
+      setBorrando(false);
     }
   };
 
@@ -168,15 +172,30 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
         )}
       </div>
 
-      <AlertDialog open={!!porBorrar} onOpenChange={(open) => !open && setPorBorrar(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!porBorrar} onOpenChange={(open) => !open && !borrando && setPorBorrar(null)}>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar a {porBorrar?.nombre}?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+            {/* Lo que hace el back (`codeudores.service.ts › eliminar`): borra
+                el registro; con un pagaré en curso o uno ya firmado por él, no
+                deja (409) y el motivo sale en el aviso. */}
+            <AlertDialogDescription>
+              Sale de los codeudores del contrato y se borran sus datos: documento, correo y
+              celular. Si hay un pagaré en curso o ya firmó uno, no se puede eliminar y te decimos
+              por qué. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmarBorrado()} data-testid="confirmar-eliminar-codeudor">
+            <AlertDialogCancel disabled={borrando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Abierto hasta que el back conteste: se cierra sólo si salió bien.
+                e.preventDefault();
+                void confirmarBorrado();
+              }}
+              loading={borrando}
+              data-testid="confirmar-eliminar-codeudor"
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

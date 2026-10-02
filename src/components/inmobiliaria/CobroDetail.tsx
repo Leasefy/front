@@ -28,7 +28,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { SheetTitle } from '@/components/ui/sheet';
+import { SheetHeader } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -238,22 +238,17 @@ export function CobroDetail({
 
   return (
     <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
-      {/* Cabecera fija. La insignia de estado va a la derecha del título,
-          por eso no usa `CajonCabecera`. */}
-      <div className="flex-none border-b border-border px-6 py-5 pr-14">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <SheetTitle className="text-lg font-semibold text-foreground">
-              {cobro.propertyTitle}
-            </SheetTitle>
-            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              {cobro.propertyAddress}
-            </p>
-          </div>
-          <StatusBadge status={cobro.status} />
-        </div>
-      </div>
+      {/* Cabecera fija: la insignia de estado a la derecha del título. */}
+      <SheetHeader
+        title={cobro.propertyTitle}
+        description={
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4" />
+            {cobro.propertyAddress}
+          </span>
+        }
+        actions={<StatusBadge status={cobro.status} />}
+      />
 
       <CajonCuerpo className="space-y-6">
         {/* Property Section */}

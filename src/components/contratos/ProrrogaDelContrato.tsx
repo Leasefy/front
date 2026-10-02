@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowsClockwise, Info, WarningCircle } from '@phosphor-icons/react';
+import { ArrowsClockwise, CalendarX, Info, WarningCircle } from '@phosphor-icons/react';
 
 import { AunNoDisponible } from './AunNoDisponible';
 import { fechaLegible } from '@/components/estado-de-cuenta/filas';
@@ -342,8 +342,14 @@ function DialogoDeAviso({
   const [parte, setParte] = useState<ParteQueAvisa>('INQUILINO');
   const [motivo, setMotivo] = useState('');
   return (
-    <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md" data-testid="dialogo-aviso-de-no-renovacion">
+    <Dialog open={abierto} onOpenChange={(o) => !o && !guardando && onCerrar()}>
+      {/* Destructiva: con el aviso, el contrato deja de prorrogarse solo. */}
+      <DialogContent
+        variant="destructive"
+        icon={<CalendarX weight="bold" />}
+        size="sm"
+        data-testid="dialogo-aviso-de-no-renovacion"
+      >
         <DialogHeader>
           <DialogTitle>Aviso de no renovación</DialogTitle>
           <DialogDescription>
@@ -381,13 +387,15 @@ function DialogoDeAviso({
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onCerrar}>
+          <Button type="button" variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
             type="button"
             variant="destructive"
-            disabled={motivo.trim().length < 3 || guardando}
+            hideArrow
+            disabled={motivo.trim().length < 3}
+            isLoading={guardando}
             onClick={() => onConfirmar(parte, motivo.trim())}
             data-testid="aviso-confirmar"
           >

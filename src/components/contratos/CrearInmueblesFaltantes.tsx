@@ -40,6 +40,7 @@ import {
   type PrevisualizacionInmueblesFaltantes,
   type ResultadoInmueblesFaltantes,
 } from '@/lib/api/contracts.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 interface Props {
   lote: string
@@ -78,7 +79,12 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
       await contar()
       onListo()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos crear los inmuebles.')
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos crear los inmuebles.',
+          accion: 'crear los inmuebles',
+        }),
+      )
     } finally {
       setCorriendo(false)
     }
@@ -126,7 +132,11 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
       {resultado ? <ResultadoDeCreacion resultado={resultado} /> : null}
 
       <AlertDialog open={confirmando} onOpenChange={(v) => !corriendo && setConfirmando(v)}>
-        <AlertDialogContent data-testid="crear-inmuebles-faltantes-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<Buildings weight="bold" />}
+          data-testid="crear-inmuebles-faltantes-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Crear {n} {n === 1 ? 'inmueble' : 'inmuebles'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -175,7 +185,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
                 e.preventDefault()
                 void crear()
               }}
-              disabled={corriendo}
+              loading={corriendo}
               data-testid="crear-inmuebles-faltantes-confirmar"
             >
               {corriendo ? 'Creando…' : `Crear ${n}`}

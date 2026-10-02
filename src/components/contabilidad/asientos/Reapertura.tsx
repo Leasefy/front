@@ -44,6 +44,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -338,7 +339,9 @@ export function Reapertura({
           if (!a && !enviando) setAbierto(false);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-reapertura">
+        {/* Advertencia: reabrir no borra nada (queda en la bitácora), pero deja
+            volver a escribir en periodos que estaban cerrados. */}
+        <AlertDialogContent variant="warning" data-testid="dialogo-de-reapertura">
           <AlertDialogHeader>
             <AlertDialogTitle>Reabrir la contabilidad</AlertDialogTitle>
             <AlertDialogDescription>
@@ -377,13 +380,13 @@ export function Reapertura({
             </label>
 
             {/* 🔴 El resultado, ANTES de confirmar. */}
-            <div
-              className="space-y-1 rounded-lg border border-border bg-surface-muted p-3 text-sm"
+            <AlertDialogSection
+              className="p-3 text-sm sm:p-3"
               data-testid="resultado-de-la-reapertura"
             >
               <p className="text-fg-muted">{frases.desde}</p>
-              <p className="font-medium text-fg">{frases.resultado}</p>
-            </div>
+              <p className="mt-1 font-medium text-fg">{frases.resultado}</p>
+            </AlertDialogSection>
 
             <div className="space-y-1.5">
               <Label htmlFor={`${id}-motivo`}>Motivo (obligatorio)</Label>
@@ -421,9 +424,9 @@ export function Reapertura({
               Un `Button` y no `AlertDialogAction`: la acción se queda abierta
               cuando el back rechaza, para que el error se lea al lado del
               formulario en vez de cerrarse con la fecha y el motivo perdidos.
+              Cobalto, no rojo: reabrir no destruye nada.
             */}
             <Button
-              variant="destructive"
               hideArrow
               onClick={() => void confirmar()}
               isLoading={enviando}

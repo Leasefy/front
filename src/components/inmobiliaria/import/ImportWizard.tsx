@@ -16,6 +16,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { StepChooseMethod } from './steps/StepChooseMethod';
 import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
@@ -661,57 +671,32 @@ export function ImportWizard({
         )}
       </div>
 
-      {/* Cancel Confirmation Dialog */}
-      <AnimatePresence>
-        {showCancelDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowCancelDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
-                  <X className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-fg dark:text-white">
-                    {t('inmobiliaria.import.wizard.cancelDialog.title')}
-                  </h3>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.import.wizard.cancelDialog.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setShowCancelDialog(false)}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={confirmCancel}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cancel Confirmation Dialog — lo que se pierde depende de si el lote
+          ya vive en el servidor (`loteRetomado` se escribe con la primera
+          tanda): desde ahí lo subido queda y se retoma desde «Tienes una carga
+          a medias»; antes, lo único que hay está en esta pantalla. */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent variant="destructive" icon={<X weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('inmobiliaria.import.wizard.cancelDialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {wizardState.loteRetomado
+                ? t('inmobiliaria.import.wizard.cancelDialog.descriptionLoteGuardado')
+                : t('inmobiliaria.import.wizard.cancelDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

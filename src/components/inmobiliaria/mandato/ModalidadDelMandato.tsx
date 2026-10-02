@@ -218,7 +218,7 @@ function EditarModalidad({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="editar-modalidad">
+      <DialogContent size="md" data-testid="editar-modalidad">
         <DialogHeader>
           <DialogTitle>Cómo se le gira al propietario</DialogTitle>
           <DialogDescription>

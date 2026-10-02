@@ -131,7 +131,9 @@ export function ForceStageModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      {/* Sin permiso, el medallón ámbar dice que no se puede (antes, la
+          descripción en rojo a mano). */}
+      <DialogContent size="sm" variant={allowed ? undefined : 'warning'}>
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalTitle')}
@@ -141,7 +143,7 @@ export function ForceStageModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalDescription')}
             </DialogDescription>
           ) : (
-            <DialogDescription className="text-danger">
+            <DialogDescription>
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
             </DialogDescription>
           )}
@@ -157,7 +159,7 @@ export function ForceStageModal({
               {/* De dónde sale. Sin esto el operador elige un destino sin saber
                   desde dónde se mueve — y «S2 → S1» y «S5 → S1» no son lo
                   mismo ni de lejos. */}
-              <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
+              <div className="rounded-[14px] border border-border px-3 py-2.5">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.currentLabel')}
                 </p>
@@ -245,20 +247,20 @@ export function ForceStageModal({
 
         {error && <p className="text-xs text-danger">{error}</p>}
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
+            hideArrow
             onClick={onClose}
             disabled={submitting}
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </Button>
           <Button
-            size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing || !allowed || !target}
+            disabled={envMissing || !allowed || !target}
+            isLoading={submitting}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirming')

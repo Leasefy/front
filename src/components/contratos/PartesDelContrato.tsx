@@ -39,7 +39,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { PencilSimple, Plus, Trash, Warning } from '@phosphor-icons/react'
+import { PencilSimple, Plus, Trash, UserMinus, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -242,7 +242,7 @@ function FilaDeInquilino({
         ) : null}
       </div>
       <AlertDialog open={confirmando} onOpenChange={(abierto) => !quitando && setConfirmando(abierto)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<UserMinus weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar a {inquilino.nombre || 'este coarrendatario'} del contrato?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -255,8 +255,7 @@ function FilaDeInquilino({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={quitando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
-              disabled={quitando}
+              loading={quitando}
               data-testid="confirmar-quitar-inquilino"
               onClick={(e) => {
                 // Se queda abierto mientras quita: el cierre lo decide la respuesta.
@@ -330,7 +329,7 @@ function AgregarInquilino({
       </Button>
 
       <Dialog open={abierto} onOpenChange={(v) => !guardando && setAbierto(v)}>
-        <DialogContent className="max-w-md" data-testid="agregar-inquilino-dialogo">
+        <DialogContent size="sm" data-testid="agregar-inquilino-dialogo">
           <DialogHeader>
             <DialogTitle>Agregar un inquilino</DialogTitle>
             <DialogDescription>

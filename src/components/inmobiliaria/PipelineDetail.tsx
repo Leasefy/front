@@ -24,7 +24,7 @@ import {
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
@@ -287,32 +287,24 @@ export function PipelineDetail({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()} modal={true}>
-      <SheetContent side="right" className="w-full sm:max-w-xl !p-0 flex flex-col">
-        {/* Header */}
-        <div className="shrink-0 px-6 py-5 border-b border-border">
-          <SheetHeader>
-            <div className="flex items-start justify-between gap-4 pr-8">
-              <div className="min-w-0 flex-1">
-                <SheetTitle className="text-lg font-semibold text-fg truncate">
-                  {item.propertyTitle}
-                </SheetTitle>
-                <div className="flex items-center gap-1.5 mt-1.5 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{item.propertyAddress}</span>
-                </div>
-              </div>
-              <span className={cn('shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold', stageInfo?.color)}>
-                {stageInfo?.labelEs}
-              </span>
-            </div>
-          </SheetHeader>
-        </div>
+      <SheetContent side="right" size="md" aria-describedby={undefined}>
+        <SheetHeader
+          title={<span className="block truncate">{item.propertyTitle}</span>}
+          description={
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span className="truncate">{item.propertyAddress}</span>
+            </span>
+          }
+          actions={
+            <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold', stageInfo?.color)}>
+              {stageInfo?.labelEs}
+            </span>
+          }
+        />
 
-        {/* Scrollable Content */}
-        <div
-          className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-6"
-          onWheel={(e) => e.stopPropagation()}
-        >
+        {/* El cuerpo: lo único que scrollea */}
+        <SheetBody className="space-y-6">
           {/* Property Card */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex gap-4 p-4">
@@ -570,11 +562,12 @@ export function PipelineDetail({
               <p className="text-sm text-danger">{item.lostReason}</p>
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        {/* Footer Actions */}
+        {/* Footer Actions — perder a la izquierda, avanzar a la derecha */}
         {!isTerminal && puedeEditar && (
-          <div className="shrink-0 p-4 border-t border-border bg-card flex items-center gap-3">
+          <SheetFooter
+            start={
             <Button
               variant="outline"
               hideArrow
@@ -582,7 +575,7 @@ export function PipelineDetail({
               data-testid="pipeline-marcar-perdido"
               disabled={isMarking || isMoving}
               isLoading={isMarking}
-              className="flex-1 border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+              className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
             >
               {isMarking ? (
                 t('inmobiliaria.pipeline.marking')
@@ -593,14 +586,14 @@ export function PipelineDetail({
                 </>
               )}
             </Button>
-
+            }
+          >
             {nextStage && (
               <Button
                 hideArrow
                 onClick={handleMoveToNext}
                 disabled={isMoving || isMarking}
                 isLoading={isMoving}
-                className="flex-1"
               >
                 {isMoving ? (
                   t('inmobiliaria.pipeline.moving')
@@ -612,7 +605,7 @@ export function PipelineDetail({
                 )}
               </Button>
             )}
-          </div>
+          </SheetFooter>
         )}
 
         {/* El motivo es obligatorio: un lead perdido sin razón no se puede leer

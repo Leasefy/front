@@ -44,6 +44,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BPS_TOTAL } from '@/lib/types/inmobiliaria';
 import type { Consignacion, Propietario } from '@/lib/types/inmobiliaria';
 import { SelectorDePropietarios, type PropietarioPendiente } from './SelectorDePropietarios';
@@ -160,9 +161,10 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
       onClose();
     } catch (e) {
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : 'No pudimos guardar los propietarios. Prueba de nuevo en un momento.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos guardar los propietarios. Prueba de nuevo en un momento.',
+          accion: 'guardar los propietarios',
+        }),
       );
     } finally {
       setGuardando(false);
@@ -171,7 +173,7 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
 
   return (
     <Dialog open={open} onOpenChange={(abierto) => !abierto && !guardando && onClose()}>
-      <DialogContent className="max-w-3xl" data-testid="editar-propietarios-dialog">
+      <DialogContent size="xl" data-testid="editar-propietarios-dialog">
         <DialogHeader>
           <DialogTitle>¿De quién es este inmueble?</DialogTitle>
           <DialogDescription>
@@ -208,7 +210,7 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
         )}
 
         <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={onClose} disabled={guardando}>
+          <Button variant="outline" hideArrow onClick={onClose} disabled={guardando}>
             Cancelar
           </Button>
           <Button

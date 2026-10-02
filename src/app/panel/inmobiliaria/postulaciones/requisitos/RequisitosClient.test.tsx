@@ -119,6 +119,16 @@ function porTestId(id: string) {
   return contenedor.querySelector(`[data-testid="${id}"]`)
 }
 
+/**
+ * Lo que vive DENTRO de un modal no está en el contenedor del test: el
+ * `Dialog`/`AlertDialog` de la casa (Radix) se pinta con un portal, colgado del
+ * `body`. Buscarlo con `porTestId` devuelve null y el test falla por la razón
+ * equivocada.
+ */
+function enElModal(id: string) {
+  return document.body.querySelector(`[data-testid="${id}"]`)
+}
+
 async function clic(el: Element | null) {
   await act(async () => {
     el?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -180,7 +190,7 @@ describe('Requisitos por tipo de inquilino', () => {
     h.api.crearRequisito.mockResolvedValue({})
     await montar()
     await clic(porTestId('abrir-agregar'))
-    const etiqueta = porTestId('req-etiqueta') as HTMLInputElement
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -190,7 +200,7 @@ describe('Requisitos por tipo de inquilino', () => {
       etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
     })
     await act(async () => {
-      porTestId('form-requisito')!.dispatchEvent(
+      enElModal('form-requisito')!.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       )
     })
@@ -203,20 +213,45 @@ describe('Requisitos por tipo de inquilino', () => {
     )
   })
 
+  it('P1c — «Agregar» vive en el pie del diálogo, fuera del form, y lo envía', async () => {
+    // 02-10-2026: el diálogo pasó al `Dialog` de la casa; el pie es fijo y el
+    // botón apunta al formulario con `form=`.
+    h.api.crearRequisito.mockResolvedValue({})
+    await montar()
+    await clic(porTestId('abrir-agregar'))
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )!.set!
+      setter.call(etiqueta, 'Certificado de contador')
+      etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const agregar = enElModal('guardar-requisito')!
+    expect(enElModal('form-requisito')!.contains(agregar)).toBe(false)
+    await clic(agregar)
+    expect(h.api.crearRequisito).toHaveBeenCalledWith(
+      expect.objectContaining({ perfil: 'EMPLEADO', etiqueta: 'Certificado de contador' }),
+    )
+  })
+
   it('P1b — y quitar el que no se pide', async () => {
     h.api.borrarRequisito.mockResolvedValue(undefined)
     await montar()
     await clic(porTestId('borrar-r-1'))
-    await clic(porTestId('confirmar-borrado-si'))
+    await clic(enElModal('confirmar-borrado-si'))
     expect(h.api.borrarRequisito).toHaveBeenCalledWith('r-1')
   })
 
   it('P6 — quitar PREGUNTA antes, y sin el diálogo del navegador', async () => {
     await montar()
     await clic(porTestId('borrar-r-1'))
-    const dialogo = porTestId('confirmar-borrado')
+    const dialogo = enElModal('confirmar-borrado')
     expect(dialogo).not.toBeNull()
     expect(dialogo!.getAttribute('role')).toBe('alertdialog')
+    // Es destructiva: el medallón y la acción salen en rojo por la variante.
+    expect(dialogo!.getAttribute('data-variant')).toBe('destructive')
     expect(dialogo!.textContent).toContain('Cédula por las dos caras')
     // Preguntar y nada más: sin confirmar, no se borró.
     expect(h.api.borrarRequisito).not.toHaveBeenCalled()

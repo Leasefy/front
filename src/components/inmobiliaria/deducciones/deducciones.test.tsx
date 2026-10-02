@@ -36,6 +36,10 @@ vi.mock('@/components/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // `responsive-dialog` (que entra por el barril `@/components/ui`) los lee
+  // al cargar: sin ellos el doble revienta antes de la primera prueba.
+  DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DialogClose: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));

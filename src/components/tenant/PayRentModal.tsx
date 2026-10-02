@@ -1,21 +1,27 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  X,
-  CheckCircle,
   WarningCircle,
   Clock,
   Receipt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  type DialogVariant,
+} from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { MonoLabel } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { leasesApi } from '@/lib/api/leases.service';
 import { getAccessToken } from '@/lib/api/client';
 import {
@@ -59,17 +65,16 @@ type Step =
  *
  * El monto lo resuelve el servidor (anti-tamper): el cliente NUNCA envía amount.
  * Los métodos (PSE, tarjeta, Nequi) se eligen en la página segura de Wompi.
+ *
+ * Es el `Dialog` canónico (DESIGN.md §17). La variante sigue al estado: el
+ * período ya pagado es `success`, el que está en verificación lleva el reloj
+ * ámbar de siempre (`warning` + `Clock`) y el error de carga es `error`; cargar,
+ * confirmar y redirigir son el modal de pago (medallón con el recibo). Mientras
+ * redirige NO se sale: sin ✕ (`hideClose`) y el `onOpenChange` lo ignora (Esc
+ * y el velo incluidos). Lenis lo frena `SmoothScroll` al ver el diálogo abierto.
  */
 export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
   const { formatCurrency, locale } = useI18n();
-  const lenis = useLenis();
-
-  // Pause Lenis smooth scroll while the modal is open (DESIGN.md §8).
-  useEffect(() => {
-    if (open) lenis.stop();
-    else lenis.start();
-    return () => lenis.start();
-  }, [open, lenis]);
 
   const [step, setStep] = useState<Step>('loading');
   const [paymentInfo, setPaymentInfo] = useState<BackendPaymentInfo | null>(null);
@@ -101,8 +106,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
       })
       .catch((err) => {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : 'No se pudo cargar la información de pago.';
-        setLoadError(msg);
+        setLoadError(mensajeParaLaPersona(err, { accion: 'cargar la información de pago' }));
       });
 
     return () => { cancelled = true; };
@@ -159,163 +163,142 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
 
   const blockClose = step === 'redirecting';
 
+  // El período que no se vuelve a pagar (ya pagado o en verificación).
+  const blockedStatus =
+    step === 'period-blocked' &&
+    paymentInfo &&
+    (paymentInfo.currentPeriodStatus === 'PENDING_VALIDATION' ||
+      paymentInfo.currentPeriodStatus === 'APPROVED')
+      ? paymentInfo.currentPeriodStatus
+      : null;
+
+  // La variante sigue al estado (DESIGN.md §17, «éxito / error dentro del mismo modal»).
+  const variant: DialogVariant | undefined = loadError
+    ? 'error'
+    : blockedStatus === 'APPROVED'
+      ? 'success'
+      : blockedStatus === 'PENDING_VALIDATION'
+        ? 'warning'
+        : undefined;
+  const icon =
+    blockedStatus === 'PENDING_VALIDATION' ? (
+      <Clock weight="bold" />
+    ) : variant ? undefined : (
+      <Receipt weight="bold" />
+    );
+
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={blockClose ? undefined : onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface rounded-[22px] w-full max-w-lg border border-border shadow-lg"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[14px] bg-primary-soft flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg">
-                    Pagar arriendo
-                  </h2>
-                  <p className="text-xs text-fg-muted mt-0.5">
-                    Método: Wompi (PSE, tarjeta o Nequi)
-                  </p>
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        // Mientras redirige a Wompi no se sale (ni Esc, ni el velo).
+        if (!abierto && !blockClose) onClose();
+      }}
+    >
+      <DialogContent size="md" variant={variant} icon={icon} hideClose={blockClose}>
+        <DialogHeader>
+          {loadError ? (
+            <>
+              <DialogTitle>No se pudo cargar la información de pago</DialogTitle>
+              <DialogDescription>{loadError}</DialogDescription>
+            </>
+          ) : blockedStatus ? (
+            <>
+              <DialogTitle>
+                {blockedStatus === 'APPROVED' ? 'Pago confirmado' : 'Pago en verificación'}
+              </DialogTitle>
+              <DialogDescription className="capitalize">{monthName}</DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle>Pagar arriendo</DialogTitle>
+              <DialogDescription>Método: Wompi (PSE, tarjeta o Nequi)</DialogDescription>
+            </>
+          )}
+        </DialogHeader>
+
+        {/* Loading */}
+        {step === 'loading' && !loadError && (
+          <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-fg-muted">
+            <Spinner size="lg" variant="current" />
+            Cargando información de pago...
+          </div>
+        )}
+
+        {/* Step: period-blocked (PENDING_VALIDATION | APPROVED) */}
+        {blockedStatus && paymentInfo && (
+          <PeriodBlockedPanel
+            status={blockedStatus}
+            amount={paymentInfo.monthlyRent}
+            formatCurrency={formatCurrency}
+          />
+        )}
+
+        {/* Step: confirm */}
+        {step === 'confirm' && paymentInfo && (
+          <div className="space-y-4">
+            {paymentInfo.currentPeriodStatus === 'REJECTED' && (
+              <div className="rounded-[14px] border border-danger/30 bg-danger-soft p-3 flex items-start gap-2">
+                <WarningCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-danger">
+                  <p className="font-medium mb-0.5">Tu pago anterior fue rechazado.</p>
+                  {paymentInfo.currentPeriodRejectionReason && (
+                    <p className="opacity-90">{paymentInfo.currentPeriodRejectionReason}</p>
+                  )}
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                disabled={blockClose}
-                aria-label="Cerrar"
-              >
-                <X className="w-5 h-5" />
-              </Button>
+            )}
+            <div className="rounded-[18px] border border-border bg-surface-hover p-4">
+              <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Período</MonoLabel>
+              <p className="text-sm font-medium text-fg capitalize">{monthName}</p>
+              <div className="border-t border-border-faint my-3" />
+              <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Monto a pagar</MonoLabel>
+              <p className="text-3xl font-bold text-fg font-mono tabular-nums">
+                {formatCurrency(paymentInfo.monthlyRent)}
+              </p>
             </div>
+            <p className="text-xs text-fg-muted">
+              Vas a completar el pago en la página segura de <strong>Wompi</strong> (PSE,
+              tarjeta o Nequi). La confirmación aparece en tu historial una vez verificado.
+            </p>
+          </div>
+        )}
 
-            {/* Body */}
-            <div
-              className="p-5 max-h-[70vh] overflow-y-auto"
-              data-lenis-prevent
-              style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        {/* Step: redirecting */}
+        {step === 'redirecting' && (
+          <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
+            <Spinner size="xl" variant="current" className="text-primary" />
+            <p className="text-sm font-medium text-fg">Te estamos llevando al pago seguro…</p>
+            <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
+          </div>
+        )}
+
+        {/* Pie: sólo los estados con acciones (cargando y redirigiendo no tienen). */}
+        {step === 'period-blocked' ? (
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onClose} hideArrow>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        ) : step === 'confirm' ? (
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handlePayWithWompi}
+              disabled={!paymentInfo}
+              hideArrow
             >
-              {/* Loading */}
-              {step === 'loading' && !loadError && (
-                <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-fg-muted">
-                  <Spinner size="lg" variant="current" />
-                  Cargando información de pago...
-                </div>
-              )}
-
-              {loadError && (
-                <div className="py-6 flex items-start gap-3 rounded-[14px] border border-danger/30 bg-danger-soft p-4">
-                  <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-danger">{loadError}</p>
-                </div>
-              )}
-
-              {/* Step: period-blocked (PENDING_VALIDATION | APPROVED) */}
-              {step === 'period-blocked' &&
-                paymentInfo &&
-                (paymentInfo.currentPeriodStatus === 'PENDING_VALIDATION' ||
-                  paymentInfo.currentPeriodStatus === 'APPROVED') && (
-                  <PeriodBlockedPanel
-                    status={paymentInfo.currentPeriodStatus}
-                    monthName={monthName}
-                    amount={paymentInfo.monthlyRent}
-                    formatCurrency={formatCurrency}
-                  />
-                )}
-
-              {/* Step: confirm */}
-              {step === 'confirm' && paymentInfo && (
-                <div className="space-y-4">
-                  {paymentInfo.currentPeriodStatus === 'REJECTED' && (
-                    <div className="rounded-[14px] border border-danger/30 bg-danger-soft p-3 flex items-start gap-2">
-                      <WarningCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-danger">
-                        <p className="font-medium mb-0.5">Tu pago anterior fue rechazado.</p>
-                        {paymentInfo.currentPeriodRejectionReason && (
-                          <p className="opacity-90">{paymentInfo.currentPeriodRejectionReason}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div className="rounded-[18px] border border-border bg-surface-muted p-4">
-                    <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Período</MonoLabel>
-                    <p className="text-sm font-medium text-fg capitalize">{monthName}</p>
-                    <div className="border-t border-border-faint my-3" />
-                    <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Monto a pagar</MonoLabel>
-                    <p className="text-3xl font-bold text-fg font-mono tabular-nums">
-                      {formatCurrency(paymentInfo.monthlyRent)}
-                    </p>
-                  </div>
-                  <p className="text-xs text-fg-muted">
-                    Vas a completar el pago en la página segura de <strong>Wompi</strong> (PSE,
-                    tarjeta o Nequi). La confirmación aparece en tu historial una vez verificado.
-                  </p>
-                </div>
-              )}
-
-              {/* Step: redirecting */}
-              {step === 'redirecting' && (
-                <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
-                  <Spinner size="xl" variant="current" className="text-primary" />
-                  <p className="text-sm font-medium text-fg">Te estamos llevando al pago seguro…</p>
-                  <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-5 border-t border-border flex items-center justify-between gap-2">
-              {step === 'period-blocked' && (
-                <Button
-                  type="button"
-                  onClick={onClose}
-                  hideArrow
-                  className="ml-auto"
-                >
-                  Cerrar
-                </Button>
-              )}
-
-              {step === 'confirm' && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={onClose}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handlePayWithWompi}
-                    disabled={!paymentInfo}
-                    hideArrow
-                  >
-                    {paymentInfo?.currentPeriodStatus === 'REJECTED'
-                      ? 'Reintentar pago'
-                      : 'Pagar arriendo'}
-                  </Button>
-                </>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+              {paymentInfo?.currentPeriodStatus === 'REJECTED'
+                ? 'Reintentar pago'
+                : 'Pagar arriendo'}
+            </Button>
+          </DialogFooter>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -337,58 +320,35 @@ function Row({ label, value, mono = false }: { label: string; value: string; mon
   );
 }
 
+/**
+ * Lo que queda del período bloqueado en el cuerpo: el título («Pago confirmado» /
+ * «Pago en verificación»), el mes y el medallón ya van en la cabecera.
+ */
 function PeriodBlockedPanel({
   status,
-  monthName,
   amount,
   formatCurrency,
 }: {
   status: 'PENDING_VALIDATION' | 'APPROVED';
-  monthName: string;
   amount: number;
   formatCurrency: (n: number) => string;
 }) {
-  if (status === 'APPROVED') {
-    return (
-      <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-success" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-fg">Pago confirmado</p>
-          <p className="text-sm text-fg-muted mt-1 capitalize">
-            {monthName}
-          </p>
-        </div>
-        <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full text-xs">
-          <Row label="Monto" value={formatCurrency(amount)} mono />
-        </div>
+  return (
+    <div className="space-y-3">
+      <div className="rounded-[14px] border border-border bg-surface-hover p-3 w-full text-xs">
+        <Row label="Monto" value={formatCurrency(amount)} mono />
+      </div>
+      {status === 'APPROVED' ? (
         <p className="text-xs text-fg-muted">
           Tu pago de este mes ya fue confirmado por el propietario.
         </p>
-      </div>
-    );
-  }
-
-  // PENDING_VALIDATION — período en verificación (no volver a pagar)
-  return (
-    <div className="py-6 flex flex-col items-center text-center space-y-3">
-      <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center">
-        <Clock className="w-8 h-8 text-warning" />
-      </div>
-      <div>
-        <p className="text-lg font-semibold text-fg">Pago en verificación</p>
-        <p className="text-sm text-fg-muted mt-1 capitalize">
-          {monthName}
+      ) : (
+        // PENDING_VALIDATION — período en verificación (no volver a pagar)
+        <p className="text-xs text-fg-muted">
+          Tu pago está en verificación. No hace falta volver a pagar — vas a
+          ver la confirmación en tu historial cuando termine.
         </p>
-      </div>
-      <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full text-xs">
-        <Row label="Monto" value={formatCurrency(amount)} mono />
-      </div>
-      <p className="text-xs text-fg-muted">
-        Tu pago está en verificación. No hace falta volver a pagar — vas a
-        ver la confirmación en tu historial cuando termine.
-      </p>
+      )}
     </div>
   );
 }

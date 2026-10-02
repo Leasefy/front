@@ -413,12 +413,14 @@ function NuevaPersona({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCerrar}>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
+            hideArrow
             onClick={() => void crear()}
             disabled={guardando || nombre.trim().length < 3 || !fechaIngreso}
+            isLoading={guardando}
             data-testid="guardar-persona"
           >
             Registrar

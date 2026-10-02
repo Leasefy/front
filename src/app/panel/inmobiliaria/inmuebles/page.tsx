@@ -16,8 +16,10 @@ import {
   FileArrowUp,
   Sparkle,
   WarningCircle,
+  SignOut,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
@@ -441,11 +443,13 @@ function PortafolioContent() {
       setPorEliminar(null);
     } catch (err) {
       // El back responde 409 con el motivo. Ese texto explica QUÉ lo retiene,
-      // así que se muestra tal cual en vez de un «no se pudo» genérico.
+      // así que se muestra tal cual en vez de un «no se pudo» genérico (el
+      // traductor lo deja pasar; sin red o con un 5xx dice lo que corresponde).
       setMotivoDelRechazo(
-        err instanceof Error && err.message
-          ? err.message
-          : 'No pudimos retirarlo. Prueba de nuevo en un momento.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos retirarlo. Prueba de nuevo en un momento.',
+          accion: 'retirar el inmueble',
+        }),
       );
     } finally {
       setEliminando(false);
@@ -709,8 +713,11 @@ function PortafolioContent() {
         )}
       </motion.div>
 
-      <AlertDialog open={Boolean(porEliminar)} onOpenChange={(abierto) => !abierto && setPorEliminar(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={Boolean(porEliminar)}
+        onOpenChange={(abierto) => !abierto && !eliminando && setPorEliminar(null)}
+      >
+        <AlertDialogContent variant="destructive" icon={<SignOut weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Retirar este inmueble de tu portafolio?</AlertDialogTitle>
             {/* Se dice qué se termina y qué NO se toca. «Eliminar» a secas deja
@@ -733,16 +740,15 @@ function PortafolioContent() {
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={eliminando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
               // `preventDefault` para que Radix NO cierre el diálogo al apretar:
               // si el back lo rechaza, cerrarlo se lleva el motivo con él.
               onClick={(e) => {
                 e.preventDefault();
                 void confirmarEliminar();
               }}
-              disabled={eliminando}
+              loading={eliminando}
             >
               {eliminando ? 'Retirando…' : 'Retirar'}
             </AlertDialogAction>

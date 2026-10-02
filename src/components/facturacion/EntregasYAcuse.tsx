@@ -320,13 +320,14 @@ export function EntregasYAcuse() {
             data-testid="entrega-rechazo-motivo"
           />
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={guardando !== null}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={(ev) => {
                 ev.preventDefault()
                 void rechazar()
               }}
-              disabled={motivoLimpio === '' || guardando !== null}
+              disabled={motivoLimpio === ''}
+              loading={guardando !== null}
               data-testid="entrega-rechazo-confirmar"
             >
               Registrar el rechazo

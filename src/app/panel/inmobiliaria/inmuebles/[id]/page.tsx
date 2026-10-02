@@ -9,7 +9,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { useI18n } from '@/lib/i18n';
@@ -801,7 +801,7 @@ function ConsignacionDetailContent() {
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<Prohibit weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('inmobiliaria.portafolio.detail.terminateDialog.title')}
@@ -834,9 +834,14 @@ function ConsignacionDetailContent() {
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
-              onClick={handleTerminateConfirm}
-              disabled={isTerminating}
+              // `preventDefault`: sin él Radix cierra el diálogo al apretar y,
+              // si el back lo rechaza, el motivo (`terminar-rechazo`) se va con
+              // él. `handleTerminateConfirm` lo cierra sólo si salió bien.
+              onClick={(e) => {
+                e.preventDefault();
+                void handleTerminateConfirm();
+              }}
+              loading={isTerminating}
             >
               {t('inmobiliaria.portafolio.detail.terminateDialog.confirm')}
             </AlertDialogAction>

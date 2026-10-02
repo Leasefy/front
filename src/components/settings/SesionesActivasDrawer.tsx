@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Monitor, ShieldCheck, SignOut, Warning } from '@phosphor-icons/react';
 
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -107,16 +107,15 @@ export function CuerpoDeSesiones({ onCerrarSesion }: { onCerrarSesion: () => voi
   useEffect(cargar, [cargar]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-border px-6 py-5">
+    <>
+      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
+          monta en un test sin el contexto del Sheet). */}
+      <SheetHeader>
         <h2 className="text-lg font-semibold text-fg">{t(`${NS}.sessionsTitle`)}</h2>
-        <p className="mt-1 text-body-sm text-fg-muted">{t(`${NS}.sessionsIntro`)}</p>
-      </div>
+        <p className="text-body-sm text-fg-muted">{t(`${NS}.sessionsIntro`)}</p>
+      </SheetHeader>
 
-      <div
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-5"
-        data-lenis-prevent
-      >
+      <SheetBody className="space-y-4">
         {estado.fase === 'cargando' && (
           <div className="flex items-center justify-center py-12" data-testid="sesiones-cargando">
             <Spinner />
@@ -173,24 +172,23 @@ export function CuerpoDeSesiones({ onCerrarSesion }: { onCerrarSesion: () => voi
               </div>
             </article>
           ))}
-      </div>
+      </SheetBody>
 
       {estado.fase === 'listo' && estado.dispositivos.length > 0 && (
-        <div className="border-t border-border px-6 py-4">
+        <SheetFooter note={t(`${NS}.sessionsCloseAllHint`)}>
           <Button
             variant="outline"
             hideArrow
             onClick={onCerrarSesion}
-            className="w-full text-danger"
+            className="text-danger"
             data-testid="cerrar-sesion-desde-drawer"
           >
             <SignOut className="h-4 w-4" aria-hidden />
             {t(`${NS}.sessionsCloseAll`)}
           </Button>
-          <p className="mt-2 text-caption text-fg-muted">{t(`${NS}.sessionsCloseAllHint`)}</p>
-        </div>
+        </SheetFooter>
       )}
-    </div>
+    </>
   );
 }
 
@@ -204,7 +202,9 @@ export function SesionesActivasDrawer({ abierto, onCerrar }: SesionesActivasDraw
     <Sheet open={abierto} onOpenChange={(a) => !a && onCerrar()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg"
+        size="md"
+        // Cabecera, cuerpo y pie viven en `CuerpoDeSesiones`.
+        layout="manual"
         aria-describedby={undefined}
         data-testid="sesiones-activas-cajon"
       >

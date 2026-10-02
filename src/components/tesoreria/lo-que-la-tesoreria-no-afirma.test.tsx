@@ -356,4 +356,48 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     expect(contenedor.querySelector('[data-testid="proponer-traslado"]')).toBeNull();
     expect(contenedor.textContent).toContain('ya está trasladada');
   });
+
+  it('🔴 rechazar es destructivo: rojo, con el monto y lo que pasa con la plata', async () => {
+    h.propuestaDeTraslado.mockResolvedValue(propuesta);
+    h.listarTraslados.mockResolvedValue({
+      disponible: true,
+      propuestos: [
+        {
+          id: 't-1',
+          origen: 'MES',
+          loteId: null,
+          periodo: '2026-08',
+          comisionCop: 4_000_000,
+          ivaComisionCop: 760_000,
+          retencionesComisionCop: 140_000,
+          interesesCop: 300_000,
+          gastosDeCobranzaCop: 0,
+          totalCop: 4_920_000,
+          estado: 'PROPUESTO',
+          fecha: null,
+          comprobanteNumero: null,
+          asientoId: null,
+          motivo: null,
+          propuestoPorUserId: null,
+          aprobadoPorUserId: null,
+          aprobadoAt: null,
+          createdAt: '2026-09-01T00:00:00.000Z',
+        },
+      ],
+      recientes: [],
+    });
+    await pintar(<TrasladoDeComisionPanel />);
+    await act(async () => {
+      contenedor.querySelector<HTMLButtonElement>('[data-testid="rechazar-t-1"]')!.click();
+    });
+
+    // El modal vive en un portal, en `document.body`.
+    const dialogo = document.body.querySelector('[data-testid="dialogo-rechazar-traslado"]');
+    expect(dialogo?.getAttribute('data-variant')).toBe('destructive');
+    expect(dialogo?.textContent).toContain('4.920.000');
+    expect(dialogo?.textContent).toContain('vuelve a quedar por trasladar');
+    expect(
+      document.body.querySelector('[data-testid="confirmar-rechazo"]')?.className,
+    ).toContain('bg-danger');
+  });
 });

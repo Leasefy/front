@@ -327,8 +327,11 @@ export function CargasAMedias({
     </section>
     ) : null}
 
-      <AlertDialog open={aDescartar !== null} onOpenChange={(a) => !a && setADescartar(null)}>
-        <AlertDialogContent data-testid="dialogo-descartar-carga">
+      <AlertDialog
+        open={aDescartar !== null}
+        onOpenChange={(a) => !a && trabajando === null && setADescartar(null)}
+      >
+        <AlertDialogContent variant="destructive" data-testid="dialogo-descartar-carga">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Descartar esta carga?</AlertDialogTitle>
             <AlertDialogDescription className="text-left">
@@ -337,8 +340,10 @@ export function CargasAMedias({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogCancel disabled={trabajando !== null}>Volver</AlertDialogCancel>
+            {/* Abierto mientras descarta (antes se podía volver a apretar). */}
             <AlertDialogAction
+              loading={aDescartar !== null && trabajando === aDescartar.lote}
               data-testid="confirmar-descartar-carga"
               onClick={(e) => {
                 e.preventDefault();

@@ -170,12 +170,15 @@ vi.mock('@/components/ui/select', () => {
  * montado un ciclo tras `open: false` — para que el test pueda ver si el cuerpo
  * del cajón se vació de golpe.
  */
-vi.mock('@/components/ui/sheet', () => {
+vi.mock('@/components/ui/sheet', async () => {
+  // Las piezas del cajón (cabecera con título, cuerpo, pie) como DOM plano.
+  const piezas = await import('@/components/ui/sheet-test-stub')
   const passthrough = (tag: string) =>
     function MockSheetPart({ children }: { children?: React.ReactNode }) {
       return React.createElement(tag, null, children)
     }
   return {
+    ...piezas,
     Sheet: ({
       children,
       open,
@@ -203,7 +206,6 @@ vi.mock('@/components/ui/sheet', () => {
     },
     SheetContent: ({ children, ...resto }: { children?: React.ReactNode; 'data-testid'?: string }) =>
       React.createElement('div', { 'data-testid': resto['data-testid'] }, children),
-    SheetHeader: passthrough('div'),
     SheetTitle: passthrough('h2'),
     SheetDescription: passthrough('p'),
   }

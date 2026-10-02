@@ -41,16 +41,16 @@ import {
   CaretRight,
   Robot,
 } from '@phosphor-icons/react';
+import { SegmentedControl, Badge } from '@leasefy/cadence';
+// El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
-  SegmentedControl,
-  Badge,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@leasefy/cadence';
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -179,7 +179,7 @@ function CuerpoDelRechazo({
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   return (
-    <DialogContent className="max-w-sm">
+    <DialogContent variant="destructive" icon={<XCircle weight="bold" />} size="sm">
         <DialogHeader>
           <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
           <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
@@ -192,7 +192,7 @@ function CuerpoDelRechazo({
           aria-label={t(k('rejectReasonPlaceholder'))}
         />
         <DialogFooter>
-          <Button variant="ghost" onClick={onCancel} disabled={busy} hideArrow>
+          <Button variant="outline" onClick={onCancel} disabled={busy} hideArrow>
             {t(k('cancel'))}
           </Button>
           <Button
@@ -201,7 +201,6 @@ function CuerpoDelRechazo({
             disabled={!reason.trim() || busy}
             isLoading={busy}
             hideArrow
-            className="gap-1.5"
           >
             {t(k('rejectConfirm'))}
           </Button>

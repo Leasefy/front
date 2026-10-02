@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Prohibit } from '@phosphor-icons/react';
 
 import {
   Dialog,
@@ -64,14 +65,20 @@ export function AnularDeduccionDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="anular-deduccion">
+      {/* Anular: el medallón rojo con el ícono de anular (no es borrar: el
+          descuento queda en la lista, anulado). */}
+      <DialogContent
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        data-testid="anular-deduccion"
+      >
         <DialogHeader>
           <DialogTitle>{t(k('titulo'))}</DialogTitle>
           <DialogDescription>{t(k('descripcion'))}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {concepto && (
-            <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-fg-muted">{concepto}</p>
+            <p className="rounded-md border border-border px-3 py-2 text-sm text-fg-muted">{concepto}</p>
           )}
           <div className="space-y-2">
             <label htmlFor="anular-motivo" className="block text-sm font-medium text-fg">
@@ -91,7 +98,13 @@ export function AnularDeduccionDialog({
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={anulando}>
             {t(k('cancelar'))}
           </Button>
-          <Button variant="destructive" hideArrow onClick={() => void anular()} disabled={anulando}>
+          <Button
+            variant="destructive"
+            hideArrow
+            onClick={() => void anular()}
+            isLoading={anulando}
+            disabled={anulando}
+          >
             {anulando ? t(k('anulando')) : t(k('confirmar'))}
           </Button>
         </DialogFooter>

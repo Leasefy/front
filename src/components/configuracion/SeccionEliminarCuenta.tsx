@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) {
   const router = useRouter();
@@ -53,7 +54,7 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
         router.push('/');
       }, 2000);
     } catch (err) {
-      toast.error(err instanceof Error && err.message ? err.message : copy.errorFallback);
+      toast.error(mensajeParaLaPersona(err, { porDefecto: copy.errorFallback, accion: 'eliminar tu cuenta' }));
     } finally {
       setBorrando(false);
     }
@@ -91,30 +92,23 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
         )}
       </section>
 
-      <SettingsModal open={abierto} onClose={cerrar} title={copy.modalTitle}>
-        <div className="space-y-4">
-          <div className="flex gap-3 rounded-lg border border-danger/30 bg-danger-soft p-4">
-            <Warning className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
-            <div>
-              <p className="text-sm font-medium text-danger">{copy.warningTitle}</p>
-              <p className="mt-1 text-sm text-danger">{copy.warningBody}</p>
-            </div>
-          </div>
-          <div>
-            <label htmlFor="confirmar-eliminar-cuenta" className="mb-2 block text-sm font-medium text-fg">
-              {copy.confirmShortPrefix} <span className="font-bold text-danger">{copy.confirmWord}</span>{' '}
-              {copy.confirmShortSuffix}
-            </label>
-            <Input
-              id="confirmar-eliminar-cuenta"
-              type="text"
-              value={confirmacion}
-              onChange={(e) => setConfirmacion(e.target.value)}
-              placeholder={copy.inputPlaceholder}
-            />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" hideArrow onClick={cerrar} className="flex-1">
+      {/* Destructiva: el título pregunta QUÉ y el subtítulo es el canónico de
+          la baja (`recovery`): 30 días para recuperarla entrando de nuevo. NO
+          `warningBody`: dice que los datos «serán eliminados», y el back
+          (`deleteAccount`) sólo desactiva la cuenta y cierra sus sesiones; es
+          el mismo subtítulo que los perfiles de inquilino, propietario e
+          inmobiliaria. Mientras borra no se cierra: el borrado ya salió. */}
+      <SettingsModal
+        open={abierto}
+        onClose={() => {
+          if (!borrando) cerrar();
+        }}
+        title={copy.warningTitle}
+        description={copy.recovery}
+        variant="destructive"
+        footer={
+          <>
+            <Button variant="outline" hideArrow onClick={cerrar} disabled={borrando}>
               {locale === 'es' ? 'Cancelar' : 'Cancel'}
             </Button>
             <Button
@@ -123,12 +117,26 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
               isLoading={borrando}
               onClick={eliminar}
               disabled={borrando || confirmacion !== copy.confirmWord}
-              className="flex-1"
             >
               {!borrando && <TrashSimple className="h-4 w-4" />}
               {borrando ? copy.deleting : copy.deleteButton}
             </Button>
-          </div>
+          </>
+        }
+      >
+        <div>
+          <label htmlFor="confirmar-eliminar-cuenta" className="mb-2 block text-sm font-medium text-fg">
+            {copy.confirmShortPrefix} <span className="font-bold text-fg">{copy.confirmWord}</span>{' '}
+            {copy.confirmShortSuffix}
+          </label>
+          <Input
+            id="confirmar-eliminar-cuenta"
+            type="text"
+            value={confirmacion}
+            onChange={(e) => setConfirmacion(e.target.value)}
+            placeholder={copy.inputPlaceholder}
+            disabled={borrando}
+          />
         </div>
       </SettingsModal>
     </>

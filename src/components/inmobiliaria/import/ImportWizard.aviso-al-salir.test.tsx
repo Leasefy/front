@@ -1,10 +1,15 @@
 /**
  * ImportWizard — aviso antes de cerrar la pestaña.
  *
- * T-0125. El asistente de inmuebles geocodifica y prepara en un bucle del
- * navegador (53 minutos con 2.864 direcciones). Cerrar la pestaña a mitad, o
- * con el archivo leído y sin preparar, pierde ese trabajo. Preparado, el lote
- * vive en el servidor (`loteRetomado`) y se retoma: ahí ya no hay que avisar.
+ * T-0125. Cerrar la pestaña con el archivo leído y sin subir pierde ese
+ * trabajo: sólo vive en el navegador. Desde la primera tanda el lote vive en
+ * el servidor (`loteRetomado`) y se retoma: ahí el asistente ya no avisa.
+ *
+ * T-0130 acotó la regla a propósito: subir y ubicar (lo único que todavía corre
+ * en el navegador) los avisa `StepConfirmImport` con su propio
+ * `useAvisoAlSalir`; crear y revisar son del servidor y reanudables, así que el
+ * «ocupado» de un paso ya NO hace preguntar al asistente — sólo se le pasa al
+ * muro.
  *
  * Los pasos se reemplazan por un doble que mueve el estado del asistente: lo
  * que se prueba es la regla del asistente, no los pasos.
@@ -47,7 +52,6 @@ vi.mock('./steps/StepChooseMethod', () => ({
 }));
 vi.mock('./steps/StepUploadFile', () => ({ StepUploadFile: () => <div /> }));
 vi.mock('./steps/StepColumnMapping', () => ({ StepColumnMapping: () => <div /> }));
-vi.mock('./steps/StepAIReview', () => ({ StepAIReview: () => <div /> }));
 vi.mock('./steps/StepConfirmImport', () => ({ StepConfirmImport: () => <div /> }));
 vi.mock('./steps/StepSoftwareMigration', () => ({ StepSoftwareMigration: () => <div /> }));
 vi.mock('./steps/StepPortalImport', () => ({ StepPortalImport: () => <div /> }));
@@ -111,15 +115,29 @@ describe('<ImportWizard> — aviso al salir', () => {
     expect(intentarSalir()).toBe(false);
   });
 
-  it('🔴 con un paso trabajando (geocodificar, preparar, activar), cerrar pregunta aunque el lote exista', async () => {
-    await pintar();
+  /*
+   * Antes: «con un paso trabajando (geocodificar, preparar, activar), cerrar
+   * pregunta aunque el lote exista». T-0130 (5409c377) lo cambió a propósito:
+   * el paso dice «ocupado» también mientras crea, revisa, descarta o reintenta
+   * —todo reanudable en el servidor: «Puedes cerrar esta página: las seguimos
+   * creando» (T-0131)—, así que preguntar por eso sería un aviso falso. Lo que
+   * sí se pierde a mitad (subir, ubicar) lo avisa `StepConfirmImport` por su
+   * cuenta. Lo que el asistente sigue cuidando: el archivo que sólo vive acá.
+   */
+  it('🔴 el «ocupado» de un paso no decide el aviso: con el archivo sin subir pregunta aunque el paso se suelte, y con el lote en el servidor (crear, revisar) no pregunta', async () => {
+    const onOcupado = await pintar();
     await clic('leer');
-    await clic('preparar');
     await clic('en-vuelo');
     expect(intentarSalir()).toBe(true);
-
+    // El paso se suelta, pero el archivo sigue sin subir: perderlo es perderlo todo.
     await clic('libre');
+    expect(intentarSalir()).toBe(true);
+
+    await clic('preparar');
+    await clic('en-vuelo');
     expect(intentarSalir()).toBe(false);
+    // …y el muro igual se entera de que hay algo corriendo.
+    expect(onOcupado).toHaveBeenLastCalledWith(true, undefined);
   });
 
   it('sigue avisándole al muro lo que el paso reporta (el aviso no se lo traga)', async () => {

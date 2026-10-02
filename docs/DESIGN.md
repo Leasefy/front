@@ -265,56 +265,113 @@ A restrained accent moment — **cobalt by default**, supporting hues only for t
 Default to `bg-primary-soft` + `text-primary` (cobalt). For categorical/chart contexts only, the
 supporting hues (cyan, green, amber, coral, violet, peach) may tile — but never as a rainbow of UI chrome.
 
-### Drawers / Side Panels
+### Drawers / Side Panels — el cajón flotante (02-10-2026)
 
-**Canonical pattern** (see `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/ui/plan/PlanDetailSheet.tsx`):
+> Nico: «que los drawers todos sean así, que se vean así de hermosos, que se separen de las
+> esquinas». Todo cajón del producto es el `Sheet` **flotante** de Cadence, a través del
+> adaptador `src/components/ui/sheet.tsx`. **Nadie arma un cajón a mano** (`createPortal` +
+> `fixed inset-y-0 right-0`): ese patrón quedó retirado.
 
-```tsx
-// 1. Pause Lenis smooth scroll while open
-const lenis = useLenis();
-useEffect(() => {
-  if (open) lenis.stop(); else lenis.start();
-  return () => lenis.start();
-}, [open, lenis]);
+**Forma** (la pone la primitiva, no el call site):
 
-// 2. Close on Escape
-useEffect(() => { ... }, [open, onClose]);
+| Qué | Valor |
+|---|---|
+| Margen a la ventana | 12 px arriba, abajo y al costado (16 px desde `lg`) |
+| Esquinas | las CUATRO en 24 px (`rounded-[24px]`) |
+| Sombra | amplia y suave `0 24px 80px -12px rgba(20,19,15,.28)`; en oscuro la separa un borde blanco al 10 % (`ink-border`), nunca el gris café de `border` |
+| Velo | ink al 18 % + `backdrop-blur-[6px]`; en oscuro negro al 55 % |
+| Animación | con los tokens de §8b: entra en `duration-slow` (300 ms) con `ease-emphasis`, deslizándose `--motion-distance-lg` (24 px) desde su lado con escala `--motion-pop-scale` (0,96) y opacidad; sale igual en `duration-fast` (150 ms) con `ease-exit`. En el celular la hoja sube desde el borde de abajo (100 %). Con `prefers-reduced-motion` sólo el fundido, con las duraciones reducidas de `--motion-*` |
+| ✕ | la de todo el producto: círculo con borde fino de 36 px (`ASPA_DE_CIERRE` = `dialogCloseClassName` de Cadence), centrada en la línea del título. `closeLabel` cambia su nombre accesible cuando hay dos cajones a la vista («Cerrar el documento») |
+| Capa | `z-[300]` (§17) |
+| Celular (< 640 px) | el cajón derecho **sube como hoja desde abajo**: radios arriba, asa, hasta el 92 % del alto, pie al alcance del pulgar. Los izquierdos (navegación) siguen laterales y flotantes. `mobile="sheet" \| "side"` lo cambia |
+| Tamaños (`size`) | `sm` 400 · `md` 560 (default) · `lg` 680 · `xl` 880 · `full` |
 
-// 3. Wait for mount before portal
-const [mounted, setMounted] = useState(false);
-useEffect(() => setMounted(true), []);
-if (!open || !mounted) return null;
+**Anatomía**:
 
-// 4. Render via portal — escapes any parent stacking context
-return createPortal(
-  <>
-    <div
-      className="fixed inset-0 z-50 bg-[#14130F]/40 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
-      aria-hidden="true"
-    />
-    <div
-      className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-surface shadow-lg flex flex-col animate-in slide-in-from-right duration-300"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="flex-none ...">{/* header */}</div>
-      <div
-        className="flex-1 overflow-y-auto p-6 space-y-6"
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
-      >
-        {/* body */}
-      </div>
-    </div>
-  </>,
-  document.body
-);
+```
+┌───────────────────────────────────────┐
+│ [ícono] Título                     (✕) │  SheetHeader — título, subtítulo apagado, acciones
+│         Subtítulo                      │                junto a la ✕; filete abajo
+├───────────────────────────────────────┤
+│ ‹ Anterior   1 de 9 del tablero  Sig. › │  SheetNav — opcional, entre registros
+├───────────────────────────────────────┤
+│  cuerpo (lo ÚNICO que scrollea)        │  SheetBody — data-lenis-prevent + overscroll contain
+│  ┌ SheetSection ────────────────────┐  │  tarjetas: borde suave, fondo apenas distinto,
+│  │ subtarjetas en bg-surface        │  │  subtarjetas blancas adentro
+│  └──────────────────────────────────┘  │
+├───────────────────────────────────────┤
+│ [✕ Rechazar]          [Mover] [Avanzar]│  SheetFooter — fijo, filete arriba;
+└───────────────────────────────────────┘  `start` a la izquierda, acciones a la derecha
 ```
 
-**Critical**: `createPortal` to `document.body` + `data-lenis-prevent` on the scrollable body +
-`lenis.stop()` on open. Skipping any of these breaks the drawer in subtle ways (overlay not at top,
-scroll dead). Overlay scrim uses warm ink (`#14130F`) at 40%, not pure black.
+```tsx
+import {
+  Sheet, SheetContent, SheetHeader, SheetNav, SheetBody, SheetSection, SheetFooter,
+} from '@/components/ui/sheet';
+
+<Sheet open={abierto} onOpenChange={(o) => !o && onCerrar()}>
+  <SheetContent size="lg" aria-describedby={undefined}>
+    <SheetHeader
+      leading={<Avatar … />}            /* opcional */
+      title="Candidatura"
+      description="Apartamento 402 · Laureles"
+      actions={<Badge>En estudio</Badge>} /* opcional, junto a la ✕ */
+    />
+    <SheetNav position={1} total={9} context="del tablero" onPrevious={…} onNext={…} />
+    <SheetBody className="space-y-5">
+      <SheetSection title="Progreso de la postulación">…</SheetSection>
+    </SheetBody>
+    <SheetFooter
+      note="Una línea de ayuda encima de los botones (opcional)"
+      start={<Button variant="secondary"><X /> Rechazar</Button>}
+    >
+      <Button variant="secondary">Mover</Button>
+      <Button>Avanzar a visita</Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
+```
+
+Un **formulario** va con el `<form>` adentro y `className="contents"` (o con `id` y el botón
+del pie con `form="…"`), para que `SheetBody` y `SheetFooter` sigan siendo hijos de la columna
+y el botón del pie pueda ser `submit`.
+
+**Reglas que no se negocian:**
+
+| Regla | Por qué |
+|---|---|
+| No pongas `p-0`, `flex flex-col`, `w-full sm:max-w-*` ni `overflow-y-auto` en `SheetContent` | Ya los trae. El ancho es `size`. Un `p-0` además apaga el reparto (ver abajo) |
+| La ✕ la pone `SheetContent` (`ASPA_DE_CIERRE`, la misma de los modales) | Nadie dibuja la suya. `hideCloseButton` la apaga, sólo para un cajón que no se debe abandonar |
+| Sin `useLenis().stop()`, sin `keydown` de Esc, sin `createPortal` | Radix pone el portal, el foco, Esc y el bloqueo del scroll; `SmoothScroll` frena Lenis mientras haya un `[role=dialog][data-state=open]` |
+| El cuerpo es `SheetBody` | Es lo que lleva `data-lenis-prevent` + `overscroll-behavior: contain`; sin eso la rueda mueve la página de atrás |
+| Para animar la salida, el contenido sigue montado | `open` manda; si el dato se va al cerrar, `useUltimoPresente`. Un cajón que el padre monta y desmonta guarda su `abierto` y avisa en `onCloseAutoFocus` (ver `AIActivityDetailPanel`) |
+
+**El reparto.** Como `DialogContent`, el `SheetContent` del adaptador **reparte** a sus hijos
+directos leyendo `bandaDeModal`: cabecera y navegación arriba, pie abajo y todo lo demás a un
+`SheetBody` automático. Así un cajón escrito «a la antigua» no queda pegado a los bordes. Se
+apaga solo cuando el call site ya arma su layout: si trae un `SheetBody`/`CajonCuerpo` en su
+JSX, si pasa `layout="manual"` (obligatorio cuando las bandas viven en un subcomponente, p. ej.
+`CuerpoDelCandidato`) o, por compatibilidad con cajones viejos, si pasa `p-0` en `className`.
+
+**`Cajon`** (`src/components/ui/cajon.tsx`) es la capa en español sobre lo mismo:
+`Cajon` (`tamano`, o el `ancho` viejo traducido) · `CajonCabecera` = `SheetHeader` ·
+`CajonCuerpo` = `SheetBody` · `CajonPie` (`izquierda`, `ayuda`) = `SheetFooter`.
+
+**Sub-cajón** (un panel junto a otro): un segundo `Sheet` DENTRO del primero, con
+`overlayClassName="bg-transparent"` (el adaptador también le quita el desenfoque) y un
+`right-[calc(margen + ancho del principal …)]` que lo deja a su izquierda SÓLO desde el
+ancho en que caben los dos; debajo se para encima del principal. Dos formas:
+- **separado** (dos tarjetas con 12 px de aire): el panel secundario de `PlanDetailSheet`,
+  desde `xl`;
+- **pegado** (una sola pieza con la costura a ras): `PilotoDocumento` junto a `PilotoCajon`,
+  desde `lg` — el principal pierde el radio izquierdo (`lg:!rounded-l-none`) y el secundario
+  el derecho y su borde (`lg:!rounded-r-none lg:border-r-0`). Su ✕ lleva
+  `closeLabel="Cerrar el documento"`.
+
+Referencias: `CandidateDrawer.tsx` (cabecera con avatar + pie con decidir),
+`PipelineDetail.tsx` (pie «perder» a la izquierda / «avanzar» a la derecha),
+`PlanDetailSheet.tsx` (sub-cajón), `InquilinoDrawer.tsx` (encabezado de persona con chips de
+contacto). En Cadence: historia `Overlays/Sheet › Referencia · Candidatura`.
 
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
@@ -463,7 +520,7 @@ onboarding), así que `toast()` desde el resto del árbol — `/auth/mfa-verify`
 
 - **Focus**: global `*:focus-visible { outline: 2px solid #1A40FF; outline-offset: 2px }` (cobalt, border.focus) — don't override per-component
 - **Skip link**: `.skip-link` utility
-- **Modals**: `role="dialog" aria-modal="true"`, focus trap optional but Escape-to-close mandatory
+- **Modals**: usá `Dialog` / `AlertDialog` (Radix): foco atrapado, Esc, `aria-labelledby`/`describedby` desde `DialogTitle`/`DialogDescription` y foco devuelto al disparador. Sin descripción visible, `aria-describedby={undefined}` en el Content.
 - **Backdrop**: `aria-hidden="true"`
 - **Icon-only buttons**: must have `aria-label` or `title`
 - **Color**: never communicate state with color alone — pair with icon + text
@@ -478,8 +535,9 @@ The site uses **Lenis** smooth scroll, configured in `src/components/providers/S
 1. **For any modal / drawer / overlay**: call `lenis.stop()` on open, `lenis.start()` on close + cleanup
 2. **For any scrollable nested container** inside the modal/drawer: add `data-lenis-prevent` + `overscrollBehavior: 'contain'`
 
-Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanDetailSheet` and
-`CandidateDrawer` follow this pattern — copy it.
+Failure mode: wheel events get hijacked, drawer body appears frozen. En los cajones ya no se
+hace a mano: `SheetBody` trae `data-lenis-prevent` + `overscroll-behavior: contain`, y
+`SmoothScroll` frena Lenis mientras haya un diálogo o cajón abierto (§4 Drawers).
 
 ---
 
@@ -925,7 +983,7 @@ Two overlay patterns plus the floating-content layer that must sit above them:
 | Pattern | Component | z-index | When |
 |---|---|---|---|
 | **Drawer / Sheet (side panel)** | `<Sheet>` / `<Drawer>` primitives (`sheet.tsx`, `drawer.tsx`) | `z-[300]` | Detail views, settings, long sectioned content |
-| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) | `z-[300]` | Confirmations, short forms, alerts |
+| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) + `confirmar()` / `avisar()` | `z-[300]` | Confirmations, short forms, status messages (info / éxito / error / advertencia) |
 | **Floating-in-modal** | `Select` / `DropdownMenu` / `Popover` / `Tooltip` / `HoverCard` content | `z-[400]` | Any Radix popover opened *inside* a modal/drawer |
 
 ⚠️ **Overlay stack: modal/drawer `z-[300]` < floating content `z-[400]` < toasts (sonner, ~1e9).**
@@ -936,81 +994,201 @@ override the design-system default `z-50` to `z-[400]`. Add new floating primiti
 that list, don't invent a new number.
 
 Dialog and Sheet share `z-[300]`; a confirmation Dialog spawned *from* a Sheet lands on
-top by DOM order (it mounts later). The legacy `PlanDetailSheet` still uses `z-50` — new
-side panels should use the shared `<Sheet>` primitive, not roll their own.
+top by DOM order (it mounts later). Desde el 02-10-2026 no queda ningún cajón armado a mano
+(`PlanDetailSheet` incluido): todos son el `<Sheet>` flotante (§4 Drawers).
 
-### Dialog Pattern
+### Dialog Pattern — el modal canónico (02-10-2026)
 
-**Todo modal del producto tiene la misma anatomía, y la impone la primitiva.**
+> Nico: «quiero algo hermoso, que cada modal se sienta bello, sea informativo,
+> de éxito, de error». Desde ese día **todo modal del producto sale de la misma
+> primitiva** (`Dialog` / `AlertDialog` de Cadence, a través de
+> `src/components/ui/dialog.tsx` y `alert-dialog.tsx`) y **nadie arma una
+> cáscara a mano** (`fixed inset-0` + caja centrada). Las historias de Storybook
+> de Cadence (`Overlays/Dialog`, `Overlays/AlertDialog`,
+> `Overlays/MessageDialog`, `Overlays/Imperativo`) son la referencia visual.
 
 ```
-┌──────────────────────────────────────┐
-│  Título                         (✕)  │  cabecera FIJA, filete abajo
-├──────────────────────────────────────┤
-│  cuerpo (lo único que scrollea)      │
-├──────────────────────────────────────┤
-│                  Cancelar  Confirmar │  pie FIJO, filete arriba
-└──────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│  (◎)                                  (✕)  │  medallón opcional (variant / icon)
+│  Título grande 20/28                       │  + subtítulo 14px apagado
+│  Subtítulo                                 │
+├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤  filete SÓLO cuando el cuerpo scrollea
+│  cuerpo — lo único que scrollea            │  data-lenis-prevent + overscroll contain
+│  ┌──────────────────────────────────────┐  │
+│  │ bloque con borde fino (DialogSection)│  │
+│  └──────────────────────────────────────┘  │
+├────────────────────────────────────────────┤
+│  pie, fondo suave         Cancelar  [Sí]   │  pie fijo, acciones a la derecha
+└────────────────────────────────────────────┘
 ```
+
+- **Panel:** esquinas de **24px**, borde fino, sombra profunda y suave, centrado
+  con `inset-0 m-auto` (no con translate). Entra con escala + opacidad en
+  `duration-slow` (300 ms) + `ease-enter`, subiendo `--motion-distance-sm`; sale
+  en `duration-fast` (150 ms) + `ease-exit` (§8b). La hoja del celular entra con
+  `ease-emphasis`. Con `prefers-reduced-motion` los tokens valen 0 y 1 y queda
+  un fundido corto, sin ninguna clase `motion-reduce:` en el panel (salvo la
+  hoja, que viaja el 100% de su alto y pasa a fundido).
+- **Velo:** tinta translúcida + **desenfoque** del fondo (negro 60% en oscuro).
+- **✕:** un círculo con borde fino arriba a la derecha. La pone el Content
+  (nunca la cabecera) y no scrollea nunca.
+- **Pie:** fondo `surface-hover` (blanco/negro translúcido: neutro en los dos
+  temas), filete arriba, acciones a la derecha. Salida = botón blanco con borde
+  (`variant="outline"` o `secondary`: el pie pinta de superficie el `outline`),
+  acción = cobalto, destructiva = rojo sobrio (también en oscuro: el pie fuerza
+  `#c0392b` en vez del salmón, que con texto blanco no llega a 4.5:1).
+- **Celular (<640px):** sube como **hoja desde abajo**, a todo el ancho, con las
+  esquinas de arriba redondeadas, los botones a todo el ancho (el principal
+  arriba) y la zona segura del iPhone respetada. `mobile="center"` lo deja como
+  tarjeta centrada.
+- **Oscuro:** Onyx `#0a0a0a`. Nada de `surface-muted` adentro del modal (es un
+  gris cálido, amarillento sobre el negro).
+
+#### Tamaños — `size` en el Content
+
+| `size` | Ancho | Para |
+|---|---|---|
+| `sm` | 420 | Confirmaciones, mensajes de estado (default de `AlertDialog`) |
+| `md` | 520 | Formularios cortos (default de `Dialog`) |
+| `lg` | 680 | Formularios con secciones |
+| `xl` | 880 | Tablas, comparaciones, extractos |
+
+Un `className="max-w-…"` en el Content sigue ganando (tailwind-merge), pero
+preferí `size`.
+
+#### Las variantes — `variant` en el Content
+
+| Tipo | Componente | `variant` | Medallón | Botón principal |
+|---|---|---|---|---|
+| Contenido / formulario | `Dialog` | — | ninguno (o `icon`) | cobalto |
+| Confirmación | `AlertDialog` / `confirmar()` | `confirm` | cobalto, «?» (o el ícono de la acción) | cobalto |
+| **Destructiva** | `AlertDialog` / `confirmar({ destructivo })` | `destructive` | rojo, papelera (o `Prohibit`…) | **rojo sobrio, solo** |
+| Advertencia | `AlertDialog` / `avisar` | `warning` | ámbar, «!» | cobalto |
+| Informativa | `Dialog` / `avisar({ tipo: "info" })` | `info` | azul, «i» | «Entendido» blanco |
+| Éxito | `Dialog` / `avisar({ tipo: "exito" })` | `success` | verde, **el ✓ se dibuja** | «Listo» blanco |
+| Error | `Dialog` / `avisar({ tipo: "error" })` | `error` | rojo, «×» | «Reintentar» si aplica |
+
+El medallón es un círculo de 48px con el **tinte suave** del estado (nunca
+saturado) y un halo del mismo tinte; entra con escala + opacidad (desde
+`--motion-pop-scale`: con movimiento reducido, sólo el fundido).
 
 ```tsx
+// Formulario / contenido
 <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent /* rounded-[20px], max-w-lg, flex-col, centrado por translate */>
+  <DialogContent size="md">
     <DialogHeader>
-      <DialogTitle>...</DialogTitle>
-      <DialogDescription>...</DialogDescription>
+      <DialogTitle>Nuevo propietario</DialogTitle>
+      <DialogDescription>Con el documento basta; el resto se completa después.</DialogDescription>
     </DialogHeader>
-    {/* cuerpo: hijos sueltos, con su padding y su scroll */}
+    {/* hijos sueltos: van al cuerpo con scroll (grid gap-4) */}
+    <DialogSection title="Datos">…</DialogSection>
     <DialogFooter>
-      <Button variant="outline">Cancelar</Button>
-      <Button>Confirmar</Button>
+      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+      <Button isLoading={guardando}>Crear propietario</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
+
+// Destructiva: el título nombra QUÉ, la descripción dice EXACTAMENTE qué se pierde
+<AlertDialog open={open} onOpenChange={setOpen}>
+  <AlertDialogContent variant="destructive">
+    <AlertDialogHeader>
+      <AlertDialogTitle>¿Anular el recibo RC-1042?</AlertDialogTitle>
+      <AlertDialogDescription>
+        La cuota de octubre vuelve a quedar pendiente por $ 2.450.000. El recibo queda
+        marcado como anulado; no se borra.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction loading={anulando} onClick={(e) => { e.preventDefault(); anular() }}>
+        Anular recibo
+      </AlertDialogAction>          {/* sale rojo solo: lo decide la variante */}
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
+// Un estado que cambia adentro del mismo modal: la variante sigue al estado
+<DialogContent variant={resultado ? "success" : undefined}>…</DialogContent>
 ```
 
-`DialogContent` **reparte** a sus hijos: `DialogHeader` arriba, `DialogFooter`
-abajo, y todo lo demás a un cuerpo con `overflow-y-auto` propio. No le pongas
-`p-0`, `overflow-y-auto` ni `flex flex-col` — ya los tiene, y pelean.
+#### Preguntar o avisar desde un manejador — `confirmar()` / `avisar()`
 
-Reglas que NO se negocian, porque son lo que hace que 29 modales se vean igual:
+`src/components/ui/confirmar.tsx`. Devuelven una promesa; **reemplazan a
+`window.confirm` / `alert`** (prohibidos: `sin-dialogos-del-navegador.test.ts`,
+que también mira `globalThis.` y `self.`). No hay que montar nada: el primer
+pedido monta un único anfitrión en `document.body` con el z del panel.
+
+```ts
+const ok = await confirmar({
+  destructivo: true,
+  titulo: '¿Eliminar a Laura Gómez del equipo?',
+  descripcion: 'Pierde el acceso al panel ya mismo. Sus gestiones y notas se conservan.',
+  accion: 'Eliminar del equipo',
+})
+if (!ok) return
+
+// Con el trabajo adentro: el botón carga; si falla, el modal sigue abierto.
+await confirmar({ titulo: '¿Enviar los 42 recordatorios?', accion: 'Enviar', alConfirmar: enviar })
+
+await avisar({ tipo: 'error', titulo: 'No pudimos enviar el lote a Wompi',
+  descripcion: 'Wompi no respondió. Lo enviado quedó guardado; reintenta en unos minutos.',
+  referencia: 'WOMPI_NO_RESPONDIO · 7f3a-29c1', accion: 'Reintentar', alAccionar: reintentar })
+```
+
+Una confirmación lleva siempre `descripcion` (qué pasa si se acepta) o, por lo
+menos, `detalle`: sin descripción, el detalle es lo que lee el lector de
+pantalla; sin ninguno de los dos, Radix avisa en la consola de desarrollo.
+
+Un error en un modal dice **qué pasó** (título) y **qué hacer** (descripción),
+con la **referencia** opcional para soporte (se copia con un clic) — las mismas
+piezas que `FalloDeCarga` (`titulo`, `descripcion`, `sePuedeReintentar`).
+
+#### Reglas que NO se negocian
 
 | Regla | Por qué |
 |---|---|
-| **Siempre `<DialogHeader>`** | Es lo único que da el título de 16px, el filete y la ✕ en su sitio. Sin él el modal se ve de otra familia. |
-| **La ✕ vive en la cabecera** | La del DS va `absolute` dentro del contenedor que scrollea: en un modal alto desaparece. |
-| **No toques el tamaño del título** | El del DS es `text-h2` (22px), tamaño de encabezado de PÁGINA. La primitiva lo baja con `[&_h2]:text-base`, por especificidad — un `className="text-base"` NO gana (tailwind-merge no reconoce `text-h2` como tamaño y sobreviven las dos). El color sí se puede cambiar. |
-| **Cabecera `sr-only` ⇒ `hideClose`** | Si no, la ✕ nace `sr-only` también. Con `hideClose` en la cabecera, el `DialogContent` la pinta flotando arriba a la derecha. |
+| **Siempre `<DialogHeader>`** | Da el título 20/28, el subtítulo, el medallón y el lugar de la ✕. Sin él el modal se ve de otra familia. |
+| **No toques el tamaño del título** | Lo fija Cadence (20/28). El color tampoco: el estado lo dice el medallón, no un título rojo o ámbar. |
+| **Nada de cabeceras con ícono hechas a mano** | Un `WarningCircle` en un recuadro `bg-danger-soft` al lado del título es lo que hace `variant` / `icon`, mejor y igual en todos lados. |
+| **El pie es `<DialogFooter>`** | Un `div` a mano no queda fijo, no tiene el fondo suave ni apila bien en el celular. |
+| **No le pongas `p-0`, `overflow-y-auto`, `max-h-*` ni `flex flex-col` al Content** | Ya los tiene, y pelean: con `overflow-y-auto` scrollea el panel entero y la cabecera se va. |
+| **Destructiva = `variant="destructive"`** | Medallón rojo + botón rojo sobrio + el texto dice exactamente qué se pierde (y qué no). |
+| **Cargando ≠ deshabilitado** | `loading` / `isLoading` en el botón principal: spinner y bloqueado, pero conserva su color. Cancelar se deshabilita mientras tanto. |
+
+`DialogContent` **reparte** a sus hijos directos: `DialogHeader` arriba,
+`DialogFooter` abajo y lo demás a un cuerpo con scroll (`grid gap-4`). Si
+escribís `<DialogBody>` a mano, se respeta tal cual (para darle otro layout).
 
 ### La ✕: una sola, y la pone la primitiva
 
-**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —chip
-redondo gris, `size-8 rounded-full bg-surface-muted`— y vive en
-`AspaDeCierre` (`src/components/ui/dialog.tsx`). Diálogos y cajones la
-heredan; la ✕ pelada del DS (`rounded-[9px]`, sin fondo) va apagada **siempre**
-en los dos adaptadores.
+**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —un
+**círculo con borde fino**, `size-9 rounded-full border border-border
+bg-surface`— y vive en `AspaDeCierre` (`src/components/ui/dialog.tsx`, dibujo en
+`aspa-de-cierre.ts`, el mismo que `DialogCloseButton` de Cadence). Diálogos y
+cajones la heredan.
 
 | Dónde | Quién la pone |
 |---|---|
-| `DialogContent` con `<DialogHeader>` | La cabecera, a la derecha del título |
-| `DialogContent` sin cabecera (o con `hideClose` en ella) | El Content, flotando en `absolute right-4 top-4` |
-| `SheetContent` | El Content, en `right-4 top-4` y `z-20` — por encima de las cabeceras `sticky` |
-| `AlertDialog` | Nadie: se sale por `Cancelar`/`Confirmar`, a propósito |
+| `DialogContent` (con o sin cabecera) | El Content, como `closeButton` de Cadence: arriba a la derecha, fuera del cuerpo que scrollea; la cabecera le reserva lugar |
+| `SheetContent` | El Content, en `right-4 top-[18px] sm:top-3.5` y `z-20` (`sheetCloseClassName` de Cadence: centrada en la línea del título), después de los hijos; `SheetHeader` le reserva el hueco. `closeLabel` le cambia el nombre («Cerrar el documento») |
+| `AlertDialog` / `confirmar()` | Nadie: se sale por `Cancelar` o por la acción (y Esc), a propósito |
 
-Para apagarla entera: `hideClose` en `DialogContent`, `hideCloseButton` en
-`SheetContent`. Sólo para un modal que no se debe abandonar a medias.
+Para apagarla entera: `hideClose` en `DialogContent` (`hideCloseButton` en
+`SheetContent`). Sólo para un modal que no se debe abandonar a medias. El
+`hideClose` de `DialogHeader` quedó por compatibilidad y no hace nada.
 
 ⚠️ **Un envoltorio de `DialogHeader`/`DialogFooter` tiene que declarar
 `bandaDeModal`.** `DialogContent` reparte a sus hijos leyendo esa marca; antes
-comparaba identidad de componente y `ResponsiveDialogHeader` —que renderiza un
-`DialogHeader` adentro pero *es* otro componente— no calificaba: la cabecera se
-iba al cuerpo con scroll, el pie dejaba de estar fijo y el Content encendía la ✕
-del DS encima de la del chip. Así vivió «Agendar una cita» con dos aspas.
-Ver `responsive-dialog.tsx`.
+comparaba identidad de componente y `ResponsiveDialogHeader` no calificaba: la
+cabecera se iba al cuerpo con scroll. Así vivió «Agendar una cita» con dos aspas.
+`ResponsiveDialog` hoy es el mismo `Dialog` (que ya es hoja de abajo en el
+celular).
 
-Una cáscara escrita a mano (`createPortal`) usa **`rounded-[20px]`**, el mismo
-radio que la primitiva. `src/components/ui/modales-alineados.test.ts` verifica
-todo esto.
+Una cáscara escrita a mano que todavía exista (`createPortal`) usa
+**`rounded-[24px]`**, el mismo radio que la primitiva — pero lo correcto es
+pasarla a `Dialog`. `src/components/ui/modales-alineados.test.ts` y
+`una-sola-aspa.test.tsx` verifican todo esto.
 
 ---
 
@@ -1031,7 +1209,8 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `card` | Card containers (`rounded-lg`, hairline border) |
 | `checkbox` | Checkbox input |
 | `collapsible` | Expand/collapse |
-| `dialog` | Centered modal (z-[300]) |
+| `dialog` | Centered modal (z-[300]) — variantes `confirm`/`destructive`/`info`/`success`/`warning`/`error`, `DialogSection`, `DialogBody` |
+| `confirmar` | `confirmar()` / `avisar()`: modales imperativos (reemplazan `window.confirm`/`alert`) |
 | `divider` / `separator` | Horizontal/vertical rules |
 | `dropdown-menu` | Menu popover |
 | `empty-state` | Empty list/page state |
@@ -1048,7 +1227,9 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `scroll-area` | Custom scrollbar |
 | `section-label` | Dot + mono uppercase eyebrow |
 | `select` | Select dropdown |
-| `sheet` | Side sheet (alternative to custom drawer) |
+| `sheet` | El cajón flotante: `Sheet` + `SheetHeader`/`SheetNav`/`SheetBody`/`SheetSection`/`SheetFooter` (§4 Drawers) |
+| `cajon` | La misma anatomía en español: `Cajon`/`CajonCabecera`/`CajonCuerpo`/`CajonPie` |
+| `drawer` | Hoja desde abajo con arrastre (vaul), mismo dibujo. Para un cajón lateral, `sheet` |
 | `skeleton` | Loading skeleton |
 | `slider` | Range input |
 | `spinner` | Loading spinner (sizes + variants) |
@@ -1148,7 +1329,7 @@ El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agu
 2. Canonical references for common needs:
    - **Cadence foundation**: [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html) + the `@leasefy/cadence` preset
    - **Color**: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md)
-   - **Drawer**: `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/ui/plan/PlanDetailSheet.tsx`
+   - **Drawer**: §4 Drawers + `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/inmobiliaria/PipelineDetail.tsx`
    - **Form**: `src/components/auth/AuthForm.tsx`
    - **Layout**: `src/app/panel/inmobiliaria/layout.tsx` + `src/components/ui/plan/PlanSidebar.tsx` + `PlanHeader.tsx`
    - **Button**: `src/components/ui/button.tsx`

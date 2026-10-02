@@ -14,7 +14,7 @@
 
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
-import { ArrowSquareOut } from '@phosphor-icons/react'
+import { ArrowSquareOut, XCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 
 import { useI18n } from '@/lib/i18n'
@@ -306,6 +306,7 @@ interface ResolvePanelProps {
 function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: ResolvePanelProps) {
   const [isResolving, setIsResolving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [resolveData, setResolveData] = useState<ResolvePayload>({})
 
@@ -343,6 +344,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
       })
       if (!res.ok) throw new Error(String(res.status))
       toast.success(t('inmobiliaria.ai.arco.toast.rejected'))
+      setRejectOpen(false)
       setRejectReason('')
       await detailRefetch()
     } catch {
@@ -382,13 +384,13 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
           apilados y con el mismo peso — un patrón de formulario móvil que en un
           panel de escritorio hace que rechazar pese igual que resolver. */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
-        <AlertDialog>
+        <AlertDialog open={rejectOpen} onOpenChange={(o) => !isRejecting && setRejectOpen(o)}>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" hideArrow disabled={busy}>
               {t('inmobiliaria.ai.arco.reject')}
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent variant="destructive" icon={<XCircle weight="bold" />}>
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {t('inmobiliaria.ai.arco.rejectDialog.title')}
@@ -415,8 +417,15 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => void handleReject()} tone="danger">
+              <AlertDialogCancel disabled={isRejecting}>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                // Abierto mientras rechaza: si falla, el motivo escrito no se pierde.
+                onClick={(e) => {
+                  e.preventDefault()
+                  void handleReject()
+                }}
+                loading={isRejecting}
+              >
                 {t('inmobiliaria.ai.arco.rejectDialog.confirm')}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -562,7 +571,7 @@ function ExtendDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={(o) => !isBusy && setOpen(o)}>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm" hideArrow disabled={!actionBase}>
           {t(`${NS}.action`)}
@@ -612,7 +621,8 @@ function ExtendDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isBusy}>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
-            disabled={isBusy || reasonTooShort || daysInvalid}
+            disabled={reasonTooShort || daysInvalid}
+            loading={isBusy}
             onClick={(e) => {
               // El diálogo cierra solo al confirmar; acá lo controlamos nosotros
               // para no cerrarlo si el aviso al solicitante falla.

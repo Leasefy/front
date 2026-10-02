@@ -300,9 +300,16 @@ export function MarcarDevueltoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-marcar-devuelto">
+      {/* La variante sigue al estado: formulario y, al terminar, éxito. */}
+      <DialogContent
+        size="md"
+        variant={resultado ? 'success' : undefined}
+        data-testid="dialogo-marcar-devuelto"
+      >
         <DialogHeader>
-          <DialogTitle>Marcar el giro como devuelto</DialogTitle>
+          <DialogTitle>
+            {resultado ? 'El giro quedó marcado como devuelto' : 'Marcar el giro como devuelto'}
+          </DialogTitle>
           <DialogDescription>
             {nombreTitular} · {formatCurrency(valorCop)}. La plata vuelve a estar por girar: el
             propietario no la recibió.
@@ -311,7 +318,7 @@ export function MarcarDevueltoDialog({
 
         {resultado ? (
           <div className="space-y-3 text-sm" data-testid="resultado-de-la-devolucion">
-            <p className="rounded-md bg-surface-muted px-4 py-3 text-fg" data-testid="texto-de-la-bitacora">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-fg" data-testid="texto-de-la-bitacora">
               {resultado.queHacer.bitacora}
             </p>
             <ul className="space-y-1 text-fg-muted">
@@ -406,7 +413,7 @@ export function MarcarDevueltoDialog({
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={onCerrar}>
+            <Button variant="outline" hideArrow onClick={onCerrar}>
               Listo
             </Button>
           ) : (
@@ -481,9 +488,14 @@ export function RegirarDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-regirar">
+      {/* La variante sigue al estado: formulario y, al terminar, éxito. */}
+      <DialogContent
+        size="md"
+        variant={resultado ? 'success' : undefined}
+        data-testid="dialogo-regirar"
+      >
         <DialogHeader>
-          <DialogTitle>Volver a girar</DialogTitle>
+          <DialogTitle>{resultado ? 'El nuevo giro quedó registrado' : 'Volver a girar'}</DialogTitle>
           <DialogDescription>
             {nombreTitular}. La fecha decide dónde queda el egreso: si el giro sale el MISMO día de
             la devolución, el egreso conserva su fecha; si sale otro día, se re-fecha.
@@ -492,7 +504,7 @@ export function RegirarDialog({
 
         {resultado ? (
           <div className="space-y-2 text-sm" data-testid="resultado-del-regiro">
-            <p className="rounded-md bg-surface-muted px-4 py-3 text-fg" data-testid="motivo-del-egreso">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-fg" data-testid="motivo-del-egreso">
               {resultado.egreso.motivo}
             </p>
             <p className="text-fg-muted">
@@ -527,7 +539,7 @@ export function RegirarDialog({
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={onCerrar}>
+            <Button variant="outline" hideArrow onClick={onCerrar}>
               Listo
             </Button>
           ) : (

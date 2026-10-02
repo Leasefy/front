@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -94,7 +95,7 @@ export function AsignarAgente({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>Asignar agente</DialogTitle>
           <DialogDescription>
@@ -179,11 +180,11 @@ export function AsignarAgente({
           </ul>
         </EstadoDeDatos>
 
-        <div className="flex justify-end pt-1">
-          <Button variant="secondary" hideArrow onClick={onCerrar}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onCerrar}>
             Cancelar
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

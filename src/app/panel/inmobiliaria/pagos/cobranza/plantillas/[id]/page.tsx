@@ -32,6 +32,7 @@ import {
   Clock,
   CheckCircle,
   WarningCircle,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
@@ -515,19 +516,19 @@ function TemplateEditorContent({
                 {t('inmobiliaria.ai.templates.publish')}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            {/* Publicar es una confirmación: el alto de los botones lo da el pie
+                del modal (en el celular, a todo el ancho). El progreso se ve en
+                el botón «Publicar» de la barra, que publica en optimista. */}
+            <AlertDialogContent variant="confirm" icon={<PaperPlaneTilt weight="bold" />}>
               <AlertDialogHeader>
                 <AlertDialogTitle>{t(dialogTitleKey)}</AlertDialogTitle>
                 <AlertDialogDescription>{t(dialogBodyKey)}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="min-h-[44px]">
+                <AlertDialogCancel>
                   {t('inmobiliaria.ai.templates.dialog.publish.cancel')}
                 </AlertDialogCancel>
-                <AlertDialogAction
-                  className="min-h-[44px]"
-                  onClick={() => void handlePublish()}
-                >
+                <AlertDialogAction onClick={() => void handlePublish()}>
                   {t('inmobiliaria.ai.templates.dialog.publish.confirm')}
                 </AlertDialogAction>
               </AlertDialogFooter>

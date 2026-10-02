@@ -285,7 +285,7 @@ function EditorDeSede({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="editor-de-sede">
+      <DialogContent size="sm" data-testid="editor-de-sede">
         <DialogHeader>
           <DialogTitle>{sede ? 'Editar la sede' : 'Crear una sede'}</DialogTitle>
           <DialogDescription>

@@ -880,7 +880,7 @@ function AcuerdosContent() {
       {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
           una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
       <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
-        <DialogContent className="sm:max-w-5xl">
+        <DialogContent size="xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
           </DialogHeader>

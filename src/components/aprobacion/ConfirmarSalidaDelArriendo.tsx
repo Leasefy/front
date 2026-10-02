@@ -41,16 +41,17 @@ export function ConfirmarSalidaDelArriendo({
 }: ConfirmarSalidaDelArriendoProps) {
   return (
     <AlertDialog open={abierto} onOpenChange={onAbiertoChange}>
-      <AlertDialogContent data-testid="confirmar-salida-aprobacion">
+      {/* Advertencia: se puede salir, pero con riesgo (perder el inmueble). */}
+      <AlertDialogContent variant="warning" data-testid="confirmar-salida-aprobacion">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Sales de tu solicitud?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {tituloDelInmueble
+              ? `Todavía no sabemos si te podemos arrendar ${tituloDelInmueble}. Mientras tanto, otra persona puede tomarlo.`
+              : 'Todavía no sabemos hasta cuánto te podemos arrendar, y sin eso no puedes postularte a ningún inmueble.'}{' '}
+            Te toma un par de minutos terminar.
+          </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogDescription>
-          {tituloDelInmueble
-            ? `Todavía no sabemos si te podemos arrendar ${tituloDelInmueble}. Mientras tanto, otra persona puede tomarlo.`
-            : 'Todavía no sabemos hasta cuánto te podemos arrendar, y sin eso no puedes postularte a ningún inmueble.'}{' '}
-          Te toma un par de minutos terminar.
-        </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel data-testid="seguir-en-aprobacion">
             Seguir con mi solicitud

@@ -376,7 +376,7 @@ export function GenerarDocumentoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Generar documento</DialogTitle>
           {/* La frase nombra los DOS orígenes desde que el selector lista también
@@ -388,9 +388,12 @@ export function GenerarDocumentoDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Este scroll propio es a propósito (no el del cuerpo del modal): deja
+            el error y el «falta completar» de abajo pegados al pie. Ver el 🔴. */}
         <div
           data-testid="doc-campos"
           className="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-1"
+          data-lenis-prevent
         >
           {/* 1 — Tipo */}
           <div className="space-y-1.5">
@@ -498,7 +501,7 @@ export function GenerarDocumentoDialog({
               </div>
               {!contractId && !consignacionId && (
                 <p
-                  className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                  className="rounded-[14px] border border-border px-4 py-3 text-body-sm text-fg-muted"
                   data-testid="doc-propia-falta-sobre-que"
                 >
                   Elige el contrato o el inmueble de donde salen los datos: esta plantilla
@@ -581,7 +584,7 @@ export function GenerarDocumentoDialog({
 
           {/* 3 — Campos */}
           {plantilla && !listo && (
-            <p className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-body-sm text-fg-muted">
               {queFaltaElegir(plantilla)}
             </p>
           )}
@@ -594,7 +597,7 @@ export function GenerarDocumentoDialog({
 
           {preparacion && !preparando && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
+              <div className="rounded-[14px] border border-border px-4 py-3">
                 <p className="text-body-sm text-fg">{preparacion.nombreSugerido}</p>
                 <p className="text-caption text-fg-muted">
                   {preparacion.contrato
@@ -620,7 +623,7 @@ export function GenerarDocumentoDialog({
                     'flex items-start gap-2 rounded-lg px-4 py-3 text-body-sm',
                     aviso.bloquea
                       ? 'bg-danger-soft text-danger'
-                      : 'bg-surface-muted text-fg-muted',
+                      : 'bg-surface-hover text-fg-muted',
                   )}
                 >
                   {aviso.bloquea && <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />}
@@ -652,7 +655,7 @@ export function GenerarDocumentoDialog({
               {preparacion.certificado?.puedeEmitirse && (
                 <p
                   data-testid="doc-certificado-procede"
-                  className="rounded-lg bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                  className="rounded-[14px] bg-surface-hover px-4 py-3 text-body-sm text-fg-muted"
                 >
                   El estado de cuenta de este contrato está en cero. Las cifras del documento
                   las toma el sistema del estado de cuenta: no se escriben a mano.
@@ -762,7 +765,7 @@ export function GenerarDocumentoDialog({
         )}
 
         <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={() => onOpenChange(false)} disabled={generando}>
+          <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={generando}>
             Cancelar
           </Button>
           <Button
@@ -770,6 +773,7 @@ export function GenerarDocumentoDialog({
             data-testid="doc-generar"
             onClick={() => void generar()}
             disabled={!sePuede || generando}
+            isLoading={generando}
           >
             {generando ? 'Generando…' : 'Generar'}
           </Button>

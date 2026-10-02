@@ -84,6 +84,20 @@ const boton = (texto: string) =>
     b.textContent?.trim().includes(texto),
   )
 
+/**
+ * El editor es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `contenedor`. Se busca en el diálogo mismo.
+ */
+const dialogo = () => {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El editor no está abierto')
+  return d
+}
+const botonDelEditor = (texto: string) =>
+  Array.from(dialogo().querySelectorAll('button')).find((b) =>
+    b.textContent?.trim().includes(texto),
+  )
+
 async function escribir(el: HTMLInputElement | HTMLTextAreaElement, valor: string) {
   const proto =
     el.tagName === 'TEXTAREA'
@@ -103,10 +117,10 @@ async function abrirYLlenar(cuerpo = 'El arrendatario entrega dos meses en depó
       new MouseEvent('click', { bubbles: true }),
     )
   })
-  const inputs = Array.from(contenedor.querySelectorAll<HTMLInputElement>('input'))
+  const inputs = Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
   await escribir(inputs[0], 'Depósito')
   await escribir(inputs[1], 'Pide dos meses por adelantado')
-  await escribir(contenedor.querySelector('textarea')!, cuerpo)
+  await escribir(dialogo().querySelector('textarea')!, cuerpo)
 }
 
 beforeEach(() => {
@@ -151,7 +165,7 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     await act(async () => {
       vi.advanceTimersByTime(600)
     })
-    const motivos = contenedor.querySelector('[data-testid="motivos"]')
+    const motivos = dialogo().querySelector('[data-testid="motivos"]')
     expect(motivos?.textContent).toContain('no se puede exigir depósito en dinero')
     expect(motivos?.textContent).toContain('Ley 820 de 2003, art. 16')
   })
@@ -163,7 +177,7 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     await act(async () => {
       vi.advanceTimersByTime(600)
     })
-    expect(boton('Agregar')!.hasAttribute('disabled')).toBe(true)
+    expect(botonDelEditor('Agregar')!.hasAttribute('disabled')).toBe(true)
   })
 
   it('C3b — limpia, sí se puede guardar y se dice que pasó el validador', async () => {
@@ -172,12 +186,12 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     await act(async () => {
       vi.advanceTimersByTime(600)
     })
-    expect(contenedor.querySelector('[data-testid="veredicto"]')?.textContent).toContain(
+    expect(dialogo().querySelector('[data-testid="veredicto"]')?.textContent).toContain(
       'no encontró nada que la ley prohíba',
     )
-    expect(boton('Agregar')!.hasAttribute('disabled')).toBe(false)
+    expect(botonDelEditor('Agregar')!.hasAttribute('disabled')).toBe(false)
     await act(async () => {
-      boton('Agregar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      botonDelEditor('Agregar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(h.api.crear).toHaveBeenCalled()
   })
@@ -189,11 +203,11 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     await act(async () => {
       vi.advanceTimersByTime(600)
     })
-    const veredicto = contenedor.querySelector('[data-testid="veredicto"]')
+    const veredicto = dialogo().querySelector('[data-testid="veredicto"]')
     expect(veredicto?.textContent).not.toContain('no encontró nada')
-    expect(contenedor.querySelector('[data-testid="motivos"]')).toBeNull()
+    expect(dialogo().querySelector('[data-testid="motivos"]')).toBeNull()
     // Y se deja intentar: manda el back, que es quien sabe.
-    expect(boton('Agregar')!.hasAttribute('disabled')).toBe(false)
+    expect(botonDelEditor('Agregar')!.hasAttribute('disabled')).toBe(false)
   })
 
   it('C5 — desactivar no borra, y dice que lo firmado no cambia', async () => {

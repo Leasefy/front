@@ -30,6 +30,7 @@ import { LocationPicker, type LatLng } from '@/components/map/LocationPicker';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { geocodeApi, GeocodeApiError } from '@/lib/api/geocode.service';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 
 export interface UbicarEnElMapaDialogProps {
@@ -97,7 +98,7 @@ export function UbicarEnElMapaDialog({
       onCerrar();
     } catch (e) {
       toast.error(t('inmobiliaria.inmuebles.ubicacion.dialogo.errorAlGuardar'), {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e),
       });
     } finally {
       setGuardando(false);
@@ -111,13 +112,13 @@ export function UbicarEnElMapaDialog({
         if (!open && !guardando) onCerrar();
       }}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.inmuebles.ubicacion.dialogo.titulo')}</DialogTitle>
           <DialogDescription>{t('inmobiliaria.inmuebles.ubicacion.dialogo.descripcion')}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-5">
+        <div className="space-y-4">
           {busquedaNoDisponible ? (
             <>
               <p

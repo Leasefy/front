@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ExtractoPropietario as ExtractoDelMes } from '@/lib/types/inmobiliaria';
 import { descargar } from '@/lib/propietarios/exportar-datos';
 import { nombreDelMes } from '@/lib/utils/mes';
@@ -49,12 +49,6 @@ export function mesDeHoy(hoy: Date = new Date()): string {
 /** «septiembre de 2026» → «Septiembre de 2026». Con `capitalize` de CSS salía «Septiembre De 2026». */
 function conInicialMayuscula(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
-}
-
-function mensajeDe(error: unknown, porDefecto: string): string {
-  if (error instanceof ApiError) return error.messages?.join(' · ') ?? error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return porDefecto;
 }
 
 export function ExtractoDelPropietarioDialog({
@@ -85,7 +79,12 @@ export function ExtractoDelPropietarioDialog({
       .catch((e: unknown) => {
         if (!vigente) return;
         setExtracto(null);
-        setError(mensajeDe(e, t('inmobiliaria.propietario.extracto.sinDatos')));
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: t('inmobiliaria.propietario.extracto.sinDatos'),
+            accion: 'armar el extracto',
+          }),
+        );
       })
       .finally(() => {
         if (vigente) setCargando(false);
@@ -108,16 +107,15 @@ export function ExtractoDelPropietarioDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>
-      {/* Ancho de dispersiones: el extracto tiene nueve columnas. El scroll lo
-          pone el Dialog; `data-lenis-prevent` para que el scroll suave no se
-          coma el de esto que flota. */}
-      <DialogContent className="max-w-5xl max-h-[90vh]" data-lenis-prevent>
+      {/* El más ancho (`xl`): el extracto tiene nueve columnas. El scroll (y
+          su `data-lenis-prevent`) lo pone el cuerpo del Dialog. */}
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.propietario.extracto.ownerStatement')}</DialogTitle>
           <DialogDescription>{propietarioName}</DialogDescription>
         </DialogHeader>
 
-        <div className="min-w-0 space-y-4 p-6 pt-2">
+        <div className="min-w-0 space-y-4">
           <div className="flex items-end gap-3">
             <div className="space-y-1">
               <Label htmlFor="mes-del-extracto" className="text-xs">

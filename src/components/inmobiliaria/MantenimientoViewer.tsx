@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { SheetTitle } from '@/components/ui/sheet';
+import { SheetHeader } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import {
   Dialog,
@@ -513,11 +513,11 @@ export function MantenimientoViewer({
   return (
     <>
       <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-xl">
-        {/* Cabecera fija. El ícono del tipo va a la izquierda del título y las
-            insignias debajo, por eso no usa `CajonCabecera`. El `pr-14` del
-            cajón reserva el hueco de la ✕, que es la misma de todo el producto. */}
-        <div className="flex-none border-b border-border px-6 py-5 pr-14">
-          <div className="flex items-start gap-3">
+        {/* Cabecera fija: el ícono del tipo a la izquierda del título, el menú
+            junto a la ✕ (que es la misma de todo el producto) y las insignias
+            debajo. */}
+        <SheetHeader
+          leading={
             <div
               className={cn(
                 'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
@@ -526,49 +526,48 @@ export function MantenimientoViewer({
             >
               <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
             </div>
-            <div className="min-w-0 flex-1">
-              <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
-              </p>
-            </div>
-
-            {/* Los tres puntos del detalle.
-                🔴 Antes NO existían: el detalle no tenía menú ninguno, así que
-                «agregarle una cotización desde los tres puntos» no era un botón
-                roto, era un botón que no estaba (Nico, 2026-09-12). Sólo lleva
-                acciones que de verdad hacen algo; una solicitud cerrada no
-                muestra menú porque no queda nada que hacerle. */}
-            {accionesDelMenu.length > 0 && (
-              <DropdownList open={menuAbierto} onOpenChange={setMenuAbierto}>
-                <DropdownListTrigger asChild>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    icon={<DotsThree className="w-5 h-5" weight="bold" />}
-                    aria-label={t('inmobiliaria.mantenimiento.moreActions')}
-                    data-testid="mantenimiento-detalle-menu"
-                  />
-                </DropdownListTrigger>
-                <DropdownListContent align="end" className="w-56">
-                  {accionesDelMenu.map((accion) => (
-                    <DropdownListItem
-                      key={accion.id}
-                      className={cn('gap-3', accion.tono)}
-                      onClick={accion.alElegir}
-                      data-testid={`mantenimiento-detalle-${accion.id}`}
-                    >
-                      <accion.icono className="w-4 h-4" />
-                      <span className="text-sm">{accion.etiqueta}</span>
-                    </DropdownListItem>
-                  ))}
-                </DropdownListContent>
-              </DropdownList>
-            )}
-          </div>
-
+          }
+          title={solicitud.title}
+          description={`${typeInfo?.labelEs ?? ''} · ${fmtDate(solicitud.createdAt)}`}
+          actions={
+            accionesDelMenu.length > 0 ? (
+              <>
+                {/* Los tres puntos del detalle.
+                    🔴 Antes NO existían: el detalle no tenía menú ninguno, así que
+                    «agregarle una cotización desde los tres puntos» no era un botón
+                    roto, era un botón que no estaba (Nico, 2026-09-12). Sólo lleva
+                    acciones que de verdad hacen algo; una solicitud cerrada no
+                    muestra menú porque no queda nada que hacerle. */}
+                <DropdownList open={menuAbierto} onOpenChange={setMenuAbierto}>
+                  <DropdownListTrigger asChild>
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                      aria-label={t('inmobiliaria.mantenimiento.moreActions')}
+                      data-testid="mantenimiento-detalle-menu"
+                    />
+                  </DropdownListTrigger>
+                  <DropdownListContent align="end" className="w-56">
+                    {accionesDelMenu.map((accion) => (
+                      <DropdownListItem
+                        key={accion.id}
+                        className={cn('gap-3', accion.tono)}
+                        onClick={accion.alElegir}
+                        data-testid={`mantenimiento-detalle-${accion.id}`}
+                      >
+                        <accion.icono className="w-4 h-4" />
+                        <span className="text-sm">{accion.etiqueta}</span>
+                      </DropdownListItem>
+                    ))}
+                  </DropdownListContent>
+                </DropdownList>
+              </>
+            ) : undefined
+          }
+        >
           {/* Status & Priority Badges */}
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-2.5">
             <span
               className={cn(
                 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
@@ -590,7 +589,7 @@ export function MantenimientoViewer({
               {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
             </span>
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Content */}
         <CajonCuerpo className="space-y-6">
@@ -838,9 +837,10 @@ export function MantenimientoViewer({
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancelar la solicitud: destructiva (medallón y botón rojos). No se
+          borra; el texto dice qué deja de poderse hacer. */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent>
+        <DialogContent size="sm" variant="destructive" icon={<XCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.mantenimiento.cancelRequest')}</DialogTitle>
             <DialogDescription>
@@ -866,9 +866,10 @@ export function MantenimientoViewer({
         </DialogContent>
       </Dialog>
 
-      {/* Complete Dialog */}
+      {/* Marcar como completada: confirmación. El medallón cobalto con el ✓ y
+          el botón principal cobalto (nada de verde a mano). */}
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent>
+        <DialogContent variant="confirm" icon={<CheckCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.mantenimiento.markAsCompleted')}</DialogTitle>
             <DialogDescription>
@@ -889,11 +890,9 @@ export function MantenimientoViewer({
             >
               {t('inmobiliaria.mantenimiento.cancel')}
             </Button>
-            {/* success/green: Cadence Button has no success variant (logged gap) — real Button + bg override. */}
             <Button
               hideArrow
               onClick={handleComplete}
-              className="bg-success text-white hover:bg-success/90"
             >
               {t('inmobiliaria.mantenimiento.confirmCompleted')}
             </Button>

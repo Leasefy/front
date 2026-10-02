@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
@@ -53,7 +54,12 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       setInviteForm({ email: '', role: 'viewer' });
       toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al enviar invitación');
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+          accion: 'enviar la invitación',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +87,12 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       setEditMemberForm({ name: '', role: 'viewer' });
       toast.success(t('landlordSettings.toasts.memberUpdated'));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al actualizar miembro');
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos guardar los cambios del miembro. Prueba de nuevo en un momento.',
+          accion: 'guardar los cambios',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +190,32 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       </motion.section>
 
       {/* Invite Team Member Modal */}
-      <SettingsModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t('landlordSettings.modals.inviteMember.title')}>
+      <SettingsModal
+        open={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title={t('landlordSettings.modals.inviteMember.title')}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={isLoading}
+              onClick={() => setShowInviteModal(false)}
+            >
+              {t('landlordSettings.modals.cancel')}
+            </Button>
+            <Button
+              hideArrow
+              onClick={handleInviteMember}
+              isLoading={isLoading}
+              disabled={isLoading || !inviteForm.email}
+            >
+              {!isLoading && <UserPlus className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
@@ -229,30 +265,39 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               ))}
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
+        </div>
+      </SettingsModal>
+
+      {/* Edit Team Member Modal */}
+      <SettingsModal
+        open={showEditMemberModal}
+        onClose={() => setShowEditMemberModal(false)}
+        title={t('landlordSettings.modals.editMember.title')}
+        footer={
+          <>
             <Button
               variant="outline"
               hideArrow
-              onClick={() => setShowInviteModal(false)}
-              className="flex-1 rounded-lg"
+              disabled={isLoading}
+              onClick={() => {
+                setShowEditMemberModal(false);
+                setEditingMember(null);
+              }}
             >
               {t('landlordSettings.modals.cancel')}
             </Button>
             <Button
               hideArrow
-              onClick={handleInviteMember}
-              disabled={isLoading || !inviteForm.email}
-              className="flex-1 rounded-lg"
+              onClick={handleEditMember}
+              isLoading={isLoading}
+              disabled={isLoading}
             >
-              {isLoading ? <Spinner size="xs" variant="current" /> : <UserPlus className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
+              {!isLoading && <PencilSimple className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
             </Button>
-          </div>
-        </div>
-      </SettingsModal>
-
-      {/* Edit Team Member Modal */}
-      <SettingsModal open={showEditMemberModal} onClose={() => setShowEditMemberModal(false)} title={t('landlordSettings.modals.editMember.title')}>
+          </>
+        }
+      >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.editMember.name')}</label>
@@ -301,28 +346,6 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => {
-                setShowEditMemberModal(false);
-                setEditingMember(null);
-              }}
-              className="flex-1 rounded-lg"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </Button>
-            <Button
-              hideArrow
-              onClick={handleEditMember}
-              disabled={isLoading}
-              className="flex-1 rounded-lg"
-            >
-              {isLoading ? <Spinner size="xs" variant="current" /> : <PencilSimple className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
-            </Button>
           </div>
         </div>
       </SettingsModal>

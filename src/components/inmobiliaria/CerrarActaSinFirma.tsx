@@ -20,12 +20,19 @@
  * juez. Es la misma razón por la que el back lo exige.
  */
 
-import { useEffect, useState } from 'react';
-import { WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { WarningCircle, CheckCircle } from '@phosphor-icons/react';
 
 import { Button, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { actasApi } from '@/lib/api/inmobiliaria.service';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 
@@ -89,12 +96,6 @@ export function CerrarActaSinFirma({
   onCerrar: () => void;
   onCerrada: (acta: ActaEntrega) => void;
 }) {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-
   const [nombre, setNombre] = useState('');
   const [documento, setDocumento] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -126,40 +127,27 @@ export function CerrarActaSinFirma({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
-            Cerrar sin la firma del inquilino
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <form onSubmit={enviar} className="space-y-4 p-6">
-          <p className="text-sm text-fg-muted">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Cerrar sin la firma del inquilino</DialogTitle>
+          <DialogDescription>
             El acta queda cerrada con la firma del asesor y un testigo. Al
             inquilino se le manda copia y tiene{' '}
             <strong className="text-fg">5 días para objetar</strong>. Objetar no
             reabre el acta: deja escrito que no está de acuerdo.
-          </p>
+          </DialogDescription>
+        </DialogHeader>
 
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de enviar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="space-y-4">
           <ul className="space-y-2" data-testid="condiciones-del-cierre">
             {condiciones.map((c) => (
               <li key={c.texto} className="flex items-start gap-2 text-xs">
@@ -208,33 +196,34 @@ export function CerrarActaSinFirma({
               {falla}
             </div>
           )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!listo || !testigoCompleto || guardando}
-              className="flex-1"
-            >
-              Cerrar el acta
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORMULARIO}
+            hideArrow
+            isLoading={guardando}
+            disabled={!listo || !testigoCompleto || guardando}
+          >
+            Cerrar el acta
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DEL_FORMULARIO = 'form-cerrar-acta-sin-firma';
 
 function mensajeDeError(e: unknown, porDefecto: string): string {
   if (e && typeof e === 'object' && 'message' in e) {

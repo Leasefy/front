@@ -168,7 +168,7 @@ export function RegistrarDescuentoDialog({
             <label htmlFor="descuento-soporte" className="block text-sm font-medium text-fg">
               {t(k('soporte'))} <span className="text-danger">*</span>
             </label>
-            <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-surface-muted px-3 py-2">
+            <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-surface-hover px-3 py-2">
               <Paperclip className="h-4 w-4 flex-shrink-0 text-fg-muted" />
               <input
                 id="descuento-soporte"
@@ -189,7 +189,13 @@ export function RegistrarDescuentoDialog({
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={guardando}>
             {t(k('cancelar'))}
           </Button>
-          <Button hideArrow onClick={() => void guardar()} disabled={guardando} data-testid="descuento-guardar">
+          <Button
+            hideArrow
+            onClick={() => void guardar()}
+            isLoading={guardando}
+            disabled={guardando}
+            data-testid="descuento-guardar"
+          >
             {guardando ? t(k('guardando')) : t(k('guardar'))}
           </Button>
         </DialogFooter>

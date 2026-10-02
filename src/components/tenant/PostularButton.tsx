@@ -17,7 +17,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Info } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -26,8 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { getAccessToken } from '@/lib/api/client'
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
 import { useAplicacionParaPropiedad } from '@/lib/hooks/use-aplicacion-propiedad'
@@ -197,13 +196,7 @@ function AntesDePostularte({
   motivo: MotivoBloqueo
   propertyId: string
 }) {
-  const lenis = useLenis()
-  useEffect(() => {
-    if (open) lenis.stop()
-    else lenis.start()
-    return () => lenis.start()
-  }, [open, lenis])
-
+  // Lenis lo frena la primitiva (SmoothScroll observa el diálogo abierto).
   const copy = COPY[motivo]
   /*
    * Después de entrar, **seguir postulándose** — no volver a la ficha.
@@ -220,7 +213,14 @@ function AntesDePostularte({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      {/*
+        Informativo: explica qué falta y lleva al paso que sigue. La variante
+        sigue al motivo (`COPY[motivo].variante`): «vencida» es una advertencia;
+        el resto, información.
+        `md` y no `sm`: con 420px los botones del pie («Conoce hasta cuánto te
+        arrendamos» + «Ahora no») no entraban en una fila.
+      */}
+      <DialogContent size="md" variant={copy.variante} data-testid="antes-de-postularte">
         <DialogHeader>
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.desc}</DialogDescription>
@@ -242,22 +242,20 @@ function AntesDePostularte({
           </ol>
         )}
 
+        {/* El «i» ya lo pone el medallón: esto va como texto, sin recuadro. */}
         {motivo === 'en_proceso' && (
-          <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3">
-            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="text-sm text-fg-muted">
-              Te avisamos por correo apenas tengamos respuesta.
-            </p>
-          </div>
+          <p className="text-sm text-fg-muted">
+            Te avisamos por correo apenas tengamos respuesta.
+          </p>
         )}
 
-        {/* Apilados a propósito: el diálogo es `max-w-md` y los dos botones en
-            fila hacían que el min-content del contenido superara el ancho de la
-            caja — se cortaba el texto de los pasos y "Ahora no" quedaba fuera. */}
-        <div className="flex flex-col gap-2 pt-1">
-          {/* Sin ArrowRight manual: el Button ya pone su flecha (hideArrow la apaga). */}
-          <Button asChild>
-            <Link href={copy.href}>{copy.cta}</Link>
+        {/* Pie fijo. El principal va ÚLTIMO en el código: a la derecha en
+            escritorio y arriba en el celular (el pie apila al revés). Con tres
+            botones (`sin_sesion`) no caben en una fila: `flex-wrap` los baja a
+            una segunda, alineados a la derecha, en vez de cortar el texto. */}
+        <DialogFooter className="sm:flex-wrap">
+          <Button variant="outline" onClick={onClose} hideArrow>
+            Ahora no
           </Button>
           {/* La segunda puerta, sólo cuando no hay sesión: quien ya tiene
               cuenta vuelve ACÁ después de entrar, no al panel. Sin el
@@ -269,16 +267,20 @@ function AntesDePostularte({
               </Link>
             </Button>
           ) : null}
-          <Button variant="ghost" onClick={onClose} hideArrow>
-            Ahora no
+          {/* Sin ArrowRight manual: el Button ya pone su flecha (hideArrow la apaga). */}
+          <Button asChild>
+            <Link href={copy.href}>{copy.cta}</Link>
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; href: string }> = {
+const COPY: Record<
+  MotivoBloqueo,
+  { title: string; desc: string; cta: string; href: string; variante: 'info' | 'warning' }
+> = {
   /*
    * El CTA principal es «conocer el tope», no «crear cuenta»: la cuenta se
    * pre-crea sola con los datos de la aprobación (ver el recorrido en
@@ -290,29 +292,37 @@ const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; hr
     desc: 'Si ya te aprobamos alguna vez, entra y sigues desde donde ibas — no hay que estudiarte de nuevo. Si es tu primera vez, empieza por saber hasta cuánto te respaldan.',
     cta: 'Es mi primera vez',
     href: '/aprobacion',
+    variante: 'info',
   },
   sin_aprobacion: {
     title: 'Antes de postularte',
     desc: 'Para postularte necesitas saber hasta cuánto te respaldan las aseguradoras. Son tres pasos y se hace una sola vez.',
     cta: 'Conoce hasta cuánto te arrendamos',
     href: '/aprobacion',
+    variante: 'info',
   },
   vencida: {
     title: 'Tu aprobación venció',
     desc: 'Las aseguradoras revisan tu situación cada vez, así que hay que renovarla. Es el mismo proceso de antes.',
     cta: 'Renovar mi aprobación',
     href: '/aprobacion',
+    // Algo que tenía dejó de servir y hay que renovarlo: advertencia.
+    variante: 'warning',
   },
   en_proceso: {
     title: 'Estamos consultando a las aseguradoras',
     desc: 'Todavía no tenemos respuesta. En cuanto la tengamos vas a poder postularte a esta y a las demás que vayan con tu tope.',
     cta: 'Ver el estado',
     href: '/inquilino/aprobacion',
+    variante: 'info',
   },
   rechazado: {
     title: 'Por ahora no podemos aprobarte',
     desc: 'No es definitivo, y hay salidas: mejorar tu perfil, volver a intentarlo, o que un familiar o amigo se postule por ti.',
     cta: 'Ver qué puedo hacer',
     href: '/inquilino/aprobacion',
+    // Es un «no», pero el texto dice «no es definitivo, y hay salidas»: un
+    // medallón rojo de error lo contradiría, así que queda informativo.
+    variante: 'info',
   },
 }

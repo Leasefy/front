@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, X, Warning, TrashSimple, Pencil, Upload } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import { CrossFade, IconButton } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
   buildChangedFields,
@@ -22,6 +22,15 @@ import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // Setup steps definition (derived from real profile data — never hardcoded)
 interface SetupStep {
@@ -238,11 +247,21 @@ export default function PerfilPage() {
     setDeleteConfirmText('');
   };
 
+  // El paso y la palabra se reinician al ABRIR (arriba), no al cerrar: el
+  // Dialog sale con su animación y, si se reiniciaran acá, el paso 2 se
+  // convertiría en el 1 mientras se desvanece.
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
-    setDeleteStep(1);
-    setDeleteConfirmText('');
     setIsDeleting(false);
+  };
+
+  /*
+   * Escape, la ✕ y el velo los maneja el `Dialog`. No se sale mientras se
+   * borra (la petición ya salió) ni en la despedida (cierra la sesión sola).
+   */
+  const sePuedeCerrarLaBaja = !isDeleting && deleteStep !== 3;
+  const alCambiarModalDeBaja = (abierto: boolean) => {
+    if (!abierto && sePuedeCerrarLaBaja) handleCloseDeleteModal();
   };
 
   // Canonical deletion strings (single source of truth for all five flows).
@@ -262,10 +281,12 @@ export default function PerfilPage() {
       }, 2000);
     } catch (err) {
       setIsDeleting(false);
-      const message = err instanceof Error && err.message
-        ? err.message
-        : deletionCopy.errorFallback;
-      toast.error(message);
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: deletionCopy.errorFallback,
+          accion: 'eliminar tu cuenta',
+        }),
+      );
     }
   };
 
@@ -922,61 +943,103 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-surface rounded-xl max-w-md w-full overflow-hidden"
-          >
-            {/* Step 1: Warning */}
-            {deleteStep === 1 && (
-              <>
-                {/* Header with icon */}
-                <div className="bg-danger-soft px-6 py-8 text-center border-b border-danger/30">
-                  <div className="w-16 h-16 rounded-full bg-danger-soft flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-danger" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-danger">
-                    {deletionCopy.warningTitle}
-                  </h3>
-                  <p className="text-sm text-danger mt-1">
-                    {deletionCopy.recovery}
-                  </p>
-                </div>
+      {/*
+        * Baja de la cuenta — el `Dialog` destructivo del DS, en tres pasos
+        * (aviso → escribir la palabra → despedida) dentro del MISMO modal: la
+        * cabecera, el cuerpo y el pie cambian con el paso y la variante lo
+        * sigue (rojo en los dos primeros, verde en la despedida). Portal,
+        * foco atrapado, Escape, velo y Lenis los pone la primitiva.
+        *
+        * El velo no cierra (nunca lo hizo): es una baja, no un aviso.
+        */}
+      <Dialog open={showDeleteModal} onOpenChange={alCambiarModalDeBaja}>
+        <DialogContent
+          size="sm"
+          variant={deleteStep === 3 ? 'success' : 'destructive'}
+          hideClose={!sePuedeCerrarLaBaja}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <CrossFade swapKey={deleteStep} className="flex min-w-0 flex-col gap-1.5">
+              {deleteStep === 1 && (
+                <>
+                  <DialogTitle>{deletionCopy.warningTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.recovery}</DialogDescription>
+                </>
+              )}
+              {deleteStep === 2 && (
+                <>
+                  <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
+                  <DialogDescription>
+                    {deletionCopy.confirmInstructionPrefix}{' '}
+                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    {deletionCopy.confirmInstructionSuffix}
+                  </DialogDescription>
+                </>
+              )}
+              {deleteStep === 3 && (
+                <>
+                  <DialogTitle>{deletionCopy.goodbyeTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.goodbyeBody}</DialogDescription>
+                </>
+              )}
+            </CrossFade>
+          </DialogHeader>
 
-                <div className="p-6">
-                  {/* What will be deleted */}
-                  <div className="mb-6">
+          {deleteStep !== 3 && (
+            <CrossFade swapKey={deleteStep}>
+              {deleteStep === 1 ? (
+                /*
+                 * Esta lista decía «Se eliminará permanentemente: tu perfil,
+                 * el historial de postulaciones y documentos, el de pagos y
+                 * contratos, las propiedades guardadas y las conversaciones».
+                 * `DELETE /users/me/account` (UsersService.deleteAccount) no
+                 * borra nada de eso: marca TU usuario con `isActive: false` y
+                 * `deletedAt`, revoca tus sesiones, y con un arriendo activo
+                 * a tu nombre (`lease.status = ACTIVE`) responde 403 y no da
+                 * de baja. Lo mismo que ya dice el perfil de la inmobiliaria.
+                 */
+                <div className="space-y-4">
+                  <div>
                     <p className="text-sm font-medium text-fg mb-3">
-                      {locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}
+                      {locale === 'es' ? 'Perderás:' : 'You will lose:'}
                     </p>
                     <ul className="space-y-2">
-                      {(locale === 'es' ? [
-                        'Tu perfil y toda tu información personal',
-                        'Historial de postulaciones y documentos',
-                        'Historial de pagos y contratos',
-                        'Acceso a propiedades guardadas',
-                        'Conversaciones y mensajes',
-                      ] : [
-                        'Your profile and all personal information',
-                        'Application and document history',
-                        'Payment and contract history',
-                        'Access to saved properties',
-                        'Conversations and messages',
-                      ]).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-fg-muted">
+                      {(locale === 'es'
+                        ? [
+                            'Tu perfil y tus datos personales',
+                            'El acceso a tu cuenta: postulaciones, pagos, documentos y propiedades guardadas',
+                            'Tu sesión en todos tus dispositivos',
+                          ]
+                        : [
+                            'Your profile and personal data',
+                            'Access to your account: applications, payments, documents and saved properties',
+                            'Your session on every device',
+                          ]
+                      ).map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
                           <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
                     </ul>
                   </div>
+                  <div>
+                    <p className="text-sm font-medium text-fg mb-3">
+                      {locale === 'es' ? 'No se elimina:' : 'What is not deleted:'}
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2 text-sm text-fg-muted">
+                        <FileText className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
+                        {locale === 'es'
+                          ? 'Tus contratos, pagos y postulaciones: quedan registrados'
+                          : 'Your contracts, payments and applications: they stay on record'}
+                      </li>
+                    </ul>
+                  </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30 mb-6">
+                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30">
                     <div className="flex items-start gap-3">
                       <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
@@ -985,108 +1048,56 @@ export default function PerfilPage() {
                         </p>
                         <p className="text-xs text-warning mt-0.5">
                           {locale === 'es'
-                            ? 'Eliminar tu cuenta no cancela un contrato de arriendo vigente. Deberás contactar a tu arrendador.'
-                            : 'Deleting your account does not cancel a current lease agreement. You will need to contact your landlord.'}
+                            ? 'No vas a poder darte de baja mientras tengas un contrato de arriendo activo a tu nombre: eliminar tu cuenta no cancela el contrato. Para terminarlo, contacta a tu arrendador.'
+                            : 'You cannot delete your account while you have an active lease in your name: deleting your account does not cancel the lease. To end it, contact your landlord.'}
                         </p>
                       </div>
                     </div>
                   </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      hideArrow
-                      onClick={handleCloseDeleteModal}
-                      className="flex-1 rounded-full"
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      hideArrow
-                      onClick={() => setDeleteStep(2)}
-                      className="flex-1 rounded-full"
-                    >
-                      {locale === 'es' ? 'Continuar' : 'Continue'}
-                    </Button>
-                  </div>
                 </div>
-              </>
-            )}
+              ) : (
+                <Input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder={deletionCopy.inputPlaceholder}
+                  aria-label={deletionCopy.confirmInstruction}
+                  autoFocus
+                  className="w-full font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
+                />
+              )}
+            </CrossFade>
+          )}
 
-            {/* Step 2: Confirmation */}
-            {deleteStep === 2 && (
-              <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border-faint">
-                  <h3 className="text-lg font-semibold text-fg">
-                    {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
-                  </h3>
-                  <IconButton
-                    variant="ghost"
-                    onClick={handleCloseDeleteModal}
-                    className="p-2 rounded-full hover:bg-surface-muted"
-                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                    icon={<X className="w-5 h-5 text-fg-muted" />}
-                  />
-                </div>
+          {deleteStep === 1 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={handleCloseDeleteModal}>
+                {t('common.cancel')}
+              </Button>
+              <Button hideArrow onClick={() => setDeleteStep(2)}>
+                {locale === 'es' ? 'Continuar' : 'Continue'}
+              </Button>
+            </DialogFooter>
+          )}
 
-                <div className="p-6">
-                  <p className="text-sm text-fg-muted mb-4">
-                    {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
-                    {deletionCopy.confirmInstructionSuffix}
-                  </p>
-
-                  <Input
-                    type="text"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                    placeholder={deletionCopy.inputPlaceholder}
-                    className="w-full rounded-xl bg-surface-muted font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
-                  />
-
-                  <div className="flex gap-3 mt-6">
-                    <Button
-                      variant="outline"
-                      hideArrow
-                      onClick={() => setDeleteStep(1)}
-                      className="flex-1 rounded-full"
-                    >
-                      {locale === 'es' ? 'Volver' : 'Back'}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      hideArrow
-                      isLoading={isDeleting}
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
-                      className="flex-1 rounded-full"
-                    >
-                      {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Goodbye */}
-            {deleteStep === 3 && (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-fg-muted" />
-                </div>
-                <h3 className="text-xl font-semibold text-fg mb-2">
-                  {deletionCopy.goodbyeTitle}
-                </h3>
-                <p className="text-sm text-fg-muted">
-                  {deletionCopy.goodbyeBody}
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
+          {deleteStep === 2 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={() => setDeleteStep(1)} disabled={isDeleting}>
+                {locale === 'es' ? 'Volver' : 'Back'}
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                isLoading={isDeleting}
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
+              >
+                {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

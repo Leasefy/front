@@ -199,7 +199,7 @@ export function ACargoDeDialog({
                 'w-full rounded-lg border p-4 text-left transition-colors',
                 eleccion === o.valor
                   ? 'border-primary bg-primary-soft'
-                  : 'border-border bg-surface hover:bg-surface-muted',
+                  : 'border-border bg-surface hover:bg-surface-hover',
               )}
               data-testid={`a-cargo-de-${o.valor}`}
             >
@@ -210,7 +210,7 @@ export function ACargoDeDialog({
         </div>
 
         {eleccion === 'PROPIETARIO' && (
-          <div className="space-y-3 rounded-lg border border-border bg-surface-muted p-4" data-testid="emergencia">
+          <div className="space-y-3 rounded-lg border border-border bg-surface-hover p-4" data-testid="emergencia">
             <label className="flex items-start gap-2 text-sm text-fg">
               <Checkbox className="mt-0.5" checked={esEmergencia} onCheckedChange={(marcada: boolean) => setEsEmergencia(marcada)} data-testid="emergencia-marcar" />
               <span>
@@ -249,7 +249,7 @@ export function ACargoDeDialog({
 
         {eleccion === 'COMPARTIDA' && (
           <div
-            className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+            className="space-y-3 rounded-lg border border-border bg-surface-hover p-4"
             data-testid="reparto"
           >
             <label className="block text-xs font-medium text-fg" htmlFor="reparto-inquilino">
@@ -288,7 +288,7 @@ export function ACargoDeDialog({
 
         {eleccion === 'INMOBILIARIA' && (
           <div
-            className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+            className="space-y-3 rounded-lg border border-border bg-surface-hover p-4"
             data-testid="motivo-inmobiliaria"
           >
             <label
@@ -315,6 +315,7 @@ export function ACargoDeDialog({
           <Button
             hideArrow
             onClick={() => void confirmar()}
+            isLoading={aprobando}
             disabled={noSePuede}
             data-testid="a-cargo-de-confirmar"
           >

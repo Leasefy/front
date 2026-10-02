@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
+import { ShieldCheck, Shield, ShieldSlash, Check, Copy } from '@phosphor-icons/react';
 import { getAccessToken } from '@/lib/api/client';
 import {
   apiDeAuth,
@@ -381,13 +381,54 @@ export function MfaSetupSection({
           open={showDisableModal}
           onClose={cerrarDesactivar}
           title={pideCodigo ? 'Quitar el segundo factor' : 'Desactivar 2FA'}
+          variant="destructive"
+          icon={<ShieldSlash weight="bold" />}
+          description={
+            pideCodigo
+              ? 'Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.'
+              : 'Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.'
+          }
+          footer={
+            pideCodigo ? (
+              <>
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={cerrarDesactivar}
+                  disabled={isLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
+                  isLoading={isLoading}
+                  onClick={() => void handleQuitarConCodigo(codigoDeLaApp)}
+                  disabled={isLoading || codigoDeLaApp.length !== 6}
+                >
+                  {isLoading ? 'Verificando…' : 'Verificar y quitar'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" hideArrow onClick={cerrarDesactivar}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
+                  isLoading={isLoading}
+                  onClick={handleUnenroll}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                </Button>
+              </>
+            )
+          }
         >
           {pideCodigo ? (
             <div className="space-y-4" aria-busy={isLoading}>
-              <p className="text-pretty text-sm text-fg-muted">
-                Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app
-                de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.
-              </p>
               <CasillasDeCodigo
                 aria-label="Código de 6 dígitos de tu app de autenticación"
                 value={codigoDeLaApp}
@@ -405,27 +446,6 @@ export function MfaSetupSection({
                   {errorDelModal}
                 </p>
               ) : null}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={cerrarDesactivar}
-                  disabled={isLoading}
-                  className="flex-1 rounded-lg"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  isLoading={isLoading}
-                  onClick={() => void handleQuitarConCodigo(codigoDeLaApp)}
-                  disabled={isLoading || codigoDeLaApp.length !== 6}
-                  className="flex-1 rounded-lg"
-                >
-                  {isLoading ? 'Verificando…' : 'Verificar y quitar'}
-                </Button>
-              </div>
               {onSinLaApp ? (
                 <div className="text-center">
                   <Button
@@ -442,38 +462,7 @@ export function MfaSetupSection({
                 </div>
               ) : null}
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-danger" />
-                </div>
-                <p className="text-sm text-danger">
-                  Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={cerrarDesactivar}
-                  className="flex-1 rounded-lg"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  isLoading={isLoading}
-                  onClick={handleUnenroll}
-                  disabled={isLoading}
-                  className="flex-1 rounded-lg"
-                >
-                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
-                </Button>
-              </div>
-            </div>
-          )}
+          ) : null}
         </SettingsModal>
       </>
     );

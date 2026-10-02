@@ -341,7 +341,9 @@ export function AutonomiaPanel({
           if (!abierto) setPorConfirmar(null)
         }}
       >
-        <AlertDialogContent>
+        {/* «Automático» es una advertencia: el agente actúa sin pedir permiso.
+            Los demás modos son una confirmación. */}
+        <AlertDialogContent variant={porConfirmar === 'autonomo' ? 'warning' : 'confirm'}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {porConfirmar

@@ -102,14 +102,24 @@ function render(props: Partial<React.ComponentProps<typeof PropertyEditModal>> =
   return defaultProps
 }
 
+/**
+ * El modal es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `container`. Se busca en el diálogo mismo.
+ */
+function dialogo(): HTMLElement {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo no está abierto')
+  return d
+}
+
 function input(testId: string): HTMLInputElement {
-  const el = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement
+  const el = dialogo().querySelector(`[data-testid="${testId}"]`) as HTMLInputElement
   expect(el).toBeTruthy()
   return el
 }
 
 async function submit() {
-  const form = container.querySelector('form') as HTMLFormElement
+  const form = dialogo().querySelector('form') as HTMLFormElement
   expect(form).toBeTruthy()
   await act(async () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
@@ -127,6 +137,20 @@ function setValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
 }
 
 describe('<PropertyEditModal>', () => {
+  it('es el Dialog canónico: título en la cabecera, una sola ✕ y el guardar del pie apunta al formulario', () => {
+    render()
+    const d = dialogo()
+    expect(d.querySelector('h2')?.textContent).toBe('Editar propiedad')
+    expect(document.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
+
+    const form = d.querySelector('form') as HTMLFormElement
+    const guardar = d.querySelector('[data-testid="edit-submit"]') as HTMLButtonElement
+    // El botón vive en el pie fijo, FUERA del <form>: lo envía por `form=`.
+    expect(form.contains(guardar)).toBe(false)
+    expect(guardar.type).toBe('submit')
+    expect(guardar.getAttribute('form')).toBe(form.id)
+  })
+
   it('seeds the form with the current property data', () => {
     render()
     expect(input('edit-title').value).toBe('Apto Chapinero')
@@ -168,7 +192,7 @@ describe('<PropertyEditModal>', () => {
 
     await submit()
 
-    const error = container.querySelector('[data-testid="edit-error"]')
+    const error = dialogo().querySelector('[data-testid="edit-error"]')
     expect(error?.textContent).toContain('No tienes acceso a esta propiedad')
     expect(props.onSuccess).not.toHaveBeenCalled()
   })
@@ -205,7 +229,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     expect(getImages).toHaveBeenCalledWith('prop-1')
-    const tiles = container.querySelectorAll('[data-testid="edit-existing-image"]')
+    const tiles = dialogo().querySelectorAll('[data-testid="edit-existing-image"]')
     expect(tiles.length).toBe(2)
   })
 
@@ -215,7 +239,7 @@ describe('<PropertyEditModal> photos', () => {
     render()
     await flush()
 
-    const removeBtn = container.querySelector(
+    const removeBtn = dialogo().querySelector(
       '[data-testid="edit-remove-image-img-1"]',
     ) as HTMLButtonElement
     expect(removeBtn).toBeTruthy()
@@ -225,7 +249,7 @@ describe('<PropertyEditModal> photos', () => {
     })
 
     expect(deleteImage).toHaveBeenCalledWith('prop-1', 'img-1')
-    const tiles = container.querySelectorAll('[data-testid="edit-existing-image"]')
+    const tiles = dialogo().querySelectorAll('[data-testid="edit-existing-image"]')
     expect(tiles.length).toBe(1)
   })
 
@@ -237,7 +261,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
-    const photoInput = container.querySelector(
+    const photoInput = dialogo().querySelector(
       '[data-testid="property-photo-input"]',
     ) as HTMLInputElement
     expect(photoInput).toBeTruthy()
@@ -265,7 +289,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
-    const photoInput = container.querySelector(
+    const photoInput = dialogo().querySelector(
       '[data-testid="property-photo-input"]',
     ) as HTMLInputElement
     Object.defineProperty(photoInput, 'files', { value: [file], configurable: true })

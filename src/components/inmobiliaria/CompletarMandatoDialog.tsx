@@ -473,7 +473,7 @@ function CuerpoDelMandato({
   };
 
   return (
-    <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
+    <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>
             {duenoConocido
@@ -496,7 +496,7 @@ function CuerpoDelMandato({
           ) : null}
           {/* Read-only summary of the already-imported property — nothing
               here is user input, it all comes off the row (contract §3.2). */}
-          <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-1">
+          <div className="rounded-lg border border-border bg-surface-hover p-4 space-y-1">
             <p className="font-medium text-fg">{inmueble.propertyTitle}</p>
             <p className="text-sm text-fg-muted">{inmueble.propertyAddress}, {inmueble.propertyCity}</p>
             {inmueble.monthlyRent != null && (
@@ -519,7 +519,7 @@ function CuerpoDelMandato({
               salida por si se equivocó de puerta. */}
           {duenoConocido && !cambiandoDueno ? (
             <div
-              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-hover px-3 py-2.5"
               data-testid="mandato-dueno-conocido"
             >
               <span className="min-w-0 text-sm text-fg">

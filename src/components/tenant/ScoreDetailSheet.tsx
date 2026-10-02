@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork, X } from '@phosphor-icons/react';
-import { ProgressRing, RiskBadge, IconButton, type RiskGrade } from '@leasefy/cadence';
+import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork } from '@phosphor-icons/react';
+import { ProgressRing, RiskBadge, type RiskGrade } from '@leasefy/cadence';
 import {
   Sheet,
+  SheetBody,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetDescription,
+  SheetFooter,
+  SheetHeader,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import type { RiskScore, RiskLevel } from '@/lib/types/risk-score';
@@ -81,38 +82,22 @@ export function ScoreDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg p-0 flex flex-col overflow-hidden"
-        hideCloseButton
-      >
-        {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg font-semibold">
-              {isPaid
-                ? (locale === 'es' ? 'Tu evaluación' : 'Your evaluation')
-                : (locale === 'es' ? 'Evaluación de inquilino' : 'Tenant evaluation')}
-            </SheetTitle>
-            <IconButton
-              variant="ghost"
-              onClick={onClose}
-              className="w-8 h-8 rounded-md hover:bg-surface-muted"
-              aria-label="Cerrar"
-              icon={<X className="w-4 h-4" />}
-            />
-          </div>
+      <SheetContent side="right" size="md">
+        {/* Header — la ✕ la pone `SheetContent`, la misma de todo el producto */}
+        <SheetHeader
+          title={
+            isPaid
+              ? (locale === 'es' ? 'Tu evaluación' : 'Your evaluation')
+              : (locale === 'es' ? 'Evaluación de inquilino' : 'Tenant evaluation')
+          }
+        >
           <SheetDescription className="sr-only">
             {locale === 'es' ? 'Detalle de evaluación de inquilino' : 'Tenant evaluation detail'}
           </SheetDescription>
         </SheetHeader>
 
         {/* Content */}
-        <div
-          className="flex-1 overflow-y-auto px-6 py-6"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
-        >
+        <SheetBody className="py-6">
           {!isPaid ? (
             <LockedContent locale={locale} />
           ) : score ? (
@@ -124,10 +109,10 @@ export function ScoreDetailSheet({
               locale={locale}
             />
           ) : null}
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-border px-6 py-4">
+        <SheetFooter className="[&>div]:w-full">
           {!isPaid ? (
             /*
               Acá había un botón primario "Evaluar mi perfil" cableado a
@@ -141,7 +126,7 @@ export function ScoreDetailSheet({
               vez de un botón muerto se dice cómo se consigue de verdad, y el
               paso siguiente es postularse.
             */
-            <div className="space-y-3">
+            <div className="w-full space-y-3">
               <p className="text-sm text-fg-muted text-center">
                 {locale === 'es'
                   ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a una propiedad. No tienes que pedirla ni pagarla aparte.'
@@ -154,7 +139,7 @@ export function ScoreDetailSheet({
               </Button>
             </div>
           ) : (
-            <div className="flex gap-3">
+            <div className="flex w-full gap-3">
               <Button variant="outline" onClick={onDownloadPDF} hideArrow className="flex-1">
                 <DownloadSimple className="w-4 h-4" />
                 {locale === 'es' ? 'Descargar PDF' : 'Download PDF'}
@@ -165,7 +150,7 @@ export function ScoreDetailSheet({
               </Button>
             </div>
           )}
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

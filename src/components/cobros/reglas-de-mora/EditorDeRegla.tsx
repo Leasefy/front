@@ -144,7 +144,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
 
   return (
     <Dialog open={abierto} onOpenChange={(estaAbierto) => !estaAbierto && onCerrar()}>
-      <DialogContent className="sm:max-w-xl" data-testid="editor-de-regla">
+      <DialogContent size="lg" data-testid="editor-de-regla">
         <DialogHeader>
           <DialogTitle>{editando ? 'Editar regla de mora' : 'Nueva regla de mora'}</DialogTitle>
           <DialogDescription>

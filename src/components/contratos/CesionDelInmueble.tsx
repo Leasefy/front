@@ -119,7 +119,7 @@ export function CesionDelInmueble({
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="cesion-del-inmueble">
+      <DialogContent size="md" data-testid="cesion-del-inmueble">
         <DialogHeader>
           {/*
             🔴 20-09 · «Cambiar de propietario», no «El propietario vendió el
@@ -187,12 +187,14 @@ export function CesionDelInmueble({
         </div>
 
         <DialogFooter>
-          <Button variant="secondary" onClick={onCerrar} disabled={guardando}>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Volver
           </Button>
           <Button
+            hideArrow
             onClick={confirmar}
-            disabled={guardando || !nuevo || !desde}
+            disabled={!nuevo || !desde}
+            isLoading={guardando}
             data-testid="confirmar-cesion"
           >
             <ArrowRightLeft className="mr-2 h-4 w-4" />

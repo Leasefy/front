@@ -8,6 +8,7 @@ import {
   Bank,
   Receipt,
   Calendar,
+  CalendarX,
   Check,
   Crown,
   Sparkle,
@@ -677,15 +678,15 @@ export function ConfigFacturacion({
           what happens: current plan stays until currentPeriodEnd, then the
           default tier, no further charges, undoable until that date. */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent size="sm" variant="destructive" icon={<CalendarX weight="bold" />}>
           <DialogHeader>
             <DialogTitle>Cancelar tu plan</DialogTitle>
+            <DialogDescription>
+              {nextBillingDate
+                ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`
+                : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`}
+            </DialogDescription>
           </DialogHeader>
-          <DialogDescription className="text-sm text-fg-muted">
-            {nextBillingDate
-              ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`
-              : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`}
-          </DialogDescription>
           <DialogFooter>
             <Button variant="outline" hideArrow onClick={() => setCancelDialogOpen(false)}>
               Volver

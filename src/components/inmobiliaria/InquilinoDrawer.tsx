@@ -91,7 +91,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import {
   RenglonDeArriendo,
@@ -202,7 +202,9 @@ export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
     <Sheet open={Boolean(persona)} onOpenChange={(abierto) => !abierto && onCerrar()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-2xl"
+        size="lg"
+        // Cabecera y cuerpo viven en `CuerpoDelCajon`.
+        layout="manual"
         aria-describedby={undefined}
         data-testid="inquilino-cajon"
       >
@@ -278,8 +280,10 @@ export function CuerpoDelCajon({
 
   return (
     <>
-      <div className="flex-none border-b border-border px-6 py-5">
-        <div className="flex items-start gap-3 pr-14">
+      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
+          monta en un test sin el contexto del Sheet). */}
+      <SheetHeader>
+        <div className="flex items-start gap-3">
           <span
             aria-hidden="true"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
@@ -348,12 +352,9 @@ export function CuerpoDelCajon({
             </span>
           ) : null}
         </div>
-      </div>
+      </SheetHeader>
 
-      <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-        data-lenis-prevent
-      >
+      <SheetBody>
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={persona.tenantId} className="mb-4" />
@@ -584,7 +585,7 @@ export function CuerpoDelCajon({
             </div>
           </div>
         )}
-      </div>
+      </SheetBody>
     </>
   );
 }

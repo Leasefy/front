@@ -1701,7 +1701,7 @@ function DialogoDescartarLote({
         if (!descartando) onOpenChange(o);
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent variant="destructive">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Descartar el lote {lote}?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2 text-left">
@@ -1735,8 +1735,7 @@ function DialogoDescartarLote({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={descartando}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            tone="danger"
-            disabled={descartando}
+            loading={descartando}
             onClick={(e) => {
               e.preventDefault();
               onConfirmar();

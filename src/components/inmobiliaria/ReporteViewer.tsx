@@ -21,12 +21,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import type { CarteraReport, ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
@@ -736,12 +731,11 @@ export function ReporteViewer({
           pie fijo) con `SheetContent` propio: `Cajon` apaga `aria-describedby`
           y este cajón SÍ registra su descripción (ver el test de al lado). */}
       {/* Ancho: la vista completa trae tablas y gráficos; en 576 px no cabían. */}
-      <SheetContent className="flex w-full flex-col gap-0 !p-0 sm:max-w-3xl">
-        {/* Header */}
-        <div className="flex-none border-b border-border px-6 py-5 pr-14">
-          {/* La ✕ la pone `SheetContent`: es la misma de todos los cajones y
-              modales del producto. Acá había una segunda, dibujada a mano. */}
-          <div className="flex items-start gap-4">
+      <SheetContent size="xl">
+        {/* Header — la ✕ la pone `SheetContent`: es la misma de todos los
+            cajones y modales del producto. */}
+        <SheetHeader
+          leading={
             <div
               className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
@@ -750,40 +744,34 @@ export function ReporteViewer({
             >
               <Icon className={cn('w-6 h-6', iconColor)} weight="duotone" />
             </div>
-            <div className="flex-1 min-w-0">
-              <SheetTitle className="text-lg font-semibold text-foreground">
-                {report.title}
-              </SheetTitle>
-              {/*
-                `SheetDescription`, no un `<p>` suelto: `SheetContent` es un
-                Radix Dialog, y un diálogo sin descripción registrada avisa en
-                consola («Missing `Description` … for {DialogContent}») y se
-                abre sin `aria-describedby`, así que el lector de pantalla
-                anuncia el título y nada más. El texto ya estaba acá; lo único
-                que faltaba era que el diálogo supiera que es SU descripción.
-              */}
-              <SheetDescription className="text-sm text-muted-foreground mt-0.5">
-                {report.description}
-              </SheetDescription>
-              <div className="flex items-center gap-2 mt-3">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    getReportCategoryColor(report.category)
-                  )}
-                >
-                  {report.category}
-                </span>
-                {formatoDelArchivoQueBaja && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
-                    <FileCsv className="w-3 h-3" />
-                    {formatoDelArchivoQueBaja}
-                  </span>
-                )}
-              </div>
-            </div>
+          }
+          title={report.title}
+          /*
+            `description` registra el texto como `SheetDescription`, no un `<p>`
+            suelto: `SheetContent` es un Radix Dialog, y un diálogo sin
+            descripción registrada avisa en consola («Missing `Description` …
+            for {DialogContent}») y se abre sin `aria-describedby`, así que el
+            lector de pantalla anuncia el título y nada más.
+          */
+          description={report.description}
+        >
+          <div className="flex items-center gap-2 mt-2.5">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                getReportCategoryColor(report.category)
+              )}
+            >
+              {report.category}
+            </span>
+            {formatoDelArchivoQueBaja && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+                <FileCsv className="w-3 h-3" />
+                {formatoDelArchivoQueBaja}
+              </span>
+            )}
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Preview Content */}
         <CajonCuerpo>
@@ -797,13 +785,16 @@ export function ReporteViewer({
         </CajonCuerpo>
 
         {/* Actions Footer */}
-        <CajonPie>
-          {notaDelArchivo && (
-            <p className="mr-auto flex min-w-0 items-center gap-2 text-caption text-fg-muted" data-testid="nota-del-archivo">
-              <CalendarBlank className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{notaDelArchivo}</span>
-            </p>
-          )}
+        <CajonPie
+          izquierda={
+            notaDelArchivo && (
+              <p className="flex min-w-0 items-center gap-2 text-caption text-fg-muted" data-testid="nota-del-archivo">
+                <CalendarBlank className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{notaDelArchivo}</span>
+              </p>
+            )
+          }
+        >
           {/* Sin archivo (los extractos) no hay botón: antes decía «Descargar
               CSV» y respondía «todavía no se puede descargar». */}
           {formatoDelArchivoQueBaja && (

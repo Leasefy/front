@@ -27,6 +27,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -73,6 +74,7 @@ export function PeriodosDeNominaPanel() {
   const [armando, setArmando] = useState(false);
   const [avisos, setAvisos] = useState<string[]>([]);
   const [anulando, setAnulando] = useState<PeriodoDeNomina | null>(null);
+  const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
   const [motivo, setMotivo] = useState('');
 
   const armar = async () => {
@@ -164,7 +166,8 @@ export function PeriodosDeNominaPanel() {
   };
 
   const confirmarAnulacion = async () => {
-    if (!anulando) return;
+    if (!anulando || enviandoAnulacion) return;
+    setEnviandoAnulacion(true);
     try {
       const r = await nominaApi.anular(anulando.id, motivo);
       toast.success('El período quedó anulado y las novedades volvieron a estar libres.');
@@ -174,6 +177,8 @@ export function PeriodosDeNominaPanel() {
       await estado.recargar();
     } catch (error) {
       toast.error(mensajeDelFallo(error, 'No se pudo anular el período.'));
+    } finally {
+      setEnviandoAnulacion(false);
     }
   };
 
@@ -358,10 +363,14 @@ export function PeriodosDeNominaPanel() {
       <AlertDialog
         open={anulando !== null}
         onOpenChange={(abierto) => {
-          if (!abierto) setAnulando(null);
+          if (!abierto && !enviandoAnulacion) setAnulando(null);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               Anular la nómina de{' '}
@@ -389,10 +398,15 @@ export function PeriodosDeNominaPanel() {
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={enviandoAnulacion}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void confirmarAnulacion()}
+              onClick={(e) => {
+                // Abierto hasta que el back conteste: si falla, el motivo no se pierde.
+                e.preventDefault();
+                void confirmarAnulacion();
+              }}
               disabled={motivo.trim().length < 10}
+              loading={enviandoAnulacion}
               data-testid="confirmar-anulacion"
             >
               Anular

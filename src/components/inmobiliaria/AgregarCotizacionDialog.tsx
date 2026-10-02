@@ -129,7 +129,7 @@ export function AgregarCotizacionDialog({
           {/* De qué solicitud estamos hablando: el diálogo se abre desde el
               tablero, desde la lista y desde el detalle, y sin esto no hay
               forma de saber sobre cuál se está cotizando. */}
-          <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 text-sm text-fg-muted">
+          <div className="flex items-center gap-2 rounded-[14px] border border-border px-3 py-2 text-sm text-fg-muted">
             <CurrencyCircleDollar className="w-4 h-4 flex-shrink-0" />
             <span className="line-clamp-1">
               {solicitud.title} · {solicitud.propertyTitle}
@@ -243,13 +243,13 @@ export function AgregarCotizacionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" hideArrow onClick={() => onOpenChange(false)}>
+          <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={guardando}>
             {t('inmobiliaria.mantenimiento.cancel')}
           </Button>
           <Button
             hideArrow
             onClick={guardar}
-            disabled={guardando}
+            isLoading={guardando}
             data-testid="cotizacion-guardar"
           >
             {guardando

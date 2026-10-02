@@ -991,8 +991,9 @@ export function ConsignacionWizard({
         </div>
       </div>
 
+      {/* Advertencia: se puede publicar sin fotos, pero con riesgo. */}
       <AlertDialog open={preguntarSinFotos} onOpenChange={setPreguntarSinFotos}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="warning">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('inmobiliaria.consignaciones.wizard.sinFotosDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1023,61 +1024,26 @@ export function ConsignacionWizard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel Confirmation Dialog */}
-      <AnimatePresence>
-        {showCancelDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowCancelDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
-                  <X className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-fg dark:text-white">
-                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}
-                  </h3>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  hideArrow
-                  size="sm"
-                  onClick={() => setShowCancelDialog(false)}
-                >
-                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  hideArrow
-                  size="sm"
-                  onClick={confirmCancel}
-                >
-                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cancelar el asistente: abandonar, no pausar (ver `confirmCancel`).
+          Antes era una cáscara a mano (`fixed inset-0`, sin foco ni Esc). */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent variant="destructive" icon={<X weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

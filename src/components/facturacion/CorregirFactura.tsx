@@ -273,11 +273,8 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                 ev.preventDefault()
                 void emitir()
               }}
-              disabled={
-                !valorValido ||
-                !motivoSuficienteParaCorregir(motivo) ||
-                guardando
-              }
+              disabled={!valorValido || !motivoSuficienteParaCorregir(motivo)}
+              loading={guardando}
               data-testid="corregir-confirmar"
             >
               {cual === 'PARCIAL' ? 'Emitir la nota crédito' : 'Emitir la nota débito'}

@@ -409,7 +409,7 @@ export function PilotoOperaSola() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg">
+      <SheetContent side="right" size="md" layout="manual">
         <CajonCabecera
           titulo={
             <span className="flex items-center gap-2">

@@ -82,6 +82,8 @@ describe('GenerarCobrosDialog', () => {
     expect(porTestId('generar-ya-generados')?.textContent).toBe('7')
     // Y no se generó nada por el solo hecho de abrirlo.
     expect(generate).not.toHaveBeenCalled()
+    // Es una pregunta: medallón de confirmación (DESIGN.md §17).
+    expect(dialogo()?.getAttribute('data-variant')).toBe('confirm')
   })
 
   it('si ya hay cobros de ese mes, avisa antes de duplicar', () => {
@@ -124,6 +126,9 @@ describe('GenerarCobrosDialog', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
     expect(onGenerado).not.toHaveBeenCalled()
     expect(document.body.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    // La variante sigue al estado: el medallón y el título dicen que falló.
+    expect(dialogo()?.getAttribute('data-variant')).toBe('error')
+    expect(dialogo()?.textContent).toContain('inmobiliaria.ai.pagos_home.resumen.generar.errorTitulo')
   })
 })
 
@@ -178,6 +183,10 @@ describe('GenerarCobrosDialog · contratos vencidos', () => {
     ).toBe('/panel/inmobiliaria/contratos/ct-1')
     // 🔴 El diálogo NO se cierra solo: si se cerrara, nadie vería la lista.
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
+    // Terminó: medallón de éxito, y el título y el conteo lo dicen.
+    expect(dialogo()?.getAttribute('data-variant')).toBe('success')
+    expect(dialogo()?.textContent).toContain('La corrida de Septiembre de 2026 terminó')
+    expect(dialogo()?.textContent).toContain('812 cobros generados.')
   })
 
   it('🔴 primero los que ya tienen una renovación abierta; después, el más vencido', () => {
@@ -209,6 +218,8 @@ describe('GenerarCobrosDialog · contratos vencidos', () => {
     expect(aviso?.textContent).toContain('La migración de terminación')
     // Y no se dibuja la lista de omitidos, que no existe.
     expect(porTestId('vencidos-omitidos')).toBeNull()
+    // Terminó, pero sin poder verificar: advertencia, no éxito.
+    expect(dialogo()?.getAttribute('data-variant')).toBe('warning')
   })
 
   it('sin vencidos y con la consulta hecha, el diálogo se cierra como siempre', async () => {

@@ -364,14 +364,16 @@ function PagoDePrestacion({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCerrar}>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
+            hideArrow
             onClick={() => void registrar()}
             disabled={
               guardando || !personaId || !desde || !hasta || !valor || !fechaPago
             }
+            isLoading={guardando}
             data-testid="guardar-pago"
           >
             Registrar el pago

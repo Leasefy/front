@@ -56,13 +56,12 @@
  * cambia de estado solo.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
   DownloadSimple,
   Plus,
-  X,
   Warning,
   CheckCircle,
   MagnifyingGlass,
@@ -73,8 +72,16 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   Badge,
   Button,
@@ -117,20 +124,6 @@ const ROTULO: Record<
 /** Lo que todavía le falta a la inmobiliaria hacer con sus propias manos. */
 const PIDE_MANO: readonly EstadoDePublicacion[] = ['POR_EXPORTAR', 'POR_DESPUBLICAR']
 
-/**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar (incluido el cleanup). Sin esto la rueda del mouse queda
- * secuestrada y el cuerpo del modal se ve congelado. El contenedor que scrollea
- * además lleva `data-lenis-prevent`.
- */
-function useLenisQuieto() {
-  const lenis = useLenis()
-  useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
-}
-
 /** El 503 y el 400 del back traen su motivo redactado: vale más que un genérico. */
 function mensajeDeError(e: unknown, porDefecto: string): string {
   if (e && typeof e === 'object' && 'message' in e) {
@@ -144,6 +137,15 @@ function mensajeDeError(e: unknown, porDefecto: string): string {
 // El armazón de un modal, que los dos comparten
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * El `Dialog` de la casa con el título y la ayuda de cada uno. Velo, Esc, ✕,
+ * foco, Lenis y bloqueo del scroll los pone la primitiva.
+ *
+ * 🔴 `children` llega TAL CUAL como hijos directos del `DialogContent`, que
+ * reparte por banda: el cuerpo va al scroll y un `<DialogFooter>` que venga en
+ * `children` (como hermano, NO envuelto en un fragmento ni en un `div`) sale al
+ * pie fijo. Mientras `bloqueado`, no se sale por ningún lado.
+ */
 function Modal({
   titulo,
   ayuda,
@@ -157,37 +159,21 @@ function Modal({
   bloqueado?: boolean
   children: React.ReactNode
 }) {
-  useLenisQuieto()
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={bloqueado ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-4">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-            {ayuda ? <p className="text-sm text-fg-muted">{ayuda}</p> : null}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={bloqueado}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto && !bloqueado) onCerrar()
+      }}
+    >
+      <DialogContent {...(ayuda ? {} : { 'aria-describedby': undefined })}>
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+          {ayuda ? <DialogDescription>{ayuda}</DialogDescription> : null}
+        </DialogHeader>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -235,7 +221,12 @@ function DialogoDeCuenta({
       invalidar('portafolio')
       onGuardado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar la cuenta'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar la cuenta',
+          accion: 'guardar la cuenta',
+        }),
+      )
     } finally {
       setGuardando(false)
     }
@@ -250,7 +241,14 @@ function DialogoDeCuenta({
       onCerrar={onCerrar}
       bloqueado={guardando}
     >
-      <form onSubmit={enviar} className="space-y-4 p-6" data-testid="form-de-cuenta">
+      {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+          el botón de guardar lo apunta con `form=`. */}
+      <form
+        id={ID_DEL_FORM_DE_CUENTA}
+        onSubmit={enviar}
+        className="space-y-4"
+        data-testid="form-de-cuenta"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-etiqueta">Cómo la llamas</Label>
           <Input
@@ -335,19 +333,32 @@ function DialogoDeCuenta({
             </span>
           </span>
         </label>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onCerrar} disabled={guardando}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={guardando} data-testid="guardar-cuenta">
-            {guardando ? 'Guardando…' : 'Guardar la cuenta'}
-          </Button>
-        </div>
       </form>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          hideArrow
+          onClick={onCerrar}
+          disabled={guardando}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          form={ID_DEL_FORM_DE_CUENTA}
+          disabled={guardando}
+          data-testid="guardar-cuenta"
+        >
+          {guardando ? 'Guardando…' : 'Guardar la cuenta'}
+        </Button>
+      </DialogFooter>
     </Modal>
   )
 }
+
+const ID_DEL_FORM_DE_CUENTA = 'form-cuenta-del-portal'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Paso 2 — sacar un inmueble a los portales
@@ -411,7 +422,12 @@ function DialogoDePublicar({
     try {
       setRevision(await publicacionApi.revision(i.propertyId))
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No pudimos revisar ese inmueble'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos revisar ese inmueble',
+          accion: 'revisar ese inmueble',
+        }),
+      )
       setElegido(null)
     } finally {
       setRevisando(false)
@@ -432,7 +448,12 @@ function DialogoDePublicar({
       invalidar('portafolio')
       onPublicado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo publicar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo publicar',
+          accion: 'publicar el inmueble',
+        }),
+      )
     } finally {
       setPublicando(false)
     }
@@ -447,7 +468,7 @@ function DialogoDePublicar({
       onCerrar={onCerrar}
       bloqueado={publicando}
     >
-      <div className="space-y-5 p-6">
+      <div className="space-y-5">
         {/* ── Escoger el inmueble ─────────────────────────────────────── */}
         {!elegido ? (
           <div className="space-y-3">
@@ -482,7 +503,7 @@ function DialogoDePublicar({
                     <button
                       type="button"
                       onClick={() => void escoger(i)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-surface-muted"
+                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-surface-hover"
                       data-testid={`elegir-${i.propertyId}`}
                     >
                       <span className="min-w-0">
@@ -615,20 +636,20 @@ function DialogoDePublicar({
             ) : null}
           </>
         )}
-
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="ghost" onClick={onCerrar} disabled={publicando}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => void publicar()}
-            disabled={!puedeSalir || marcados.length === 0 || publicando}
-            data-testid="confirmar-publicar"
-          >
-            {publicando ? 'Publicando…' : 'Publicar'}
-          </Button>
-        </div>
       </div>
+
+      <DialogFooter>
+        <Button variant="outline" hideArrow onClick={onCerrar} disabled={publicando}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={() => void publicar()}
+          disabled={!puedeSalir || marcados.length === 0 || publicando}
+          data-testid="confirmar-publicar"
+        >
+          {publicando ? 'Publicando…' : 'Publicar'}
+        </Button>
+      </DialogFooter>
     </Modal>
   )
 }

@@ -455,8 +455,9 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
 
       <Resultado resultado={resultado} error={error} />
 
+      {/* Se cierra al confirmar: el avance se ve debajo, en la barra de la carga. */}
       <AlertDialog open={confirmaDescarte} onOpenChange={setConfirmaDescarte}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>{`¿No traer ${N(cantidad)} ${cantidad === 1 ? 'fila' : 'filas'}?`}</AlertDialogTitle>
             <AlertDialogDescription>

@@ -8,6 +8,15 @@ import { uploadPropertyPhotos, PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/proper
 import { PropertyPhotoPicker } from '@/components/inmobiliaria/PropertyPhotoPicker';
 import { Button, Input, Textarea, Spinner } from '@/components/ui';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -43,7 +52,11 @@ interface PropertyImageRow {
  * or assigned agent). Photos: existing images (with ids) are fetched on open,
  * removable via DELETE /properties/:id/images/:imageId, and new ones can be
  * added (uploaded on save, respecting the backend max of 10 total).
- * Same overlay pattern as ChangeAgentModal.
+ *
+ * Es el `Dialog` canónico (DESIGN.md §17): el `<form>` va en el cuerpo y el
+ * botón de guardar en el pie fijo, apuntándolo con `form=`. El clic en el velo
+ * NO cierra (así era la cáscara a mano): un formulario largo con fotos no se
+ * pierde por un clic de más; se sale por Cancelar, la ✕ o Esc.
  */
 export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEditModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +114,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
       setImages((prev) => prev.filter((img) => img.id !== imageId));
     } catch (err) {
       toast.error('No se pudo eliminar la foto', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'eliminar la foto' }),
       });
     } finally {
       setDeletingImageId(null);
@@ -161,29 +174,37 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
       }
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar la propiedad');
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'Error al actualizar la propiedad',
+          accion: 'actualizar la propiedad',
+        }),
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-card rounded-[20px] border border-border max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <div>
-            <h2 className="text-base font-semibold text-fg">Editar propiedad</h2>
-            <p className="text-sm text-fg-muted mt-0.5 truncate max-w-[320px]">
-              {property.title}
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent
+        size="md"
+        // El velo no cierra (como antes): un clic de más no bota lo escrito.
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Editar propiedad</DialogTitle>
+          <DialogDescription className="truncate">{property.title}</DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORMULARIO} onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">Título *</label>
             <Input
@@ -351,30 +372,26 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
           {error && (
             <p className="text-sm text-danger" data-testid="edit-error">{error}</p>
           )}
-
-          <div className="flex items-center gap-3 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={isSubmitting}
-              disabled={!isValid || isSubmitting}
-              className="flex-1"
-              data-testid="edit-submit"
-            >
-              {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button type="button" variant="secondary" hideArrow onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORMULARIO}
+            hideArrow
+            isLoading={isSubmitting}
+            disabled={!isValid || isSubmitting}
+            data-testid="edit-submit"
+          >
+            {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DEL_FORMULARIO = 'form-editar-propiedad';

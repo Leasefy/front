@@ -21,7 +21,7 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet'
 import { Button } from '@/components/ui'
 // El Badge de cadence — el del barrel local no tiene el variant `neutral`,
 // y la página del detalle usa este mismo.
@@ -87,7 +87,10 @@ export function LlamadaDetalleSheet({ callId, onClose }: LlamadaDetalleSheetProp
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0"
+        size="lg"
+        // Cabecera, cuerpo y pie viven en `CajonAbierto`.
+        layout="manual"
+        aria-describedby={undefined}
       >
         {ultimo && <CajonAbierto callId={ultimo} />}
       </SheetContent>
@@ -126,43 +129,31 @@ function CajonAbierto({ callId }: { callId: string }) {
 
   return (
     <>
-        <SheetTitle className="sr-only">
-          Llamada de cobranza{data ? ` a ${data.debtorNameMasked}` : ''}
-        </SheetTitle>
-
-        {/* Cabecera fija. `pr-12`: el botón de cerrar del Sheet va absoluto
-            arriba a la derecha. */}
-        <div className="flex-none border-b border-border p-5 pr-12 space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-lg font-semibold text-fg">
-              {data?.debtorNameMasked ?? 'Llamada'}
-            </h2>
-            {data && (
-              <Badge variant={qaVariant(data.qa.overall)} className="shrink-0 mt-0.5 tabular-nums">
+        <SheetHeader
+          title={data?.debtorNameMasked ?? 'Llamada'}
+          description={
+            data
+              ? [
+                  fechaLabel,
+                  data.durationSeconds != null ? formatSec(data.durationSeconds) : null,
+                  callOutcomeLabel(data.outcome) ?? null,
+                  `${channelLabel(data.channel)}${data.direction === 'inbound' ? ` · ${directionLabel(data.direction)}` : ''}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : undefined
+          }
+          actions={
+            data ? (
+              <Badge variant={qaVariant(data.qa.overall)} className="shrink-0 tabular-nums">
                 QA {overallPct == null ? '—' : `${overallPct}/100`}
               </Badge>
-            )}
-          </div>
-          {data && (
-            <p className="text-xs text-fg-muted">
-              {[
-                fechaLabel,
-                data.durationSeconds != null ? formatSec(data.durationSeconds) : null,
-                callOutcomeLabel(data.outcome) ?? null,
-                `${channelLabel(data.channel)}${data.direction === 'inbound' ? ` · ${directionLabel(data.direction)}` : ''}`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-        </div>
+            ) : undefined
+          }
+        />
 
-        {/* Cuerpo — `data-lenis-prevent` o el scroll queda muerto */}
-        <div
-          className="flex-1 overflow-y-auto p-5 space-y-4"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain' }}
-        >
+        {/* Cuerpo — lo único que scrollea (`SheetBody` trae data-lenis-prevent) */}
+        <SheetBody className="space-y-4">
           {isLoading && !data && (
             <div className="space-y-3" aria-hidden="true">
               {[0, 1, 2].map((i) => (
@@ -216,17 +207,17 @@ function CajonAbierto({ callId }: { callId: string }) {
               <CallStateTracePanel stateTrace={data.stateTrace} />
             </>
           )}
-        </div>
+        </SheetBody>
 
         {/* Pie: la página completa sigue siendo la casa del PDF de
             transcripción y del replay a pantalla llena. */}
-        <div className="flex-none border-t border-border p-4">
+        <SheetFooter>
           <Button asChild variant="outline" size="sm" hideArrow>
             <Link href={`/panel/inmobiliaria/pagos/cobranza/llamadas/${callId}`}>
               Abrir la página completa
             </Link>
           </Button>
-        </div>
+        </SheetFooter>
     </>
   )
 }

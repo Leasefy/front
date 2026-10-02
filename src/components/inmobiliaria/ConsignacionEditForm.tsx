@@ -72,7 +72,7 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { LocationPicker, type LatLng } from '@/components/map/LocationPicker';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { ApiError } from '@/lib/api/client';
@@ -615,23 +615,17 @@ export function ConsignacionEditForm({
         if (!open && !guardando) onCerrar();
       }}
     >
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-2xl"
-        data-testid="cajon-editar-inmueble"
-      >
-        <div className="flex-none border-b border-border px-6 py-5 pr-16">
-          <SheetTitle className="text-lg font-semibold text-fg">
-            {t('inmobiliaria.portafolio.detail.editProperty')}
-          </SheetTitle>
-          <SheetDescription className="mt-1 text-sm text-fg-muted">{tf('descripcionCajon')}</SheetDescription>
-        </div>
+      <SheetContent side="right" size="lg" data-testid="cajon-editar-inmueble">
+        <SheetHeader
+          title={t('inmobiliaria.portafolio.detail.editProperty')}
+          description={tf('descripcionCajon')}
+        />
 
+        <SheetBody>
         <form
           id="form-editar-inmueble"
           onSubmit={guardar}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-8"
-          data-lenis-prevent
+          className="space-y-8"
           noValidate
         >
           {mandatoTerminado && (
@@ -1108,9 +1102,10 @@ export function ConsignacionEditForm({
             <Aviso tono="danger" titulo={conflicto.titulo} detalle={conflicto.detalle} testId="editar-conflicto" />
           )}
         </form>
+        </SheetBody>
 
-        <div className="flex-none border-t border-border px-6 py-4 flex items-center gap-3">
-          <Button type="button" variant="secondary" hideArrow onClick={onCerrar} disabled={guardando} className="flex-1">
+        <SheetFooter>
+          <Button type="button" variant="secondary" hideArrow onClick={onCerrar} disabled={guardando}>
             {tf('cancel')}
           </Button>
           <Button
@@ -1119,12 +1114,11 @@ export function ConsignacionEditForm({
             hideArrow
             disabled={guardando}
             isLoading={guardando}
-            className="flex-1"
             data-testid="editar-guardar"
           >
             {guardando ? tf('saving') : tf('saveChanges')}
           </Button>
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

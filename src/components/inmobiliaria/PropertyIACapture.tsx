@@ -676,7 +676,8 @@ export function PropertyIACapture() {
         open={confirmarReextraccion}
         onOpenChange={(abierto) => !abierto && setConfirmarReextraccion(false)}
       >
-        <AlertDialogContent>
+        {/* Destructiva: volver a procesar pisa lo que editaste a mano. */}
+        <AlertDialogContent variant="destructive" icon={<ArrowClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t(k('confirmReextractTitle'))}</AlertDialogTitle>
             <AlertDialogDescription>{t(k('confirmReextract'))}</AlertDialogDescription>

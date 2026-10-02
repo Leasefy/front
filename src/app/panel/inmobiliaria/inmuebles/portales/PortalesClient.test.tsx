@@ -297,7 +297,7 @@ describe('Publicación en portales', () => {
 
     // Y ya no vive dentro del diálogo de la cuenta.
     await clic(porTestId('cuenta-FINCARAIZ'))
-    const form = porTestId('form-de-cuenta')!
+    const form = enElModal('form-de-cuenta')!
     expect(form.textContent).not.toMatch(/ejecutivo comercial/)
     expect(form.querySelector('details')).toBeNull()
     // El cuidado del portal SÍ se queda: no es explicación, es una advertencia
@@ -367,12 +367,31 @@ describe('Publicación en portales', () => {
     h.api.guardarCuenta.mockResolvedValue({ aviso: null })
     await montar()
     await clic(porTestId('cuenta-FINCARAIZ'))
-    expect(porTestId('form-de-cuenta')).not.toBeNull()
+    expect(enElModal('form-de-cuenta')).not.toBeNull()
     await act(async () => {
-      porTestId('form-de-cuenta')!.dispatchEvent(
+      enElModal('form-de-cuenta')!.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       )
     })
+    expect(h.api.guardarCuenta).toHaveBeenCalledWith(
+      expect.objectContaining({ portal: 'FINCARAIZ', activa: true }),
+    )
+  })
+
+  it('P1c — el diálogo de la cuenta es el de la casa: título en la cabecera y «Guardar» en el pie', async () => {
+    // 02-10-2026: el armazón `Modal` dejó de ser una caja a mano y pasó al
+    // `Dialog` de la casa. El título nombra al diálogo, y el botón de guardar
+    // vive en el pie fijo —FUERA del <form>— y lo envía con `form=`.
+    h.api.guardarCuenta.mockResolvedValue({ aviso: null })
+    await montar()
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    const dialogo = document.body.querySelector<HTMLElement>('[role="dialog"]')!
+    expect(dialogo).not.toBeNull()
+    const titulo = document.getElementById(dialogo.getAttribute('aria-labelledby') ?? '')
+    expect(titulo?.textContent).toBe('Anotar tu cuenta de Fincaraíz')
+    const guardar = enElModal('guardar-cuenta')!
+    expect(enElModal('form-de-cuenta')!.contains(guardar)).toBe(false)
+    await clic(guardar)
     expect(h.api.guardarCuenta).toHaveBeenCalledWith(
       expect.objectContaining({ portal: 'FINCARAIZ', activa: true }),
     )
@@ -419,10 +438,10 @@ describe('Publicación en portales', () => {
     })
     await montar()
     await clic(porTestId('abrir-publicar'))
-    await clic(porTestId('elegir-prop-1'))
+    await clic(enElModal('elegir-prop-1'))
     // Metrocuadrado tiene cuenta activa; Fincaraíz no tiene ninguna.
-    expect(porTestId('marcar-METROCUADRADO')).not.toBeNull()
-    expect(porTestId('marcar-FINCARAIZ')).toBeNull()
+    expect(enElModal('marcar-METROCUADRADO')).not.toBeNull()
+    expect(enElModal('marcar-FINCARAIZ')).toBeNull()
   })
 
   it('P4 — lo que le falta al inmueble lo dice el back, y se muestra tal cual', async () => {
@@ -451,8 +470,8 @@ describe('Publicación en portales', () => {
     })
     await montar()
     await clic(porTestId('abrir-publicar'))
-    await clic(porTestId('elegir-prop-1'))
-    const falta = porTestId('le-falta')
+    await clic(enElModal('elegir-prop-1'))
+    const falta = enElModal('le-falta')
     expect(falta).not.toBeNull()
     const items = Array.from(falta!.querySelectorAll('li')).map((li) => li.textContent)
     expect(items).toEqual([
@@ -461,7 +480,7 @@ describe('Publicación en portales', () => {
     ])
     // Y no se ofrece publicar algo que el back va a rechazar.
     expect(
-      (porTestId('confirmar-publicar') as HTMLButtonElement).disabled,
+      (enElModal('confirmar-publicar') as HTMLButtonElement).disabled,
     ).toBe(true)
   })
 

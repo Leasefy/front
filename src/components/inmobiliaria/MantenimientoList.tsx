@@ -26,6 +26,7 @@ import {
   User,
   MapPin,
   ListBullets,
+  Prohibit,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -718,7 +719,11 @@ export function MantenimientoList({
           if (!abierto) setSolicitudACancelar(null);
         }}
       >
-        <AlertDialogContent data-testid="confirmar-cancelar-solicitud">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="confirmar-cancelar-solicitud"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cancelar esta solicitud?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -730,7 +735,6 @@ export function MantenimientoList({
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
               data-testid="confirmar-cancelar-solicitud-si"
               onClick={() => {
                 if (solicitudACancelar) onCancel?.(solicitudACancelar);

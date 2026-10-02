@@ -267,7 +267,7 @@ export function CierreDePeriodo({
       />
 
       <Dialog open={confirmando} onOpenChange={(open) => !open && cerrarDialogo()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent variant="destructive" icon={<LockKey weight="bold" />} size="sm">
           <DialogHeader>
             <DialogTitle>Cerrar la contabilidad hasta el {diaLegible(hasta)}</DialogTitle>
             <DialogDescription>
@@ -300,7 +300,7 @@ export function CierreDePeriodo({
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" hideArrow onClick={cerrarDialogo} disabled={enviando}>
+            <Button variant="outline" hideArrow onClick={cerrarDialogo} disabled={enviando}>
               Cancelar
             </Button>
             <Button

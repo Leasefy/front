@@ -20,7 +20,10 @@ void React;
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
-vi.mock('@/components/ui/dialog', () => ({
+// Parcial: el barril `@/components/ui` (de donde salen Button e Input) carga
+// `responsive-dialog`, que lee `DialogTrigger`/`DialogClose` de este módulo.
+vi.mock('@/components/ui/dialog', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/ui/dialog')>()),
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) => (open ? <div>{children}</div> : null),
   DialogContent: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

@@ -88,6 +88,7 @@ import {
   TreeStructure,
   Warning,
   WarningCircle,
+  Notebook,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 
@@ -1273,7 +1274,11 @@ export function HubDeContabilidad() {
           if (!abierto && !reprocesando) setConfirmandoReproceso(false);
         }}
       >
-        <AlertDialogContent data-testid="confirmar-reproceso-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<Notebook weight="bold" />}
+          data-testid="confirmar-reproceso-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {faltantes
@@ -1295,7 +1300,7 @@ export function HubDeContabilidad() {
                 e.preventDefault();
                 void reprocesar();
               }}
-              disabled={reprocesando}
+              loading={reprocesando}
               data-testid="confirmar-reproceso"
             >
               Asentar

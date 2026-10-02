@@ -214,7 +214,7 @@ export function ThresholdVersionsTable({
           if (!o && !isRollingBack) setRollbackConfirmVersion(null)
         }}
       >
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent variant="confirm" icon={<ArrowCounterClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {locale.startsWith('es') ? '¿Restaurar versión?' : 'Restore version?'}
@@ -230,7 +230,7 @@ export function ThresholdVersionsTable({
               {locale.startsWith('es') ? 'Cancelar' : 'Cancel'}
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={isRollingBack}
+              loading={isRollingBack}
               onClick={(e) => {
                 e.preventDefault()
                 void confirmRollback()

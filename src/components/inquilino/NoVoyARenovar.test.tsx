@@ -28,10 +28,24 @@ vi.mock('sonner', () => ({ toast: h.toast }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // La variante viaja como `data-variant`, igual que en el Content de Cadence.
+  DialogContent: ({
+    children,
+    variant,
+    'data-testid': testId,
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+    'data-testid'?: string;
+  }) => (
+    <div data-testid={testId} data-variant={variant}>
+      {children}
+    </div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 import { NoVoyARenovar, diasHastaElFin } from './NoVoyARenovar';
@@ -151,6 +165,17 @@ describe('el plazo se dice ANTES de apretar', () => {
 });
 
 describe('avisar', () => {
+  it('es destructivo: rojo, y dice qué pasa con la prórroga y que se puede retirar', async () => {
+    await montar(arriendo(150));
+    await abrir();
+    const dialogo = porTestId('dialogo-no-voy-a-renovar')!;
+    // DESIGN.md §17: medallón rojo y el botón principal rojo.
+    expect(dialogo.getAttribute('data-variant')).toBe('destructive');
+    expect(porTestId('confirmar-no-renovar')!.className).toContain('bg-danger');
+    expect(dialogo.textContent).toContain('Sin aviso se prorroga solo');
+    expect(dialogo.textContent).toContain('puedes retirarlo');
+  });
+
   it('sin motivo no se puede: no es burocracia, es lo que la inmobiliaria lee', async () => {
     await montar(arriendo(150));
     await abrir();

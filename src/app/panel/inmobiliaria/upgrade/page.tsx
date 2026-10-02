@@ -305,15 +305,15 @@ function AgencyUpgradeContent() {
           if (!open) setPendingDowngrade(null);
         }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent variant="confirm" size="sm">
           <DialogHeader>
             <DialogTitle>Confirmar cambio de plan</DialogTitle>
+            <DialogDescription>
+              {subscriptionState?.subscription?.currentPeriodEnd
+                ? `Tu plan cambiará a ${pendingDowngrade?.name} el ${formatDate(subscriptionState.subscription.currentPeriodEnd)}; hasta entonces sigues con ${currentPlan?.name ?? 'tu plan actual'}.`
+                : `Tu plan cambiará a ${pendingDowngrade?.name} al final de tu período actual; hasta entonces sigues con ${currentPlan?.name ?? 'tu plan actual'}.`}
+            </DialogDescription>
           </DialogHeader>
-          <DialogDescription className="text-sm text-fg-muted">
-            {subscriptionState?.subscription?.currentPeriodEnd
-              ? `Tu plan cambiará a ${pendingDowngrade?.name} el ${formatDate(subscriptionState.subscription.currentPeriodEnd)}; hasta entonces seguís con ${currentPlan?.name ?? 'tu plan actual'}.`
-              : `Tu plan cambiará a ${pendingDowngrade?.name} al final de tu período actual; hasta entonces seguís con ${currentPlan?.name ?? 'tu plan actual'}.`}
-          </DialogDescription>
           <DialogFooter>
             <Button variant="outline" hideArrow onClick={() => setPendingDowngrade(null)}>
               Cancelar

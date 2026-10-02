@@ -2,7 +2,6 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +12,6 @@ import {
   Buildings,
   CurrencyDollar,
   Warning,
-  X,
   GridFour,
   List,
   CaretRight,
@@ -21,8 +19,6 @@ import {
   UserCircle,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   PropietarioCard,
   PropietarioTable,
@@ -36,6 +32,14 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
 } from '@/components/migracion/VeredictoDeMigracion';
@@ -47,6 +51,7 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   errorAlGuardarPropietario,
   motivoAlEliminarPropietario,
@@ -59,151 +64,69 @@ import {
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
-import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
+import { SegmentedControl, KpiCard } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
 /**
- * Modal Component - Uses Portal to escape transformed parents
+ * La cáscara de los cuatro diálogos de la lista: nuevo, crear con IA, editar
+ * y eliminar.
+ *
+ * Era un portal hecho a mano (capa `fixed inset-0`, ✕ propia, `lenis.stop()`
+ * y un bloqueo del scroll que fijaba el body con `position: fixed` y lo
+ * devolvía a su `scrollY`), sin Esc, sin foco atrapado y sin `role="dialog"`.
+ * Ahora es el `Dialog` de la plataforma (DESIGN.md §17): el velo, la ✕, el
+ * Esc, el foco y el bloqueo del scroll los pone la primitiva —que bloquea sin
+ * mover la página, así que el salto al tope que corregía ese efecto ya no
+ * tiene de dónde salir (`modal-conserva-el-scroll.test.tsx`)—, y a Lenis lo
+ * frena `SmoothScroll` al ver un `[role=dialog]` abierto.
+ *
+ * El pie va por `footer` y no dentro de `children`: el `DialogContent` reparte
+ * sólo a sus hijos DIRECTOS, y un pie metido en el cuerpo se iría con el
+ * scroll. `variant="destructive"` (eliminar) pone el medallón rojo; el botón
+ * rojo lo trae el pie.
  */
 function Modal({
   open,
   onClose,
   title,
+  description,
   children,
+  footer,
   size = 'md',
+  variant,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'destructive';
 }) {
-  const lenis = useLenis();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  /*
-   * Bloquear el scroll del fondo mientras el modal está abierto.
-   *
-   * 🔴 La limpieza tiene que estar DENTRO del `if (open)`.
-   *
-   * Estaba afuera, y eso hacía que la página saltara al tope cada vez que se
-   * abría un modal: React corre la limpieza del render anterior ANTES del
-   * efecto nuevo, así que al pasar de cerrado a abierto primero se ejecutaba
-   * un `window.scrollTo(0, -parseInt(''))` —o sea, `scrollTo(0, 0)`— y recién
-   * después se leía `window.scrollY`… que para entonces ya era 0. Resultado:
-   * abrir «Agregar propietario» desde la mitad de la lista te mandaba arriba,
-   * y al cerrar te dejaba ahí. Se veía como un salto sin causa.
-   *
-   * De paso, la posición se recuerda en la clausura en vez de releerse del
-   * `style.top`: el número que se guardó es el que se restaura, sin depender
-   * de que nadie más haya tocado ese estilo.
-   */
-  useEffect(() => {
-    if (!open) return;
-
-    // Stop Lenis smooth scroll to allow native scroll in modal
-    lenis.stop();
-
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      // Restart Lenis when modal closes
-      lenis.start();
-
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, [open, lenis]);
-
-  if (!open || !mounted) return null;
-
-  const modalContent = (
-    <div
-      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
-      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
-      className="fixed inset-0 z-[300]"
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      data-lenis-prevent
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        onClick={onClose}
-      />
-      {/* Modal container - centers the modal */}
-      <div
-        className="absolute inset-0 flex items-center justify-center p-4"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      <DialogContent
+        size={size}
+        variant={variant}
+        // Sin descripción visible, Radix no tiene a qué apuntar: se le avisa.
+        {...(description ? {} : { 'aria-describedby': undefined })}
       >
-        {/* Modal */}
-        <div
-          className={cn(
-            'relative bg-card w-full rounded-[20px] flex flex-col',
-            sizeClasses[size]
-          )}
-          style={{ maxHeight: '85vh' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header - fixed */}
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">
-              {title}
-            </h3>
-            <IconButton
-              onClick={onClose}
-              aria-label="Cerrar"
-              variant="ghost"
-              size="md"
-              className="bg-muted hover:bg-muted/70"
-              icon={<X className="w-4 h-4" />}
-            />
-          </div>
-          {/* Content - scrollable */}
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto overscroll-contain p-6"
-            data-lenis-prevent
-            style={{
-              minHeight: 0,
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
-              touchAction: 'pan-y',
-            }}
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
-
-  // Use portal to render at body level, escaping any transformed parents
-  return createPortal(modalContent, document.body);
 }
 
 /**
@@ -215,7 +138,7 @@ function AvisoEnElDialogo({ children }: { children: React.ReactNode }) {
     <p
       role="alert"
       data-testid="aviso-en-el-dialogo"
-      className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+      className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
     >
       {children}
     </p>
@@ -292,6 +215,14 @@ function PropietariosContent() {
   const [showIACapture, setShowIACapture] = useState(false);
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
+  /*
+   * Lo que los diálogos de editar y eliminar MUESTRAN: el último propietario.
+   * Al cerrar, el estado vuelve a `null` en el mismo render en que el `Dialog`
+   * empieza a salir; sin esto el modal se vaciaba (sin formulario, sin pie) y
+   * se iba en blanco. Las acciones siguen leyendo el estado de verdad.
+   */
+  const propietarioQueSeEdita = useUltimoPresente(editingPropietario);
+  const propietarioQueSeBorra = useUltimoPresente(deletingPropietario);
   const [isDeleting, setIsDeleting] = useState(false);
 
   /*
@@ -591,8 +522,8 @@ function PropietariosContent() {
   /* O5: con inmuebles consignados, o figurando como dueño en mandatos de otro
      (copropiedades), el back rechaza el borrado con un 409. Se dice antes y el
      botón no se ofrece activo. */
-  const inmueblesDelBorrado = deletingPropietario?.propertyCount ?? 0;
-  const copropiedadesDelBorrado = deletingPropietario?.copropiedadesCount ?? 0;
+  const inmueblesDelBorrado = propietarioQueSeBorra?.propertyCount ?? 0;
+  const copropiedadesDelBorrado = propietarioQueSeBorra?.copropiedadesCount ?? 0;
   const borradoBloqueado = inmueblesDelBorrado > 0 || copropiedadesDelBorrado > 0;
 
   return (
@@ -881,11 +812,11 @@ function PropietariosContent() {
         title={t('inmobiliaria.propietarios.editOwner')}
         size="lg"
       >
-        {editingPropietario && (
+        {propietarioQueSeEdita && (
           <>
             {errorAlEditar?.general && <AvisoEnElDialogo>{errorAlEditar.general}</AvisoEnElDialogo>}
             <PropietarioForm
-              initialData={editingPropietario}
+              initialData={propietarioQueSeEdita}
               onSubmit={handleEditSubmit}
               onCancel={cerrarEdicion}
               mode="edit"
@@ -895,52 +826,23 @@ function PropietariosContent() {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal — destructiva: dice qué se borra (la ficha
+          entera; el back hace un `delete`, no la archiva) y, si algo lo
+          retiene, por qué y a dónde ir. */}
       <Modal
         open={!!deletingPropietario && puedeEliminar}
         onClose={cerrarEliminar}
         title={t('inmobiliaria.propietarios.deleteOwner')}
+        description={
+          propietarioQueSeBorra
+            ? t('inmobiliaria.propietarios.deleteConfirm', { name: propietarioQueSeBorra.name })
+            : undefined
+        }
         size="sm"
-      >
-        {deletingPropietario && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
-            </p>
-            {/* O5 — lo mismo que la ficha: qué lo retiene y a dónde ir. El aviso
-                ámbar de antes lo decía, pero dejaba el botón activo y el clic
-                terminaba en el 409. */}
-            {borradoBloqueado && (
-              <AlertaAccionable
-                severidad="danger"
-                titulo={
-                  inmueblesDelBorrado > 0
-                    ? t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: inmueblesDelBorrado })
-                    : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', {
-                        count: copropiedadesDelBorrado,
-                      })
-                }
-                accion={{
-                  label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
-                  href: '/panel/inmobiliaria/inmuebles',
-                }}
-                data-testid="borrar-bloqueado"
-              >
-                {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
-              </AlertaAccionable>
-            )}
-            {/* O1 — el motivo del back cuando igual lo rechaza (p. ej. una
-                copropiedad que la lista no cuenta). Se queda en el diálogo. */}
-            {motivoAlEliminar && (
-              <p
-                role="alert"
-                data-testid="motivo-al-eliminar"
-                className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-              >
-                {motivoAlEliminar}
-              </p>
-            )}
-            <div className="flex items-center gap-3 justify-end pt-4">
+        variant="destructive"
+        footer={
+          propietarioQueSeBorra ? (
+            <>
               <Button
                 variant="secondary"
                 hideArrow
@@ -960,8 +862,46 @@ function PropietariosContent() {
               >
                 {t('inmobiliaria.common.delete')}
               </Button>
-            </div>
-          </div>
+            </>
+          ) : null
+        }
+      >
+        {/* O5 — lo mismo que la ficha: qué lo retiene y a dónde ir. El aviso
+            ámbar de antes lo decía, pero dejaba el botón activo y el clic
+            terminaba en el 409. */}
+        {propietarioQueSeBorra && borradoBloqueado && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={
+              inmueblesDelBorrado > 0
+                ? t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: inmueblesDelBorrado })
+                : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', {
+                    count: copropiedadesDelBorrado,
+                  })
+            }
+            accion={{
+              label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
+              href: '/panel/inmobiliaria/inmuebles',
+            }}
+            data-testid="borrar-bloqueado"
+          >
+            {/* Como en la ficha: a un copropietario no se le pide retirar
+                mandatos desde el portafolio, sino quitarlo del reparto. */}
+            {inmueblesDelBorrado > 0
+              ? t('inmobiliaria.propietarios.deleteBloqueado.detalle')
+              : t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
+          </AlertaAccionable>
+        )}
+        {/* O1 — el motivo del back cuando igual lo rechaza (p. ej. una
+            copropiedad que la lista no cuenta). Se queda en el diálogo. */}
+        {propietarioQueSeBorra && motivoAlEliminar && (
+          <p
+            role="alert"
+            data-testid="motivo-al-eliminar"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {motivoAlEliminar}
+          </p>
         )}
       </Modal>
     </div>

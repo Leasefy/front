@@ -9,34 +9,70 @@
  * renovación (Nico, 2026-09-08: «revisa que sí sea la forma en que tenemos
  * nuestros drawers… ni los títulos ni la interacción del scroll»).
  *
+ * Desde el 02-10-2026 es una capa en español sobre las piezas del Sheet
+ * flotante de Cadence (`SheetHeader` / `SheetBody` / `SheetFooter`): mismo
+ * dibujo que cualquier otro cajón del producto.
+ *
  * Para un formulario, el `<form>` va ADENTRO con `className="contents"`:
  * así `CajonCuerpo` y `CajonPie` siguen siendo hijos directos de la columna
  * y el botón del pie puede ser `type="submit"`.
  */
 
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  type SheetContentProps,
+} from '@/components/ui/sheet';
+
+type Tamano = NonNullable<SheetContentProps['size']>;
+
+/** El `ancho` viejo (`sm:max-w-*`) traducido a los tamaños de Cadence. */
+const TAMANO_POR_ANCHO: Record<string, Tamano> = {
+  'sm:max-w-sm': 'sm',
+  'sm:max-w-md': 'sm',
+  'sm:max-w-lg': 'md',
+  'sm:max-w-xl': 'md',
+  'sm:max-w-2xl': 'lg',
+  'sm:max-w-3xl': 'lg',
+  'sm:max-w-4xl': 'xl',
+  'sm:max-w-5xl': 'xl',
+};
 
 export function Cajon({
   abierto,
   onOpenChange,
-  ancho = 'sm:max-w-xl',
+  ancho,
+  tamano,
   children,
   className,
   ...resto
 }: {
   abierto: boolean;
   onOpenChange: (abierto: boolean) => void;
-  /** Ancho máximo en escritorio (`sm:max-w-xl`, `sm:max-w-2xl`, `sm:max-w-4xl`). */
+  /** Tamaño de Cadence: sm 400 · md 560 (default) · lg 680 · xl 880. */
+  tamano?: Tamano;
+  /**
+   * Compatibilidad: el ancho máximo viejo (`sm:max-w-xl`, `sm:max-w-2xl`,
+   * `sm:max-w-4xl`). Se traduce a `tamano`; uno desconocido se aplica tal cual.
+   */
   ancho?: string;
   children: React.ReactNode;
   className?: string;
 } & Record<`data-${string}`, string | undefined>) {
+  const traducido = ancho ? TAMANO_POR_ANCHO[ancho] : undefined;
   return (
     <Sheet open={abierto} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className={cn('flex w-full flex-col gap-0 !p-0', ancho, className)}
+        size={tamano ?? traducido ?? 'md'}
+        // El cajón arma su propio layout con las tres piezas de abajo, aunque
+        // vengan de un subcomponente que el reparto no alcanza a ver.
+        layout="manual"
+        className={cn(ancho && !traducido ? ancho : undefined, className)}
         aria-describedby={undefined}
         {...resto}
       >
@@ -57,26 +93,17 @@ export function CajonCabecera({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex-none border-b border-border px-6 py-5 pr-14">
-      <SheetTitle className="text-lg font-semibold text-fg">{titulo}</SheetTitle>
-      {descripcion ? (
-        <SheetDescription className="mt-0.5 text-sm text-fg-muted">{descripcion}</SheetDescription>
-      ) : null}
+    <SheetHeader title={titulo} description={descripcion ?? undefined}>
       {children}
-    </div>
+    </SheetHeader>
   );
 }
+CajonCabecera.bandaDeModal = 'cabecera' as const;
 
 export function CajonCuerpo({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5', className)}
-      data-lenis-prevent
-    >
-      {children}
-    </div>
-  );
+  return <SheetBody className={className}>{children}</SheetBody>;
 }
+CajonCuerpo.bandaDeModal = 'cuerpo' as const;
 
 /** Acciones a la derecha; lo que va a la izquierda (volver, borrar) se pasa en `izquierda`. */
 export function CajonPie({
@@ -90,12 +117,9 @@ export function CajonPie({
   ayuda?: React.ReactNode;
 }) {
   return (
-    <div className="flex-none border-t border-border px-6 py-4">
-      {ayuda ? <div className="mb-3 text-xs text-fg-muted">{ayuda}</div> : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">{izquierda}</div>
-        <div className="flex items-center gap-2">{children}</div>
-      </div>
-    </div>
+    <SheetFooter start={izquierda} note={ayuda}>
+      {children}
+    </SheetFooter>
   );
 }
+CajonPie.bandaDeModal = 'pie' as const;

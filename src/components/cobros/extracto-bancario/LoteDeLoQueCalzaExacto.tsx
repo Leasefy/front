@@ -19,7 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Stack } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Receipt, Stack } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -267,8 +267,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
         </div>
       )}
 
-      <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
-        <AlertDialogContent>
+      <AlertDialog open={confirmando} onOpenChange={(abierto) => !ocupado && setConfirmando(abierto)}>
+        <AlertDialogContent variant="confirm" icon={<Receipt weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               Aprobar {propuesto?.cantidad ?? 0} {propuesto?.cantidad === 1 ? 'movimiento' : 'movimientos'}
@@ -286,7 +286,7 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
                 e.preventDefault();
                 if (propuesto) void aprobar(propuesto);
               }}
-              disabled={ocupado}
+              loading={ocupado}
               data-testid="confirmar-aprobar-lote"
             >
               {ocupado ? 'Emitiendo…' : 'Aprobar y emitir'}
@@ -295,8 +295,11 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={reversando !== null} onOpenChange={(abierto) => !abierto && setReversando(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={reversando !== null}
+        onOpenChange={(abierto) => !abierto && !ocupado && setReversando(null)}
+      >
+        <AlertDialogContent variant="destructive" icon={<ArrowCounterClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>Reversar el lote</AlertDialogTitle>
             <AlertDialogDescription>
@@ -323,7 +326,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
                 e.preventDefault();
                 void reversar();
               }}
-              disabled={ocupado || motivo.trim().length < 5}
+              disabled={motivo.trim().length < 5}
+              loading={ocupado}
               data-testid="confirmar-reversar-lote"
             >
               Reversar

@@ -215,6 +215,59 @@ describe('Registro de proveedores', () => {
 })
 
 /**
+ * 🔴 02-10-2026 · Los dos modales de esta pantalla dejaron de ser cajas a mano
+ * y pasaron al `Dialog` de la casa (Radix): se pintan en un portal sobre
+ * `document.body`, no dentro de `contenedor`. El botón de guardar vive en el
+ * pie fijo —FUERA del <form>— y lo envía con `form=`.
+ */
+describe('Proveedores — los modales son el Dialog de la casa', () => {
+  const dialogo = () => {
+    const d = document.querySelector<HTMLElement>('[role="dialog"]')
+    if (!d) throw new Error('El diálogo no está abierto')
+    return d
+  }
+  const tituloDelDialogo = () =>
+    document.getElementById(dialogo().getAttribute('aria-labelledby') ?? '')?.textContent
+
+  it('M1 — registrar: el título va en la cabecera y «Registrar» envía desde el pie', async () => {
+    h.api.crear.mockResolvedValue({ ...UNO, id: 'p-9' })
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Registrar proveedor'),
+      ),
+    )
+    expect(tituloDelDialogo()).toBe('Registrar proveedor')
+
+    const [nombre, documento] = Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
+    await escribir(nombre, 'Cerrajería La Llave')
+    await escribir(documento, '71234567')
+
+    const registrar = Array.from(dialogo().querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Registrar',
+    )!
+    expect(dialogo().querySelector('form')!.contains(registrar)).toBe(false)
+    await clic(registrar)
+    expect(h.api.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ nombre: 'Cerrajería La Llave', documento: '71234567' }),
+    )
+  })
+
+  it('M2 — el historial abre como diálogo, con el nombre del proveedor', async () => {
+    h.api.calificaciones.mockResolvedValue([])
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Historial',
+      ),
+    )
+    expect(h.api.calificaciones).toHaveBeenCalledWith('p-1')
+    expect(tituloDelDialogo()).toBe('Cómo le ha ido a Plomería El Rayo')
+    expect(dialogo().textContent).toContain('Todavía no lo han calificado.')
+  })
+})
+
+/**
  * 🔴 El chasis de la casa. Antes de esto el buscador y la casilla de inactivos
  * flotaban sobre el fondo de la página, encima de una pila de tarjetas.
  */

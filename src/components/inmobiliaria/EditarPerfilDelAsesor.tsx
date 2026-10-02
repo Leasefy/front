@@ -43,6 +43,7 @@ import { Button, Input } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -55,6 +56,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
 /** El rol, en los dos idiomas. El front va en minúscula; la ruta en mayúscula. */
@@ -154,7 +156,7 @@ export function EditarPerfilDelAsesor({
       onCerrar();
     } catch (err) {
       toast.error('No pudimos guardar el perfil', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err),
       });
     } finally {
       setGuardando(false);
@@ -163,7 +165,7 @@ export function EditarPerfilDelAsesor({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md" data-testid="editar-perfil-asesor">
+      <DialogContent size="sm" data-testid="editar-perfil-asesor">
         <DialogHeader>
           <DialogTitle>Editar perfil</DialogTitle>
           <DialogDescription>
@@ -172,7 +174,7 @@ export function EditarPerfilDelAsesor({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-fg-muted" htmlFor="asesor-rol">
               Rol
@@ -245,14 +247,19 @@ export function EditarPerfilDelAsesor({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="secondary" hideArrow onClick={onCerrar} disabled={guardando}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
-          <Button hideArrow onClick={guardar} disabled={guardando || !comisionValida}>
+          <Button
+            hideArrow
+            onClick={guardar}
+            isLoading={guardando}
+            disabled={guardando || !comisionValida}
+          >
             {guardando ? 'Guardando…' : 'Guardar'}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

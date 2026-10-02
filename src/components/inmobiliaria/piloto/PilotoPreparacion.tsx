@@ -107,7 +107,7 @@ export function PilotoPreparacion() {
 
       {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll),
           con `SheetContent` propio porque el disparador vive acá adentro. */}
-      <SheetContent side="right" className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg">
+      <SheetContent side="right" size="md" layout="manual">
         <CajonCabecera
           titulo={
             <span className="flex items-center gap-2">

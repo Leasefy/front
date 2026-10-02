@@ -3,7 +3,14 @@
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
 import { MonoLabel } from '@leasefy/cadence';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Shield, CheckCircle, FileText, Download, QrCode, Lock, Clock, Hash, User } from '@phosphor-icons/react';
@@ -90,17 +97,25 @@ function CertificateContent({ contract, variant, className }: CertificateContent
 
   return (
     <div className={cn('bg-surface rounded-sm', variant === 'full' ? 'p-0' : 'p-4 border border-border', className)}>
-      {/* Header with seal */}
-      <div className={cn(
-        'flex items-center justify-between border-b border-border',
-        variant === 'full' ? 'p-6 bg-surface-muted/50' : 'pb-4'
-      )}>
+      {/* Header with seal — sólo en la vista previa: en el modal, el título, el
+          ID y el sello (medallón) los pone el DialogHeader (DESIGN.md §17). */}
+      {variant === 'full' ? (
+        isActive && (
+          <div className="pb-4 border-b border-border">
+            <Badge variant="success" className="gap-1.5 px-3 py-1.5 text-xs font-semibold">
+              <CheckCircle className="h-4 w-4" />
+              VÁLIDO
+            </Badge>
+          </div>
+        )
+      ) : (
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Shield className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h3 className={cn('font-semibold text-fg', variant === 'full' ? 'text-lg' : 'text-base')}>
+            <h3 className="font-semibold text-fg text-base">
               Certificado de Autenticidad Digital
             </h3>
             <p className="text-xs text-fg-muted font-mono">
@@ -115,9 +130,10 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           </Badge>
         )}
       </div>
+      )}
 
       {/* Document Info */}
-      <div className={cn('border-b border-border', variant === 'full' ? 'p-6' : 'py-4')}>
+      <div className={cn('border-b border-border', 'py-4')}>
         <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
           Documento Certificado
         </MonoLabel>
@@ -144,7 +160,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       </div>
 
       {/* Parties */}
-      <div className={cn('border-b border-border', variant === 'full' ? 'p-6' : 'py-4')}>
+      <div className={cn('border-b border-border', 'py-4')}>
         <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
           Partes Firmantes
         </MonoLabel>
@@ -204,7 +220,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       </div>
 
       {/* Timestamps */}
-      <div className={cn('border-b border-border', variant === 'full' ? 'p-6' : 'py-4')}>
+      <div className={cn('border-b border-border', 'py-4')}>
         <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
           Cronología de Firmas
         </MonoLabel>
@@ -235,7 +251,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       </div>
 
       {/* QR Code placeholder & Legal Reference */}
-      <div className={cn(variant === 'full' ? 'p-6' : 'pt-4')}>
+      <div className="pt-4">
         <div className="flex items-start gap-4">
           {/* QR Placeholder */}
           <div className="flex flex-col items-center gap-2">
@@ -271,7 +287,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       {/* Footer */}
       <div className={cn(
         'text-center text-xs text-fg-muted',
-        variant === 'full' ? 'p-4 bg-surface-muted/50 border-t border-border' : 'pt-4 mt-4 border-t border-border'
+        'pt-4 mt-4 border-t border-border'
       )}>
         <p>
           Leasefy &middot; Certificado generado automáticamente &middot;{' '}
@@ -313,23 +329,27 @@ export function AuthenticityCertificate({
   // Full variant - modal display
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh]">
-        <DialogHeader className="sr-only" hideClose>
-          <DialogTitle>Certificado de Autenticidad</DialogTitle>
+      <DialogContent size="lg" icon={<Shield weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>Certificado de Autenticidad Digital</DialogTitle>
+          <DialogDescription className="font-mono text-xs">
+            {generateCertificateId(contract)}
+          </DialogDescription>
         </DialogHeader>
 
         <CertificateContent contract={contract} variant="full" />
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-3 p-4 border-t border-border bg-surface-muted/30">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onClose}>
             Cerrar
           </Button>
-          <Button>
-            <Download className="mr-2 h-4 w-4" />
+          {/* Sin `onClick` desde antes: la descarga no existe todavía (ver el
+              informe de la migración de modales, 02-10-2026). */}
+          <Button hideArrow>
+            <Download className="h-4 w-4" aria-hidden="true" />
             Descargar Certificado
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

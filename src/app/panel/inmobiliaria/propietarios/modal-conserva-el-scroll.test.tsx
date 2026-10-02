@@ -15,8 +15,12 @@
  * arriba de todo, y al cerrar te dejaba ahí. Se veía como un salto sin causa,
  * y nada fallaba.
  *
- * Este archivo fija las dos mitades: la posición se guarda al abrir y se
- * devuelve al cerrar.
+ * 02-10-2026: la cáscara a mano se fue; los cuatro diálogos de la lista son el
+ * `Dialog` de la plataforma, que congela el fondo con `react-remove-scroll`
+ * (marca `data-scroll-locked` en el body) SIN fijarlo con `position: fixed` y
+ * sin tocar el scroll. Este archivo sigue fijando las dos mitades: al abrir el
+ * fondo se congela donde estaba (nadie lo manda al tope), y al irse el modal
+ * la página sigue donde estaba y el fondo se suelta.
  */
 
 import * as React from 'react';
@@ -106,22 +110,29 @@ describe('Abrir un modal no mueve la página', () => {
       root.render(React.createElement(PropietariosPage));
     });
 
-    // `-640px`, no `-0px`: si sale `-0px` es que la limpieza corrió antes y
-    // se llevó puesto el scroll.
-    expect(document.body.style.top).toBe(`-${SCROLL}px`);
-    expect(document.body.style.position).toBe('fixed');
-    // Y nadie scrolleó al tope de paso.
+    // El modal de alta está abierto (el de la plataforma, con su rol)…
+    const dialogo = document.body.querySelector('[role="dialog"]');
+    expect(dialogo?.textContent).toContain('inmobiliaria.propietarios.addOwner');
+    // …el fondo quedó congelado…
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(true);
+    // …y donde estaba: nadie lo fijó en `top: -0px` ni scrolleó al tope.
+    expect(document.body.style.position).toBe('');
+    expect(document.body.style.top).toBe('');
+    expect(window.scrollY).toBe(SCROLL);
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it('al desmontar con el modal abierto, devuelve la página a donde estaba', async () => {
+  it('al desmontar con el modal abierto, la página sigue donde estaba y el fondo se suelta', async () => {
     paramsState.nuevo = 'true';
     await act(async () => {
       root.render(React.createElement(PropietariosPage));
     });
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(true);
     await act(async () => root.unmount());
 
-    expect(scrollTo).toHaveBeenCalledWith(0, SCROLL);
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(false);
+    expect(window.scrollY).toBe(SCROLL);
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
     expect(document.body.style.position).toBe('');
 
     // El `afterEach` desmonta de nuevo; que sea inofensivo.

@@ -29,7 +29,7 @@ import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-ico
 import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -189,19 +189,15 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
     <Sheet open={abierto} onOpenChange={(a) => !a && onCerrar()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-md"
+        size="sm"
         aria-describedby={undefined}
         data-testid="nuevo-mensaje-cajon"
       >
-        <SheetTitle className="border-b border-border px-5 py-4 text-lg">
-          Nuevo mensaje
-        </SheetTitle>
-
-        {/* Buscar sólo tiene sentido del lado de la inmobiliaria: una persona
-            tiene una o dos inmobiliarias, no una lista para filtrar. */}
-        {esLadoAgencia && (
-          <div className="border-b border-border px-5 py-3">
-            <div className="relative">
+        <SheetHeader title="Nuevo mensaje">
+          {/* Buscar sólo tiene sentido del lado de la inmobiliaria: una persona
+              tiene una o dos inmobiliarias, no una lista para filtrar. */}
+          {esLadoAgencia && (
+            <div className="relative mt-3">
               <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
               <Input
                 value={busqueda}
@@ -212,25 +208,25 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
                 data-testid="nuevo-mensaje-buscar"
               />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Del lado de una persona la lista son sus inmobiliarias: no hay dos
-            grupos que separar, así que no hay pestañas. */}
-        {hayPestanas && (
-          <div className="border-b border-border px-5 py-2.5" data-testid="pestanas-destinatarios">
-            <SegmentedControl<Pestana>
-              fullWidth
-              size="sm"
-              aria-label="Filtrar destinatarios por rol"
-              value={pestana}
-              onChange={setPestana}
-              options={opciones}
-            />
-          </div>
-        )}
+          {/* Del lado de una persona la lista son sus inmobiliarias: no hay dos
+              grupos que separar, así que no hay pestañas. */}
+          {hayPestanas && (
+            <div className="mt-3" data-testid="pestanas-destinatarios">
+              <SegmentedControl<Pestana>
+                fullWidth
+                size="sm"
+                aria-label="Filtrar destinatarios por rol"
+                value={pestana}
+                onChange={setPestana}
+                options={opciones}
+              />
+            </div>
+          )}
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto">
+        <SheetBody className="p-0">
           {cargando ? (
             <div className="flex items-center justify-center py-16">
               <Spinner size="lg" />
@@ -291,7 +287,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
               ))}
             </ul>
           )}
-        </div>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

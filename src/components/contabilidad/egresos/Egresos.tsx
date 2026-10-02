@@ -844,7 +844,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           if (!a && ocupado === null) setPagando(null);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-pago">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<CheckCircle weight="bold" />}
+          data-testid="dialogo-de-pago"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Marcar el lote como pagado?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -884,7 +888,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void marcarPagado();
               }}
-              disabled={ocupado !== null || !fechaDelPago}
+              disabled={!fechaDelPago}
+              loading={ocupado !== null}
               data-testid="confirmar-pago"
             >
               {ocupado !== null ? 'Asentando…' : 'Marcar pagado'}
@@ -902,15 +907,23 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {anulando?.tipo === 'lote' ? '¿Anular el lote?' : '¿Anular el egreso?'}
             </AlertDialogTitle>
+            {/* Lo que hace el back (`egresos.service.ts`): un egreso PAGADO no se
+                anula (por eso el botón no se ofrece); uno sin pagar queda
+                ANULADO, sale de su lote, reversa su asiento si lo tenía y su
+                factura vuelve a quedar por pagar. */}
             <AlertDialogDescription>
               {anulando?.tipo === 'lote'
                 ? 'Sus egresos vuelven a quedar pendientes y se pueden meter en otro lote.'
-                : 'Si el egreso ya estaba pagado, su asiento se REVERSA con un asiento espejo: no se borra.'}{' '}
+                : 'El egreso queda anulado —no se borra— y sale de su lote. Si ya tenía asiento, se REVERSA con un asiento espejo. Su factura del proveedor vuelve a quedar por pagar: anular el egreso no anula el gasto.'}{' '}
               El motivo se guarda y lo va a leer el contador.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -931,7 +944,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void anular();
               }}
-              disabled={ocupado !== null || motivo.trim().length === 0}
+              disabled={motivo.trim().length === 0}
+              loading={ocupado !== null}
               data-testid="confirmar-anulacion"
             >
               {ocupado !== null ? 'Anulando…' : 'Anular'}
@@ -946,7 +960,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           if (!a && ocupado === null) setConciliando(null);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-conciliacion">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<LinkSimple weight="bold" />}
+          data-testid="dialogo-de-conciliacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Conciliar contra el extracto</AlertDialogTitle>
             <AlertDialogDescription>
@@ -970,7 +988,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void conciliar();
               }}
-              disabled={ocupado !== null || movimientoBancarioId.trim().length === 0}
+              disabled={movimientoBancarioId.trim().length === 0}
+              loading={ocupado !== null}
               data-testid="confirmar-conciliacion"
             >
               Conciliar
@@ -991,7 +1010,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         falso». Por eso el botón sólo se ofrece con `numero !== null`.
       */}
       <AlertDialog open={comprobante !== null} onOpenChange={(a) => !a && setComprobante(null)}>
-        <AlertDialogContent className="max-w-2xl" data-testid="comprobante-de-egreso">
+        <AlertDialogContent size="lg" data-testid="comprobante-de-egreso">
           <AlertDialogHeader>
             <AlertDialogTitle>Comprobante de egreso {comprobante?.numero}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1052,7 +1071,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               {/* Los valores, con las retenciones desglosadas: es lo que el
                   proveedor tiene que poder cotejar contra su propia factura. */}
               <dl
-                className="grid gap-2 rounded-lg border border-border bg-surface-muted p-3 sm:grid-cols-5"
+                className="grid gap-2 rounded-[14px] border border-border p-3 sm:grid-cols-5"
                 data-testid="valores-del-comprobante"
               >
                 <div>

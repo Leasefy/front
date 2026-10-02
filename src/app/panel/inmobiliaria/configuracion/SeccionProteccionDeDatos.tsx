@@ -594,7 +594,7 @@ function RegistrarSolicitud({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="registrar-solicitud-dialogo">
+      <DialogContent size="md" data-testid="registrar-solicitud-dialogo">
         <DialogHeader>
           <DialogTitle>Registrar una solicitud de un titular</DialogTitle>
           <DialogDescription>

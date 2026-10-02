@@ -616,7 +616,11 @@ export function FacturasDeProveedor({
           }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Anular la factura {anulando?.prefijoDelProveedor ?? ''}
@@ -625,7 +629,7 @@ export function FacturasDeProveedor({
             <AlertDialogDescription>
               {anulando?.asientoNumero
                 ? `El asiento N.º ${anulando.asientoNumero} se REVERSA con un asiento espejo: no se borra, y los dos quedan en el libro. `
-                : 'La factura queda anulada. '}
+                : 'La factura queda anulada —no se borra— y, como todavía no tiene asiento, no hay nada que reversar en el libro. '}
               El motivo se guarda con la anulación y lo va a leer el contador.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -648,7 +652,8 @@ export function FacturasDeProveedor({
                 e.preventDefault();
                 void anular();
               }}
-              disabled={enviandoAnulacion || motivo.trim().length === 0}
+              disabled={motivo.trim().length === 0}
+              loading={enviandoAnulacion}
               data-testid="confirmar-anulacion"
             >
               {enviandoAnulacion ? 'Anulando…' : 'Anular'}

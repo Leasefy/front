@@ -22,7 +22,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { FloppyDisk } from '@phosphor-icons/react'
 
-import { Spinner } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
@@ -50,6 +49,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
@@ -320,40 +320,45 @@ function PoliticaAutoMatch() {
 
       {/* Diálogo de confirmación (T-323 — decisión humana explícita) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        {/* Advertencia si autoriza conciliar sin revisión humana; si deja todo
+            en sugerencia no hay riesgo: es una confirmación. */}
+        <AlertDialogContent
+          variant={anyEnabled ? 'warning' : 'confirm'}
+          icon={anyEnabled ? undefined : <FloppyDisk weight="bold" />}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar política de auto-match</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2">
-                <p>
-                  {anyEnabled
-                    ? 'Vas a autorizar al sistema a conciliar automáticamente (sin revisión humana) los siguientes dominios:'
-                    : 'Vas a dejar TODOS los dominios en modo sugerencia (sombra). El sistema seguirá proponiendo coincidencias, pero ninguna se confirmará automáticamente.'}
-                </p>
-                {anyEnabled && (
-                  <ul className="list-disc pl-5 space-y-0.5 text-fg">
-                    {CONCILIACION_DOMAINS.filter((d) => draftEnabled[d]).map((d) => (
-                      <li key={d}>
-                        {DOMAIN_META[d].title}
-                        {draftThresholds[d] !== undefined && (
-                          <span className="text-fg-muted">
-                            {' '}
-                            (umbral {Math.round((draftThresholds[d] as number) * 100)}%)
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-xs text-fg-muted">
-                  Se creará una nueva versión de la política. Las versiones anteriores se conservan.
-                </p>
-                {saveError && (
-                  <span className="block text-danger text-sm">{saveError}</span>
-                )}
-              </div>
+            <AlertDialogDescription>
+              {anyEnabled
+                ? 'Vas a autorizar al sistema a conciliar automáticamente (sin revisión humana) los siguientes dominios:'
+                : 'Vas a dejar TODOS los dominios en modo sugerencia (sombra). El sistema seguirá proponiendo coincidencias, pero ninguna se confirmará automáticamente.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {anyEnabled && (
+            <AlertDialogSection>
+              <ul className="list-disc pl-5 space-y-0.5 text-sm text-fg">
+                {CONCILIACION_DOMAINS.filter((d) => draftEnabled[d]).map((d) => (
+                  <li key={d}>
+                    {DOMAIN_META[d].title}
+                    {draftThresholds[d] !== undefined && (
+                      <span className="text-fg-muted">
+                        {' '}
+                        (umbral{' '}
+                        <span className="font-mono tabular-nums">
+                          {Math.round((draftThresholds[d] as number) * 100)}%
+                        </span>
+                        )
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </AlertDialogSection>
+          )}
+          <p className="text-xs text-fg-muted">
+            Se creará una nueva versión de la política. Las versiones anteriores se conservan.
+          </p>
+          {saveError && <p className="text-sm text-danger">{saveError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSaving}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
@@ -362,13 +367,8 @@ function PoliticaAutoMatch() {
                 e.preventDefault()
                 void handleSave()
               }}
-              disabled={isSaving}
+              loading={isSaving}
             >
-              {isSaving ? (
-                <Spinner size="sm" variant="current" className="mr-1.5" />
-              ) : (
-                <FloppyDisk className="h-4 w-4 mr-1.5" />
-              )}
               Confirmar y guardar
             </AlertDialogAction>
           </AlertDialogFooter>

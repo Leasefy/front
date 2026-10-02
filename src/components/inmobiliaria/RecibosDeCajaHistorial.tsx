@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { estaVivo, type ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface RecibosDeCajaHistorialProps {
   recibos: ReciboDeCaja[];
@@ -92,8 +93,10 @@ export function RecibosDeCajaHistorial({
       });
       cerrarAnular();
     } catch (error) {
-      // El mensaje del back va tal cual: dice POR QUÉ no se pudo.
-      setErrorDeAnular(error instanceof Error ? error.message : t('recibos.anular.fallo'));
+      // El motivo del back (un 4xx) dice POR QUÉ no se pudo; un 5xx, que fue nuestro.
+      setErrorDeAnular(
+        mensajeParaLaPersona(error, { porDefecto: t('recibos.anular.fallo'), accion: 'anular el recibo' }),
+      );
     } finally {
       setAnulando(false);
     }
@@ -247,9 +250,9 @@ export function RecibosDeCajaHistorial({
 
       {/* Anular — el motivo es obligatorio y el back lo exige. */}
       <Dialog open={aAnular !== null} onOpenChange={(abierto) => !abierto && cerrarAnular()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="destructive" icon={<Prohibit weight="bold" />}>
           <DialogHeader>
-            <DialogTitle className="text-foreground">
+            <DialogTitle>
               {t('recibos.anular.titulo', { numero: String(aAnular?.numero ?? '') })}
             </DialogTitle>
             <DialogDescription>

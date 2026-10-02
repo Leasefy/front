@@ -274,14 +274,18 @@ export function TasasDeUsuraPanel() {
       />
 
       <AlertDialog open={borrando !== null} onOpenChange={(o) => !o && setBorrando(null)}>
-        <AlertDialogContent data-testid="confirmar-borrado-de-tasa">
+        <AlertDialogContent variant="destructive" data-testid="confirmar-borrado-de-tasa">
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Borrar tu tasa de {borrando ? nombreDelMes(borrando.mes) : ''}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Ese mes vuelve a regirse por la tasa general de Colombia. Si no hay general para ese
-              mes, el interés de mora de ese mes pasa a liquidarse SIN topear.
+              Se borra tu tasa de{' '}
+              <span className="font-mono tabular-nums">
+                {borrando ? porcentaje(borrando.efectivaAnualPct) : ''}
+              </span>{' '}
+              efectiva anual y ese mes vuelve a regirse por la tasa general de Colombia. Si no hay
+              general para ese mes, el interés de mora de ese mes pasa a liquidarse SIN topear.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -374,7 +378,7 @@ function EditorDeTasa({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="editor-de-tasa">
+      <DialogContent size="sm" data-testid="editor-de-tasa">
         <DialogHeader>
           <DialogTitle>{tasa ? 'Editar la tasa' : 'Cargar una tasa de usura'}</DialogTitle>
           <DialogDescription>

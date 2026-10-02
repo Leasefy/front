@@ -18,7 +18,7 @@ import { useI18n } from '@/lib/i18n'
 import { Label } from '@/components/ui/label'
 import { Combobox } from '@/components/ui/combobox'
 import { Cajon, CajonCuerpo } from '@/components/ui/cajon'
-import { SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import { SheetHeader } from '@/components/ui/sheet'
 import { useAgentes } from '@/lib/hooks/useInmobiliaria'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ApiError } from '@/lib/api/client'
@@ -114,11 +114,11 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
       {pqrs && (
         <>
           {/* Cabecera fija: el radicado y el estado se quedan a la vista
-              mientras el cuerpo hace scroll. La insignia va al lado del título,
-              por eso no usa `CajonCabecera`. */}
-          <div className="flex-none border-b border-border px-6 py-5 pr-14">
-            <div className="flex items-center gap-2">
-              <SheetTitle className="text-lg font-semibold text-fg">{pqrs.radicado}</SheetTitle>
+              mientras el cuerpo hace scroll. */}
+          <SheetHeader
+            title={pqrs.radicado}
+            description={`${TIPO_LABEL[pqrs.tipo]} · radicada el ${fecha(pqrs.createdAt)}`}
+            actions={
               <span
                 className={cn(
                   'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
@@ -128,11 +128,8 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
               >
                 {ESTADO_LABEL[pqrs.estado]}
               </span>
-            </div>
-            <SheetDescription className="mt-0.5 text-sm text-fg-muted">
-              {TIPO_LABEL[pqrs.tipo]} · radicada el {fecha(pqrs.createdAt)}
-            </SheetDescription>
-          </div>
+            }
+          />
 
           <CajonCuerpo className="space-y-6">
             <section className="space-y-2">

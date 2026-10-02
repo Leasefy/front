@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, XCircle, WarningCircle } from '@phosphor-icons/react';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -948,109 +948,72 @@ export default function DocumentosPage() {
         </motion.section>
       </div>
 
-      {/* Document Viewer Modal */}
-      <AnimatePresence>
+      {/* Visor del documento: el modal del sistema (DESIGN.md §17). La ✕, el
+          velo, el Esc y el foco los pone la primitiva. */}
+      <Dialog
+        open={!!viewingDocument}
+        onOpenChange={(open) => {
+          if (!open) setViewingDocument(null);
+        }}
+      >
         {viewingDocument && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          <DialogContent
+            size="xl"
+            icon={(() => {
+              const DocIcon = getDocIcon(viewingDocument.type);
+              return <DocIcon weight="bold" />;
+            })()}
           >
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setViewingDocument(null)}
-            />
+            <DialogHeader>
+              <DialogTitle>{getDocLabel(viewingDocument.type)}</DialogTitle>
+              <DialogDescription>
+                {viewingDocument.fileName} · {formatDate(viewingDocument.createdAt)} · {formatSize(viewingDocument.size)}
+              </DialogDescription>
+            </DialogHeader>
 
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
-              className="relative bg-surface dark:bg-[#1a1a1c] w-full max-w-4xl max-h-[90vh] rounded-xl flex flex-col overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint dark:border-border-strong">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
-                    {(() => { const DocIcon = getDocIcon(viewingDocument.type); return <DocIcon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" />; })()}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-fg dark:text-white">
-                      {getDocLabel(viewingDocument.type)}
-                    </h3>
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                      {viewingDocument.fileName} · {formatDate(viewingDocument.createdAt)} · {formatSize(viewingDocument.size)}
-                    </p>
-                  </div>
+            <div className="flex min-h-[400px] items-center justify-center overflow-hidden rounded-[16px] border border-border">
+              {viewerUrlLoading ? (
+                <Spinner size="lg" variant="current" className="text-primary" />
+              ) : viewingDocument.mimeType?.startsWith('image/') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewUrl}
+                  alt={getDocLabel(viewingDocument.type)}
+                  className="max-w-full max-h-[60vh] rounded-md object-contain"
+                />
+              ) : viewingDocument.mimeType === 'application/pdf' ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[60vh] min-h-[400px]"
+                  title={getDocLabel(viewingDocument.type)}
+                />
+              ) : (
+                <div className="text-center p-8">
+                  <FileText className="w-16 h-16 text-fg-subtle mx-auto mb-4" />
+                  <p className="text-lg font-medium text-fg mb-2">
+                    {viewingDocument.fileName}
+                  </p>
+                  <p className="text-sm text-fg-muted font-mono tabular-nums">
+                    {viewingDocument.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'} · {formatSize(viewingDocument.size)}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(viewingDocument)}
-                    className="flex items-center gap-2 px-4 py-2 bg-ink dark:bg-surface text-white dark:text-fg rounded-full text-sm font-medium hover:bg-ink dark:hover:bg-surface-muted transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    {t('documents.download')}
-                  </button>
-                  <IconButton
-                    variant="ghost"
-                    onClick={() => setViewingDocument(null)}
-                    className="p-2 rounded-full hover:bg-surface-muted dark:hover:bg-[#2a2a2c] text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle"
-                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                    icon={<X className="w-5 h-5" />}
-                  />
-                </div>
-              </div>
+              )}
+            </div>
 
-              {/* Document Preview Area */}
-              <div className="flex-1 bg-surface-muted dark:bg-[#0f0f10] p-6 overflow-auto">
-                <div className="bg-surface dark:bg-[#1a1a1c] h-full rounded-xl flex items-center justify-center min-h-[400px]">
-                  {viewerUrlLoading ? (
-                    <Spinner size="lg" variant="current" className="text-primary" />
-                  ) : viewingDocument.mimeType?.startsWith('image/') ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={previewUrl}
-                      alt={getDocLabel(viewingDocument.type)}
-                      className="max-w-full max-h-[60vh] rounded-md object-contain"
-                    />
-                  ) : viewingDocument.mimeType === 'application/pdf' ? (
-                    <iframe
-                      src={previewUrl}
-                      className="w-full h-full min-h-[500px] rounded-md"
-                      title={getDocLabel(viewingDocument.type)}
-                    />
-                  ) : (
-                    <div className="text-center p-8">
-                      <FileText className="w-16 h-16 text-fg-subtle dark:text-fg-muted mx-auto mb-4" />
-                      <p className="text-lg font-medium text-fg dark:text-white mb-2">
-                        {viewingDocument.fileName}
-                      </p>
-                      <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
-                        {viewingDocument.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'} · {formatSize(viewingDocument.size)}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(viewingDocument)}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white rounded-full text-sm font-medium transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        {locale === 'es' ? 'Descargar archivo' : 'Download file'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={() => setViewingDocument(null)}>
+                {locale === 'es' ? 'Cerrar' : 'Close'}
+              </Button>
+              <Button hideArrow onClick={() => handleDownload(viewingDocument)}>
+                <Download className="w-4 h-4" aria-hidden="true" />
+                {viewingDocument.mimeType?.startsWith('image/') || viewingDocument.mimeType === 'application/pdf'
+                  ? t('documents.download')
+                  : (locale === 'es' ? 'Descargar archivo' : 'Download file')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         )}
-      </AnimatePresence>
+      </Dialog>
 
       {/* ARCO supresión — type-to-confirm delete for application documents. Real
           documentsApi.delete (no setTimeout theater). The contrato firmado is excluded
@@ -1064,15 +1027,15 @@ export default function DocumentosPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent variant="destructive" size="sm">
           <DialogHeader>
             <DialogTitle>
               {locale === 'es' ? 'Eliminar documento' : 'Delete document'}
             </DialogTitle>
             <DialogDescription>
               {locale === 'es'
-                ? 'Esta acción es permanente. Ejercés tu derecho de supresión (ARCO, Ley 1581) sobre este documento.'
-                : 'This action is permanent. You are exercising your right to erasure (ARCO, Law 1581) over this document.'}
+                ? 'El archivo se borra de tu postulación y no se puede recuperar. Ejerces tu derecho de supresión (ARCO, Ley 1581) sobre este documento; tu contrato firmado no se toca.'
+                : 'The file is removed from your application and cannot be recovered. You are exercising your right to erasure (ARCO, Law 1581) over this document; your signed contract is not affected.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -1107,10 +1070,11 @@ export default function DocumentosPage() {
             )}
           </div>
 
-          <DialogFooter className="flex gap-2 justify-end">
+          <DialogFooter>
             <Button
               variant="outline"
               hideArrow
+              disabled={isDeleting}
               onClick={() => {
                 setDeletingDocument(null);
                 setDeleteConfirmText('');

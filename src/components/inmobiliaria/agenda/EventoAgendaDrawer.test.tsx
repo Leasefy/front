@@ -42,10 +42,11 @@ vi.mock('next/link', () => ({
 }));
 
 // Los primitivos de Radix viven en un portal; acá interesa el contenido.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetTitle: ({ children }: { children?: React.ReactNode }) => React.createElement('h2', null, children),
   SheetDescription: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
 }));
@@ -80,6 +81,8 @@ vi.mock('@phosphor-icons/react', () => ({
   Phone: () => null,
   VideoCamera: () => null,
   MapPin: () => null,
+  // El medallón de `MotivoDialog` (cancelar o rechazar es destructivo).
+  XCircle: () => null,
 }));
 
 import { EventoAgendaDrawer } from './EventoAgendaDrawer';

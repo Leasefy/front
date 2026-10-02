@@ -24,7 +24,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ClipboardText, FileText, Plus } from '@phosphor-icons/react';
+import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -851,7 +851,7 @@ function DocumentosContent() {
           texto— pero los documentos ya generados con ella no cambian, y eso es
           lo que hay que decir para que la decisión se tome informada. */}
       <AlertDialog open={borrando !== null} onOpenChange={(o) => !o && setBorrando(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<Archive weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {borrando ? `¿Archivar «${borrando.name}»?` : ''}

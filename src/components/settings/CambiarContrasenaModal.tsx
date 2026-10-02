@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { CheckCircle, Envelope, Info, Warning } from '@phosphor-icons/react';
+import { Envelope, Info, Warning } from '@phosphor-icons/react';
 
 import { SettingsModal } from './SettingsModal';
 import { Button } from '@/components/ui/button';
@@ -67,33 +67,52 @@ export function CambiarContrasenaModal({ abierto, onCerrar }: CambiarContrasenaM
     setEstado('listo');
   };
 
+  const enviado = estado === 'enviado';
+
+  // Enviado, el modal pasa a «listo»: el medallón verde lo dice y el título
+  // nombra a qué correo salió el enlace (DESIGN.md §17, la variante sigue al estado).
   return (
-    <SettingsModal open={abierto} onClose={cerrar} title={t(`${NS}.passwordModalTitle`)}>
-      {estado === 'enviado' ? (
-        <div className="space-y-4" data-testid="contrasena-enviado">
-          <div className="flex gap-3 rounded-lg border border-border bg-success-soft p-4">
-            <CheckCircle className="h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-success">
-                {t(`${NS}.passwordModalSent`, { email: correo })}
-              </p>
-              <p className="mt-1 text-body-sm text-fg-muted">
-                {t(`${NS}.passwordModalSentBody`)}
-              </p>
-            </div>
-          </div>
-          <p className="text-body-sm text-fg-muted">{t(`${NS}.passwordModalSpam`)}</p>
-          <Button hideArrow onClick={cerrar} className="w-full">
+    <SettingsModal
+      open={abierto}
+      onClose={cerrar}
+      variant={enviado ? 'success' : undefined}
+      title={
+        enviado
+          ? t(`${NS}.passwordModalSent`, { email: correo })
+          : t(`${NS}.passwordModalTitle`)
+      }
+      description={
+        enviado
+          ? t(`${NS}.passwordModalSentBody`)
+          : t(`${NS}.passwordModalLead`, { email: correo })
+      }
+      footer={
+        enviado ? (
+          <Button hideArrow variant="outline" onClick={cerrar}>
             {t(`${NS}.passwordModalClose`)}
           </Button>
-        </div>
+        ) : (
+          <Button
+            hideArrow
+            onClick={enviar}
+            isLoading={estado === 'enviando'}
+            disabled={estado === 'enviando' || !correo}
+            data-testid="enviar-enlace-contrasena"
+          >
+            {estado === 'enviando'
+              ? t(`${NS}.passwordModalSending`)
+              : t(`${NS}.passwordModalSend`)}
+          </Button>
+        )
+      }
+    >
+      {enviado ? (
+        <p className="text-body-sm text-fg-muted" data-testid="contrasena-enviado">
+          {t(`${NS}.passwordModalSpam`)}
+        </p>
       ) : (
         <div className="space-y-4">
-          <p className="text-body-sm text-fg">
-            {t(`${NS}.passwordModalLead`, { email: correo })}
-          </p>
-
-          <ul className="space-y-3 rounded-lg border border-border bg-surface-muted/50 p-4">
+          <ul className="space-y-3 rounded-lg border border-border p-4">
             <Punto icono={<Info className="h-[18px] w-[18px]" />}>
               {t(`${NS}.passwordModalWhy`)}
             </Punto>
@@ -108,18 +127,6 @@ export function CambiarContrasenaModal({ abierto, onCerrar }: CambiarContrasenaM
               <p className="text-body-sm text-danger">{t(`${NS}.passwordModalError`)}</p>
             </div>
           )}
-
-          <Button
-            hideArrow
-            onClick={enviar}
-            disabled={estado === 'enviando' || !correo}
-            className="w-full"
-            data-testid="enviar-enlace-contrasena"
-          >
-            {estado === 'enviando'
-              ? t(`${NS}.passwordModalSending`)
-              : t(`${NS}.passwordModalSend`)}
-          </Button>
         </div>
       )}
     </SettingsModal>

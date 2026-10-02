@@ -39,6 +39,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -134,7 +135,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
 
   return (
     <Dialog open={abierto} onOpenChange={cambiar}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>¿Para quién es el contrato?</DialogTitle>
           <DialogDescription>
@@ -181,12 +182,9 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                 Ninguna postulación coincide con «{busqueda}».
               </p>
             ) : (
-              <ul
-                // El listado puede pasarse de alto; sin esto Lenis se queda con
-                // la rueda y no scrollea (docs/DESIGN.md §8).
-                data-lenis-prevent
-                className="max-h-[320px] space-y-1 overflow-y-auto [overscroll-behavior:contain]"
-              >
+              // Sin scroll propio: el cuerpo del modal es lo único que scrollea
+              // (y ya trae `data-lenis-prevent`, DESIGN.md §17).
+              <ul className="space-y-1">
                 {elegibles.map((c) => (
                   <li key={c.id}>
                     <button
@@ -199,10 +197,10 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                       }}
                       className={cn(
                         'flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left',
-                        'hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       )}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-hover">
                         <User className="h-4 w-4 text-fg-muted" />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -222,13 +220,14 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-surface-muted/60 px-4 py-3">
-          <p className="text-sm text-fg-muted">
+        {/* La otra salida va en el pie fijo: con muchas postulaciones no se
+            pierde abajo del listado. */}
+        <DialogFooter>
+          <p className="text-sm text-fg-muted sm:mr-auto">
             ¿Sin postulación? Eliges un inmueble consignado y el inquilino.
           </p>
           <Button
             variant="secondary"
-            size="sm"
             hideArrow
             onClick={() => {
               onOpenChange(false)
@@ -238,7 +237,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
           >
             Armarlo a mano
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

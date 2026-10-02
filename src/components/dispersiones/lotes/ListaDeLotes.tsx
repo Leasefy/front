@@ -492,7 +492,7 @@ function ArmarLoteDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-4xl" data-testid="dialogo-armar-lote">
+      <DialogContent size="xl" data-testid="dialogo-armar-lote">
         <DialogHeader>
           <DialogTitle>Armar el lote de {nombreDelMes(mes)}</DialogTitle>
           <DialogDescription>
@@ -502,7 +502,9 @@ function ArmarLoteDialog({
               ' Como eres administrador, queda aprobado al armarlo, sin código (P-4): en la bitácora queda que fuiste la misma persona.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] space-y-5 overflow-y-auto px-6 py-4 text-sm">
+        {/* Sin scroll ni relleno propios: el cuerpo del modal ya scrollea
+            (dos scrollers anidados se pelean el gesto). */}
+        <div className="space-y-5 text-sm">
           {abierto && <ElegirBancoDeOrigen onCambio={setBanco} />}
           {abierto && <ElegirAQuienPagarle mes={mes} onCambio={setEleccion} />}
           {error && <Banner variant="danger">{error}</Banner>}

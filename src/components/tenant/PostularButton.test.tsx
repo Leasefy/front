@@ -38,14 +38,24 @@ vi.mock('@/components/ui/button', () => ({
 
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // La variante viaja como `data-variant`, igual que en el Content de Cadence.
+  DialogContent: ({
+    children,
+    variant,
+    'data-testid': testId,
+  }: {
+    children: React.ReactNode
+    variant?: string
+    'data-testid'?: string
+  }) => (
+    <div data-testid={testId} data-variant={variant}>
+      {children}
+    </div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-vi.mock('@/components/providers/SmoothScroll', () => ({
-  useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
+  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('next/link', () => ({
@@ -246,6 +256,25 @@ describe('PostularButton — ya postulado', () => {
     expect(link()?.getAttribute('href')).toBe('/inquilino/aplicaciones/app-1')
     expect(container.textContent).toContain('Ir a mi postulación')
     expect(container.textContent).not.toContain('Postularme')
+  })
+
+  it('bloqueado: el modal explica el motivo y su variante lo sigue (vencida = advertencia)', () => {
+    aprobacionMock.mockReturnValue({ aprobacion: APROBADA, cargando: false, vigente: false })
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+    const modal = container.querySelector('[data-testid="antes-de-postularte"]')
+    expect(modal?.getAttribute('data-variant')).toBe('warning')
+    expect(modal?.textContent).toContain('Tu aprobación venció')
+    expect(modal?.textContent).toContain('Ahora no')
+
+    aprobacionMock.mockReturnValue({
+      aprobacion: { ...APROBADA, estado: 'en_proceso' },
+      cargando: false,
+      vigente: false,
+    })
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+    expect(
+      container.querySelector('[data-testid="antes-de-postularte"]')?.getAttribute('data-variant'),
+    ).toBe('info')
   })
 
   it('la postulación activa tiene prioridad aunque la aprobación esté vencida', () => {

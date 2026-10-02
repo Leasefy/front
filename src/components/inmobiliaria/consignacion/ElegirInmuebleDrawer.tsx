@@ -20,7 +20,7 @@
 
 import { useMemo, useState } from 'react';
 import { MagnifyingGlass, HouseLine, CaretRight } from '@phosphor-icons/react';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
@@ -93,16 +93,15 @@ export function ElegirInmuebleDrawer({
     >
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-xl"
+        size="md"
         aria-describedby={undefined}
         data-testid="elegir-inmueble-drawer"
       >
-        <div className="flex-none border-b border-border px-6 py-5">
-          <SheetTitle className="text-lg font-semibold text-fg">{t(`${NS}.titulo`)}</SheetTitle>
-          <p className="mt-1 text-sm text-fg-muted">
-            {t(`${NS}.subtitulo`, { count: inmuebles.length })}
-          </p>
-          <div className="relative mt-4">
+        <SheetHeader
+          title={t(`${NS}.titulo`)}
+          description={t(`${NS}.subtitulo`, { count: inmuebles.length })}
+        >
+          <div className="relative mt-3">
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
             <Input
               type="search"
@@ -115,12 +114,9 @@ export function ElegirInmuebleDrawer({
               autoFocus
             />
           </div>
-        </div>
+        </SheetHeader>
 
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3"
-          data-lenis-prevent
-        >
+        <SheetBody className="px-3 py-3">
           {cargando ? (
             <div className="flex items-center gap-2 px-3 py-8 text-sm text-fg-muted">
               <Spinner size="sm" /> {t(`${NS}.cargando`)}
@@ -200,10 +196,11 @@ export function ElegirInmuebleDrawer({
               ))}
             </ul>
           )}
-        </div>
+        </SheetBody>
 
         {onCrearNuevo && (
-          <div className="flex-none border-t border-border px-6 py-4">
+          <SheetFooter
+            start={
             <button
               type="button"
               onClick={onCrearNuevo}
@@ -212,7 +209,8 @@ export function ElegirInmuebleDrawer({
             >
               {t(`${NS}.noEsta`)}
             </button>
-          </div>
+            }
+          />
         )}
       </SheetContent>
     </Sheet>

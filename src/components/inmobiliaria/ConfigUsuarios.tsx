@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogSection,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,7 +132,7 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.config.users.editRoleModal.title')}</DialogTitle>
           <DialogDescription>
@@ -139,7 +140,9 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* El pie va FUERA del <form> (hijo directo del Content, para que quede
+            fijo abajo); el botón de guardar lo envía con `form=`. */}
+        <form id="form-editar-rol" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>{t('inmobiliaria.config.users.editRoleModal.currentRole')}</Label>
             <div className="flex items-center gap-2">
@@ -166,16 +169,20 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
               </SelectContent>
             </Select>
           </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t('inmobiliaria.common.cancel')}
-            </Button>
-            <Button type="submit" disabled={!user || selectedRole === user?.role || isLoading}>
-              {t('inmobiliaria.config.users.editRoleModal.saveChange')}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t('inmobiliaria.common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="form-editar-rol"
+            disabled={!user || selectedRole === user?.role || isLoading}
+          >
+            {t('inmobiliaria.config.users.editRoleModal.saveChange')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -205,28 +212,26 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      {/* Destructiva: el back NO borra a la persona (`removeMember` la marca
+          REMOVED): pierde el acceso a esta inmobiliaria y sale de la lista; su
+          cuenta y lo que hizo quedan, y se la puede volver a invitar. */}
+      <DialogContent size="sm" variant="destructive" icon={<UserMinus weight="bold" />}>
         <DialogHeader>
-          <DialogTitle className="text-danger">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
+          <DialogTitle>{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
           <DialogDescription>
+            {t('inmobiliaria.config.users.deleteModal.confirmMessage', { name: user?.name ?? '' })}{' '}
             {t('inmobiliaria.config.users.deleteModal.description')}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <div className="p-4 rounded-md bg-danger-soft border border-danger/30">
-            <p className="text-sm text-danger">
-              {t('inmobiliaria.config.users.deleteModal.confirmMessage', { name: user?.name ?? '' })}
-            </p>
-            {user?.email && (
-              <p className="text-sm text-danger mt-1">
-                {user.email}
-              </p>
-            )}
-          </div>
-        </div>
+        {user && (
+          <DialogSection>
+            <p className="text-sm font-medium text-fg">{user.name}</p>
+            {user.email && <p className="text-sm text-fg-muted">{user.email}</p>}
+          </DialogSection>
+        )}
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t('inmobiliaria.common.cancel')}
           </Button>
@@ -234,9 +239,9 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
             type="button"
             variant="destructive"
             onClick={handleConfirm}
-            disabled={isLoading}
+            isLoading={isLoading}
           >
-            {isLoading ? t('inmobiliaria.config.users.deleteModal.deleting') : t('inmobiliaria.config.users.deleteUser')}
+            {t('inmobiliaria.config.users.deleteUser')}
           </Button>
         </DialogFooter>
       </DialogContent>

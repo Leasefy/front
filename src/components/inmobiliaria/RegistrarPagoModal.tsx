@@ -782,12 +782,11 @@ export function RegistrarPagoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
-      <DialogContent className="max-h-[85vh] sm:max-w-lg">
+      {/* El ícono va en el medallón de la cabecera, no metido en el título; el
+          alto lo maneja la primitiva (sólo scrollea el cuerpo). */}
+      <DialogContent size="md" icon={<Receipt weight="bold" />}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" />
-            {t('recibos.form.titulo')}
-          </DialogTitle>
+          <DialogTitle>{t('recibos.form.titulo')}</DialogTitle>
           <DialogDescription>
             {/* Sin nada vencido el encabezado deja de prometer un cobro y
                 nombra lo que de verdad se puede hacer: adelantar. */}
@@ -1062,7 +1061,7 @@ export function RegistrarPagoModal({
                           'w-full rounded-lg border p-3 text-left transition-colors',
                           forma === o.valor
                             ? 'border-primary bg-primary-soft'
-                            : 'border-border bg-surface hover:bg-surface-muted',
+                            : 'border-border bg-surface hover:bg-surface-hover',
                         )}
                         data-testid={`forma-${o.valor}`}
                       >

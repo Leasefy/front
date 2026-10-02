@@ -61,4 +61,17 @@ describe('AgenteFormModal', () => {
     montar('agent');
     expect(document.body.querySelector('[data-testid="rol-del-sistema"]')).toBeNull();
   });
+
+  it('es el Dialog de la plataforma: el botón de enviar vive en el pie y envía el formulario con `form=`', () => {
+    montar('member');
+    const dialogo = document.body.querySelector('[role="dialog"]');
+    expect(dialogo?.textContent).toContain('Invitar usuario');
+    const form = dialogo!.querySelector('form')!;
+    const enviar = dialogo!.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    // Fuera del <form> (el pie fijo es hijo directo del Content)…
+    expect(form.contains(enviar)).toBe(false);
+    // …y apuntándolo, para que «Enviar invitación» siga enviando.
+    expect(form.id).not.toBe('');
+    expect(enviar.getAttribute('form')).toBe(form.id);
+  });
 });

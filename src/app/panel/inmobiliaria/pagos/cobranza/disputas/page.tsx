@@ -31,15 +31,16 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
+import { SegmentedControl, Card } from '@leasefy/cadence'
+// El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
-  SegmentedControl,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  Card,
-} from '@leasefy/cadence'
+} from '@/components/ui/dialog'
 import {
   useDisputes,
   type CobranzaDispute,
@@ -143,17 +144,16 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="md:max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Abrir una disputa</DialogTitle>
+          <DialogDescription>
+            Registrar una disputa deja constancia y la pone en la cola de
+            revisión humana. No pausa la cobranza automáticamente.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-xs text-fg-muted leading-relaxed">
-            Registrar una disputa deja constancia y la pone en la cola de
-            revisión humana. No pausa la cobranza automáticamente.
-          </p>
-
           {/* Deudor — se elige de la cartera, nunca se escribe un UUID */}
           <div className="space-y-1.5">
             <label
@@ -232,6 +232,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             hideArrow
             onClick={() => void handleSubmit()}
             disabled={!canSubmit}
+            isLoading={submitting}
             data-testid="disputa-abrir-submit"
           >
             {submitting ? 'Registrando…' : 'Registrar disputa'}

@@ -524,7 +524,7 @@ function ConciliacionSala() {
 
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<ArrowsClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Conciliar ahora?</AlertDialogTitle>
             <AlertDialogDescription>

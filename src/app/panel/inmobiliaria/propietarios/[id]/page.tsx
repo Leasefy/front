@@ -4,7 +4,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { Suspense, useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +21,6 @@ import {
   CurrencyDollar,
   House,
   CheckCircle,
-  X,
   FileText,
   Download,
   Plus,
@@ -34,6 +32,15 @@ import {
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
@@ -93,94 +100,59 @@ function mensajeDe(error: unknown, porDefecto: string): string {
 }
 
 /**
- * Modal Component - Uses portal to render at document.body level
+ * La cáscara de los tres diálogos de la ficha: editar, eliminar y notas.
+ *
+ * Era un portal hecho a mano (capa `fixed inset-0`, ✕ propia y bloqueo del
+ * scroll del body), sin Esc, sin foco atrapado y sin `role="dialog"`. Ahora es
+ * el `Dialog` de la plataforma (DESIGN.md §17): el velo, la ✕, el Esc, el foco
+ * y el bloqueo del scroll los pone la primitiva.
+ *
+ * El pie va por `footer` y no dentro de `children`: el `DialogContent` reparte
+ * sólo a sus hijos DIRECTOS, y un pie metido en el cuerpo se iría con el
+ * scroll. `variant="destructive"` (eliminar) pone el medallón rojo; el botón
+ * rojo lo trae el pie.
  */
 function Modal({
   open,
   onClose,
   title,
+  description,
   children,
+  footer,
   size = 'md',
+  variant,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'destructive';
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Block body scroll when modal is open
-  useEffect(() => {
-    if (open) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalStyle;
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [open]);
-
-  if (!open || !mounted) return null;
-
-  const modalContent = (
-    <>
-      {/* Backdrop - separate fixed element */}
-      {/* Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9998/9999],
-          que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
-      <div
-        className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm"
-        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        onClick={onClose}
-      />
-
-      {/* Modal Container */}
-      <div
-        className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none"
-        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        onWheel={(e) => e.stopPropagation()}
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent
+        size={size}
+        variant={variant}
+        // Sin descripción visible, Radix no tiene a qué apuntar: se le avisa.
+        {...(description ? {} : { 'aria-describedby': undefined })}
       >
-        {/* Modal */}
-        <div
-          className={cn(
-            'pointer-events-auto bg-card w-full rounded-[20px] flex flex-col max-h-[85vh]',
-            sizeClasses[size]
-          )}
-        >
-          <div className="flex items-center justify-between px-6 py-5 border-b border-border shrink-0">
-            <h3 className="text-base font-semibold text-foreground">
-              {title}
-            </h3>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              aria-label="Cerrar"
-              icon={<X className="w-4 h-4" />}
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto overscroll-contain p-6">{children}</div>
-        </div>
-      </div>
-    </>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
-
-  // Render modal at document.body level to escape any transform contexts
-  return createPortal(modalContent, document.body);
 }
 
 /**
@@ -601,8 +573,10 @@ function PropietarioDetailContent() {
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: propietario.name }));
       router.push(LISTA_DE_PROPIETARIOS);
     } catch (error) {
+      // El motivo con la regla de oro: el 409 dice qué lo retiene; un 5xx no
+      // culpa a nadie; «conexión» sólo si no hubo respuesta.
       toast.error(t('inmobiliaria.propietarios.toasts.deleteError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'eliminar el propietario' }),
       });
       setIsDeleting(false);
     }
@@ -618,7 +592,7 @@ function PropietarioDetailContent() {
       await refetch();
     } catch (error) {
       toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'guardar las notas' }),
       });
     } finally {
       setIsSavingNotes(false);
@@ -1107,7 +1081,8 @@ function PropietarioDetailContent() {
           sin permiso. Debajo de las pestañas: vale para todas. */}
       <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
-      {/* Edit Modal */}
+      {/* Edit Modal — el formulario trae sus propios botones (Cancelar /
+          Guardar) al final: `PropietarioForm` no se toca acá. */}
       <Modal
         open={showEditModal && puedeEditar}
         onClose={cerrarEdicion}
@@ -1118,7 +1093,7 @@ function PropietarioDetailContent() {
           <p
             role="alert"
             data-testid="aviso-en-el-dialogo"
-            className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
           >
             {errorAlEditar.general}
           </p>
@@ -1132,42 +1107,18 @@ function PropietarioDetailContent() {
         />
       </Modal>
 
-      {/* Delete Modal */}
+      {/* Delete Modal — destructiva: dice qué se borra (la ficha entera; el
+          back hace un `delete`, no lo archiva) y, si algo lo retiene, por qué
+          y a dónde ir. Con algo que lo retiene, el botón no se ofrece. */}
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         title={t('inmobiliaria.propietarios.deleteOwner')}
+        description={t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
         size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
-          </p>
-          {/* Con inmuebles consignados el back no lo deja borrar: se dice
-              antes, con lo que hay que hacer, y el botón no se ofrece. */}
-          {propietario.propertyCount > 0 && (
-            <AlertaAccionable
-              severidad="danger"
-              titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: propietario.propertyCount })}
-              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
-              data-testid="borrar-bloqueado"
-            >
-              {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
-            </AlertaAccionable>
-          )}
-          {/* Lo mismo si es COPROPIETARIO sin ser principal: la FK lo retiene
-              igual y el back responde 409 (antes era un 500). */}
-          {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
-            <AlertaAccionable
-              severidad="danger"
-              titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount ?? 0 })}
-              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
-              data-testid="borrar-bloqueado-copropietario"
-            >
-              {t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
-            </AlertaAccionable>
-          )}
-          <div className="flex items-center gap-3 justify-end pt-4">
+        variant="destructive"
+        footer={
+          <>
             <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
               {t('inmobiliaria.common.cancel')}
             </Button>
@@ -1176,8 +1127,33 @@ function PropietarioDetailContent() {
                 {t('inmobiliaria.common.delete')}
               </Button>
             )}
-          </div>
-        </div>
+          </>
+        }
+      >
+        {/* Con inmuebles consignados el back no lo deja borrar: se dice
+            antes, con lo que hay que hacer, y el botón no se ofrece. */}
+        {propietario.propertyCount > 0 && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: propietario.propertyCount })}
+            accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+            data-testid="borrar-bloqueado"
+          >
+            {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
+          </AlertaAccionable>
+        )}
+        {/* Lo mismo si es COPROPIETARIO sin ser principal: la FK lo retiene
+            igual y el back responde 409 (antes era un 500). */}
+        {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount ?? 0 })}
+            accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+            data-testid="borrar-bloqueado-copropietario"
+          >
+            {t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
+          </AlertaAccionable>
+        )}
       </Modal>
 
       {/* Extracto del mes */}
@@ -1195,24 +1171,8 @@ function PropietarioDetailContent() {
         onClose={() => setShowNotesModal(false)}
         title={t('inmobiliaria.propietarios.detail.internalNotes')}
         size="md"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
-            </label>
-            <Textarea
-              value={notesValue}
-              onChange={(e) => setNotesValue(e.target.value)}
-              placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
-              rows={6}
-              className="resize-none"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t('inmobiliaria.propietarios.detail.notesPrivacy')}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 justify-end pt-2">
+        footer={
+          <>
             <Button variant="secondary" hideArrow onClick={() => setShowNotesModal(false)}>
               {t('inmobiliaria.common.cancel')}
             </Button>
@@ -1224,7 +1184,24 @@ function PropietarioDetailContent() {
             >
               {isSavingNotes ? t('inmobiliaria.common.saving') : t('inmobiliaria.propietarios.detail.saveNotes')}
             </Button>
-          </div>
+          </>
+        }
+      >
+        <div>
+          <label htmlFor="notas-internas-del-propietario" className="block text-sm font-medium text-foreground mb-2">
+            {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
+          </label>
+          <Textarea
+            id="notas-internas-del-propietario"
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
+            rows={6}
+            className="resize-none"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('inmobiliaria.propietarios.detail.notesPrivacy')}
+          </p>
         </div>
       </Modal>
     </div>

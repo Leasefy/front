@@ -23,7 +23,7 @@ import { PencilSimple, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
@@ -72,7 +72,9 @@ export function FichaDelPropietario({
     <Sheet open={Boolean(propietario)} onOpenChange={(abierto) => !abierto && onCerrar()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-2xl"
+        size="lg"
+        // Cabecera y cuerpo viven en `CuerpoDeLaFicha`.
+        layout="manual"
         aria-describedby={undefined}
         data-testid="ficha-del-propietario"
       >
@@ -141,8 +143,8 @@ export function CuerpoDeLaFicha({ fila }: { fila: Propietario }) {
 
   return (
     <>
-      <div className="flex-none border-b border-border px-6 py-5">
-        <div className="flex items-start gap-3 pr-14">
+      <SheetHeader>
+        <div className="flex items-start gap-3">
           <span
             aria-hidden="true"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
@@ -173,12 +175,9 @@ export function CuerpoDeLaFicha({ fila }: { fila: Propietario }) {
           pendientes={persona.datosPendientes}
           onCompletar={puedeEditar && ficha && !editando ? abrirEdicion : undefined}
         />
-      </div>
+      </SheetHeader>
 
-      <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-        data-lenis-prevent
-      >
+      <SheetBody>
         {errorDeCarga ? (
           <FalloDeCarga
             error={errorDeCarga}
@@ -221,7 +220,7 @@ export function CuerpoDeLaFicha({ fila }: { fila: Propietario }) {
         ) : (
           <LecturaDeLaFicha ficha={ficha} onEditar={puedeEditar ? abrirEdicion : undefined} />
         )}
-      </div>
+      </SheetBody>
     </>
   );
 }

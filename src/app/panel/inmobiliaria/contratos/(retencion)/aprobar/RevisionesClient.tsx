@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogCancel,
+  AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -148,6 +149,8 @@ interface ActionMeta {
   label: string
   variant: 'default' | 'outline' | 'destructive'
   icon: PhosphorIcon
+  /** Clase del modal de confirmación (DESIGN.md §17). Ninguna destruye nada. */
+  dialogVariant: 'confirm' | 'warning'
   confirmTitle: string
   confirmBody: string
 }
@@ -158,6 +161,7 @@ const ACTIONS: ActionMeta[] = [
     label: 'Confirmar',
     variant: 'default',
     icon: CheckCircle,
+    dialogVariant: 'confirm',
     confirmTitle: '¿Confirmar la decisión de Laura?',
     confirmBody: 'La decisión queda registrada como correcta. Esto la marca como revisada y no se podrá cambiar.',
   },
@@ -166,6 +170,8 @@ const ACTIONS: ActionMeta[] = [
     label: 'Revertir',
     variant: 'outline',
     icon: ArrowUUpLeft,
+    // Sigue, pero con riesgo: el caso vuelve a manos del equipo.
+    dialogVariant: 'warning',
     confirmTitle: '¿Revertir la decisión de Laura?',
     confirmBody: 'Marcas la decisión como incorrecta. El equipo deberá retomar el caso manualmente.',
   },
@@ -174,6 +180,7 @@ const ACTIONS: ActionMeta[] = [
     label: 'Escalar',
     variant: 'destructive',
     icon: ArrowFatLineUp,
+    dialogVariant: 'confirm',
     confirmTitle: '¿Escalar esta decisión?',
     confirmBody: 'Elevas el caso para revisión humana de mayor nivel. Quedará registrado como escalado.',
   },
@@ -453,22 +460,24 @@ export default function RevisionesClient() {
 
       {/* Confirmación de revisión */}
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          variant={pending?.action.dialogVariant ?? 'confirm'}
+          icon={
+            pending && pending.action.dialogVariant === 'confirm' ? (
+              <pending.action.icon weight="bold" />
+            ) : undefined
+          }
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{pending?.action.confirmTitle}</AlertDialogTitle>
             <AlertDialogDescription>{pending?.action.confirmBody}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isReviewing}>Cancelar</AlertDialogCancel>
-            <Button
-              type="button"
-              variant={pending?.action.variant ?? 'default'}
-              hideArrow
-              isLoading={isReviewing}
-              onClick={onConfirm}
-            >
+            {/* Cobalto en las tres: ninguna destruye nada (antes «Escalar» salía rojo). */}
+            <AlertDialogAction loading={isReviewing} onClick={onConfirm}>
               {pending?.action.label}
-            </Button>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

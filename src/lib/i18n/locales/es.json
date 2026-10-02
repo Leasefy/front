@@ -850,8 +850,8 @@
           "saving": "Guardando..."
         },
         "deleteAccount": {
-          "title": "Eliminar cuenta",
-          "confirmMessage": "¿Estás seguro de que deseas eliminar esta cuenta?",
+          "title": "¿Eliminar esta cuenta de recaudo?",
+          "confirmMessage": "Sus datos se borran de Leasefy y no se pueden recuperar: si la vuelves a necesitar, tendrás que agregarla otra vez. Si era tu cuenta predeterminada, pasa a serlo la más antigua que te quede.",
           "warningWithProperties": "Esta cuenta tiene {{count}} propiedad(es) asignada(s). Debes reasignarlas antes de eliminar.",
           "warningDefault": "Esta es tu cuenta por defecto. Debes establecer otra cuenta como predeterminada antes de eliminar.",
           "deleteButton": "Eliminar cuenta",
@@ -1975,8 +1975,8 @@
           "saveChange": "Guardar cambio"
         },
         "deleteModal": {
-          "description": "Esta accion es permanente y no se puede deshacer.",
-          "confirmMessage": "Se eliminara permanentemente el acceso de {{name}} a la plataforma.",
+          "description": "Su cuenta de Leasefy y lo que hizo aquí no se borran, y puedes volver a invitarla.",
+          "confirmMessage": "{{name}} pierde ya mismo el acceso al panel de esta inmobiliaria y sale de la lista del equipo.",
           "deleting": "Eliminando..."
         }
       },
@@ -2034,10 +2034,10 @@
           }
         },
         "confirmTitle": "Confirmar cambios",
-        "confirmDescription": "Los cambios en permisos afectaran inmediatamente a todos los usuarios con estos roles.",
+        "confirmDescription": "Los cambios en permisos afectarán de inmediato a todas las personas con estos roles.",
         "cancel": "Cancelar",
         "resetTitle": "Restablecer permisos",
-        "resetDescription": "Esto restablecera los permisos de todos los roles a sus valores por defecto.",
+        "resetDescription": "Los permisos de todos los roles vuelven a los de fábrica y se pierden los cambios que les hiciste. No se puede deshacer.",
         "resetWarning": "Todos los cambios personalizados se perderan. Esta accion no se puede deshacer.",
         "adminNote": "Los administradores tienen todos los permisos por defecto y no se pueden modificar.",
         "memberOverrideNote": "Si una persona de este rol tiene permisos propios, los conserva: guardar sólo cambia lo que hereda del rol. «Restablecer» sí borra los permisos propios de todo el equipo."
@@ -2177,7 +2177,7 @@
       "addOwnerIA": "Crear con IA",
       "editOwner": "Editar propietario",
       "deleteOwner": "Eliminar propietario",
-      "deleteConfirm": "¿Estás seguro de eliminar a {{name}}?",
+      "deleteConfirm": "Al eliminar a {{name}} se borra su ficha: datos de contacto, cuenta bancaria, perfil tributario y notas internas. No se puede deshacer.",
       "deleteWarningProperties": "Este propietario tiene {{count}} propiedad(es) consignadas.",
       "deleteBloqueado": {
         "titulo": "No se puede eliminar: tiene {{count}} inmueble(s) consignado(s)",
@@ -3467,7 +3467,7 @@
         },
         "terminateDialog": {
           "title": "¿Terminar consignación?",
-          "body": "\"{{property}}\" pasará a estado Terminada y saldrá del portafolio activo. Esta acción no se puede deshacer.",
+          "body": "«{{property}}» pasa a Terminada y sale de tu portafolio activo. Los términos del mandato (canon y comisión) quedan como historia y ya no se editan; el inmueble sí se sigue editando desde su ficha. Esta acción no se puede deshacer.",
           "confirm": "Terminar consignación"
         }
       },
@@ -3561,7 +3561,8 @@
         "mobileProgress": "Paso {{current}} de {{total}}: {{label}}",
         "cancelDialog": {
           "title": "¿Cancelar importación?",
-          "description": "Perderás el progreso de esta importación.",
+          "description": "Todavía no has subido nada: si sales, se pierde lo que llevas en esta pantalla.",
+          "descriptionLoteGuardado": "Lo que ya subiste queda guardado y lo retomas desde «Tienes una carga a medias». Si la subida no había terminado, para seguir tendrás que elegir el mismo archivo otra vez.",
           "continueEditing": "Continuar",
           "yesCancel": "Sí, cancelar"
         }
@@ -4057,10 +4058,10 @@
         "uploadingPhotos": "Subiendo fotos...",
         "confirmConsignment": "Confirmar Consignación",
         "cancelDialog": {
-          "title": "Cancelar consignacion?",
-          "description": "Se perdera toda la informacion ingresada",
+          "title": "¿Cancelar la consignación?",
+          "description": "Se pierde lo que llevas cargado en este inmueble, fotos incluidas, y se borra el borrador que se guardaba en este navegador. No se puede deshacer.",
           "continueEditing": "Continuar editando",
-          "yesCancel": "Si, cancelar"
+          "yesCancel": "Sí, cancelar"
         },
         "toasts": {
           "successTitle": "Inmueble consignado",
@@ -5123,7 +5124,7 @@
       "addNoteDesc": "Agrega una nota o actualización a esta solicitud de mantenimiento",
       "notePlaceholder": "Escribe tu nota aquí...",
       "saveNote": "Guardar nota",
-      "cancelConfirm": "¿Estás seguro de que quieres cancelar esta solicitud?",
+      "cancelConfirm": "La solicitud queda «Cancelada»: no se borra, pero desde aquí ya no se le pueden agregar cotizaciones ni notas, ni marcarla como completada.",
       "noKeep": "No, mantener",
       "yesCancel": "Sí, cancelar",
       "markAsCompleted": "Marcar como completada",
@@ -9280,7 +9281,9 @@
             "avisoYaHay": "Ya hay {{n}} cobros de {{mes}}. Revisa la tabla antes de volver a generar.",
             "avisoLimpio": "Todavía no hay ningún cobro de {{mes}}.",
             "confirmar": "Generar los cobros de {{mes}}",
-            "enviando": "Generando…"
+            "enviando": "Generando…",
+            "errorTitulo": "No pudimos generar los cobros de {{mes}}",
+            "errorDescripcion": "Abajo te contamos qué pasó y si se puede reintentar."
           },
           "actividad": {
             "aria": "Actividad reciente",
@@ -9472,7 +9475,7 @@
       "toastReversed": "Conciliación revertida.",
       "toastActionError": "No se pudo completar la acción.",
       "rejectDialogTitle": "Rechazar sugerencia",
-      "rejectDialogDesc": "Ingresa el motivo del rechazo. Este campo es obligatorio y queda registrado en la auditoría.",
+      "rejectDialogDesc": "La sugerencia se descarta y el movimiento vuelve a quedar sin identificar. Escribe el motivo: es obligatorio y queda registrado en la auditoría.",
       "rejectReasonPlaceholder": "Motivo del rechazo…",
       "rejectConfirm": "Rechazar",
       "cancel": "Cancelar",
@@ -10826,6 +10829,7 @@
       "cancelModalTitle": "Cancelar visita",
       "cancelModalVisitWith": "Visita con",
       "cancelModalDateAt": "el {{date}} a las {{time}}",
+      "cancelModalWhatHappens": "La visita no se borra: queda en tu lista como cancelada, con el motivo que elijas, y a {{name}} le llega el aviso.",
       "cancelReasonLabel": "Motivo de cancelación",
       "cancelReason1": "No tengo disponibilidad en esa fecha",
       "cancelReason2": "La propiedad ya no está disponible",

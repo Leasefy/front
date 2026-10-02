@@ -56,6 +56,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogSection,
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
@@ -1055,7 +1056,27 @@ function PedirAprobacionDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-pedir-aprobacion">
+      {/* La variante sigue al estado (DESIGN.md §17): confirmación antes de
+          mandar; éxito si quedó aprobado o no exige código; info si salió el
+          código por correo. */}
+      <DialogContent
+        size="md"
+        variant={
+          !resultado
+            ? 'confirm'
+            : resultado.lote.estado === 'APROBADO' || !resultado.exigeCodigo
+              ? 'success'
+              : 'info'
+        }
+        icon={
+          resultado ? undefined : comoAdministrador ? (
+            <SealCheck weight="bold" />
+          ) : (
+            <PaperPlaneTilt weight="bold" />
+          )
+        }
+        data-testid="dialogo-pedir-aprobacion"
+      >
         <DialogHeader>
           <DialogTitle>
             {comoAdministrador ? 'Aprobar el lote' : reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}
@@ -1069,7 +1090,7 @@ function PedirAprobacionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 px-6 py-4 text-sm">
+        <div className="space-y-3 text-sm">
           {!resultado ? (
             <>
               {comoAdministrador ? (
@@ -1088,16 +1109,20 @@ function PedirAprobacionDialog({
             </>
           ) : (
             <div className="space-y-3" data-testid="resultado-de-aprobacion">
+              {/* El medallón ya dice éxito o info: el resultado va en un bloque
+                  con borde, sin repetir el ícono de un Banner. */}
               {resultado.lote.estado === 'APROBADO' ? (
-                <Banner variant="success" title={APROBADO_POR_TI}>
-                  {resultado.mismoPaso?.nota ??
-                    'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
-                </Banner>
+                <DialogSection title={APROBADO_POR_TI}>
+                  <p className="text-fg-muted">
+                    {resultado.mismoPaso?.nota ??
+                      'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
+                  </p>
+                </DialogSection>
               ) : resultado.exigeCodigo ? (
                 <>
-                  <Banner variant="info" title="El código salió por correo">
-                    {resultado.motivoDelCodigo}
-                  </Banner>
+                  <DialogSection title="El código salió por correo">
+                    <p className="text-fg-muted">{resultado.motivoDelCodigo}</p>
+                  </DialogSection>
                   <div>
                     <p className="text-xs text-fg-muted">Le llegó a</p>
                     <ul className="mt-1 space-y-0.5 font-mono text-fg">
@@ -1114,10 +1139,12 @@ function PedirAprobacionDialog({
                   )}
                 </>
               ) : (
-                <Banner variant="success" title="No exige código">
-                  Está por debajo del monto que pide doble control. Igual lo tiene que aprobar otra
-                  persona.
-                </Banner>
+                <DialogSection title="No exige código">
+                  <p className="text-fg-muted">
+                    Está por debajo del monto que pide doble control. Igual lo tiene que aprobar otra
+                    persona.
+                  </p>
+                </DialogSection>
               )}
             </div>
           )}
@@ -1134,7 +1161,7 @@ function PedirAprobacionDialog({
               </Button>
             </>
           ) : (
-            <Button onClick={onCerrar} hideArrow>
+            <Button variant="outline" onClick={onCerrar} hideArrow>
               Entendido
             </Button>
           )}
@@ -1198,7 +1225,12 @@ function AprobarDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-aprobar">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={<ShieldCheck weight="bold" />}
+        data-testid="dialogo-aprobar"
+      >
         <DialogHeader>
           <DialogTitle>Aprobar el lote</DialogTitle>
           <DialogDescription>
@@ -1208,7 +1240,7 @@ function AprobarDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 px-6 py-4 text-sm">
+        <div className="space-y-3 text-sm">
           {exigeCodigo ? (
             <div className="space-y-2">
               <Label htmlFor="codigo-de-aprobacion">Código de 6 dígitos</Label>
@@ -1339,7 +1371,15 @@ function ArchivoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
+      {/* La variante sigue al estado: confirmación antes de generar; con el
+          archivo listo, éxito (layout verificado), advertencia (sin verificar)
+          o info (planilla para cargar a mano). */}
+      <DialogContent
+        size="lg"
+        variant={!archivo ? 'confirm' : esPlanilla ? 'info' : sinVerificar ? 'warning' : 'success'}
+        icon={archivo ? undefined : <FileText weight="bold" />}
+        data-testid="dialogo-archivo"
+      >
         <DialogHeader>
           <DialogTitle>
             {origen?.formato === 'PLANILLA_MANUAL'
@@ -1352,7 +1392,7 @@ function ArchivoDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-4 text-sm">
+        <div className="space-y-4 text-sm">
           {!archivo && origen && origen.formato !== 'PLANILLA_MANUAL' && (
             <p className="text-fg" data-testid="archivo-del-banco">
               Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
@@ -1425,7 +1465,7 @@ function ArchivoDialog({
                     viaje hasta el escritorio.
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
-                    <div className="rounded-lg border border-border bg-surface-muted p-3">
+                    <div className="rounded-[14px] border border-border p-3">
                       <p className="text-xs font-medium text-fg">Qué falta confirmar contra el banco</p>
                       <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
                         {archivo.pendienteDeConfirmar.map((p) => (
@@ -1481,7 +1521,7 @@ function ArchivoDialog({
               )}
 
               {archivo.advertencias.length > 0 && (
-                <div className="rounded-lg border border-border bg-surface-muted p-3">
+                <div className="rounded-[14px] border border-border p-3">
                   <p className="text-xs font-medium text-fg">Advertencias</p>
                   <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
                     {archivo.advertencias.map((a, i) => (
@@ -1590,7 +1630,12 @@ function MarcarPagadoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-pagado">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={<SealCheck weight="bold" />}
+        data-testid="dialogo-pagado"
+      >
         <DialogHeader>
           <DialogTitle>Marcar el lote como pagado</DialogTitle>
           <DialogDescription>
@@ -1598,7 +1643,7 @@ function MarcarPagadoDialog({
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 px-6 py-4 text-sm">
+        <div className="space-y-2 text-sm">
           <Label htmlFor="referencia-del-banco">Referencia del banco</Label>
           <Input
             id="referencia-del-banco"
@@ -1709,7 +1754,12 @@ function AnularDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-anular">
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        data-testid="dialogo-anular"
+      >
         <DialogHeader>
           <DialogTitle>Anular el lote</DialogTitle>
           <DialogDescription>
@@ -1717,7 +1767,7 @@ function AnularDialog({
             anulado, con el motivo.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 px-6 py-4 text-sm">
+        <div className="space-y-2 text-sm">
           <Label htmlFor="motivo-de-anulacion">Por qué se anula</Label>
           <Textarea
             id="motivo-de-anulacion"

@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
-import { SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
@@ -146,9 +146,9 @@ export function EventoAgendaDrawer({
         {evento && (
           <>
             {/* Cabecera fija. El estado y el tipo van ENCIMA del título, por
-                eso no usa `CajonCabecera` (que pinta el título primero). */}
-            <div className="flex-none space-y-1 border-b border-border px-6 py-5 pr-14">
-              <div className="flex items-center gap-2">
+                eso el título va como hijo y no como `title`. */}
+            <SheetHeader>
+              <div className="mb-1 flex items-center gap-2">
                 <span
                   className={cn(
                     'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
@@ -159,12 +159,12 @@ export function EventoAgendaDrawer({
                 </span>
                 <span className="text-caption text-fg-muted">{t(k(`rowTipo_${evento.tipo}`))}</span>
               </div>
-              <SheetTitle className="text-lg font-semibold text-fg">{evento.titulo}</SheetTitle>
-              <SheetDescription className="text-sm text-fg-muted">
+              <SheetTitle>{evento.titulo}</SheetTitle>
+              <SheetDescription>
                 {dia ? formatDate(dia, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : evento.fecha}
                 {evento.hora ? ` · ${evento.hora}` : ''}
               </SheetDescription>
-            </div>
+            </SheetHeader>
 
             <CajonCuerpo>
               <dl className="space-y-3 text-sm" data-testid="evento-detalle">

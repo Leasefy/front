@@ -11,9 +11,32 @@ vi.mock('@/lib/auth', () => ({ useAuth: () => ({ signOut: vi.fn() }) }))
 vi.mock('@/lib/i18n', () => ({ useI18n: () => ({ t: (k: string) => k, locale: 'es' }) }))
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('@/lib/api/settings.service', () => ({ settingsApi: { deleteAccount: vi.fn() } }))
+// La cáscara pinta título, descripción, cuerpo y el pie (`footer`), donde van
+// los botones desde que es el `Dialog` de la plataforma (02-10-2026).
 vi.mock('@/components/settings/SettingsModal', () => ({
-  SettingsModal: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
-    open ? <div data-testid="modal">{children}</div> : null,
+  SettingsModal: ({
+    open,
+    title,
+    description,
+    variant,
+    children,
+    footer,
+  }: {
+    open: boolean
+    title: string
+    description?: React.ReactNode
+    variant?: string
+    children: React.ReactNode
+    footer?: React.ReactNode
+  }) =>
+    open ? (
+      <div data-testid="modal" data-variant={variant}>
+        <h2>{title}</h2>
+        <p>{description}</p>
+        {children}
+        <div>{footer}</div>
+      </div>
+    ) : null,
 }))
 
 import { SeccionEliminarCuenta } from './SeccionEliminarCuenta'
@@ -47,6 +70,9 @@ describe('SeccionEliminarCuenta', () => {
     await act(async () => boton().click())
     const modal = container.querySelector('[data-testid="modal"]')
     expect(modal?.textContent).toContain('ELIMINAR')
+    // Destructiva, y dice qué se pierde y cómo se recupera (30 días).
+    expect(modal?.getAttribute('data-variant')).toBe('destructive')
+    expect(modal?.textContent).toContain('30 días')
     const confirmar = [...modal!.querySelectorAll('button')].find((b) => b.textContent?.includes('Eliminar'))
     expect(confirmar?.disabled).toBe(true)
   })

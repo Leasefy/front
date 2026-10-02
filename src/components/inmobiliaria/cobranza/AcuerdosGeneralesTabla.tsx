@@ -20,6 +20,7 @@
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Handshake, PencilSimple, Trash } from '@phosphor-icons/react'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Card } from '@leasefy/cadence'
 
 import {
@@ -104,7 +105,12 @@ export function AcuerdosGeneralesTabla() {
     try {
       await borrar(a.id)
     } catch (e) {
-      setErrorAccion(e instanceof Error ? e.message : 'No pudimos borrar el acuerdo.')
+      setErrorAccion(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos borrar el acuerdo.',
+          accion: 'borrar el acuerdo',
+        }),
+      )
     } finally {
       setOcupado(null)
     }
@@ -269,8 +275,9 @@ export function AcuerdosGeneralesTabla() {
         </div>
       )}
 
+      {/* Se cierra al confirmar: el progreso se ve en la fila (`ocupado`). */}
       <AlertDialog open={aBorrar !== null} onOpenChange={(abierto) => !abierto && setABorrar(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Borrar «{aBorrar?.name}»?</AlertDialogTitle>
             <AlertDialogDescription>

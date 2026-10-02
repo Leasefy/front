@@ -199,6 +199,10 @@ export function ConfigIntegraciones({
     );
   }
 
+  // El ícono de la integración abierta va en el medallón del modal, no metido
+  // en el título.
+  const IconoDeLaElegida = selectedIntegration ? ICON_MAP[selectedIntegration.icon] : undefined;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -398,23 +402,18 @@ export function ConfigIntegraciones({
           hablar con nadie, y la llave escrita se tiraba. Como no hay endpoint
           para las llaves, el diálogo dice qué hay y qué falta. */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          size="sm"
+          icon={IconoDeLaElegida ? <IconoDeLaElegida weight="bold" /> : undefined}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedIntegration && ICON_MAP[selectedIntegration.icon] && (
-                (() => {
-                  const IconComponent = ICON_MAP[selectedIntegration.icon];
-                  return <IconComponent className="w-5 h-5 text-fg-muted" weight="duotone" />;
-                })()
-              )}
-              {selectedIntegration?.name ?? ''}
-            </DialogTitle>
+            <DialogTitle>{selectedIntegration?.name ?? ''}</DialogTitle>
             <DialogDescription>
               {selectedIntegration?.description}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3">
               <div>
                 <dt className="text-xs uppercase tracking-wide text-fg-subtle">
@@ -455,7 +454,7 @@ export function ConfigIntegraciones({
               </div>
             )}
 
-            <div className="flex gap-2 rounded-md border border-border bg-surface-muted p-3">
+            <div className="flex gap-2 rounded-md border border-border bg-surface-hover p-3">
               <Key className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
               <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.config.integrations.keysNotHere')}

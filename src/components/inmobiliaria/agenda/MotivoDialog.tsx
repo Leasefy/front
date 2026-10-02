@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { XCircle } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -66,7 +67,13 @@ export function MotivoDialog({
 
   return (
     <AlertDialog open={abierto} onOpenChange={(a) => !a && !enviando && onCerrar()}>
-      <AlertDialogContent data-testid="motivo-dialog">
+      {/* Rechazar o cancelar una visita y marcar perdido a un candidato: algo
+          se cae, así que es destructiva (medallón y botón rojos). */}
+      <AlertDialogContent
+        variant="destructive"
+        icon={<XCircle weight="bold" />}
+        data-testid="motivo-dialog"
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{titulo}</AlertDialogTitle>
           <AlertDialogDescription>{descripcion}</AlertDialogDescription>
@@ -97,7 +104,8 @@ export function MotivoDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={enviando}>Volver</AlertDialogCancel>
           <AlertDialogAction
-            disabled={!sirve || enviando}
+            disabled={!sirve}
+            loading={enviando}
             onClick={(e) => {
               // El motivo se manda acá; sin `preventDefault` el diálogo se
               // cierra antes de que la llamada termine y el error no se ve.

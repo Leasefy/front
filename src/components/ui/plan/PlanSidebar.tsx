@@ -1458,7 +1458,9 @@ export function PlanSidebar({
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="left"
-          className="w-[280px] p-0 bg-bg border-r-0"
+          // Flotante como todo cajón; la barra arma su propio layout.
+          className="w-[280px] bg-bg"
+          layout="manual"
           aria-describedby={undefined}
           onOpenAutoFocus={alAbrirElCajon}
           onCloseAutoFocus={alCerrarElCajon}

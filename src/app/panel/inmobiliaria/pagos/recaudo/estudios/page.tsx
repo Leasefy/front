@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Prohibit } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -33,6 +34,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { formatCurrency } from '@/lib/format';
 import { estudiosApi, type PagoDeEstudio } from '@/lib/api/estudios.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 function Contenido() {
   const { isAdmin, agencyRole } = usePermissions();
@@ -44,6 +46,7 @@ function Contenido() {
      navegador ignora el tema y algunos navegadores lo suprimen. */
   const [anulando, setAnulando] = useState<PagoDeEstudio | null>(null);
   const [motivo, setMotivo] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -63,7 +66,8 @@ function Contenido() {
 
   const anular = async () => {
     const pago = anulando;
-    if (!pago || motivo.trim().length < 5) return;
+    if (!pago || motivo.trim().length < 5 || enviando) return;
+    setEnviando(true);
     try {
       await estudiosApi.anular(pago.id, motivo.trim());
       toast.success(`Recibo #${pago.numeroRecibo} anulado`);
@@ -71,7 +75,11 @@ function Contenido() {
       setMotivo('');
       await cargar();
     } catch (e) {
-      toast.error('No se pudo anular', { description: e instanceof Error ? e.message : undefined });
+      toast.error('No se pudo anular', {
+        description: mensajeParaLaPersona(e, { accion: 'anular el recibo' }),
+      });
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -146,14 +154,23 @@ function Contenido() {
         </div>
       </EstadoDeDatos>
 
-      <AlertDialog open={anulando !== null} onOpenChange={(abierto) => !abierto && setAnulando(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={anulando !== null}
+        onOpenChange={(abierto) => !abierto && !enviando && setAnulando(null)}
+      >
+        <AlertDialogContent variant="destructive" icon={<Prohibit weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               Anular el recibo #{anulando?.numeroRecibo ?? ''}
             </AlertDialogTitle>
+            {/* Lo que hace el back (`estudios-pagados.service.ts › anular`): el
+                recibo se marca anulado, deja de contar como estudio vigente y
+                la factura se anula si no se había emitido. */}
             <AlertDialogDescription>
-              El estudio NO se devuelve: anular es sólo para un error de caja. Queda escrito el motivo.
+              El recibo queda anulado —no se borra— y deja de valer como estudio vigente de{' '}
+              {anulando?.solicitante.nombre ?? 'el solicitante'}. Si su factura todavía no se
+              emitió, se anula con él. El estudio NO se devuelve: anular es sólo para un error de
+              caja. Queda escrito el motivo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
@@ -169,13 +186,14 @@ function Contenido() {
             <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={enviando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 void anular();
               }}
               disabled={motivo.trim().length < 5}
+              loading={enviando}
               data-testid="confirmar-anular-estudio"
             >
               Anular

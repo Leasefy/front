@@ -18,7 +18,7 @@
  */
 
 import { useState } from 'react'
-import { Buildings, DotsThreeVertical } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Buildings, DotsThreeVertical } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -314,7 +314,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
       {/* AlertDialog for Reset — shadcn, NOT browser confirm() */}
       <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<ArrowCounterClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('inmobiliaria.ai.cotizador.aseguradoras.resetDialog.title')}
@@ -329,10 +329,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <AlertDialogCancel>
               {t('common.cancel')}
             </AlertDialogCancel>
-            <AlertDialogAction
-              tone="danger"
-              onClick={handleResetConfirm}
-            >
+            <AlertDialogAction onClick={handleResetConfirm}>
               {t('inmobiliaria.ai.cotizador.aseguradoras.resetDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>

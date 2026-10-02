@@ -14,6 +14,7 @@ import {
   SquaresFour,
   Lightning,
   DownloadSimple,
+  Stamp,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -46,6 +47,7 @@ import { apiClient } from '@/lib/api/client';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -935,7 +937,7 @@ function DispersionesContent() {
           if (!aprobandoTodas) setConfirmandoAprobarTodas(abierto);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<Stamp weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               Vas a aprobar {pendientesEnPantalla.length}{' '}
@@ -951,7 +953,7 @@ function DispersionesContent() {
             <AlertDialogCancel disabled={aprobandoTodas}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               data-testid="confirmar-aprobar-todas"
-              disabled={aprobandoTodas}
+              loading={aprobandoTodas}
               onClick={(e) => {
                 // El diálogo se cierra al terminar, con el informe: no antes.
                 e.preventDefault();
@@ -967,33 +969,18 @@ function DispersionesContent() {
       {/* Extracto Modal */}
       <Dialog open={isExtractoOpen} onOpenChange={(open) => !open && handleExtractoClose()}>
         {/*
-          Más ancho porque el extracto tiene nueve columnas. El scroll vertical
-          ya lo pone el primitivo del Dialog, así que NO se agrega otro acá:
-          dos scrollers anidados se pelean el gesto.
-
-          `data-lenis-prevent` sí es obligatorio — el scroll suave se come el
-          de cualquier cosa flotante si no se le dice que no toque esto.
+          `xl` (880) porque el extracto tiene nueve columnas. El scroll vertical
+          (con `data-lenis-prevent`) lo pone el cuerpo del Dialog: NO se agrega
+          otro acá, dos scrollers anidados se pelean el gesto. «Descargar PDF»
+          va en el pie, no metido en el título (DESIGN.md §17).
         */}
-        <DialogContent className="max-w-5xl max-h-[90vh]" data-lenis-prevent>
+        <DialogContent size="xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</span>
-              {extractoData && !extractoCargando && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => extractoDispersion && handleDownloadExtracto(extractoDispersion)}
-                  className="flex items-center gap-2"
-                >
-                  <DownloadSimple className="w-4 h-4" />
-                  {t('inmobiliaria.dispersiones.downloadPdf')}
-                </Button>
-              )}
-            </DialogTitle>
+            <DialogTitle>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</DialogTitle>
           </DialogHeader>
-          {/* : es hijo de un grid, y sin esto se estira al ancho de
+          {/* `min-w-0`: es hijo de un grid, y sin esto se estira al ancho de
               la tabla en vez de dejar que ella scrollee adentro. */}
-          <div className="min-w-0 p-6 pt-4" data-testid="extracto-cuerpo">
+          <div className="min-w-0" data-testid="extracto-cuerpo">
             <EstadoDeDatos
               cargando={extractoCargando}
               error={extractoError}
@@ -1004,6 +991,17 @@ function DispersionesContent() {
               {extractoData && <ExtractoPropietario extracto={extractoData} />}
             </EstadoDeDatos>
           </div>
+          {extractoData && !extractoCargando && (
+            <DialogFooter>
+              <Button
+                hideArrow
+                onClick={() => extractoDispersion && handleDownloadExtracto(extractoDispersion)}
+              >
+                <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+                {t('inmobiliaria.dispersiones.downloadPdf')}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

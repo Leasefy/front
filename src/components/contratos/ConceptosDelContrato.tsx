@@ -330,7 +330,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           if (!abierto && !ocupado) setAQuitar(null)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar «{aQuitar?.nombre}» del contrato?</AlertDialogTitle>
             <AlertDialogDescription data-testid="que-deja-de-cobrarse">
@@ -340,8 +340,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
-              disabled={ocupado}
+              loading={ocupado}
               data-testid="confirmar-quitar-concepto"
               onClick={(e) => {
                 // Se queda abierto mientras quita: el cierre lo decide la respuesta.

@@ -690,14 +690,14 @@ export function ConfigPermisos({
 
       {/* Confirm Save Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="confirm" icon={<ShieldCheck weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.config.permissions.confirmTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.confirmDescription')}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>
@@ -710,19 +710,14 @@ export function ConfigPermisos({
 
       {/* Reset to Defaults Dialog */}
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="destructive" icon={<ArrowClockwise weight="bold" />}>
           <DialogHeader>
-            <DialogTitle className="text-warning">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.resetDescription')}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 rounded-md bg-warning-soft border border-warning/30">
-            <p className="text-sm text-warning">
-              {t('inmobiliaria.config.permissions.resetWarning')}
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>

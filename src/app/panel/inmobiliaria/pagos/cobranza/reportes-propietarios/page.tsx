@@ -43,6 +43,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Card, CardContent, Spinner } from '@/components/ui'
+import { confirmar } from '@/components/ui/confirmar'
 import { SegmentedControl, Eyebrow } from '@leasefy/cadence'
 import {
   DebtorPicker,
@@ -421,9 +422,14 @@ function ReportesPropietariosContent() {
   const onAprobarEnviar = async () => {
     if (!esReal || yaEnviado) return
     // Confirmación humana explícita antes de marcar como enviado al propietario.
-    const ok = globalThis.confirm(
-      `¿Confirmas que revisaste este reporte y quieres enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
-    )
+    // Con el modal del sistema, no con el diálogo del navegador (02-10-2026).
+    const ok = await confirmar({
+      titulo: `¿Aprobar y enviar el reporte a ${seleccionado.propietario}?`,
+      descripcion:
+        'Confirmas que lo revisaste. El reporte queda aprobado y marcado como enviado al propietario.',
+      accion: 'Aprobar y enviar',
+      icono: <PaperPlaneTilt weight="bold" />,
+    })
     if (!ok) return
     setActionMsg(null)
     const updated = await approve(seleccionado.id, true)

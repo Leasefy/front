@@ -363,7 +363,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         )}
       </div>
       <AlertDialog open={porQuitar !== null} onOpenChange={(abierto) => { if (!abierto) setPorQuitar(null); }}>
-        <AlertDialogContent data-testid="quitar-foto-dialogo">
+        <AlertDialogContent variant="destructive" data-testid="quitar-foto-dialogo">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar esta foto?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -373,8 +373,8 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupada !== null}>Cancelar</AlertDialogCancel>
+            {/* Se cierra al confirmar: el progreso se ve sobre la foto. */}
             <AlertDialogAction
-              tone="danger"
               disabled={ocupada !== null}
               onClick={() => void confirmarQuitar()}
               data-testid="quitar-foto-confirmar"

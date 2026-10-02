@@ -4,14 +4,22 @@ import { useState, useCallback, useMemo, useEffect, use } from 'react';
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { useRouter } from 'next/navigation';
-import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
+import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button, Spinner, Card } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { IconButton, MonoLabel } from '@leasefy/cadence';
+import { MonoLabel } from '@leasefy/cadence';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ApiError } from '@/lib/api/client';
@@ -1217,85 +1225,88 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
 
       </div>
 
-      {/* Document Preview Modal */}
+      {/* Document Preview Modal — el `Dialog` de la plataforma. Se abre desde
+          el cajón del candidato: antes era una capa a mano en z-[60], DEBAJO
+          del cajón (z-[300]); ahora se apila arriba, con Esc y foco atrapado. */}
       {previewDoc && selectedCandidate && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewDoc(null)} />
-          <div className="relative bg-surface border border-border rounded-lg w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <div>
-                <h3 className="text-base font-semibold text-fg">{previewDoc.name}</h3>
-                <p className="text-xs text-fg-muted mt-0.5">{selectedCandidate.fullName} · {previewDoc.subtitle}</p>
-              </div>
-              <IconButton
-                variant="ghost"
-                onClick={() => setPreviewDoc(null)}
-                icon={<X className="w-5 h-5" />}
-                aria-label="Cerrar"
-              />
-            </div>
+        <Dialog
+          open
+          onOpenChange={(abierto) => {
+            if (!abierto) setPreviewDoc(null);
+          }}
+        >
+          <DialogContent size="md">
+            <DialogHeader>
+              <DialogTitle>{previewDoc.name}</DialogTitle>
+              <DialogDescription>
+                {selectedCandidate.fullName} · {previewDoc.subtitle}
+              </DialogDescription>
+            </DialogHeader>
 
             {/* Document preview area */}
-            <div className="flex-1 overflow-auto p-6">
-              {previewDoc.url ? (
-                <div className="space-y-5">
-                  {/* Status */}
-                  {previewDoc.verified && (
-                    <div className="flex items-center gap-2.5 p-3 bg-success-soft dark:bg-[#2C7A53]/15 rounded-lg border border-success/30 dark:border-success/40">
-                      <Shield className="w-5 h-5 text-success dark:text-[#3EAE70] flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-success dark:text-[#3EAE70]">Documento verificado</p>
-                        <p className="text-xs text-success dark:text-[#3EAE70]">Verificación automática completada</p>
-                      </div>
+            {previewDoc.url ? (
+              <div className="space-y-5">
+                {/* Status */}
+                {previewDoc.verified && (
+                  <div className="flex items-center gap-2.5 p-3 bg-success-soft rounded-lg border border-success/30">
+                    <Shield className="w-5 h-5 text-success flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-success">Documento verificado</p>
+                      <p className="text-xs text-success">Verificación automática completada</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Document preview - show image or file icon */}
+                <div className="border border-border rounded-lg bg-surface-hover p-8 flex flex-col items-center justify-center min-h-[280px]">
+                  {previewDoc.mimeType?.startsWith('image/') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-md object-contain" />
+                  ) : previewDoc.mimeType === 'application/pdf' ? (
+                    <iframe src={previewDoc.url} className="w-full min-h-[400px] rounded-md" title={previewDoc.name} />
+                  ) : (
+                    <>
+                      <FileText className="w-12 h-12 text-fg-subtle mb-3" />
+                      <p className="text-sm font-medium text-fg">{previewDoc.name}</p>
+                    </>
                   )}
-
-                  {/* Document preview - show image or file icon */}
-                  <div className="border border-border rounded-lg bg-surface-muted p-8 flex flex-col items-center justify-center min-h-[280px]">
-                    {previewDoc.mimeType?.startsWith('image/') ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-md object-contain" />
-                    ) : previewDoc.mimeType === 'application/pdf' ? (
-                      <iframe src={previewDoc.url} className="w-full min-h-[400px] rounded-md" title={previewDoc.name} />
-                    ) : (
-                      <>
-                        <FileText className="w-12 h-12 text-fg-subtle mb-3" />
-                        <p className="text-sm font-medium text-fg">{previewDoc.name}</p>
-                      </>
-                    )}
-                    <div className="mt-3 text-center">
-                      <p className="text-xs text-fg-muted">
-                        {previewDoc.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'}
-                        {previewDoc.createdAt && ` · Subido el ${new Date(previewDoc.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                  <div className="mt-3 text-center">
+                    <p className="text-xs text-fg-muted">
+                      {previewDoc.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'}
+                      {previewDoc.createdAt && ` · Subido el ${new Date(previewDoc.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                    </p>
+                    {previewDoc.size != null && (
+                      <p className="text-xs text-fg-muted font-mono tabular-nums">
+                        {previewDoc.size > 1024 * 1024
+                          ? `${(previewDoc.size / (1024 * 1024)).toFixed(1)} MB`
+                          : `${Math.round(previewDoc.size / 1024)} KB`}
                       </p>
-                      {previewDoc.size != null && (
-                        <p className="text-xs text-fg-muted">
-                          {previewDoc.size > 1024 * 1024
-                            ? `${(previewDoc.size / (1024 * 1024)).toFixed(1)} MB`
-                            : `${Math.round(previewDoc.size / 1024)} KB`}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mb-4">
-                    <FileText className="w-8 h-8 text-fg-subtle" />
-                  </div>
-                  <p className="text-base font-medium text-fg mb-1">Documento pendiente</p>
-                  <p className="text-sm text-fg-muted max-w-xs">
-                    El candidato aún no ha subido este documento. Se le ha notificado para completar su documentación.
-                  </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-xl bg-surface-hover flex items-center justify-center mb-4">
+                  <FileText className="w-8 h-8 text-fg-subtle" />
                 </div>
-              )}
-            </div>
+                <p className="text-base font-medium text-fg mb-1">Documento pendiente</p>
+                <p className="text-sm text-fg-muted max-w-xs">
+                  El candidato aún no ha subido este documento. Se le ha notificado para completar su documentación.
+                </p>
+              </div>
+            )}
 
-            {/* Footer */}
             {previewDoc.url && (
-              <div className="px-6 py-4 border-t border-border flex gap-3">
-                <Button asChild variant="default" hideArrow className="flex-1">
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPreviewDoc(null)}
+                >
+                  Cerrar
+                </Button>
+                <Button asChild variant="default" hideArrow>
                   <a
                     href={previewDoc.url}
                     target="_blank"
@@ -1309,17 +1320,10 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     Descargar
                   </a>
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPreviewDoc(null)}
-                >
-                  Cerrar
-                </Button>
-              </div>
+              </DialogFooter>
             )}
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

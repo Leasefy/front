@@ -26,12 +26,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Sparkle, Check, X, ChatCircleText, Phone } from '@phosphor-icons/react';
+import { Sparkle, Check, X, XCircle, ChatCircleText, Phone } from '@phosphor-icons/react';
 
 import { Button, Badge, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { cn } from '@/lib/utils';
 import {
   propuestasDePqrsApi,
   type PropuestaDePqrs,
@@ -242,53 +249,61 @@ function DialogoDeDescarte({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <form
-        onSubmit={enviar}
-        className={cn('relative w-full max-w-md rounded-lg bg-background p-6')}
-      >
-        <h3 className="text-base font-semibold text-fg">¿Por qué no era una PQRS?</h3>
-        <p className="mt-1 text-xs text-fg-muted">
-          El motivo queda guardado. Es lo que deja ver dónde se equivoca el agente.
-        </p>
-        <Input
-          autoFocus
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          maxLength={500}
-          placeholder="Era una consulta de horarios, no un reclamo"
-          className="mt-3"
-          aria-label="Motivo del descarte"
-        />
-        <div className="mt-4 flex gap-2">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="sm" variant="destructive" icon={<XCircle weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>¿Por qué no era una PQRS?</DialogTitle>
+          <DialogDescription>
+            «{propuesta.asunto}» no se radica y sale de esta bandeja. La propuesta
+            queda guardada con el motivo: es lo que deja ver dónde se equivoca el
+            agente.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* El pie vive FUERA del <form>: el botón de enviar lo apunta con `form=`. */}
+        <form id={ID_FORM_DESCARTE} onSubmit={enviar}>
+          <Input
+            autoFocus
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            maxLength={500}
+            placeholder="Era una consulta de horarios, no un reclamo"
+            aria-label="Motivo del descarte"
+          />
+        </form>
+
+        <DialogFooter>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             hideArrow
             onClick={onCerrar}
             disabled={guardando}
-            className="flex-1"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
+            form={ID_FORM_DESCARTE}
+            variant="destructive"
             hideArrow
             isLoading={guardando}
             disabled={!motivo.trim() || guardando}
-            className="flex-1"
           >
             Descartar
           </Button>
-        </div>
-      </form>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_FORM_DESCARTE = 'form-descartar-propuesta-de-pqrs';
 
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', {

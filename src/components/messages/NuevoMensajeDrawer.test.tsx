@@ -32,7 +32,9 @@ vi.mock('sonner', () => ({ toast: { error: (m: string) => toastError(m) } }));
 
 // El Sheet real arrastra los primitivos de diálogo del design system; acá sólo
 // interesa el contenido.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetContent: ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': rest['data-testid'] }, children as React.ReactNode),

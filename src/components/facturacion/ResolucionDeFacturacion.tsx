@@ -45,7 +45,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Certificate, DotsThreeVertical, SealWarning } from '@phosphor-icons/react'
+import { Certificate, DotsThreeVertical, Prohibit, SealWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -374,7 +374,11 @@ export function ResolucionDeFacturacion({
           if (!abierto && anulando === null) setPorAnular(null)
         }}
       >
-        <AlertDialogContent data-testid="anular-resolucion-dialogo">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="anular-resolucion-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Anular la resolución {porAnular?.numero}?
@@ -407,14 +411,14 @@ export function ResolucionDeFacturacion({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={anulando !== null}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
               onClick={(e) => {
                 // Radix cierra el diálogo al hacer clic: se frena para cerrarlo
                 // sólo si el back confirmó.
                 e.preventDefault()
                 void anular()
               }}
-              disabled={motivoLimpio === '' || anulando !== null}
+              disabled={motivoLimpio === ''}
+              loading={anulando !== null}
               data-testid="confirmar-anular"
             >
               {anulando !== null ? 'Anulando…' : 'Anular la resolución'}

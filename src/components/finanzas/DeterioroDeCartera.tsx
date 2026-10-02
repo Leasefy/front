@@ -456,7 +456,12 @@ export function DeterioroDeCarteraPanel() {
         open={confirmando === 'aprobar'}
         onOpenChange={(o) => !o && setConfirmando(null)}
       >
-        <DialogContent className="max-w-md" data-testid="dialogo-aprobar-deterioro">
+        <DialogContent
+          size="sm"
+          variant="confirm"
+          icon={<CheckCircle weight="bold" />}
+          data-testid="dialogo-aprobar-deterioro"
+        >
           <DialogHeader>
             <DialogTitle>Aprobar la provisión</DialogTitle>
             <DialogDescription>
@@ -486,7 +491,13 @@ export function DeterioroDeCarteraPanel() {
 
       {/* ── Anular: con motivo, siempre ────────────────────────────────── */}
       <Dialog open={confirmando === 'anular'} onOpenChange={(o) => !o && setConfirmando(null)}>
-        <DialogContent className="max-w-md" data-testid="dialogo-anular-deterioro">
+        {/* Destructiva: no borra (reversa), pero deja sin efecto la provisión. */}
+        <DialogContent
+          size="sm"
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-anular-deterioro"
+        >
           <DialogHeader>
             <DialogTitle>Anular la provisión</DialogTitle>
             <DialogDescription>
@@ -506,6 +517,7 @@ export function DeterioroDeCarteraPanel() {
               Cancelar
             </Button>
             <Button
+              variant="destructive"
               hideArrow
               onClick={() => void anular()}
               disabled={motivo.trim().length < 5}

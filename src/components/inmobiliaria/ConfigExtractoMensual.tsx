@@ -364,7 +364,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
       </div>
 
       <AlertDialog open={confirmando} onOpenChange={(abierto) => !enviando && setConfirmando(abierto)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<PaperPlaneTilt weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('inmobiliaria.config.extractoMensual.confirmTitle', { mes: mesEnFrase })}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -378,7 +378,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
             <AlertDialogCancel disabled={enviando}>{t('inmobiliaria.config.extractoMensual.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               data-testid="extracto-mensual-confirmar"
-              disabled={enviando}
+              loading={enviando}
               onClick={(e) => {
                 // Se queda abierto mientras manda: el cierre lo decide el envío.
                 e.preventDefault();

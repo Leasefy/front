@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet'
 import { TerminosContenido } from '@/components/legal/TerminosContenido'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -76,18 +76,15 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
       </div>
 
       <Sheet open={terminosAbiertos} onOpenChange={setTerminosAbiertos}>
-        <SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-2xl">
-          <SheetHeader className="shrink-0 border-b border-border px-6 py-4 text-left">
-            <SheetTitle>Términos y condiciones</SheetTitle>
-            <SheetDescription>Los mismos que en leasefy.co/terminos. Puedes cerrar y seguir donde estabas.</SheetDescription>
-          </SheetHeader>
-          <div
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-            data-lenis-prevent
-            data-testid="terminos-en-cajon"
-          >
+        <SheetContent side="right" size="lg">
+          <SheetHeader
+            title="Términos y condiciones"
+            description="Los mismos que en leasefy.co/terminos. Puedes cerrar y seguir donde estabas."
+          />
+          {/* Lo único que scrollea (`data-lenis-prevent` y `overscroll-behavior: contain`). */}
+          <SheetBody data-testid="terminos-en-cajon">
             <TerminosContenido />
-          </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 

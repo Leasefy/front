@@ -157,6 +157,10 @@ describe('<RecibosDeCajaHistorial> anular', () => {
     );
     expect(confirmar).toBeTruthy();
     expect((confirmar as HTMLButtonElement).disabled).toBe(true);
+    // Anular es destructivo: medallón rojo (DESIGN.md §17).
+    expect(document.body.querySelector('[role="dialog"]')?.getAttribute('data-variant')).toBe(
+      'destructive',
+    );
   });
 
   it('manda el motivo recortado al back', async () => {

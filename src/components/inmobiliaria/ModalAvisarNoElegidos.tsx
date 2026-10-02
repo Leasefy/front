@@ -18,16 +18,22 @@
  *    porque quien responde después el teléfono es la inmobiliaria.
  */
 
-import { useEffect, useState } from 'react'
-import { CheckCircle, WarningCircle, X } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { clasificarFallo } from '@/lib/errores/clasificar'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
 
 const MENSAJE_POR_DEFECTO =
@@ -63,33 +69,6 @@ export function ModalAvisarNoElegidos({
   // Aprobar dos veces al mismo puede dar 409 o duplicar el evento. Un
   // reintento tiene que reintentar SÓLO lo que falló.
   const [elegidoYaAprobado, setElegidoYaAprobado] = useState(false)
-
-  /*
-   * Lenis toma el scroll de toda la página. Sin pararlo, la rueda dentro del
-   * modal mueve el fondo (`docs/DESIGN.md` §8). El `data-lenis-prevent` de
-   * abajo protege al contenedor que scrollea; esto protege al resto.
-   */
-  const lenis = useLenis()
-  useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
-
-  /*
-   * Escape cierra. Un overlay a mano no lo trae gratis, y este se abre sobre
-   * una decisión que aprueba a una persona y rechaza a las otras: quien se
-   * arrepiente tiene que poder salir sin buscar el botón.
-   *
-   * No cierra mientras la operación está en curso: irse a mitad dejaría al
-   * elegido aprobado y a los demás sin aviso, sin nadie mirando.
-   */
-  useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !enCurso) onCerrar()
-    }
-    document.addEventListener('keydown', alTeclear)
-    return () => document.removeEventListener('keydown', alTeclear)
-  }, [enCurso, onCerrar])
 
   const alternar = (id: string) => {
     setAAvisar((prev) => {
@@ -163,33 +142,31 @@ export function ModalAvisarNoElegidos({
   const yaSeIntentó = Object.keys(resultados).length > 0
   const cantidad = aAvisar.size
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      {/* `role="dialog"` + `aria-modal`: sin esto un lector de pantalla lo lee
-          como una sección más de la página, con el panel entero todavía
-          navegable detrás. */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="avisar-titulo"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card"
-        data-lenis-prevent
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
-          <div>
-            <h2 id="avisar-titulo" className="text-base font-semibold text-fg">
-              Eliges a {elegido.tenantName}
-            </h2>
-            <p className="mt-0.5 text-sm text-fg-muted">
-              Queda aprobado y puedes armarle el contrato.
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" hideArrow onClick={onCerrar} aria-label="Cerrar">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+  /*
+   * Escape, la ✕ y el velo cierran — salvo mientras la operación está en
+   * curso: irse a mitad dejaría al elegido aprobado y a los demás sin aviso,
+   * sin nadie mirando. El velo no cierra nunca (como antes): el modal se abre
+   * sobre una decisión que aprueba a una persona y rechaza a las otras, y un
+   * clic fuera no es una respuesta. El portal, el foco atrapado, el Esc, el
+   * scroll del fondo y Lenis los pone la primitiva.
+   */
+  const alCambiarApertura = (abierto: boolean) => {
+    if (!abierto && !enCurso) onCerrar()
+  }
 
-        <div className="space-y-5 p-6">
+  return (
+    <Dialog open onOpenChange={alCambiarApertura}>
+      <DialogContent
+        size="md"
+        hideClose={enCurso}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Eliges a {elegido.tenantName}</DialogTitle>
+          <DialogDescription>Queda aprobado y puedes armarle el contrato.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
           {errorDelElegido !== null && (
             <div className="rounded-md border border-danger bg-danger-soft px-4 py-3">
               <p className="text-sm font-medium text-danger">
@@ -281,10 +258,20 @@ export function ModalAvisarNoElegidos({
               )}
             </>
           )}
+
+          {/* Va en el cuerpo, justo arriba del pie fijo: debajo del pie no se
+              vería en un modal alto. */}
+          {yaSeIntentó && fallaron.length > 0 && (
+            <p className="text-sm text-danger">
+              A {fallaron.map((c) => c.tenantName).join(', ')} no le llegó el aviso.
+              Vuelve a intentarlo — {elegido.tenantName} ya quedó aprobado, eso no
+              se repite.
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-border px-6 py-4">
-          <Button variant="secondary" hideArrow onClick={onCerrar} disabled={enCurso} className="flex-1">
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={enCurso}>
             Cancelar
           </Button>
           <Button
@@ -292,7 +279,6 @@ export function ModalAvisarNoElegidos({
             onClick={() => void confirmar()}
             isLoading={enCurso}
             disabled={enCurso || (cantidad > 0 && !mensaje.trim())}
-            className="flex-1"
             data-testid="confirmar-eleccion"
           >
             {yaSeIntentó && fallaron.length > 0
@@ -301,16 +287,8 @@ export function ModalAvisarNoElegidos({
                 ? `Elegir y avisar a ${cantidad}`
                 : 'Elegir'}
           </Button>
-        </div>
-
-        {yaSeIntentó && fallaron.length > 0 && (
-          <p className={cn('px-6 pb-4 text-sm text-danger')}>
-            A {fallaron.map((c) => c.tenantName).join(', ')} no le llegó el aviso.
-            Vuelve a intentarlo — {elegido.tenantName} ya quedó aprobado, eso no
-            se repite.
-          </p>
-        )}
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

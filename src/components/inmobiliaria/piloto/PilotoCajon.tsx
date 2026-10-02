@@ -43,7 +43,6 @@ import {
   Clock,
   Info,
   Warning,
-  X,
 } from '@phosphor-icons/react'
 import {
   IconButton,
@@ -60,10 +59,10 @@ import { PilotoAccionForm } from './PilotoAccionForm'
 import { PilotoDocumento } from './PilotoDocumento'
 import {
   Sheet,
+  SheetBody,
   SheetContent,
-  SheetDescription,
+  SheetFooter,
   SheetHeader,
-  SheetTitle,
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
@@ -268,82 +267,70 @@ export function PilotoCajon({
     <Sheet open={apertura !== null} onOpenChange={(abierto) => !abierto && onClose()}>
       <SheetContent
         side="right"
-        hideCloseButton
-        /*
-         * Con el sub-cajón abierto, el borde izquierdo se endereza: dos
-         * paneles pegados con las esquinas redondeadas dejan una muesca en la
-         * costura y se leen como dos ventanas sueltas (Nico, 2026-09-06). Al
-         * cerrarlo vuelve a su radio.
-         */
+        // 576 px: el documento se pega a su izquierda con este mismo ancho.
         className={cn(
-          'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl',
-          documento && 'sm:!rounded-l-none',
+          'sm:max-w-xl',
+          /*
+           * Con el sub-cajón abierto al lado (desde `lg`, donde caben los dos),
+           * el borde izquierdo se endereza: dos paneles pegados con las
+           * esquinas redondeadas dejan una muesca en la costura y se leen como
+           * dos ventanas sueltas (Nico, 2026-09-06). Al cerrarlo vuelve a su
+           * radio.
+           */
+          documento && 'lg:!rounded-l-none',
         )}
+        // Cabecera, cuerpo y pie se arman acá abajo.
+        layout="manual"
         data-testid="piloto-cajon"
       >
-        {/* Encabezado fijo — el título del caso siempre visible al scrollear */}
-        <SheetHeader className="shrink-0 space-y-0 border-b border-border px-6 pt-6 pb-4">
-          <div className="flex items-start gap-3">
-            {onVolver && (
+        {/* Encabezado fijo — el título del caso siempre visible al scrollear.
+            La ✕ la pone `SheetContent`: la misma de todo el producto. */}
+        <SheetHeader
+          leading={
+            onVolver ? (
               <IconButton
                 variant="ghost"
                 onClick={onVolver}
                 aria-label={t('inmobiliaria.piloto.cajon.volver')}
-                className="-ml-2 mt-0.5 h-8 w-8 shrink-0 rounded-md hover:bg-surface-muted"
+                className="-ml-2 h-8 w-8 shrink-0 rounded-full hover:bg-surface-hover"
                 icon={<CaretLeft weight="bold" className="h-4 w-4" aria-hidden="true" />}
               />
-            )}
-            <div className="min-w-0 flex-1">
-              <SheetTitle
-                className={`text-lg font-semibold ${alerta ? (TONO_SEVERIDAD[alerta.severidad] ?? 'text-fg') : 'text-fg'}`}
-              >
-                {titulo}
-              </SheetTitle>
-              <SheetDescription className="mt-1 text-caption text-fg-muted">
-                {subtitulo}
-              </SheetDescription>
-              {data && !alerta && (
-                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-caption text-fg-subtle">
-                  {/* «esperando» sólo si hay algo que decidir (una acción, o
-                      un enlace que dice por qué se decide en otra pantalla):
-                      un hecho ya ocurrido (una llamada, los cobros de un día)
-                      no espera a nadie — decía «esperando hace 1d» (24-09). */}
-                  {data.desde && (
-                    <span className="flex items-center gap-1 font-mono tabular-nums" data-testid="piloto-cajon-desde">
-                      <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
-                      {data.acciones.length > 0 || data.enlaces.some((e) => Boolean(e.razon))
-                        ? t('inmobiliaria.piloto.cajon.esperando', { tiempo: relativeTime(data.desde, t) })
-                        : relativeTime(data.desde, t)}
-                    </span>
-                  )}
-                  {typeof data.montoCop === 'number' && (
-                    <span className="font-mono tabular-nums text-fg">
-                      {formatCurrency(data.montoCop)}
-                    </span>
-                  )}
-                </div>
+            ) : undefined
+          }
+          title={
+            <span className={alerta ? (TONO_SEVERIDAD[alerta.severidad] ?? 'text-fg') : 'text-fg'}>
+              {titulo}
+            </span>
+          }
+          description={subtitulo}
+        >
+          {data && !alerta && (
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-caption text-fg-subtle">
+              {/* «esperando» sólo si hay algo que decidir (una acción, o
+                  un enlace que dice por qué se decide en otra pantalla):
+                  un hecho ya ocurrido (una llamada, los cobros de un día)
+                  no espera a nadie — decía «esperando hace 1d» (24-09). */}
+              {data.desde && (
+                <span className="flex items-center gap-1 font-mono tabular-nums" data-testid="piloto-cajon-desde">
+                  <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
+                  {data.acciones.length > 0 || data.enlaces.some((e) => Boolean(e.razon))
+                    ? t('inmobiliaria.piloto.cajon.esperando', { tiempo: relativeTime(data.desde, t) })
+                    : relativeTime(data.desde, t)}
+                </span>
+              )}
+              {typeof data.montoCop === 'number' && (
+                <span className="font-mono tabular-nums text-fg">
+                  {formatCurrency(data.montoCop)}
+                </span>
               )}
             </div>
-            <IconButton
-              variant="ghost"
-              onClick={onClose}
-              aria-label={t('inmobiliaria.piloto.cajon.cerrar')}
-              className="-mr-1 -mt-1 h-8 w-8 shrink-0 rounded-md hover:bg-surface-muted"
-              icon={<X weight="bold" className="h-4 w-4" aria-hidden="true" />}
-            />
-          </div>
+          )}
         </SheetHeader>
 
-        {/* Cuerpo — el único que scrollea */}
-        {/* Cuerpo — el único que scrollea. `data-lenis-prevent` +
-            `overscrollBehavior:'contain'` son OBLIGATORIOS: el panel corre con
-            Lenis (scroll suave) y sin esto la rueda dentro del cajón la
-            intercepta la página de atrás. Mismo patrón que ScoreDetailSheet. */}
-        <div
-          className="min-h-0 flex-1 overflow-y-auto px-6 pb-10 pt-5"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
-        >
+        {/* Cuerpo — el único que scrollea. `SheetBody` trae `data-lenis-prevent`
+            y `overscroll-behavior: contain`: sin eso la rueda dentro del cajón
+            la intercepta Lenis en la página de atrás. */}
+        <SheetBody className="pb-10">
           {/* ── Modo alerta: sin red, con los casos que sostienen el número ── */}
           {alerta && (
             <div className="space-y-5" data-testid="piloto-cajon-alerta">
@@ -529,11 +516,13 @@ export function PilotoCajon({
               )}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        {/* Pie fijo con las acciones — solo si el micro declaró alguna */}
+        {/* Pie fijo con las acciones — solo si el micro declaró alguna. Su
+            contenido ocupa el ancho entero: el formulario de una acción toma
+            el pie y la fila de botones se ordena sola (ver abajo). */}
         {!alerta && data && data.acciones.length > 0 && (
-          <footer className="shrink-0 border-t border-border bg-surface px-6 py-4">
+          <SheetFooter className="[&>div>*]:w-full [&>div]:w-full">
             {abierta ? (
               /* Una acción que pide datos toma el pie entero: el formulario
                  vive acá y no en otro diálogo encima del cajón. */
@@ -592,7 +581,7 @@ export function PilotoCajon({
                 )}
               </div>
             )}
-          </footer>
+          </SheetFooter>
         )}
       </SheetContent>
 

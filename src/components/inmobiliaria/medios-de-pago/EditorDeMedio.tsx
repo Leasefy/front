@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type {
   MedioDePago,
   NuevoMedioDePago,
@@ -107,9 +107,10 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
       await onGuardar(valores);
     } catch (error) {
       setErrorDelBack(
-        error instanceof ApiError || error instanceof Error
-          ? error.message
-          : 'No se pudo guardar el medio de pago.',
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo guardar el medio de pago.',
+          accion: 'guardar el medio de pago',
+        }),
       );
     } finally {
       setGuardando(false);
@@ -156,7 +157,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && onCerrar()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{medio ? 'Editar medio de pago' : 'Nuevo medio de pago'}</DialogTitle>
           <DialogDescription>
@@ -164,7 +165,9 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
           </DialogDescription>
         </DialogHeader>
 
-        <form id="form-medio-de-pago" onSubmit={guardar} className="space-y-5 px-6 py-5">
+        {/* El pie va FUERA del <form> (hijo directo del Content, fijo abajo); el
+            botón de guardar lo envía con `form=`. El cuerpo ya trae su margen. */}
+        <form id="form-medio-de-pago" onSubmit={guardar} className="space-y-5">
           <div className="space-y-2">
             <Label>Tipo</Label>
             <div className="flex flex-wrap gap-2">

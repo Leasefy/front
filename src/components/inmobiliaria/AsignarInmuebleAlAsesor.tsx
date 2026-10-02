@@ -37,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -138,7 +139,7 @@ export function AsignarInmuebleAlAsesor({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="asignar-inmueble-al-asesor">
+      <DialogContent size="md" data-testid="asignar-inmueble-al-asesor">
         <DialogHeader>
           <DialogTitle>Asignar un inmueble</DialogTitle>
           <DialogDescription>
@@ -249,11 +250,11 @@ export function AsignarInmuebleAlAsesor({
           </div>
         </EstadoDeDatos>
 
-        <div className="flex justify-end pt-1">
-          <Button variant="secondary" hideArrow onClick={onCerrar}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onCerrar}>
             Cancelar
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

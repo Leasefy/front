@@ -10,6 +10,7 @@
 
 import * as React from 'react'
 import { useEffect, useState } from 'react'
+import { Phone } from '@phosphor-icons/react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
@@ -102,7 +103,12 @@ export function ManualCallModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      {/* Confirmación (dispara una llamada); sin permiso, advertencia. */}
+      <DialogContent
+        size="sm"
+        variant={allowed ? 'confirm' : 'warning'}
+        icon={allowed ? <Phone weight="bold" /> : undefined}
+      >
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.modalTitle')}
@@ -112,7 +118,7 @@ export function ManualCallModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.modalDescription')}
             </DialogDescription>
           ) : (
-            <DialogDescription className="text-danger">
+            <DialogDescription>
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
             </DialogDescription>
           )}
@@ -145,20 +151,20 @@ export function ManualCallModal({
 
         {error && <p className="text-xs text-danger">{error}</p>}
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
+            hideArrow
             onClick={onClose}
             disabled={submitting}
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </Button>
           <Button
-            size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing || !allowed}
+            disabled={envMissing || !allowed}
+            isLoading={submitting}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.confirming')

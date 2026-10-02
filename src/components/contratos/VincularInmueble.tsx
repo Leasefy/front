@@ -127,7 +127,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
       </Button>
 
       <Dialog open={abierto} onOpenChange={(v) => !guardando && setAbierto(v)}>
-        <DialogContent className="max-w-lg" data-testid="vincular-inmueble-dialog">
+        <DialogContent size="md" data-testid="vincular-inmueble-dialog">
           <DialogHeader>
             <DialogTitle>¿Cuál es el inmueble de este contrato?</DialogTitle>
             <DialogDescription>

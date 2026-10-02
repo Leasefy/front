@@ -73,22 +73,25 @@ export function HistorialDeVersiones({ versiones }: { versiones: VersionDelInven
       )}
 
       <Dialog open={abierta !== null} onOpenChange={(o) => !o && setAbierta(null)}>
-        <DialogContent className="sm:max-w-3xl" data-testid="version-abierta">
+        {/* La cabecera va como hijo DIRECTO del Content (no dentro de un
+            fragmento): el Content reparte sólo a sus hijos directos, y dentro
+            de un `<>` el título caía al cuerpo con scroll. */}
+        <DialogContent size="xl" data-testid="version-abierta">
           {abierta && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{t(`${B}.versionTitulo`, { version: abierta.version })}</DialogTitle>
-                <DialogDescription>
-                  {abierta.estado === 'COMPLETO'
-                    ? t(`${B}.completadaEl`, { fecha: instanteLegible(abierta.completadoEn) })
-                    : t(`${B}.editadaEl`, { fecha: instanteLegible(abierta.updatedAt) })}
-                </DialogDescription>
-              </DialogHeader>
-              <ActaEntregaView
-                inventoryItems={abierta.items}
-                contractDate={abierta.completadoEn ?? abierta.updatedAt}
-              />
-            </>
+            <DialogHeader>
+              <DialogTitle>{t(`${B}.versionTitulo`, { version: abierta.version })}</DialogTitle>
+              <DialogDescription>
+                {abierta.estado === 'COMPLETO'
+                  ? t(`${B}.completadaEl`, { fecha: instanteLegible(abierta.completadoEn) })
+                  : t(`${B}.editadaEl`, { fecha: instanteLegible(abierta.updatedAt) })}
+              </DialogDescription>
+            </DialogHeader>
+          )}
+          {abierta && (
+            <ActaEntregaView
+              inventoryItems={abierta.items}
+              contractDate={abierta.completadoEn ?? abierta.updatedAt}
+            />
           )}
         </DialogContent>
       </Dialog>

@@ -3,8 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Plus, Play, CreditCard, CaretRight, Check, ArrowRight, Shield, Lightning, Users, Buildings, Clock, TrendUp, X, VideoCamera, FileText, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
+import { Plus, Play, CreditCard, CaretRight, Check, ArrowRight, Shield, Lightning, Users, Buildings, Clock, TrendUp, VideoCamera, FileText, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
@@ -76,29 +85,34 @@ const getSetupSteps = (hasProperty: boolean): SetupStep[] => [
 // VideoCamera Modal Component
 // ============================================================================
 
+/**
+ * Informativo: el `Dialog` canónico con `variant="info"` (DESIGN.md §17). La ✕,
+ * el velo y Esc cierran SIN marcar el paso; «Entendido, continuar» lo marca.
+ */
 function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClose: () => void; onComplete: () => void }) {
   const { locale } = useI18n();
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-3xl bg-surface rounded-lg overflow-hidden"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent size="xl" variant="info">
+        <DialogHeader>
+          <DialogTitle>
+            {locale === 'es' ? 'Cómo funciona Leasefy' : 'How Leasefy works'}
+          </DialogTitle>
+          <DialogDescription>
+            {locale === 'es'
+              ? 'Descubre cómo publicar tu propiedad, recibir aplicaciones verificadas y cobrar tu arriendo de forma segura.'
+              : 'Learn how to list your property, receive verified applications, and collect rent securely.'}
+          </DialogDescription>
+        </DialogHeader>
 
         {/* VideoCamera placeholder - replace with actual video embed */}
-        <div className="aspect-video bg-neutral-900 flex items-center justify-center">
+        <div className="aspect-video overflow-hidden rounded-[16px] bg-neutral-900 flex items-center justify-center">
           <div className="text-center">
             <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
               <Play className="w-10 h-10 text-white fill-white" />
@@ -109,27 +123,21 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
           </div>
         </div>
 
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-fg mb-2">
-            {locale === 'es' ? 'Cómo funciona Leasefy' : 'How Leasefy works'}
-          </h3>
-          <p className="text-sm text-fg-muted mb-4">
-            {locale === 'es'
-              ? 'Descubre cómo publicar tu propiedad, recibir aplicaciones verificadas y cobrar tu arriendo de forma segura.'
-              : 'Learn how to list your property, receive verified applications, and collect rent securely.'}
-          </p>
-          <button
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            hideArrow
             onClick={() => {
               onComplete();
               onClose();
             }}
-            className="w-full py-3 bg-fg text-bg font-semibold rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
           >
             {locale === 'es' ? 'Entendido, continuar' : 'Got it, continue'}
-          </button>
-        </div>
-      </motion.div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

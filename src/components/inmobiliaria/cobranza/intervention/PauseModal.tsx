@@ -9,6 +9,7 @@
 
 import * as React from 'react'
 import { useEffect, useState } from 'react'
+import { Pause, Play } from '@phosphor-icons/react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
@@ -120,7 +121,11 @@ export function PauseModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={modo === 'reanudar' ? <Play weight="bold" /> : <Pause weight="bold" />}
+      >
         <DialogHeader>
           <DialogTitle>
             {t(
@@ -178,20 +183,20 @@ export function PauseModal({
 
         {error && <p className="text-xs text-danger">{error}</p>}
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
+            hideArrow
             onClick={onClose}
             disabled={submitting}
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </Button>
           <Button
-            size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing}
+            disabled={envMissing}
+            isLoading={submitting}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirming')

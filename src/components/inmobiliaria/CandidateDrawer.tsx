@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner as DSSpinner } from '@/components/ui/spinner';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
@@ -188,14 +188,15 @@ export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = t
     <Sheet open={Boolean(candidate)} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="right"
-        hideCloseButton
+        size="lg"
+        // El cuerpo (cabecera, cuerpo, pie) vive en `CuerpoDelCandidato`: el
+        // reparto automático no lo ve a través del componente.
+        layout="manual"
         aria-describedby={undefined}
-        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0 bg-background"
       >
         {ultimo && (
           <CuerpoDelCandidato
             candidate={ultimo}
-            onClose={onClose}
             onAction={onAction}
             puedeDecidir={puedeDecidir}
           />
@@ -208,12 +209,11 @@ export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = t
 interface CuerpoDelCandidatoProps {
   /** Nunca null: el envoltorio no monta el cuerpo sin candidato. */
   candidate: LandlordCandidate;
-  onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
   puedeDecidir: boolean;
 }
 
-function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
+function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -389,40 +389,22 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
 
   return (
     <>
-        {/* sr-only title satisfies Dialog a11y; the visual header lives below */}
-        <SheetTitle className="sr-only">{candidate.tenantName || 'Candidato'}</SheetTitle>
-        {/* Header — flex-none keeps it pinned to the top of the panel */}
-        <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+        <SheetHeader
+          leading={
             <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-primary" />
             </div>
-            <div className="min-w-0">
-              <h2 className="font-semibold text-foreground truncate">
-                {candidate.tenantName || 'Candidato'}
-              </h2>
-              <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
-                <Envelope className="w-3 h-3" />
-                {candidate.tenantEmail}
-              </p>
-            </div>
-          </div>
-          <IconButton
-            variant="ghost"
-            size="md"
-            icon={<X className="w-4 h-4" />}
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="flex-shrink-0"
-          />
-        </div>
-
-        {/* Scrollable body — data-lenis-prevent so Lenis stays out of native scroll */}
-        <div
-          className="flex-1 overflow-y-auto p-6 space-y-6"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+          }
+          title={<span className="block truncate">{candidate.tenantName || 'Candidato'}</span>}
         >
+          <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
+            <Envelope className="w-3 h-3" />
+            {candidate.tenantEmail}
+          </p>
+        </SheetHeader>
+
+        {/* El cuerpo: lo único que scrollea (trae data-lenis-prevent y overscroll contain) */}
+        <SheetBody className="space-y-6">
           {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-fg-muted">Estado:</span>
@@ -919,7 +901,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
             <ChatThread applicationId={candidate.id} />
           </section>
 
-        </div>
+        </SheetBody>
 
         {/*
           * Las acciones, al pie y siempre visibles.
@@ -929,53 +911,47 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
           * entero. Decidir es a lo que se viene, así que no se scrollea.
           */}
         {hayAcciones && (
-          <div className="flex-none border-t border-border bg-background px-6 py-4 space-y-3">
-            {requiresManualReview && (
-              // El motivo, a la vista. Antes vivía en un `title=`: el botón se
-              // veía apagado y nadie podía saber por qué.
-              <p className="flex items-start gap-2 text-xs text-danger">
-                <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
-                <span>
-                  El análisis marcó inconsistencias en los documentos. Revisa las alertas de
-                  integridad antes de decidir.
+          <SheetFooter
+            note={
+              requiresManualReview ? (
+                // El motivo, a la vista. Antes vivía en un `title=`: el botón se
+                // veía apagado y nadie podía saber por qué.
+                <span className="flex items-start gap-2 text-danger">
+                  <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+                  <span>
+                    El análisis marcó inconsistencias en los documentos. Revisa las alertas de
+                    integridad antes de decidir.
+                  </span>
                 </span>
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              {canReject && (
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={() => onAction('reject', candidate)}
-                  className="flex-1 min-w-[8rem]"
-                >
+              ) : undefined
+            }
+            start={
+              canReject ? (
+                <Button variant="secondary" hideArrow onClick={() => onAction('reject', candidate)}>
+                  <X weight="bold" className="w-4 h-4" aria-hidden="true" />
                   Rechazar
                 </Button>
-              )}
-              {canRequestInfo && (
-                <Button
-                  variant="secondary"
-                  hideArrow
-                  onClick={() => onAction('request-info', candidate)}
-                  className="flex-1 min-w-[8rem]"
-                >
-                  Pedir info
-                </Button>
-              )}
-              {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
-              {canApprove && (
-                // success/green: Cadence Button has no success variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
-                <Button
-                  hideArrow
-                  onClick={() => onAction('approve', candidate)}
-                  className="flex-1 min-w-[8rem] bg-success text-white hover:bg-success/90"
-                >
-                  Aprobar
-                </Button>
-              )}
-            </div>
-          </div>
+              ) : undefined
+            }
+          >
+            {canRequestInfo && (
+              <Button variant="secondary" hideArrow onClick={() => onAction('request-info', candidate)}>
+                Pedir info
+              </Button>
+            )}
+            {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
+            {canApprove && (
+              // success/green: Cadence Button has no success variant (logged gap) — real
+              // Button keeps all DS states; only the fill is overridden for the missing tone.
+              <Button
+                hideArrow
+                onClick={() => onAction('approve', candidate)}
+                className="bg-success text-white hover:bg-success/90"
+              >
+                Aprobar
+              </Button>
+            )}
+          </SheetFooter>
         )}
     </>
   );

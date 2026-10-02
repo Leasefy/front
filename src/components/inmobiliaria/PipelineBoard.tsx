@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -22,13 +22,11 @@ import {
   CaretUp,
   DotsSixVertical,
   ArrowsOutSimple,
-  X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui';
 import { IconButton } from '@leasefy/cadence';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
@@ -145,46 +143,15 @@ function DroppableColumn({
 }: DroppableColumnProps) {
   const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  // «Ver todo»: el cajón con todos los leads de la columna. Portal, foco, Esc,
+  // bloqueo del scroll y Lenis los ponen el `Sheet` y `SmoothScroll`.
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const { setNodeRef } = useDroppable({
     id: stage,
     data: { stage },
   });
-  const { stop: stopLenis, start: startLenis } = useLenis();
 
   const stageInfo = getPipelineStageInfo(stage);
-
-  // Track client-side mounting
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Stop Lenis and lock body scroll when sidebar is open
-  useEffect(() => {
-    if (isSidebarOpen) {
-      // Stop Lenis smooth scroll to allow native scroll in sidebar
-      stopLenis();
-
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
-        // Restart Lenis
-        startLenis();
-      };
-    }
-  }, [isSidebarOpen, stopLenis, startLenis]);
 
   // Extract background and text color classes from stageInfo
   const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
@@ -353,80 +320,36 @@ function DroppableColumn({
         </motion.div>
       )}
 
-      {/* Ver Todo - Custom Portal Sidebar */}
-      {isMounted && isSidebarOpen && createPortal(
-        <>
-          {/* Backdrop */}
-          {/* Drawer layer = z-[300] (misma capa que <Sheet>/<Drawer>). Antes z-[9998/9999],
-              que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
-          <div
-            className="fixed inset-0 bg-black/60 z-[300]"
-            onClick={() => setIsSidebarOpen(false)}
-            style={{ touchAction: 'none' }}
+      {/* Ver Todo — el cajón flotante de la casa */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="right" size="sm" aria-describedby={undefined}>
+          <SheetHeader
+            leading={
+              <div
+                className={cn(
+                  'w-3 h-3 rounded-full',
+                  bgColorClass.replace('-100', '-500')
+                )}
+              />
+            }
+            title={stageInfo?.labelEs || stage}
+            description={`${items.length} ${items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}`}
           />
 
-          {/* Sidebar */}
-          <div
-            className="fixed top-0 right-0 w-full sm:w-[420px] bg-card z-[300]"
-            style={{ height: '100dvh' }}
-          >
-            {/* Header - Fixed height */}
-            <div
-              className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b border-border bg-card"
-              style={{ height: '73px' }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    'w-3 h-3 rounded-full',
-                    bgColorClass.replace('-100', '-500')
-                  )}
-                />
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">
-                    {stageInfo?.labelEs || stage}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
-                  </p>
-                </div>
-              </div>
-              <IconButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSidebarOpen(false)}
-                aria-label={t('inmobiliaria.pipeline.close')}
-                icon={<X className="w-5 h-5" />}
+          <SheetBody className="space-y-3 px-4 py-4">
+            {items.map((item) => (
+              <PipelineCard
+                key={item.id}
+                item={item}
+                onClick={(clickedItem) => {
+                  setIsSidebarOpen(false);
+                  onCardClick(clickedItem);
+                }}
               />
-            </div>
-
-            {/* Scrollable Content - Absolute positioned */}
-            <div
-              className="absolute left-0 right-0 p-4 space-y-3"
-              style={{
-                top: '73px',
-                bottom: '0px',
-                overflowY: 'scroll',
-                WebkitOverflowScrolling: 'touch',
-                overscrollBehavior: 'contain',
-              }}
-              onWheel={(e) => e.stopPropagation()}
-            >
-              {items.map((item) => (
-                <PipelineCard
-                  key={item.id}
-                  item={item}
-                  onClick={(clickedItem) => {
-                    setIsSidebarOpen(false);
-                    onCardClick(clickedItem);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </>,
-        document.body
-      )}
+            ))}
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -48,6 +48,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { ListaDeAplicables, PendienteAplicable } from '@/lib/api/tesoreria.types';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 export function PendientesDeAplicarPanel() {
@@ -107,7 +108,9 @@ export function PendientesDeAplicarPanel() {
       setValor('');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo registrar la devolución.');
+      toast.error(
+        mensajeParaLaPersona(error, { porDefecto: 'No se pudo registrar la devolución.' }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -300,12 +303,19 @@ export function PendientesDeAplicarPanel() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDevolviendo(null)}>
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => setDevolviendo(null)}
+              disabled={trabajando}
+            >
               Volver
             </Button>
             <Button
+              hideArrow
               onClick={() => void devolver()}
               disabled={trabajando || motivo.trim().length === 0}
+              isLoading={trabajando}
               data-testid="confirmar-devolucion"
             >
               Registrar la devolución

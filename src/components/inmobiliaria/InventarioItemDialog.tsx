@@ -34,6 +34,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -189,7 +190,7 @@ export function InventarioItemDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && !guardando && onCerrar()}>
-      <DialogContent className="sm:max-w-md" data-testid="inventario-item-dialog">
+      <DialogContent size="sm" data-testid="inventario-item-dialog">
         <DialogHeader>
           <DialogTitle>
             {item ? t('inmobiliaria.acta.itemDialog.titleEdit') : t('inmobiliaria.acta.itemDialog.titleNew')}
@@ -197,7 +198,9 @@ export function InventarioItemDialog({
           <DialogDescription>{t('inmobiliaria.acta.itemDialog.subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4">
+        {/* El pie vive FUERA del <form> (el Content lo saca al pie fijo): el
+            botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="inv-name" className="text-sm font-medium text-fg">
               {t('inmobiliaria.acta.itemDialog.name')} <span className="text-danger">*</span>
@@ -282,7 +285,7 @@ export function InventarioItemDialog({
             </span>
             <div className="flex items-center gap-3">
               {vista ? (
-                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-surface-muted">
+                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-surface-hover">
                   {/* eslint-disable-next-line @next/next/no-img-element -- la foto todavía no está subida: es una URL de objeto local */}
                   <img
                     src={vista}
@@ -292,7 +295,7 @@ export function InventarioItemDialog({
                   />
                 </div>
               ) : (
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-subtle">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md bg-surface-hover text-fg-subtle">
                   <Camera className="h-6 w-6" />
                 </div>
               )}
@@ -351,17 +354,25 @@ export function InventarioItemDialog({
               aria-label={t('inmobiliaria.acta.itemDialog.photoUrl')}
             />
           </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" hideArrow onClick={onCerrar} disabled={guardando}>
-              {t('inmobiliaria.acta.itemDialog.cancel')}
-            </Button>
-            <Button type="submit" hideArrow isLoading={guardando} data-testid="inventario-item-guardar">
-              {item ? t('inmobiliaria.acta.itemDialog.save') : t('inmobiliaria.acta.itemDialog.saveNew')}
-            </Button>
-          </div>
         </form>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
+            {t('inmobiliaria.acta.itemDialog.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORMULARIO}
+            hideArrow
+            isLoading={guardando}
+            data-testid="inventario-item-guardar"
+          >
+            {item ? t('inmobiliaria.acta.itemDialog.save') : t('inmobiliaria.acta.itemDialog.saveNew')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+const ID_DEL_FORMULARIO = 'form-inventario-item';

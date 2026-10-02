@@ -18,7 +18,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Chip, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
-import { Bank, CheckCircle, Paperclip, ShieldWarning, WarningCircle } from '@phosphor-icons/react';
+import {
+  Bank,
+  CheckCircle,
+  Paperclip,
+  Prohibit,
+  ShieldWarning,
+  Stamp,
+  WarningCircle,
+  XCircle,
+} from '@phosphor-icons/react';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Button } from '@/components/ui/button';
@@ -772,7 +781,7 @@ function PedirCambioDeCuenta({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="pedir-cambio">
+      <DialogContent size="md" data-testid="pedir-cambio">
         <DialogHeader>
           <DialogTitle>Cambiar la cuenta bancaria</DialogTitle>
           <DialogDescription>
@@ -997,7 +1006,7 @@ function AprobarCambio({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="md" variant="confirm" icon={<Stamp weight="bold" />}>
         <DialogHeader>
           <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
           <DialogDescription>
@@ -1090,7 +1099,11 @@ function CerrarCambio({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={rechazo ? <XCircle weight="bold" /> : <Prohibit weight="bold" />}
+      >
         <DialogHeader>
           <DialogTitle>{rechazo ? 'Rechazar el cambio de cuenta' : 'Anular el cambio de cuenta'}</DialogTitle>
           <DialogDescription>

@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { contractsApi } from '@/lib/api/contracts.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import type { Contract } from '@/lib/types/contract'
 
 const USOS = { VIVIENDA: 'Vivienda', COMERCIAL: 'Comercial' } as const
@@ -191,7 +192,7 @@ export function AdministracionDelContrato({
       onActualizado(actualizado)
       setEditando(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar.')
+      setError(mensajeParaLaPersona(e, { porDefecto: 'No se pudo guardar.', accion: 'guardar cómo se cobra el contrato' }))
     } finally {
       setGuardando(false)
     }
@@ -383,7 +384,7 @@ export function AdministracionDelContrato({
         columnas, agrupados por lo que deciden.
       */}
       <Dialog open={editando} onOpenChange={(v) => !guardando && setEditando(v)}>
-        <DialogContent className="max-w-3xl" data-testid="administracion-dialogo">
+        <DialogContent size="xl" data-testid="administracion-dialogo">
           <DialogHeader>
             <DialogTitle>Cómo se cobra este contrato</DialogTitle>
             <DialogDescription>

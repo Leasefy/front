@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CalendarX } from "lucide-react";
+import { CalendarX, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -166,8 +166,13 @@ export function TerminarContrato({
   }
 
   return (
-    <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="terminar-contrato">
+    <Dialog open={abierto} onOpenChange={(v) => !v && !guardando && onCerrar()}>
+      <DialogContent
+        variant="destructive"
+        icon={<CalendarX weight="bold" />}
+        size="md"
+        data-testid="terminar-contrato"
+      >
         <DialogHeader>
           <DialogTitle>Terminar el arriendo antes de tiempo</DialogTitle>
           <DialogDescription>
@@ -273,7 +278,7 @@ export function TerminarContrato({
           {/* Lo que va a quedar cobrado. El número, antes de confirmar. */}
           {vista?.prorrateoDelUltimoMes && (
             <div
-              className="rounded-md bg-muted p-3 text-sm"
+              className="rounded-[14px] border border-border p-3 text-sm"
               data-testid="prorrateo-del-ultimo-mes"
             >
               <p className="font-medium">Último mes ({vista.prorrateoDelUltimoMes.mes})</p>
@@ -306,7 +311,7 @@ export function TerminarContrato({
               className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               data-testid="garantia-de-servicios-pendiente"
             >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <Warning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {vista.garantiaDeServiciosPendiente}
             </p>
           )}
@@ -322,23 +327,24 @@ export function TerminarContrato({
               className="flex items-start gap-2 text-sm text-plan-status-yellow"
               data-testid="razon-para-no-terminar"
             >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <Warning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {vista.razon}
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="secondary" onClick={onCerrar} disabled={guardando}>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Volver
           </Button>
           <Button
             variant="destructive"
+            hideArrow
             onClick={confirmar}
             disabled={!puedeConfirmar}
+            isLoading={guardando}
             data-testid="confirmar-terminacion"
           >
-            <CalendarX className="mr-2 h-4 w-4" />
             {guardando ? "Terminando…" : "Terminar el arriendo"}
           </Button>
         </DialogFooter>

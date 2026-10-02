@@ -161,7 +161,9 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && cerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl" data-testid="asiento-manual">
+      {/* `xl`: la tabla de líneas. El scroll lo hace el cuerpo del modal (con
+          `overflow-y-auto` en el Content scrolleaba el panel y el título se iba). */}
+      <DialogContent size="xl" data-testid="asiento-manual">
         <DialogHeader>
           <DialogTitle>Asiento manual</DialogTitle>
           <DialogDescription>
@@ -294,7 +296,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
               'flex flex-wrap items-center justify-between gap-3 rounded-md border p-3',
               diferencia === 0 && veredicto.totales.debitos > 0
                 ? 'border-border bg-success-soft'
-                : 'border-border bg-surface-muted',
+                : 'border-border',
             )}
             aria-live="polite"
             data-testid="totales-del-asiento"

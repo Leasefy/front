@@ -529,9 +529,9 @@ function ConciliacionLiquidaciones() {
             </div>
 
             {/* Vista previa del neto (canon − comisión − otros) */}
-            <div className="rounded-lg bg-surface-muted px-3 py-2 text-sm tabular-nums">
+            <div className="rounded-[14px] border border-border px-4 py-2.5 text-sm">
               <span className="text-fg-muted">Neto al propietario: </span>
-              <span className="font-semibold text-fg">{fmtCop(previewNet)}</span>
+              <span className="font-mono font-semibold tabular-nums text-fg">{fmtCop(previewNet)}</span>
             </div>
           </div>
 
@@ -553,7 +553,7 @@ function ConciliacionLiquidaciones() {
 
       {/* Confirmación humana de "Aprobar" (T-323) */}
       <AlertDialog open={toApprove !== null} onOpenChange={(o) => { if (!o && !busy) setToApprove(null) }}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<ShieldCheck weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Aprobar liquidación?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -562,15 +562,22 @@ function ConciliacionLiquidaciones() {
                   Vas a aprobar la liquidación de{' '}
                   <strong>{toApprove.ownerName?.trim() || 'el propietario'}</strong> por el periodo{' '}
                   <strong>{toApprove.period}</strong>, con un neto de{' '}
-                  <strong>{fmtCop(toApprove.netCop)}</strong>. Esto autoriza el monto — no mueve ni
-                  desembolsa dinero (el pago real lo hace pagos).
+                  <strong className="font-mono tabular-nums">{fmtCop(toApprove.netCop)}</strong>. Esto
+                  autoriza el monto — no mueve ni desembolsa dinero (el pago real lo hace pagos).
                 </>
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void handleApprove()} disabled={busy}>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Abierto mientras aprueba: `handleApprove` lo cierra al terminar.
+                e.preventDefault()
+                void handleApprove()
+              }}
+              loading={busy}
+            >
               Sí, aprobar
             </AlertDialogAction>
           </AlertDialogFooter>

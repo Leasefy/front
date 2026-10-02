@@ -262,7 +262,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-4">
+        {/* El cuerpo ya trae su margen: un `px-6` acá corría el formulario
+            hacia adentro respecto del título. */}
+        <div className="space-y-4">
           {consignaciones.length === 0 ? (
             <p className="text-sm text-fg-muted" data-testid="nuevo-lead-sin-inmuebles">
               Todavía no tienes inmuebles consignados. Un lead se anota sobre uno: consigna el

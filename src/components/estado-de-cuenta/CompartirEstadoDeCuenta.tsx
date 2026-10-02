@@ -74,6 +74,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
@@ -237,7 +238,17 @@ export function CompartirEstadoDeCuenta({
           if (!abierto && ocupado === null) cancelarEnvio();
         }}
       >
-        <AlertDialogContent data-testid="confirmar-envio-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={
+            envioPorConfirmar === 'WHATSAPP' ? (
+              <WhatsappLogo weight="bold" />
+            ) : (
+              <Envelope weight="bold" />
+            )
+          }
+          data-testid="confirmar-envio-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {envioPorConfirmar === 'WHATSAPP'
@@ -253,13 +264,13 @@ export function CompartirEstadoDeCuenta({
             </AlertDialogDescription>
           </AlertDialogHeader>
           {conFiltros ? (
-            <p
-              className="rounded-md bg-surface-muted px-3 py-2 text-body-sm text-fg"
+            <AlertDialogSection
+              className="text-body-sm text-fg"
               data-testid="confirmar-envio-filtros"
             >
               El enlace muestra la MISMA vista filtrada que tienes en pantalla, no el estado de
               cuenta entero.
-            </p>
+            </AlertDialogSection>
           ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado !== null}>Cancelar</AlertDialogCancel>
@@ -269,7 +280,7 @@ export function CompartirEstadoDeCuenta({
                 e.preventDefault();
                 void confirmarEnvio();
               }}
-              disabled={ocupado !== null}
+              loading={ocupado !== null}
               data-testid="confirmar-envio"
             >
               {ocupado !== null ? 'Enviando…' : 'Mandar'}

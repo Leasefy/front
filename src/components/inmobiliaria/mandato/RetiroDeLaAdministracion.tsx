@@ -129,7 +129,14 @@ export function RetiroDeLaAdministracionDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && !guardando && onCerrar()}>
-      <DialogContent className="sm:max-w-2xl" data-testid="retiro-de-la-administracion">
+      {/* Destructiva: termina la consignación. El medallón es el de retirar
+          (`SignOut`), no la papelera. */}
+      <DialogContent
+        size="lg"
+        variant="destructive"
+        icon={<SignOut weight="bold" />}
+        data-testid="retiro-de-la-administracion"
+      >
         <DialogHeader>
           <DialogTitle>El propietario retira la administración</DialogTitle>
           <DialogDescription>
@@ -140,7 +147,7 @@ export function RetiroDeLaAdministracionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1" data-lenis-prevent>
+        <div className="space-y-4">
           {estado && !estado.disponible && estado.motivo ? (
             <div className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning flex gap-2">
               <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -258,7 +265,7 @@ function VistaDelCorte({ previa }: { previa: PrevisualizacionDelCorte }) {
   const delInquilino = porLado('INQUILINO');
   const delPropietario = porLado('PROPIETARIO');
   return (
-    <div className="space-y-3 rounded-md border border-border bg-surface-muted p-3" data-testid="vista-del-corte">
+    <div className="space-y-3 rounded-md border border-border bg-surface-hover p-3" data-testid="vista-del-corte">
       <p className="text-sm text-foreground">
         Salen de la cartera <strong>{delInquilino.length}</strong> cuotas del inquilino (
         <span className="font-mono">{PESOS.format(previa.liquidacionFinal.anuladoInquilinoCop)}</span>) y{' '}
@@ -377,7 +384,7 @@ export function RetiroRegistrado({ consignacionId }: { consignacionId: string })
 
       {aviso !== null ? (
         <Dialog open onOpenChange={(v) => !v && setAviso(null)}>
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent size="lg">
             <DialogHeader>
               <DialogTitle>Aviso al inquilino</DialogTitle>
               <DialogDescription>

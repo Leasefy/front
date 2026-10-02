@@ -37,10 +37,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { leasesApi } from '@/lib/api/leases.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Lease } from '@/lib/types/lease';
 
 /**
@@ -100,7 +102,7 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       onCambio();
     } catch (e: unknown) {
       toast.error('No pudimos registrar tu aviso', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e),
       });
     } finally {
       setGuardando(false);
@@ -198,12 +200,21 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       </div>
 
       <Dialog open={abierto} onOpenChange={setAbierto}>
-        <DialogContent className="sm:max-w-lg">
+        {/* Destructiva: con el aviso el contrato deja de prorrogarse. El ícono
+            es el mismo de la tarjeta «Avisaste que no vas a renovar». */}
+        <DialogContent
+          size="md"
+          variant="destructive"
+          icon={<CalendarX weight="bold" />}
+          data-testid="dialogo-no-voy-a-renovar"
+        >
           <DialogHeader>
             <DialogTitle>Avisar que no vas a renovar</DialogTitle>
             <DialogDescription>
               Tu contrato termina el {fechaLarga(lease.endDate)}. Sin aviso se prorroga
-              solo; con tu aviso, no.
+              solo; con tu aviso, no: queda registrado con la fecha de hoy y tu
+              inmobiliaria lo ve. Si cambias de opinión, puedes retirarlo desde esta
+              misma pantalla.
             </DialogDescription>
           </DialogHeader>
 
@@ -249,29 +260,31 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
                 propongan otra cosa.
               </p>
             </div>
-
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                hideArrow
-                onClick={() => setAbierto(false)}
-                disabled={guardando}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                hideArrow
-                onClick={() => void avisar()}
-                disabled={guardando || motivo.trim().length < 3}
-                title={motivo.trim().length < 3 ? 'Cuéntales por qué' : undefined}
-                data-testid="confirmar-no-renovar"
-              >
-                {guardando ? 'Avisando…' : 'Avisar que no renuevo'}
-              </Button>
-            </div>
           </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              onClick={() => setAbierto(false)}
+              disabled={guardando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              hideArrow
+              onClick={() => void avisar()}
+              disabled={guardando || motivo.trim().length < 3}
+              isLoading={guardando}
+              title={motivo.trim().length < 3 ? 'Cuéntales por qué' : undefined}
+              data-testid="confirmar-no-renovar"
+            >
+              {guardando ? 'Avisando…' : 'Avisar que no renuevo'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

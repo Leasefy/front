@@ -5,14 +5,14 @@ import Image from 'next/image';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, X, ArrowsOut } from '@phosphor-icons/react';
+import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, ArrowsOut } from '@phosphor-icons/react';
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
+  SheetFooter,
   SheetHeader,
-  SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
@@ -95,32 +95,15 @@ export function PropertyDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl bg-surface"
-          hideCloseButton
-        >
-          {/* Custom Header */}
-          <SheetHeader className="flex-shrink-0 flex flex-row items-center justify-between px-5 py-4 border-b border-border-faint">
-            <div>
-              <SheetTitle className="text-lg font-semibold text-fg">
-                Detalle de propiedad
-              </SheetTitle>
-              <SheetDescription className="text-sm text-fg-muted">
-                {property.neighborhood}, {property.city}
-              </SheetDescription>
-            </div>
-            <IconButton
-              variant="ghost"
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-surface-muted"
-              aria-label="Cerrar"
-              icon={<X className="w-5 h-5 text-fg-muted" />}
-            />
-          </SheetHeader>
+        <SheetContent side="right" size="md">
+          {/* Header — la ✕ la pone `SheetContent`, la misma de todo el producto */}
+          <SheetHeader
+            title="Detalle de propiedad"
+            description={`${property.neighborhood}, ${property.city}`}
+          />
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
+          {/* Scrollable Content — la foto va a sangre, por eso sin padding */}
+          <SheetBody className="p-0">
             {/* Hero Image */}
             <div className="relative aspect-video bg-surface-muted">
               <PortadaDelInmueble
@@ -356,13 +339,12 @@ export function PropertyDetailSheet({
               {/* Robottom padding for footer */}
               <div className="h-4" />
             </div>
-          </div>
+          </SheetBody>
 
-          {/* Sticky Footer */}
-          <div className="flex-shrink-0 border-t border-border-faint bg-surface p-4">
-            <div className="flex items-center gap-3">
-              {/* Price */}
-              <div className="flex-1 min-w-0">
+          {/* Sticky Footer — el precio a la izquierda, las acciones a la derecha */}
+          <SheetFooter
+            start={
+              <div className="min-w-0">
                 {property.listingType === 'sale' ? (
                   <span className="text-lg font-bold text-fg">
                     {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
@@ -378,13 +360,14 @@ export function PropertyDetailSheet({
                   </>
                 )}
               </div>
-
+            }
+          >
               {/* Wishlist Button */}
               <IconButton
                 variant="ghost"
                 onClick={handleWishlistClick}
                 className={cn(
-                  'w-12 h-12 rounded-xl border',
+                  'w-10 h-10 rounded-full border',
                   wishlisted
                     ? 'bg-danger-soft border-danger/30'
                     : 'bg-surface-muted border-border hover:bg-surface-muted'
@@ -409,24 +392,20 @@ export function PropertyDetailSheet({
                 full detail page, where `StickyCTA` already implements them.
               */}
               {property.listingType === 'sale' ? (
-                <Link href={`/propiedades/${property.id}`} className="w-full">
-                  <Button hideArrow className="w-full h-12">
-                    Contactar / agendar visita
-                  </Button>
-                </Link>
+                <Button asChild hideArrow>
+                  <Link href={`/propiedades/${property.id}`}>Contactar / agendar visita</Link>
+                </Button>
               ) : (
                 /* Postulación — el gate enseña el camino si todavía no puede
                    (ver PostularButton). "Aplicar" murió: docs/VOCABULARIO.md. */
                 <PostularButton
                   propertyId={property.id}
                   canonCop={property.monthlyRent ?? undefined}
-                  className="w-full h-12"
                 >
                   Postularme a esta propiedad
                 </PostularButton>
               )}
-            </div>
-          </div>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
 

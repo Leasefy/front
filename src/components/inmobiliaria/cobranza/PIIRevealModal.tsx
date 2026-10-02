@@ -16,6 +16,7 @@
 
 import * as React from 'react'
 import { useEffect, useState } from 'react'
+import { Eye } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { usePIIReveal } from '@/lib/hooks/cobranza/use-pii-reveal'
 import type { PIIFieldKey } from '@/lib/context/PIIRevealContext'
@@ -74,7 +75,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
       open={open && field !== null}
       onOpenChange={(o) => { if (!o) onClose() }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent size="sm" variant="confirm" icon={<Eye weight="bold" />}>
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.pii.modalTitle')}

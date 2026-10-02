@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Receipt, SealWarning } from '@phosphor-icons/react'
+import { Prohibit, Receipt, SealWarning } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 
 import { Button } from '@/components/ui/button'
@@ -322,7 +322,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
           if (!abierto && !anulando) setPorAnular(null)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<Prohibit weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Anular la factura{' '}
@@ -330,8 +330,11 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               La factura NO se borra: lleva un número que la DIAN autorizó. Se
-              emite una nota crédito por {pesos(porAnular?.totalCop ?? 0)} que la
-              netea, y quedan los dos documentos. En el libro se reversa la
+              emite una nota crédito por{' '}
+              <span className="font-mono tabular-nums">
+                {pesos(porAnular?.totalCop ?? 0)}
+              </span>{' '}
+              que la netea, y quedan los dos documentos. En el libro se reversa la
               causación de ese mes; si el inquilino ya pagó, el neteo lo hace tu
               contador y la nota lo dice.
             </AlertDialogDescription>
@@ -381,7 +384,8 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                 e.preventDefault()
                 void anular()
               }}
-              disabled={anulando || !motivoSuficiente(motivo)}
+              disabled={!motivoSuficiente(motivo)}
+              loading={anulando}
               data-testid="confirmar-nota-credito"
             >
               {anulando ? 'Emitiendo…' : 'Emitir la nota crédito'}

@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowsLeftRight, CheckCircle, Prohibit } from '@phosphor-icons/react';
+import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
@@ -45,6 +45,7 @@ import type {
   Traslado,
 } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** `YYYY-MM` del mes pasado en Bogotá: el que normalmente se acaba de liquidar. */
 function mesAnterior(): string {
@@ -136,7 +137,7 @@ export function TrasladoDeComisionPanel() {
       setMotivo('');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo rechazar el traslado.');
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo rechazar el traslado.' }));
     } finally {
       setTrabajando(false);
     }
@@ -253,12 +254,26 @@ export function TrasladoDeComisionPanel() {
       </EstadoDeDatos>
 
       <Dialog open={rechazando !== null} onOpenChange={(v) => !v && setRechazando(null)}>
-        <DialogContent>
+        {/* Destructiva: rechazar (no anular) → `XCircle` en el medallón. */}
+        <DialogContent
+          variant="destructive"
+          icon={<XCircle weight="bold" />}
+          data-testid="dialogo-rechazar-traslado"
+        >
           <DialogHeader>
-            <DialogTitle>Rechazar el traslado</DialogTitle>
+            <DialogTitle>
+              Rechazar el traslado
+              {rechazando ? (
+                <>
+                  {' '}de <span className="tabular-nums">{formatCurrency(rechazando.totalCop)}</span>
+                </>
+              ) : null}
+            </DialogTitle>
             <DialogDescription>
               La comisión se queda en la cuenta de recaudo y el cuadre de plata de terceros va a
-              seguir mostrando esa diferencia. Deja escrito por qué.
+              seguir mostrando esa diferencia. El traslado queda como rechazado, no se borra, y esa
+              plata vuelve a quedar por trasladar: se puede proponer otro desde acá. Deja escrito
+              por qué.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -269,15 +284,23 @@ export function TrasladoDeComisionPanel() {
             data-testid="motivo-del-rechazo"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRechazando(null)}>
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => setRechazando(null)}
+              disabled={trabajando}
+            >
               Volver
             </Button>
             <Button
+              variant="destructive"
+              hideArrow
               onClick={() => void rechazar()}
               disabled={trabajando || motivo.trim().length === 0}
+              isLoading={trabajando}
               data-testid="confirmar-rechazo"
             >
-              Rechazar
+              Rechazar el traslado
             </Button>
           </DialogFooter>
         </DialogContent>

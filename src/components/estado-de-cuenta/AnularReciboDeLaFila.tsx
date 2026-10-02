@@ -21,6 +21,7 @@
 
 import * as React from 'react';
 import { Banner } from '@leasefy/cadence';
+import { Prohibit } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui';
@@ -37,6 +38,7 @@ import { formatCurrency } from '@/lib/format';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import { estaVivo, type ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
 import type { FilaDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const ContextoDeAnular = React.createContext<((fila: FilaDelEstadoDeCuenta) => void) | null>(null);
 
@@ -119,7 +121,9 @@ export function ProveedorDeAnularRecibo({
       onAnulado();
     } catch (e) {
       // El mensaje del back va tal cual: dice POR QUÉ no se pudo.
-      setError(e instanceof Error ? e.message : 'No se pudo anular el recibo.');
+      setError(
+        mensajeParaLaPersona(e, { porDefecto: 'No se pudo anular el recibo.', accion: 'anular el recibo' }),
+      );
     } finally {
       setAnulando(false);
     }
@@ -129,9 +133,14 @@ export function ProveedorDeAnularRecibo({
     <ContextoDeAnular.Provider value={habilitado ? setFila : null}>
       {children}
       <Dialog open={fila !== null} onOpenChange={(abierto) => !abierto && cerrar()}>
-        <DialogContent className="sm:max-w-md" data-testid="anular-recibo-dialogo">
+        <DialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          size="sm"
+          data-testid="anular-recibo-dialogo"
+        >
           <DialogHeader>
-            <DialogTitle className="text-foreground">
+            <DialogTitle>
               Anular el recibo {fila?.documentoDePago?.numero ?? ''}
             </DialogTitle>
             <DialogDescription>
@@ -154,7 +163,7 @@ export function ProveedorDeAnularRecibo({
           </div>
           {error && <Banner variant="danger">{error}</Banner>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={cerrar} disabled={anulando}>
+            <Button type="button" variant="outline" hideArrow onClick={cerrar} disabled={anulando}>
               Cancelar
             </Button>
             <Button

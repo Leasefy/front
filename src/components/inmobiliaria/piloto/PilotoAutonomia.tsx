@@ -37,9 +37,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
@@ -186,14 +184,16 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="text-lg font-semibold text-fg">{t('inmobiliaria.piloto.autonomia.titulo')}</SheetTitle>
-          <SheetDescription>{t('inmobiliaria.piloto.autonomia.hint')}</SheetDescription>
-        </SheetHeader>
+      {/* Cabecera arriba y fija; lo demás lo reparte el `SheetContent` a un
+          cuerpo con scroll. */}
+      <SheetContent side="right" size="md">
+        <SheetHeader
+          title={t('inmobiliaria.piloto.autonomia.titulo')}
+          description={t('inmobiliaria.piloto.autonomia.hint')}
+        />
 
         {/* Qué significa cada modo — sin esto, los tres botones son adivinanza */}
-        <dl className="mt-4 space-y-2 rounded-lg border border-border bg-surface-muted p-3">
+        <dl className="space-y-2 rounded-lg border border-border bg-surface-muted p-3">
           {MODOS.map((modo) => (
             <div key={modo} className="text-caption">
               <dt className="font-medium text-fg">

@@ -29,7 +29,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bank } from '@phosphor-icons/react';
+import { Bank, EyeSlash } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -433,13 +433,15 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               que vengan.
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-4" data-testid="conciliar-con-cliente">
+          {/* El aire lo da el cuerpo del modal: sin `px-6 py-4` propios. */}
+          <div data-testid="conciliar-con-cliente">
             <ElegirCliente value={clienteElegido} onChange={setClienteElegido} />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               hideArrow
+              disabled={conCliente ? ocupados.has(conCliente.id) : false}
               onClick={() => {
                 setConCliente(null);
                 setClienteElegido(null);
@@ -449,7 +451,8 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             </Button>
             <Button
               hideArrow
-              disabled={!clienteElegido || (conCliente ? ocupados.has(conCliente.id) : true)}
+              disabled={!clienteElegido || !conCliente}
+              isLoading={conCliente ? ocupados.has(conCliente.id) : false}
               onClick={() => void conciliarConCliente()}
               data-testid="confirmar-conciliar-cliente"
             >
@@ -459,8 +462,9 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         </DialogContent>
       </Dialog>
 
+      {/* Confirmación: ignorar se puede deshacer (vuelve a pendientes). */}
       <Dialog open={ignorando !== null} onOpenChange={(abierto) => !abierto && setIgnorando(null)}>
-        <DialogContent>
+        <DialogContent variant="confirm" icon={<EyeSlash weight="bold" />}>
           <DialogHeader>
             <DialogTitle>Ignorar este movimiento</DialogTitle>
             <DialogDescription>
@@ -468,7 +472,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               qué no es un pago de canon; se puede volver a pendiente después.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 px-6 py-4">
+          <div className="space-y-2">
             <Label htmlFor="motivo-ignorar">Motivo</Label>
             <Textarea
               id="motivo-ignorar"
@@ -481,12 +485,18 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" hideArrow onClick={() => setIgnorando(null)}>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={ignorando ? ocupados.has(ignorando.id) : false}
+              onClick={() => setIgnorando(null)}
+            >
               Cancelar
             </Button>
             <Button
               hideArrow
-              disabled={motivo.trim().length < 5 || (ignorando ? ocupados.has(ignorando.id) : true)}
+              disabled={motivo.trim().length < 5 || !ignorando}
+              isLoading={ignorando ? ocupados.has(ignorando.id) : false}
               onClick={() => void ignorar()}
               data-testid="confirmar-ignorar"
             >

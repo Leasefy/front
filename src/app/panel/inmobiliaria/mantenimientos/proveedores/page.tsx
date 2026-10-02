@@ -31,16 +31,23 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Star, X } from '@phosphor-icons/react';
+import { Plus, Star } from '@phosphor-icons/react';
 import { Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
 import { TablaDeProveedores } from '@/components/mantenimientos/TablaDeProveedores';
 import { ESPECIALIDADES } from '@/components/mantenimientos/especialidades';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import {
   proveedoresDeMantenimientoApi,
@@ -156,20 +163,6 @@ function ContenidoDeProveedores() {
   );
 }
 
-/**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar (incluido el cleanup). Sin esto la rueda del mouse queda
- * secuestrada y el cuerpo del modal se ve congelado. El contenedor que scrollea
- * además lleva `data-lenis-prevent`.
- */
-function useLenisQuieto() {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-}
-
 // ── El formulario ───────────────────────────────────────────────────────────
 
 function FormularioDeProveedor({
@@ -181,7 +174,6 @@ function FormularioDeProveedor({
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
-  useLenisQuieto();
   const [form, setForm] = useState<GuardarProveedor>({
     nombre: proveedor?.nombre ?? '',
     documento: proveedor?.documento ?? '',
@@ -227,7 +219,12 @@ function FormularioDeProveedor({
       toast.success(proveedor ? 'Proveedor actualizado' : 'Proveedor registrado');
       onGuardado();
     } catch (err) {
-      setFalla(mensajeDeError(err, 'No se pudo guardar el proveedor'));
+      setFalla(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar el proveedor',
+          accion: 'guardar el proveedor',
+        }),
+      );
     } finally {
       setGuardando(false);
     }
@@ -237,31 +234,23 @@ function FormularioDeProveedor({
     form.nombre.trim().length > 0 && form.documento.trim().length > 0 && !guardando;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background">
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>
             {proveedor ? `Editar a ${proveedor.nombre}` : 'Registrar proveedor'}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORM_DE_PROVEEDOR} onSubmit={enviar} className="space-y-4">
           <Campo label="Nombre" requerido>
             {/* 🔴 21-09 · Con `placeholder`. Nico: «¿por qué estos inputs no
                 tienen placeholder?». Un campo en blanco al lado de un rótulo de
@@ -409,41 +398,43 @@ function FormularioDeProveedor({
             </div>
           )}
 
-          {/*
-            🔴 19-09 (visto en el navegador, no en una prueba): el pie NO era
-            pegajoso y el encabezado sí. Con el alto real de una pantalla
-            (806 px) el formulario mide 860 y «Registrar» caía en y=836: fuera
-            de vista, sin ninguna señal de que hubiera algo más abajo. Alguien
-            llenaba Nombre y NIT —los dos únicos obligatorios— y no encontraba
-            con qué guardar. El mismo defecto de siempre: el control que
-            necesitás no está donde estás mirando.
-          */}
-          <div className="sticky bottom-0 -mx-6 -mb-6 flex gap-2 border-t border-border bg-background px-6 py-4">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!puedeEnviar}
-              className="flex-1"
-            >
-              {proveedor ? 'Guardar' : 'Registrar'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        {/*
+          🔴 19-09 (visto en el navegador, no en una prueba): el pie NO era
+          pegajoso y el encabezado sí. Con el alto real de una pantalla
+          (806 px) el formulario mide 860 y «Registrar» caía en y=836: fuera
+          de vista, sin ninguna señal de que hubiera algo más abajo. Alguien
+          llenaba Nombre y NIT —los dos únicos obligatorios— y no encontraba
+          con qué guardar. Desde el 02-10 el pie es el `DialogFooter`: fijo,
+          fuera del cuerpo que scrollea.
+        */}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORM_DE_PROVEEDOR}
+            hideArrow
+            isLoading={guardando}
+            disabled={!puedeEnviar}
+          >
+            {proveedor ? 'Guardar' : 'Registrar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DEL_FORM_DE_PROVEEDOR = 'form-proveedor-de-mantenimiento';
 
 function Campo({
   label,
@@ -477,7 +468,6 @@ function HistorialDeCalificaciones({
   proveedor: ProveedorDeMantenimiento;
   onCerrar: () => void;
 }) {
-  useLenisQuieto();
   const [filas, setFilas] = useState<CalificacionDelProveedor[] | null>(null);
   const [error, setError] = useState<unknown>(null);
 
@@ -489,26 +479,17 @@ function HistorialDeCalificaciones({
   }, [proveedor.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCerrar} />
-      <div data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background">
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
-            Cómo le ha ido a {proveedor.nombre}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-3 p-6">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onCerrar();
+      }}
+    >
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Cómo le ha ido a {proveedor.nombre}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
           {error ? (
             <p role="alert" className="text-sm text-danger">
               No se pudo cargar el historial.
@@ -542,8 +523,8 @@ function HistorialDeCalificaciones({
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

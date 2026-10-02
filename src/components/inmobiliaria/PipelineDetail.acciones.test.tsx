@@ -46,10 +46,11 @@ vi.mock('next/link', () => ({
 // Radix monta en portales y se apoya en APIs que happy-dom no tiene completas.
 // Se reemplaza SÓLO la carcasa: la lógica de MotivoDialog (el mínimo de
 // caracteres, el `preventDefault`, el reset del texto) es la real.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 

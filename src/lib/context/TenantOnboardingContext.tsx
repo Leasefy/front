@@ -10,6 +10,11 @@ import {
   type TenantPreferences,
 } from '@/lib/api/tenant-preferences.service'
 import { useAuth } from '@/lib/auth/use-auth'
+import {
+  datosDelInquilinoCompletos,
+  documentoYCelularParaElBack,
+  type TipoDeDocumentoDelInquilino,
+} from '@/lib/onboarding/datos-del-inquilino'
 
 // ============================================================================
 // NOTA PARA BACKEND:
@@ -60,8 +65,10 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   // Validation tracking
   step1Valid?: boolean
   step2Valid?: boolean
-  /** Cédula de Ciudadanía (Colombia) */
+  /** Número de documento (el tipo va en `documentType`). */
   rut?: string
+  /** Tipo de documento: CC, CE, PPT o pasaporte (`lib/onboarding/datos-del-inquilino`). */
+  documentType?: TipoDeDocumentoDelInquilino
   /**
    * Eligió «Aún no lo sé» en «¿Cuándo planeas mudarte?». Sólo vive en el
    * borrador: al back no se manda fecha, que es lo mismo que no saberla; esto
@@ -346,11 +353,17 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     setDraft((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  // El documento ya guardado en el back no se cambia desde acá (soporte).
+  const documentoBloqueado = user?.profileSource === 'backend' && !!user.rut
+
   const isStepValid = useCallback(
     (step: number): boolean => {
       switch (step) {
-        case 1: // Welcome - name required
-          return !!draft.displayName && draft.displayName.trim().length > 0
+        // Nombre, documento (tipo + número) y celular: obligatorios y con las
+        // reglas de la plataforma (Nico, 01-10-2026: «él debe llenar esa
+        // información»). Ver `lib/onboarding/datos-del-inquilino`.
+        case 1:
+          return datosDelInquilinoCompletos(draft, { documentoBloqueado })
         case 2: // Preferences - budget required
           return (
             !!draft.budgetMin &&
@@ -362,7 +375,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
           return false
       }
     },
-    [draft]
+    [draft, documentoBloqueado]
   )
 
   const canProceed = useMemo(() => isStepValid(currentStep), [isStepValid, currentStep])
@@ -404,6 +417,13 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       setCurrentStep(1)
       return
     }
+    // Un borrador viejo (de antes de que el documento y el celular fueran
+    // obligatorios) puede llegar al último paso sin ellos: se vuelve al 1.
+    if (!datosDelInquilinoCompletos(draft, { documentoBloqueado })) {
+      toast.error('Completa tu documento y tu celular para terminar tu perfil.')
+      setCurrentStep(1)
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -421,10 +441,10 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         await apiClient.post('/users/me/onboarding', {
           firstName,
           lastName,
-          phone: draft.phone || undefined,
-          // Document number: the backend only writes it when the user has none
-          // (immutable once set — changes go through Leasefy support).
-          rut: draft.rut || undefined,
+          // Documento limpio + su tipo y el celular en E.164 (lo que el back
+          // valida: `^(\+57)?3\d{9}$`). El back escribe el documento una sola
+          // vez; con el documento ya bloqueado no se manda.
+          ...documentoYCelularParaElBack(draft, { documentoBloqueado }),
           userType: 'TENANT',
           preferredContact: draft.preferredContact,
           budgetMin: draft.budgetMin,
@@ -490,7 +510,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     } finally {
       setIsSubmitting(false)
     }
-  }, [totalSteps, draft, refreshUser, userId])
+  }, [totalSteps, draft, refreshUser, userId, documentoBloqueado])
 
   const resetDraft = useCallback(() => {
     setDraft(initialTenantOnboardingDraft)

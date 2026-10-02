@@ -100,10 +100,15 @@ export function PhoneField({
         autoComplete="tel-national"
         disabled={disabled}
         aria-invalid={invalid || undefined}
+        // `invalid` del DS pinta el borde de error, como en los demás campos.
+        invalid={invalid}
         aria-describedby={`${id}-pais`}
-        // El largo lo pone el país; el recorte igual se hace en onChange porque
-        // maxLength no frena un pegado desde el portapapeles.
-        maxLength={pais.longitud}
+        // SIN maxLength (01-10-2026, encontrado probando en el navegador): el
+        // tope del navegador cuenta caracteres, no dígitos, y corta ANTES de
+        // limpiar. «300 123 4567» quedaba en «300 123 45» → 8 dígitos, y
+        // «+57 300 123 4567» pegado en «+57 300 12». El largo lo pone el país
+        // en `onChange` (`recortarAlPais`), que primero quita lo que no es
+        // dígito y el indicativo, y después recorta.
         // Con "Ej:" delante para que no se lea como un valor ya escrito.
         placeholder={`Ej: ${pais.ejemplo}`}
         value={value}

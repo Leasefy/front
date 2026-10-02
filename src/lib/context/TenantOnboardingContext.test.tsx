@@ -70,6 +70,9 @@ import type { User } from '@/lib/auth/types'
 
 type ContextValue = ReturnType<typeof useTenantOnboarding>
 
+/** Documento y celular válidos: desde el 01-10-2026 el paso 1 los exige. */
+const DATOS_VALIDOS = { rut: '1090525663', phone: '3001234567' }
+
 const STORAGE_KEY = 'plan_onboarding_tenant'
 
 let container: HTMLDivElement
@@ -126,6 +129,23 @@ describe('TenantOnboardingContext — step 1 name gate', () => {
     await act(async () => {
       captured!.updateDraft({ displayName: 'Ana María' })
     })
+    // Sólo con el nombre ya no alcanza: el documento y el celular son
+    // obligatorios (Nico, 01-10-2026).
+    expect(captured!.isStepValid(1)).toBe(false)
+
+    await act(async () => {
+      captured!.updateDraft({ rut: '12', phone: '3001234567' })
+    })
+    expect(captured!.isStepValid(1)).toBe(false)
+
+    await act(async () => {
+      captured!.updateDraft({ rut: '1090525663', phone: '!@#$%^&*' })
+    })
+    expect(captured!.isStepValid(1)).toBe(false)
+
+    await act(async () => {
+      captured!.updateDraft(DATOS_VALIDOS)
+    })
     expect(captured!.isStepValid(1)).toBe(true)
   })
 })
@@ -136,7 +156,7 @@ describe('TenantOnboardingContext — name splitting on submit', () => {
     await renderProvider()
 
     await act(async () => {
-      captured!.updateDraft({ displayName: '  Ana María  Pérez Gómez ' })
+      captured!.updateDraft({ displayName: '  Ana María  Pérez Gómez ', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await captured!.submitOnboarding()
@@ -146,8 +166,11 @@ describe('TenantOnboardingContext — name splitting on submit', () => {
     expect(postMock).toHaveBeenCalledWith('/users/me/onboarding', {
       firstName: 'Ana',
       lastName: 'María Pérez Gómez',
-      phone: undefined,
-      rut: undefined,
+      // El documento limpio con su tipo y el celular en E.164 (lo que el back
+      // valida: ^(\+57)?3\d{9}$).
+      rut: '1090525663',
+      documentType: 'CC',
+      phone: '+573001234567',
       userType: 'TENANT',
       // Housing preferences ride along so the backend becomes the source of
       // truth for onboarding completeness (initial draft values here).
@@ -169,6 +192,7 @@ describe('TenantOnboardingContext — name splitting on submit', () => {
     await act(async () => {
       captured!.updateDraft({
         displayName: 'Ana Pérez',
+        ...DATOS_VALIDOS,
         budgetMin: 800000,
         budgetMax: 1500000,
         preferredZones: ['Chapinero'],
@@ -201,7 +225,7 @@ describe('TenantOnboardingContext — name splitting on submit', () => {
     await renderProvider()
 
     await act(async () => {
-      captured!.updateDraft({ displayName: 'Ana' })
+      captured!.updateDraft({ displayName: 'Ana', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await captured!.submitOnboarding()
@@ -438,7 +462,7 @@ describe('TenantOnboardingContext — split error handling (POST vs refreshUser)
     postMock.mockRejectedValue(new Error('500'))
     await renderProvider()
     await act(async () => {
-      captured!.updateDraft({ displayName: 'Ana Pérez' })
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await expect(captured!.submitOnboarding()).rejects.toThrow()
@@ -459,7 +483,7 @@ describe('TenantOnboardingContext — split error handling (POST vs refreshUser)
     refreshUserMock.mockRejectedValue(new Error('network'))
     await renderProvider()
     await act(async () => {
-      captured!.updateDraft({ displayName: 'Ana Pérez' })
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await expect(captured!.submitOnboarding()).rejects.toThrow()
@@ -486,7 +510,7 @@ describe('TenantOnboardingContext — split error handling (POST vs refreshUser)
       .mockResolvedValueOnce(undefined)
     await renderProvider()
     await act(async () => {
-      captured!.updateDraft({ displayName: 'Ana Pérez' })
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await captured!.submitOnboarding()
@@ -509,7 +533,7 @@ describe('TenantOnboardingContext — rejected submit', () => {
     await renderProvider()
 
     await act(async () => {
-      captured!.updateDraft({ displayName: 'Ana Pérez' })
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS })
     })
     await act(async () => {
       await expect(captured!.submitOnboarding()).rejects.toThrow()

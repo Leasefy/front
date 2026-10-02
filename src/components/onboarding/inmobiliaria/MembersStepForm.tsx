@@ -317,9 +317,7 @@ export function MembersStepForm({
     ])
     const reparto = aplicarErroresDelServidor<FieldPath<MembersStepFormValues>>(
       errorDelServidor,
-      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
-      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
-      { setError: (campo, error) => setError(campo, error), setFocus },
+      { setError, setFocus },
       {
         campos,
         toast: false,

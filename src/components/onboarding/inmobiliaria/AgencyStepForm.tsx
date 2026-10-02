@@ -176,9 +176,7 @@ export function AgencyStepForm({
     }
     const reparto = aplicarErroresDelServidor<FieldPath<AgencyStepFormValues>>(
       errorDelServidor,
-      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
-      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
-      { setError: (campo, error) => setError(campo, error), setFocus },
+      { setError, setFocus },
       {
         campos: camposConError,
         toast: false,

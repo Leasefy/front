@@ -106,7 +106,9 @@ export function repartirErroresDelServidor<Campo extends string = string>(
 
 /** Lo mínimo de `useForm()` que hace falta (así sirve con cualquier formulario). */
 export interface FormularioConErrores<Campo extends string> {
-  setError: (name: Campo, error: { type: string; message: string }, opciones?: { shouldFocus?: boolean }) => void
+  // `shouldFocus` obligatorio dentro de `opciones`, como en react-hook-form: así
+  // se le pasa `form` tal cual, sin envolver su `setError`.
+  setError: (name: Campo, error: { type: string; message: string }, opciones?: { shouldFocus: boolean }) => void
   setFocus?: (name: Campo) => void
 }
 

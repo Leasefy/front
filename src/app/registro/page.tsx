@@ -335,14 +335,7 @@ function RegistroContent() {
       // con otro formato) va a SU campo, con el foco; lo demás (400 del token,
       // 409 de otra inmobiliaria, un 5xx) al cartel, con la regla de oro. El
       // token NO se borra (removeItem sólo corre al salir bien): se puede reintentar.
-      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
-      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
-      const formulario = {
-        setError: (campo: (typeof CAMPOS_DEL_PERFIL)[number], error: { type: string; message: string }) =>
-          profileForm.setError(campo, error),
-        setFocus: profileForm.setFocus,
-      };
-      const reparto = aplicarErroresDelServidor(err, formulario, {
+      const reparto = aplicarErroresDelServidor(err, profileForm, {
         campos: CAMPOS_DEL_PERFIL,
         toast: false,
         porDefecto: 'No se pudo completar el registro. Intenta de nuevo.',

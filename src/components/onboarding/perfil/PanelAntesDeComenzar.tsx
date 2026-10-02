@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { X } from '@phosphor-icons/react'
+import { WarningCircle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
@@ -123,11 +123,25 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
             ))}
           </div>
         ) : status === 'needs-info' || status === 'provisioning' ? (
-          <OwnerNameStepForm
-            onSubmit={provision}
-            isSubmitting={status === 'provisioning'}
-            valoresIniciales={valoresGuardados ?? undefined}
-          />
+          <>
+            {/* La última vez los datos no pasaron: el formulario vuelve lleno
+                y esto dice qué revisar. Nunca un «quedó bloqueado». */}
+            {status === 'needs-info' && fallo?.paraCorregir ? (
+              <div
+                role="alert"
+                className="mb-5 flex items-start gap-2.5 rounded-md bg-warning-soft p-3"
+                data-testid="registro-para-corregir"
+              >
+                <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="fill" aria-hidden />
+                <p className="text-body-sm text-fg">{fallo.mensaje}</p>
+              </div>
+            ) : null}
+            <OwnerNameStepForm
+              onSubmit={provision}
+              isSubmitting={status === 'provisioning'}
+              valoresIniciales={valoresGuardados ?? undefined}
+            />
+          </>
         ) : (
           <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
         )}

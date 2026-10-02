@@ -325,7 +325,8 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     })
   })
 
-  it('con la agencia en FAILED no ofrece reintento: es terminal', async () => {
+  // Nico, 01-10-2026: «le dice que es irreversible, ¿cómo así? es ilógico».
+  it('con la agencia en FAILED vuelve el formulario lleno para corregir: nunca «quedó bloqueado»', async () => {
     getOnboardingResumePointMock.mockResolvedValue({
       agentSessionId: null,
       tenantId: 'agencia-1',
@@ -337,8 +338,13 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     const hook = renderHook()
     await flush()
 
-    expect(hook.get().status).toBe('error')
-    expect(hook.get().fallo?.reintentable).toBe(false)
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo).toMatchObject({ reintentable: true, paraCorregir: true })
+    expect(hook.get().fallo?.mensaje).not.toMatch(/bloquead|soporte/i)
+    expect(hook.get().valoresGuardados).toMatchObject({
+      razonSocial: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+    })
   })
 
   it('si no se puede averiguar dónde quedó, se empieza igual', async () => {
@@ -349,20 +355,20 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     expect(hook.get().status).toBe('needs-info')
   })
 
-  it('guarda el mensaje del back en vez de comérselo', async () => {
+  it('un 400 son los datos: guarda el mensaje del back y vuelve al formulario para corregir', async () => {
     postUsersOnboardingMock.mockRejectedValue(
-      new ApiError(400, 'El registro de esta inmobiliaria no se pudo completar previamente.'),
+      new ApiError(400, 'No se pudo completar el registro de la inmobiliaria. Verifica los datos e intenta nuevamente.'),
     )
     const hook = renderHook()
     await flush()
     act(() => hook.get().provision(VALID_INPUT))
     await flush()
 
-    expect(hook.get().status).toBe('error')
-    expect(hook.get().fallo?.mensaje).toContain('no se pudo completar previamente')
-    // 400 en este flujo es terminal: reintentar da lo mismo para siempre.
-    expect(hook.get().fallo?.reintentable).toBe(false)
-    expect(hook.get().fallo?.status).toBe(400)
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().fallo?.mensaje).toContain('Verifica los datos')
+    expect(hook.get().fallo).toMatchObject({ reintentable: true, paraCorregir: true, status: 400 })
+    // Lo que escribió vuelve al formulario.
+    expect(hook.get().valoresGuardados).toMatchObject({ razonSocial: 'Inmobiliaria Andes SAS' })
   })
 
   it('el 409 CORREO_DE_OTRA_INMOBILIARIA muestra el mensaje del back y no ofrece reintentar', async () => {

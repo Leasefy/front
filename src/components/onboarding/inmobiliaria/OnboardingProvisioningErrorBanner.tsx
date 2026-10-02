@@ -60,7 +60,8 @@ export function OnboardingProvisioningErrorBanner({
       <WarningCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-danger" weight="fill" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-danger">
-          {reintentable ? 'No pudimos abrir tu registro' : 'Tu registro quedó bloqueado'}
+          {/* Nunca «quedó bloqueado»: suena irreversible y no lo es (Nico, 01-10-2026). */}
+          {reintentable ? 'No pudimos abrir tu registro' : 'No pudimos seguir con tu registro'}
         </p>
         <p className="mt-1 text-body-sm text-fg-muted">{mensaje}</p>
 

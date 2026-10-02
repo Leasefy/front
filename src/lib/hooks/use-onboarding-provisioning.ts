@@ -15,8 +15,9 @@
  *  - si hay agencia pero no sesión, el paso previo aparece PRELLENADO con la
  *    razón social y el NIT que ya había escrito, y reenviarlo vuelve a pedirle
  *    la sesión al agente;
- *  - si la agencia quedó FAILED, no se ofrece reintento: es terminal y lo
- *    destraba soporte. Un botón que no puede funcionar es peor que no tenerlo.
+ *  - si la agencia quedó FAILED (el micro rechazó los datos), vuelve el paso
+ *    previo prellenado con un aviso arriba para corregir y reenviar. Nada en
+ *    este flujo es terminal (01-10-2026): «irreversible» era ilógico.
  *
  * Los fallos ya no se tragan. El mensaje del back —que viene en español y es
  * específico— se guarda y se muestra, junto con si tiene sentido reintentar.
@@ -102,7 +103,16 @@ export interface FalloDeAprovisionamiento {
   status: number | null
   /** Sólo cuando lo que falló fue una caída. Ver `CaidaDelRegistro`. */
   caida?: CaidaDelRegistro
+  /**
+   * true ⇒ lo que falló fueron los DATOS: se vuelve al formulario prellenado
+   * con este mensaje arriba, para corregir y reenviar. Nunca es un callejón.
+   */
+  paraCorregir?: boolean
 }
+
+/** Lo que se dice arriba del formulario cuando la última vez el micro rechazó los datos. */
+export const REVISA_LOS_DATOS =
+  'La última vez no pudimos crear tu inmobiliaria con estos datos. Revísalos —sobre todo el NIT— y vuelve a intentar.'
 
 /** Lo que tranquiliza en el registro: lo escrito se queda (ver `valoresGuardados`). */
 export const LO_ESCRITO_NO_SE_PIERDE = 'Lo que escribiste no se pierde.'
@@ -140,9 +150,9 @@ const FALLO_GENERICO =
  * Traduce lo que salió mal a algo que se le pueda decir a una persona, y a si
  * tiene sentido ofrecerle el botón de reintentar.
  *
- * Un 400 del back en este flujo es siempre terminal: o la agencia quedó FAILED
- * (que no se auto-reintenta nunca) o los datos no pasaron validación, y en los
- * dos casos volver a mandar lo mismo da lo mismo.
+ * Un 400/422 son los datos: `paraCorregir` lleva de vuelta al formulario
+ * prellenado. Lo único que no se ofrece reintentar es lo que el formulario no
+ * puede arreglar (el 409 del correo de otra inmobiliaria, un 403).
  */
 export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
   /*
@@ -190,9 +200,21 @@ export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
     if (error.status === 0) {
       return { mensaje: error.message, reintentable: true, status: 0 }
     }
+    // Un 400/422 son los DATOS (el micro los rechazó, falta el NIT, no pasó
+    // la validación): se corrigen en el formulario y se reenvían. Antes esto
+    // era «terminal» y la persona quedaba trancada para siempre (Nico,
+    // 01-10-2026: «le dice que es irreversible, ¿cómo así? es ilógico»).
+    if (error.status === 400 || error.status === 422) {
+      return {
+        mensaje: error.message || REVISA_LOS_DATOS,
+        reintentable: true,
+        status: error.status,
+        paraCorregir: true,
+      }
+    }
     return {
       mensaje: error.message || FALLO_GENERICO,
-      reintentable: error.status !== 400 && error.status !== 403,
+      reintentable: error.status !== 403,
       status: error.status,
     }
   }
@@ -267,15 +289,10 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
           return
         }
 
+        // FAILED = la última vez el micro rechazó los datos. No es un
+        // callejón: vuelve el formulario prellenado, con el aviso arriba.
         if (punto.provisioningStatus === 'FAILED') {
-          setFallo({
-            mensaje:
-              'El registro de esta inmobiliaria quedó bloqueado y no se puede reintentar solo. Escríbenos y lo destrabamos.',
-            reintentable: false,
-            status: null,
-          })
-          setStatus('error')
-          return
+          setFallo({ mensaje: REVISA_LOS_DATOS, reintentable: true, status: null, paraCorregir: true })
         }
 
         setStatus('needs-info')
@@ -339,8 +356,11 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (!mountedRef.current || requestIdRef.current !== requestId) return
         setSessionId(null)
         setValoresGuardados(valoresDelEnvio(input))
-        setFallo(interpretarFallo(error))
-        setStatus('error')
+        const fallo = interpretarFallo(error)
+        setFallo(fallo)
+        // Si lo que falló fueron los datos, se vuelve al formulario para
+        // corregirlos; lo demás (una caída, un 409) va al cartel.
+        setStatus(fallo.paraCorregir ? 'needs-info' : 'error')
       })
   }, [])
 

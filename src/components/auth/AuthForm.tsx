@@ -127,7 +127,11 @@ const AVISOS_DE_SESION: Record<string, string> = {
   expirada: 'Tu sesión expiró. Vuelve a entrar para seguir donde estabas.',
   revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
   inactividad: 'Cerramos tu sesión por inactividad. Vuelve a entrar para continuar.',
+  'contrasena-actualizada': 'Tu contraseña quedó actualizada. Inicia sesión con la nueva.',
 };
+
+/** Avisos que confirman algo que salió bien: van en verde, no en ámbar. */
+const AVISOS_DE_CONFIRMACION = new Set(['contrasena-actualizada']);
 
 /**
  * Aviso de por qué el usuario terminó acá sin pedirlo.
@@ -136,14 +140,18 @@ const AVISOS_DE_SESION: Record<string, string> = {
  * un error del usuario ni una falla del sistema, es lo que tiene que pasar. El
  * rojo del ErrorBanner de abajo queda para lo que sí salió mal.
  */
-function AvisoBanner({ children }: { children: React.ReactNode }) {
+function AvisoBanner({ children, confirmacion = false }: { children: React.ReactNode; confirmacion?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30"
+      role="status"
+      data-testid="aviso-de-sesion"
+      className={confirmacion
+        ? 'px-3.5 py-2.5 rounded-lg bg-success-soft border border-success/30'
+        : 'px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30'}
     >
-      <p className="text-[12.5px] text-warning">{children}</p>
+      <p className={confirmacion ? 'text-[12.5px] text-success' : 'text-[12.5px] text-warning'}>{children}</p>
     </motion.div>
   );
 }
@@ -443,6 +451,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    */
   const olvidarAviso = React.useCallback(() => setMotivoDeCierre(null), []);
   const avisoDeSesion = motivoDeCierre ? AVISOS_DE_SESION[motivoDeCierre] ?? null : null;
+  const avisoDeConfirmacion = !!motivoDeCierre && AVISOS_DE_CONFIRMACION.has(motivoDeCierre);
   /*
    * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
    * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
@@ -974,7 +983,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </div>
               </div>
-              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
+              {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               {error && correoSinConfirmar && (
                 <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
@@ -1089,7 +1098,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
-              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
+              {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               {error && correoYaRegistrado && (
                 <p className="text-[13px] text-fg-subtle">
@@ -1210,7 +1219,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
               />
             </div>
-            {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
+            {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
             <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}

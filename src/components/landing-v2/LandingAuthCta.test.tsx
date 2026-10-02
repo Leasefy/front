@@ -53,12 +53,21 @@ describe('<LandingAuthCta>', () => {
     expect(anchor.getAttribute('target')).toBeNull()
   })
 
-  it('renders the logged-out variant while auth is still loading, even with a user in context', () => {
-    mockUseAuth.mockReturnValue({ user: { role: 'agency' }, isAuthenticated: true, isLoading: true })
+  // QA 01-10-2026: los botones cambiaban solos segundos después de cargar.
+  // Mientras la sesión no se sabe no se pinta NINGÚN botón de sesión: un hueco
+  // invisible del mismo tamaño (las mismas clases), sin enlace ni texto leíble.
+  it.each([
+    ['sin usuario', { user: null, isAuthenticated: false }],
+    ['con un usuario en el contexto', { user: { role: 'agency' }, isAuthenticated: true }],
+  ])('mientras carga (%s) deja un hueco invisible, no «Iniciar sesión» ni «Ir al panel»', (_caso, estado) => {
+    mockUseAuth.mockReturnValue({ ...estado, isLoading: true })
     render({ variant: 'header' })
-    const anchor = container.querySelector('a')!
-    expect(anchor.textContent).toBe('Iniciar sesión')
-    expect(anchor.getAttribute('href')).toBe('/auth')
+    expect(container.querySelector('a')).toBeNull()
+    const hueco = container.querySelector('[data-testid="hueco-de-boton-de-sesion"]') as HTMLElement
+    expect(hueco).not.toBeNull()
+    expect(hueco.getAttribute('aria-hidden')).toBe('true')
+    expect(hueco.style.visibility).toBe('hidden')
+    expect(hueco.className).toBe('btn outline sm')
   })
 
   it('renders "Ir al panel" -> /panel/inmobiliaria/piloto for an authenticated agency user', () => {

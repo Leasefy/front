@@ -21,6 +21,7 @@ import { SignOut, UserCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth/use-auth'
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor'
 
 interface Props {
   /** A dónde iba la persona. Se respeta al continuar. */
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
-  const { user, signOut } = useAuth()
+  const { user, signOut, mfaRequired, mfaEnrollRequired } = useAuth()
   const [saliendo, setSaliendo] = useState(false)
   // La recarga completa tarda (el destino arma todo el panel): mientras
   // tanto el botón carga y queda quieto, para que no parezca que el clic no
@@ -41,8 +42,18 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
     setContinuando(true)
     // `window.location` y no el router: el resto del formulario ya navega así,
     // y una recarga completa deja el contexto de auth limpio en el destino.
-    window.location.href = destino
-  }, [destino])
+    //
+    // «Continuar» no salta el segundo factor (QA 01-10-2026): una sesión
+    // abierta con la contraseña y sin el código (la de un enlace de
+    // recuperación, o una que se quedó a medias) iba directo al destino, y si
+    // el destino no tenía su propio ProtectedRoute —el selector de perfil, los
+    // onboardings— quedaba adentro sin el código. Mismo orden que AuthForm.
+    if (mfaEnrollRequired) {
+      window.location.href = '/auth/mfa-enroll'
+      return
+    }
+    window.location.href = mfaRequired ? rutaAlSegundoFactor(destino) : destino
+  }, [destino, mfaRequired, mfaEnrollRequired])
 
   const cambiar = useCallback(async () => {
     setSaliendo(true)

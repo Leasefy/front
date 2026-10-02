@@ -57,3 +57,19 @@ export function borrarMarcaDeRecuperacion(): void {
   // entornos que la dan por viva hasta el siguiente milisegundo.
   document.cookie = `${COOKIE_DE_RECUPERACION}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
 }
+
+/**
+ * A dónde va quien acaba de poner su contraseña nueva desde el enlace: a
+ * entrar con ella, con el aviso de que quedó guardada (QA 01-10-2026: antes iba
+ * a la landing con la sesión del enlace viva). El aviso viaja como los de
+ * cierre: `?reason=` (el `PARAM_MOTIVO` de session-terminal.ts, que no se
+ * importa porque es `'use client'` y este módulo lo usa también
+ * `/auth/callback`, del servidor; una prueba ata los dos) y `anunciarCierre`
+ * en sessionStorage. Si el enlace traía su propio
+ * destino (`?next=`), se conserva para después de entrar.
+ */
+export function rutaParaEntrarConLaNueva(destino: string): string {
+  const sp = new URLSearchParams({ reason: 'contrasena-actualizada' })
+  if (destino && destino !== '/') sp.set('returnUrl', destino)
+  return `/auth?${sp.toString()}`
+}

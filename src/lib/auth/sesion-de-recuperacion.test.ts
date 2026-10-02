@@ -1,3 +1,5 @@
+import { rutaParaEntrarConLaNueva } from './sesion-de-recuperacion'
+import { PARAM_MOTIVO } from './session-terminal'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -30,3 +32,21 @@ describe('sesión de recuperación', () => {
     expect(hayMarcaDeRecuperacion(`x${COOKIE_DE_RECUPERACION}=1`)).toBe(false)
   })
 })
+
+describe('rutaParaEntrarConLaNueva (QA 01-10-2026)', () => {
+  it('después de la contraseña nueva va a /auth con el aviso, no a la landing', () => {
+    expect(rutaParaEntrarConLaNueva('/')).toBe('/auth?reason=contrasena-actualizada')
+  })
+
+  it('conserva el destino propio del enlace para después de entrar', () => {
+    expect(rutaParaEntrarConLaNueva('/panel/inmobiliaria')).toBe(
+      `/auth?reason=contrasena-actualizada&returnUrl=${encodeURIComponent('/panel/inmobiliaria')}`,
+    )
+  })
+
+  it('usa el mismo parámetro que lee /auth (PARAM_MOTIVO)', () => {
+    const url = new URL(rutaParaEntrarConLaNueva('/'), 'http://x')
+    expect(url.searchParams.get(PARAM_MOTIVO)).toBe('contrasena-actualizada')
+  })
+})
+

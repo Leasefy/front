@@ -39,6 +39,12 @@ export type MotivoDeCierre =
   | 'revocada'
   /** Nadie tocó nada durante el tope configurado. */
   | 'inactividad'
+  /**
+   * La persona puso su contraseña nueva desde el enlace de recuperación: esa
+   * sesión se cierra y se entra con la nueva (QA 01-10-2026). No es un
+   * vencimiento: el aviso es una confirmación, no una advertencia.
+   */
+  | 'contrasena-actualizada'
 
 /** El valor que viaja en `?reason=` hacia /auth. */
 export const PARAM_MOTIVO = 'reason'
@@ -192,6 +198,15 @@ interface AvisoGuardado {
   en: number
 }
 
+/**
+ * Deja el aviso para /auth sin pasar por `terminarSesion`: para un cierre que
+ * la pantalla hace ella misma y espera (la contraseña nueva cierra la sesión
+ * del enlace y después navega). Mismo almacenamiento y misma vigencia.
+ */
+export function anunciarCierre(motivo: MotivoDeCierre): void {
+  guardarAviso(motivo)
+}
+
 function guardarAviso(motivo: MotivoDeCierre): void {
   if (typeof window === 'undefined') return
   try {
@@ -241,7 +256,7 @@ export function tomarAvisoDeCierre(motivoEnLaUrl?: string | null): MotivoDeCierr
   }
 }
 
-const MOTIVOS: readonly string[] = ['expirada', 'revocada', 'inactividad']
+const MOTIVOS: readonly string[] = ['expirada', 'revocada', 'inactividad', 'contrasena-actualizada']
 
 function esMotivo(v: unknown): v is MotivoDeCierre {
   return typeof v === 'string' && MOTIVOS.includes(v)

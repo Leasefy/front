@@ -889,6 +889,91 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     expect(captured!.mfaRequired).toBe(true)
   })
 
+  /*
+   * QA 01-10-2026: «se ingresó sin haber pedido el token». Entrar desde el
+   * formulario es INITIAL_SESSION sin sesión (suelta `isLoading`) y DESPUÉS
+   * SIGNED_IN. Antes el usuario se ponía antes del chequeo de MFA: había un
+   * render con isAuthenticated=true, isLoading=false y mfaRequired=false, y
+   * AuthForm navegaba al destino sin pedir el código.
+   */
+  it('entrar desde el formulario con un factor pendiente: nunca hay un render «adentro» sin mfaRequired', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: null },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+
+    // Cada render que se vea con la sesión «adentro» tiene que saber ya que
+    // falta el código.
+    const adentroSinCodigo: string[] = []
+    function Vigia() {
+      const a = React.useContext(AuthContext)!
+      if (!a.isLoading && a.isAuthenticated && !a.mfaRequired) adentroSinCodigo.push(a.user?.email ?? '?')
+      if (!a.isLoading && a.needsOnboarding && !a.mfaRequired) adentroSinCodigo.push('onboarding')
+      return null
+    }
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+          <Vigia />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.isAuthenticated).toBe(false)
+
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+    // El callback volvió; el chequeo de MFA todavía no corrió: la sesión
+    // todavía no se muestra.
+    expect(captured!.isAuthenticated).toBe(false)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.mfaRequired).toBe(true)
+    expect(adentroSinCodigo).toEqual([])
+  })
+
+  it('entrar desde el formulario SIN segundo factor: la sesión aparece igual, apenas termina el chequeo', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.mfaRequired).toBe(false)
+  })
+
   it('TOKEN_REFRESHED with no MFA requirement (aal1→aal1): releases isLoading normally, no regression for non-MFA users', async () => {
     getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
     getMock.mockResolvedValue({

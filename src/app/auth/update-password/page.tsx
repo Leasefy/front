@@ -16,7 +16,8 @@ import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
-import { borrarMarcaDeRecuperacion } from '@/lib/auth/sesion-de-recuperacion';
+import { borrarMarcaDeRecuperacion, rutaParaEntrarConLaNueva } from '@/lib/auth/sesion-de-recuperacion';
+import { anunciarCierre } from '@/lib/auth/session-terminal';
 
 /**
  * Supabase no deja cambiar la contraseña de una cuenta con segundo factor
@@ -110,7 +111,7 @@ function enEspanol(mensaje: string): string {
 function UpdatePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoading: authLoading, isAuthenticated, mfaRequired } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, mfaRequired, signOut } = useAuth();
 
   const esPrimeraVez = searchParams.get('nuevo') === '1';
   const destino = sanitizeReturnUrl(searchParams.get('next'), '/');
@@ -122,6 +123,8 @@ function UpdatePasswordContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  /** Cerrando la sesión del enlace antes de mandar a entrar con la nueva. */
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
   /*
    * Los campos de acá no llevan `name`, así que un envío nativo antes de
    * hidratar no mandaría la contraseña a ningún lado. Igual va la misma guarda
@@ -175,7 +178,31 @@ function UpdatePasswordContent() {
       // Ya no es una sesión «sólo para cambiar la contraseña».
       borrarMarcaDeRecuperacion();
       setSuccess(true);
-      setTimeout(() => router.push(destino), 2000);
+      if (esPrimeraVez) {
+        // La invitación: no tiene otra forma de entrar que esta sesión.
+        setTimeout(() => router.push(destino), 2000);
+        return;
+      }
+      /*
+       * 🔴 QA 01-10-2026: «luego de renovar una contraseña está dirigiendo
+       * directamente hacia la landing y no hacia el login», y en la landing los
+       * botones pasaban solos de «Ir al panel» a «Iniciar sesión». Antes se
+       * navegaba a `/` con la sesión del ENLACE todavía viva: la landing la
+       * mostraba como una sesión normal hasta que algo la cerraba.
+       *
+       * Ahora la sesión del enlace se cierra acá —revocada en el servidor y
+       * borrada de este navegador— y se ESPERA a que termine; recién después se
+       * va a entrar con la contraseña nueva. Navegación dura y `replace`: no
+       * queda nada de esta sesión en memoria, y «atrás» no vuelve a este
+       * formulario.
+       */
+      setCerrandoSesion(true);
+      // La contraseña YA quedó guardada: un fallo al cerrar (red caída) no se
+      // pinta como error de este formulario. `signOut` igual borra la sesión
+      // de este navegador aunque la revocación en el servidor no responda.
+      await signOut().catch(() => {});
+      anunciarCierre('contrasena-actualizada');
+      window.location.replace(rutaParaEntrarConLaNueva(destino));
     } catch (err) {
       if (err instanceof FaltaElSegundoFactor) {
         alSegundoFactor();
@@ -211,13 +238,19 @@ function UpdatePasswordContent() {
               <p className="text-sm text-fg-muted mb-6">
                 {esPrimeraVez
                   ? 'Ya puedes entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
-                  : 'Tu contraseña fue cambiada exitosamente. Redirigiendo...'}
+                  : 'Ahora entra con la contraseña nueva. Te llevamos a iniciar sesión…'}
               </p>
-              <Link href={destino}>
-                <Button className="w-full">
-                  {esPrimeraVez ? 'Ver mi arriendo' : 'Ir al inicio'}
-                </Button>
-              </Link>
+              {/* En la recuperación no hay botón: navegar antes de que termine
+                  el cierre dejaría viva la sesión del enlace. */}
+              {esPrimeraVez ? (
+                <Link href={destino}>
+                  <Button className="w-full">Ver mi arriendo</Button>
+                </Link>
+              ) : (
+                <p className="text-xs text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
+                  {cerrandoSesion ? 'Cerrando la sesión del enlace…' : 'Un momento…'}
+                </p>
+              )}
             </div>
           ) : (
             <>

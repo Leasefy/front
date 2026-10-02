@@ -1082,18 +1082,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
           if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
-          setUser(userData)
-          setNeedsOnboarding(needsOnb)
-          setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-          // Apply the bootstrap's own membership verdict — no second request.
-          // Fire-and-forget — the global loader does not wait on this either
-          // (only the agency-route gate waits, on agencyMembershipChecked).
-          if (userData) {
-            if (agencyResult) {
-              applyAgencyFetchResult(agencyResult)
-              setAgencyMembershipChecked(true)
-            } else {
-              void probeAgencyMembership(session.access_token)
+          /*
+           * 🔴 QA 01-10-2026: «se ingresó sin haber pedido el token». Quien
+           * entra desde el formulario llega acá con `isLoading` YA en false (el
+           * INITIAL_SESSION sin sesión lo soltó al cargar /auth). Si el usuario
+           * se pone antes del chequeo de MFA, hay un render con
+           * `isAuthenticated=true`, `isLoading=false` y `mfaRequired=false` (el
+           * valor por defecto, no el real): el efecto de AuthForm lo lee como
+           * «entró sin segundo factor» y navega al destino. El panel lo atajaba
+           * su ProtectedRoute; el selector de perfil y los onboardings de
+           * inquilino y propietario, no.
+           *
+           * Por eso el usuario, el onboarding y la membresía se ponen JUNTO con
+           * el veredicto del MFA, adentro de `alSoltarElLock`: nadie ve una
+           * sesión «adentro» sin saber todavía si le falta el código.
+           */
+          const aplicarSesion = () => {
+            setUser(userData)
+            setNeedsOnboarding(needsOnb)
+            setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
+            // Apply the bootstrap's own membership verdict — no second request.
+            // Fire-and-forget — the global loader does not wait on this either
+            // (only the agency-route gate waits, on agencyMembershipChecked).
+            if (userData) {
+              if (agencyResult) {
+                applyAgencyFetchResult(agencyResult)
+                setAgencyMembershipChecked(true)
+              } else {
+                void probeAgencyMembership(session.access_token)
+              }
             }
           }
           // SIGNED_IN también puede venir de adentro del lock (`setSession` en
@@ -1116,6 +1133,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           alSoltarElLock(async () => {
             await checkMfaLevel(miGeneracion)
             if (sessionGenerationRef.current === miGeneracion) {
+              // Después del chequeo: cuando aparece el usuario, `mfaRequired`
+              // ya tiene su valor real.
+              aplicarSesion()
               setIsLoading(false)
             }
             // NOTE: the waiter handoff to `signInWithEmail` below is

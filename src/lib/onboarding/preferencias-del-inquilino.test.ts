@@ -36,6 +36,20 @@ describe('revisarPreferenciasDelInquilino', () => {
     expect(PRESUPUESTO_MAXIMO_COP).toBeLessThanOrEqual(2_147_483_647)
   })
 
+  /*
+   * 02-10-2026 · Nico: el tope es $100.000.000 al mes, el mismo número y la
+   * misma frase que `back/src/users/dto/limites-del-perfil.ts`.
+   */
+  it('🔴 el tope de Nico: $100.000.000 pasa; un peso más es el error con la frase del back', () => {
+    expect(revisarPreferenciasDelInquilino({ budgetMin: 100_000_000, budgetMax: 100_000_000 })).toEqual({})
+    expect(revisarPreferenciasDelInquilino({ ...base, budgetMax: 100_000_001 })).toEqual({
+      budgetMax: 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    })
+    expect(revisarPreferenciasDelInquilino({ budgetMin: 150_000_000, budgetMax: 150_000_000 })).toMatchObject({
+      budgetMin: 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    })
+  })
+
   it('falta el presupuesto: la frase de siempre del paso', () => {
     expect(revisarPreferenciasDelInquilino({})).toEqual({
       budgetMin: MENSAJES_DEL_PERFIL.faltaPresupuesto,

@@ -24,7 +24,12 @@ import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } fr
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
-import { leerFallo } from './traductor-de-errores'
+import { fraseDelCodigo, leerFallo, mensajeParaLaPersona } from './traductor-de-errores'
+import {
+  CODIGO_LIMITE_DEL_PLAN,
+  CODIGO_NOMINA_NO_HABILITADA,
+  CODIGO_PLAN_REQUERIDO,
+} from './codigos-del-plan'
 import {
   esCaidaDeLaBase,
   esServicioNoDisponible,
@@ -378,9 +383,35 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
-  // Un 402 no es un tropiezo: el plan se quedó sin créditos de IA. Ofrecer
-  // «Intentar de nuevo» ahí es la misma promesa falsa que sobre un 404 — la
-  // consulta no va a pasar hasta que alguien recargue.
+  /*
+   * 02-10-2026 · Los 402 del back llevan `code` y cada uno dice lo suyo. Antes
+   * TODO 402 era «Tu plan se quedó sin créditos de IA», también la inmobiliaria
+   * sin plan activo y el tope del plan. Ninguno se arregla reintentando.
+   */
+  if (status === 402) {
+    const code = cuerpoDelNo(error).code
+    const titulos: Record<string, string> = {
+      [CODIGO_PLAN_REQUERIDO]: 'Tu inmobiliaria no tiene un plan activo',
+      [CODIGO_LIMITE_DEL_PLAN]: 'Llegaste al límite de tu plan',
+      [CODIGO_NOMINA_NO_HABILITADA]: 'El módulo de Nómina no está habilitado',
+    }
+    if (code && titulos[code]) {
+      return {
+        tipo: 'sinPermiso',
+        titulo: titulos[code],
+        // El texto del back si se lee (es el más preciso: «límite de AGENTES»);
+        // si no, la frase del código. Lo decide el traductor.
+        descripcion: mensajeParaLaPersona(error, { porDefecto: fraseDelCodigo(code) }),
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+  }
+
+  // Un 402 sin código no es un tropiezo: el plan se quedó sin créditos de IA.
+  // Ofrecer «Intentar de nuevo» ahí es la misma promesa falsa que sobre un
+  // 404 — la consulta no va a pasar hasta que alguien recargue.
   if (status === 402) {
     return {
       tipo: 'sinCreditos',

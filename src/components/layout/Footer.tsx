@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { LeasefySymbol } from "@/components/brand";
 
 const menuLinks = [
@@ -70,7 +68,7 @@ export function Footer() {
     <footer className="bg-primary text-white uppercase tracking-wide font-mono overflow-hidden">
       {/* Main Content - 80px padding top */}
       <div className="container-platform pt-[80px]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
           {/* Left Column - List & Social */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -125,55 +123,16 @@ export function Footer() {
             </div>
           </motion.div>
 
-          {/* Center Column - Newsletter */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="md:border-x md:border-white/10 md:px-12"
-          >
-            {/* Newsletter text - 16px, -0.32px letter-spacing, white/60% */}
-            <p className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-white/60 text-center mb-[24px]">
-              Suscríbete a nuestro boletín para recibir nuevas propiedades, consejos y más
-            </p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
-                if (!email) return;
-                toast.success('¡Suscrito!', { description: 'Te enviaremos novedades a tu correo.' });
-                form.reset();
-              }}
-              className="flex"
-            >
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="Tu correo electrónico"
-                aria-label="Correo electrónico para suscripción"
-                className="flex-1 h-[44px] px-4 bg-white/5 border border-white/10 rounded-l-xl text-[16px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/20 tracking-[-0.32px]"
-              />
-              <Button
-                type="submit"
-                variant="white"
-                hideArrow
-                className="h-[44px] px-[20px] rounded-l-none rounded-r-xl text-[15px] tracking-[-0.15px]"
-              >
-                Suscribir
-              </Button>
-            </form>
-          </motion.div>
-
+          {/* 02-10-2026 · Acá iba «Suscríbete a nuestro boletín»: decía «¡Suscrito!»
+              sin guardar el correo en ningún lado. Se quitó mientras no haya dónde
+              guardarlo; la cuadrícula pasó de tres columnas a dos. */}
           {/* Right Column - Pages & Contact */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="md:pl-8"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="md:border-l md:border-white/10 md:pl-12"
           >
             <div className="grid grid-cols-2 gap-8">
               <div>

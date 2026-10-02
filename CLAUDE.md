@@ -273,8 +273,15 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
 - **El error bajo el campo entra suave**: `<ErrorDelCampo id mensaje pista? />`
   (`src/components/estado/ErrorDelCampo.tsx`, `Presence`/`CrossFade` de Cadence; con `pista`, la ayuda
   y el error se cruzan). `id` = el de `aria-describedby` (`${id}-error` en un `FormField`).
-- **402**: sólo un GET del panel sin `code` (plan vencido) lleva a `/panel/inmobiliaria/upgrade`
-  (`el402LlevaAlPlan`, `client.ts`). El tope del plan en una acción y el registro se quedan donde están.
+- **402** (códigos en `src/lib/errores/codigos-del-plan.ts`, espejo del back): `PLAN_REQUERIDO` en un GET
+  del panel lleva a `/panel/inmobiliaria/upgrade` (`el402LlevaAlPlan`, `client.ts`); `LIMITE_DEL_PLAN`
+  (trae `limite`) NUNCA navega, se dice donde pasó; `NOMINA_NO_HABILITADA` lo pinta su cartel; un 402 sin
+  `code` (back viejo) sigue la regla de antes. El registro nunca saca al fundador. `clasificarFallo`
+  titula cada código (sin código = «sin créditos de IA»).
+- **Frase por código** (`FRASES_DE_LOS_CODIGOS` / `fraseDelCodigo`): el `message` del back gana si se
+  lee; la frase del código, si no. Un `message` se muestra hasta `LARGO_MAXIMO_DE_UN_MENSAJE` (800: los
+  409 de caja pasan de 300) y nunca si trae saltos de línea, HTML, una traza, `node_modules`, un
+  `archivo.ts:N`, Prisma o un JSON. `RegistrarPagoModal` ya pasa por el traductor.
 - Un `code` estable decide; nunca el texto (P2002 del back viejo → `YA_EXISTE`; «should not
   exist» → `campos[].regla === 'no_permitido'`).
 

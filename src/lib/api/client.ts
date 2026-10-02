@@ -20,6 +20,7 @@ import {
   servicioDelError,
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
+import { CODIGO_PLAN_REQUERIDO } from '@/lib/errores/codigos-del-plan'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -404,23 +405,26 @@ function errorDeRed(err: unknown): ApiError {
  * ¿Este 402 se lleva a la persona a la página del plan? (02-10-2026)
  *
  * Antes, CUALQUIER 402 de una ruta `/inmobiliaria/*` navegaba a
- * `/panel/inmobiliaria/upgrade`. Pero el back manda 402 por tres motivos:
+ * `/panel/inmobiliaria/upgrade`. Pero el back manda 402 por tres motivos, y
+ * desde el 02-10-2026 cada uno con su `code` (`lib/errores/codigos-del-plan.ts`):
  *
- *  · la inmobiliaria no tiene un plan activo (`AgencyActiveSubscriptionGuard`,
- *    sin `code`): corta TODO el panel, y ahí sí va la página del plan;
- *  · llegó al tope de su plan (`assertCanAddAgente`, `assertCanAddConsignacion`:
- *    «Alcanzaste el límite de agentes de tu plan…»): nace de una ACCIÓN —invitar
- *    a alguien, consignar un inmueble— y la pantalla lo dice en su sitio con
- *    «Ver planes» (`InvitarAlEquipo`), con lo que la persona escribió intacto;
- *  · un módulo de pago sin contratar (`NOMINA_NO_HABILITADA`, con `code`): lo
- *    activa Leasefy, no la página del plan.
+ *  · `PLAN_REQUERIDO` — la inmobiliaria no tiene un plan activo
+ *    (`AgencyActiveSubscriptionGuard`): corta TODO el panel, y al CARGAR una
+ *    pantalla ahí sí va la página del plan;
+ *  · `LIMITE_DEL_PLAN` — llegó al tope de su plan (agentes, inmuebles): nace de
+ *    una ACCIÓN —invitar, consignar— y la pantalla lo dice en su sitio con «Ver
+ *    planes» (`InvitarAlEquipo`), con lo que la persona escribió intacto. NUNCA
+ *    navega, ni en un GET;
+ *  · `NOMINA_NO_HABILITADA` — un módulo de pago sin contratar: lo activa
+ *    Leasefy, no la página del plan. Lo pinta su propio cartel.
  *
- * Y el fundador que invita a su equipo desde el ASISTENTE DE REGISTRO
- * (`/onboarding/inmobiliaria`) salía del asistente a mitad de camino.
+ * Un 402 SIN `code` es un back anterior: conserva la regla de antes (era el
+ * del plan vencido). Y el fundador que invita a su equipo desde el ASISTENTE
+ * DE REGISTRO (`/onboarding/inmobiliaria`) nunca sale del asistente.
  *
- * Regla: sólo un GET (cargar una pantalla del panel), sin `code` propio, y
- * sólo si la persona está en el panel (nunca desde el registro, el onboarding
- * o la página del plan / el pago, que haría un bucle).
+ * Regla: sólo un GET (cargar una pantalla del panel), con `PLAN_REQUERIDO` o
+ * sin `code`, y sólo si la persona está en el panel (nunca desde el registro,
+ * el onboarding o la página del plan / el pago, que haría un bucle).
  */
 export function el402LlevaAlPlan({
   method,
@@ -434,7 +438,7 @@ export function el402LlevaAlPlan({
   pagina: string
 }): boolean {
   if (method.toUpperCase() !== 'GET') return false
-  if (code) return false
+  if (code && code !== CODIGO_PLAN_REQUERIDO) return false
   if (!path.startsWith('/inmobiliaria')) return false
   if (!pagina.startsWith('/panel/inmobiliaria')) return false
   return (
@@ -634,9 +638,9 @@ async function request<T>(
 
   if (res.status === 402) {
     // Payment Required — respaldo del `AgencySubscriptionGuard` del cliente:
-    // con el plan vencido, el panel va a la página del plan. SÓLO en ese caso
-    // (ver `el402LlevaAlPlan`): el tope de un plan o un módulo sin contratar se
-    // dicen donde está la persona.
+    // sin plan activo (`PLAN_REQUERIDO`), cargar el panel va a la página del
+    // plan. SÓLO en ese caso (ver `el402LlevaAlPlan`): el tope de un plan
+    // (`LIMITE_DEL_PLAN`) o un módulo sin contratar se dicen donde está la persona.
     const errorBody = await res.json().catch(() => ({}))
     const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
     if (

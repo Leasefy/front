@@ -11,6 +11,8 @@ import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPla
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { getContractTypeLabel } from '@/lib/types/contract';
 import { contractsApi } from '@/lib/api/contracts.service';
+import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface ContractExpandableItemProps {
   contract: Contract;
@@ -64,28 +66,38 @@ function SignatureIndicator({
  */
 export function ContractExpandableItem({ contract }: ContractExpandableItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isPaperPlaneTiltingReminder, setIsPaperPlaneTiltingReminder] = useState(false);
-  const [reminderCooldown, setReminderCooldown] = useState(false);
+  /*
+   * 🔴 El recordatorio de firma (02-10-2026). Antes era un `setTimeout` de
+   * 1,2 s seguido de «Se envió un recordatorio a …»: no llamaba a nada y no
+   * salía ningún aviso. Ahora es `POST /contracts/:id/remind`, que le vuelve a
+   * mandar al inquilino el aviso «Firma tu contrato» (uno cada 24 h por
+   * contrato). La pantalla dice lo que pasó: enviando → enviado, o el motivo.
+   */
+  const [recordatorio, setRecordatorio] = useState<'listo' | 'enviando' | 'enviado'>('listo');
 
-  const handlePaperPlaneTiltReminder = useCallback(async (e: React.MouseEvent) => {
+  const handleRecordar = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isPaperPlaneTiltingReminder || reminderCooldown) return;
-
-    setIsPaperPlaneTiltingReminder(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setIsPaperPlaneTiltingReminder(false);
-    setReminderCooldown(true);
-
-    toast.success('Recordatorio enviado', {
-      description: `Se envió un recordatorio a ${contract.tenantName} (${contract.tenantEmail}) para firmar el contrato.`,
-    });
-
-    // 60s cooldown
-    setTimeout(() => setReminderCooldown(false), 60_000);
-  }, [isPaperPlaneTiltingReminder, reminderCooldown, contract.tenantName, contract.tenantEmail]);
+    if (recordatorio !== 'listo') return;
+    setRecordatorio('enviando');
+    try {
+      await contractsApi.remind(contract.id);
+      setRecordatorio('enviado');
+      toast.success('Recordatorio enviado', {
+        description: `Le avisamos a ${contract.tenantName || 'el inquilino'} que el contrato espera su firma.`,
+      });
+    } catch (err) {
+      // Ya hay uno de las últimas 24 h: el botón queda como enviado (lo está)
+      // y el mensaje del back dice desde cuándo se puede mandar otro.
+      const yaHayUno = err instanceof ApiError && err.code === 'RECORDATORIO_RECIENTE';
+      setRecordatorio(yaHayUno ? 'enviado' : 'listo');
+      toast.error(yaHayUno ? 'Ya se envió un recordatorio hoy' : 'No se envió el recordatorio', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'enviar el recordatorio',
+        }),
+      });
+    }
+  }, [recordatorio, contract.id, contract.tenantName]);
 
   const needsLandlordAction = contract.status === 'pending_landlord';
   const needsTenantAction = contract.status === 'pending_tenant';
@@ -281,11 +293,13 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                   <Button
                     variant="outline"
                     className="flex-1 gap-2 rounded-lg border-border"
-                    disabled={isPaperPlaneTiltingReminder || reminderCooldown}
-                    onClick={handlePaperPlaneTiltReminder}
+                    disabled={recordatorio !== 'listo'}
+                    aria-busy={recordatorio === 'enviando'}
+                    onClick={handleRecordar}
+                    data-testid="recordar-firma"
                   >
-                    <PaperPlaneTilt className={cn('w-4 h-4', isPaperPlaneTiltingReminder && 'animate-pulse')} />
-                    {isPaperPlaneTiltingReminder ? 'Enviando…' : reminderCooldown ? 'Enviado' : 'Recordar'}
+                    <PaperPlaneTilt className={cn('w-4 h-4', recordatorio === 'enviando' && 'animate-pulse')} />
+                    {recordatorio === 'enviando' ? 'Enviando…' : recordatorio === 'enviado' ? 'Enviado' : 'Recordar'}
                   </Button>
                 )}
                 <Link href={contractUrl} className={needsLandlordAction || needsTenantAction ? '' : 'flex-1'}>

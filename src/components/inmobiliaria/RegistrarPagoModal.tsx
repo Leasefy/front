@@ -111,6 +111,7 @@ import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -683,7 +684,9 @@ export function RegistrarPagoModal({
         const trabado =
           typeof e.detalle?.cobroId === 'string' ? e.detalle.cobroId : sinConciliar[0]?.id;
         if (esPlataSinRecibo && trabado) {
-          setConciliando({ cobroId: trabado, mensaje: e.message });
+          // El texto del back trae la cifra que no cuadra; pasa por el
+          // traductor (02-10-2026) para que un volcado nunca llegue a caja.
+          setConciliando({ cobroId: trabado, mensaje: mensajeParaLaPersona(e, { porDefecto: '' }) });
           setErrorDelBack(null);
           return;
         }
@@ -715,7 +718,20 @@ export function RegistrarPagoModal({
             ? t('recibos.form.cuotaYCobroNoCuadran')
             : null,
       );
-      setErrorDelBack(e instanceof Error ? e.message : t('recibos.form.fallo'));
+      /*
+       * 02-10-2026 · Por el traductor, no `e.message` crudo. Los 409 de caja son
+       * largos (mes, inmueble, inquilino, cifras, qué hacer) y el traductor los
+       * descartaba por pasar de 300 caracteres; ya los deja pasar enteros. Lo
+       * que cambia es el resto: un 5xx dice que fue nuestro con la referencia
+       * (no «Error interno del servidor»), sin respuesta habla de la red, y un
+       * volcado o un HTML no llegan a la pantalla.
+       */
+      setErrorDelBack(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'registrar el pago',
+        }),
+      );
     } finally {
       setEnviando(false);
     }
@@ -762,7 +778,9 @@ export function RegistrarPagoModal({
       setOrigen('');
       await recargar();
     } catch (e) {
-      setErrorDeConciliacion(e instanceof Error ? e.message : t('recibos.conciliar.fallo'));
+      setErrorDeConciliacion(
+        mensajeParaLaPersona(e, { porDefecto: t('recibos.conciliar.fallo'), accion: 'conciliar el pago' }),
+      );
     } finally {
       setEnviandoConciliacion(false);
     }
@@ -860,10 +878,12 @@ export function RegistrarPagoModal({
                 {t('recibos.conciliar.porQue')}
               </Banner>
 
-              {/* El mensaje del back, tal cual: trae la cifra que no cuadra. */}
-              <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-                {conciliando.mensaje}
-              </p>
+              {/* El mensaje del back (por el traductor): trae la cifra que no cuadra. */}
+              {conciliando.mensaje && (
+                <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
+                  {conciliando.mensaje}
+                </p>
+              )}
 
               <p className="text-sm text-fg-muted">{t('recibos.conciliar.queVaAPasar')}</p>
 
@@ -1188,7 +1208,7 @@ export function RegistrarPagoModal({
                 />
               </div>
 
-              {/* El rechazo del back, tal cual */}
+              {/* El rechazo del back, por el traductor */}
               {errorDelBack && (
                 <Banner
                   variant="danger"

@@ -32,7 +32,7 @@ vi.mock('@/lib/i18n', () => ({
 import { StepHousingPreferences } from '../StepHousingPreferences'
 import { IntentoDeAvanzarContext } from '../intento-de-avanzar'
 
-const TOPE = 'El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.'
+const TOPE = 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
 
 let container: HTMLDivElement
 let root: Root

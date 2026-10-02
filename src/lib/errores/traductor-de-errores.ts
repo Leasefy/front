@@ -34,6 +34,11 @@
 import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
 import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible'
 import { leerElError } from '@/lib/conexion/leer-el-error'
+import {
+  CODIGO_LIMITE_DEL_PLAN,
+  CODIGO_NOMINA_NO_HABILITADA,
+  CODIGO_PLAN_REQUERIDO,
+} from './codigos-del-plan'
 
 // ── El contrato ──────────────────────────────────────────────────────────────
 
@@ -134,15 +139,48 @@ function referenciaDelError(error: unknown): string | undefined {
   return undefined
 }
 
+/**
+ * El largo máximo de un `message` que se le muestra a una persona (02-10-2026).
+ *
+ * Era 300 y se quedaba corto: los 409 de caja (`recibos-de-caja.service.ts`,
+ * `sincronizar-cuota-con-cobro.ts`) explican mes, inmueble, inquilino, cifras
+ * y qué hacer, y con nombres reales pasan de 300. Medidos con títulos de 100
+ * y nombres de 60 caracteres: `CUOTA_Y_COBRO_NO_CUADRAN` (el cobro de otro
+ * contrato) ≈ 510, el 400 del pago de una aseguradora que excede lo vencido
+ * ≈ 560; con los topes de las columnas (título 200, nombre 100) ≈ 690. El
+ * traductor los descartaba y `RegistrarPagoModal` tenía que mostrar el mensaje
+ * crudo. 800 los cubre; lo que lo protege de un volcado no es el largo, son
+ * las reglas de abajo.
+ */
+export const LARGO_MAXIMO_DE_UN_MENSAJE = 800
+
+/**
+ * Lo que delata un volcado aunque venga en una sola línea y sea corto: una
+ * traza (`at fn (/app/x.js:10:5)`), una ruta de `node_modules`, un archivo con
+ * su línea, una consulta de Prisma o un JSON.
+ */
+const PARECE_UNA_TRAZA = [
+  /\bat\s+\S.*:\d+:\d+\)?/,
+  /node_modules[\\/]/,
+  /\.(?:[cm]?[jt]sx?|java|py):\d+/,
+  /Invalid `/,
+  /prisma\.\w+\.\w+\(/,
+  /^[[{]/,
+]
+
+/** Una etiqueta de HTML en cualquier parte («<html>», «</div>», «<!DOCTYPE»). */
+const TRAE_HTML = /<\/?[a-z!][^>]*>/i
+
 /** Un `message` que es un volcado, un HTML o un código no le sirve a nadie. */
 function esLegible(m: string): boolean {
   const t = m.trim()
   return (
     t.length > 0 &&
-    t.length <= 300 &&
-    !t.includes('\n') &&
-    !t.startsWith('Invalid `') &&
+    t.length <= LARGO_MAXIMO_DE_UN_MENSAJE &&
+    !/[\n\r]/.test(t) &&
     !t.startsWith('<') &&
+    !TRAE_HTML.test(t) &&
+    !PARECE_UNA_TRAZA.some((r) => r.test(t)) &&
     !/^Error \d{3}$/.test(t) &&
     !/^[1-5]\d\d$/.test(t)
   )
@@ -254,6 +292,29 @@ export function conReferencia(texto: string, fallo: FalloLeido): string {
   return ref ? `${texto} Si sigue pasando, escríbenos con la referencia ${ref}.` : texto
 }
 
+/**
+ * Una frase en español para cada `code` que el front trata aparte (02-10-2026).
+ *
+ * El `message` del back gana cuando se puede leer: es más preciso («límite de
+ * AGENTES de tu plan»). La frase del código es para cuando no: un back viejo,
+ * un mensaje vacío o en inglés, un volcado.
+ */
+export const FRASES_DE_LOS_CODIGOS: Readonly<Record<string, string>> = {
+  [CODIGO_PLAN_REQUERIDO]:
+    'Tu inmobiliaria no tiene un plan activo. Elige o renueva tu plan para seguir usando el panel.',
+  [CODIGO_LIMITE_DEL_PLAN]: 'Llegaste al límite de tu plan. Sube de plan para agregar más.',
+  [CODIGO_NOMINA_NO_HABILITADA]:
+    'El módulo de Nómina no está habilitado para tu inmobiliaria. Es un módulo de pago: lo activa Leasefy cuando se contrata.',
+  RECORDATORIO_RECIENTE: 'Ya se envió un recordatorio de firma en las últimas 24 horas.',
+}
+
+/** La frase de un `code`, o `undefined` si el código no tiene una propia. */
+export function fraseDelCodigo(code: string | undefined): string | undefined {
+  return code && Object.prototype.hasOwnProperty.call(FRASES_DE_LOS_CODIGOS, code)
+    ? FRASES_DE_LOS_CODIGOS[code]
+    : undefined
+}
+
 export interface OpcionesDelMensaje {
   /** Lo que se dice si el error no trae nada legible (un 4xx vacío, algo raro). */
   porDefecto?: string
@@ -287,6 +348,8 @@ export function mensajeParaLaPersona(error: unknown, { porDefecto, accion }: Opc
     default: {
       const legibles = fallo.mensajes.filter(esLegible)
       if (legibles.length) return Array.from(new Set(legibles)).join(' · ')
+      const delCodigo = fraseDelCodigo(fallo.code)
+      if (delCodigo) return delCodigo
       const deCampos = fallo.campos.map((c) => c.mensaje)
       if (deCampos.length) return Array.from(new Set(deCampos)).join(' · ')
       return general

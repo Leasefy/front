@@ -2,9 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/client'
 import { CODIGO_LEASEFY_NO_RESPONDE, MENSAJE_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
 import {
+  FRASES_DE_LOS_CODIGOS,
+  LARGO_MAXIMO_DE_UN_MENSAJE,
   MENSAJE_SIN_INTERNET,
   MENSAJE_SIN_RESPUESTA,
   camposDelError,
+  fraseDelCodigo,
   leerFallo,
   mensajeParaLaPersona,
 } from './traductor-de-errores'
@@ -20,12 +23,12 @@ function cuatrocientosConCampos() {
   const cuerpo = {
     statusCode: 400,
     code: 'DATOS_INVALIDOS',
-    message: ['El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.'],
+    message: ['El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'],
     campos: [
       {
         campo: 'budgetMax',
         regla: 'maximo',
-        mensaje: 'El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.',
+        mensaje: 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
         valor: 30_000_000_000,
       },
     ],
@@ -109,7 +112,7 @@ describe('mensajeParaLaPersona: la regla de oro', () => {
 
   it('🔴 un 400 con campos dice QUÉ está mal, nunca la conexión', () => {
     const m = mensajeParaLaPersona(cuatrocientosConCampos(), { porDefecto: 'No pudimos guardar tu perfil.' })
-    expect(m).toContain('$2.000.000.000')
+    expect(m).toContain('$100.000.000')
     expect(m).not.toMatch(/conexi[oó]n/i)
   })
 
@@ -143,5 +146,89 @@ describe('mensajeParaLaPersona: la regla de oro', () => {
 
   it('un TypeError de JavaScript no es un texto para nadie', () => {
     expect(mensajeParaLaPersona(new TypeError('x is not a function'), { porDefecto: 'No se pudo.' })).toBe('No se pudo.')
+  })
+})
+
+/**
+ * 02-10-2026 · El tope de 300 caracteres descartaba los 409 de caja, que
+ * explican mes, inmueble, inquilino, cifras y qué hacer. Por eso
+ * `RegistrarPagoModal` mostraba el mensaje crudo en vez de usar el traductor.
+ * El tope sube; lo que ataja un volcado son las otras reglas.
+ */
+describe('mensajeParaLaPersona: los mensajes largos de caja pasan; los volcados no', () => {
+  // Medido sobre la plantilla del back (`sincronizar-cuota-con-cobro.ts`):
+  // el cobro de otro contrato, con un título y un nombre reales.
+  const CUOTA_Y_COBRO =
+    'Ya existe el cobro de septiembre de 2026 de Apartamento 1203 Torre B Conjunto Residencial Los Almendros del Poblado Medellín ' +
+    'a nombre de María Fernanda Restrepo Gutiérrez de la Ossa, y es de otro contrato (normalmente, el del inquilino anterior). ' +
+    'Un inmueble tiene un solo cobro por mes, así que el pago de Juan Camilo Rodríguez Echeverri no tiene documento propio para ' +
+    'septiembre de 2026. Desde caja no se puede corregir: avísale a soporte.'
+
+  it('🔴 un 409 de caja de más de 300 caracteres llega entero, no el texto por defecto', () => {
+    expect(CUOTA_Y_COBRO.length).toBeGreaterThan(300)
+    const e = new ApiError(409, CUOTA_Y_COBRO, 'CUOTA_Y_COBRO_NO_CUADRAN', { cobroId: 'c-1' })
+    expect(mensajeParaLaPersona(e, { porDefecto: 'No se emitió el recibo.' })).toBe(CUOTA_Y_COBRO)
+  })
+
+  it('el tope cubre el peor caso medido de caja (≈690) y no más que eso con holgura', () => {
+    expect(LARGO_MAXIMO_DE_UN_MENSAJE).toBeGreaterThanOrEqual(700)
+    expect(LARGO_MAXIMO_DE_UN_MENSAJE).toBeLessThanOrEqual(1000)
+  })
+
+  it('un texto más largo que el tope sigue sin pasar', () => {
+    const e = new ApiError(409, 'a '.repeat(LARGO_MAXIMO_DE_UN_MENSAJE), 'X')
+    expect(mensajeParaLaPersona(e, { porDefecto: 'No se pudo.' })).toBe('No se pudo.')
+  })
+
+  it.each([
+    ['una traza en una sola línea', "TypeError: Cannot read properties of undefined (reading 'id') at ReciboService.crear (/app/dist/recibos.js:120:15)"],
+    ['una ruta de node_modules', 'Error en /app/node_modules/@prisma/client/runtime/library.js'],
+    ['un archivo con su línea', 'Falló en recibos-de-caja.service.ts:512'],
+    ['una consulta de Prisma', 'Error en prisma.reciboDeCaja.create( ... ) con datos inválidos'],
+    ['un volcado de Prisma en el medio', 'Fallo: Invalid `this.prisma.cobro.update()` invocation'],
+    ['un HTML en el medio', 'El proveedor respondió: <html><body><h1>502 Bad Gateway</h1></body></html>'],
+    ['un HTML al principio', '<!DOCTYPE html><html>…'],
+    ['un JSON', '{"statusCode":500,"message":"Internal server error"}'],
+    ['un retorno de carro', 'uno\rdos'],
+  ])('🔴 %s no se le muestra a nadie', (_que, texto) => {
+    const e = new ApiError(409, texto, 'X')
+    expect(mensajeParaLaPersona(e, { porDefecto: 'No se pudo.' })).toBe('No se pudo.')
+  })
+})
+
+/**
+ * 02-10-2026 · Una frase en español para cada código que el front trata aparte
+ * (los 402 del plan, el módulo sin contratar, el recordatorio de firma). El
+ * `message` del back gana cuando se puede leer.
+ */
+describe('fraseDelCodigo y los 402', () => {
+  it('🔴 PLAN_REQUERIDO, LIMITE_DEL_PLAN y NOMINA_NO_HABILITADA tienen su frase', () => {
+    for (const code of ['PLAN_REQUERIDO', 'LIMITE_DEL_PLAN', 'NOMINA_NO_HABILITADA', 'RECORDATORIO_RECIENTE']) {
+      expect(fraseDelCodigo(code)).toBe(FRASES_DE_LOS_CODIGOS[code])
+      expect(fraseDelCodigo(code)).toMatch(/^[A-ZÁÉÍÓÚÑ¿¡]/)
+    }
+    expect(fraseDelCodigo('CODIGO_NUEVO')).toBeUndefined()
+    expect(fraseDelCodigo(undefined)).toBeUndefined()
+    expect(fraseDelCodigo('toString')).toBeUndefined()
+  })
+
+  it('🔴 un 402 con código y sin texto legible dice la frase del código, no el texto por defecto', () => {
+    expect(mensajeParaLaPersona(new ApiError(402, '', 'PLAN_REQUERIDO'), { porDefecto: 'No se pudo.' })).toBe(
+      FRASES_DE_LOS_CODIGOS.PLAN_REQUERIDO,
+    )
+    expect(mensajeParaLaPersona(new ApiError(402, '402', 'LIMITE_DEL_PLAN'), { porDefecto: 'No se pudo.' })).toBe(
+      FRASES_DE_LOS_CODIGOS.LIMITE_DEL_PLAN,
+    )
+  })
+
+  it('el mensaje del back gana cuando se lee: dice QUÉ tope fue', () => {
+    const e = new ApiError(402, 'Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.', 'LIMITE_DEL_PLAN', {
+      limite: 'agentes',
+    })
+    expect(mensajeParaLaPersona(e)).toBe('Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.')
+  })
+
+  it('un 402 sin código sigue como antes: el texto del back o el por defecto', () => {
+    expect(mensajeParaLaPersona(new ApiError(402, ''), { porDefecto: 'No se pudo.' })).toBe('No se pudo.')
   })
 })

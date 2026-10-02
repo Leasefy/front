@@ -14,8 +14,12 @@
 
 import { z } from 'zod'
 
-/** `min_budget`/`max_budget` son `int4`; el tope del negocio queda debajo. */
-export const PRESUPUESTO_MAXIMO_COP = 2_000_000_000
+/**
+ * El tope del presupuesto MENSUAL del inquilino: $100.000.000 (Nico, 02-10-2026).
+ * Regla del negocio, no de la columna (`int4`, 2.147.483.647): una cifra más
+ * alta es casi siempre un cero de más.
+ */
+export const PRESUPUESTO_MAXIMO_COP = 100_000_000
 export const MAX_ZONAS = 10
 export const MAX_LARGO_ZONA = 80
 export const MAX_AMENIDADES = 30
@@ -29,7 +33,7 @@ export const MENSAJES_DEL_PERFIL = {
   faltaPresupuesto: 'Ingresa tu presupuesto mínimo y máximo para continuar',
   presupuestoEntero: 'El presupuesto debe ser un número entero de pesos, sin decimales.',
   presupuestoNegativo: 'El presupuesto no puede ser negativo.',
-  presupuestoMaximo: 'El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.',
+  presupuestoMaximo: 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
   maximoMenorQueMinimo: 'El máximo no puede ser menor que el mínimo.',
   fechaDeMudanza: 'Elige una fecha de mudanza válida.',
   fechaDeMudanzaFueraDeRango: 'La fecha de mudanza debe estar entre el año 2000 y el 2100.',

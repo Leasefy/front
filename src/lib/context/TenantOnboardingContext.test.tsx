@@ -582,7 +582,7 @@ describe('TenantOnboardingContext — errores del servidor en su campo (02-10-20
   }
 
   const PREFERENCIAS_VALIDAS = { budgetMin: 1_000_000, budgetMax: 2_000_000 }
-  const TOPE = 'El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.'
+  const TOPE = 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
 
   async function listoParaGuardar() {
     await renderProvider()
@@ -603,8 +603,13 @@ describe('TenantOnboardingContext — errores del servidor en su campo (02-10-20
       captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS, budgetMin: 1_000_000, budgetMax: 30_000_000_000 })
     })
     expect(captured!.isStepValid(2)).toBe(false)
+    // El tope de Nico (02-10-2026): $100.000.000 al mes. Un peso más tampoco pasa.
     await act(async () => {
-      captured!.updateDraft({ budgetMax: 2_000_000_000 })
+      captured!.updateDraft({ budgetMax: 100_000_001 })
+    })
+    expect(captured!.isStepValid(2)).toBe(false)
+    await act(async () => {
+      captured!.updateDraft({ budgetMax: 100_000_000 })
     })
     expect(captured!.isStepValid(2)).toBe(true)
   })

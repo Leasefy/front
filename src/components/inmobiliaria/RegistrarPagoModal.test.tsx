@@ -1143,6 +1143,70 @@ describe('<RegistrarPagoModal> los tres conflictos del back no son el mismo', ()
   });
 });
 
+/*
+ * 🔴 02-10-2026 · El modal mostraba `e.message` crudo porque el traductor
+ * descartaba los 409 de caja (pasan de 300 caracteres). El tope subió y el
+ * modal pasa por el traductor: los 409 largos llegan enteros, un 5xx dice que
+ * fue nuestro con la referencia y un volcado no llega a caja.
+ */
+describe('<RegistrarPagoModal> los rechazos pasan por el traductor', () => {
+  const banner = () => document.body.querySelector('[data-testid="error-del-back"]');
+
+  it('🔴 un 500 dice que falló de nuestro lado, con la referencia; nunca «Error interno del servidor»', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(banner()?.textContent).toContain('No pudimos registrar el pago: algo falló de nuestro lado');
+    expect(banner()?.textContent).toContain('ab12cd34');
+    expect(banner()?.textContent).not.toContain('Error interno del servidor');
+  });
+
+  it('🔴 un 409 de caja de más de 300 caracteres llega ENTERO', async () => {
+    const mensaje =
+      'Ya existe el cobro de junio de 2026 de Apartamento 1203 Torre B Conjunto Residencial Los Almendros del Poblado ' +
+      'a nombre de María Fernanda Restrepo Gutiérrez, y es de otro contrato (normalmente, el del inquilino anterior). ' +
+      'Un inmueble tiene un solo cobro por mes, así que el pago de Jose Lopez no tiene documento propio para junio de 2026. ' +
+      'Desde caja no se puede corregir: avísale a soporte.';
+    expect(mensaje.length).toBeGreaterThan(300);
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError(409, mensaje, 'CUOTA_Y_COBRO_NO_CUADRAN', { cobroId: 'c-jun', cuotaId: 'q-c-jun', month: '2026-06' }),
+    );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(banner()?.textContent).toContain('recibos.form.cuotaYCobroNoCuadran');
+    expect(banner()?.textContent).toContain(mensaje);
+  });
+
+  it('🔴 un HTML o una traza del servidor no llegan a caja', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'Falló: <html><body><h1>502 Bad Gateway</h1></body></html>', 'CODIGO_NUEVO'));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(banner()?.textContent).not.toContain('<html>');
+    expect(banner()?.textContent).not.toContain('Bad Gateway');
+    expect(banner()?.textContent).toContain('Prueba de nuevo en un momento.');
+  });
+
+  it('sin respuesta habla de la red, sin el texto crudo del navegador', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new ApiError(0, 'No pudimos conectarnos al servidor. (Failed to fetch)'));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(banner()?.textContent).toMatch(/conexión/);
+    expect(banner()?.textContent).not.toContain('Failed to fetch');
+  });
+});
+
 describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
   /*
    * 🔴 Prueba en vivo en QA (2026-09-16, contrato #69): al cambiar la fecha

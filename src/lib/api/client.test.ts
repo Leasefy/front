@@ -660,7 +660,68 @@ describe('402: sólo el panel bloqueado por el plan va a la página del plan', (
     ['/registro', 'GET', '/inmobiliaria/agency', undefined, false],
     ['/panel/inmobiliaria/pipeline', 'get', '/inmobiliaria/pipeline', undefined, true],
     ['/panel/inmobiliaria/inmuebles', 'PATCH', '/inmobiliaria/consignaciones/1', undefined, false],
+    // 02-10-2026 · el back manda `code` en los 402 del plan.
+    ['/panel/inmobiliaria/pipeline', 'GET', '/inmobiliaria/pipeline', 'PLAN_REQUERIDO', true],
+    ['/panel/inmobiliaria/inmuebles', 'POST', '/inmobiliaria/consignaciones', 'PLAN_REQUERIDO', false],
+    ['/onboarding/inmobiliaria', 'GET', '/inmobiliaria/agency', 'PLAN_REQUERIDO', false],
+    ['/panel/inmobiliaria/upgrade', 'GET', '/inmobiliaria/agency', 'PLAN_REQUERIDO', false],
+    ['/panel/inmobiliaria/inmuebles', 'GET', '/inmobiliaria/consignaciones', 'LIMITE_DEL_PLAN', false],
+    ['/panel/inmobiliaria/configuracion', 'POST', '/inmobiliaria/agency/members/invite', 'LIMITE_DEL_PLAN', false],
+    ['/panel/inmobiliaria/nomina', 'GET', '/inmobiliaria/nomina/empleados', 'NOMINA_NO_HABILITADA', false],
   ] as const)('desde %s, %s %s (code %s) → %s', (pagina, method, path, code, esperado) => {
     expect(el402LlevaAlPlan({ method, path, code, pagina })).toBe(esperado)
+  })
+})
+
+/**
+ * 02-10-2026 · Nico: los 402 llevan `code`. `PLAN_REQUERIDO` en una lectura del
+ * panel lleva a la página del plan; `LIMITE_DEL_PLAN` NUNCA navega (se dice
+ * donde pasó); un 402 sin código conserva la regla de antes (back viejo).
+ */
+describe('402 con código: decide el código, no el método', () => {
+  const PLAN_REQUERIDO = {
+    statusCode: 402,
+    code: 'PLAN_REQUERIDO',
+    message: 'Necesitas una suscripción activa para acceder al panel de tu inmobiliaria. Actualiza tu plan para continuar.',
+  }
+  const LIMITE = {
+    statusCode: 402,
+    code: 'LIMITE_DEL_PLAN',
+    limite: 'inmuebles',
+    message: 'Alcanzaste el límite de propiedades de tu plan. Sube de plan para agregar más.',
+  }
+
+  it('🔴 PLAN_REQUERIDO al cargar una pantalla del panel → la página del plan', async () => {
+    setLocation('/panel/inmobiliaria/inmuebles')
+    vi.stubGlobal('fetch', stubFetch(402, PLAN_REQUERIDO))
+    const err = (await apiClient.get('/inmobiliaria/consignaciones').catch((e) => e)) as ApiError
+    expect(window.location.href).toBe('/panel/inmobiliaria/upgrade')
+    expect(err.status).toBe(402)
+    expect(err.code).toBe('PLAN_REQUERIDO')
+    expect(err.message).toBe(PLAN_REQUERIDO.message)
+  })
+
+  it('🔴 LIMITE_DEL_PLAN no navega, ni siquiera en una lectura del panel, y llega entero', async () => {
+    setLocation('/panel/inmobiliaria/inmuebles')
+    vi.stubGlobal('fetch', stubFetch(402, LIMITE))
+    const err = (await apiClient.get('/inmobiliaria/consignaciones').catch((e) => e)) as ApiError
+    expect(window.location.href).toBe('')
+    expect(err.code).toBe('LIMITE_DEL_PLAN')
+    expect(err.detalle).toMatchObject({ limite: 'inmuebles' })
+    expect(err.message).toBe(LIMITE.message)
+  })
+
+  it('PLAN_REQUERIDO en una acción (POST) se dice donde pasó', async () => {
+    setLocation('/panel/inmobiliaria/inmuebles')
+    vi.stubGlobal('fetch', stubFetch(402, PLAN_REQUERIDO))
+    await apiClient.post('/inmobiliaria/consignaciones', {}).catch(() => null)
+    expect(window.location.href).toBe('')
+  })
+
+  it('🔴 el asistente de registro nunca saca al fundador, tampoco con PLAN_REQUERIDO', async () => {
+    setLocation('/onboarding/inmobiliaria')
+    vi.stubGlobal('fetch', stubFetch(402, PLAN_REQUERIDO))
+    await apiClient.get('/inmobiliaria/agency').catch(() => null)
+    expect(window.location.href).toBe('')
   })
 })

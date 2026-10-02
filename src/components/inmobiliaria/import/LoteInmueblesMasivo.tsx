@@ -14,6 +14,7 @@
  *    Rellena sólo lo vacío salvo que se pida «también reemplazar».
  *  - «Descartar»: sólo con el permiso `portafolio:delete`.
  */
+import { mensajeDeCarga } from './lib/mensajeDeCarga';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -235,7 +236,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
     } catch (e) {
       if (!vivo.current) return;
       if (suma.procesadas > 0) {
-        suma.interrumpida = { motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.' };
+        suma.interrumpida = { motivo: mensajeDeCarga(e, 'Se cortó la conexión a mitad.') };
         setResultado(suma);
       } else if (e instanceof ApiError && e.status === 403 && cambios.descartar) {
         setError('Descartar filas en bloque requiere el permiso de eliminar inmuebles y tu rol no lo tiene.');
@@ -246,7 +247,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
       } else if (e instanceof ApiError && e.code === 'SIN_CAMBIOS') {
         setError('No hay nada que aplicar.');
       } else {
-        setError(e instanceof Error ? e.message : 'No pudimos aplicar el cambio.');
+        setError(mensajeDeCarga(e, 'No pudimos aplicar el cambio.'));
       }
     } finally {
       if (vivo.current) {

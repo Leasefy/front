@@ -40,6 +40,18 @@ export type EstadoLoteImportacion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLI
 export type EstadoFilaImportacion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
 
 /**
+ * T-0130 — en qué etapa de la carga va el lote, aparte del `estado` del job.
+ * `RECIBIENDO`: todavía llegan filas del navegador. `UBICANDO`: el NAVEGADOR
+ * busca cada dirección en el mapa y el servidor guarda lo que va ubicando
+ * (`ubicacion`; en esta etapa no hay job). `REVISANDO`: el job del servidor
+ * revisa las filas. `LISTA`: ya se puede revisar a mano y activar.
+ */
+export type FaseDeLoteInmuebles = 'RECIBIENDO' | 'UBICANDO' | 'REVISANDO' | 'LISTA';
+
+/** T-0130 — cómo quedó ubicada una fila en el mapa. */
+export type UbicacionDeFila = 'PENDIENTE' | 'DIRECCION' | 'MUNICIPIO' | 'NINGUNA' | 'OMITIDA';
+
+/**
  * The full vocabulary a row can report as missing (wu-4-report.md §6). An
  * UNKNOWN string (a back build ahead of this front) must render as a
  * generic "falta un dato", never be dropped — see `FALTANTE_LABELS` in
@@ -203,6 +215,10 @@ export interface FilaDeImportacion {
   candidatos: InmuebleDuplicado[];
   propertyId: string | null;
   datos: ImportarInmuebleDto;
+  /** T-0130 — ausente = back anterior. */
+  ubicacion?: UbicacionDeFila;
+  /** T-0130 — por qué falló la creación de esta fila, si falló. */
+  errorDeActivacion?: string | null;
 }
 
 export interface EstadoDeLoteInmuebles {
@@ -217,6 +233,86 @@ export interface EstadoDeLoteInmuebles {
   jobId: string | null;
   error: string | null;
   creadoEn: string;
+  /*
+   * T-0130 — todo lo de abajo es opcional EN EL TIPO porque un back anterior no
+   * lo manda; el back actual lo manda siempre. Quien lo lea cae a un valor
+   * neutro (`?? 0`, `?? 'LISTA'`), nunca asume que estuvo.
+   */
+  fase?: FaseDeLoteInmuebles;
+  recibidas?: number;
+  listas?: number;
+  activadas?: number;
+  porRevisar?: number;
+  fallidas?: number;
+  descartadas?: number;
+  /** Direcciones ubicadas (en el navegador) de las que hay que ubicar. */
+  ubicacion?: UbicacionDeLote;
+  /** Se puede dar por terminada la ubicación (`reintentar { omitirUbicacion }`). */
+  puedeOmitirUbicacion?: boolean;
+  /** Sólo en `RECIBIENDO`: desde qué fila (base 0) se reanuda la subida. */
+  siguienteDesde?: number | null;
+  /** Sólo en `RECIBIENDO`: las filas (base 1, inclusivas) que ya llegaron. */
+  rangosRecibidos?: [number, number][] | null;
+  tandaRecomendada?: number;
+  /** El job murió (`FALLIDO`) o quedaron filas fallidas: se puede reintentar. */
+  puedeReintentar?: boolean;
+  omitirUbicacion?: boolean;
+  actualizadoEn?: string;
+}
+
+/** Avance de la ubicación de un lote; `siguienteDesde` es el cursor para seguir. */
+export interface UbicacionDeLote {
+  total: number;
+  ubicadas: number;
+  siguienteDesde: number | null;
+}
+
+/** Una dirección que el navegador tiene que ubicar (`GET .../por-ubicar`). */
+export interface FilaPorUbicar {
+  /** Posición de la fila en el lote: es lo que se devuelve al guardar. */
+  indice: number;
+  direccion: string | null;
+  ciudad: string | null;
+  departamento: string | null;
+}
+
+export interface PaginaPorUbicar {
+  filas: FilaPorUbicar[];
+  siguienteDesde: number | null;
+  total: number;
+  ubicadas: number;
+}
+
+/** Una ubicación que el navegador encontró. `lat/lng: null` = no se pudo ubicar. */
+export interface UbicacionDeFilaGuardada {
+  indice: number;
+  lat: number | null;
+  lng: number | null;
+  precision?: string;
+}
+
+/** `POST .../preparar` por tandas (T-0130). */
+export interface OpcionesDeTanda {
+  /** Cuántas filas tiene el archivo ENTERO. */
+  totalDelArchivo: number;
+  /** Índice (base 0) de la primera fila de esta tanda. */
+  desde: number;
+  /** Huella de las primeras filas del archivo; el back responde 409 `ARCHIVO_DISTINTO` si cambia. */
+  huellaDelArchivo?: string;
+}
+
+/** `POST .../lotes/:lote/reintentar` (T-0130). */
+export interface RespuestaDeReintento {
+  accion: 'JOB_ENCOLADO' | 'FILAS_LIBERADAS';
+  filasLiberadas: number;
+  lote: EstadoDeLoteInmuebles;
+}
+
+/** Una fila que no se pudo crear al activar (T-0130). */
+export interface FilaFallidaAlActivar {
+  id: string;
+  fila: number;
+  motivo: string;
 }
 
 export interface PaginaDeFilasInmuebles {
@@ -288,6 +384,13 @@ export interface ResumenActivacionInmuebles {
   restantes: number;
   /** Mandatos creados en esta llamada que quedaron con varios dueños y su reparto. */
   mandatosConVariosDuenos?: number;
+  /**
+   * T-0130 — filas que fallaron en ESTA llamada, con el motivo. Ya no cuentan
+   * en `restantes`: el bucle sigue con las demás.
+   */
+  fallidas?: FilaFallidaAlActivar[];
+  /** T-0130 — el lote entero tras la llamada: «X de Y creadas». Puede ser `null`. */
+  progreso?: EstadoDeLoteInmuebles | null;
 }
 
 /**
@@ -404,6 +507,12 @@ export interface ResultadoMasivoInmuebles {
 const BASE = '/inmobiliaria/inmuebles/importar';
 /** Capped at 200 by the back (wu-4-report.md §6). */
 export const POR_PAGINA_MAX = 200;
+/** T-0130 — filas por llamada a `activar`: cada una dura segundos, no minutos. */
+export const TANDA_DE_ACTIVACION = 50;
+/** T-0130 — filas por llamada a `preparar` si el back no recomienda otra cosa. */
+export const TANDA_DE_SUBIDA = 500;
+/** T-0130 — direcciones por vuelta de ubicación: es lo máximo que se pierde en un corte. */
+export const TANDA_DE_UBICACION = 50;
 
 export const inmueblesImportacionApi = {
   /**
@@ -414,13 +523,68 @@ export const inmueblesImportacionApi = {
   async preparar(
     inmuebles: ImportarInmuebleDto[],
     idempotencyKey?: string,
+    tanda?: OpcionesDeTanda,
   ): Promise<EstadoDeLoteInmuebles> {
-    // La carga aparece en el centro de procesos del header (22-09).
-    anunciarProceso();
+    // La carga aparece en el centro de procesos del header (22-09). Por tandas,
+    // sólo se anuncia con la primera: las demás son el mismo proceso.
+    if (!tanda || tanda.desde === 0) anunciarProceso();
     return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar`, {
       inmuebles,
       ...(idempotencyKey ? { idempotencyKey } : {}),
+      /*
+       * T-0130 — carga por tandas: la MISMA clave en todas, el tamaño del
+       * archivo entero y la posición de esta tanda. Reenviar una tanda que ya
+       * llegó no hace nada.
+       */
+      ...(tanda
+        ? {
+            totalDelArchivo: tanda.totalDelArchivo,
+            desde: tanda.desde,
+            ...(tanda.huellaDelArchivo ? { huellaDelArchivo: tanda.huellaDelArchivo } : {}),
+          }
+        : {}),
     });
+  },
+
+  /**
+   * T-0130 — las direcciones que faltan por ubicar, de a `limite` (≤ 50), desde
+   * el cursor `desde`. Salen del SERVIDOR: tras recargar la página el navegador
+   * sigue sin tener el archivo.
+   */
+  async porUbicar(lote: string, desde: number, limite = TANDA_DE_UBICACION): Promise<PaginaPorUbicar> {
+    return apiClient.get<PaginaPorUbicar>(
+      `${BASE}/lotes/${encodeURIComponent(lote)}/por-ubicar?desde=${desde}&limite=${limite}`,
+    );
+  },
+
+  /**
+   * T-0130 — guarda lo ubicado (≤ 200 por llamada, idempotente). Cuando todas
+   * están ubicadas el back encola solo la revisión.
+   */
+  async guardarUbicaciones(
+    lote: string,
+    filas: UbicacionDeFilaGuardada[],
+  ): Promise<UbicacionDeLote> {
+    return apiClient.patch<UbicacionDeLote>(
+      `${BASE}/lotes/${encodeURIComponent(lote)}/ubicaciones`,
+      { filas },
+    );
+  },
+
+  /**
+   * T-0130 — retoma un lote: re-encola el job muerto o libera las filas que
+   * fallaron al activar. `omitirUbicacion` da por terminada la ubicación: las
+   * filas que faltan quedan SIN pin en el mapa y el lote sigue a la revisión. 409 `LOTE_INCOMPLETO` (todavía llegan
+   * filas), `LOTE_EN_PROCESO` (el job sigue vivo), `LOTE_NO_REINTENTABLE`.
+   */
+  async reintentar(
+    lote: string,
+    opciones: { omitirUbicacion?: boolean } = {},
+  ): Promise<RespuestaDeReintento> {
+    return apiClient.post<RespuestaDeReintento>(
+      `${BASE}/lotes/${encodeURIComponent(lote)}/reintentar`,
+      opciones.omitirUbicacion ? { omitirUbicacion: true } : {},
+    );
   },
 
   /** The "you have an unfinished import" resume card — batches not yet
@@ -540,10 +704,11 @@ export const inmueblesImportacionApi = {
     return apiClient.delete<DescarteDeLoteInmuebles>(`${BASE}/lotes/${encodeURIComponent(lote)}`);
   },
 
-  /** 3. Converts LISTO rows into real properties — 500 per call. Call again
-   * while `restantes > 0`; resumable, nothing repeats. */
-  async activar(lote: string): Promise<ResumenActivacionInmuebles> {
-    return apiClient.post<ResumenActivacionInmuebles>(`${BASE}/activar`, { lote });
+  /** 3. Converts LISTO rows into real properties — `maximo` per call (T-0130:
+   * 50 por defecto; antes 500 o 15 s). Call again while `restantes > 0`;
+   * resumable, nothing repeats. */
+  async activar(lote: string, maximo = TANDA_DE_ACTIVACION): Promise<ResumenActivacionInmuebles> {
+    return apiClient.post<ResumenActivacionInmuebles>(`${BASE}/activar`, { lote, maximo });
   },
 
   /**

@@ -3267,7 +3267,6 @@
       "newAgent": "Nuevo Agente",
       "newAgentDescription": "Agrega un nuevo miembro al equipo",
       "fullName": "Nombre completo",
-      "phone": "Teléfono",
       "zone": "Zona",
       "selectZone": "Seleccionar zona",
       "specialization": "Especialización",
@@ -3279,7 +3278,6 @@
       "errorNameRequired": "El nombre es requerido",
       "errorEmailRequired": "El email es requerido",
       "errorEmailInvalid": "El email no es válido",
-      "errorPhoneRequired": "El teléfono es requerido",
       "errorCommissionRange": "Debe ser entre 0 y 100",
       "sortRecommended": "Recomendados",
       "sortByName": "Por nombre",
@@ -7340,7 +7338,8 @@
             "categoryLabel": "Categoría",
             "textLabel": "Detalle de la resolución",
             "submit": "Cerrar escalación",
-            "escalatedToLegalWarning": "Al cerrar como ‘Pasa a jurídico’ el deudor avanza a etapa prejurídica automáticamente."
+            "escalatedToLegalWarning": "Al cerrar como ‘Pasa a jurídico’ el deudor avanza a etapa prejurídica automáticamente.",
+            "escalatedToLegalAck": "Entiendo que el deudor pasa a cobro prejurídico."
           },
           "resolveTemplates": {
             "compromise": "Acordamos plan de pago con el deudor",
@@ -8130,7 +8129,6 @@
         },
         "acciones": {
           "toastOk": "{{label}} · listo",
-          "toastFail": "No se pudo: {{error}}",
           "motivoPara": "Motivo para {{accion}}",
           "motivoPlaceholder": "Escribe el motivo…",
           "confirmar": "Confirmar",

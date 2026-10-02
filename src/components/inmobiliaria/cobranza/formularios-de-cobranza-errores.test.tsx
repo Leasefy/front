@@ -365,3 +365,41 @@ describe('ThresholdEditor', () => {
     )
   })
 })
+
+// ── «Pasa a jurídico»: la frase de la casilla (02-10-2026, decisión de Nico) ──
+// Antes la casilla decía «Esto pasará el deudor a pre_judicial» (un código
+// técnico). Ahora dice la MISMA frase que declara el micro para la cola humana
+// y el Piloto, desde una sola clave i18n.
+
+describe('EscalationResolveModal — la casilla de «Pasa a jurídico»', () => {
+  it('dice la frase de la clave i18n (no el código «pre_judicial») y sin marcarla no deja enviar', async () => {
+    const onResolve = vi.fn().mockResolvedValue({ ok: true })
+    await pintar(<EscalationResolveModal escalationId="e-1" isOpen onClose={vi.fn()} onResolve={onResolve as never} />)
+    await elegir($<HTMLSelectElement>('[data-testid="select-nativo"]')!, 'escalated-to-legal')
+    await escribir(
+      $<HTMLTextAreaElement>('#resolve-text')!,
+      'El deudor rechazó todas las ofertas y dejó de contestar; se pasa a jurídico para iniciar la restitución.',
+    )
+
+    const casilla = $('[data-testid="ack-legal-checkbox"]')!
+    const etiqueta = casilla.closest('label')!.textContent ?? ''
+    expect(etiqueta).toContain('inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalAck')
+    expect(contenedor.textContent).not.toContain('pre_judicial')
+
+    await clic($('[data-testid="resolve-submit-button"]'))
+    expect(onResolve).not.toHaveBeenCalled()
+    await clic(casilla)
+    await clic($('[data-testid="resolve-submit-button"]'))
+    expect(onResolve).toHaveBeenCalledTimes(1)
+  })
+
+  it('la clave dice, en español, la misma frase que declara el micro', async () => {
+    type ConLaClave = {
+      inmobiliaria: { ai: { cobranza: { escalaciones: { resolveModal: { escalatedToLegalAck: string } } } } }
+    }
+    const es = (await import('@/lib/i18n/locales/es.json')).default as unknown as ConLaClave
+    expect(es.inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalAck).toBe(
+      'Entiendo que el deudor pasa a cobro prejurídico.',
+    )
+  })
+})

@@ -3233,7 +3233,6 @@
       "newAgent": "New Agent",
       "newAgentDescription": "Add a new team member",
       "fullName": "Full name",
-      "phone": "Phone",
       "zone": "Zone",
       "selectZone": "Select zone",
       "specialization": "Specialization",
@@ -3245,7 +3244,6 @@
       "errorNameRequired": "Name is required",
       "errorEmailRequired": "Email is required",
       "errorEmailInvalid": "Email is not valid",
-      "errorPhoneRequired": "Phone is required",
       "errorCommissionRange": "Must be between 0 and 100",
       "sortRecommended": "Recommended",
       "sortByName": "By name",
@@ -7306,7 +7304,8 @@
             "categoryLabel": "Category",
             "textLabel": "Resolution detail",
             "submit": "Close escalation",
-            "escalatedToLegalWarning": "Closing as ‘Escalated to legal’ will move the debtor to the pre-judicial stage automatically."
+            "escalatedToLegalWarning": "Closing as ‘Escalated to legal’ will move the debtor to the pre-judicial stage automatically.",
+            "escalatedToLegalAck": "I understand the debtor moves to pre-judicial collection."
           },
           "resolveTemplates": {
             "compromise": "We agreed on a payment plan with the debtor",
@@ -8096,7 +8095,6 @@
         },
         "acciones": {
           "toastOk": "{{label}} · done",
-          "toastFail": "Failed: {{error}}",
           "motivoPara": "Reason for {{accion}}",
           "motivoPlaceholder": "Write the reason…",
           "confirmar": "Confirm",

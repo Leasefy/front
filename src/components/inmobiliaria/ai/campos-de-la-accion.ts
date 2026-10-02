@@ -17,9 +17,59 @@ import type { CampoDeLaAccion, WorkItemAction } from '@/lib/api/work-item'
 export type ValoresDeLaAccion = Record<string, string>
 export type ErroresDeLaAccion = Partial<Record<string, string>>
 
-/** ¿La acción declara su cuerpo? (al menos un campo) */
+/** El valor de una `confirmacion` marcada (los valores son texto; desmarcada, `''`). */
+export const CONFIRMADO = 'si'
+
+/** La frase bajo una casilla obligatoria sin marcar. */
+export const FALTA_CONFIRMAR = 'Confirma que lo entiendes: marca la casilla.'
+
+/**
+ * Los tipos que esta versión sabe pintar. Uno nuevo del micro (que todavía no
+ * conocemos) no se pinta como texto ni viaja en el cuerpo: se ignora.
+ */
+const TIPOS_CONOCIDOS: ReadonlySet<string> = new Set<CampoDeLaAccion['tipo']>(['opcion', 'texto', 'confirmacion'])
+
+/** ¿La acción declara su cuerpo? (al menos un campo que sabemos pintar) */
 export function camposDeLaAccion(action: Pick<WorkItemAction, 'campos'>): CampoDeLaAccion[] {
-  return Array.isArray(action.campos) ? action.campos.filter((c) => c && typeof c.nombre === 'string' && c.nombre) : []
+  return Array.isArray(action.campos)
+    ? action.campos.filter(
+        (c) => c && typeof c.nombre === 'string' && c.nombre && TIPOS_CONOCIDOS.has(c.tipo),
+      )
+    : []
+}
+
+/**
+ * ¿Se ve el campo con estos valores? Sin `visibleSi`, siempre. Oculto, no se
+ * valida ni viaja (p. ej. la casilla de «Pasa a jurídico» con otra categoría).
+ */
+export function esVisible(campo: CampoDeLaAccion, valores: ValoresDeLaAccion): boolean {
+  const regla = campo.visibleSi
+  if (!regla || typeof regla.campo !== 'string') return true
+  return (valores[regla.campo] ?? '').trim() === regla.valor
+}
+
+/** Los campos que se ven con estos valores, en el orden declarado. */
+export function camposVisibles(campos: readonly CampoDeLaAccion[], valores: ValoresDeLaAccion): CampoDeLaAccion[] {
+  return campos.filter((c) => esVisible(c, valores))
+}
+
+/**
+ * Los valores después de cambiar uno. Si cambia el campo del que depende una
+ * `confirmacion` (la categoría), la casilla vuelve a quedar sin marcar: lo
+ * que se confirmó era para la opción anterior.
+ */
+export function cambiarValor(
+  campos: readonly CampoDeLaAccion[],
+  valores: ValoresDeLaAccion,
+  nombre: string,
+  valor: string,
+): ValoresDeLaAccion {
+  const siguientes: ValoresDeLaAccion = { ...valores, [nombre]: valor }
+  if ((valores[nombre] ?? '') === valor) return siguientes
+  for (const campo of campos) {
+    if (campo.tipo === 'confirmacion' && campo.visibleSi?.campo === nombre) siguientes[campo.nombre] = ''
+  }
+  return siguientes
 }
 
 export function tieneCampos(action: Pick<WorkItemAction, 'campos'>): boolean {
@@ -45,6 +95,10 @@ const enMiles = (n: number) => n.toLocaleString('es-CO')
  */
 export function errorDelCampo(campo: CampoDeLaAccion, valor: string | undefined): string | undefined {
   const limpio = (valor ?? '').trim()
+  if (campo.tipo === 'confirmacion') {
+    return limpio === CONFIRMADO || !campo.obligatorio ? undefined : FALTA_CONFIRMAR
+  }
+  if (campo.tipo !== 'texto' && campo.tipo !== 'opcion') return undefined
   if (campo.tipo === 'opcion') {
     if (!limpio) return campo.obligatorio ? `Elige una opción en «${campo.etiqueta}».` : undefined
     const opciones = campo.opciones ?? []
@@ -63,14 +117,23 @@ export function errorDelCampo(campo: CampoDeLaAccion, valor: string | undefined)
   return undefined
 }
 
-/** Los errores de todos los campos, en el orden en que se declararon. */
+/**
+ * La ayuda gris bajo un texto con mínimo (como el modal de escalaciones:
+ * «Mínimo 80 caracteres»). Un mínimo de 1 es «obligatorio», no una pista.
+ */
+export function pistaDelCampo(campo: CampoDeLaAccion): string | undefined {
+  if (campo.tipo !== 'texto' || typeof campo.minimo !== 'number' || campo.minimo <= 1) return undefined
+  return `Mínimo ${enMiles(campo.minimo)} caracteres`
+}
+
+/** Los errores de los campos que se ven, en el orden en que se declararon. */
 export function erroresDelCliente(
   campos: readonly CampoDeLaAccion[],
   valores: ValoresDeLaAccion,
 ): { porCampo: ErroresDeLaAccion; orden: string[] } {
   const porCampo: ErroresDeLaAccion = {}
   const orden: string[] = []
-  for (const campo of campos) {
+  for (const campo of camposVisibles(campos, valores)) {
     const error = errorDelCampo(campo, valores[campo.nombre])
     if (error) {
       porCampo[campo.nombre] = error
@@ -82,14 +145,17 @@ export function erroresDelCliente(
 
 /**
  * El cuerpo, con las claves que declaró el micro. El texto va sin espacios a
- * los lados; un campo opcional vacío no viaja.
+ * los lados; un campo opcional vacío no viaja. Tampoco viajan: una
+ * `confirmacion` (es una compuerta del cliente; el cuerpo de resolve es
+ * `.strict()` y la rechazaría), un campo oculto ni un `tipo` desconocido.
  */
 export function cuerpoDeLaAccion(
   campos: readonly CampoDeLaAccion[],
   valores: ValoresDeLaAccion,
 ): Record<string, string> {
   const cuerpo: Record<string, string> = {}
-  for (const campo of campos) {
+  for (const campo of camposVisibles(campos, valores)) {
+    if (campo.tipo !== 'texto' && campo.tipo !== 'opcion') continue
     const limpio = (valores[campo.nombre] ?? '').trim()
     if (!limpio && !campo.obligatorio) continue
     cuerpo[campo.nombre] = limpio

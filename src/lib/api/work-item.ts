@@ -43,17 +43,24 @@ export type Severidad = 'baja' | 'media' | 'alta' | 'critica'
  * Un campo que la acción pide antes de mandarse (02-10-2026).
  *
  * El micro DECLARA qué lleva el cuerpo de la acción: «Resolver» una escalación
- * pide `category` (una de cinco) y `resolution_text` (1 a 2.000 caracteres).
+ * pide `category` (una de cinco) y `resolution_text` (80 a 2.000 caracteres),
+ * y con «Pasa a jurídico» una casilla de confirmación que NO viaja.
  * Antes la cola mandaba `{ reason }` a todas las acciones con motivo y ésa
  * respondía 400 siempre. Con `campos`, la cola pinta un formulario con esos
  * campos, los valida con estos topes y manda el cuerpo con estas claves.
  */
 export interface CampoDeLaAccion {
-  /** Clave en el cuerpo: `category`, `resolution_text`… */
+  /** Clave en el cuerpo: `category`, `resolution_text`… (una `confirmacion` no viaja). */
   nombre: string
-  /** Cómo se llama en pantalla, en español. */
+  /** Cómo se llama en pantalla, en español (en una `confirmacion`, junto a la casilla). */
   etiqueta: string
-  tipo: 'opcion' | 'texto'
+  /**
+   * `confirmacion`: una casilla que hay que marcar antes de enviar; es una
+   * compuerta del cliente y nunca viaja en el cuerpo. Un `tipo` que esta
+   * versión no conoce no se pinta ni viaja (`campos-de-la-accion.ts`).
+   */
+  tipo: 'opcion' | 'texto' | 'confirmacion'
+  /** Mientras el campo se vea (ver `visibleSi`). */
   obligatorio: boolean
   /** Sólo `opcion`. */
   opciones?: Array<{ valor: string; etiqueta: string }>
@@ -61,6 +68,10 @@ export interface CampoDeLaAccion {
   minimo?: number
   /** Largo máximo (texto, ya sin espacios a los lados). */
   maximo?: number
+  /** Sólo se ve —y sólo se valida y viaja— cuando `campo` vale `valor`. */
+  visibleSi?: { campo: string; valor: string }
+  /** Sólo `confirmacion`: lo que se lee antes de marcar la casilla. */
+  aviso?: string
 }
 
 /** A real, already-existing backend action surfaced on the item. */

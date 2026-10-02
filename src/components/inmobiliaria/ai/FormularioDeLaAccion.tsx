@@ -15,13 +15,18 @@
  * Lo usan la cola (`ColaHumana`) y el detalle del caso (`AccionSugerida`). Una
  * acción sin `campos` no pasa por acá: sigue con el motivo de siempre.
  *
+ * Una `confirmacion` (02-10-2026, «Pasa a jurídico») es una casilla con su
+ * aviso, como la del modal de escalaciones: obligatoria mientras se vea, se
+ * reinicia al cambiar la categoría y NUNCA viaja en el cuerpo. Un campo con
+ * `visibleSi` entra y sale con su opción; oculto, no se valida ni viaja.
+ *
  * Entra con Framer y los tokens de movimiento de Cadence (sólo `opacity` y
  * `transform`; con movimiento reducido, sólo el fundido).
  */
 
 import { useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
-import { CheckCircle, XCircle } from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { CheckCircle, WarningCircle, XCircle } from '@phosphor-icons/react'
 import {
   motionDistance,
   motionDuration,
@@ -34,6 +39,7 @@ import { useI18n } from '@/lib/i18n'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -46,11 +52,15 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { textosDelFallo } from '@/components/inmobiliaria/piloto/fallo-de-la-accion'
 import { cn } from '@/lib/utils'
 import {
+  CONFIRMADO,
+  cambiarValor,
   camposDeLaAccion,
+  camposVisibles,
   cuerpoDeLaAccion,
   errorDelCampo,
   erroresDelCliente,
   largoDelTexto,
+  pistaDelCampo,
   valoresIniciales,
   type ErroresDeLaAccion,
   type ValoresDeLaAccion,
@@ -98,7 +108,8 @@ export function FormularioDeLaAccion({
   }
 
   function cambiar(nombre: string, valor: string) {
-    setValores((v) => ({ ...v, [nombre]: valor }))
+    // Cambiar la categoría desmarca la casilla que dependía de ella.
+    setValores((v) => cambiarValor(campos, v, nombre, valor))
     setDelServidor(({ [nombre]: _, ...resto }) => resto)
   }
 
@@ -142,6 +153,9 @@ export function FormularioDeLaAccion({
   }
 
   const ocupado = enviando || Boolean(deshabilitado)
+  const visibles = camposVisibles(campos, valores)
+  /** Entra bajando un poco y sale subiendo; con movimiento reducido, sólo el fundido. */
+  const desplazamiento = reducido ? 0 : -motionDistance.xs
 
   return (
     <motion.form
@@ -154,68 +168,127 @@ export function FormularioDeLaAccion({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: motionDuration.base, ease: motionEase.enter }}
     >
-      {campos.map((campo) => {
-        const id = idDe(campo.nombre)
-        const error = errorVisible(campo)
-        const describe = error ? { 'aria-describedby': `${id}-error`, 'aria-invalid': true as const } : {}
-        return (
-          <div key={campo.nombre} className="space-y-1.5" data-campo={campo.nombre}>
-            <label htmlFor={id} className="block text-[11px] font-medium text-fg-muted">
-              {campo.etiqueta}
-              {campo.obligatorio && (
-                <span className="ml-0.5 text-danger" aria-hidden="true">
-                  *
-                </span>
-              )}
-            </label>
+      <AnimatePresence initial={false}>
+        {visibles.map((campo) => {
+          const id = idDe(campo.nombre)
+          const error = errorVisible(campo)
+          const pista = pistaDelCampo(campo)
+          const describedBy = [
+            campo.tipo === 'confirmacion' && campo.aviso ? `${id}-aviso` : null,
+            // `ErrorDelCampo` le pone a la pista el id `${idDelError}-pista`.
+            pista ? `${id}-error-pista` : null,
+            error ? `${id}-error` : null,
+          ]
+            .filter(Boolean)
+            .join(' ')
+          const describe = {
+            ...(describedBy ? { 'aria-describedby': describedBy } : {}),
+            ...(error ? { 'aria-invalid': true as const } : {}),
+          }
+          const animacion = {
+            initial: { opacity: 0, y: desplazamiento },
+            animate: { opacity: 1, y: 0, transition: { duration: motionDuration.base, ease: motionEase.enter } },
+            exit: { opacity: 0, y: desplazamiento, transition: { duration: motionDuration.fast, ease: motionEase.exit } },
+          }
 
-            {campo.tipo === 'opcion' ? (
-              <Select
-                value={valores[campo.nombre] || undefined}
-                onValueChange={(v) => cambiar(campo.nombre, v)}
-                disabled={ocupado}
-              >
-                <SelectTrigger id={id} className="w-full max-w-md" {...describe}>
-                  <SelectValue placeholder="Elige una opción" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(campo.opciones ?? []).map((o) => (
-                    <SelectItem key={o.valor} value={o.valor}>
-                      {o.etiqueta}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Textarea
-                id={id}
-                value={valores[campo.nombre] ?? ''}
-                onChange={(e) => cambiar(campo.nombre, e.target.value)}
-                rows={3}
-                disabled={enviando}
-                className="w-full max-w-2xl resize-none text-caption"
-                {...describe}
-              />
-            )}
+          if (campo.tipo === 'confirmacion') {
+            // Como el aviso del modal de escalaciones: la franja roja, el aviso y la casilla.
+            return (
+              <motion.div key={campo.nombre} data-campo={campo.nombre} {...animacion}>
+                <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger-soft p-3">
+                  <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+                  <div className="flex-1 space-y-2">
+                    {campo.aviso && (
+                      <p id={`${id}-aviso`} className="text-caption font-semibold text-danger">
+                        {campo.aviso}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={id}
+                        checked={valores[campo.nombre] === CONFIRMADO}
+                        onCheckedChange={(c) => cambiar(campo.nombre, c === true ? CONFIRMADO : '')}
+                        disabled={ocupado}
+                        aria-required={campo.obligatorio || undefined}
+                        data-testid={`confirmacion-${campo.nombre}`}
+                        {...describe}
+                      />
+                      <label htmlFor={id} className="cursor-pointer text-caption text-danger">
+                        {campo.etiqueta}
+                        {campo.obligatorio && (
+                          <span className="ml-0.5" aria-hidden="true">
+                            *
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                    <ErrorDelCampo id={`${id}-error`} mensaje={error} className="mt-0" />
+                  </div>
+                </div>
+              </motion.div>
+            )
+          }
 
-            <div className="flex items-start justify-between gap-3">
-              <ErrorDelCampo id={`${id}-error`} mensaje={error} className="mt-0" />
-              {campo.tipo === 'texto' && typeof campo.maximo === 'number' && (
-                <span
-                  className={cn(
-                    'ml-auto shrink-0 font-mono text-[11px] tabular-nums',
-                    largoDelTexto(valores[campo.nombre]) > campo.maximo ? 'text-danger' : 'text-fg-subtle',
-                  )}
-                  data-testid={`contador-${campo.nombre}`}
+          return (
+            <motion.div key={campo.nombre} className="space-y-1.5" data-campo={campo.nombre} {...animacion}>
+              <label htmlFor={id} className="block text-[11px] font-medium text-fg-muted">
+                {campo.etiqueta}
+                {campo.obligatorio && (
+                  <span className="ml-0.5 text-danger" aria-hidden="true">
+                    *
+                  </span>
+                )}
+              </label>
+
+              {campo.tipo === 'opcion' ? (
+                <Select
+                  value={valores[campo.nombre] || undefined}
+                  onValueChange={(v) => cambiar(campo.nombre, v)}
+                  disabled={ocupado}
                 >
-                  {largoDelTexto(valores[campo.nombre]).toLocaleString('es-CO')} /{' '}
-                  {campo.maximo.toLocaleString('es-CO')}
-                </span>
+                  <SelectTrigger id={id} className="w-full max-w-md" {...describe}>
+                    <SelectValue placeholder="Elige una opción" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(campo.opciones ?? []).map((o) => (
+                      <SelectItem key={o.valor} value={o.valor}>
+                        {o.etiqueta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Textarea
+                  id={id}
+                  value={valores[campo.nombre] ?? ''}
+                  onChange={(e) => cambiar(campo.nombre, e.target.value)}
+                  rows={3}
+                  disabled={enviando}
+                  className="w-full max-w-2xl resize-none text-caption"
+                  {...describe}
+                />
               )}
-            </div>
-          </div>
-        )
-      })}
+
+              <div className="flex items-start justify-between gap-3">
+                {/* Con mínimo, la pista («Mínimo 80 caracteres») hasta que haya un error, como el modal. */}
+                <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={pista} className="mt-0" />
+                {campo.tipo === 'texto' && typeof campo.maximo === 'number' && (
+                  <span
+                    className={cn(
+                      'ml-auto shrink-0 font-mono text-[11px] tabular-nums',
+                      largoDelTexto(valores[campo.nombre]) > campo.maximo ? 'text-danger' : 'text-fg-subtle',
+                    )}
+                    data-testid={`contador-${campo.nombre}`}
+                  >
+                    {largoDelTexto(valores[campo.nombre]).toLocaleString('es-CO')} /{' '}
+                    {campo.maximo.toLocaleString('es-CO')}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          )
+        })}
+      </AnimatePresence>
 
       <div className="flex items-center gap-2">
         <Button

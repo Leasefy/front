@@ -52,14 +52,26 @@ export type PilotoPrioridad = 'alta' | 'media' | 'baja'
  * `AccionCampo` en el micro (`src/piloto/bandeja.ts`).
  */
 export interface AccionCampo {
-  /** Llave con la que el valor entra al cuerpo. */
+  /** Llave con la que el valor entra al cuerpo (una `confirmacion` no viaja). */
   id: string
   label: string
-  tipo: 'opcion' | 'multiple' | 'texto'
+  /**
+   * `confirmacion` (02-10-2026): una casilla que hay que marcar antes de
+   * ejecutar; es una compuerta del cliente y NUNCA viaja en el cuerpo. Un
+   * `tipo` que esta versión no conoce no se pinta ni viaja.
+   */
+  tipo: 'opcion' | 'multiple' | 'texto' | 'confirmacion'
   opciones?: Array<{ valor: string; label: string }>
+  /** Mientras el campo se vea (ver `visibleSi`). */
   requerido?: boolean
   placeholder?: string
+  /** Mínimo de caracteres de un `texto`, sin espacios a los lados. */
+  minLargo?: number
   maxLargo?: number
+  /** Sólo se ve —y sólo cuenta y viaja— cuando `campo` vale `valor`. */
+  visibleSi?: { campo: string; valor: string }
+  /** Sólo `confirmacion`: lo que se lee antes de marcar la casilla. */
+  aviso?: string
 }
 
 export interface InboxAccion {

@@ -12,7 +12,9 @@
  *  · un 400 del micro con `campos` va a cada campo, con el foco; lo demás
  *    al toast por el traductor;
  *  · una acción SIN `campos` sigue con el motivo de siempre;
- *  · el detalle del caso (`AccionSugerida`) hace lo mismo.
+ *  · el detalle del caso (`AccionSugerida`) hace lo mismo;
+ *  · (02-10-2026, decisión de Nico) «Pasa a jurídico» pide una casilla que no
+ *    viaja, y el detalle pide al menos 80 caracteres, con su pista.
  */
 
 import * as React from 'react'
@@ -89,9 +91,22 @@ const RESOLVER: WorkItemAction = {
         { valor: 'other', etiqueta: 'Otro' },
       ],
     },
-    { nombre: 'resolution_text', etiqueta: 'Cómo se resolvió', tipo: 'texto', obligatorio: true, minimo: 1, maximo: 2000 },
+    {
+      nombre: 'confirmacion_de_juridico',
+      etiqueta: 'Entiendo que el deudor pasa a cobro prejurídico.',
+      tipo: 'confirmacion',
+      obligatorio: true,
+      visibleSi: { campo: 'category', valor: 'escalated-to-legal' },
+      aviso: 'Al cerrar como «Pasa a jurídico», el deudor avanza automáticamente a la etapa prejurídica.',
+    },
+    { nombre: 'resolution_text', etiqueta: 'Cómo se resolvió', tipo: 'texto', obligatorio: true, minimo: 80, maximo: 2000 },
   ],
 }
+
+/** Detalles de más de 80 caracteres (el mínimo del micro). */
+const ACUERDO = 'Acordó pagar el 15 de octubre en dos cuotas por transferencia; enviará el comprobante al correo.'
+const FALSA_ALARMA =
+  'Era un deudor que ya había pagado: la consignación llegó tarde al banco y el agente no la vio a tiempo.'
 
 /** La misma acción como la manda un micro viejo: sin `campos`. */
 const RESOLVER_SIN_CAMPOS: WorkItemAction = { ...RESOLVER, campos: undefined }
@@ -187,13 +202,13 @@ describe('ColaHumana — una acción que declara sus campos', () => {
     renderCola()
     act(() => boton(/^Resolver$/).click())
     act(() => (container.querySelector('[data-opcion="compromise"]') as HTMLButtonElement).click())
-    escribir(container.querySelector('textarea')!, '  Acordó pagar el 15 de octubre.  ')
+    escribir(container.querySelector('textarea')!, `  ${ACUERDO}  `)
     await enviar()
 
     expect(onAction).toHaveBeenCalledTimes(1)
     const [, accion, cuerpo] = onAction.mock.calls[0]
     expect(accion.id).toBe('resolve')
-    expect(cuerpo).toEqual({ category: 'compromise', resolution_text: 'Acordó pagar el 15 de octubre.' })
+    expect(cuerpo).toEqual({ category: 'compromise', resolution_text: ACUERDO })
     expect(toasts.ok).toHaveLength(1)
     // Salió bien: el formulario se cierra.
     expect(formulario()).toBeNull()
@@ -216,6 +231,8 @@ describe('ColaHumana — una acción que declara sus campos', () => {
     act(() => boton(/^Resolver$/).click())
     act(() => (container.querySelector('[data-opcion="other"]') as HTMLButtonElement).click())
     escribir(container.querySelector('textarea')!, 'a'.repeat(2001))
+    // Con pista («Mínimo 80…»), el error entra cuando la pista termina de salir.
+    await unCuadro()
     expect(errorDe('resolution_text')).toBe('«Cómo se resolvió» puede tener hasta 2.000 caracteres.')
     await enviar()
     expect(onAction).not.toHaveBeenCalled()
@@ -241,14 +258,14 @@ describe('ColaHumana — una acción que declara sus campos', () => {
     renderCola()
     act(() => boton(/^Resolver$/).click())
     act(() => (container.querySelector('[data-opcion="compromise"]') as HTMLButtonElement).click())
-    escribir(container.querySelector('textarea')!, 'ok')
+    escribir(container.querySelector('textarea')!, ACUERDO)
     await enviar()
 
     expect(errorDe('resolution_text')).toBe('Cuenta cómo se resolvió con un poco más de detalle.')
     expect(campo('resolution_text')?.getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(campo('resolution_text'))
     expect(toasts.error).toEqual([])
-    expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe('ok')
+    expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe(ACUERDO)
   })
 
   it('un 5xx va al toast por el traductor: «de nuestro lado» con la referencia', async () => {
@@ -260,7 +277,7 @@ describe('ColaHumana — una acción que declara sus campos', () => {
     renderCola()
     act(() => boton(/^Resolver$/).click())
     act(() => (container.querySelector('[data-opcion="compromise"]') as HTMLButtonElement).click())
-    escribir(container.querySelector('textarea')!, 'Pagará el 15.')
+    escribir(container.querySelector('textarea')!, ACUERDO)
     await enviar()
 
     expect(toasts.error).toHaveLength(1)
@@ -296,11 +313,128 @@ describe('AccionSugerida (el detalle del caso) — la misma acción', () => {
     act(() => boton(/^Resolver$/).click())
     expect(container.querySelector('#accion-sugerida-reason')).toBeNull()
     act(() => (container.querySelector('[data-opcion="false-positive"]') as HTMLButtonElement).click())
-    escribir(container.querySelector('textarea')!, 'No era una escalación.')
+    escribir(container.querySelector('textarea')!, FALSA_ALARMA)
     await enviar()
     expect(enviarAccion).toHaveBeenCalledWith(RESOLVER, {
       category: 'false-positive',
-      resolution_text: 'No era una escalación.',
+      resolution_text: FALSA_ALARMA,
     })
+  })
+})
+
+describe('ColaHumana — «Pasa a jurídico» pide la casilla, como el modal (02-10-2026)', () => {
+  const casilla = () =>
+    container.querySelector('[data-testid="confirmacion-confirmacion_de_juridico"]') as HTMLButtonElement | null
+  const elegir = (valor: string) =>
+    act(() => (container.querySelector(`[data-opcion="${valor}"]`) as HTMLButtonElement).click())
+  const marcada = () => casilla()?.getAttribute('aria-checked') === 'true'
+
+  it('la casilla y su aviso aparecen sólo con «Pasa a jurídico»', () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    expect(casilla()).toBeNull()
+    elegir('compromise')
+    expect(casilla()).toBeNull()
+    elegir('escalated-to-legal')
+    expect(casilla()).not.toBeNull()
+    expect(formulario()!.textContent).toContain('el deudor avanza automáticamente a la etapa prejurídica')
+    expect(formulario()!.textContent).toContain('Entiendo que el deudor pasa a cobro prejurídico.')
+    // El aviso describe la casilla para el lector de pantalla.
+    const aviso = container.querySelector('[id$="-confirmacion_de_juridico-aviso"]')
+    expect(casilla()!.getAttribute('aria-describedby')).toContain(aviso!.id)
+    // Sin códigos técnicos.
+    expect(formulario()!.textContent).not.toMatch(/pre_judicial|escalated-to-legal/)
+  })
+
+  it('🔴 sin marcar no se manda: «Confirma…» bajo la casilla, con el foco en ella', async () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    elegir('escalated-to-legal')
+    escribir(container.querySelector('textarea')!, ACUERDO)
+    await enviar()
+
+    expect(onAction).not.toHaveBeenCalled()
+    expect(errorDe('confirmacion_de_juridico')).toBe('Confirma que lo entiendes: marca la casilla.')
+    expect(casilla()!.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(casilla())
+  })
+
+  it('🔴 marcada, se manda — y la confirmación NO viaja en el cuerpo', async () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    elegir('escalated-to-legal')
+    act(() => casilla()!.click())
+    expect(marcada()).toBe(true)
+    expect(errorDe('confirmacion_de_juridico')).toBe('')
+    escribir(container.querySelector('textarea')!, ACUERDO)
+    await enviar()
+
+    expect(onAction).toHaveBeenCalledTimes(1)
+    const [, , cuerpo] = onAction.mock.calls[0]
+    expect(cuerpo).toEqual({ category: 'escalated-to-legal', resolution_text: ACUERDO })
+    expect('confirmacion_de_juridico' in cuerpo).toBe(false)
+  })
+
+  it('al cambiar de categoría la casilla se reinicia: hay que volver a marcarla', async () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    elegir('escalated-to-legal')
+    act(() => casilla()!.click())
+    expect(marcada()).toBe(true)
+    elegir('compromise')
+    await unCuadro()
+    expect(casilla()).toBeNull()
+    elegir('escalated-to-legal')
+    expect(casilla()).not.toBeNull()
+    expect(marcada()).toBe(false)
+  })
+})
+
+describe('ColaHumana — el detalle tiene al menos 80 caracteres (02-10-2026)', () => {
+  it('la pista «Mínimo 80 caracteres» se ve bajo el texto y lo describe', () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    const pista = container.querySelector('[id$="-resolution_text-error-pista"]')
+    expect(pista?.textContent).toBe('Mínimo 80 caracteres')
+    expect(campo('resolution_text')!.getAttribute('aria-describedby')).toContain(pista!.id)
+  })
+
+  it('🔴 con 79 caracteres no se manda: la frase del mínimo bajo el texto, con el foco', async () => {
+    renderCola()
+    act(() => boton(/^Resolver$/).click())
+    act(() => (container.querySelector('[data-opcion="other"]') as HTMLButtonElement).click())
+    escribir(container.querySelector('textarea')!, 'a'.repeat(79))
+    await enviar()
+
+    expect(onAction).not.toHaveBeenCalled()
+    expect(errorDe('resolution_text')).toBe('«Cómo se resolvió» debe tener al menos 80 caracteres.')
+    expect(document.activeElement).toBe(campo('resolution_text'))
+
+    escribir(container.querySelector('textarea')!, 'a'.repeat(80))
+    await enviar()
+    expect(onAction).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ColaHumana — un campo con un `tipo` desconocido', () => {
+  it('no se pinta (ni como texto) ni viaja', async () => {
+    const conRaro: WorkItemAction = {
+      ...RESOLVER,
+      campos: [
+        ...RESOLVER.campos!,
+        { nombre: 'firma', etiqueta: 'Firma', tipo: 'dibujo', obligatorio: true } as unknown as NonNullable<
+          WorkItemAction['campos']
+        >[number],
+      ],
+    }
+    renderCola([conRaro])
+    act(() => boton(/^Resolver$/).click())
+    expect(container.querySelector('[data-campo="firma"]')).toBeNull()
+    expect(container.querySelectorAll('textarea')).toHaveLength(1)
+    act(() => (container.querySelector('[data-opcion="compromise"]') as HTMLButtonElement).click())
+    escribir(container.querySelector('textarea')!, ACUERDO)
+    await enviar()
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(onAction.mock.calls[0][2]).toEqual({ category: 'compromise', resolution_text: ACUERDO })
   })
 })

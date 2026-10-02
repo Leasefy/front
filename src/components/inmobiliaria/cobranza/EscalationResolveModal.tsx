@@ -259,7 +259,10 @@ export function EscalationResolveModal({
                   onCheckedChange={(c) => setAckLegal(c === true)}
                   data-testid="ack-legal-checkbox"
                 />
-                <span>Esto pasará el deudor a pre_judicial</span>
+                {/* La misma frase que declara el micro para la cola humana y el Piloto (02-10-2026). */}
+                <span>
+                  {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalAck')}
+                </span>
               </label>
             </div>
           </div>

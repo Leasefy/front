@@ -16,6 +16,17 @@ import type { PerfilDeOnboarding } from './perfil-de-onboarding'
 /** Where a session must go before it may reach a panel (T-0123 WU-3). */
 export type MfaDestino = 'enroll' | 'verify' | 'none'
 
+/**
+ * ¿Ya se sabe si a esta sesión le falta el código del segundo factor?
+ * (Nico, 02-10-2026: si no se puede saber, no se entra.)
+ *  - `pending`: se está preguntando (sesión nueva, o «Reintentar»).
+ *  - `verified`: la consulta respondió; `mfaRequired`/`mfaEnrollRequired`
+ *    dicen la verdad.
+ *  - `failed`: no respondió ni reintentando. Las pantallas protegidas muestran
+ *    «No pudimos confirmar tu sesión» con «Reintentar»; no se cierra la sesión.
+ */
+export type EstadoDelChequeoMfa = 'pending' | 'verified' | 'failed'
+
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
@@ -206,6 +217,12 @@ export interface AuthState {
    */
   mfaEnrollRequired: boolean
   /**
+   * Ver `EstadoDelChequeoMfa`. Opcional SÓLO para que los dobles de prueba no
+   * tengan que traerlo: `AuthProvider` siempre lo pone. Los guardias bloquean
+   * con `pending`/`failed`, nunca con `undefined`.
+   */
+  mfaCheckStatus?: EstadoDelChequeoMfa
+  /**
    * True when Supabase Auth has a valid JWT but the backend returned 401
    * "User not found" — meaning the user hasn't completed onboarding yet.
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
@@ -261,6 +278,8 @@ export interface AuthContextType extends AuthState {
   /** null clears a field on the backend; undefined leaves it unchanged */
   updateProfile: (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }) => Promise<void>
   setMfaVerified: () => void
+  /** Vuelve a preguntar por el segundo factor después de un `failed`. Opcional por lo mismo que `mfaCheckStatus`. */
+  retryMfaCheck?: () => Promise<void>
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
   /** Manually retry fetching the agency membership (e.g. an error card's

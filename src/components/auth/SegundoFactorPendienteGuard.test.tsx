@@ -12,7 +12,13 @@ void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const { estado, replaceMock } = vi.hoisted(() => ({
-  estado: { isLoading: false, isAuthenticated: true, mfaRequired: false },
+  estado: {
+    isLoading: false,
+    isAuthenticated: true,
+    mfaRequired: false,
+    mfaCheckStatus: undefined as 'pending' | 'verified' | 'failed' | undefined,
+    retryMfaCheck: vi.fn().mockResolvedValue(undefined),
+  },
   replaceMock: vi.fn(),
 }))
 
@@ -34,6 +40,7 @@ beforeEach(() => {
   estado.isLoading = false
   estado.isAuthenticated = true
   estado.mfaRequired = false
+  estado.mfaCheckStatus = undefined
   window.history.replaceState(null, '', '/onboarding/seleccionar-rol?returnUrl=%2Faplicar%2F7')
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -88,3 +95,34 @@ describe('<SegundoFactorPendienteGuard>', () => {
     expect(replaceMock).not.toHaveBeenCalled()
   })
 })
+
+describe('<SegundoFactorPendienteGuard> sin el veredicto del segundo factor (Nico, 02-10-2026)', () => {
+  it('«failed»: no muestra el selector de perfil; pide reintentar, sin redirigir', () => {
+    estado.mfaCheckStatus = 'failed'
+    pintar()
+    expect(container.querySelector('[data-testid="pantalla"]')).toBeNull()
+    expect(container.querySelector('[data-testid="no-pudimos-confirmar-sesion"]')).not.toBeNull()
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('«pending» con sesión: cargador, no la pantalla', () => {
+    estado.mfaCheckStatus = 'pending'
+    pintar()
+    expect(container.querySelector('[data-testid="pantalla"]')).toBeNull()
+    expect(container.querySelector('[data-testid="cargando"]')).not.toBeNull()
+  })
+
+  it('sin sesión, «pending» no bloquea (el onboarding se ve sin cuenta)', () => {
+    estado.isAuthenticated = false
+    estado.mfaCheckStatus = 'pending'
+    pintar()
+    expect(container.querySelector('[data-testid="pantalla"]')).not.toBeNull()
+  })
+
+  it('«verified» sin código pendiente: muestra la pantalla', () => {
+    estado.mfaCheckStatus = 'verified'
+    pintar()
+    expect(container.querySelector('[data-testid="pantalla"]')).not.toBeNull()
+  })
+})
+

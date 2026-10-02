@@ -9,6 +9,7 @@ import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { NoPudimosConfirmarTuSesion } from '@/components/auth/NoPudimosConfirmarTuSesion';
 
 /**
  * Post-login resolver for the OAuth (Google) flow.
@@ -35,6 +36,7 @@ function PostLoginResolver() {
     perfilElegido,
     mfaRequired,
     mfaEnrollRequired,
+    mfaCheckStatus,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
@@ -55,6 +57,9 @@ function PostLoginResolver() {
 
   React.useEffect(() => {
     if (authLoading) return;
+    // Nico, 02-10-2026: sin el veredicto del segundo factor no se navega
+    // (`failed` pinta «No pudimos confirmar tu sesión» abajo).
+    if (isAuthenticated && (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed')) return;
     // MFA gate first (security): never bypass a pending second factor.
     // T-0099: enroll-pending takes priority — same order as ProtectedRoute.
     if (mfaEnrollRequired) {
@@ -110,12 +115,17 @@ function PostLoginResolver() {
     perfilElegido,
     mfaRequired,
     mfaEnrollRequired,
+    mfaCheckStatus,
     returnUrl,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
     probeWaitElapsed,
   ]);
+
+  if (!authLoading && isAuthenticated && mfaCheckStatus === 'failed') {
+    return <NoPudimosConfirmarTuSesion />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">

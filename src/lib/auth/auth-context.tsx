@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole, MfaDestino } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole, MfaDestino, EstadoDelChequeoMfa } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
@@ -34,6 +34,8 @@ import {
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
 import { esCorreoYaRegistrado } from './correo'
+import { decodeAccessToken } from './jwt'
+import { conReintentos } from './con-reintentos'
 
 /**
  * Auth Context
@@ -253,6 +255,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [mfaRequired, setMfaRequired] = useState(false)
   // T-0099 — see AuthState['mfaEnrollRequired'] in types.ts.
   const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false)
+  /** Ver `EstadoDelChequeoMfa` (types.ts). */
+  const [mfaCheckStatus, setMfaCheckStatus] = useState<EstadoDelChequeoMfa>('pending')
+  /**
+   * La sesión (su `session_id`) a la que corresponde `mfaCheckStatus`. auth-js
+   * vuelve a emitir SIGNED_IN cada vez que la pestaña vuelve a estar visible
+   * (`_recoverAndRefresh`): si eso reiniciara el chequeo a 'pending', el panel
+   * se desmontaría tras el cargador cada vez que alguien cambia de pestaña.
+   * Sólo una sesión DISTINTA vuelve a empezar.
+   */
+  const sesionDelChequeoRef = useRef<string | null>(null)
+  const empezarChequeoSiEsOtraSesion = useCallback((accessToken: string) => {
+    const id = decodeAccessToken(accessToken)?.session_id ?? accessToken
+    if (sesionDelChequeoRef.current === id) return
+    sesionDelChequeoRef.current = id
+    setMfaCheckStatus('pending')
+  }, [])
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
   // El perfil elegido en «Selecciona tu perfil». Vive en `user_metadata` de
   // Supabase y se relee de la sesión en cada evento (ver perfil-de-onboarding.ts).
@@ -684,35 +702,81 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *      `'aal1'` with nothing enrolled, identical to "no requirement at
    *      all"). `listFactors()` is only called to break that tie — never
    *      when `nextLevel === 'aal2'` already proves a factor exists. */
-  const checkMfaLevel = useCallback(async (miGeneracion?: number): Promise<MfaDestino> => {
+  const checkMfaLevel = useCallback(async (
+    miGeneracion?: number,
+    opciones?: { requisitoNuevo?: boolean },
+  ): Promise<MfaDestino> => {
     const supabase = getSupabase()
     if (!supabase) return 'none'
-    try {
-      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-      if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return 'none'
-      if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
-        setMfaRequired(true)
-      } else if (aal?.currentLevel === 'aal2') {
-        setMfaRequired(false)
-      }
-      if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
-        setMfaEnrollRequired(false)
-        // Only the back's requirement sends anyone to a challenge: a person
-        // with an OPTIONAL factor (tenant) is never routed by this verdict.
-        return segundoFactorExigidoRef.current && aal?.currentLevel !== 'aal2' && aal?.nextLevel === 'aal2'
-          ? 'verify'
-          : 'none'
-      } else {
-        const { data: factors } = await supabase.auth.mfa.listFactors()
-        if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return 'none'
-        const tieneFactorVerificado = (factors?.totp ?? []).some((f) => f.status === 'verified')
-        setMfaEnrollRequired(!tieneFactorVerificado)
-        return tieneFactorVerificado ? 'none' : 'enroll'
-      }
-    } catch {
-      // MFA not available — ignore
+    const vigente = () => miGeneracion === undefined || sessionGenerationRef.current === miGeneracion
+    /*
+     * 🔴 Nico, 02-10-2026: si no se puede saber si a la sesión le falta el
+     * código, NO se entra. Antes un error acá («MFA not available — ignore»)
+     * devolvía 'none' y dejaba `mfaRequired` en su valor por defecto, falso:
+     * entraba sin el código. Ahora se reintenta sola (`conReintentos`) y, si
+     * sigue sin respuesta, `mfaCheckStatus` queda en 'failed': las pantallas
+     * protegidas muestran «No pudimos confirmar tu sesión» con «Reintentar».
+     * No se cierra la sesión ni se manda al login.
+     *
+     * Una sesión que YA quedó verificada (`verified`) no se bloquea porque un
+     * re-chequeo posterior falle (la renovación del token, volver a la
+     * pestaña): no trae nada nuevo que verificar. Salvo `requisitoNuevo`: el
+     * back acaba de empezar a exigir el segundo factor y lo de antes no lo
+     * cubre.
+     */
+    const noSePudoVerificar = (): MfaDestino => {
+      if (!vigente()) return 'none'
+      setMfaCheckStatus((antes) => (antes === 'verified' && !opciones?.requisitoNuevo ? 'verified' : 'failed'))
       return 'none'
     }
+
+    let aal: Awaited<ReturnType<typeof supabase.auth.mfa.getAuthenticatorAssuranceLevel>>['data'] & object
+    try {
+      aal = await conReintentos(
+        async () => {
+          const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+          if (error || !data) throw error ?? new Error('Sin respuesta del nivel de la sesión')
+          return data
+        },
+        { debeSeguir: vigente },
+      )
+    } catch {
+      return noSePudoVerificar()
+    }
+    if (!vigente()) return 'none'
+    if (aal.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+      setMfaRequired(true)
+    } else if (aal.currentLevel === 'aal2') {
+      setMfaRequired(false)
+    }
+    if (aal.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal.nextLevel === 'aal2') {
+      setMfaEnrollRequired(false)
+      setMfaCheckStatus('verified')
+      // Only the back's requirement sends anyone to a challenge: a person
+      // with an OPTIONAL factor (tenant) is never routed by this verdict.
+      return segundoFactorExigidoRef.current && aal.currentLevel !== 'aal2' && aal.nextLevel === 'aal2'
+        ? 'verify'
+        : 'none'
+    }
+
+    let factors: Awaited<ReturnType<typeof supabase.auth.mfa.listFactors>>['data'] & object
+    try {
+      factors = await conReintentos(
+        async () => {
+          const { data, error } = await supabase.auth.mfa.listFactors()
+          if (error || !data) throw error ?? new Error('Sin respuesta de los factores')
+          return data
+        },
+        { debeSeguir: vigente },
+      )
+    } catch {
+      return noSePudoVerificar()
+    }
+    if (!vigente()) return 'none'
+    const tieneFactorVerificado = (factors.totp ?? []).some((f) => f.status === 'verified')
+    setMfaEnrollRequired(!tieneFactorVerificado)
+    setMfaCheckStatus('verified')
+    return tieneFactorVerificado ? 'none' : 'enroll'
   }, [])
 
   /** Refresh user data from backend (e.g. after onboarding) and re-evaluate the
@@ -727,6 +791,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // If the stored token is still valid the backend will respond; if not,
     // fetchBootstrap handles the 401 gracefully (same contract as fetchUser).
     const miGeneracion = sessionGenerationRef.current
+    const exigidoAntes = segundoFactorExigidoRef.current
     const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(undefined, miGeneracion)
     // The session that asked for this refresh may have ended (sign-out, a
     // new sign-in) while the bootstrap was in flight — never let a stale
@@ -768,10 +833,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
        * T-0123 WU-3: el mismo recálculo devuelve el destino (enroll / verify /
        * none) para que quien llama sepa a dónde mandar a la persona.
        */
-      return checkMfaLevel(miGeneracion)
+      return checkMfaLevel(miGeneracion, {
+        requisitoNuevo: !exigidoAntes && segundoFactorExigidoRef.current,
+      })
     }
     return 'none'
   }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult, checkMfaLevel])
+
+  /**
+   * «Reintentar» de «No pudimos confirmar tu sesión»: vuelve a preguntar (con
+   * sus propios reintentos) para la sesión de ahora. Mientras pregunta, las
+   * pantallas protegidas muestran el cargador, no el contenido.
+   */
+  const retryMfaCheck = useCallback(async (): Promise<void> => {
+    const miGeneracion = sessionGenerationRef.current
+    setMfaCheckStatus('pending')
+    await checkMfaLevel(miGeneracion)
+  }, [checkMfaLevel])
 
   /* ------------------------------------------------------------------
    * 🔴 Self-heal del PERFIL degradado.
@@ -1028,6 +1106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const miGeneracion = sessionGenerationRef.current
             huboSesionRef.current = true
             setAccessToken(session.access_token)
+            empezarChequeoSiEsOtraSesion(session.access_token)
             // Claim the active session BEFORE any other authenticated request.
             await claimActiveSession(session.access_token, miGeneracion)
             if (sessionGenerationRef.current !== miGeneracion) return
@@ -1074,6 +1153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
+          empezarChequeoSiEsOtraSesion(session.access_token)
           // Claim the active session BEFORE any other authenticated request.
           await claimActiveSession(session.access_token, miGeneracion)
           if (sessionGenerationRef.current !== miGeneracion) return
@@ -1207,6 +1287,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // member's pending state for even one render.
           setMfaEnrollRequired(false)
           segundoFactorExigidoRef.current = false
+          sesionDelChequeoRef.current = null
+          setMfaCheckStatus('pending')
           setNeedsOnboarding(false)
           setPerfilElegido(null)
           setIsLoading(false)
@@ -1225,6 +1307,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
+          // Puede ser el PRIMER evento de la carga (pestaña dormida): entonces
+          // es una sesión que todavía nadie verificó.
+          empezarChequeoSiEsOtraSesion(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
@@ -1301,7 +1386,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession])
+  }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession, empezarChequeoSiEsOtraSesion])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -1531,6 +1616,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setPersistedContext(null)
     clearActiveContext()
     setMfaRequired(false)
+    sesionDelChequeoRef.current = null
+    setMfaCheckStatus('pending')
 
     // Fire-and-forget — never await, supabase's internal lock can hang here.
     try {
@@ -1631,6 +1718,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     mfaRequired,
     mfaEnrollRequired,
+    mfaCheckStatus,
+    retryMfaCheck,
     needsOnboarding,
     perfilElegido,
     agency,

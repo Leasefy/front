@@ -16,6 +16,7 @@ import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { SesionYaAbierta } from './SesionYaAbierta';
+import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion';
 import { MedidorDeContrasena } from './MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
@@ -338,7 +339,7 @@ function ReenvioDeConfirmacion({
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -479,6 +480,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   React.useEffect(() => {
     if (!didAuthenticateInForm.current) return;
     if (authLoading) return;
+    // Nico, 02-10-2026: sin el veredicto del segundo factor no se navega a
+    // ningún lado. `failed` pinta «No pudimos confirmar tu sesión» abajo.
+    if (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed') return;
     // MFA gate first (security): never bypass a pending second factor, regardless
     // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
     // T-0099: enroll-pending (no factor to step up to) takes priority over
@@ -526,7 +530,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's
@@ -849,6 +853,25 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setIsLoading(false);
     }
   };
+
+  /*
+   * La consulta del segundo factor no respondió ni reintentando (Nico,
+   * 02-10-2026): ni se sigue al destino ni se ofrece «Continuar como…»; sólo
+   * «Reintentar». La sesión no se cierra.
+   */
+  if (
+    !authLoading &&
+    isAuthenticated &&
+    user &&
+    mfaCheckStatus === 'failed' &&
+    (didAuthenticateInForm.current || (!quiereOtraCuenta && returnUrl && returnUrl !== '/'))
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <NoPudimosConfirmarTuSesion variante="tarjeta" />
+      </div>
+    );
+  }
 
   /*
    * Sesión ya abierta: se pregunta antes de nada.

@@ -23,6 +23,8 @@ const { replaceMock, authState, barra } = vi.hoisted(() => ({
     perfilElegido: null as string | null,
     mfaRequired: false,
     mfaEnrollRequired: false,
+    mfaCheckStatus: undefined as 'pending' | 'verified' | 'failed' | undefined,
+    retryMfaCheck: vi.fn().mockResolvedValue(undefined),
     agencyRole: null as string | null,
     agencyMembershipChecked: true,
     hasActiveAgencyMembership: false,
@@ -51,6 +53,7 @@ beforeEach(() => {
   authState.perfilElegido = null
   authState.mfaRequired = false
   authState.mfaEnrollRequired = false
+  authState.mfaCheckStatus = undefined
   barra.query = ''
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -153,3 +156,27 @@ describe('post-login — el segundo factor conserva el destino (QA 23-09)', () =
     )
   })
 })
+
+describe('post-login — sin el veredicto del segundo factor no se navega (Nico, 02-10-2026)', () => {
+  it('«failed»: no va al panel ni al onboarding; muestra «No pudimos confirmar tu sesión»', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaCheckStatus = 'failed'
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('No pudimos confirmar tu sesión')
+  })
+
+  it('«pending»: espera, sin navegar', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.mfaCheckStatus = 'pending'
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+})
+

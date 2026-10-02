@@ -325,6 +325,48 @@ The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the cano
 - Sidebar: `lg:fixed lg:inset-y-0`, 240px wide, collapsible to 64px via `SidebarContext`
 - Header: `sticky top-0 z-30 bg-bg border-b border-border`
 - Main content offset: `lg:pl-[240px]` (or `lg:pl-16` when collapsed)
+- **Botón de plegar** (`BotonDeLaBarra`, 02-10-2026): cuadrado de 36 px, `rounded-[12px]`,
+  `bg-surface` + `border-border`, ícono `SidebarSimple` de Phosphor (el mismo en los dos estados).
+  Abierta, a la derecha del logo; plegada, debajo del símbolo. Tooltip neutro (`bg-fg text-bg`)
+  «Ocultar barra» / «Mostrar barra». No existe atajo de teclado para plegar. En el cajón del
+  celular no aparece. Se hunde al apretarlo (`whileTap` 0,94, framer).
+- **Al plegar/desplegar**: la cabecera y la navegación nuevas entran con un fundido de 200 ms
+  (sólo `opacity`) mientras la barra cambia de ancho; lo que ya estaba al cargar la página NO se
+  anima ni sale con `opacity: 0` en el HTML del servidor (`useDespuesDelPrimerPintado`). El ancho
+  sigue con `transition-all` de CSS (cambia el layout del panel; no es `transform`).
+- **Elemento activo del menú**: tinte NEUTRO (`bg-surface-selected`) que se desliza entre filas
+  del mismo bloque con `layoutId` (framer-motion, `MotionConfig reducedMotion="user"`), texto e
+  ícono en `text-fg` con el ícono relleno; dentro de una sección, un tramo de 2 px `bg-fg-subtle`
+  sobre la guía, sin halo ni degradado. Al pasar: `hover:bg-surface-hover` (también la cabecera de
+  sección). Nunca `bg-primary-soft` (en oscuro es un índigo saturado). Resorte de 220 ms sin
+  rebote, a opacidad plena; sólo cuando la activa salta a OTRO bloque (sin resaltado previo desde
+  donde deslizarse) entra con un fundido. Ver `ResalteDeLaFilaActiva` en `PlanSidebar.tsx`.
+- **Secciones al entrar**: una sola abierta, «Operación» (`#sec-operacion`; en un panel sin ella,
+  la primera), más la de la página actual. Lo que se abre o cierra vale mientras se navega y NO se
+  guarda (`secciones-del-menu.ts`).
+
+### Command palette (⌘K, `src/components/inmobiliaria/CommandPalette.tsx`)
+Guía: el menú flotante y el modal del sistema de diseño de referencia (`SaleADS-projects/chat`,
+`chat-v2/live/Menu.tsx` / `Modal.tsx`) hablado con tokens de Leasefy.
+- Caja de 680 px a 12 vh del borde, `rounded-[20px]`, con la sombra de los modales de Cadence,
+  centrada con `mx-auto` (NO con `-translate-x-1/2`: la animación usa `transform`); en `<md`,
+  pantalla completa con la ✕ del producto (`AspaDeCierre`, sólo ahí).
+- Velo §41: tinta al 32 % + `backdrop-blur-[6px]` (en oscuro, negro al 62 %). Un clic en él cierra.
+- **Movimiento con framer-motion** (no con las clases `animate-dialog-*` de Cadence): el
+  `DialogContent` de Radix queda como MARCO invisible a pantalla completa (`hideClose`, velo de
+  Radix transparente, `!animate-none`) y adentro `AnimatePresence` anima el velo y la caja. El
+  diálogo sigue abierto (`montada`) hasta que termina la salida; lo escrito se borra recién ahí.
+  Caja: entra en 220 ms (sube 8 px, 0,98 → 1), sale en 150 ms; velo: entra en 200 ms, sale en 150.
+  Filas, grupos, novedades, vacío y cargando: 180 ms, 4 px de subida, escalera de 20 ms (tope en la
+  fila 8); la fila que ya estaba no se vuelve a animar al seguir escribiendo. Lupa ↔ cargando, la ✕
+  de limpiar y el ↵: fundidos de 150 ms. Resaltado de la activa: resorte de 200 ms sin rebote.
+  Curva: ease-out `[0.22, 1, 0.36, 1]`. Valores PROVISIONALES (`MOVIMIENTO` en el archivo) hasta que
+  exista el sistema de movimiento de Cadence.
+- Fila: ícono en su cuadrito (32 px, `rounded-[10px]`, `bg-surface-muted`), título + línea de apoyo;
+  la activa lleva el mismo tinte neutro deslizante que el menú y un `kbd` ↵. Lo escrito se resalta
+  (`tramos-de-coincidencia.ts`, sin tildes ni mayúsculas). Foco en el campo + `aria-activedescendant`.
+- Novedades del audit log: `novedades-del-buscador.ts` las dice en español y junta las repetidas
+  («3 veces»).
 
 ### Banners (state-colored info blocks)
 ```tsx

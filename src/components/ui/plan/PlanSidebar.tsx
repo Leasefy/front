@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X } from '@phosphor-icons/react';
+import { CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X, SidebarSimple } from '@phosphor-icons/react';
+import { MotionConfig, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { LeasefyLogo, LeasefySymbol, LeasefyLogotype } from '@/components/brand';
 import { SidebarThemeToggle } from './SidebarThemeToggle';
@@ -15,10 +16,9 @@ import {
   agruparEnSecciones,
   almacenLocal,
   estaAbierta,
-  guardarSecciones,
-  leerSecciones,
-  llaveDeAlmacenamiento,
+  olvidarSeccionesGuardadas,
   resumenDeSeccion,
+  seccionAbiertaAlEntrar,
   type BloqueDelMenu,
   type EstadoDeSecciones,
 } from '@/lib/nav/secciones-del-menu';
@@ -28,6 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 // Real Cadence Sidebar building blocks. The collapse/expand rail, nested-group
 // disclosure, disabled rows, `tag` pills and the collapse-aware brand are
 // composed AROUND these (the primitive does not model them — see ## Gaps in
@@ -193,9 +194,96 @@ interface NavItemComponentProps {
    * lea «estás acá, dentro de esto».
    */
   enSeccion?: boolean;
+  /**
+   * El bloque del menú al que pertenece la fila (la clave de su sección, o el
+   * grupo de filas sueltas). El resaltado de la activa se DESLIZA entre filas
+   * del mismo bloque; al pasar a otro bloque aparece en su sitio. Si viajara
+   * entre secciones, la caja `overflow-hidden` de cada una (la que anima el
+   * plegado) lo recortaría a mitad de camino.
+   */
+  grupoDelResalte?: string;
 }
 
-function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enSeccion = false }: NavItemComponentProps) {
+/**
+ * El elemento activo del menú (Nico, 02-10-2026: «no logro conectar con esa
+ * línea de selección tan fea y con drop shadow, muy saturada»). Antes: la
+ * píldora `bg-primary-soft` del DS —en oscuro, índigo saturado— más un tramo
+ * de 3 px en degradado con halo sobre la guía. Ahora, como la navegación del
+ * sistema de diseño de referencia (`chat-v2/live/laterales.css`: tinta al 5 %
+ * al pasar, al 8 % la actual):
+ *   · un fondo NEUTRO (`surface-selected`: tinta al 6 % en claro, blanco al
+ *     7 % en oscuro) que se desliza de fila en fila con `layoutId`;
+ *   · texto e ícono en tinta plena (`text-fg`, ícono relleno), no en azul;
+ *   · el tramo de la guía, 2 px en gris y sin halo.
+ * Al pasar el mouse, `surface-hover` (4–5 %): más tenue que la activa en los
+ * dos temas. El `surface-muted` del DS en oscuro (#24221c) era MÁS claro que
+ * cualquier activa y la competía.
+ */
+// ── Movimiento — PROVISIONAL ─────────────────────────────────────────────────
+// Valores propios (150–250 ms, ease-out) hasta que exista el sistema de
+// movimiento de Cadence; al llegar, se cambian por sus tokens.
+
+/** El resaltado de la activa: resorte de 220 ms SIN rebote (con rebote temblaba). */
+const RESORTE_DEL_MENU = { type: 'spring', visualDuration: 0.22, bounce: 0 } as const;
+
+/** Lo que aparece al plegar o desplegar la barra (cabecera, navegación): 200 ms. */
+const FUNDIDO_DE_LA_BARRA = { duration: 0.2, ease: [0.22, 1, 0.36, 1] } as const;
+
+/** La presión del botón de plegar. */
+const PRESION_DEL_BOTON = { scale: 0.94 } as const;
+
+/**
+ * `false` en el primer render —también el del servidor— y `true` después. Lo
+ * que ya estaba al cargar la página no entra animado (ni queda en `opacity: 0`
+ * en el HTML del servidor); lo que aparece después, al plegar o desplegar, sí.
+ */
+function useDespuesDelPrimerPintado(): boolean {
+  const [listo, setListo] = useState(false);
+  useEffect(() => setListo(true), []);
+  return listo;
+}
+
+/**
+ * ¿El resaltado de la activa entra con fundido? Sólo cuando la activa SALTA a
+ * otro bloque del menú: ahí no hay un resaltado previo con el mismo
+ * `layoutId` desde donde deslizarse, y aparecer de golpe se ve como un
+ * parpadeo. Dentro del mismo bloque, NO: el fundido correría encima del
+ * deslizamiento y lo dejaría casi invisible (medido: opacidad 0,02 a mitad
+ * del viaje). Tampoco en el primer pintado: el resaltado salía con
+ * `opacity: 0` en el HTML del servidor y la activa quedaba sin fondo hasta
+ * hidratar. Va por contexto porque cada resaltado se monta de nuevo al
+ * cambiar de fila y no puede llevar la cuenta solo.
+ */
+const ResalteConFundido = createContext(false);
+
+function ResalteDeLaFilaActiva({ grupo, conGuia }: { grupo: string; conGuia: boolean }) {
+  const conFundido = useContext(ResalteConFundido);
+  return (
+    <>
+      <motion.span
+        layoutId={`menu-activa-${grupo}`}
+        aria-hidden="true"
+        data-testid="resalte-de-la-fila-activa"
+        className="pointer-events-none absolute inset-0 rounded-[12px] bg-surface-selected"
+        initial={conFundido ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={RESORTE_DEL_MENU}
+      />
+      {conGuia && (
+        // Cae justo sobre la guía de la sección (`GUIA_DE_SECCION`: 1 px de
+        // borde + 3 px de aire → centro a −3,5 px de la fila).
+        <motion.span
+          layoutId={`menu-guia-${grupo}`}
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-[4.5px] bottom-1.5 top-1.5 w-[2px] rounded-full bg-fg-subtle"
+          transition={RESORTE_DEL_MENU}
+        />
+      )}
+    </>
+  );
+}
+
+function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enSeccion = false, grupoDelResalte = 'menu' }: NavItemComponentProps) {
   const Icon = item.icon;
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = item.children && item.children.length > 0;
@@ -243,16 +331,16 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
             (isActive || isChildActive)
-              ? 'text-primary font-medium'
+              ? 'text-fg font-medium'
               : 'text-plan-secondary hover:text-plan-primary',
             isCollapsed && 'justify-center px-2'
           )}
         >
           <Icon
-            weight={(isActive || isChildActive) ? 'duotone' : 'regular'}
+            weight={(isActive || isChildActive) ? 'fill' : 'regular'}
             className={cn(
               'w-[18px] h-[18px] stroke-[1.5px]',
-              (isActive || isChildActive) ? 'text-primary' : 'text-plan-muted'
+              (isActive || isChildActive) ? 'text-fg' : 'text-plan-muted'
             )}
           />
           {!isCollapsed && (
@@ -296,15 +384,17 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         data-tour-target={item.dataTourTarget}
         title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
         className={cn(
-          'flex items-center justify-center px-2.5 py-2.5 rounded-full transition-colors',
+          // El mismo activo sobrio que la barra abierta: tinte neutro, ícono
+          // relleno en tinta (antes, la píldora azul del DS).
+          'flex items-center justify-center px-2.5 py-2.5 rounded-[12px] transition-colors',
           isActive
-            ? 'text-primary bg-primary-soft'
-            : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
+            ? 'text-fg bg-surface-selected'
+            : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
         )}
       >
         <Icon
-          weight={isActive ? 'duotone' : 'regular'}
-          className={cn('w-[18px] h-[18px]', isActive ? 'text-primary' : 'text-fg-muted')}
+          weight={isActive ? 'fill' : 'regular'}
+          className={cn('w-[18px] h-[18px]', isActive ? 'text-fg' : 'text-fg-muted')}
         />
       </Link>
     );
@@ -338,7 +428,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   const row = (
       <SidebarItem
         href={item.href}
-        icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
+        icon={<Icon weight={isActive ? 'fill' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-fg')} />}
         label={displayLabel(item)}
         active={isActive}
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
@@ -349,16 +439,10 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         onClick={navegar}
         onMouseEnter={precargar}
         onFocus={precargar}
-        className={
-          enSeccion
-            ? // El tramo encendido cae exactamente sobre la guía de la sección
-              // (`GUIA_DE_SECCION`: 1 px de borde + 3 px de aire → centro a −3,5 px).
-              // Nico, 23-09: «que se vea algo más top, glow up esa línea»: 3 px,
-              // degradado del primario hacia abajo y un halo del mismo color, así
-              // se lee como luz sobre la guía y no como un borde más.
-              "data-[active]:before:absolute data-[active]:before:-left-[5px] data-[active]:before:top-1 data-[active]:before:bottom-1 data-[active]:before:w-[3px] data-[active]:before:rounded-full data-[active]:before:bg-gradient-to-b data-[active]:before:from-primary data-[active]:before:via-primary data-[active]:before:to-primary/50 data-[active]:before:shadow-[0_0_10px_1px_hsl(var(--primary)/0.55)] data-[active]:before:content-[''] motion-safe:data-[active]:before:animate-in motion-safe:data-[active]:before:fade-in motion-safe:data-[active]:before:duration-300"
-            : undefined
-        }
+        // El fondo de la activa lo pone `ResalteDeLaFilaActiva` (detrás, para
+        // poder deslizarse): la fila va transparente y POR ENCIMA de él (`z-[1]`).
+        // tailwind-merge pisa la píldora azul del DS con estas clases.
+        className="z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:font-medium data-[active]:text-fg"
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
         // así que este `style` gana: dentro de una sección el aire es de 8/6 px.
         style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
@@ -366,7 +450,12 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
       />
   );
 
-  return item.dataTourTarget ? <div data-tour-target={item.dataTourTarget}>{row}</div> : row;
+  return (
+    <div className="relative" data-tour-target={item.dataTourTarget}>
+      {isActive && <ResalteDeLaFilaActiva grupo={grupoDelResalte} conGuia={enSeccion} />}
+      {row}
+    </div>
+  );
 }
 
 /**
@@ -461,7 +550,9 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
         aria-controls={idFilas}
         className={cn(
           'group/seccion flex w-full items-center gap-2 rounded-[12px] px-[10px] py-[7px] text-left',
-          'transition-colors duration-150 hover:bg-surface-muted',
+          // El mismo tinte al pasar que las filas (`surface-hover`): en oscuro
+          // `surface-muted` era más claro que la fila activa y la competía.
+          'transition-colors duration-150 hover:bg-surface-hover',
           'outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'active:scale-[0.99] motion-reduce:active:scale-100',
         )}
@@ -472,7 +563,9 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
             // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
             // distingue de las filas sin competir con ellas (Nico, 23-09).
             'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
-            marcada ? 'text-primary' : 'text-fg-subtle group-hover/seccion:text-fg-muted',
+            // Plegada con la página actual adentro: en tinta plena, no en azul
+            // (el activo del menú es sobrio, ver `ResalteDeLaFilaActiva`).
+            marcada ? 'text-fg' : 'text-fg-subtle group-hover/seccion:text-fg-muted',
           )}
         >
           {bloque.cabecera.label}
@@ -527,6 +620,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
                 isCollapsed={false}
                 onClick={onItemClick}
                 enSeccion
+                grupoDelResalte={bloque.clave}
               />
             ))}
           </div>
@@ -565,46 +659,48 @@ function GrupoDelRiel({
 }
 
 /**
- * Qué secciones están abiertas, recordado por persona en el navegador.
+ * Qué secciones están abiertas en ESTA visita (`secciones-del-menu.ts`).
  *
- * Se lee en un efecto y no en el inicializador: el servidor pinta todo
- * abierto (no tiene el almacenamiento) y el primer render del cliente tiene
- * que coincidir, o React avisa de un mismatch.
+ * Al entrar: «Operación» y la sección de la página actual; las demás
+ * plegadas. Es lo que pinta el primer render —también el del servidor—, sin
+ * esperar un efecto, así que no hay parpadeo ni desajuste de hidratación.
  *
- * La sección de la página actual se abre sola cada vez que se navega a otra
- * sección — y queda así guardada. Si después la persona la cierra, se respeta
- * hasta la próxima navegación: abrirla a la fuerza en cada render sería un
- * botón que no obedece.
+ * Después, lo que la persona abra o cierre se respeta mientras navega (el
+ * menú vive en el layout y no se vuelve a montar). La sección de la página
+ * actual se abre sola cada vez que se navega a OTRA sección; si la persona la
+ * cierra estando ahí, queda cerrada hasta la próxima navegación: abrirla a la
+ * fuerza en cada render sería un botón que no obedece.
+ *
+ * No se guarda nada: la próxima entrada vuelve a la regla. Lo que se guardaba
+ * antes en el navegador se borra una vez.
  */
-function useSeccionesAbiertas(usuarioId: string | null | undefined, claveActiva: string | null) {
-  const llave = llaveDeAlmacenamiento(usuarioId);
+function useSeccionesAbiertas(
+  usuarioId: string | null | undefined,
+  claveActiva: string | null,
+  claves: readonly string[],
+) {
   const [estado, setEstado] = useState<EstadoDeSecciones>({});
+  const deEntrada = seccionAbiertaAlEntrar(claves);
 
   useEffect(() => {
-    setEstado(leerSecciones(llave, almacenLocal()));
-  }, [llave]);
+    olvidarSeccionesGuardadas(usuarioId, almacenLocal());
+  }, [usuarioId]);
 
-  // Va DESPUÉS del de lectura a propósito: los dos actualizadores se encolan
-  // en orden, así que éste ve lo leído y no el `{}` del primer render.
   useEffect(() => {
     if (!claveActiva) return;
-    setEstado((prev) => {
-      if (estaAbierta(prev, claveActiva)) return prev;
-      const siguiente = { ...prev, [claveActiva]: true };
-      guardarSecciones(llave, siguiente, almacenLocal());
-      return siguiente;
-    });
-  }, [claveActiva, llave]);
+    setEstado((prev) => (prev[claveActiva] === true ? prev : { ...prev, [claveActiva]: true }));
+  }, [claveActiva]);
+
+  const abierta = (clave: string) => estaAbierta(estado, clave, { deEntrada, activa: claveActiva });
 
   const alternar = (clave: string) => {
-    setEstado((prev) => {
-      const siguiente = { ...prev, [clave]: !estaAbierta(prev, clave) };
-      guardarSecciones(llave, siguiente, almacenLocal());
-      return siguiente;
-    });
+    setEstado((prev) => ({
+      ...prev,
+      [clave]: !estaAbierta(prev, clave, { deEntrada, activa: claveActiva }),
+    }));
   };
 
-  return { estado, alternar };
+  return { abierta, alternar };
 }
 
 interface SidebarContentProps {
@@ -701,45 +797,60 @@ export function SidebarContent({
     }
     return null;
   }, [bloques, hrefActivo]);
-  const { estado: estadoSecciones, alternar: alternarSeccion } = useSeccionesAbiertas(user?.id, claveActiva);
+  const clavesDeSecciones = useMemo(
+    () => bloques.flatMap((b) => (b.tipo === 'seccion' ? [b.clave] : [])),
+    [bloques],
+  );
+  const { abierta: seccionAbierta, alternar: alternarSeccion } = useSeccionesAbiertas(
+    user?.id,
+    claveActiva,
+    clavesDeSecciones,
+  );
+  // Al plegar o desplegar, la cabecera y la navegación nuevas entran con un
+  // fundido mientras la barra cambia de ancho (las etiquetas no aparecen de
+  // golpe y cortadas). Sólo `opacity`.
+  const yaPintada = useDespuesDelPrimerPintado();
+  const entraAlCambiar = yaPintada ? { opacity: 0 } : false;
+
+  // El bloque (sección o grupo de filas sueltas) de la fila activa, y el de
+  // la navegación anterior: si cambió, el resaltado nuevo entra con fundido.
+  // Es estado y no ref: en el render de la navegación todavía vale lo de
+  // antes, y el efecto lo pone al día después.
+  const bloqueActivo = useMemo(() => {
+    const i = bloques.findIndex((b) => b.filas.some((f) => f.href === hrefActivo));
+    if (i < 0) return null;
+    const b = bloques[i]!;
+    return b.tipo === 'seccion' ? b.clave : `sueltas-${i}`;
+  }, [bloques, hrefActivo]);
+  const [bloqueAnterior, setBloqueAnterior] = useState(bloqueActivo);
+  useEffect(() => setBloqueAnterior(bloqueActivo), [bloqueActivo]);
+  const resalteConFundido = yaPintada && bloqueAnterior !== bloqueActivo;
 
   return (
     // El sidebar NO pisa `--primary`: el primario es el del tema y nada más
     // (2026-08-16, definición de producto). Antes había un tinte de marca que
     // lo reemplazaba en claro por el hex de la agencia y dejaba dos azules
     // distintos para el mismo rol en la misma pantalla. Ver globals.css.
+    //
+    // `reducedMotion="user"`: con «reducir movimiento» el resaltado de la fila
+    // activa salta en vez de deslizarse.
+    <MotionConfig reducedMotion="user">
+    <ResalteConFundido.Provider value={resalteConFundido}>
     <div className="flex flex-col h-full bg-bg relative">
-      {/* Collapse Button */}
-      {showCollapseButton && (
-        <button
-          onClick={onCollapse}
-          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
-          aria-expanded={!isCollapsed}
-          className={cn(
-            'absolute top-6 -right-3 z-50',
-            'w-6 h-6 rounded-full bg-surface',
-            'border border-border',
-            'flex items-center justify-center',
-            'text-fg-subtle hover:text-fg-muted',
-            'shadow-xs transition-colors',
-            // ≥44px hit target without changing the 24px visual (24 + 2×10 = 44)
-            "before:absolute before:-inset-2.5 before:rounded-full before:content-['']",
-            'outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1'
-          )}
-        >
-          {isCollapsed ? (
-            <CaretRight className="w-3.5 h-3.5" />
-          ) : (
-            <CaretLeft className="w-3.5 h-3.5" />
-          )}
-        </button>
-      )}
-
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
-          brand mark on the collapsed rail. */}
+          brand mark on the collapsed rail. El botón de plegar vive acá (Nico,
+          02-10-2026): abierta, a la derecha del logo; plegada, debajo del
+          símbolo, a la vista para volver a abrirla. Antes era una media luna
+          de 24 px pegada al borde entre la barra y el contenido. */}
       {isCollapsed ? (
-        <div className="h-[60px] flex items-center justify-center px-2">
-          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
+        <motion.div
+          key="cabecera-plegada"
+          className="flex flex-col items-center gap-2 px-2 pb-1 pt-3"
+          initial={entraAlCambiar}
+          animate={{ opacity: 1 }}
+          transition={FUNDIDO_DE_LA_BARRA}
+        >
+          <Link href={logo?.href ?? '/'} className="flex h-9 items-center" onClick={onItemClick}>
             {workspaceLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -757,7 +868,8 @@ export function SidebarContent({
               </span>
             )}
           </Link>
-        </div>
+          {showCollapseButton && <BotonDeLaBarra plegada onAlternar={onCollapse} />}
+        </motion.div>
       ) : (
         // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
         // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
@@ -770,16 +882,23 @@ export function SidebarContent({
         // Igual en los TRES paneles. Antes inquilino y propietario caían a un
         // fallback con otro logo y otro tamaño: la misma app cambiaba de firma
         // según quién entrara.
-        <div className="px-3 pt-4 pb-3">
+        <motion.div
+          key="cabecera-abierta"
+          className="flex items-center gap-2 px-3 pt-4 pb-3"
+          initial={entraAlCambiar}
+          animate={{ opacity: 1 }}
+          transition={FUNDIDO_DE_LA_BARRA}
+        >
           <Link
             href={logo?.href ?? '/'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
-            className="flex w-full items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-w-0 flex-1 items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LeasefyLogotype size={26} />
           </Link>
-        </div>
+          {showCollapseButton && <BotonDeLaBarra plegada={false} onAlternar={onCollapse} />}
+        </motion.div>
       )}
 
       {/* Search — cadence SidebarSearch opens the command palette (⌘K).
@@ -821,7 +940,7 @@ export function SidebarContent({
           <NavSkeleton isCollapsed={isCollapsed} />
         ) : (
           isCollapsed ? (
-            <div>
+            <motion.div key="riel" initial={entraAlCambiar} animate={{ opacity: 1 }} transition={FUNDIDO_DE_LA_BARRA}>
               {bloques.map((bloque, i) => (
                 <GrupoDelRiel
                   key={bloque.tipo === 'seccion' ? bloque.clave : `sueltas-${i}`}
@@ -831,15 +950,21 @@ export function SidebarContent({
                   primero={i === 0}
                 />
               ))}
-            </div>
+            </motion.div>
           ) : (
-            <div className="space-y-1">
+            <motion.div
+              key="abierta"
+              className="space-y-1"
+              initial={entraAlCambiar}
+              animate={{ opacity: 1 }}
+              transition={FUNDIDO_DE_LA_BARRA}
+            >
               {bloques.map((bloque, i) =>
                 bloque.tipo === 'seccion' ? (
                   <SeccionPlegable
                     key={bloque.clave}
                     bloque={bloque}
-                    abierta={estaAbierta(estadoSecciones, bloque.clave)}
+                    abierta={seccionAbierta(bloque.clave)}
                     contieneLaActiva={bloque.clave === claveActiva}
                     onAlternar={() => alternarSeccion(bloque.clave)}
                     isActive={isActive}
@@ -860,12 +985,13 @@ export function SidebarContent({
                         isActive={isActive(item)}
                         isCollapsed={false}
                         onClick={onItemClick}
+                        grupoDelResalte={`sueltas-${i}`}
                       />
                     ))}
                   </div>
                 ),
               )}
-            </div>
+            </motion.div>
           )
         )}
       </nav>
@@ -1011,6 +1137,57 @@ export function SidebarContent({
         </div>
       )}
     </div>
+    </ResalteConFundido.Provider>
+    </MotionConfig>
+  );
+}
+
+/**
+ * El botón de plegar la barra (Nico, 02-10-2026, con la referencia): un
+ * cuadrado de esquinas muy redondeadas (12 px), fondo de superficie y filete,
+ * con el ícono de «panel lateral» (`SidebarSimple` de Phosphor: un rectángulo
+ * con la franja de la izquierda). El mismo ícono en los dos estados — es el
+ * nombre de la cosa, no una flecha — y el tooltip dice qué va a pasar. No hay
+ * atajo de teclado para plegar, así que el tooltip no promete ninguno.
+ *
+ * 36 px de lado: con el aire del encabezado, el blanco táctil pasa de 44.
+ *
+ * Movimiento: se hunde al apretarlo (`whileTap`, framer) y, como cambia de
+ * lugar al plegar, entra con el fundido de la cabecera. Con «reducir
+ * movimiento» no se hunde (`MotionConfig reducedMotion="user"`).
+ */
+function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar: () => void }) {
+  const texto = plegada ? 'Mostrar barra' : 'Ocultar barra';
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.button
+            type="button"
+            onClick={onAlternar}
+            aria-label={plegada ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
+            aria-expanded={!plegada}
+            data-testid="boton-de-la-barra"
+            whileTap={PRESION_DEL_BOTON}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className={cn(
+              'grid h-9 w-9 flex-shrink-0 place-items-center rounded-[12px]',
+              'border border-border bg-surface text-fg-muted',
+              'transition-colors duration-150',
+              'hover:bg-surface-hover hover:text-fg',
+              'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            )}
+          >
+            <SidebarSimple className="h-[18px] w-[18px]" aria-hidden="true" />
+          </motion.button>
+        </TooltipTrigger>
+        {/* Tinta sobre papel (al revés en oscuro), no el cobalto del tooltip
+            por defecto: es un rótulo del chrome, no una llamada a la acción. */}
+        <TooltipContent side={plegada ? 'right' : 'bottom'} sideOffset={6} className="bg-fg text-bg">
+          {texto}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

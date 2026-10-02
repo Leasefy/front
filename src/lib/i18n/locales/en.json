@@ -10105,8 +10105,18 @@
         "cotizador": "Go to Insurability",
         "reportes": "View reports",
         "portafolio": "View portfolio",
-        "hoy": "View Today"
+        "hoy": "View Today",
+        "detalles": {
+          "nuevaConsignacion": "A new property with its owner",
+          "cobranza": "Debtors, calls and payment plans",
+          "cotizador": "Quotes with insurers",
+          "reportes": "Your operation in numbers",
+          "portafolio": "All your properties"
+        }
       },
+      "veces": "{{n}} times",
+      "buscando": "Searching…",
+      "resultados": "Results: {{n}}",
       "hintNavigate": "navigate",
       "hintOpen": "open",
       "hintClose": "close"

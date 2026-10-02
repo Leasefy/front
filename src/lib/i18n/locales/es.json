@@ -10139,8 +10139,18 @@
         "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
         "portafolio": "Ver portafolio",
-        "hoy": "Ver Hoy"
+        "hoy": "Ver Hoy",
+        "detalles": {
+          "nuevaConsignacion": "Un inmueble nuevo con su propietario",
+          "cobranza": "Deudores, llamadas y acuerdos de pago",
+          "cotizador": "Cotizaciones con las aseguradoras",
+          "reportes": "Las cifras de tu operación",
+          "portafolio": "Todos tus inmuebles"
+        }
       },
+      "veces": "{{n}} veces",
+      "buscando": "Buscando…",
+      "resultados": "Resultados: {{n}}",
       "hintNavigate": "navegar",
       "hintOpen": "abrir",
       "hintClose": "cerrar"

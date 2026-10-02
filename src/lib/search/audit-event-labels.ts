@@ -151,6 +151,51 @@ export const AUDIT_EVENT_LABELS_ES: Readonly<Record<string, string>> = {
   // Cotizador
   'cotizador.quote.requested': 'Cotización solicitada',
   'cotizador.pii_leak_runtime': 'Alerta de fuga de datos en el cotizador',
+  cotizacion_creada: 'Cotización creada',
+  cotizacion_completada: 'Cotización completada',
+
+  // Piloto automático (`~/rent/agent/src/piloto/*`). Sin el diccionario el
+  // humanizador decía «Piloto retenido por autonomia» — sin tilde y al revés:
+  // lo retenido no es el piloto, es una acción que esperó tu aprobación. Las
+  // frases siguen a `piloto/motivos.ts` del agente, que es como ya las dice la
+  // pantalla del piloto automático.
+  piloto_retenido_por_autonomia: 'Acción retenida para tu aprobación',
+  piloto_retenido_aprobado: 'Aprobaste una acción retenida',
+  piloto_retenido_descartado: 'Descartaste una acción retenida',
+  piloto_retenidos_caducados: 'Se cerraron retenciones que ya no aplicaban',
+  piloto_decision_vencida: 'Una decisión lleva 72 h sin respuesta',
+  piloto_decision_resuelta: 'Se aplicó una decisión tuya',
+  piloto_reporte_enviado: 'Resumen del piloto automático enviado por correo',
+  piloto_evento_dominio: 'Novedad del negocio',
+  piloto_conciliacion_automatica: 'La conciliación cruzó sola los depósitos exactos',
+  piloto_conciliacion_humana: 'Conciliación hecha a mano',
+  piloto_gerente_hecha: 'El Gerente hizo una acción por su cuenta',
+  piloto_gerente_fallida: 'El Gerente no pudo hacer una acción',
+  piloto_gerente_para_tu_clic: 'Acciones listas para tu clic',
+  piloto_preferencias_cambiadas: 'Cambiaste los topes o la gracia del piloto automático',
+  piloto_habilitacion_cambiada: 'Cambiaste qué agentes trabajan para tu inmobiliaria',
+  piloto_autonomia_cambiada: 'Cambiaste el modo de un agente',
+  piloto_autonomia_flota_cambiada: 'Cambiaste el modo del piloto automático',
+  piloto_envio_programado: 'Envío programado con tiempo para deshacerlo',
+  piloto_envio_deshecho: 'Deshiciste un envío',
+
+  // Pagos, matching y conciliación
+  pago_creado: 'Pago registrado',
+  pago_verificado: 'Pago verificado',
+  pago_autorreportado: 'Pago reportado por el inquilino',
+  match_sugerido: 'Coincidencia sugerida',
+  match_decidido: 'Coincidencia decidida',
+  'matching.caso.descartado': 'Caso de matching descartado',
+  'conciliacion.daily_report.dispatched': 'Reporte diario de conciliación enviado',
+  escalacion_creada: 'Escalación creada',
+  escalacion_resuelta: 'Escalación resuelta',
+  'followup.send_failed': 'Seguimiento no enviado',
+  'cobranza.politica.updated': 'Política de cobranza actualizada',
+  'cobranza.memo.manual_create': 'Nota agregada al deudor',
+  'cobranza.acuerdo_general.updated': 'Acuerdo general actualizado',
+  'cobranza.acuerdo_general.deleted': 'Acuerdo general eliminado',
+  'retenido.caducado': 'Retención vencida',
+  inspeccion_fence_block: 'Inspección bloqueada por límites',
 };
 
 export const AUDIT_EVENT_LABELS_EN: Readonly<Record<string, string>> = {
@@ -259,6 +304,45 @@ export const AUDIT_EVENT_LABELS_EN: Readonly<Record<string, string>> = {
 
   'cotizador.quote.requested': 'Quote requested',
   'cotizador.pii_leak_runtime': 'Quote engine data-leak alert',
+  cotizacion_creada: 'Quote created',
+  cotizacion_completada: 'Quote completed',
+
+  piloto_retenido_por_autonomia: 'Action held for your approval',
+  piloto_retenido_aprobado: 'You approved a held action',
+  piloto_retenido_descartado: 'You discarded a held action',
+  piloto_retenidos_caducados: 'Holds that no longer applied were closed',
+  piloto_decision_vencida: 'A decision has waited 72 h for an answer',
+  piloto_decision_resuelta: 'One of your decisions was applied',
+  piloto_reporte_enviado: 'Autopilot summary emailed',
+  piloto_evento_dominio: 'Business update',
+  piloto_conciliacion_automatica: 'Reconciliation matched the exact deposits on its own',
+  piloto_conciliacion_humana: 'Reconciliation done by hand',
+  piloto_gerente_hecha: 'The Manager took an action on its own',
+  piloto_gerente_fallida: 'The Manager could not take an action',
+  piloto_gerente_para_tu_clic: 'Actions ready for your click',
+  piloto_preferencias_cambiadas: 'You changed the autopilot limits or grace period',
+  piloto_habilitacion_cambiada: 'You changed which agents work for your agency',
+  piloto_autonomia_cambiada: "You changed an agent's mode",
+  piloto_autonomia_flota_cambiada: 'You changed the autopilot mode',
+  piloto_envio_programado: 'Send scheduled with time to undo it',
+  piloto_envio_deshecho: 'You undid a send',
+
+  pago_creado: 'Payment recorded',
+  pago_verificado: 'Payment verified',
+  pago_autorreportado: 'Payment reported by the tenant',
+  match_sugerido: 'Match suggested',
+  match_decidido: 'Match decided',
+  'matching.caso.descartado': 'Matching case discarded',
+  'conciliacion.daily_report.dispatched': 'Daily reconciliation report sent',
+  escalacion_creada: 'Escalation created',
+  escalacion_resuelta: 'Escalation resolved',
+  'followup.send_failed': 'Follow-up not sent',
+  'cobranza.politica.updated': 'Collections policy updated',
+  'cobranza.memo.manual_create': 'Note added to the debtor',
+  'cobranza.acuerdo_general.updated': 'General agreement updated',
+  'cobranza.acuerdo_general.deleted': 'General agreement deleted',
+  'retenido.caducado': 'Hold expired',
+  inspeccion_fence_block: 'Inspection blocked by limits',
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -303,6 +387,14 @@ const PATTERN_FAMILIES: readonly PatternFamily[] = [
     pattern: /^arco_([a-z]+)_requested$/,
     es: (m) => `Solicitud ARCO de ${ARCO_ACCION_ES[m[1] ?? ''] ?? m[1]} recibida`,
     en: (m) => `Data-rights ${ARCO_ACCION_EN[m[1] ?? ''] ?? m[1]} request received`,
+  },
+  {
+    // Una huella `piloto_*` nueva que el diccionario todavía no conoce: el
+    // prefijo no se dice (ya lo dice el contexto de la fila, «Piloto
+    // automático»), así que «piloto_algo_nuevo» sale «Algo nuevo».
+    pattern: /^piloto_(.+)$/,
+    es: (m) => humanizeEventType(m[1] ?? ''),
+    en: (m) => humanizeEventType(m[1] ?? ''),
   },
 ];
 
@@ -387,6 +479,32 @@ export const AUDIT_ENTITY_LABELS_ES: Readonly<Record<string, string>> = {
   cotizador_arco_job: 'proceso ARCO del cotizador',
   cotizador_arco_objections: 'oposición ARCO',
   cotizador_tenant_aseguradora_override: 'aseguradora',
+  // Piloto automático: «piloto retencion» era la clave cruda humanizada.
+  piloto_retencion: 'piloto automático',
+  piloto_reporte: 'piloto automático',
+  acciones_del_piloto: 'piloto automático',
+  preferencias_del_piloto: 'piloto automático',
+  agent_autonomy: 'piloto automático',
+  gerente_detector: 'piloto automático',
+  retencion_sweep_run: 'piloto automático',
+  // Conciliación, pagos y proveedores
+  conciliacion_bancaria: 'conciliación bancaria',
+  conciliacion_daily_report: 'reporte de conciliación',
+  reconciliation_match: 'conciliación',
+  reconciliation_run: 'conciliación',
+  reconciliation_ingest: 'extracto del banco',
+  reconciliation_policy_versions: 'política de conciliación',
+  owner_settlement: 'liquidación del propietario',
+  vendor: 'proveedor',
+  vendor_bill: 'factura de proveedor',
+  ap_payment_run: 'pago a proveedores',
+  ap_approval_matrix_versions: 'matriz de aprobación',
+  approval_request: 'solicitud de aprobación',
+  matching_case: 'matching',
+  inspection_session: 'inspección',
+  agency_agreement_template: 'plantilla de acuerdo',
+  politica_de_cobranza: 'política de cobranza',
+  debtor_memo: 'nota del deudor',
 };
 
 export const AUDIT_ENTITY_LABELS_EN: Readonly<Record<string, string>> = {
@@ -420,6 +538,30 @@ export const AUDIT_ENTITY_LABELS_EN: Readonly<Record<string, string>> = {
   cotizador_arco_job: 'quote-engine data-rights job',
   cotizador_arco_objections: 'data-rights objection',
   cotizador_tenant_aseguradora_override: 'insurer',
+  piloto_retencion: 'autopilot',
+  piloto_reporte: 'autopilot',
+  acciones_del_piloto: 'autopilot',
+  preferencias_del_piloto: 'autopilot',
+  agent_autonomy: 'autopilot',
+  gerente_detector: 'autopilot',
+  retencion_sweep_run: 'autopilot',
+  conciliacion_bancaria: 'bank reconciliation',
+  conciliacion_daily_report: 'reconciliation report',
+  reconciliation_match: 'reconciliation',
+  reconciliation_run: 'reconciliation',
+  reconciliation_ingest: 'bank statement',
+  reconciliation_policy_versions: 'reconciliation policy',
+  owner_settlement: 'owner settlement',
+  vendor: 'vendor',
+  vendor_bill: 'vendor bill',
+  ap_payment_run: 'vendor payment',
+  ap_approval_matrix_versions: 'approval matrix',
+  approval_request: 'approval request',
+  matching_case: 'matching',
+  inspection_session: 'inspection',
+  agency_agreement_template: 'agreement template',
+  politica_de_cobranza: 'collections policy',
+  debtor_memo: 'debtor note',
 };
 
 /**

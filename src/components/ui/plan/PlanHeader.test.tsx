@@ -114,8 +114,20 @@ vi.mock('@/components/feedback/FeedbackCta', () => ({
   FeedbackCta: () => null,
 }));
 
+const permisos: { value: { isAdmin: boolean; canAccess: (m: string, a: string) => boolean } } = {
+  value: { isAdmin: true, canAccess: () => true },
+};
 vi.mock('@/lib/context/PermissionsContext', () => ({
-  usePermissionsContextSafe: () => ({ isAdmin: true, canAccess: () => true }),
+  usePermissionsContextSafe: () => permisos.value,
+}));
+
+// El modal se prueba en su propio archivo; acá sólo importa qué recibe.
+const { modalDelEquipo } = vi.hoisted(() => ({ modalDelEquipo: vi.fn() }));
+vi.mock('@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo', () => ({
+  InvitarAlEquipo: (props: { open: boolean; puedeInvitar: boolean }) => {
+    modalDelEquipo(props);
+    return props.open ? <div data-testid="modal-del-equipo">{props.puedeInvitar ? 'puede invitar' : 'sólo mira'}</div> : null;
+  },
 }));
 
 vi.mock('@/lib/context/PanelPrefsContext', () => ({
@@ -136,6 +148,8 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  permisos.value = { isAdmin: true, canAccess: () => true };
+  modalDelEquipo.mockClear();
   subState.value = { subscription: null, error: null, refetch: vi.fn() };
   agencySubState.value = { currentPlanId: 'starter', error: null, refetch: vi.fn() };
   agencyPlansState.value = { plans: [], isLoading: false };
@@ -265,5 +279,74 @@ describe('PlanHeader — "Tu Suscripción" popover resolves the REAL agency plan
 
     const popover = container.querySelector('[data-testid="subscription-popover"]')!;
     expect(popover.textContent).not.toContain('Cambia a');
+  });
+});
+
+// ── «Invitar a tu equipo» (02-10-2026) ─────────────────────────────────────
+
+const PORCENTAJE_CATALOG = [
+  {
+    id: 'flex',
+    name: 'Porcentaje',
+    description: 'Plan de pago por uso',
+    pricingModel: 'usage' as const,
+    price: { monthly: 0, yearly: 0 },
+    evaluation: { price: 0, discount: 0, limit: null },
+    limits: { properties: -1, users: -1 },
+    features: ['Sin mensualidad'],
+    level: null,
+    isDefault: false,
+  },
+];
+
+const botonDelEquipo = () =>
+  Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+    (b.getAttribute('aria-label') ?? '').startsWith('Invitar a tu equipo'),
+  );
+
+describe('PlanHeader — «Invitar a tu equipo» abre un modal, no un popover', () => {
+  it('el administrador ve el botón y abre el modal pudiendo invitar', () => {
+    render();
+    const boton = botonDelEquipo();
+    expect(boton).toBeTruthy();
+    expect(boton!.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')).toBeNull();
+
+    act(() => boton!.click());
+
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')!.textContent).toBe('puede invitar');
+    // El formulario viejo (cuatro tarjetas de rol) ya no está en el encabezado.
+    expect(container.textContent).not.toContain('Enviar Invitación');
+    expect(container.textContent).not.toContain('Colabora con tu equipo');
+  });
+
+  it('quien ve el equipo sin ser administrador lo abre, pero sin poder invitar', () => {
+    permisos.value = { isAdmin: false, canAccess: (m, a) => m === 'configuracion' && a === 'view' };
+    render();
+    act(() => botonDelEquipo()!.click());
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')!.textContent).toBe('sólo mira');
+  });
+
+  it('sin permiso para ver el equipo no hay botón ni modal', () => {
+    permisos.value = { isAdmin: false, canAccess: () => false };
+    render();
+    expect(botonDelEquipo()).toBeUndefined();
+    expect(modalDelEquipo).not.toHaveBeenCalled();
+  });
+});
+
+describe('PlanHeader — sin la pastilla del plan junto al avatar (Nico, 02-10-2026)', () => {
+  it('con el plan «Porcentaje» no sale la corona ni el nombre del plan junto al avatar', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_CATALOG, isLoading: false };
+    render();
+
+    const avatar = container.querySelector('[data-tour-target="perfil"]')!;
+    expect(avatar).toBeTruthy();
+    expect(avatar.textContent).not.toContain('Porcentaje');
+    expect(avatar.querySelector('[title^="Plan "]')).toBeNull();
+    // El plan sigue a un toque, en «Tu suscripción»: sólo dejó de mostrarse ahí.
+    const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).toContain('Porcentaje');
   });
 });

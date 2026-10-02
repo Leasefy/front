@@ -2858,6 +2858,12 @@ export interface AgencyUser {
   invitedAt?: string;
   lastLoginAt?: string;
   createdAt: string;
+  /**
+   * Sólo en una invitación pendiente (02-10-2026): cuándo vence, ISO. Ausente
+   * con un back anterior; `null` si no tiene fecha. La lista NUNCA trae el
+   * token ni el enlace: ésos salen sólo al invitar o reenviar.
+   */
+  invitationExpiresAt?: string | null;
 }
 
 export interface UserInvite {
@@ -3298,6 +3304,13 @@ export interface AgencyInviteResult extends AgencyMember {
    * el backend recorte la respuesta, esto se apaga solo en vez de romper.
    */
   invitationToken?: string;
+  /**
+   * El enlace personal de la invitación, armado por el back con la MISMA
+   * función que el correo (`/registro?invitationToken=…`, 02-10-2026). Sólo
+   * llega a quien invita (invitar y reenviar son rutas del administrador).
+   * Opcional: un back anterior no lo manda y el front lo arma con el token.
+   */
+  invitationLink?: string;
 }
 
 // ============================================================================

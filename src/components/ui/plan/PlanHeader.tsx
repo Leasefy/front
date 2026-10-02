@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass, Warning } from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
 import { SegmentedControl } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -27,9 +28,9 @@ import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
-import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
-import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
 import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
+import { InvitarAlEquipo } from '@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo';
+import { useMovimiento } from '@/components/inmobiliaria/invitar-al-equipo/movimiento';
 import { toast } from '@/components/ui/toast';
 import {
   searchData,
@@ -109,18 +110,8 @@ export function PlanHeader({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
-  const [teamInviteOpen, setTeamInviteOpen] = useState(false);
+  const [equipoAbierto, setEquipoAbierto] = useState(false);
   const [activeTab, setNotifTab] = useState<'all' | 'unread'>('all');
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteEmailError, setInviteEmailError] = useState('');
-  const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
-  const [inviteSent, setInviteSent] = useState(false);
-  // true when the member row was created but the invitation email failed to send.
-  const [inviteEmailUndelivered, setInviteEmailUndelivered] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
-
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchBtnRef = useRef<HTMLButtonElement>(null);
@@ -135,6 +126,15 @@ export function PlanHeader({
   // Outside inmobiliaria (landlord/tenant), always show these actions.
   const permsCtx = usePermissionsContextSafe();
   const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
+
+  // «Invitar a tu equipo» (02-10-2026) — sólo en el panel de la inmobiliaria:
+  // en el del propietario el botón invitaba a una agencia que no existe.
+  // Ver el equipo pide `configuracion:view` (lo exige `GET /agency/members`);
+  // invitar, ser ADMINISTRADOR (el back corta a cualquier otro rol con 403).
+  const puedeInvitarAlEquipo = isInmobiliaria && (permsCtx?.isAdmin ?? false);
+  const puedeVerElEquipo =
+    isInmobiliaria && (puedeInvitarAlEquipo || (permsCtx?.canAccess('configuracion', 'view') ?? false));
+  const movimiento = useMovimiento();
 
   // Phase 38 plan 38-06 (D-38-07) — PanelPrefsContext is only mounted under
   // /panel/inmobiliaria/*, so this header (rendered across multiple layouts)
@@ -256,10 +256,16 @@ export function PlanHeader({
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
   const isTopTier = !effectiveSubError && planId === 'flex';
-  // Real agency roster (GET /inmobiliaria/agency/members) — matches the endpoint
-  // the invite form below posts to. Only fetched in the inmobiliaria context;
-  // `skip` avoids a wasted/failing call for landlord/tenant headers.
-  const { users: teamMembers, refetch: refetchTeam } = useAgencyUsers(isInmobiliaria);
+  // El equipo (GET /inmobiliaria/agency/members) para el modal «Invitar a tu
+  // equipo» y el contador de invitaciones pendientes. Sólo se pide si quien
+  // mira puede verlo: antes se pedía para todo el que entraba al panel y a un
+  // asesor le devolvía 403 en cada página.
+  const {
+    users: teamMembers,
+    isLoading: teamLoading,
+    errorCrudo: teamError,
+    refetch: refetchTeam,
+  } = useAgencyUsers(puedeVerElEquipo);
   const pendingInvites = teamMembers.filter((m) => m.status === 'invited');
 
   // MagnifyingGlass functionality
@@ -754,254 +760,63 @@ export function PlanHeader({
                 </PopoverContent>
               </Popover>}
 
-              {/* Team Invite Popover — admin-only in inmobiliaria context */}
-              {canShowAdminActions && <Popover open={teamInviteOpen} onOpenChange={(open) => {
-                setTeamInviteOpen(open);
-                if (!open) {
-                  setInviteEmail('');
-                  setInviteRole('viewer');
-                  setInviteSent(false);
-                }
-              }}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={locale === 'es' ? 'Invitar a tu equipo' : 'Invite your team'}
-                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
-                  >
-                    <UserPlus className="w-5 h-5 stroke-[1.5px]" />
-                    {pendingInvites.length > 0 && (
-                      <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
-                        {pendingInvites.length}
-                      </span>
-                    )}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
-                  align="end"
-                  sideOffset={8}
+              {/*
+                «Invitar a tu equipo» (02-10-2026): ya no es un popover. Abre un
+                modal (`InvitarAlEquipo`) con «Con acceso» e «Invitar» y el
+                enlace personal de cada invitación. Sólo en el panel de la
+                inmobiliaria y para quien puede ver el equipo.
+              */}
+              {puedeVerElEquipo && (
+                <button
+                  type="button"
+                  onClick={() => setEquipoAbierto(true)}
+                  aria-haspopup="dialog"
+                  aria-label={
+                    pendingInvites.length > 0
+                      ? `Invitar a tu equipo (${pendingInvites.length} ${pendingInvites.length === 1 ? 'invitación pendiente' : 'invitaciones pendientes'})`
+                      : 'Invitar a tu equipo'
+                  }
+                  title="Invitar a tu equipo"
+                  className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
                 >
-                  {/* Header */}
-                  <div className="px-5 py-4 border-b border-border-faint bg-surface-muted">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-fg">Invitar al Equipo</h3>
-                      <button
-                        onClick={() => setTeamInviteOpen(false)}
-                        aria-label={t('common.close')}
-                        className="text-fg-subtle hover:text-fg-muted transition-colors"
+                  <UserPlus className="w-5 h-5 stroke-[1.5px]" />
+                  {/* El contador salta al aparecer y la cifra nueva llega en
+                      su lugar al invitar o cancelar (`movimiento.ts`). */}
+                  <AnimatePresence initial={false}>
+                    {pendingInvites.length > 0 && (
+                      <motion.span
+                        key="pendientes"
+                        aria-hidden="true"
+                        initial={movimiento.salta.initial}
+                        animate={movimiento.salta.animate}
+                        exit={movimiento.salta.exit}
+                        className="absolute top-0 right-0 w-4 h-4 overflow-hidden bg-primary text-primary-fg font-mono tabular-nums text-[9px] font-medium flex items-center justify-center rounded-full"
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <p className="text-[12px] text-fg-muted mt-1">
-                      Colabora con tu equipo en la gestión de propiedades
-                    </p>
-                  </div>
-
-                  <div className="p-5">
-                    {inviteSent ? (
-                      /* Result state — success or partial-success (email not delivered) */
-                      <div className="text-center py-4">
-                        {inviteEmailUndelivered ? (
-                          <>
-                            <div className="w-12 h-12 bg-warning-soft rounded-full flex items-center justify-center mx-auto mb-3">
-                              <Warning className="w-6 h-6 text-warning" />
-                            </div>
-                            <p className="text-[14px] font-medium text-plan-primary">Invitación creada</p>
-                            <p className="text-[12px] text-plan-secondary mt-1">
-                              No pudimos enviar el correo a {inviteEmail}. Usa &quot;Reenviar invitación&quot; o verifica la dirección.
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
-                              <Check className="w-6 h-6 text-[#2C7A53]" />
-                            </div>
-                            <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
-                            <p className="text-[12px] text-plan-secondary mt-1">
-                              Se envió un correo a {inviteEmail}
-                            </p>
-                          </>
-                        )}
-                        <button
-                          onClick={() => {
-                            setInviteSent(false);
-                            setInviteEmailUndelivered(false);
-                            setInviteName('');
-                            setInviteEmail('');
-                            setInviteRole('viewer');
-                          }}
-                          className="mt-4 text-[13px] text-plan-secondary hover:text-plan-primary"
+                        <motion.span
+                          key={pendingInvites.length}
+                          initial={movimiento.cambia.initial}
+                          animate={movimiento.cambia.animate}
                         >
-                          Invitar a otra persona
-                        </button>
-                      </div>
-                    ) : (
-                      /* Invite form */
-                      <>
-                        {/* Name input */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Nombre
-                          </label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
-                            <input
-                              type="text"
-                              value={inviteName}
-                              onChange={(e) => setInviteName(e.target.value)}
-                              placeholder="Nombre del colaborador"
-                              aria-label="Nombre del colaborador"
-                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Email input */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Correo electrónico
-                          </label>
-                          <div className="relative">
-                            <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
-                            <input
-                              type="email"
-                              value={inviteEmail}
-                              onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
-                              onBlur={() => { if (inviteEmail && !isValidEmail(inviteEmail)) setInviteEmailError('Ingresa un correo válido'); }}
-                              placeholder="correo@ejemplo.com"
-                              aria-label="Correo electrónico para invitación"
-                              className={cn(
-                                "w-full h-10 pl-9 pr-4 bg-muted border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
-                                inviteEmailError ? 'border-[#C4503B]/30 focus:ring-[#C4503B]' : 'border-plan-border focus:ring-plan-primary'
-                              )}
-                            />
-                          </div>
-                          {inviteEmailError && (
-                            <p className="text-xs text-[#C4503B] mt-1">{inviteEmailError}</p>
-                          )}
-                        </div>
-
-                        {/* Role selector */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Rol
-                          </label>
-                          <div className="space-y-2">
-                            {TEAM_ROLES.map((role) => (
-                              <button
-                                key={role.id}
-                                onClick={() => setInviteRole(role.id)}
-                                className={cn(
-                                  'w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all',
-                                  inviteRole === role.id
-                                    ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                                    : 'border-border hover:border-border-strong'
-                                )}
-                              >
-                                <div className={cn(
-                                  'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors',
-                                  inviteRole === role.id ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40' : 'border-border-strong'
-                                )}>
-                                  {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-[13px] font-medium text-plan-primary">{role.name}</p>
-                                  <p className="text-[11px] text-plan-secondary">{role.description}</p>
-                                </div>
-                              </button>
-                            ))}
-
-                            {/* Agente — redirige a /panel/inmobiliaria/configuracion/equipo */}
-                            <button
-                              onClick={() => {
-                                setTeamInviteOpen(false);
-                                router.push(AGENTE_TEAM_ENTRY.redirectTo);
-                              }}
-                              className="w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all border-border hover:border-border-strong"
-                            >
-                              <div className="w-4 h-4 rounded-full border-2 border-border-strong flex items-center justify-center mt-0.5" />
-                              <div className="flex-1">
-                                <p className="text-[13px] font-medium text-plan-primary">{AGENTE_TEAM_ENTRY.name}</p>
-                                <p className="text-[11px] text-plan-secondary">{AGENTE_TEAM_ENTRY.description}</p>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                          onClick={async () => {
-                            if (!inviteEmail || !isValidEmail(inviteEmail)) return;
-                            setInviteLoading(true);
-                            try {
-                              const result = await inmobiliariaConfigApi.inviteUser({
-                                email: inviteEmail,
-                                name: inviteName.trim(),
-                                role: inviteRole,
-                              });
-                              setInviteEmailUndelivered(result.emailDelivered === false);
-                              setInviteSent(true);
-                              void refetchTeam();
-                            } catch {
-                              toast.error('No se pudo enviar la invitación. Intenta de nuevo.');
-                            } finally {
-                              setInviteLoading(false);
-                            }
-                          }}
-                          disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
-                          className={cn(
-                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-lg transition-colors flex items-center justify-center gap-2',
-                            inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
-                              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
-                              : 'bg-muted text-plan-muted cursor-not-allowed'
-                          )}
-                        >
-                          {inviteLoading ? (
-                            <>
-                              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                              </svg>
-                              Enviando...
-                            </>
-                          ) : (
-                            'Enviar Invitación'
-                          )}
-                        </button>
-                      </>
+                          {pendingInvites.length}
+                        </motion.span>
+                      </motion.span>
                     )}
-
-                    {/* Current team preview */}
-                    {teamMembers.length > 1 && !inviteSent && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-[11px] font-normal text-plan-muted font-mono uppercase tracking-wide mb-2">
-                          Equipo actual ({teamMembers.length})
-                        </p>
-                        <div className="flex -space-x-2">
-                          {teamMembers.slice(0, 5).map((member) => (
-                            <div
-                              key={member.id}
-                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface flex items-center justify-center text-[11px] font-medium text-plan-secondary"
-                              title={member.name || member.email}
-                            >
-                              {(member.name || member.email).charAt(0).toUpperCase()}
-                            </div>
-                          ))}
-                          {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
-                              +{teamMembers.length - 5}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>}
+                  </AnimatePresence>
+                </button>
+              )}
+              {puedeVerElEquipo && (
+                <InvitarAlEquipo
+                  open={equipoAbierto}
+                  onOpenChange={setEquipoAbierto}
+                  miembros={teamMembers}
+                  cargando={teamLoading ?? false}
+                  error={teamError}
+                  onReintentar={refetchTeam}
+                  onCambio={refetchTeam}
+                  puedeInvitar={puedeInvitarAlEquipo}
+                  correoPropio={user?.email}
+                />
+              )}
             </>
           )}
 
@@ -1212,10 +1027,8 @@ export function PlanHeader({
                 // Anclaje del recorrido guiado del panel (`TourDelPanel`): acá
                 // viven perfil, configuración y el enlace que vuelve a lanzarlo.
                 data-tour-target="perfil"
-                // A 390 px sólo el avatar: el sello del plan y la flecha se
-                // van a partir de `sm`. Con ellos el encabezado medía 447 px y
-                // la página entera scrolleaba de lado (24-09). El plan sigue a
-                // un toque, en el rayo de «Tu suscripción».
+                // A 390 px sólo el avatar: la flecha se va a partir de `sm`.
+                // El plan sigue a un toque, en el rayo de «Tu suscripción».
                 className="flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 sm:pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {/* Avatar */}
@@ -1224,24 +1037,16 @@ export function PlanHeader({
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                {/* Subscription badge */}
-                {isLandlord ? (
-                  <span className="hidden sm:inline-flex">
-                    <AvatarSubscriptionIndicator
-                      variant="landlord"
-                      planId={planId}
-                      agencyPlan={
-                        isInmobiliaria && agencyLivePlan
-                          ? {
-                              name: agencyLivePlan.name,
-                              isDefault: agencyLivePlan.isDefault ?? false,
-                              level: agencyLivePlan.level ?? null,
-                            }
-                          : undefined
-                      }
-                    />
-                  </span>
-                ) : tenantSubscription ? (
+                {/*
+                  🔴 02-10-2026 (Nico): «¿qué es eso de la corona y porcentaje?
+                  Quítalo, porque por ahora no usamos nada de eso». Junto al
+                  avatar del propietario y de la inmobiliaria iba el sello del
+                  plan de la suscripción: con el plan «Porcentaje» del catálogo
+                  (slug `flex`, cobro por uso, `level: null`) salía una corona
+                  dorada. Sólo deja de mostrarse: el plan, su cobro y el rayo de
+                  «Tu suscripción» siguen igual. El «Pass» del inquilino se queda.
+                */}
+                {!isLandlord && tenantSubscription ? (
                   <span className="hidden sm:inline-flex">
                     <AvatarSubscriptionIndicator
                       variant="tenant"

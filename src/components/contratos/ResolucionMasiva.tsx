@@ -28,10 +28,19 @@
  * (en la lista) selecciona sólo lo que queda, y repetir la acción continúa. El
  * progreso se lee contra ese total del servidor, no contra la selección
  * original.
+ *
+ * T-0138 — las acciones salen de los problemas REALES de la selección. Al
+ * cambiar la selección se le pregunta al servidor cuántas filas tienen cada
+ * problema (`POST migrar/filas/faltantes`) y se ofrece una acción por problema
+ * presente, con su número; las de 0 no se muestran. Lo que no tiene arreglo en
+ * bloque seguro (el correo o el nombre del inquilino, las fechas…) se cuenta y
+ * se manda a la fila, sin botón. Repartir en partes iguales y descartar piden
+ * confirmación en la página: una cambia cómo se divide el canon, la otra saca
+ * filas del lote.
  */
 
 import { useEffect, useState } from 'react'
-import { Users, WarningCircle } from '@phosphor-icons/react'
+import { Buildings, Trash, Users, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -45,6 +54,7 @@ import {
 } from '@/components/ui/select'
 import {
   contractsApi,
+  type FaltantesDeLaSeleccion,
   type FilaDeMigracion,
   type ResultadoMasivo,
 } from '@/lib/api/contracts.service'
@@ -59,7 +69,32 @@ const CHUNK_MASIVA = 100
 /** Vueltas máximas contra el servidor: un tope duro, nunca un bucle sin fin. */
 const MAX_VUELTAS = 50
 
-type Modo = 'uso' | 'propietario'
+type Modo = 'uso' | 'propietario' | 'reparto' | 'descartar'
+
+/**
+ * Lo que no se arregla en bloque: el código de `faltantes` dicho como lo que le
+ * pasa a la fila. Un código que no está acá (o `otros`) cae en la última.
+ */
+const PROBLEMAS_POR_FILA: Record<string, string> = {
+  inmueble_ambiguo: 'con dos inmuebles posibles para la dirección',
+  inmueble_codigo: 'con un código de inmueble que no está cargado',
+  inmueble_ocupado: 'con un inmueble que ya tiene un contrato vivo',
+  inquilino_correo: 'sin correo del inquilino',
+  inquilino_nombre: 'sin nombre del inquilino',
+  inquilino_documento_ajeno: 'con un documento del inquilino que es de otra cuenta',
+  fechas: 'con fechas que no cuadran',
+  canon: 'sin canon',
+  dia_de_pago: 'sin un día de pago válido',
+  consecutivo_repetido: 'con un consecutivo repetido en el archivo',
+  cartera_antes_del_inicio: 'con la fecha de cartera anterior al inicio',
+  otros: 'con otro dato por completar',
+}
+
+/** Códigos que tienen botón propio arriba: no se repiten en «se resuelve en cada fila». */
+const CON_ACCION = new Set(['uso', 'propietario', 'reparto_del_canon', 'inmueble'])
+
+/** El bloque «Crear los inmuebles que faltan» del resumen del lote (T-0135). */
+const ID_CREAR_INMUEBLES = 'crear-inmuebles-faltantes'
 
 interface Props {
   /**
@@ -125,6 +160,14 @@ export function ResolucionMasiva({
   const [faltanAhora, setFaltanAhora] = useState<number | null>(null)
   /** La acción terminó sin tener nada que hacer (no es un resultado de «0 de 0»). */
   const [nadaQueHacer, setNadaQueHacer] = useState(false)
+  /** T-0138 — los problemas reales de la selección; `null` mientras se pregunta o si falló. */
+  const [desglose, setDesglose] = useState<FaltantesDeLaSeleccion | null>(null)
+  const [cargandoDesglose, setCargandoDesglose] = useState(false)
+  /** Se sube al terminar una acción para volver a contar contra el servidor. */
+  const [versionDesglose, setVersionDesglose] = useState(0)
+  /** La acción delicada (repartir, descartar) espera un «sí» explícito en la página. */
+  const [confirmando, setConfirmando] = useState(false)
+  const [avisoInmuebles, setAvisoInmuebles] = useState<string | null>(null)
 
   // Mientras corre la acción, cerrar la pestaña la corta: lo aplicado queda
   // guardado en el servidor, pero la persona tiene que saberlo antes de irse.
@@ -147,18 +190,30 @@ export function ResolucionMasiva({
    * lo activado y lo descartado, así que nunca es un daño, sólo más ruido.
    */
   async function pendientesAhora(
-    faltante: Modo,
+    accion: Modo,
     yaIntentadas: Set<string>,
   ): Promise<string[]> {
     if (!lote) return ids.filter((id) => !yaIntentadas.has(id))
     try {
-      const r = await contractsApi.migracion.idsDeFilas(lote, undefined, faltante)
-      const faltan = new Set(r.ids)
+      let faltan: Set<string>
+      if (accion === 'descartar') {
+        // Descartar no depende de un faltante: son las filas vivas (ni
+        // activadas ni descartadas), con o sin problema.
+        const [p, l] = await Promise.all([
+          contractsApi.migracion.idsDeFilas(lote, 'PENDIENTE'),
+          contractsApi.migracion.idsDeFilas(lote, 'LISTO'),
+        ])
+        faltan = new Set([...p.ids, ...l.ids])
+      } else {
+        const faltante = accion === 'reparto' ? 'reparto_del_canon' : accion
+        const r = await contractsApi.migracion.idsDeFilas(lote, undefined, faltante)
+        faltan = new Set(r.ids)
+      }
       // «Mismo propietario» también alcanza a una fila ACTIVADA sin propietario
       // (se consigna): esas no tienen faltante, así que se respetan si la
       // persona las marcó a mano.
       const activadas =
-        faltante === 'propietario'
+        accion === 'propietario'
           ? new Set(seleccionadas.filter((f) => f.estado === 'ACTIVADO').map((f) => f.id))
           : new Set<string>()
       return ids.filter(
@@ -172,6 +227,39 @@ export function ResolucionMasiva({
   // Antes de aplicar, se le pregunta al servidor cuántas de las seleccionadas
   // necesitan de verdad la acción elegida: si son 0, se dice y no se ofrece.
   const llaveDeLaSeleccion = `${ids.length}:${ids[0] ?? ''}:${ids[ids.length - 1] ?? ''}`
+
+  // T-0138 — qué problemas tiene de verdad ESTA selección: de ahí salen las
+  // acciones que se ofrecen. Sin `lote` no hay a quién preguntarle y se cae al
+  // par de siempre (uso / propietario).
+  useEffect(() => {
+    if (!lote || ids.length === 0) {
+      setDesglose(null)
+      return
+    }
+    let vigente = true
+    setCargandoDesglose(true)
+    contractsApi.migracion
+      .faltantesDeLaSeleccion(lote, ids)
+      .then((d) => {
+        if (vigente) setDesglose(d)
+      })
+      .catch(() => {
+        if (vigente) setDesglose(null)
+      })
+      .finally(() => {
+        if (vigente) setCargandoDesglose(false)
+      })
+    return () => {
+      vigente = false
+    }
+    // `ids` se compara por su llave: cambia cuando cambia la selección.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lote, llaveDeLaSeleccion, versionDesglose])
+
+  // Cambiar de acción o de selección cancela una confirmación a medias.
+  useEffect(() => {
+    setConfirmando(false)
+  }, [modo, llaveDeLaSeleccion])
   useEffect(() => {
     setNadaQueHacer(false)
     if (modo === null || !lote || ids.length === 0) {
@@ -216,6 +304,12 @@ export function ResolucionMasiva({
                   comision.trim() === '' ? undefined : Number(comision),
               },
             }
+      const aplicarTanda = (trozo: string[]): Promise<ResultadoMasivo> =>
+        modo === 'reparto'
+          ? contractsApi.migracion.repartirEnPartesIguales(trozo)
+          : modo === 'descartar'
+            ? contractsApi.migracion.descartarFilas(trozo)
+            : contractsApi.migracion.resolverMasivo(trozo, cambios)
 
       const intentadas = new Set<string>()
       let totalPorHacer = 0
@@ -242,7 +336,7 @@ export function ResolucionMasiva({
 
         for (let i = 0; i < pendientes.length; i += CHUNK_MASIVA) {
           const trozo = pendientes.slice(i, i + CHUNK_MASIVA)
-          const r = await contractsApi.migracion.resolverMasivo(trozo, cambios)
+          const r = await aplicarTanda(trozo)
           acumulado = acumular(acumulado, r)
           trozo.forEach((id) => intentadas.add(id))
           setResultado(acumulado)
@@ -261,6 +355,8 @@ export function ResolucionMasiva({
       )
     } finally {
       setCorriendo(false)
+      setConfirmando(false)
+      setVersionDesglose((v) => v + 1)
       // Refresca la lista de trabajo si al menos una tanda llegó a procesarse,
       // aunque una tanda posterior haya fallado — lo que se aplicó ya cambió
       // filas reales.
@@ -275,58 +371,189 @@ export function ResolucionMasiva({
       ? uso !== ''
       : modo === 'propietario'
         ? nombre.trim() !== '' && documento.trim() !== ''
-        : false)
+        : modo === 'reparto' || modo === 'descartar')
 
-  // Lo que no es uso ni propietario no se resuelve en bloque: se dice dónde.
-  const pistaDeLoQueFalta =
-    ids.length === 1
-      ? ' Lo que le falte se resuelve en la propia fila (reparto, inmueble, inquilino).'
-      : ' Lo que les falta se resuelve en cada fila (reparto, inmueble, inquilino).'
+  const n = (codigo: string) => desglose?.porMotivo[codigo] ?? 0
+  const activadasSeleccionadas = seleccionadas.filter((f) => f.estado === 'ACTIVADO').length
+  // Cuántas filas toca cada acción. «Mismo propietario» también alcanza a una
+  // fila ACTIVADO sin propietario que la persona marcó a mano (se consigna).
+  const cuantasUso = n('uso')
+  const cuantasPropietario = n('propietario') + activadasSeleccionadas
+  const cuantasReparto = n('reparto_del_canon')
+  const cuantasInmueble = n('inmueble')
+  const cuantasDescartar = desglose?.descartables ?? 0
+  const cuantasDeLaAccion =
+    modo === 'uso'
+      ? cuantasUso
+      : modo === 'propietario'
+        ? cuantasPropietario
+        : modo === 'reparto'
+          ? cuantasReparto
+          : modo === 'descartar'
+            ? cuantasDescartar
+            : 0
+
+  // Los problemas sin arreglo en bloque seguro: se cuentan y se mandan a la fila.
+  const sinArregloEnBloque = Object.entries(desglose?.porMotivo ?? {})
+    .filter(([codigo, cuantas]) => !CON_ACCION.has(codigo) && (cuantas ?? 0) > 0)
+    .map(([codigo, cuantas]) => ({
+      codigo,
+      cuantas: cuantas ?? 0,
+      texto: PROBLEMAS_POR_FILA[codigo] ?? PROBLEMAS_POR_FILA.otros,
+    }))
+  const nadaPendiente =
+    desglose !== null &&
+    cuantasDescartar === 0 &&
+    cuantasUso + cuantasPropietario + cuantasReparto + cuantasInmueble === 0 &&
+    sinArregloEnBloque.length === 0
+
+  function elegir(m: Modo) {
+    setModo(modo === m ? null : m)
+  }
+
+  function irACrearInmuebles() {
+    const bloque = document.getElementById(ID_CREAR_INMUEBLES)
+    if (bloque) {
+      setAvisoInmuebles(null)
+      bloque.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    } else {
+      setAvisoInmuebles(
+        'El bloque «Crear los inmuebles que faltan» no está disponible ahora: recarga el lote e inténtalo de nuevo.',
+      )
+    }
+  }
 
   const mensajeNada =
-    (modo === 'uso'
-      ? ids.length === 1
-        ? 'La fila seleccionada ya tiene uso: no hay nada que resolver.'
-        : `Ninguna de las ${ids.length} filas necesita uso: todas ya lo tienen.`
-      : ids.length === 1
-        ? 'La fila seleccionada ya tiene propietario: no hay nada que resolver.'
-        : `Ninguna de las ${ids.length} filas necesita propietario: todas ya lo tienen.`) +
-    pistaDeLoQueFalta
+    modo === 'uso'
+      ? 'Las filas seleccionadas ya tienen uso: no hay nada que resolver.'
+      : modo === 'propietario'
+        ? 'Las filas seleccionadas ya tienen propietario: no hay nada que resolver.'
+        : modo === 'reparto'
+          ? 'Las filas seleccionadas ya no tienen problema de reparto: no hay nada que resolver.'
+          : 'Las filas seleccionadas ya no se pueden descartar: no hay nada que hacer.'
+
+  // Sin `lote` (o si falló la pregunta) no hay desglose: se ofrece el par de siempre.
+  const mostrarUso = desglose === null ? !cargandoDesglose : cuantasUso > 0
+  const mostrarPropietario = desglose === null ? !cargandoDesglose : cuantasPropietario > 0
+  const conNumero = (texto: string, cuantas: number) =>
+    desglose === null ? texto : `${texto} (${cuantas})`
 
   return (
     <Card className="space-y-4 border-primary/30 p-5" data-testid="resolucion-masiva">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="space-y-3">
         <p className="text-sm font-medium text-foreground">
           {ids.length} {ids.length === 1 ? 'fila seleccionada' : 'filas seleccionadas'}
         </p>
-        <div className="flex gap-2">
-          <Button
-            variant={modo === 'uso' ? 'default' : 'outline'}
-            size="sm"
-            hideArrow
-            disabled={corriendo}
-            onClick={() => setModo(modo === 'uso' ? null : 'uso')}
-          >
-            Definir el uso
-          </Button>
-          <Button
-            variant={modo === 'propietario' ? 'default' : 'outline'}
-            size="sm"
-            hideArrow
-            disabled={corriendo}
-            onClick={() => setModo(modo === 'propietario' ? null : 'propietario')}
-          >
-            <Users className="mr-1.5 h-3.5 w-3.5" />
-            Mismo propietario
-          </Button>
+
+        {cargandoDesglose && desglose === null ? (
+          <p className="text-caption text-muted-foreground" data-testid="revisando-problemas">
+            Revisando qué problemas tienen las filas seleccionadas…
+          </p>
+        ) : null}
+
+        {nadaPendiente ? (
+          <p className="text-caption text-muted-foreground" data-testid="nada-pendiente-seleccion">
+            No hay nada pendiente en la selección: todas las filas ya están activadas o
+            descartadas.
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2" data-testid="acciones-masivas">
+          {mostrarUso ? (
+            <Button
+              variant={modo === 'uso' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              disabled={corriendo}
+              onClick={() => elegir('uso')}
+            >
+              {conNumero('Definir el uso', cuantasUso)}
+            </Button>
+          ) : null}
+          {mostrarPropietario ? (
+            <Button
+              variant={modo === 'propietario' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              disabled={corriendo}
+              onClick={() => elegir('propietario')}
+            >
+              <Users className="mr-1.5 h-3.5 w-3.5" />
+              {conNumero('Mismo propietario', cuantasPropietario)}
+            </Button>
+          ) : null}
+          {cuantasReparto > 0 ? (
+            <Button
+              variant={modo === 'reparto' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              disabled={corriendo}
+              onClick={() => elegir('reparto')}
+              data-testid="accion-reparto"
+            >
+              Repartir en partes iguales ({cuantasReparto})
+            </Button>
+          ) : null}
+          {cuantasInmueble > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              disabled={corriendo}
+              onClick={irACrearInmuebles}
+              data-testid="accion-inmuebles"
+            >
+              <Buildings className="mr-1.5 h-3.5 w-3.5" />
+              Crear los inmuebles que faltan ({cuantasInmueble})
+            </Button>
+          ) : null}
+          {cuantasDescartar > 0 ? (
+            <Button
+              variant={modo === 'descartar' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              disabled={corriendo}
+              onClick={() => elegir('descartar')}
+              data-testid="accion-descartar"
+            >
+              <Trash className="mr-1.5 h-3.5 w-3.5" />
+              Descartar las seleccionadas ({cuantasDescartar})
+            </Button>
+          ) : null}
         </div>
+
+        {cuantasInmueble > 0 ? (
+          <p className="text-caption text-muted-foreground">
+            Crear los inmuebles se hace desde el bloque del resumen del lote, que cubre
+            todas las filas sin inmueble del lote, no sólo las seleccionadas.
+          </p>
+        ) : null}
+        {avisoInmuebles ? (
+          <p className="text-caption text-warning" data-testid="aviso-inmuebles">
+            {avisoInmuebles}
+          </p>
+        ) : null}
+
+        {sinArregloEnBloque.length > 0 ? (
+          <ul
+            className="space-y-0.5 text-caption text-muted-foreground"
+            data-testid="sin-arreglo-en-bloque"
+          >
+            {sinArregloEnBloque.map((p) => (
+              <li key={p.codigo}>
+                {p.cuantas} {p.cuantas === 1 ? 'fila' : 'filas'} {p.texto} — se resuelve en
+                cada fila.
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       {modo === 'uso' ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px]">
             <label className="text-caption text-muted-foreground">
-              Uso para las {ids.length}
+              Uso para las {cuantasUso || ids.length}
             </label>
             <Select value={uso} onValueChange={(v) => setUso(v as 'VIVIENDA' | 'COMERCIAL')}>
               <SelectTrigger>
@@ -372,6 +599,23 @@ export function ResolucionMasiva({
         </div>
       ) : null}
 
+      {modo === 'reparto' ? (
+        <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5 text-caption text-foreground">
+          <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+          Esto cambia cómo se divide el canon entre los dueños: cada dueño queda con la
+          misma parte y los pesos que sobran van al primero, sin importar lo que decía el
+          archivo. El canon total no cambia.
+        </p>
+      ) : null}
+
+      {modo === 'descartar' ? (
+        <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5 text-caption text-foreground">
+          <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+          Las filas descartadas dejan de entrar a la migración. No se borra nada: queda su
+          rastro en el lote. Las ya activadas no se tocan.
+        </p>
+      ) : null}
+
       {modo && nadaParaResolver ? (
         <p
           className="rounded-lg border border-border bg-muted/40 p-2.5 text-caption text-foreground"
@@ -381,15 +625,57 @@ export function ResolucionMasiva({
         </p>
       ) : null}
 
-      {modo ? (
+      {modo && confirmando ? (
+        <div
+          className="space-y-2 rounded-lg border border-border bg-muted/40 p-3"
+          data-testid="confirmar-masivo"
+        >
+          <p className="text-sm text-foreground">
+            {modo === 'descartar'
+              ? `¿Descartar ${cuantasDeLaAccion} ${cuantasDeLaAccion === 1 ? 'fila' : 'filas'}?`
+              : `¿Repartir el canon en partes iguales en ${cuantasDeLaAccion} ${cuantasDeLaAccion === 1 ? 'fila' : 'filas'}?`}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              hideArrow
+              isLoading={corriendo}
+              disabled={corriendo}
+              onClick={() => void aplicar()}
+              data-testid="confirmar-masivo-si"
+            >
+              {modo === 'descartar' ? 'Sí, descartar' : 'Sí, repartir'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              disabled={corriendo}
+              onClick={() => setConfirmando(false)}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {modo && !confirmando ? (
         <Button
           size="sm"
           hideArrow
           disabled={!puedeAplicar || corriendo || ids.length === 0}
           isLoading={corriendo}
-          onClick={() => void aplicar()}
+          onClick={() =>
+            modo === 'reparto' || modo === 'descartar'
+              ? setConfirmando(true)
+              : void aplicar()
+          }
         >
-          Aplicar a {ids.length}
+          {modo === 'descartar'
+            ? `Descartar ${cuantasDeLaAccion || ids.length}`
+            : modo === 'reparto'
+              ? `Repartir en ${cuantasDeLaAccion || ids.length}`
+              : `Aplicar a ${cuantasDeLaAccion || ids.length}`}
         </Button>
       ) : null}
 

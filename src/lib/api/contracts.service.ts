@@ -423,6 +423,37 @@ export const contractsApi = {
       return apiClient.get<IdsDeFilas>(`/contracts/migrar/filas/ids?${q.toString()}`);
     },
 
+    /**
+     * T-0138 — qué problemas tienen de verdad las filas seleccionadas (sin las
+     * ACTIVADO ni DESCARTADO). Con `ids` cuenta esa selección; sin ellos, todo
+     * el lote. POST por el tamaño: una selección de todo el lote son miles de ids.
+     */
+    async faltantesDeLaSeleccion(
+      lote: string,
+      ids?: string[],
+    ): Promise<FaltantesDeLaSeleccion> {
+      return apiClient.post<FaltantesDeLaSeleccion>('/contracts/migrar/filas/faltantes', {
+        lote,
+        ...(ids ? { ids } : {}),
+      });
+    },
+
+    /**
+     * T-0138 — repartir el canon en partes iguales (el resto al primer dueño)
+     * en las filas que todavía tienen `reparto_del_canon`. Tandas de ≤ 200.
+     */
+    async repartirEnPartesIguales(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>(
+        '/contracts/migrar/filas/repartir-en-partes-iguales',
+        { ids },
+      );
+    },
+
+    /** T-0138 — descartar varias filas sin borrar su rastro. Tandas de ≤ 200. */
+    async descartarFilas(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>('/contracts/migrar/filas/descartar', { ids });
+    },
+
     async resumen(lote?: string): Promise<ResumenLote> {
       const q = lote ? `?lote=${encodeURIComponent(lote)}` : '';
       return apiClient.get<ResumenLote>(`/contracts/migrar/resumen${q}`);
@@ -1382,6 +1413,16 @@ export interface ResultadoInmueblesFaltantes {
    * de una sola vez (o un back anterior).
    */
   siguienteFila?: number | null;
+}
+
+/** T-0138 — `POST migrar/filas/faltantes`: los problemas de la selección, con su conteo. */
+export interface FaltantesDeLaSeleccion {
+  /** Filas vivas de la selección (sin activadas ni descartadas): las que «Descartar» alcanza. */
+  descartables: number;
+  /** De ésas, cuántas tienen al menos un problema. */
+  conProblema: number;
+  /** Filas que frena cada código de `faltantes`; una llave ausente es cero. */
+  porMotivo: Partial<Record<string, number>>;
 }
 
 export interface ResultadoMasivo {

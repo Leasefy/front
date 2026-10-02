@@ -155,7 +155,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   if (!previa || (n === 0 && !resultado)) return null
 
   return (
-    <div className="space-y-3" data-testid="crear-inmuebles-faltantes">
+    <div id="crear-inmuebles-faltantes" className="space-y-3" data-testid="crear-inmuebles-faltantes">
       {n > 0 ? (
         <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">

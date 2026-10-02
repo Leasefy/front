@@ -20,6 +20,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub chat-lessons) ──────
 
@@ -133,7 +134,10 @@ export async function getChatLessons(
  *
  * Returns the backend's verdict verbatim. The caller MUST inspect `applied`:
  * a certify that hit the fail-closed fence resolves with `applied: false` and a
- * `reason` (NOT an HTTP error). A non-OK status (e.g. 403 for VIEWER) throws.
+ * `reason` (NOT an HTTP error). A non-OK status (e.g. 403 for VIEWER) throws
+ * the WHOLE failure: an `ApiError` with status, `code` and body (02-10-2026),
+ * so the panel says it through the translator. Before it was
+ * `Error('ai-hub chat lessons certify 403')`, shown raw in the toast.
  */
 export async function certifyChatLesson(args: {
   agencyId: string;
@@ -148,6 +152,6 @@ export async function certifyChatLesson(args: {
     body: JSON.stringify({ decision: args.decision }),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw new Error(`ai-hub chat lessons certify ${res.status}`);
+  if (!res.ok) throw await falloDelMicro(res);
   return (await res.json()) as CertifyLessonResponse;
 }

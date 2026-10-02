@@ -186,6 +186,47 @@ describe('MessageActions — pulgares', () => {
     await clic(botonPorEtiqueta('beta.actions.like'));
     expect(rateMessageMock).toHaveBeenCalledWith('msg-1', 'up');
   });
+
+  /**
+   * 02-10-2026 · Si no se guardó, el toast dice POR QUÉ: el motivo que trae
+   * `rateMessage` (el traductor: un 403, un 5xx con su referencia, la red
+   * caída). Nunca un «Gracias» sobre un pulgar que no llegó.
+   */
+  it('si no se guardó, el toast dice el motivo del traductor y no da las gracias', async () => {
+    const { toast } = await import('@/components/ui');
+    const motivo =
+      'No pudimos guardar tu valoración: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento. Si sigue pasando, escríbenos con la referencia ab12cd34.';
+    rateMessageMock.mockResolvedValue(motivo as unknown as boolean);
+    mount(mkMessage());
+    await clic(botonPorEtiqueta('beta.actions.like'));
+    expect(toast.error).toHaveBeenCalledWith(motivo);
+    expect(toast.success).not.toHaveBeenCalled();
+
+    // El comentario del pulgar abajo, igual: el campo queda abierto.
+    vi.mocked(toast.error).mockClear();
+    await clic(botonPorEtiqueta('beta.actions.dislike'));
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+    await act(async () => {
+      setter?.call(textarea, 'son 7 contratos');
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const enviar = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'beta.actions.feedbackSend',
+    ) as HTMLElement;
+    await clic(enviar);
+    expect(toast.error).toHaveBeenLastCalledWith(motivo);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(container.querySelector('textarea')).not.toBeNull();
+  });
+
+  it('si no salió nada (`false`), el «no pude guardar» de siempre', async () => {
+    const { toast } = await import('@/components/ui');
+    rateMessageMock.mockResolvedValue(false);
+    mount(mkMessage());
+    await clic(botonPorEtiqueta('beta.actions.like'));
+    expect(toast.error).toHaveBeenCalledWith('beta.actions.feedbackError');
+  });
 });
 
 /**

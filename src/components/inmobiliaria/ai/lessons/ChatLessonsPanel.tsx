@@ -12,6 +12,13 @@
  * Rejecting is always applied. VIEWER/CONTADOR can read but get no actions; a
  * stray 403 from certify is also handled with a toast.
  *
+ * 🔴 (02-10-2026) Un fallo de certificar llega ENTERO (`ApiError`, ver
+ * `certifyChatLesson`) y el toast lo dice por el traductor: un 403 dice quién
+ * puede, un 5xx «de nuestro lado» con la referencia, «la conexión» sólo si no
+ * hubo respuesta. Antes: «No se pudo procesar la acción: ai-hub chat lessons
+ * certify 403», y el 403 se detectaba buscando «403» en el texto. El motivo
+ * de la cerca (`reason`) viene en inglés del micro y tampoco se muestra crudo.
+ *
  * States mirror the AI hub conventions (use-ai-hub-landing / ai-hub-chat):
  *   - no backend wired      → honest "backend not configured" notice
  *   - loading               → skeletons
@@ -36,6 +43,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lessons'
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
 
@@ -45,6 +53,28 @@ const GROUP_TITLE: Record<(typeof STATUS_ORDER)[number], string> = {
   candidate: 'Por certificar',
   certified: 'Certificadas',
   rejected: 'Descartadas',
+}
+
+/**
+ * Por qué la cerca no dejó certificar, en español y en minúscula (va después
+ * de «No se pudo certificar: »). El micro lo manda en inglés
+ * (`chat-lessons.ts` → `certifyFence`: «insufficient evidence (support 2 <
+ * 3)», «empty recommendation», «lesson not found»): se traduce lo que se
+ * conoce y lo que no se conoce no se muestra.
+ */
+export function motivoDeLaCerca(reason: string | null | undefined): string {
+  const r = (reason ?? '').trim()
+  if (/insufficient evidence/i.test(r)) {
+    return 'todavía no hay evidencia suficiente; el asistente necesita verlo más veces.'
+  }
+  if (/empty recommendation/i.test(r)) return 'la lección no tiene una recomendación escrita.'
+  if (/not found/i.test(r)) return 'esa lección ya no existe. Recarga la lista.'
+  // La que el micro ya escribe en español («sólo el administrador certifica…»).
+  if (/^s[óo]lo el administrador/i.test(r)) return /[.!?]$/.test(r) ? r : `${r}.`
+  // Sin motivo: la cerca es la de la evidencia (lo de siempre).
+  if (!r) return 'todavía no hay evidencia suficiente.'
+  // Otro motivo («store error», «missing id»…): no se inventa uno.
+  return 'no se pudo aplicar en este momento. Prueba de nuevo.'
 }
 
 const GROUP_HINT: Record<(typeof STATUS_ORDER)[number], string> = {
@@ -88,16 +118,20 @@ export function ChatLessonsPanel() {
       if (result.applied) {
         toast.success('Lección certificada')
       } else {
-        // Fail-closed fence: surface the backend reason verbatim.
-        toast.error(`No se pudo certificar: ${result.reason || 'evidencia insuficiente'}`)
+        // Fail-closed fence: the backend reason, in Spanish.
+        toast.error(`No se pudo certificar: ${motivoDeLaCerca(result.reason)}`)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'error desconocido'
-      if (message.includes('403')) {
-        toast.error('No tienes permiso para certificar lecciones.')
-      } else {
-        toast.error(`No se pudo procesar la acción: ${message}`)
-      }
+      toast.error(
+        mensajeDelFalloDeLaAccion(err, {
+          accion: decision === 'rejected' ? 'descartar la lección' : 'certificar la lección',
+          porDefecto:
+            decision === 'rejected'
+              ? 'No se pudo descartar la lección. Prueba de nuevo en un momento.'
+              : 'No se pudo certificar la lección. Prueba de nuevo en un momento.',
+          sinPermiso: 'No tienes permiso para certificar lecciones.',
+        }),
+      )
     } finally {
       setPendingId(null)
     }

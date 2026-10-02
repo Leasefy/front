@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowDown } from '@phosphor-icons/react';
-import { ChatDataCard } from '@leasefy/cadence';
+import { ChatDataCard, motionDistance, motionDuration, motionEase } from '@leasefy/cadence';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
 import { mosaicosDelEstado } from '@/lib/chat/tarjeta-del-estado';
@@ -495,25 +496,40 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
             <div ref={espacioRef} aria-hidden data-espacio-del-hilo style={{ height: 0 }} />
           </div>
 
-          {/* «Ver el resto»: flota sobre el borde de abajo del hilo mientras
-              quede respuesta debajo. Una caja de alto cero pegada al hilo le da
-              dónde anclarse sin envolver el hilo (y fuera de su `aria-live`,
-              para que el lector de pantalla no lo anuncie en cada cambio). */}
-          <div className="relative h-0">
+          {/* «Ver el resto», mientras quede respuesta debajo. Va fuera del hilo
+              (y de su `aria-live`, para que el lector de pantalla no lo anuncie
+              en cada cambio).
+              · Desde `md` flota sobre el borde de abajo del hilo: una caja de
+                alto cero pegada al hilo le da dónde anclarse.
+              · 🔴 En el celular (Nico, 02-10-2026) flotando tapaba una línea del
+                pensamiento en vivo: ahí la caja crece y el botón va en su propia
+                franja, entre el hilo y la caja de escribir. El hilo termina
+                encima del botón y ninguna línea queda debajo de él. */}
+          <div
+            className={cn('relative shrink-0', verResto ? 'h-12 md:h-0' : 'h-0')}
+            data-testid="franja-ver-el-resto"
+          >
             {verResto && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                hideArrow
-                onClick={irAlResto}
-                // Discreto (contorno, chico) pero opaco: no se lee el texto de detrás.
-                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 gap-1.5 bg-surface shadow-md"
-                data-testid="ver-el-resto"
+              <motion.div
+                initial={{ opacity: 0, y: motionDistance.xs }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: motionDuration.base, ease: motionEase.enter }}
+                className="pointer-events-none absolute inset-x-0 bottom-1.5 z-10 flex justify-center md:bottom-3"
               >
-                {t('beta.enElChat.verElResto')}
-                <ArrowDown className="size-4" aria-hidden />
-              </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  onClick={irAlResto}
+                  // Discreto (contorno, chico) pero opaco: no se lee el texto de detrás.
+                  className="pointer-events-auto gap-1.5 bg-surface shadow-md"
+                  data-testid="ver-el-resto"
+                >
+                  {t('beta.enElChat.verElResto')}
+                  <ArrowDown className="size-4" aria-hidden />
+                </Button>
+              </motion.div>
             )}
           </div>
 

@@ -23,6 +23,8 @@ import {
   type BackendAccionPropuesta,
 } from './ai-hub-acciones';
 import { handleSSEEvent } from './ai-hub-chat';
+import { ApiError } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const AGENCIA = '11111111-1111-4111-8111-111111111111';
 
@@ -108,6 +110,37 @@ describe('confirmarAccion', () => {
     const error = await confirmarAccion({ agencyId: AGENCIA, propuestaId: 'p-1' }).catch((e) => e);
     expect(error).toBeInstanceOf(ErrorDeAccion);
     expect((error as ErrorDeAccion).status).toBe(403);
+  });
+
+  it('02-10-2026 · el fallo llega entero (un `ApiError` con el cuerpo): un 5xx conserva su referencia', async () => {
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'ab12cd34' }),
+          { status: 500 },
+        ),
+    ) as unknown as typeof fetch;
+    const error = await confirmarAccion({ agencyId: AGENCIA, propuestaId: 'p-1' }).catch((e) => e);
+    expect(error).toBeInstanceOf(ErrorDeAccion);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.code).toBe('ERROR_INTERNO');
+    expect(error.detalle.referencia).toBe('ab12cd34');
+    const texto = mensajeParaLaPersona(error, { accion: 'confirmar la acción' });
+    expect(texto).toContain('de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('02-10-2026 · sin cuerpo o con el `error` viejo, el texto nunca es «ai-hub acción NNN» ni el inglés', async () => {
+    globalThis.fetch = vi.fn(async () => new Response(null, { status: 500 })) as unknown as typeof fetch;
+    const sinCuerpo = await confirmarAccion({ agencyId: AGENCIA, propuestaId: 'p-1' }).catch((e) => e);
+    expect(sinCuerpo.message).not.toContain('ai-hub');
+
+    globalThis.fetch = vi.fn(
+      async () => new Response(JSON.stringify({ error: 'Forbidden — tu rol no puede ejecutar acciones' }), { status: 403 }),
+    ) as unknown as typeof fetch;
+    const viejo = await confirmarAccion({ agencyId: AGENCIA, propuestaId: 'p-1' }).catch((e) => e);
+    expect(viejo.status).toBe(403);
+    expect(viejo.message).not.toContain('Forbidden');
   });
 });
 

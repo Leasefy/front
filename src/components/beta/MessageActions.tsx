@@ -182,6 +182,20 @@ export function MessageActions({
   };
 
   /**
+   * `true` = guardada. Si no, el motivo que trae `rateMessage` (02-10-2026: un
+   * 403, un 5xx con su referencia o la red caída, dichos por el traductor) o,
+   * si no salió nada, el «no pude guardar» de siempre.
+   */
+  const avisar = (resultado: boolean | string, exito: string): boolean => {
+    if (resultado === true) {
+      toast.success(exito);
+      return true;
+    }
+    toast.error(typeof resultado === 'string' ? resultado : t('beta.actions.feedbackError'));
+    return false;
+  };
+
+  /**
    * El pulgar.
    *
    * Arriba: se manda de una (no hay nada que preguntar) y la pregunta queda
@@ -206,33 +220,22 @@ export function MessageActions({
       setAbrirComentario(true);
       // Se manda el pulgar ya; el comentario es un segundo envío sobre el
       // MISMO turno (el backend hace upsert por turno, no duplica).
-      const ok = await rateMessage(message.id, 'down');
-      toast[ok ? 'success' : 'error'](
-        ok ? t('beta.actions.feedbackDown') : t('beta.actions.feedbackError')
-      );
+      avisar(await rateMessage(message.id, 'down'), t('beta.actions.feedbackDown'));
       window.setTimeout(() => comentarioRef.current?.focus(), 0);
       return;
     }
     setAbrirComentario(false);
-    const ok = await rateMessage(message.id, 'up');
-    toast[ok ? 'success' : 'error'](
-      ok ? t('beta.actions.feedbackUp') : t('beta.actions.feedbackError')
-    );
+    avisar(await rateMessage(message.id, 'up'), t('beta.actions.feedbackUp'));
   };
 
   const handleEnviarComentario = async () => {
     setEnviandoComentario(true);
-    const ok = await rateMessage(message.id, 'down', {
+    const resultado = await rateMessage(message.id, 'down', {
       comentario: comentario.trim(),
       cifraMal,
     });
     setEnviandoComentario(false);
-    if (!ok) {
-      toast.error(t('beta.actions.feedbackError'));
-      return;
-    }
-    setAbrirComentario(false);
-    toast.success(t('beta.actions.feedbackSaved'));
+    if (avisar(resultado, t('beta.actions.feedbackSaved'))) setAbrirComentario(false);
   };
 
   if (message.status !== 'complete') return null;

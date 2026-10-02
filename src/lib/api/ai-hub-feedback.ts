@@ -18,6 +18,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 
 export type VeredictoFeedback = 'up' | 'down';
 
@@ -52,7 +53,12 @@ function agentBaseUrl(): string {
   return base;
 }
 
-/** Manda la valoración. Lanza en no-OK (el llamador lo muestra). */
+/**
+ * Manda la valoración. En no-OK lanza el fallo ENTERO (`ApiError` con status,
+ * `code` y cuerpo; 02-10-2026): el llamador lo dice por el traductor. Antes
+ * era `Error('ai-hub chat feedback 403')` y la pantalla sólo podía decir «no
+ * pude guardar» sin saber si era permiso, sesión o un fallo nuestro.
+ */
 export async function enviarFeedbackDeChat(args: {
   agencyId: string;
   feedback: FeedbackDeRespuesta;
@@ -65,6 +71,6 @@ export async function enviarFeedbackDeChat(args: {
     body: JSON.stringify(args.feedback),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw new Error(`ai-hub chat feedback ${res.status}`);
+  if (!res.ok) throw await falloDelMicro(res);
   return (await res.json()) as RespuestaDeFeedback;
 }

@@ -80,8 +80,9 @@ import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
 import { leerRazonamiento } from '@/lib/agentes/agente-que-habla';
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
-import { clasificarFallo } from '@/lib/errores/clasificar';
+import { clasificarFallo, esSegundoFactor } from '@/lib/errores/clasificar';
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -376,7 +377,12 @@ export interface UseBetaChatReturn {
   retryAgent: (executionId: string) => void;
 
   // Decision handling
-  selectDecisionOption: (messageId: string, optionId: string) => void;
+  /**
+   * Elige una opción de la tarjeta de decisión. Si es una aprobación del
+   * micro, la registra y devuelve `null` si quedó, o el motivo (ya dicho por
+   * el traductor) si no: la tarjeta vuelve a quedar abierta para reintentar.
+   */
+  selectDecisionOption: (messageId: string, optionId: string) => Promise<string | null>;
   pendingDecisionsCount: number;
   allDecisions: DecisionEntry[];
 
@@ -387,13 +393,16 @@ export interface UseBetaChatReturn {
   regenerateResponse: (assistantMessageId: string) => void;
   /**
    * Valora una respuesta y la MANDA (pulgar arriba/abajo). `comentario` y
-   * `cifraMal` sólo aplican al pulgar abajo. Devuelve si el backend confirmó.
+   * `cifraMal` sólo aplican al pulgar abajo. Devuelve `true` si el backend
+   * confirmó; `false` si no salió nada (se quitó, o no hay a dónde mandarla);
+   * y si el envío falló, el motivo para la persona, ya dicho por el traductor
+   * (nunca «403» ni el inglés del micro).
    */
   rateMessage: (
     messageId: string,
     rating: 'up' | 'down',
     opts?: { comentario?: string; cifraMal?: boolean }
-  ) => Promise<boolean>;
+  ) => Promise<boolean | string>;
 
   // Conversation management
   conversations: Conversation[];
@@ -489,6 +498,13 @@ export function mensajeDeFalloDelChat(error: unknown): string {
       return 'Tu sesión se venció. Vuelve a entrar para seguir conversando.';
     case 'sinPermiso':
       return 'Tu rol en la inmobiliaria no incluye el asistente. Pídele a un administrador que te lo habilite.';
+    case 'sinSegundoFactor':
+    case 'segundoFactorPendiente':
+      // El 403 del segundo factor: le falta un paso que puede dar ella misma.
+      // Antes llegaba porque el `error` del cuerpo (en español, por suerte) se
+      // volvía el texto del error; ahora el texto es sólo el `message` del
+      // sobre, así que la frase sale de la clasificación, igual que en el panel.
+      return `${fallo.titulo}. ${fallo.descripcion}`;
     default: {
       // 🔴 La regla de oro del traductor (02-10, `traductor-de-errores.ts`):
       // «conexión» SÓLO cuando no hubo respuesta. Antes TODO lo demás —un 500
@@ -1823,9 +1839,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           onError: (message, meta) => {
             // Se guarda el error ENTERO, no sólo su texto: el status es lo que
             // deja distinguir «sin créditos» (402) de «no pude conectarme».
+            // El texto del `ApiError` es sólo el `message` del sobre (español);
+            // el `error` del evento (el texto interno del micro, a veces en
+            // inglés) queda en el cuerpo, para diagnóstico, y nunca se muestra.
             collected.streamError =
               typeof meta?.status === 'number'
-                ? new ApiError(meta.status, message, meta.code)
+                ? new ApiError(meta.status, meta.mensaje ?? '', meta.code, {
+                    error: message,
+                    ...(meta.referencia ? { referencia: meta.referencia } : {}),
+                  })
                 : new Error(message);
           },
         },
@@ -2144,14 +2166,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    *   bloques de sistema.
    *
    * Devuelve si el backend lo confirmó, para que la pantalla no diga «guardado»
-   * cuando la red falló.
+   * cuando la red falló; y si el envío falló, POR QUÉ (02-10-2026): un 403 no
+   * es un 500 ni una red caída, y antes los tres decían lo mismo.
    */
   const rateMessage = useCallback(
     async (
       messageId: string,
       rating: 'up' | 'down',
       opts: { comentario?: string; cifraMal?: boolean } = {}
-    ): Promise<boolean> => {
+    ): Promise<boolean | string> => {
       const quitando =
         conversations
           .flatMap((c) => c.messages)
@@ -2221,11 +2244,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           }))
         );
         return r.guardado;
-      } catch {
+      } catch (err) {
         // El pulgar queda marcado en pantalla pero SIN el «guardado»: la
         // diferencia entre lo que el usuario eligió y lo que llegó al servidor
-        // tiene que verse.
-        return false;
+        // tiene que verse. Y el motivo, por el traductor.
+        return mensajeDelFalloDeLaAccion(err, {
+          accion: 'guardar tu valoración',
+          porDefecto: 'No pude guardar tu valoración. Intenta de nuevo.',
+        });
       }
     },
     [conversations, agencyId]
@@ -2318,12 +2344,17 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const selectDecisionOption = useCallback(
-    (messageId: string, optionId: string) => {
-      if (!activeConversationId) return;
+    async (messageId: string, optionId: string): Promise<string | null> => {
+      if (!activeConversationId) return null;
+
+      // La aprobación se lee de lo que está en pantalla, no desde adentro del
+      // actualizador de estado (React puede correrlo después).
+      const aprobacion = conversations
+        .find((c) => c.id === activeConversationId)
+        ?.messages.find((m) => m.id === messageId)?.decision?.approvalId;
 
       // Find the option label for the user response message
       let optionLabel = '';
-      let aprobacion: string | undefined;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
@@ -2333,7 +2364,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               if (m.id !== messageId || !m.decision) return m;
               const option = m.decision.options.find((o) => o.id === optionId);
               if (option) optionLabel = option.label;
-              aprobacion = m.decision.approvalId;
               return {
                 ...m,
                 decision: {
@@ -2352,15 +2382,34 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // abre otro turno: la acción no se ejecuta acá, se ejecuta en su frente,
       // así que pedirle al modelo que opine de nuevo sólo gastaría un turno.
       if (aprobacion && agencyId) {
-        void resolveChatApproval({
-          agencyId,
-          approvalId: aprobacion,
-          outcome: optionId === 'cancel' ? 'rejected' : 'approved',
-        }).catch(() => {
-          // Fail-soft: la tarjeta ya quedó marcada; no se rompe la conversación.
-          console.warn('[useBetaChat] no se pudo registrar la decisión de aprobación');
-        });
-        return;
+        try {
+          await resolveChatApproval({
+            agencyId,
+            approvalId: aprobacion,
+            outcome: optionId === 'cancel' ? 'rejected' : 'approved',
+          });
+          return null;
+        } catch (err) {
+          // 🔴 (02-10-2026) Antes se tragaba el error (`console.warn`) y la
+          // tarjeta quedaba «Decidido» aunque el micro no lo hubiera
+          // registrado. Ahora la elección se deshace —la tarjeta vuelve a
+          // quedar abierta para reintentar— y el motivo sale por el traductor.
+          setConversations((prev) =>
+            prev.map((c) => ({
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId && m.decision?.selectedOptionId === optionId
+                  ? { ...m, decision: { ...m.decision, selectedOptionId: undefined, selectedAt: undefined } }
+                  : m
+              ),
+            }))
+          );
+          return mensajeDelFalloDeLaAccion(err, {
+            accion: 'registrar tu decisión',
+            porDefecto: 'No pude registrar tu decisión. Prueba de nuevo en un momento.',
+            sinPermiso: 'Tu rol no puede decidir sobre esta propuesta. Pídele a un administrador que la revise.',
+          });
+        }
       }
 
       // Send a user message confirming the selection, then trigger a mock response
@@ -2370,8 +2419,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           sendMessage(`He seleccionado: ${optionLabel}`);
         }, 300);
       }
+      return null;
     },
-    [activeConversationId, sendMessage, agencyId]
+    [activeConversationId, conversations, sendMessage, agencyId]
   );
 
 
@@ -2405,7 +2455,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * Los códigos se traducen a algo que el operador entienda: 410 es «venció»
    * (la cartera ya cambió y hay que volver a pedirla), 409 «ya se resolvió»,
    * 403 «tu cuenta no puede». Un error de red NO se cuenta como envío fallido
-   * inventado: se dice que no se pudo confirmar.
+   * inventado: se dice que no se pudo confirmar. Lo demás (un 400, un 404, un
+   * 5xx con su referencia, la red caída, el segundo factor) lo dice el
+   * traductor (02-10-2026); antes todo eso era «No se pudo confirmar».
    */
   const confirmarAccionDelMensaje = useCallback(
     async (messageId: string) => {
@@ -2430,12 +2482,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         const status = err instanceof ErrorDeAccion ? err.status : 0;
         const motivo =
           status === 410
-            ? 'La propuesta venció. Pedímela de nuevo y la preparo con los números de ahora.'
+            ? 'La propuesta venció. Pídemela de nuevo y la preparo con los números de ahora.'
             : status === 409
               ? 'Esa acción ya se resolvió.'
-              : status === 403
+              : status === 403 && !esSegundoFactor(err)
                 ? 'Tu cuenta no puede ejecutar esta acción.'
-                : 'No se pudo confirmar. Prueba de nuevo en un momento.';
+                : mensajeDelFalloDeLaAccion(err, {
+                    accion: 'confirmar la acción',
+                    porDefecto: 'No se pudo confirmar. Prueba de nuevo en un momento.',
+                  });
         parcharAccion(messageId, {
           estado: status === 410 ? 'vencida' : 'pendiente',
           error: motivo,
@@ -2509,7 +2564,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    */
   const confirmActionProposal = useCallback(
     async (messageId: string, workItemId: string, reason?: string): Promise<void> => {
-      if (!agencyId) throw new Error('No agency');
+      if (!agencyId) throw new Error('No hay inmobiliaria activa');
 
       // Mark as confirming
       const updateStatus = (
@@ -2532,28 +2587,32 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         );
       };
 
+      // La acción se lee de lo que está en pantalla. Antes se leía desde
+      // adentro de un actualizador de estado, que React corre DESPUÉS (había
+      // otro cambio pendiente: «confirmando»), así que `action` quedaba vacío
+      // y esto nunca llegaba a llamar al micro (02-10-2026).
+      const action = conversations
+        .flatMap((c) => c.messages)
+        .find((m) => m.id === messageId)
+        ?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
+
       updateStatus('confirming');
       try {
-        // Find the action from state to pass to the network call
-        let action: ActionProposal['action'] | undefined;
-        setConversations((prev) => {
-          const msg = prev
-            .flatMap((c) => c.messages)
-            .find((m) => m.id === messageId);
-          action = msg?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
-          return prev;
-        });
-
-        if (!action) throw new Error('Proposal not found');
+        if (!action) throw new Error('No encontré esa propuesta');
         await executeAction({ agencyId, workItemId, action, reason });
         updateStatus('executed', { result: true });
       } catch (err) {
-        const error = err instanceof Error ? err.message : 'Error al ejecutar la acción';
+        // 🔴 Antes: `err.message` tal cual («execute action 409», el `error` en
+        // inglés del micro). Ahora lo dice el traductor.
+        const error = mensajeDelFalloDeLaAccion(err, {
+          accion: 'ejecutar la acción',
+          porDefecto: 'No se pudo ejecutar la acción. Prueba de nuevo en un momento.',
+        });
         updateStatus('error', { error });
         throw err; // re-throw so the card can show the error (if it handles it)
       }
     },
-    [agencyId]
+    [agencyId, conversations]
   );
 
   /** Discard a proposal UI-only (no network call). */

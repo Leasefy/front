@@ -171,7 +171,7 @@ describe('AccionPropuestaCard — después', () => {
   it('una propuesta con la hora pasada se muestra vencida aunque el estado diga pendiente', () => {
     montar(propuesta({ venceEn: new Date(Date.now() - 60_000).toISOString() }), 'pendiente');
     expect(container.textContent).toContain('Venció');
-    expect(container.textContent).toContain('Pedímela de nuevo');
+    expect(container.textContent).toContain('Pídemela de nuevo');
     expect(botones()).toHaveLength(0);
   });
 

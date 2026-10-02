@@ -9,6 +9,7 @@ vi.mock('@/lib/api/agent-auth', () => ({
   agentAuthHeaders: (extra?: HeadersInit) => new Headers(extra),
 }));
 
+import { ApiError } from '@/lib/api/client';
 import {
   handleSSEEvent,
   executeAction,
@@ -137,27 +138,39 @@ describe('executeAction', () => {
     expect(body.reason).toBe('Monto incorrecto');
   });
 
-  it('throws on non-2xx with backend error message', async () => {
+  // 02-10-2026: el fallo llega ENTERO (`ApiError`) y su texto es SÓLO el
+  // `message` del sobre. El `error` del cuerpo viejo y el «execute action NNN»
+  // que se armaba acá ya no son el texto (ver `ai-hub-chat.errores.test.ts`).
+  it('throws an ApiError with the envelope message on non-2xx', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 422,
-      json: async () => ({ error: 'Estado inválido para esta acción' }),
+      json: async () => ({ statusCode: 422, code: 'ESTADO_INVALIDO', message: 'Estado inválido para esta acción' }),
     } as Response);
 
-    await expect(
-      executeAction({ agencyId: 'ag-1', workItemId: 'wi-5', action: 'confirm' })
-    ).rejects.toThrow('Estado inválido para esta acción');
+    const e = (await executeAction({ agencyId: 'ag-1', workItemId: 'wi-5', action: 'confirm' }).catch((x: unknown) => x)) as ApiError;
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e).toMatchObject({ status: 422, code: 'ESTADO_INVALIDO', message: 'Estado inválido para esta acción' });
   });
 
-  it('throws with default message when error body is not parseable', async () => {
+  it('the old `error` body and an unparseable body never become the text', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: 'Invalid state for this action' }),
+    } as Response);
+    const viejo = (await executeAction({ agencyId: 'ag-1', workItemId: 'wi-5', action: 'confirm' }).catch((x: unknown) => x)) as ApiError;
+    expect(viejo).toBeInstanceOf(ApiError);
+    expect(viejo.message).toBe('');
+
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: async () => { throw new Error('not json'); },
     } as unknown as Response);
-
-    await expect(
-      executeAction({ agencyId: 'ag-1', workItemId: 'wi-6', action: 'approve' })
-    ).rejects.toThrow('execute action 500');
+    const sinCuerpo = (await executeAction({ agencyId: 'ag-1', workItemId: 'wi-6', action: 'approve' }).catch((x: unknown) => x)) as ApiError;
+    expect(sinCuerpo).toBeInstanceOf(ApiError);
+    expect(sinCuerpo.status).toBe(500);
+    expect(sinCuerpo.message).not.toContain('execute action');
   });
 });

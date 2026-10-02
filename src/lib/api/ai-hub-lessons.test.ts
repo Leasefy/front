@@ -6,6 +6,7 @@ vi.mock('@/lib/api/agent-auth', () => ({
   agentAuthHeaders: (extra?: HeadersInit) => new Headers(extra),
 }));
 
+import { ApiError } from '@/lib/api/client';
 import {
   getChatLessons,
   certifyChatLesson,
@@ -150,11 +151,32 @@ describe('certifyChatLesson', () => {
     expect(res.reason).toContain('Evidencia insuficiente');
   });
 
-  it('throws on 403 (VIEWER cannot certify)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, false, 403)));
-    await expect(
-      certifyChatLesson({ agencyId: AGENCY, lessonId: 'les_1', decision: 'certified' }),
-    ).rejects.toThrow('ai-hub chat lessons certify 403');
+  it('throws on 403 (VIEWER cannot certify) — the WHOLE failure, never «certify 403»', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({ error: 'Forbidden — tu rol sólo puede consultar, no ejecutar acciones', code: 'ROL_SOLO_CONSULTA' }, false, 403),
+      ),
+    );
+    const e = await certifyChatLesson({ agencyId: AGENCY, lessonId: 'les_1', decision: 'certified' }).catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.status).toBe(403);
+    expect(e.code).toBe('ROL_SOLO_CONSULTA');
+    // El `error` en inglés del cuerpo viejo nunca es el texto.
+    expect(e.message).toBe('');
+    expect(e.message).not.toContain('certify');
+  });
+
+  it('a 5xx keeps its referencia for the translator', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'ab12cd34' }, false, 500),
+      ),
+    );
+    const e = await certifyChatLesson({ agencyId: AGENCY, lessonId: 'les_1', decision: 'certified' }).catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.detalle.referencia).toBe('ab12cd34');
   });
 
   it('rejecting always sends decision:rejected', async () => {

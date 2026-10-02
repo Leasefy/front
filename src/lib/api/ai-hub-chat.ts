@@ -38,6 +38,7 @@ import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat'
 import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
 import type {
   AgentType,
@@ -383,8 +384,16 @@ export interface ChatStreamHandlers {
    * panel leía cualquier corte como «no pude conectarme», incluida la cuenta
    * sin saldo, que es la única que se arregla recargando créditos (auditoría
    * 13-09, caso B2).
+   *
+   * `message` es el `error` del evento: el texto interno del micro (a veces en
+   * inglés), para diagnóstico y nunca para la persona. Si el evento trae el
+   * sobre (`message` en español, `referencia`), viajan en `meta.mensaje` y
+   * `meta.referencia` (02-10-2026).
    */
-  onError?: (message: string, meta?: { status?: number; code?: string }) => void;
+  onError?: (
+    message: string,
+    meta?: { status?: number; code?: string; mensaje?: string; referencia?: string },
+  ) => void;
 }
 
 /**
@@ -547,12 +556,20 @@ export function handleSSEEvent(
       });
       break;
     }
-    case 'error':
+    case 'error': {
+      // El status puede venir como `status` (el evento de siempre) o como
+      // `statusCode` (el sobre). El `message` del sobre es lo único que se le
+      // puede mostrar a una persona; el `error` queda para diagnóstico.
+      const status =
+        typeof obj.status === 'number' ? obj.status : typeof obj.statusCode === 'number' ? obj.statusCode : undefined;
       handlers.onError?.(String(obj.error ?? 'stream error'), {
-        ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
+        ...(status !== undefined ? { status } : {}),
         ...(typeof obj.code === 'string' ? { code: obj.code } : {}),
+        ...(typeof obj.message === 'string' && obj.message.trim() ? { mensaje: obj.message.trim() } : {}),
+        ...(typeof obj.referencia === 'string' && obj.referencia ? { referencia: obj.referencia } : {}),
       });
       break;
+    }
     default:
       break;
   }
@@ -568,8 +585,15 @@ export function handleSSEEvent(
  * créditos de IA) y un 429 terminaban en la burbuja como «no pude
  * conectarme», igual que un 500. Con `ApiError`, `clasificarFallo` los
  * distingue.
+ *
+ * 🔴 (02-10-2026) Y el texto del error es SÓLO el `message` del sobre (en
+ * español), como en `falloDelMicro`. Hasta acá, si el cuerpo no lo traía, el
+ * texto era el `error` del cuerpo viejo («Forbidden — …», en inglés) o
+ * «ai-hub chat 500» / «execute action 409» / «ai-hub approval 403», y el
+ * traductor lo mostraba tal cual: un 5xx sin `message` decía «ai-hub chat
+ * stream 500» en vez de «falló de nuestro lado» con la referencia.
  */
-async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+async function falloDelAgente(res: Response): Promise<ApiError> {
   // El 429 del micro (su limitador, o el `agents_limit` de NGINX) se dice
   // IGUAL que el del back: «Espera 45 segundos y vuelve a intentar», con el
   // número cuando viene en el cuerpo o en `Retry-After`. Antes pasaba el
@@ -577,24 +601,7 @@ async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
   // decía «espera un momento» sin plazo, que invita a machacar el botón y
   // alarga el bloqueo (auditoría de seguridad 23-09).
   if (res.status === 429) return errorDeDemasiadasSolicitudes(res);
-  let cuerpo: Record<string, unknown> | undefined;
-  try {
-    const json: unknown = await res.json();
-    if (json && typeof json === 'object' && !Array.isArray(json)) {
-      cuerpo = json as Record<string, unknown>;
-    }
-  } catch {
-    // Sin cuerpo JSON (un proxy que devuelve HTML, por ejemplo): queda el status.
-  }
-  const crudo = cuerpo?.message ?? cuerpo?.error;
-  const mensaje =
-    typeof crudo === 'string'
-      ? crudo
-      : Array.isArray(crudo) && crudo.every((x) => typeof x === 'string')
-        ? (crudo as string[])
-        : `${que} ${res.status}`;
-  const code = typeof cuerpo?.code === 'string' ? cuerpo.code : undefined;
-  return new ApiError(res.status, mensaje, code, cuerpo);
+  return falloDelMicro(res);
 }
 
 function agentBaseUrl(): string {
@@ -633,7 +640,7 @@ export async function postChatTurn(args: {
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat');
+  if (!res.ok) throw await falloDelAgente(res);
   return (await res.json()) as BackendChatResponse;
 }
 
@@ -656,7 +663,8 @@ export async function resolveChatApproval(args: {
     headers: agentAuthHeaders({ 'content-type': 'application/json' }),
     body: JSON.stringify({ outcome: args.outcome }),
   });
-  if (!res.ok) throw new Error(`ai-hub approval ${res.status}`);
+  // El fallo entero (status, `code`, cuerpo): la tarjeta lo dice por el traductor.
+  if (!res.ok) throw await falloDelAgente(res);
 }
 
 /**
@@ -686,7 +694,7 @@ export async function fetchEjecucion(args: {
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat ejecucion');
+  if (!res.ok) throw await falloDelAgente(res);
   const cuerpo: unknown = await res.json().catch(() => null);
   const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
   return leerTarjetaDeEjecucion(tarjeta);
@@ -714,7 +722,7 @@ export async function streamChatTurn(args: {
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat stream');
+  if (!res.ok) throw await falloDelAgente(res);
   if (!res.body) throw new Error('ai-hub chat stream sin cuerpo');
 
   const reader = res.body.getReader();
@@ -749,8 +757,8 @@ export interface ExecuteActionArgs {
 }
 
 /**
- * Execute a confirmed action proposal. Throws on non-2xx (the caller keeps the
- * error on the message). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
+ * Execute a confirmed action proposal. Throws an `ApiError` on non-2xx (the
+ * caller keeps the error on the message, dicho por el traductor). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
  * se retiró el 24-09: ninguna pantalla la montaba; lo que el chat ejecuta hoy
  * se ve con `TarjetaDeEjecucion`.
  */
@@ -767,17 +775,10 @@ export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
     body: JSON.stringify(body),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) {
-    let message = `execute action ${res.status}`;
-    try {
-      const err = (await res.json()) as Record<string, unknown>;
-      if (typeof err.error === 'string') message = err.error;
-      else if (typeof err.message === 'string') message = err.message;
-    } catch {
-      // ignore parse error — use default message
-    }
-    throw new Error(message);
-  }
+  // 🔴 Antes: `new Error(err.error ?? err.message ?? 'execute action NNN')`:
+  // el `error` en inglés del cuerpo viejo, o «execute action 409», crudos en
+  // la tarjeta. Ahora el fallo entero; el texto lo pone el traductor.
+  if (!res.ok) throw await falloDelAgente(res);
   return res.json();
 }
 

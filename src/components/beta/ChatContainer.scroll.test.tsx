@@ -243,6 +243,35 @@ describe('el scroll del turno', () => {
     expect(hilo().scrollTop).toBeLessThanOrEqual(antes + ALTO);
   });
 
+  /*
+   * 🔴 Nico (02-10-2026): en el celular «Ver el resto» flotaba sobre el hilo y
+   * tapaba una línea del pensamiento en vivo. Ahí va en su PROPIA franja, entre
+   * el hilo y la caja de escribir (la franja tiene alto y el botón no flota);
+   * desde `md` sigue flotando sobre el borde del hilo. Sin botón, la franja no
+   * ocupa nada. (Verificado en un navegador de 390 px: ninguna línea del hilo
+   * queda debajo del botón; antes, hasta 3.)
+   */
+  it('🔴 en el celular «Ver el resto» va en su propia franja, no encima del hilo', () => {
+    pintar();
+    const franja = () => container.querySelector('[data-testid="franja-ver-el-resto"]') as HTMLElement;
+    // Sin nada abajo: la franja no ocupa nada y no hay botón.
+    expect(franja().className).toMatch(/(^|\s)h-0(\s|$)/);
+    expect(container.querySelector('[data-testid="ver-el-resto"]')).toBeNull();
+
+    geo.fin = 3000;
+    contexto.messages = [...historia(), pregunta, respuesta('La ficha del contrato #24…')];
+    pintar();
+    const boton = container.querySelector('[data-testid="ver-el-resto"]') as HTMLElement;
+    expect(boton).not.toBeNull();
+    // Celular: la franja tiene alto (el hilo termina encima del botón)…
+    expect(franja().className).toMatch(/(^|\s)h-12(\s|$)/);
+    // …y desde `md` vuelve a alto cero, con el botón flotando sobre el borde.
+    expect(franja().className).toContain('md:h-0');
+    expect(boton.parentElement?.className).toContain('md:bottom-3');
+    // La franja no está DENTRO del hilo: no lo tapa.
+    expect(hilo().contains(franja())).toBe(false);
+  });
+
   it('una conversación que se abre se muestra por el final, como siempre', () => {
     geo.fin = 2000;
     pintar();

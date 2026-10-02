@@ -101,4 +101,54 @@ describe('enfocarElPrimerError', () => {
     const c = montar('<input id="a" />');
     expect(enfocarElPrimerError(c)).toBe(false);
   });
+
+  describe('con el orden del contexto (`ordenDeLosErrores`)', () => {
+    it('🔴 enfoca el primero de ESE orden aunque en el DOM venga otro antes', () => {
+      const c = montar(`
+        <input id="publicar-adminFee" aria-invalid="true" aria-describedby="publicar-adminFee-error" />
+        <input id="publicar-monthlyRent" aria-invalid="true" aria-describedby="publicar-monthlyRent-error" />
+      `);
+      expect(enfocarElPrimerError(c, ['monthlyRent', 'adminFee'])).toBe(true);
+      expect(document.activeElement?.id).toBe('publicar-monthlyRent');
+    });
+
+    it('un campo del orden que no está en pantalla se salta: va al siguiente', () => {
+      const c = montar(`
+        <input id="publicar-title" aria-invalid="true" aria-describedby="publicar-title-error" />
+        <input id="publicar-description" aria-invalid="true" aria-describedby="publicar-description-error" />
+      `);
+      enfocarElPrimerError(c, ['area', 'description', 'title']);
+      expect(document.activeElement?.id).toBe('publicar-description');
+    });
+
+    it('un grupo del orden pasa el foco a su botón elegido', () => {
+      const c = montar(`
+        <input id="publicar-neighborhood" aria-invalid="true" aria-describedby="publicar-neighborhood-error" />
+        <div role="group" aria-invalid="true" aria-describedby="publicar-city-error">
+          <button id="bogota" aria-pressed="false">Bogotá</button>
+          <button id="medellin" aria-pressed="true">Medellín</button>
+        </div>
+      `);
+      enfocarElPrimerError(c, ['city', 'neighborhood']);
+      expect(document.activeElement?.id).toBe('medellin');
+    });
+
+    it('si ninguno del orden está en pantalla, el primero marcado', () => {
+      const c = montar(`
+        <input id="b" aria-invalid="true" />
+        <input id="c" aria-invalid="true" />
+      `);
+      expect(enfocarElPrimerError(c, ['area'])).toBe(true);
+      expect(document.activeElement?.id).toBe('b');
+    });
+
+    it('un campo corregido (sin aria-invalid) no recibe el foco aunque siga nombrado', () => {
+      const c = montar(`
+        <input id="publicar-area" aria-describedby="publicar-area-error" />
+        <input id="publicar-floor" aria-invalid="true" aria-describedby="publicar-floor-error" />
+      `);
+      enfocarElPrimerError(c, ['area', 'floor']);
+      expect(document.activeElement?.id).toBe('publicar-floor');
+    });
+  });
 });

@@ -142,3 +142,88 @@ describe('useDocumentAnalysis — el error pasa por el traductor', () => {
     expect(ultimo?.results).toBeNull();
   });
 });
+
+/**
+ * 02-10-2026 (Nico) · Al CARGAR, un fallo que no es 404 se tragaba en silencio:
+ * la pantalla quedaba en «Inicia el análisis…» como si no hubiera nada. Ahora
+ * el hook lo conserva tal cual (`falloAlCargar`, con su status y su referencia)
+ * para que la pantalla lo pinte con `FalloDeCarga`, y `recargar` vuelve a pedir.
+ */
+describe('useDocumentAnalysis — el fallo al cargar y el reintento', () => {
+  it('un 404 al montar no es un fallo: todavía no hay análisis', async () => {
+    api.getResults.mockReset();
+    api.getResults.mockRejectedValueOnce(new ApiError(404, 'No encontrado'));
+    await montar();
+
+    expect(ultimo?.falloAlCargar).toBeNull();
+    expect(ultimo?.results).toBeNull();
+    expect(ultimo?.isLoading).toBe(false);
+  });
+
+  it('🔴 un 500 al montar queda en `falloAlCargar` tal cual, con su status y su referencia', async () => {
+    api.getResults.mockReset();
+    api.getResults.mockRejectedValueOnce(ERROR_500_CON_REFERENCIA);
+    await montar();
+
+    expect(ultimo?.falloAlCargar).toBe(ERROR_500_CON_REFERENCIA);
+    expect((ultimo?.falloAlCargar as ApiError).status).toBe(500);
+    expect((ultimo?.falloAlCargar as ApiError).detalle?.referencia).toBe('ab12cd34');
+    expect(ultimo?.isLoading).toBe(false);
+  });
+
+  it('`recargar` vuelve a pedir y, si sale bien, se va el fallo y llegan los resultados', async () => {
+    api.getResults.mockReset();
+    api.getResults.mockRejectedValueOnce(ERROR_500_CON_REFERENCIA);
+    await montar();
+    expect(ultimo?.falloAlCargar).not.toBeNull();
+
+    api.getResults.mockResolvedValueOnce(TERMINADO);
+    await act(async () => {
+      await ultimo?.recargar();
+    });
+
+    expect(api.getResults).toHaveBeenCalledTimes(2);
+    expect(api.getResults).toHaveBeenLastCalledWith('app-1');
+    expect(ultimo?.falloAlCargar).toBeNull();
+    expect(ultimo?.results).toEqual(TERMINADO);
+    expect(ultimo?.isLoading).toBe(false);
+  });
+
+  it('`recargar` que vuelve a fallar deja el fallo nuevo', async () => {
+    api.getResults.mockReset();
+    api.getResults.mockRejectedValueOnce(ERROR_500_CON_REFERENCIA);
+    await montar();
+
+    const sinRespuesta = new ApiError(0, 'No pudimos conectarnos al servidor.');
+    api.getResults.mockRejectedValueOnce(sinRespuesta);
+    await act(async () => {
+      await ultimo?.recargar();
+    });
+
+    expect(ultimo?.falloAlCargar).toBe(sinRespuesta);
+  });
+
+  it('una recarga vieja que responde tarde no pisa a la nueva', async () => {
+    api.getResults.mockReset();
+    api.getResults.mockRejectedValueOnce(ERROR_500_CON_REFERENCIA);
+    await montar();
+
+    let rechazarLaVieja: (e: unknown) => void = () => undefined;
+    api.getResults.mockReturnValueOnce(
+      new Promise((_, r) => {
+        rechazarLaVieja = r;
+      }),
+    );
+    api.getResults.mockResolvedValueOnce(TERMINADO);
+    await act(async () => {
+      const vieja = ultimo?.recargar();
+      await ultimo?.recargar();
+      rechazarLaVieja(new ApiError(503, 'Servicio no disponible'));
+      await vieja;
+    });
+
+    expect(ultimo?.falloAlCargar).toBeNull();
+    expect(ultimo?.results).toEqual(TERMINADO);
+    expect(ultimo?.isLoading).toBe(false);
+  });
+});

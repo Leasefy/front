@@ -12,6 +12,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Appear } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
@@ -19,6 +20,7 @@ import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from '@/components/ui/toast';
 import type { DocumentAnalysisResult } from '@/lib/api/ai-analysis.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // Types
@@ -180,7 +182,8 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
 // ============================================================================
 
 export function DocumentAnalysisSection({ applicationId, className }: DocumentAnalysisSectionProps) {
-  const { results, isAnalyzing, isLoading, error, triggerAnalysis } = useDocumentAnalysis(applicationId);
+  const { results, isAnalyzing, isLoading, error, falloAlCargar, recargar, triggerAnalysis } =
+    useDocumentAnalysis(applicationId);
   const [triggering, setTriggering] = useState(false);
 
   const handleTrigger = async () => {
@@ -212,6 +215,35 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
           <Spinner size="sm" variant="muted" />
           <span className="text-sm text-fg-muted">Cargando resultados...</span>
         </div>
+      </div>
+    );
+  }
+
+  /*
+   * 02-10-2026 (Nico) · La carga falló con algo que NO es 404 (el 404 es
+   * «todavía no hay análisis» y sigue como siempre): se dice con el traductor
+   * —«conexión» sólo sin respuesta, un 4xx qué está mal, un 5xx «de nuestro
+   * lado» con la referencia— y se ofrece reintentar. Sin el botón de analizar:
+   * no sabemos si ya hay un análisis y no se pide uno a ciegas.
+   */
+  if (falloAlCargar) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <div className="flex items-center gap-2">
+          <Brain className="w-5 h-5 text-primary" />
+          <h4 className="text-sm font-semibold text-fg">
+            Analisis IA de documentos
+          </h4>
+        </div>
+        <Appear>
+          <FalloDeCarga
+            error={falloAlCargar}
+            queEs="el análisis de los documentos"
+            onReintentar={recargar}
+            enmarcado={false}
+            className="py-8"
+          />
+        </Appear>
       </div>
     );
   }

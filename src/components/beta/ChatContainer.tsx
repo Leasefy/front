@@ -499,14 +499,14 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
           {/* «Ver el resto», mientras quede respuesta debajo. Va fuera del hilo
               (y de su `aria-live`, para que el lector de pantalla no lo anuncie
               en cada cambio).
-              · Desde `md` flota sobre el borde de abajo del hilo: una caja de
-                alto cero pegada al hilo le da dónde anclarse.
-              · 🔴 En el celular (Nico, 02-10-2026) flotando tapaba una línea del
-                pensamiento en vivo: ahí la caja crece y el botón va en su propia
-                franja, entre el hilo y la caja de escribir. El hilo termina
-                encima del botón y ninguna línea queda debajo de él. */}
+              🔴 En su PROPIA franja, entre el hilo y la caja de escribir, en
+              TODOS los anchos (Nico, 02-10-2026: primero el celular; en la
+              noche, también el escritorio). Flotando sobre el borde del hilo
+              tapaba una línea del pensamiento en vivo. La franja crece sólo
+              mientras hay botón: el hilo termina encima de él y ninguna línea
+              queda debajo. Sin botón, alto cero. */}
           <div
-            className={cn('relative shrink-0', verResto ? 'h-12 md:h-0' : 'h-0')}
+            className={cn('relative shrink-0', verResto ? 'h-12' : 'h-0')}
             data-testid="franja-ver-el-resto"
           >
             {verResto && (
@@ -514,7 +514,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                 initial={{ opacity: 0, y: motionDistance.xs }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: motionDuration.base, ease: motionEase.enter }}
-                className="pointer-events-none absolute inset-x-0 bottom-1.5 z-10 flex justify-center md:bottom-3"
+                className="pointer-events-none absolute inset-x-0 bottom-1.5 z-10 flex justify-center"
               >
                 <Button
                   type="button"

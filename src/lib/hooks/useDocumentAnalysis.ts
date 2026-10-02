@@ -38,6 +38,15 @@ interface UseDocumentAnalysisReturn {
   isLoading: boolean;
   /** La frase del fallo, ya dicha por el traductor (nunca el `err.message` crudo). */
   error: string | null;
+  /**
+   * Lo que tiró la CARGA de los resultados (al montar o con `recargar`), tal
+   * cual, para que la pantalla lo pinte con `FalloDeCarga`: status, `code`,
+   * `campos` y `referencia` del sobre. Un 404 NO es un fallo (todavía no hay
+   * análisis): queda en `null`.
+   */
+  falloAlCargar: unknown;
+  /** Vuelve a cargar los resultados como al montar (el «Intentar de nuevo»). */
+  recargar: () => Promise<void>;
   /** Trigger analysis for all documents */
   triggerAnalysis: () => Promise<void>;
   /** Fetch results once (no polling) */
@@ -57,6 +66,10 @@ export function useDocumentAnalysis(applicationId: string): UseDocumentAnalysisR
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [falloAlCargar, setFalloAlCargar] = useState<unknown>(null);
+  // La carga vigente: una respuesta de una carga anterior (o de antes de
+  // desmontar) no pisa lo que ya se pintó.
+  const cargaVigente = useRef(0);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -73,6 +86,7 @@ export function useDocumentAnalysis(applicationId: string): UseDocumentAnalysisR
       const data = await aiAnalysisApi.getResults(applicationId);
       setResults(data);
       setError(null);
+      setFalloAlCargar(null);
 
       // Stop polling if all documents are done
       const { summary } = data;
@@ -133,32 +147,57 @@ export function useDocumentAnalysis(applicationId: string): UseDocumentAnalysisR
     };
   }, []);
 
-  // Fetch existing results on mount
-  useEffect(() => {
-    let cancelled = false;
+  /**
+   * La carga de los resultados que ya existen (al montar y al reintentar).
+   *
+   * 02-10-2026 (Nico) · Antes, un fallo que no era 404 se tragaba en silencio:
+   * la pantalla quedaba en «Inicia el análisis…» como si no hubiera nada, y
+   * ofrecía analizar de nuevo unos documentos que quizá ya estaban analizados.
+   * Ahora se guarda tal cual en `falloAlCargar` y la pantalla lo dice con
+   * `FalloDeCarga` (el traductor), con «Intentar de nuevo» → `recargar`.
+   */
+  const cargar = useCallback(async () => {
+    const esta = ++cargaVigente.current;
     setIsLoading(true);
-    aiAnalysisApi.getResults(applicationId)
-      .then((data) => {
-        if (cancelled) return;
-        setResults(data);
-        // If there are in-progress items, resume polling
-        if (data.summary.processing > 0 || data.summary.pending > 0) {
-          startPolling();
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        // 404 = no analysis yet, that's fine
-        if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 404) {
-          setResults(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => { cancelled = true; };
+    setFalloAlCargar(null);
+    try {
+      const data = await aiAnalysisApi.getResults(applicationId);
+      if (esta !== cargaVigente.current) return;
+      setResults(data);
+      // If there are in-progress items, resume polling
+      if (data.summary.processing > 0 || data.summary.pending > 0) {
+        startPolling();
+      }
+    } catch (err) {
+      if (esta !== cargaVigente.current) return;
+      // 404 = no analysis yet, that's fine
+      if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 404) {
+        setResults(null);
+        return;
+      }
+      setFalloAlCargar(err);
+    } finally {
+      if (esta === cargaVigente.current) setIsLoading(false);
+    }
   }, [applicationId, startPolling]);
 
-  return { results, isAnalyzing, isLoading, error, triggerAnalysis, fetchResults };
+  // Fetch existing results on mount
+  useEffect(() => {
+    void cargar();
+    // Al desmontar (o cambiar de postulación) la carga en vuelo deja de valer.
+    return () => {
+      cargaVigente.current += 1;
+    };
+  }, [cargar]);
+
+  return {
+    results,
+    isAnalyzing,
+    isLoading,
+    error,
+    falloAlCargar,
+    recargar: cargar,
+    triggerAnalysis,
+    fetchResults,
+  };
 }

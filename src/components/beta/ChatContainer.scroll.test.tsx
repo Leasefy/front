@@ -244,14 +244,14 @@ describe('el scroll del turno', () => {
   });
 
   /*
-   * 🔴 Nico (02-10-2026): en el celular «Ver el resto» flotaba sobre el hilo y
-   * tapaba una línea del pensamiento en vivo. Ahí va en su PROPIA franja, entre
-   * el hilo y la caja de escribir (la franja tiene alto y el botón no flota);
-   * desde `md` sigue flotando sobre el borde del hilo. Sin botón, la franja no
-   * ocupa nada. (Verificado en un navegador de 390 px: ninguna línea del hilo
-   * queda debajo del botón; antes, hasta 3.)
+   * 🔴 Nico (02-10-2026): «Ver el resto» flotaba sobre el hilo y tapaba una
+   * línea del pensamiento en vivo. Va en su PROPIA franja, entre el hilo y la
+   * caja de escribir (la franja tiene alto y el botón no flota), en TODOS los
+   * anchos: primero fue sólo el celular; en la noche, también el escritorio.
+   * Sin botón, la franja no ocupa nada. (Verificado en un navegador a 390 y a
+   * 1280 px: ninguna línea del hilo queda debajo del botón.)
    */
-  it('🔴 en el celular «Ver el resto» va en su propia franja, no encima del hilo', () => {
+  it('🔴 «Ver el resto» va en su propia franja en todos los anchos, no encima del hilo', () => {
     pintar();
     const franja = () => container.querySelector('[data-testid="franja-ver-el-resto"]') as HTMLElement;
     // Sin nada abajo: la franja no ocupa nada y no hay botón.
@@ -263,11 +263,12 @@ describe('el scroll del turno', () => {
     pintar();
     const boton = container.querySelector('[data-testid="ver-el-resto"]') as HTMLElement;
     expect(boton).not.toBeNull();
-    // Celular: la franja tiene alto (el hilo termina encima del botón)…
+    // La franja tiene alto (el hilo termina encima del botón)…
     expect(franja().className).toMatch(/(^|\s)h-12(\s|$)/);
-    // …y desde `md` vuelve a alto cero, con el botón flotando sobre el borde.
-    expect(franja().className).toContain('md:h-0');
-    expect(boton.parentElement?.className).toContain('md:bottom-3');
+    // …y en NINGÚN ancho vuelve a alto cero ni el botón flota sobre el borde
+    // del hilo: ni una clase responsiva que lo cambie desde `sm`/`md`/`lg`.
+    expect(franja().className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):h-/);
+    expect(boton.parentElement?.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):(bottom|top|inset)-/);
     // La franja no está DENTRO del hilo: no lo tapa.
     expect(hilo().contains(franja())).toBe(false);
   });

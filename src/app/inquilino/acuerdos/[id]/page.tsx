@@ -15,14 +15,14 @@
  * rendered VERBATIM — no saldo/total math) + a state timeline built from SOURCE
  * timestamps only (`offeredAt` → `acceptedAt` when present; nothing synthesized). The
  * `AcuerdoAcceptPanel` (sign-to-accept) appears ONLY when `acceptedAt === null`; an
- * already-accepted plan shows a factual accepted state instead. No "pagar cuota"
- * affordance here (that is v7-07-06).
+ * already-accepted plan shows a factual accepted state instead. «Pagar cuota» (ACUE-03,
+ * `PagarCuota`) va con el plan aceptado y una cuota por pagar.
  *
  * Guardrails: neutral tone (badge capped at `warning`, Ley 1480); accept-only (the
  * panel never approves/sets terms, T-323/A5); es-CO dates; additive route only.
  */
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -34,22 +34,20 @@ import {
   SealCheck,
   MagnifyingGlass,
   XCircle,
-  CreditCard,
   type Icon,
 } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
 import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
-import { acuerdosApi } from '@/lib/api/tenant-acuerdos.service';
 import type { AcuerdoDetail, AcuerdoInstallment } from '@/lib/api/tenant-acuerdos.types';
 import { useI18n } from '@/lib/i18n';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
 import { AcuerdoAcceptPanel } from '@/components/tenant/AcuerdoAcceptPanel';
+import { PagarCuota } from '@/components/tenant/PagarCuota';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 
@@ -75,7 +73,9 @@ function formatLongDate(iso: string, locale: string): string {
 }
 
 // ============================================================================
-// Pagar cuota (ACUE-03) — GATED on the read-side contract, no premature success
+// Pagar cuota (ACUE-03) — `PagarCuota` (Nico, 02-10-2026, noche: conectado YA
+// por `/api/inquilino/acuerdos/wompi-session`; antes preguntaba a
+// `getCuotaPaymentUrl`, una ruta que no existe, y quedaba en «Próximamente»).
 // ============================================================================
 
 // A cuota that is settled/closed is not payable. Neutral string compare only —
@@ -85,125 +85,6 @@ const SETTLED_CUOTA_STATUSES = new Set(['paid', 'pagada', 'cancelled', 'cancelad
 /** First cuota that still owes money (source order preserved). */
 function nextPayableCuota(installments: AcuerdoInstallment[]): AcuerdoInstallment | undefined {
   return installments.find((c) => !SETTLED_CUOTA_STATUSES.has(c.status));
-}
-
-type PagoState =
-  | { kind: 'checking' }
-  | { kind: 'unavailable' } // getCuotaPaymentUrl → null (not-live) or a soft error
-  | { kind: 'ready'; url: string }
-  | { kind: 'redirecting' };
-
-/**
- * "Pagar cuota" affordance for the next owed cuota. It asks the read-side contract
- * `acuerdosApi.getCuotaPaymentUrl(planId, cuotaNumber)` for a SERVER-provided hosted
- * checkout URL: `null` (today, the agent route is not live) → the button is DISABLED
- * with a "Próximamente" title and never a fabricated URL; a URL → the tenant redirects
- * to the agent's Wompi hosted checkout. On return, settlement is webhook-only — the
- * cuota keeps its recorded status and the copy says it stays "confirmando" until
- * verified. No client amount, no optimistic success, no invoice ("comprobante interno").
- */
-function CuotaPagoSection({
-  planId,
-  cuota,
-  locale,
-}: {
-  planId: string;
-  cuota: AcuerdoInstallment;
-  locale: string;
-}) {
-  const es = locale === 'es';
-  const [state, setState] = useState<PagoState>({ kind: 'checking' });
-
-  // Resolve the gate up-front so the button reflects availability immediately.
-  useEffect(() => {
-    let cancelled = false;
-    setState({ kind: 'checking' });
-    acuerdosApi
-      .getCuotaPaymentUrl(planId, cuota.number)
-      .then((url) => {
-        if (cancelled) return;
-        setState(url ? { kind: 'ready', url } : { kind: 'unavailable' });
-      })
-      .catch(() => {
-        // Any non-not-live error still keeps the affordance honestly gated —
-        // never an enabled button that would fail or fabricate a checkout URL.
-        if (!cancelled) setState({ kind: 'unavailable' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [planId, cuota.number]);
-
-  const handlePay = useCallback(() => {
-    setState((prev) => {
-      if (prev.kind !== 'ready') return prev;
-      // Redirect to the agent-provided hosted checkout. The browser leaves this page;
-      // there is no in-page success — settlement flips only via the backend webhook.
-      window.location.href = prev.url;
-      return { kind: 'redirecting' };
-    });
-  }, []);
-
-  const isReady = state.kind === 'ready';
-  const isRedirecting = state.kind === 'redirecting';
-  const label = isRedirecting
-    ? es
-      ? 'Confirmando…'
-      : 'Confirming…'
-    : es
-      ? `Pagar cuota ${cuota.number}`
-      : `Pay installment ${cuota.number}`;
-
-  return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
-          <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-fg dark:text-white">
-            {es ? 'Pago de cuota' : 'Installment payment'}
-          </h2>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
-            {es
-              ? `Próxima cuota por pagar: cuota ${cuota.number}`
-              : `Next installment due: installment ${cuota.number}`}
-          </p>
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        onClick={handlePay}
-        disabled={!isReady}
-        isLoading={isRedirecting}
-        hideArrow
-        title={
-          state.kind === 'unavailable'
-            ? es
-              ? 'Próximamente'
-              : 'Coming soon'
-            : undefined
-        }
-      >
-        {label}
-      </Button>
-
-      {state.kind === 'unavailable' && (
-        <p className="mt-3 text-xs text-fg-muted dark:text-fg-subtle">
-          {es
-            ? 'El pago de cuotas estará disponible pronto.'
-            : 'Installment payments will be available soon.'}
-        </p>
-      )}
-
-      <p className="mt-3 text-xs text-fg-subtle dark:text-fg-muted">
-        {es
-          ? 'Cuando pagues, el estado de la cuota queda en confirmando hasta que se verifique; se confirma en tu historial una vez validado. Cualquier recibo es un comprobante interno.'
-          : 'After you pay, the installment stays confirming until verified; it is confirmed in your history once validated. Any receipt is an internal voucher.'}
-      </p>
-    </section>
-  );
 }
 
 // ============================================================================
@@ -334,10 +215,8 @@ function AcuerdoDetailView({
         </section>
       )}
 
-      {/* Pagar cuota (ACUE-03) — gated on getCuotaPaymentUrl; only for an accepted plan */}
-      {nextCuota && (
-        <CuotaPagoSection planId={plan.planId} cuota={nextCuota} locale={locale} />
-      )}
+      {/* Pagar cuota (ACUE-03) — por la sesión de pago de la ruta; sólo con el plan aceptado */}
+      {nextCuota && <PagarCuota planId={plan.planId} cuota={nextCuota} locale={locale} />}
 
       {/* State timeline — source-timestamp-only events */}
       <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">

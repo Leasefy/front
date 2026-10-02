@@ -13,7 +13,9 @@
  *    amenidades), que no tiene un control único.
  *  · `hayErroresNuevos` + `enfocarElPrimerError`: el foco va al primer campo
  *    con error SÓLO cuando llegan errores nuevos (un fallo al publicar), no
- *    en cada render ni cuando la persona corrige uno y los demás quedan.
+ *    en cada render ni cuando la persona corrige uno y los demás quedan. El
+ *    «primero» es el de `ordenDeLosErrores` del contexto (el orden de la
+ *    pantalla), no el que mandó primero el servidor.
  */
 
 import type { PropertyDraft } from '@/lib/types/publish';
@@ -76,16 +78,8 @@ export function hayErroresNuevos(antes: ErroresDePublicar, ahora: ErroresDePubli
 
 const ENFOCABLES = 'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/**
- * Le da el foco al primer control con error del paso que se ve (orden de la
- * pantalla). Un grupo marcado con `aria-invalid` pasa el foco a su botón
- * elegido (`aria-pressed="true"`) o, si no hay, al primero.
- * Devuelve si enfocó algo.
- */
-export function enfocarElPrimerError(contenedor: HTMLElement | null): boolean {
-  if (!contenedor) return false;
-  const marcado = contenedor.querySelector<HTMLElement>('[aria-invalid="true"]');
-  if (!marcado) return false;
+/** Enfoca un control marcado; un grupo pasa el foco a su botón elegido o al primero. */
+function enfocarElMarcado(marcado: HTMLElement): boolean {
   const destino = marcado.matches(ENFOCABLES)
     ? marcado
     : (marcado.querySelector<HTMLElement>('[aria-pressed="true"]:not([disabled])') ??
@@ -93,4 +87,28 @@ export function enfocarElPrimerError(contenedor: HTMLElement | null): boolean {
   if (!destino) return false;
   destino.focus();
   return true;
+}
+
+/**
+ * Le da el foco al primer control con error del paso que se ve. Con `orden`
+ * (el `ordenDeLosErrores` del contexto), el primero de esa lista que esté en
+ * pantalla, marcado con `aria-invalid` y nombrando su error en
+ * `aria-describedby`; si ninguno está, o sin `orden`, el primero marcado en la
+ * pantalla. Un grupo marcado pasa el foco a su botón elegido
+ * (`aria-pressed="true"`) o, si no hay, al primero.
+ * Devuelve si enfocó algo.
+ */
+export function enfocarElPrimerError(
+  contenedor: HTMLElement | null,
+  orden: readonly CampoDePublicar[] = [],
+): boolean {
+  if (!contenedor) return false;
+  for (const campo of orden) {
+    const marcado = contenedor.querySelector<HTMLElement>(
+      `[aria-invalid="true"][aria-describedby~="${idDelError(campo)}"]`,
+    );
+    if (marcado && enfocarElMarcado(marcado)) return true;
+  }
+  const marcado = contenedor.querySelector<HTMLElement>('[aria-invalid="true"]');
+  return marcado ? enfocarElMarcado(marcado) : false;
 }

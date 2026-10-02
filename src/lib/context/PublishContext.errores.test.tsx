@@ -6,6 +6,10 @@
  *  · Un 400 con `campos` lleva al paso del campo; los topes del DTO se atajan
  *    antes de mandar; un 5xx dice «de nuestro lado» con la referencia; sólo
  *    sin respuesta se habla de la conexión.
+ *  · El aviso del pie (`submissionError`) lleva SÓLO lo que no tiene campo: lo
+ *    que tiene campo se pinta bajo él y no se repite (Nico, 02-10-2026).
+ *  · `ordenDeLosErrores` va en el orden de la pantalla, no en el del servidor:
+ *    la persona llega al paso del primero de ESE orden.
  */
 
 import * as React from 'react';
@@ -140,10 +144,11 @@ describe('PublishContext — los errores al crear el inmueble', () => {
     expect(ctx!.erroresDelServidor.monthlyRent).toBe(
       'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
     );
-    expect(ctx!.submissionError).toContain('El canon no puede pasar de $100.000.000');
+    // Se lee bajo el campo del canon: el pie no lo repite.
+    expect(ctx!.submissionError).toBeNull();
   });
 
-  it('un 400 con campos lleva al paso del campo y lo dice; editarlo lo borra', async () => {
+  it('un 400 con campos lleva al paso del campo y lo pone en su campo, no en el pie; editarlo lo borra', async () => {
     const frase = 'El área debe ser un número entero de metros cuadrados.';
     crear.mockRejectedValueOnce(
       new ApiError(400, [frase], 'DATOS_INVALIDOS', {
@@ -154,12 +159,78 @@ describe('PublishContext — los errores al crear el inmueble', () => {
     await publicarCon(BORRADOR);
     expect(ctx!.currentStep).toBe(3);
     expect(ctx!.erroresDelServidor.area).toBe(frase);
-    expect(ctx!.submissionError).toBe(frase);
+    expect(ctx!.submissionError).toBeNull();
 
     await act(async () => {
       ctx!.updateDraft({ area: 61 });
     });
     expect(ctx!.erroresDelServidor.area).toBeUndefined();
+  });
+
+  it('🔴 al pie va SÓLO el campo del sobre que ningún paso pinta; el que tiene campo va a su campo', async () => {
+    const delArea = 'El área debe ser un número entero de metros cuadrados.';
+    const delPunto = 'La latitud tiene que estar entre -90 y 90.';
+    crear.mockRejectedValueOnce(
+      new ApiError(400, [delArea, delPunto], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [
+          { campo: 'area', regla: 'entero', mensaje: delArea },
+          { campo: 'latitude', regla: 'rango', mensaje: delPunto },
+        ],
+      }),
+    );
+    await publicarCon(BORRADOR);
+    expect(ctx!.erroresDelServidor).toEqual({ area: delArea });
+    expect(ctx!.submissionError).toBe(delPunto);
+    expect(ctx!.currentStep).toBe(3);
+  });
+
+  it('un campo del sobre con un nombre que el asistente no tiene va al pie, y no cambia de paso', async () => {
+    const frase = 'El código del portal no existe.';
+    crear.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'portalCode', regla: 'existe', mensaje: frase }],
+      }),
+    );
+    await publicarCon(BORRADOR);
+    expect(ctx!.erroresDelServidor).toEqual({});
+    expect(ctx!.submissionError).toBe(frase);
+    expect(ctx!.currentStep).toBe(1);
+    expect(ctx!.ordenDeLosErrores).toEqual([]);
+  });
+
+  it('un 409 sin campos dice su mensaje en el pie', async () => {
+    crear.mockRejectedValueOnce(
+      new ApiError(409, 'Ya publicaste un inmueble con esta dirección.', 'INMUEBLE_REPETIDO'),
+    );
+    await publicarCon(BORRADOR);
+    expect(ctx!.erroresDelServidor).toEqual({});
+    expect(ctx!.submissionError).toBe('Ya publicaste un inmueble con esta dirección.');
+  });
+
+  it('🔴 ordenDeLosErrores va en el orden de la pantalla, no en el que los mandó el servidor', async () => {
+    crear.mockRejectedValueOnce(
+      new ApiError(400, ['x'], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [
+          { campo: 'title', regla: 'largo', mensaje: 'El título es muy largo.' },
+          { campo: 'monthlyRent', regla: 'tope', mensaje: 'El canon es muy alto.' },
+          { campo: 'stratum', regla: 'rango', mensaje: 'El estrato va de 1 a 6.' },
+          { campo: 'bedrooms', regla: 'rango', mensaje: 'Las habitaciones van de 1 a 20.' },
+        ],
+      }),
+    );
+    await publicarCon(BORRADOR);
+    // La persona llega al paso del primero de ESE orden (características), no al del título.
+    expect(ctx!.currentStep).toBe(3);
+    expect(ctx!.ordenDeLosErrores).toEqual(['bedrooms', 'stratum', 'monthlyRent', 'title']);
+
+    // Corregir uno lo saca del orden; los demás siguen en el suyo.
+    await act(async () => {
+      ctx!.updateDraft({ bedrooms: 3 });
+    });
+    expect(ctx!.ordenDeLosErrores).toEqual(['stratum', 'monthlyRent', 'title']);
   });
 
   it('🔴 un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {

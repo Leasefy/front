@@ -93,19 +93,14 @@ interface Promesa {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const EN_PANTALLA: Record<string, Promesa> = {
-  'app/inquilino/acuerdos/[id]/page.tsx': {
-    estado: 'FALTA',
-    de: 'micro',
-    nota:
-      'Acuerdos de pago del inquilino — el escalón del MEDIO de la cobranza ' +
-      '(cobrar → acuerdo → castigo), con los dos extremos ya construidos. 🔴 El ' +
-      'motor también está construido, en el micro: `src/cartera/payment-plans/` ' +
-      '(engine, política de descuento, romper acuerdo, watcher de incumplimiento, ' +
-      'link de Wompi), expuesto SÓLO con alcance de agencia en ' +
-      '`POST /api/cartera/payment-plans/offer`. Faltan las cuatro rutas con ' +
-      'alcance de INQUILINO que `tenant-acuerdos.service.ts` ya declara: `/mine`, ' +
-      '`/:planId/accept`, `/:planId/payment-url` y `/request`.',
-  },
+  // `app/inquilino/acuerdos/[id]/page.tsx` salió de acá el 02-10-2026 (noche):
+  // «Pagar cuota» ya no espera a `/:planId/payment-url` ni dice «Próximamente»,
+  // va por `/api/inquilino/acuerdos/wompi-session` (`PagarCuota`). Lo que sigue
+  // faltando es del back y del micro, no de la pantalla: las rutas con alcance
+  // de INQUILINO (`/mine`, `/:planId`, `/:planId/accept`, `/request`); sin
+  // `/mine` la lista sale vacía y la pantalla dice «Acuerdo no encontrado».
+  // `/mine`, `/accept` y `/request` los vigila `rutas-que-el-back-no-tiene`;
+  // `/:planId` lo pide la ruta del servidor de la sesión de pago.
   'app/inquilino/casos/page.tsx': {
     estado: 'FALTA',
     de: 'infra',

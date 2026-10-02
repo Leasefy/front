@@ -14,30 +14,32 @@ import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
 type CampoDelBorrador = keyof PropertyDraft;
 
 /**
- * En qué paso se corrige cada campo (sistema de errores, 02-10-2026): un 400
- * con `campos` lleva a la persona a ese paso. Los nombres del DTO coinciden con
- * los del borrador.
+ * En qué paso se corrige cada campo, y en qué orden los ve la persona: paso por
+ * paso y, dentro de cada paso, como salen en la pantalla (de arriba abajo, de
+ * izquierda a derecha). Sistema de errores, 02-10-2026: un 400 con `campos`
+ * lleva a la persona al paso del PRIMER campo en este orden —no al primero que
+ * mandó el servidor— y el foco va a ese campo. Los nombres del DTO coinciden
+ * con los del borrador. `steps/index.errores.test.tsx` vigila que este orden
+ * sea el de la pantalla.
  */
-const PASO_DEL_CAMPO: Partial<Record<CampoDelBorrador, number>> = {
-  type: 1,
-  city: 2,
-  neighborhood: 2,
-  address: 2,
-  bedrooms: 3,
-  bathrooms: 3,
-  area: 3,
-  floor: 3,
-  parkingSpaces: 3,
-  stratum: 3,
-  yearBuilt: 3,
-  amenities: 4,
-  monthlyRent: 6,
-  adminFee: 6,
-  deposit: 6,
-  title: 7,
-  description: 7,
-};
-const CAMPOS_CON_PASO = Object.keys(PASO_DEL_CAMPO) as CampoDelBorrador[];
+const CAMPOS_DE_CADA_PASO: ReadonlyArray<readonly [paso: number, campos: readonly CampoDelBorrador[]]> = [
+  [1, ['type']],
+  [2, ['city', 'neighborhood', 'address']],
+  [3, ['bedrooms', 'bathrooms', 'area', 'parkingSpaces', 'floor', 'stratum', 'yearBuilt']],
+  [4, ['amenities']],
+  [6, ['monthlyRent', 'adminFee', 'deposit']],
+  [7, ['title', 'description']],
+];
+
+/** Los campos que pinta el asistente, en el orden de la pantalla. */
+export const ORDEN_DE_LOS_CAMPOS: readonly CampoDelBorrador[] = CAMPOS_DE_CADA_PASO.flatMap(
+  ([, campos]) => campos,
+);
+
+/** El paso donde se corrige cada campo. Un campo que no está acá no se pinta. */
+export const PASO_DEL_CAMPO: Readonly<Partial<Record<CampoDelBorrador, number>>> = Object.fromEntries(
+  CAMPOS_DE_CADA_PASO.flatMap(([paso, campos]) => campos.map((campo) => [campo, paso])),
+);
 
 /** Una foto que no subió y por qué (para decirlo, no sólo a la consola). */
 export interface FotoQueNoSubio {
@@ -53,6 +55,12 @@ interface PublishContextTextT {
   completedSteps: number[];
   isSubmitting: boolean;
   isComplete: boolean;
+  /**
+   * El aviso del pie: SÓLO lo que no tiene campo en el asistente (un 5xx con
+   * su referencia, la red, un 409 sin `campos`, un campo del sobre que ningún
+   * paso pinta). Lo que tiene campo se pinta bajo ese campo y no se repite acá.
+   * `null` = no hay nada sin campo.
+   */
   submissionError: string | null;
   createdPropertyId: string | null;
   /**
@@ -60,6 +68,16 @@ interface PublishContextTextT {
    * del borrador. Se vacía al editar ese campo.
    */
   erroresDelServidor: Partial<Record<CampoDelBorrador, string>>;
+  /**
+   * Los campos con error en el orden de la pantalla (`ORDEN_DE_LOS_CAMPOS`):
+   * el primero es al que va el foco tras un fallo al publicar.
+   */
+  ordenDeLosErrores: readonly CampoDelBorrador[];
+  /**
+   * Los pasos con al menos un campo con error, de menor a mayor: la barra de
+   * pasos los marca. Un paso sale de acá cuando se corrige su último error.
+   */
+  pasosConErrores: readonly number[];
   /** Las fotos que no subieron al publicar, con su motivo. Vacío = todas subieron. */
   fotosQueNoSubieron: FotoQueNoSubio[];
 
@@ -160,6 +178,17 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const canProceed = useMemo(() => isStepValid(currentStep), [isStepValid, currentStep]);
 
+  const ordenDeLosErrores = useMemo(
+    () => ORDEN_DE_LOS_CAMPOS.filter((campo) => !!erroresDelServidor[campo]),
+    [erroresDelServidor],
+  );
+
+  // `ORDEN_DE_LOS_CAMPOS` va paso por paso: los pasos salen ya de menor a mayor.
+  const pasosConErrores = useMemo(
+    () => Array.from(new Set(ordenDeLosErrores.map((campo) => PASO_DEL_CAMPO[campo]!))),
+    [ordenDeLosErrores],
+  );
+
   const nextStep = useCallback(() => {
     if (currentStep < totalSteps && isStepValid(currentStep)) {
       if (!completedSteps.includes(currentStep)) {
@@ -183,15 +212,25 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     }
   }, [currentStep, totalSteps, completedSteps]);
 
-  /** Los errores van a su campo, la persona a su paso, y el texto arriba del pie. */
-  const mostrarErrores = useCallback((porCampo: Partial<Record<CampoDelBorrador, string>>, orden: CampoDelBorrador[], sueltos: string[]) => {
-    setErroresDelServidor(porCampo);
-    const primero = orden[0];
-    const paso = primero ? PASO_DEL_CAMPO[primero] : undefined;
-    if (paso) setCurrentStep(paso);
-    // Los pasos todavía no pintan el error en el campo: el aviso del pie lo
-    // dice entero (los del campo primero, luego lo que no tiene campo).
-    const texto = Array.from(new Set([...orden.map((c) => porCampo[c]!).filter(Boolean), ...sueltos])).join(' · ');
+  /**
+   * Cada error a su campo, la persona al paso del primero (en el orden de la
+   * pantalla) y al aviso del pie SÓLO lo que no tiene campo (02-10-2026, Nico:
+   * el pie repetía lo que ya se lee bajo cada campo). Un campo que ningún paso
+   * pinta también va al pie: no se pierde nada.
+   */
+  const mostrarErrores = useCallback((porCampo: Partial<Record<CampoDelBorrador, string>>, sueltos: string[]) => {
+    const conCampo: Partial<Record<CampoDelBorrador, string>> = {};
+    const sinCampo = [...sueltos];
+    for (const campo of Object.keys(porCampo) as CampoDelBorrador[]) {
+      const mensaje = porCampo[campo];
+      if (!mensaje) continue;
+      if (PASO_DEL_CAMPO[campo] === undefined) sinCampo.push(mensaje);
+      else conCampo[campo] = mensaje;
+    }
+    setErroresDelServidor(conCampo);
+    const primero = ORDEN_DE_LOS_CAMPOS.find((c) => conCampo[c] !== undefined);
+    if (primero) setCurrentStep(PASO_DEL_CAMPO[primero]!);
+    const texto = Array.from(new Set(sinCampo)).join(' · ');
     setSubmissionError(texto || null);
   }, []);
 
@@ -217,11 +256,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
       floor: draft.floor || undefined,
       parkingSpaces: draft.parkingSpaces || undefined,
     }) as Partial<Record<CampoDelBorrador, string>>;
-    const conTope = (Object.keys(topes) as CampoDelBorrador[]).sort(
-      (a, b) => (PASO_DEL_CAMPO[a] ?? 99) - (PASO_DEL_CAMPO[b] ?? 99),
-    );
-    if (conTope.length > 0) {
-      mostrarErrores(topes, conTope, []);
+    if (Object.keys(topes).length > 0) {
+      mostrarErrores(topes, []);
       setIsSubmitting(false);
       return;
     }
@@ -310,12 +346,13 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       // Un 400 con `campos` lleva al paso del campo; un 5xx dice «de nuestro
       // lado» con la referencia; «conexión», sólo sin respuesta.
+      // Un campo del sobre que ningún paso pinta queda en `sueltos` (al pie).
       const reparto = repartirErroresDelServidor<CampoDelBorrador>(err, {
-        campos: CAMPOS_CON_PASO,
+        campos: ORDEN_DE_LOS_CAMPOS,
         porDefecto: 'No pudimos publicar el inmueble. Prueba de nuevo en un momento.',
         accion: 'publicar el inmueble',
       });
-      mostrarErrores(reparto.porCampo, reparto.orden, reparto.sueltos);
+      mostrarErrores(reparto.porCampo, reparto.sueltos);
     } finally {
       setIsSubmitting(false);
     }
@@ -345,6 +382,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     submissionError,
     createdPropertyId,
     erroresDelServidor,
+    ordenDeLosErrores,
+    pasosConErrores,
     fotosQueNoSubieron,
     photoFiles,
     addPhotoFiles,

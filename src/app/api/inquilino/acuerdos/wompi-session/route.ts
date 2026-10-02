@@ -15,6 +15,34 @@
  *
  * The cuota amount originates in `installments[cuotaNumber].amountCop` (or the plan-level
  * `totalDueCop` when no cuota is given). Nothing is recomputed here beyond peso→centavos.
+ *
+ * ── Los errores salen en el sobre (Nico, 02-10-2026) ─────────────────────────
+ *
+ * Igual que su gemela de arriendos (`inquilino/pagos/wompi-session`, commit
+ * `2e8e605c`). Antes respondía `{ error: 'payment_plan_failed' }` y otros
+ * códigos en inglés. Ahora todo error sale con el sobre del back
+ * (`back/src/common/errores/contrato-de-error.ts`): `{ statusCode, code,
+ * message }` con `message` en español para la persona (y `campos` en un 400 del
+ * cuerpo). Un 4xx de `/cartera/payment-plans/:id` se reenvía con SU `code` y SU
+ * frase; un 5xx, con su `referencia` y su `servicio`, para que el front diga
+ * «de nuestro lado» o la caída. La llama «Pagar cuota»
+ * (`components/tenant/PagarCuota.tsx`) y lo lee con `falloDelMicro` y el
+ * traductor (`mensajeParaLaPersona`), como `PayRentModal`.
+ *
+ * ── Quién sirve el plan (comprobado el 02-10-2026, noche) ────────────────────
+ *
+ * El plan vive en el micro (`agent/src/cartera/payment-plans/`), pero su única
+ * lectura es `GET /api/agency/{agencyId}/cartera/payment-plans/{planId}`
+ * (`agent/src/server/routes/cartera-payment-plans.ts`), con alcance de
+ * INMOBILIARIA: exige un miembro de la agencia (OWNER/ADMIN/OPERATOR/VIEWER) y
+ * el `agencyId` en la ruta. Un inquilino no pasa por ahí, y armar una ruta con
+ * `agencyId` desde el portal sería un IDOR. El back todavía no tiene
+ * `/cartera/payment-plans/*`. Esta ruta sigue el contrato de
+ * `tenant-acuerdos.service.ts` (el back como intermediario hacia el micro, como
+ * `agent-contact`): hasta que exista la lectura con alcance de inquilino, el
+ * back responde 404 y la persona lee «No encontramos este acuerdo de pago a tu
+ * nombre». Hoy la pantalla tampoco llega a pintar el botón: sin `/mine` la
+ * lista de acuerdos sale vacía.
  */
 
 import { NextResponse } from 'next/server'
@@ -26,6 +54,101 @@ import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types'
 export const runtime = 'nodejs'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
+
+/** Lo que se dice cuando el pedido llegó mal: no es algo que la persona escribió. */
+const RECARGA = 'Recarga la página e intenta de nuevo.'
+
+// Sin `export`: un `route.ts` sólo puede exportar lo que Next admite (POST, runtime…).
+const MENSAJES_DE_LA_SESION_DE_PAGO = {
+  cuerpoIlegible: `No pudimos leer el pedido de pago. ${RECARGA}`,
+  faltaElAcuerdo: `Falta el acuerdo de pago que vas a pagar. ${RECARGA}`,
+  acuerdoInvalido: `El acuerdo de pago que vas a pagar no es válido. ${RECARGA}`,
+  cuotaInvalida: `La cuota que vas a pagar no es válida. ${RECARGA}`,
+  datosDelPago: `No pudimos iniciar el pago con estos datos. ${RECARGA}`,
+  sinConfigurar:
+    'Los pagos en línea no están disponibles en este momento: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo más tarde.',
+  sesion: 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.',
+  sinAcceso: `No encontramos este acuerdo de pago a tu nombre. ${RECARGA}`,
+  montoInvalido:
+    'No pudimos calcular el valor de la cuota: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+  delBack: 'No pudimos iniciar el pago: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+} as const
+
+interface CampoConError {
+  campo: string
+  regla: string
+  mensaje: string
+}
+
+/** El sobre de error, como lo manda el back. */
+function sobre(
+  statusCode: number,
+  code: string,
+  message: string | string[],
+  extras: { campos?: CampoConError[]; referencia?: string; servicio?: string } = {},
+) {
+  return NextResponse.json({ statusCode, code, message, ...extras }, { status: statusCode })
+}
+
+/** Un 400 de un campo del cuerpo (`planId`, `cuotaNumber`), con su `campos`. */
+function campoDelPedido(campo: 'planId' | 'cuotaNumber', regla: string, mensaje: string) {
+  return sobre(400, 'DATOS_INVALIDOS', [mensaje], { campos: [{ campo, regla, mensaje }] })
+}
+
+/**
+ * El `code` por defecto de un status del back que no trajo el suyo (un back
+ * viejo, un balanceador).
+ */
+function codigoPorStatus(status: number): string {
+  if (status === 401) return 'SESION_REQUERIDA'
+  if (status === 403) return 'SIN_ACCESO'
+  if (status === 404) return 'NO_ENCONTRADO'
+  if (status >= 500) return 'ERROR_INTERNO'
+  return 'PAGO_NO_INICIADO'
+}
+
+function mensajePorStatus(status: number): string {
+  if (status === 401) return MENSAJES_DE_LA_SESION_DE_PAGO.sesion
+  if (status === 403 || status === 404) return MENSAJES_DE_LA_SESION_DE_PAGO.sinAcceso
+  if (status >= 500) return MENSAJES_DE_LA_SESION_DE_PAGO.delBack
+  return MENSAJES_DE_LA_SESION_DE_PAGO.datosDelPago
+}
+
+function textoDelMensaje(m: unknown): string | string[] | undefined {
+  if (typeof m === 'string') return m.trim() ? m : undefined
+  if (Array.isArray(m)) {
+    const partes = m.filter((x): x is string => typeof x === 'string' && x.trim() !== '')
+    return partes.length ? partes : undefined
+  }
+  return undefined
+}
+
+/**
+ * El fallo de `/cartera/payment-plans/:id` en el sobre, con su status.
+ *
+ * Un 400/422 de allá es un `planId` que no le sirvió (un texto de validación
+ * en inglés que no es para nadie), así que va el nuestro. Lo demás (403, 404,
+ * 409, un 5xx con `referencia`) se reenvía con su `code` y su frase.
+ */
+async function falloDelBack(res: Response) {
+  let cuerpo: Record<string, unknown> = {}
+  try {
+    const leido: unknown = await res.json()
+    if (leido && typeof leido === 'object' && !Array.isArray(leido)) cuerpo = leido as Record<string, unknown>
+  } catch {
+    // Sin cuerpo o no es JSON (un balanceador): queda el status.
+  }
+  const status = res.status >= 400 && res.status <= 599 ? res.status : 502
+  if (status === 400 || status === 422) {
+    return sobre(status, 'DATOS_INVALIDOS', [MENSAJES_DE_LA_SESION_DE_PAGO.datosDelPago])
+  }
+  const code = typeof cuerpo.code === 'string' && cuerpo.code.trim() ? cuerpo.code : codigoPorStatus(status)
+  const message = textoDelMensaje(cuerpo.message) ?? mensajePorStatus(status)
+  return sobre(status, code, message, {
+    ...(typeof cuerpo.referencia === 'string' && cuerpo.referencia ? { referencia: cuerpo.referencia } : {}),
+    ...(typeof cuerpo.servicio === 'string' && cuerpo.servicio ? { servicio: cuerpo.servicio } : {}),
+  })
+}
 
 /**
  * Acuerdo-namespaced payment reference so a cuota reference never collides with a
@@ -48,19 +171,19 @@ export async function POST(req: Request) {
     planId = body.planId
     cuotaNumber = body.cuotaNumber
   } catch {
-    return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+    return sobre(400, 'DATOS_INVALIDOS', [MENSAJES_DE_LA_SESION_DE_PAGO.cuerpoIlegible])
   }
 
   if (!planId) {
-    return NextResponse.json({ error: 'planId required' }, { status: 400 })
+    return campoDelPedido('planId', 'requerido', MENSAJES_DE_LA_SESION_DE_PAGO.faltaElAcuerdo)
   }
   // `planId` va dentro de la ruta del back y de la referencia firmada; la cuota,
   // si viene, es un número de cuota y nada más. Ver `identificador-seguro.ts`.
   if (!esIdentificadorSeguro(planId)) {
-    return NextResponse.json({ error: 'invalid_planId' }, { status: 400 })
+    return campoDelPedido('planId', 'formato', MENSAJES_DE_LA_SESION_DE_PAGO.acuerdoInvalido)
   }
   if (cuotaNumber !== undefined && !(Number.isInteger(cuotaNumber) && cuotaNumber >= 1)) {
-    return NextResponse.json({ error: 'invalid_cuotaNumber' }, { status: 400 })
+    return campoDelPedido('cuotaNumber', 'formato', MENSAJES_DE_LA_SESION_DE_PAGO.cuotaInvalida)
   }
 
   // --- Server-only env vars (no public prefix) ---
@@ -68,13 +191,13 @@ export async function POST(req: Request) {
   const publicKey = process.env.WOMPI_PUBLIC_KEY
 
   if (!integritySecret || !publicKey) {
-    return NextResponse.json({ error: 'wompi_not_configured' }, { status: 500 })
+    return sobre(500, 'PAGOS_SIN_CONFIGURAR', MENSAJES_DE_LA_SESION_DE_PAGO.sinConfigurar)
   }
 
   // --- Forward the tenant's JWT to the backend (auth + ownership enforcement) ---
   const authorization = req.headers.get('authorization') ?? ''
   if (!authorization) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    return sobre(401, 'SESION_REQUERIDA', MENSAJES_DE_LA_SESION_DE_PAGO.sesion)
   }
 
   // --- Resolve the authoritative cuota amount server-side from the agent record ---
@@ -84,10 +207,7 @@ export async function POST(req: Request) {
 
   if (!planRes.ok) {
     // Also enforces tenant ownership — the agent rejects a plan not owned by the caller.
-    return NextResponse.json(
-      { error: 'payment_plan_failed' },
-      { status: planRes.status }
-    )
+    return falloDelBack(planRes)
   }
 
   const plan = (await planRes.json()) as AcuerdoDetail
@@ -101,7 +221,7 @@ export async function POST(req: Request) {
 
   // --- Server-resolved amount (anti-tamper) ---
   if (typeof amountCop !== 'number' || !Number.isFinite(amountCop) || amountCop <= 0) {
-    return NextResponse.json({ error: 'invalid_amount' }, { status: 502 })
+    return sobre(502, 'MONTO_INVALIDO', MENSAJES_DE_LA_SESION_DE_PAGO.montoInvalido)
   }
 
   const amountInCents = Math.round(amountCop * 100)

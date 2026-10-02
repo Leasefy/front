@@ -15,6 +15,7 @@ import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacio
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
 import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
+import { MotionProvider } from "@leasefy/cadence";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -133,6 +134,11 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
+        {/* Movimiento (Cadence, docs/DESIGN.md «Movimiento»): UNA configuración
+            para todo framer-motion de la app. `reducedMotion="user"` respeta
+            `prefers-reduced-motion`: sin desplazamientos ni layout, quedan los
+            fundidos. No toca el scroll: Lenis y framer no comparten nada. */}
+        <MotionProvider>
         <ThemeProvider nonce={nonce}>
           <AuthProvider>
             <WishlistProvider>
@@ -163,6 +169,7 @@ export default async function RootLayout({
               layout. Ver src/lib/conexion/estado-de-conexion.ts. */}
           <AvisoDeConexion />
         </ThemeProvider>
+        </MotionProvider>
       </body>
     </html>
   );

@@ -1605,6 +1605,26 @@ select:-webkit-autofill:active {
  * Fuente de verdad: design-system/src/styles/tokens.css
  * ═══════════════════════════════════════════════════════════════════════════ */
 :root {
+  /* Movimiento (Cadence, docs/DESIGN.md §8b) — los mismos valores que
+     `cadence/src/motion/tokens.ts` y que el respaldo de `duration-*`,
+     `ease-*` y `animate-pop-in/rise-in/collapse-*` del preset. Con
+     movimiento reducido la regla global de este archivo deja las
+     animaciones CSS en 0,01ms; framer lo resuelve `MotionProvider`. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 300ms;
+  --motion-duration-reveal: 500ms;
+  --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-emphasis: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-distance-xs: 4px;
+  --motion-distance-sm: 8px;
+  --motion-distance-md: 16px;
+  --motion-distance-lg: 24px;
+  --motion-pop-scale: 0.96;
   --bg: #fbfaf9;
   --surface: #ffffff;
   --surface-muted: #f4f2ef;

@@ -158,10 +158,11 @@ modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 **Drawers, modals → `z-50`.** Toaster sits above everything.
 
 ### Motion
-- **Durations**: `150ms` (micro), `200ms` (default), `300ms` (panels), `500ms` (slow reveals)
-- **Easing**: `ease-out` (default), `cubic-bezier(0.32, 0.72, 0, 1)` (spring for panels)
-- **Press feedback**: interactive controls use a subtle `active:scale-[0.98]`
-- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md`
+Resumen — el sistema completo (tokens, primitivas, cuándo usar cuál) está en **§8b Movimiento**.
+- **Durations**: `duration-instant` 100ms · `duration-fast` 150ms (presión, salidas) · `duration-base` 200ms (por defecto) · `duration-slow` 300ms (paneles, página, colapsables) · `duration-reveal` 500ms (revelados, cifras)
+- **Easing**: `ease-enter` (lo que entra, desacelera) · `ease-exit` (lo que sale, acelera) · `ease-emphasis` `cubic-bezier(0.32,0.72,0,1)` (paneles) · `ease-spring` (rebote leve: presión, toggles)
+- **Press feedback**: controles interactivos `active:scale-[0.97]` con `ease-spring` (el `Button` ya lo trae)
+- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md` (`motionClasses.hoverLift`)
 
 ---
 
@@ -206,7 +207,7 @@ modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 
 ### Buttons (`src/components/ui/button.tsx`)
 
-**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.98]`.
+**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.97]` con resorte leve (CSS, viene del DS; el spinner de `isLoading` entra con pop).
 
 ```tsx
 <Button>Iniciar sesión</Button>                          // default = bg-primary, white text
@@ -466,6 +467,111 @@ Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanD
 
 ---
 
+## 8b. Movimiento — cada interacción con su animación
+
+Nico (02-10-2026): «que cada interacción tenga su animación top: cosas suaves, entradas,
+salidas, cambios». El sistema vive en **`@leasefy/cadence`** (`cadence/src/motion/`): tokens,
+primitivas sobre **framer-motion** (peer de Cadence: UNA sola copia, la del front) y recetas de
+clases para lo que se anima en CSS. Las historias de Storybook «Foundations/Motion» y la
+«Animación» de cada componente muestran todo funcionando.
+
+### Las reglas (lo que hace que todo se sienta de la misma familia)
+
+| Regla | Por qué |
+|---|---|
+| Lo que **entra** desacelera (`enter`, 200ms); lo que **sale** acelera y dura menos (`exit`, 150ms) | Nadie espera a que algo termine de irse |
+| Sólo se anima **`transform` y `opacity`** | Lo demás (width, height, top, margin) recalcula el layout en cada cuadro. Única excepción: la altura de un colapsable (`Collapse`, acordeón) |
+| **Distancias chicas**: 4 · 8 · 16 · 24 px | Algo que viaja 40px parece un error; 8px parece que llegó |
+| **Movimiento reducido** (`prefers-reduced-motion`): sin desplazamientos, quedan fundidos cortos | Accesibilidad. Las primitivas lo hacen solas; `MotionProvider` (layout raíz) lo aplica a todo framer; en CSS lo hace la regla global de `globals.css` |
+| Nada arranca invisible en HTML del servidor arriba del pliegue | Un `initial={{ opacity: 0 }}` sin hidratar es una página en blanco (y castiga el LCP) |
+| Los estados que ya vienen al cargar **no se animan**; se anima el CAMBIO | Una tabla con 40 casillas marcadas no «late» entera al abrir |
+
+### Tokens
+
+| Token | JS (`@leasefy/cadence`) | Tailwind | CSS |
+|---|---|---|---|
+| Duraciones | `motionDuration.instant/fast/base/slow/reveal` (s) | `duration-instant` 100 · `duration-fast` 150 · `duration-base` 200 · `duration-slow` 300 · `duration-reveal` 500 | `--motion-duration-*` |
+| Curvas | `motionEase.enter/exit/emphasis/standard/spring` | `ease-enter` · `ease-exit` · `ease-emphasis` · `ease-standard` · `ease-spring` | `--motion-ease-*` |
+| Resortes | `motionSpring.soft` (sin rebote, superficies) · `.snappy` (indicadores, layout) · `.bouncy` (rebote leve, algo que «llega») | — | — |
+| Distancias | `motionDistance.xs` 4 · `sm` 8 · `md` 16 · `lg` 24 | — | `--motion-distance-*` |
+| Escalas | `motionScale.pop` 0.96 (flotantes) · `.press` 0.97 | `active:scale-[0.97]` | `--motion-pop-scale` |
+| Escalonado | `motionStagger.step` 40ms, techo `max` 320ms | — | — |
+
+Las clases de Tailwind leen las variables con el mismo valor de respaldo, así que funcionan aunque
+la app no las defina. Animaciones CSS del preset: `animate-pop-in` / `animate-pop-out`
+(flotantes), `animate-tip-in` (tooltip), `animate-rise-in` (avisos), `animate-collapse-open` /
+`animate-collapse-close` (acordeón y colapsable), `animate-spinner-in`.
+
+### Primitivas — cuál usar
+
+| Quiero… | Usa | Ejemplo |
+|---|---|---|
+| Que algo **aparezca** (una tarjeta, una sección) | `Appear` | `<Appear>…</Appear>` · `<Appear direction="left" delay={0.1}>` · `<Appear inView>` (al hacer scroll) |
+| **Mostrar y ocultar** con salida (lo que `{x && …}` no puede) | `Presence` | `<Presence show={hayError}><Banner …/></Presence>` |
+| Una **lista** que entra escalonada; **filas que se agregan o quitan** | `Stagger` + `StaggerItem` | `<Stagger as="ul">{filas.map(f => <StaggerItem key={f.id} as="li">…)}</Stagger>` |
+| **Cambiar un contenido por otro**: cargando → contenido, vacío → lleno, **pasos** de un asistente | `CrossFade` | `<CrossFade swapKey={cargando ? 'cargando' : 'listo'}>…` · `<CrossFade swapKey={paso} direction={adelante ? 'forward' : 'backward'}>` |
+| Una sección que **se abre y se cierra** (altura automática) | `Collapse` | `<Collapse open={abierto} className="pt-3">…</Collapse>` |
+| Una **cifra que cambia** (saldo, total, KPI) | `AnimatedNumber` | `<AnimatedNumber value={saldo} format={formatCurrency} className="font-mono" />` |
+| La marca de **«estás acá» que se desliza** (pestañas propias, filtros, navegación) | `MotionIndicator` | dentro del ítem activo: `<MotionIndicator layoutId={\`${id}-filtro\`} className="inset-0 -z-10 rounded-full bg-surface" />` (ítem con `relative isolate`) |
+| **Presión y hover** físicos en una tarjeta o loseta armada a mano | `Pressable` (o `motionClasses.press` / `hoverLift` en CSS) | `<Pressable as="button" onClick={abrir}>…</Pressable>` |
+| La **entrada de una página** | `PageTransition` | ya está en los `template.tsx` (ver abajo) |
+
+Todas aceptan `as` (`div`, `li`, `ul`, `section`, `tr`…), respetan el movimiento reducido solas y
+no cambian el marcado entre servidor y cliente. Para un flotante de Radix hecho a mano:
+`motionClasses.floating` (popover/menú) y `motionClasses.tooltip`.
+
+### Los componentes base ya traen su movimiento
+
+Quien usa estos componentes (o sus adaptadores de `src/components/ui/`) lo hereda sin hacer nada:
+`Button` (presión con resorte; el spinner entra con pop) · `Tabs` (la barra o la píldora del
+activo **se desliza**, `layoutId`; el panel entra con fundido) · `SegmentedControl` (la píldora se
+desliza y se ajusta al ancho) · `Accordion` y `Collapsible` (altura + fundido, chevron con la misma
+curva) · `Popover`, `DropdownMenu` (y submenú), `Select`, `Combobox`, `HoverCard` y `Tooltip`
+(**entran desde su ancla y salen acelerando**; antes cerraban de golpe) · `Toast` (sonner con la
+curva de entrada del sistema) · `Switch` (thumb con resorte que se estira al presionar) ·
+`Checkbox` (el visto **se dibuja** al marcar y se borra al desmarcar) · `Radio` (el punto crece) ·
+`Badge` (cruza el color al cambiar de estado) · `Chip` (presión) · `Card interactive` (hover sutil:
+sube 1px) · `Banner`, `Alert`, `Callout` (entran subiendo 8px) · `Skeleton` (deja de brillar con
+movimiento reducido). `Dialog`, `AlertDialog`, `Sheet` y `Drawer` tienen su propia coreografía
+(§17) con los mismos tokens.
+
+### Páginas
+
+- `MotionProvider` (Cadence) envuelve toda la app en `src/app/layout.tsx`: `reducedMotion="user"`.
+  No toca el scroll; Lenis sigue igual y `inView` funciona con él.
+- `template.tsx` con `PageTransition` en: la raíz (cambio de sección de primer nivel),
+  `panel/inmobiliaria`, `panel/(landlord)` e `inquilino`. Los de los paneles van **dentro** del layout:
+  al cambiar de módulo entra sólo el contenido (fundido + 8px, 300ms); sidebar, header, muro de
+  migración y guards de sesión quedan montados y no parpadean.
+- La **primera pantalla** de la sesión no se anima: llega visible desde el HTML del servidor.
+- **Nunca dos a la vez:** al llegar al panel desde fuera se montan juntos el template raíz y el del
+  panel; anima sólo el de afuera. Y la página **no anima su propia entrada** (`initial={{ opacity: 0, y: 20 }}`
+  en el contenedor de la página): se suma a la del template. Lo que se anima adentro son los cambios.
+- Navegar dentro de un módulo (lista → ficha) no remonta el template: ese movimiento lo pone cada
+  pantalla con las primitivas.
+- ⚠️ Durante los 300ms de la entrada el contenedor tiene `transform`: un `position: fixed` de
+  adentro se ubica relativo a él. Lo flotante de una página va en portal o `sticky` (§19).
+
+### Errores que no hay que repetir
+
+| ❌ | ✅ |
+|---|---|
+| `transition-all` en un contenedor grande | Nombrar las propiedades: `transition-[transform,opacity]` |
+| Animar `width`/`height`/`top` (barras de progreso, indicadores) | `transform` (`scaleX`, `translateX`) o `MotionIndicator` |
+| `key={index}` en una lista animada | `key={dato.id}`: con el índice, borrar la fila 2 anima la salida de la última |
+| `layout` en una lista de 300 filas o virtualizada | `<Stagger layout={false}>`: cada cambio mediría todas las filas |
+| `AnimatePresence mode="wait"` con salidas largas | Salidas en `fast`; `CrossFade` ya lo hace |
+| Curvas y duraciones inventadas (`duration: 0.6, ease: 'easeInOut'`) | Los tokens. Si falta uno, se agrega al sistema |
+| `{abierto && <Panel/>}` y quejarse de que «cierra de golpe» | `Presence` (o `open={…}` en los primitivos de Radix) |
+
+### En las pruebas
+
+`vitest.setup.ts` pone `MotionGlobalConfig.skipAnimations = true`: toda animación de framer salta a
+su valor final, así que ya no hace falta mockear `framer-motion` para que un `AnimatePresence`
+monte el contenido nuevo.
+
+---
+
 ## 9. Anti-Patterns Cheat Sheet
 
 | ❌ Don't | ✅ Do |
@@ -638,6 +744,15 @@ Centered card with an **error-tinted** icon circle:
 ```
 Skeleton class: `animate-pulse rounded-md bg-surface-muted` (use the `<Skeleton />` primitive at
 `src/components/ui/skeleton.tsx`).
+
+**Esqueleto → contenido** (§8b): nunca un corte seco. `CrossFade` saca el esqueleto en 150ms y
+hace entrar el contenido; si el contenido es una lista, sus filas llegan con `Stagger`:
+```tsx
+<CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
+  {isLoading ? <SkeletonTableRows rows={6} /> : <TablaDeContratos filas={filas} />}
+</CrossFade>
+```
+Lo mismo para vacío → lleno y error → reintento.
 
 ### 404 (Next.js default — KEEP IT DARK)
 The 404 page is warm-ink (`surface.inverse`) with **JetBrains Mono** "404 | This page could not be
@@ -891,7 +1006,7 @@ Available at `src/components/ui/` — **check first before creating new componen
 |---|---|
 | `accordion` | Collapsible sections (Radix) |
 | `alert` / `alert-dialog` | Banners / confirm dialogs |
-| `animated-counter` | Counts up on view (mono tabular) |
+| `animated-counter` | Counts up on view (mono tabular). Sin consumidores: para cifras nuevas usa `AnimatedNumber` (§8b) |
 | `avatar` | User avatars with size/ring variants |
 | `back-button` | Standard back button |
 | `badge` | Status pills (incl. risk-a/b/c/d) |

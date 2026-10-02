@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { motionClasses } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
@@ -29,7 +30,10 @@ const TooltipContent = React.forwardRef<
       className={cn(
         // z-[400]: Dialog/Sheet viven en z-[300]; z-50 dejaría el tooltip DETRÁS
         // del overlay del modal que lo contiene. Igual que select.tsx.
-        "z-[400] overflow-hidden rounded-sm bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-tooltip-content-transform-origin]",
+        "z-[400] overflow-hidden rounded-sm bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+        // Movimiento de Cadence: entra en 150ms desde su ancla (4px desde el
+        // lado del disparador) y sale acelerando. El mismo que el Tooltip del DS.
+        motionClasses.tooltip,
         className
       )}
       {...props}

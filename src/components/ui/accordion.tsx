@@ -16,10 +16,11 @@ import { cn } from '@/lib/utils';
  *   (border-border en vez de border-border-faint, y el último item CONSERVA su
  *   borde — el DS aplica `last:border-0`).
  * - AccordionContent: implementación local sobre Radix. Se mantiene porque
- *   (a) conserva la animación de altura accordion-up/down del mvp (el DS usa
- *   fade-in) y (b) el Content del DS aplica `className` al nodo exterior Y al
- *   interior, lo que duplicaría paddings pasados por los call sites (p.ej.
- *   `pb-5` en PropertyAccordion).
+ *   el Content del DS aplica `className` al nodo exterior Y al interior, lo
+ *   que duplicaría paddings pasados por los call sites (p.ej. `pb-5` en
+ *   PropertyAccordion). La animación es la del sistema de movimiento de
+ *   Cadence (`animate-collapse-open/close`: abre en 300ms con la curva de
+ *   énfasis y fundido, cierra en 200ms acelerando) — la misma del DS.
  */
 
 const Accordion = DSAccordion;
@@ -44,7 +45,7 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
-    className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    className="overflow-hidden text-sm data-[state=closed]:animate-collapse-close data-[state=open]:animate-collapse-open"
     {...props}
   >
     <div className={cn('pb-4 pt-0', className)}>{children}</div>

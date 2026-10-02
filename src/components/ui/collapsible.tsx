@@ -46,7 +46,11 @@ const CollapsibleContent = React.forwardRef<
     ref={ref}
     className={cn(
       'overflow-hidden',
-      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
+      // Altura + fundido del sistema de movimiento de Cadence. Antes usaba
+      // `animate-accordion-*`, cuyos keyframes leen la variable del ACORDEÓN:
+      // dentro de un Collapsible esa variable no existe y la altura saltaba.
+      // `collapse-*` lee la del acordeón o, si no está, la del colapsable.
+      'data-[state=closed]:animate-collapse-close data-[state=open]:animate-collapse-open',
       className
     )}
     {...props}

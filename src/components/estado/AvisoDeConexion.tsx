@@ -31,11 +31,15 @@
  * `AuthProvider` y de todo guard, por la misma razón que él: un aviso emitido
  * mientras un guard resuelve —o cuando no deja pasar— tiene que verse igual.
  *
- * Flota arriba y centrada, con 16 px de margen a los lados: no empuja el
+ * Flota ABAJO y centrada, con 16 px de margen a los lados: no empuja el
  * contenido (el `<PlanHeader>` es `sticky top-0` y el sidebar es fijo; una
  * franja que empujara descuadraría el panel) y deja pasar los clics
  * (`pointer-events-none`), porque no tiene nada que tocar. Va por encima de
  * diálogos y cajones (`z-[300]`) y debajo de menús y popovers (`z-[400]`).
+ *
+ * Abajo y no arriba: arriba tapaba el encabezado, y en el celular eso es el
+ * menú entero. En pantallas chicas sube 5rem para no tapar la barra de
+ * navegación del panel (`MobileNavBar`, fija abajo y oculta desde `lg`).
  */
 
 import { useEffect } from 'react'
@@ -97,9 +101,10 @@ export function AvisoDeConexion() {
       {texto && (
         <div
           className={cn(
-            'pointer-events-none fixed inset-x-4 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[350] mx-auto max-w-xl',
+            'pointer-events-none fixed inset-x-4 z-[350] mx-auto max-w-xl',
+            'bottom-[calc(env(safe-area-inset-bottom)+5rem)] lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]',
             'flex items-start gap-2.5 rounded-md border border-border px-4 py-2.5 shadow-md',
-            'animate-in fade-in-0 slide-in-from-top-2 motion-reduce:animate-none',
+            'animate-in fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none',
             estado === 'sin-internet' ? 'bg-warning-soft' : 'bg-danger-soft',
           )}
         >

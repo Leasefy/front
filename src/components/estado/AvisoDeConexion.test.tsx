@@ -143,4 +143,12 @@ describe('<AvisoDeConexion>', () => {
     expect(franja.className).toContain('pointer-events-none')
     expect(franja.className).toContain('inset-x-4')
   })
+
+  it('va abajo, no arriba: arriba tapaba el encabezado (en el celular, el menú)', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 503 }))
+    act(() => avisarQueLeasefyNoResponde())
+    const franja = region().firstElementChild as HTMLElement
+    expect(franja.className).toMatch(/\bbottom-\[/)
+    expect(franja.className).not.toMatch(/(^|\s)top-/)
+  })
 })

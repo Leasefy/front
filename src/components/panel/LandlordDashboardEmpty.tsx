@@ -111,15 +111,13 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
           </DialogDescription>
         </DialogHeader>
 
-        {/* VideoCamera placeholder - replace with actual video embed */}
+        {/* Video placeholder - replace with actual video embed */}
         <div className="aspect-video overflow-hidden rounded-[16px] bg-neutral-900 flex items-center justify-center">
           <div className="text-center">
             <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
               <Play className="w-10 h-10 text-white fill-white" />
             </div>
-            <p className="text-white/60 text-sm">
-              {locale === 'es' ? 'VideoCamera introductorio' : 'Intro video'}
-            </p>
+            <p className="text-white/60 text-sm">Video</p>
           </div>
         </div>
 

@@ -107,9 +107,13 @@ export function ExtractoDelPropietarioDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>
-      {/* El más ancho (`xl`): el extracto tiene nueve columnas. El scroll (y
-          su `data-lenis-prevent`) lo pone el cuerpo del Dialog. */}
-      <DialogContent size="xl">
+      {/* Más ancho que `xl` (880): el extracto tiene diez columnas y una tabla
+          de ~1.170 px. Mirado en pantalla el 02-10, a 880 sólo se veían seis
+          (Propiedad → Estado) y Comisión, Conceptos y Neto —lo que el
+          propietario recibe— quedaban detrás del scroll lateral; a 1024, el
+          ancho de antes, se ven casi ocho. Se le devuelve ese ancho. El scroll
+          (y su `data-lenis-prevent`) lo pone el cuerpo del Dialog. */}
+      <DialogContent size="xl" className="max-w-5xl" data-testid="extracto-del-propietario">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.propietario.extracto.ownerStatement')}</DialogTitle>
           <DialogDescription>{propietarioName}</DialogDescription>

@@ -64,6 +64,13 @@ describe('SeccionEliminarCuenta', () => {
     expect(container.querySelector('[data-testid="bloqueo-eliminar-cuenta"]')?.textContent).toContain('2 arriendo')
   })
 
+  it('la tarjeta dice lo que pasa de verdad: se desactiva y se cierran las sesiones, no se borra nada', async () => {
+    await act(async () => root.render(<SeccionEliminarCuenta />))
+    expect(container.textContent).toContain('se cierran tus sesiones')
+    expect(container.textContent).toContain('quedan registrados')
+    expect(container.textContent).not.toMatch(/serán eliminad/i)
+  })
+
   it('sin bloqueo abre la confirmación, que pide escribir ELIMINAR', async () => {
     await act(async () => root.render(<SeccionEliminarCuenta />))
     expect(boton().disabled).toBe(false)

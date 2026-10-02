@@ -1220,15 +1220,74 @@
     @apply min-h-[44px] inline-flex items-center;
   }
 
-  /* Reduced motion preference */
+  /* Movimiento reducido (DESIGN.md §8b): SIN desplazamientos, pero CON los
+     fundidos del sistema.
+
+     Esto ponía TODA animación y transición en 0,01 ms, y así nunca se
+     aplicaban las duraciones reducidas de los tokens de Cadence: un modal o un
+     cajón aparecía de golpe en vez de con su fundido de 150 ms. Ahora:
+
+     1. Los tokens (`--motion-*`, en el puente de abajo) pasan a distancia 0,
+        escala 1 y 150 ms, como en Cadence. Las animaciones del sistema que
+        leen esos tokens quedan en un fundido corto, sin moverse.
+     2. `tailwindcss-animate` (`animate-in slide-in-from-* zoom-in-*`) pierde
+        el desplazamiento, la escala y el giro: queda el fundido.
+     3. Todo lo demás que se anima con CSS sigue quieto, como siempre:
+        keyframes propios (rebotes, giros, marquesinas, la barra
+        indeterminada, la hoja que sube el 100 %, el spinner que crece desde
+        0,5), y las transiciones de `transform` (hover lift, presión). Se
+        salvan SÓLO las animaciones de la lista —cada una se nombra con su
+        token entero: `animate-in` no debe atrapar a `animate-indeterminate`—
+        y las transiciones que sólo cambian la opacidad.
+
+     `movimiento-reducido.test.ts` comprueba que ninguna de las salvadas se
+     mueve con estos valores. framer-motion no pasa por acá: lo resuelve
+     `MotionProvider` (`reducedMotion="user"`). */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
+      --tw-enter-translate-x: 0 !important;
+      --tw-enter-translate-y: 0 !important;
+      --tw-enter-scale: 1 !important;
+      --tw-enter-rotate: 0 !important;
+      --tw-exit-translate-x: 0 !important;
+      --tw-exit-translate-y: 0 !important;
+      --tw-exit-scale: 1 !important;
+      --tw-exit-rotate: 0 !important;
+      scroll-behavior: auto !important;
+    }
+
+    *:not(
+        [class*="animate-in "], [class$="animate-in"],
+        [class*="animate-out "], [class$="animate-out"],
+        [class*="animate-pop-in "], [class$="animate-pop-in"],
+        [class*="animate-pop-out "], [class$="animate-pop-out"],
+        [class*="animate-tip-in "], [class$="animate-tip-in"],
+        [class*="animate-rise-in "], [class$="animate-rise-in"],
+        [class*="animate-dialog-overlay-in "], [class$="animate-dialog-overlay-in"],
+        [class*="animate-dialog-overlay-out "], [class$="animate-dialog-overlay-out"],
+        [class*="animate-dialog-in "], [class$="animate-dialog-in"],
+        [class*="animate-dialog-out "], [class$="animate-dialog-out"],
+        [class*="animate-dialog-fade-in "], [class$="animate-dialog-fade-in"],
+        [class*="animate-dialog-fade-out "], [class$="animate-dialog-fade-out"],
+        [class*="animate-dialog-icon-in "], [class$="animate-dialog-icon-in"],
+        [class*="animate-sheet-fade-in "], [class$="animate-sheet-fade-in"],
+        [class*="animate-sheet-fade-out "], [class$="animate-sheet-fade-out"]
+      ),
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+    }
+
+    *:not(
+        :is([class*="transition-opacity "], [class$="transition-opacity"]):not([class*="transition-transform"], [class*="transition-["]),
+        .chat-acciones
+      ),
+    *::before,
+    *::after {
       transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
     }
   }
 
@@ -1608,8 +1667,10 @@ select:-webkit-autofill:active {
   /* Movimiento (Cadence, docs/DESIGN.md §8b) — los mismos valores que
      `cadence/src/motion/tokens.ts` y que el respaldo de `duration-*`,
      `ease-*` y `animate-pop-in/rise-in/collapse-*` del preset. Con
-     movimiento reducido la regla global de este archivo deja las
-     animaciones CSS en 0,01ms; framer lo resuelve `MotionProvider`. */
+     movimiento reducido pasan a distancia 0, escala 1 y 150 ms (el bloque
+     que sigue a éste, igual que `cadence/src/styles/tokens.css`), y la regla
+     global de «Movimiento reducido» deja quieto lo que no pasa por ellos;
+     framer lo resuelve `MotionProvider`. */
   --motion-duration-instant: 100ms;
   --motion-duration-fast: 150ms;
   --motion-duration-base: 200ms;
@@ -1657,6 +1718,24 @@ select:-webkit-autofill:active {
   /* el DS habla display/body; mvp habla heading/sans — mismo Satoshi */
   --font-display: var(--font-heading);
   --font-body: var(--font-sans);
+}
+
+/* Movimiento reducido: sin desplazamientos ni escalas; quedan fundidos cortos.
+   Los mismos valores que `cadence/src/styles/tokens.css` (que este front no
+   importa): las clases `animate-*` y `duration-*` del preset leen estas
+   variables, así que no hace falta un `motion-reduce:` por componente. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-distance-xs: 0px;
+    --motion-distance-sm: 0px;
+    --motion-distance-md: 0px;
+    --motion-distance-lg: 0px;
+    --motion-pop-scale: 1;
+    --motion-duration-base: 150ms;
+    --motion-duration-slow: 150ms;
+    --motion-duration-reveal: 150ms;
+    --motion-ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
 .dark {

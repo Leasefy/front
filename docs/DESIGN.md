@@ -556,7 +556,7 @@ clases para lo que se anima en CSS. Las historias de Storybook «Foundations/Mot
 | Lo que **entra** desacelera (`enter`, 200ms); lo que **sale** acelera y dura menos (`exit`, 150ms) | Nadie espera a que algo termine de irse |
 | Sólo se anima **`transform` y `opacity`** | Lo demás (width, height, top, margin) recalcula el layout en cada cuadro. Única excepción: la altura de un colapsable (`Collapse`, acordeón) |
 | **Distancias chicas**: 4 · 8 · 16 · 24 px | Algo que viaja 40px parece un error; 8px parece que llegó |
-| **Movimiento reducido** (`prefers-reduced-motion`): sin desplazamientos, quedan fundidos cortos | Accesibilidad. Las primitivas lo hacen solas; `MotionProvider` (layout raíz) lo aplica a todo framer; en CSS lo hace la regla global de `globals.css` |
+| **Movimiento reducido** (`prefers-reduced-motion`): sin desplazamientos, quedan fundidos cortos | Accesibilidad. Las primitivas lo hacen solas; `MotionProvider` (layout raíz) lo aplica a todo framer. En CSS, `globals.css` pone los `--motion-*` reducidos (distancia 0, escala 1, 150 ms) y su regla global deja quieto todo lo demás, salvo las animaciones del sistema (modales, cajones, flotantes, `animate-in` sin desplazamiento) y las transiciones de sólo opacidad, que quedan como fundidos. Una animación nueva del preset que se quiera salvar se agrega a esa lista: `movimiento-reducido.test.ts` comprueba que no se mueva |
 | Nada arranca invisible en HTML del servidor arriba del pliegue | Un `initial={{ opacity: 0 }}` sin hidratar es una página en blanco (y castiga el LCP) |
 | Los estados que ya vienen al cargar **no se animan**; se anima el CAMBIO | Una tabla con 40 casillas marcadas no «late» entera al abrir |
 

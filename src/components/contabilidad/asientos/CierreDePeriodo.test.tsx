@@ -196,3 +196,22 @@ describe('<CierreDePeriodo> · lo que ya no está tirado', () => {
     expect(filas).toHaveLength(2);
   });
 });
+
+/*
+ * El cierre decía «Esto no se deshace», y en la misma pantalla está «Reabrir
+ * la contabilidad». Nico, 02-10: que diga cómo se deshace de verdad.
+ */
+describe('<CierreDePeriodo> · la confirmación dice cómo se deshace', () => {
+  it('🔴 «Sólo se deshace reabriendo», no «no se deshace»', async () => {
+    await pintar({ cierre: null });
+    await act(async () => {
+      q('abrir-cierre')!.click();
+    });
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.textContent).toContain(
+      'Sólo se deshace reabriendo, y queda en la bitácora con el motivo.',
+    );
+    expect(dialogo!.textContent).not.toContain('Esto no se deshace');
+  });
+});

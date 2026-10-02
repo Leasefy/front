@@ -181,7 +181,6 @@ export { UpgradePrompt, FeatureGate } from './UpgradePrompt';
 // AI Agent Components
 export { AIAgentCard } from './ai/AIAgentCard';
 export { AIAgentActivityFeed } from './ai/AIAgentActivityFeed';
-export { AIAgentDetailSidebar } from './ai/AIAgentDetailSidebar';
 export { AIAgentExecutionPanel } from './ai/AIAgentExecutionPanel';
 
 // Reminder Components

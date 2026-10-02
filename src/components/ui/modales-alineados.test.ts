@@ -32,11 +32,6 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/CommandPalette.tsx':
     'Paleta de comandos: su primer elemento es el buscador, no un título. Un ' +
     'filete y una ✕ arriba estorbarían el único gesto que importa (escribir).',
-  'components/inmobiliaria/AgencyCheckoutOverlay.tsx':
-    'Overlay de estado del checkout directo a Wompi: muestra el progreso del ' +
-    'pago (procesando/esperando/éxito/error) como una tarjeta centrada con ' +
-    'ícono, no como un diálogo con título. Es no-descartable mientras el pago ' +
-    'está en curso, así que una cabecera con filete y ✕ no corresponde.',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {

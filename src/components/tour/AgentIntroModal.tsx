@@ -15,20 +15,31 @@
  * localStorage (`leasefy.agent-intro.<id>`): otro navegador u otra persona
  * de la misma agencia la volvía a ver. Ahora es la clave `agente:<id>` del
  * mismo mecanismo que el recorrido del panel (`PanelPrefsContext` →
- * `/inmobiliaria/onboarding-visto`): el fondo o Esc la dejan `omitido`,
+ * `/inmobiliaria/onboarding-visto`): el fondo, Esc o la ✕ la dejan `omitido`,
  * «Entendido» `completo`, y mientras no se sabe si la agencia ya la vio no se
  * muestra.
  *
- * A11y: role=dialog + aria-label, Escape dismisses, focus lands on the dialog
- * on open and is restored on close.
+ * ── La cáscara (02-10-2026) ────────────────────────────────────────────────
+ * El mismo patrón que `PilotoNovedad`, que ya resolvió la tarjeta dentro del
+ * modal: el `Dialog` de Radix (foco atrapado y devuelto, Esc, velo, capa
+ * `z-[300]` de los modales) con un Content transparente, y adentro la tarjeta
+ * TAL CUAL la pinta `FeatureAnnouncement` —que trae su propio fondo, radio y
+ * sombra— más la ✕ del producto (`ASPA_DE_CIERRE`). Antes era una cáscara
+ * a mano (un portal con su capa en `z-[1000]`, sin ✕) con su propio Esc y su
+ * propio manejo del foco. `FeatureAnnouncement` no se toca.
+ *
+ * A11y: título y descripción anunciados (sr-only: la tarjeta los pinta); el
+ * foco vuelve a donde estaba al abrirse.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { X } from '@phosphor-icons/react'
 import { FeatureAnnouncement } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre'
 import {
   claveDeLaPresentacionDelAgente,
   type EstadoDelOnboarding,
@@ -114,13 +125,18 @@ export interface AgentIntroModalProps {
   suppressed?: boolean
 }
 
+/** El respiro antes de abrir: que la pantalla del agente pinte primero. */
+const ESPERA_AL_ENTRAR_MS = 600
+
 export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModalProps) {
   const { t } = useI18n()
   const { estaVista, marcarVista } = usePanelPrefs()
-  const [mounted, setMounted] = useState(false)
   const [visibleId, setVisibleId] = useState<string | null>(null)
+  /**
+   * Radix devuelve el foco al disparador, y acá no hay disparador: se abre
+   * sola. Se recuerda qué tenía el foco al abrir para devolverlo al cerrar.
+   */
   const prevFocusRef = useRef<HTMLElement | null>(null)
-  const dialogRef = useRef<HTMLDivElement>(null)
 
   // El agente lo decide la MISMA función que las pestañas y el breadcrumb:
   // respeta el borde de segmento y el `excluir` (en /pagos/dispersiones no se
@@ -131,81 +147,71 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   // null = no se sabe si la agencia ya la vio → no se muestra.
   const vista = clave ? estaVista(clave) : null
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // Open with a small delay on the agency's first visit to the agent's workspace.
   useEffect(() => {
-    if (!mounted || suppressed || !agent || vista !== false) {
+    if (suppressed || !agent || vista !== false) {
       setVisibleId(null)
       return
     }
     const timer = window.setTimeout(() => {
       prevFocusRef.current = document.activeElement as HTMLElement | null
       setVisibleId(agent.id)
-    }, 600)
+    }, ESPERA_AL_ENTRAR_MS)
     return () => window.clearTimeout(timer)
-  }, [mounted, suppressed, agent, vista])
+  }, [suppressed, agent, vista])
 
   const cerrar = useCallback(
     (estado: EstadoDelOnboarding) => {
       if (visibleId) void marcarVista(claveDeLaPresentacionDelAgente(visibleId), estado)
       setVisibleId(null)
-      setTimeout(() => {
-        prevFocusRef.current?.focus?.()
-      }, 0)
     },
     [visibleId, marcarVista],
   )
-  // El fondo y Esc la dejan de lado; «Entendido» es haberla leído.
-  const dismiss = useCallback(() => cerrar('omitido'), [cerrar])
-  const entendido = useCallback(() => cerrar('completo'), [cerrar])
 
-  // Escape dismisses; focus lands on the dialog when it opens.
-  useEffect(() => {
-    if (!visibleId) return
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus())
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        dismiss()
-      }
+  const devolverElFoco = useCallback((e: Event) => {
+    const previo = prevFocusRef.current
+    prevFocusRef.current = null
+    if (previo && previo.isConnected && previo !== document.body) {
+      e.preventDefault()
+      previo.focus()
     }
-    document.addEventListener('keydown', handler)
-    return () => {
-      cancelAnimationFrame(raf)
-      document.removeEventListener('keydown', handler)
-    }
-  }, [visibleId, dismiss])
+  }, [])
 
-  if (!mounted || !visibleId || !agent || visibleId !== agent.id) return null
+  const abierta = Boolean(agent && visibleId === agent.id)
+  const titulo = agent ? t(agent.titleKey) : ''
+  const descripcion = agent ? t(agent.descriptionKey) : ''
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/55 p-4 motion-reduce:transition-none"
-      onClick={dismiss}
-    >
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t(agent.titleKey)}
-        className="outline-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <FeatureAnnouncement
-          appName="Leasefy"
-          appInitial="L"
-          title={t(agent.titleKey)}
-          description={t(agent.descriptionKey)}
-          ctaLabel={t('inmobiliaria.ai.tour.finish')}
-          onCta={entendido}
-          className="max-w-[calc(100vw-2rem)]"
-        />
-      </div>
-    </div>,
-    document.body,
+  return (
+    // El fondo, Esc y la ✕ la dejan de lado; «Entendido» es haberla leído.
+    <DialogPrimitive.Root open={abierta} onOpenChange={(o) => !o && cerrar('omitido')}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[300] bg-black/60 motion-safe:animate-in motion-safe:fade-in-0" />
+        <DialogPrimitive.Content
+          className="fixed left-1/2 top-1/2 z-[300] max-h-[90dvh] w-[calc(100vw-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[20px] outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95"
+          data-lenis-prevent
+          data-testid="presentacion-del-agente"
+          onCloseAutoFocus={devolverElFoco}
+        >
+          <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
+          <FeatureAnnouncement
+            appName="Leasefy"
+            appInitial="L"
+            title={titulo}
+            description={descripcion}
+            ctaLabel={t('inmobiliaria.ai.tour.finish')}
+            onCta={() => cerrar('completo')}
+            className="w-full"
+          />
+          <DialogPrimitive.Close
+            aria-label={t('common.close')}
+            className={`${ASPA_DE_CIERRE} absolute right-3 top-3`}
+            data-testid="presentacion-del-agente-cerrar"
+          >
+            <X size={16} weight="bold" aria-hidden="true" />
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   )
 }

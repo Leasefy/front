@@ -197,9 +197,10 @@ describe('SegundoFactorDentroDelPanel — con mfaEnrollRequired', () => {
     // El porqué se dice UNA vez: el paso a paso va sin su encabezado.
     expect(document.querySelector('[data-testid="paso-a-paso"]')!.getAttribute('data-sin-encabezado')).toBe('si')
     expect(modal.textContent?.match(/aunque tenga tu contraseña/g)).toHaveLength(1)
-    // La cáscara de la decisión de migrar: dos columnas con la foto, 880 px, 20 px de radio.
+    // La cáscara de la decisión de migrar: dos columnas con la foto, 880 px, y
+    // el radio de todo modal desde el 02-10 (24 px, DESIGN.md §17).
     expect(modal.className).toContain('max-w-[880px]')
-    expect(modal.className).toContain('rounded-[20px]')
+    expect(modal.className).toContain('rounded-[24px]')
     expect(modal.className).toContain('md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]')
   })
 

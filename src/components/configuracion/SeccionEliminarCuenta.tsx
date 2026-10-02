@@ -93,11 +93,11 @@ export function SeccionEliminarCuenta({ bloqueo }: { bloqueo?: string | null }) 
       </section>
 
       {/* Destructiva: el título pregunta QUÉ y el subtítulo es el canónico de
-          la baja (`recovery`): 30 días para recuperarla entrando de nuevo. NO
-          `warningBody`: dice que los datos «serán eliminados», y el back
-          (`deleteAccount`) sólo desactiva la cuenta y cierra sus sesiones; es
+          la baja (`recovery`): 30 días para recuperarla entrando de nuevo; es
           el mismo subtítulo que los perfiles de inquilino, propietario e
-          inmobiliaria. Mientras borra no se cierra: el borrado ya salió. */}
+          inmobiliaria. Lo que pasa (el back sólo desactiva la cuenta y cierra
+          sus sesiones; no borra nada) ya lo dijo la tarjeta de arriba con
+          `warningBody`. Mientras borra no se cierra: el borrado ya salió. */}
       <SettingsModal
         open={abierto}
         onClose={() => {

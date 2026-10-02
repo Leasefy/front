@@ -22,8 +22,11 @@ import { CabeceraDelTurno, DelegacionesDelTurno } from '@/components/agentes/Tur
  * tal cual; esto las acomoda al lenguaje del chat por dentro:
  *
  *   CabeceraDeLaRespuesta — el orbe y el nombre del orquestador (con su estado
- *                           mientras trabaja) y, a la derecha, el tipo de
- *                           respuesta en una etiqueta discreta.
+ *                           mientras trabaja) y, a la derecha, «Accionable»
+ *                           en una etiqueta discreta cuando la respuesta pide
+ *                           actuar. «Informativo» no se dice: es casi toda
+ *                           respuesta y repetido en cada una no informa nada
+ *                           (Nico, 02-10).
  *   ResumenDelTurno       — en una respuesta ya cerrada, la delegación en UNA
  *                           línea («Ori le pasó el trabajo a Laura») que se
  *                           abre en el detalle de cada especialista.
@@ -32,7 +35,7 @@ import { CabeceraDelTurno, DelegacionesDelTurno } from '@/components/agentes/Tur
  * pasos (`AgentTaskThread`), en su lugar de la historia.
  */
 
-/** El orbe del orquestador, su nombre y su estado; a la derecha, el tipo de respuesta. */
+/** El orbe del orquestador, su nombre y su estado; a la derecha, «Accionable» si la respuesta pide actuar. */
 export function CabeceraDeLaRespuesta({
   turno,
   tipo,
@@ -40,7 +43,7 @@ export function CabeceraDeLaRespuesta({
   className,
 }: {
   turno: LecturaDelTurno;
-  /** El tipo de la respuesta (`responseMeta.type`), si lo trae: va como etiqueta discreta. */
+  /** El tipo de la respuesta (`responseMeta.type`). Sólo `actionable` se muestra, como etiqueta discreta. */
   tipo?: ResponseType | null;
   onAbrirEquipo?: (id: IdDeAgente) => void;
   className?: string;
@@ -49,12 +52,12 @@ export function CabeceraDeLaRespuesta({
   return (
     <div className={cn('flex min-h-[34px] items-center justify-between gap-3', className)} data-testid="cabecera-de-la-respuesta">
       <CabeceraDelTurno turno={turno} onAbrirEquipo={onAbrirEquipo} />
-      {tipo && turno.orquestador.estado === 'listo' && (
+      {tipo === 'actionable' && turno.orquestador.estado === 'listo' && (
         <span
           className="shrink-0 animate-in fade-in duration-slow font-mono text-[10.5px] uppercase tracking-[0.08em] text-fg-subtle motion-reduce:animate-none"
           data-testid="tipo-de-respuesta"
         >
-          {tipo === 'actionable' ? t('beta.response.actionable') : t('beta.response.informative')}
+          {t('beta.response.actionable')}
         </span>
       )}
     </div>

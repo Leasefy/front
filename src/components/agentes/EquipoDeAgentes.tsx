@@ -187,7 +187,7 @@ export function EquipoDeAgentes({
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   placeholder={t('agentes.equipo.buscar')}
-                  className="h-10 w-full rounded-full border border-border bg-surface pl-10 pr-9 text-body-sm text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-search-cancel-button]:hidden"
+                  className="h-10 w-full rounded-full border border-border bg-surface pl-10 pr-9 text-body-sm text-fg placeholder:text-fg-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-search-cancel-button]:hidden"
                   data-testid="equipo-buscar"
                 />
                 {busqueda && (

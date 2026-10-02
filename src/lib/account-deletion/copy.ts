@@ -28,7 +28,7 @@ export interface AccountDeletionCopy {
   warningTitle: string
   /** The canonical 30-day recovery explanation (also the warning subtitle) */
   recovery: string
-  /** Config-style modal body: what is deleted + the recovery explanation */
+  /** Config-style body: what the deletion does (deactivate + close sessions, nothing erased) + the recovery explanation */
   warningBody: string
   /** The word the user must type to confirm */
   confirmWord: string
@@ -60,12 +60,25 @@ const RECOVERY_ES =
 const RECOVERY_EN =
   'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.'
 
+/**
+ * What the deletion actually does, in one sentence. `DELETE /users/me/account`
+ * (back `UsersService.deleteAccount`) only DEACTIVATES the user
+ * (`isActive: false`, `deletedAt`) and revokes every session; it erases
+ * nothing. This used to say «Todos tus datos, documentos e historial serán
+ * eliminados» — a promise the back never kept. Same facts the three profile
+ * modals list («Perderás» / «No se elimina»).
+ */
+const WHAT_HAPPENS_ES =
+  'Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus contratos y pagos no se borran: quedan registrados.'
+const WHAT_HAPPENS_EN =
+  'You lose access to your account and your sessions are closed on every device. Your contracts and payments are not erased: they stay on record.'
+
 export const ACCOUNT_DELETION_COPY: Record<'es' | 'en', AccountDeletionCopy> = {
   es: {
     modalTitle: 'Eliminar cuenta',
     warningTitle: '¿Eliminar tu cuenta?',
     recovery: RECOVERY_ES,
-    warningBody: `Todos tus datos, documentos e historial serán eliminados. ${RECOVERY_ES}`,
+    warningBody: `${WHAT_HAPPENS_ES} ${RECOVERY_ES}`,
     confirmWord: 'ELIMINAR',
     confirmInstruction: 'Escribe ELIMINAR para confirmar',
     confirmInstructionPrefix: 'Para confirmar la eliminación de tu cuenta, escribe',
@@ -84,7 +97,7 @@ export const ACCOUNT_DELETION_COPY: Record<'es' | 'en', AccountDeletionCopy> = {
     modalTitle: 'Delete account',
     warningTitle: 'Delete your account?',
     recovery: RECOVERY_EN,
-    warningBody: `All your data, documents, and history will be deleted. ${RECOVERY_EN}`,
+    warningBody: `${WHAT_HAPPENS_EN} ${RECOVERY_EN}`,
     confirmWord: 'DELETE',
     confirmInstruction: 'Type DELETE to confirm',
     confirmInstructionPrefix: 'To confirm account deletion, type',

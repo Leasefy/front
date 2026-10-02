@@ -271,9 +271,9 @@ export function CierreDePeriodo({
           <DialogHeader>
             <DialogTitle>Cerrar la contabilidad hasta el {diaLegible(hasta)}</DialogTitle>
             <DialogDescription>
-              Esto no se deshace. Después del cierre no entra ningún asiento con fecha igual o
-              anterior al {diaLegible(hasta)}; lo que esté mal sólo se corrige con una reversa
-              fechada después.
+              Sólo se deshace reabriendo, y queda en la bitácora con el motivo. Después del
+              cierre no entra ningún asiento con fecha igual o anterior al {diaLegible(hasta)};
+              lo que esté mal sólo se corrige con una reversa fechada después.
             </DialogDescription>
           </DialogHeader>
 

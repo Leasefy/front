@@ -480,7 +480,7 @@
       "sessions": "Sesiones activas",
       "logoutAll": "Cerrar todas las sesiones",
       "deleteAccount": "Eliminar cuenta",
-      "deleteWarning": "Esta acción es irreversible"
+      "deleteWarning": "Tienes 30 días para recuperarla iniciando sesión"
     },
     "notifications": {
       "title": "Notificaciones",
@@ -650,8 +650,8 @@
     },
     "dangerZone": {
       "title": "Zona de Peligro",
-      "subtitle": "Acciones irreversibles",
-      "deleteDescription": "Eliminar tu cuenta es permanente. Todos tus datos, propiedades, contratos e historial serán eliminados.",
+      "subtitle": "Acciones con consecuencias",
+      "deleteDescription": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus inmuebles, contratos y pagos no se borran: quedan registrados. Si inicias sesión en los próximos 30 días, la recuperas.",
       "activeLeasesWarning": "Tienes {{count}} arriendo(s) activo(s). Debes finalizarlos antes de eliminar tu cuenta.",
       "deleteAccount": "Eliminar cuenta"
     },
@@ -697,7 +697,7 @@
       "deleteAccount": {
         "title": "Eliminar cuenta",
         "warning": "¿Eliminar tu cuenta?",
-        "warningDesc": "Todos tus datos, documentos e historial serán eliminados. Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
+        "warningDesc": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus contratos y pagos no se borran: quedan registrados. Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
         "typeToConfirm": "Escribe",
         "confirmWord": "ELIMINAR",
         "toConfirm": "para confirmar",
@@ -725,6 +725,11 @@
         "role": "Rol",
         "saving": "Guardando...",
         "saveChanges": "Guardar cambios"
+      },
+      "removeMember": {
+        "title": "¿Quitar a {{name}} de tu equipo?",
+        "description": "Pierde el acceso a tu panel ya mismo y, si no había aceptado la invitación, el enlace deja de servir. Para que vuelva, tendrás que invitarlo de nuevo.",
+        "confirm": "Quitar del equipo"
       }
     },
     "toasts": {
@@ -5129,7 +5134,6 @@
       "yesCancel": "Sí, cancelar",
       "markAsCompleted": "Marcar como completada",
       "completeConfirm": "¿Confirmar que el trabajo se ha completado satisfactoriamente?",
-      "completionNotesPlaceholder": "Notas sobre la finalización del trabajo...",
       "confirmCompleted": "Confirmar completada",
       "uploadPhotos": "Subir fotos"
     },
@@ -6664,7 +6668,7 @@
           "cerrar": {
             "label": "Cerrar (no procede)",
             "confirmTitle": "Confirmar cierre",
-            "confirmDesc": "El cierre requiere evidencia y confirmación. ¿Deseas continuar?",
+            "confirmDesc": "El ticket queda cerrado como «no procede». ¿Deseas continuar?",
             "confirm": "Confirmar cierre",
             "cancel": "Cancelar"
           }

@@ -277,6 +277,18 @@ describe('PostularButton — ya postulado', () => {
     ).toBe('info')
   })
 
+  it('🔴 rechazado: «Por ahora no podemos aprobarte» es informativo, no error (no es definitivo y hay salidas)', () => {
+    aprobacionMock.mockReturnValue({
+      aprobacion: { ...APROBADA, estado: 'rechazado' },
+      cargando: false,
+      vigente: false,
+    })
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+    const modal = container.querySelector('[data-testid="antes-de-postularte"]')
+    expect(modal?.textContent).toContain('Por ahora no podemos aprobarte')
+    expect(modal?.getAttribute('data-variant')).toBe('info')
+  })
+
   it('la postulación activa tiene prioridad aunque la aprobación esté vencida', () => {
     aprobacionMock.mockReturnValue({ aprobacion: APROBADA, cargando: false, vigente: false })
     aplicacionMock.mockReturnValue({ activa: { id: 'app-9', status: 'APPROVED' }, cargando: false })

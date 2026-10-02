@@ -75,8 +75,15 @@ describe('la cabecera de la respuesta', () => {
     expect(cabecera.querySelector('[data-agente="orquestador"]')).not.toBeNull();
     act(() => cabecera.querySelector<HTMLButtonElement>('[data-testid="turno-cabecera"]')!.click());
     expect(abrir).toHaveBeenCalledWith('orquestador');
-    // Terminada: el tipo de respuesta, discreto.
-    expect(container.querySelector('[data-testid="tipo-de-respuesta"]')!.textContent).toBe('Informativo');
+    // Terminada e informativa: no se rotula. «Informativo» en cada respuesta
+    // no dice nada (Nico, 02-10).
+    expect(container.querySelector('[data-testid="tipo-de-respuesta"]')).toBeNull();
+  });
+
+  it('🔴 una respuesta para actuar sí lleva su etiqueta, discreta', () => {
+    pintar(<CabeceraDeLaRespuesta turno={leerElTurno({ mensaje: respuesta() })} tipo="actionable" />);
+    const etiqueta = container.querySelector('[data-testid="tipo-de-respuesta"]');
+    expect(etiqueta!.textContent).toBe('Accionable');
   });
 
   it('mientras piensa dice que está pensando, y el tipo no se muestra todavía', () => {

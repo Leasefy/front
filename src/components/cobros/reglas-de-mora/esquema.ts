@@ -24,7 +24,7 @@ import {
 export const esquemaDeRegla = z
   .object({
     nombre: z
-      .string({ required_error: 'Ponele un nombre.' })
+      .string({ required_error: 'Ponle un nombre.' })
       .trim()
       .min(3, 'El nombre necesita al menos 3 letras.')
       .max(120, 'El nombre no puede pasar de 120 letras.'),

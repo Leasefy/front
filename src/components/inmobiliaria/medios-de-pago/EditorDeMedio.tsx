@@ -197,7 +197,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
               placeholder="Como lo va a leer el inquilino"
               maxLength={80}
             />
-            {tocado && sinNombre && <p className="text-xs text-danger">Ponele un nombre de al menos dos letras.</p>}
+            {tocado && sinNombre && <p className="text-xs text-danger">Ponle un nombre de al menos dos letras.</p>}
           </div>
 
           {campos.muestra.length > 0 && <div className="grid gap-4 sm:grid-cols-2">{campos.muestra.map(campo)}</div>}

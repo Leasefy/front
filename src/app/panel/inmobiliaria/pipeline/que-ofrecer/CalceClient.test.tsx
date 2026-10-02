@@ -35,7 +35,11 @@ const { api } = vi.hoisted(() => ({
  * seguir probando es que la explicación EXISTE y dice lo mismo, no que esté
  * puesta sobre la pantalla.
  */
-vi.mock('@/components/ui/dialog', () => ({
+// Mock PARCIAL: el resto de la primitiva sigue siendo la de verdad, porque
+// `responsive-dialog.tsx` (que llega por `@/components/ui`) pide
+// `DialogTrigger`, `DialogClose`… y un mock entero los dejaba en `undefined`.
+vi.mock('@/components/ui/dialog', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/ui/dialog')>()),
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div data-testid="modal">{children}</div> : null,
   DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,

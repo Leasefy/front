@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, CheckCircle, FileText, Download, QrCode, Lock, Clock, Hash, User } from '@phosphor-icons/react';
+import { Shield, CheckCircle, FileText, QrCode, Lock, Clock, Hash, User } from '@phosphor-icons/react';
 import type { Contract } from '@/lib/types/contract';
 
 // ============================================================================
@@ -343,12 +343,9 @@ export function AuthenticityCertificate({
           <Button variant="outline" hideArrow onClick={onClose}>
             Cerrar
           </Button>
-          {/* Sin `onClick` desde antes: la descarga no existe todavía (ver el
-              informe de la migración de modales, 02-10-2026). */}
-          <Button hideArrow>
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Descargar Certificado
-          </Button>
+          {/* «Descargar Certificado» no se muestra hasta que exista la
+              descarga: el botón no tenía `onClick` y no hacía nada (Nico,
+              02-10). */}
         </DialogFooter>
       </DialogContent>
     </Dialog>

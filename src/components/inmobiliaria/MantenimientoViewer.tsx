@@ -408,7 +408,6 @@ export function MantenimientoViewer({
   const [noteText, setNoteText] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-  const [completionNotes, setCompletionNotes] = useState('');
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(undefined);
   const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -867,7 +866,9 @@ export function MantenimientoViewer({
       </Dialog>
 
       {/* Marcar como completada: confirmación. El medallón cobalto con el ✓ y
-          el botón principal cobalto (nada de verde a mano). */}
+          el botón principal cobalto (nada de verde a mano). Sin campo de notas
+          de cierre: `onStatusChange(id, 'completed')` no las lleva a ningún
+          lado y se perdían al confirmar (Nico, 02-10). */}
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
         <DialogContent variant="confirm" icon={<CheckCircle weight="bold" />}>
           <DialogHeader>
@@ -876,12 +877,6 @@ export function MantenimientoViewer({
               {t('inmobiliaria.mantenimiento.completeConfirm')}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={completionNotes}
-            onChange={(e) => setCompletionNotes(e.target.value)}
-            placeholder={t('inmobiliaria.mantenimiento.completionNotesPlaceholder')}
-            className="w-full min-h-[100px] resize-none"
-          />
           <DialogFooter>
             <Button
               variant="outline"

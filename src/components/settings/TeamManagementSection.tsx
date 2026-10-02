@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
+import { confirmar } from '@/components/ui/confirmar';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -65,7 +66,23 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  /**
+   * «Eliminar» sacaba al miembro al primer clic, sin preguntar. Ahora pide
+   * confirmación destructiva diciendo qué pasa: el back BORRA la membresía
+   * (`DELETE /users/me/team/:id`), así que pierde el acceso al panel ya mismo
+   * —y una invitación pendiente deja de servir—; para que vuelva hay que
+   * invitarlo de nuevo.
+   */
+  const handleRemoveMember = async (member: { id: string; name?: string; email: string }) => {
+    const ok = await confirmar({
+      destructivo: true,
+      titulo: t('landlordSettings.modals.removeMember.title', { name: member.name || member.email }),
+      descripcion: t('landlordSettings.modals.removeMember.description'),
+      accion: t('landlordSettings.modals.removeMember.confirm'),
+      cancelar: t('landlordSettings.modals.cancel'),
+    });
+    if (!ok) return;
+    const memberId = member.id;
     try {
       await remove(memberId);
       toast.success(t('landlordSettings.toasts.memberRemoved'));
@@ -157,7 +174,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                       {t('landlordSettings.team.edit')}
                     </button>
                     <button
-                      onClick={() => handleRemoveMember(member.id)}
+                      onClick={() => void handleRemoveMember(member)}
                       className="text-xs text-danger hover:underline"
                     >
                       {t('landlordSettings.team.remove')}

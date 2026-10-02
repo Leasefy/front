@@ -61,6 +61,39 @@ describe('ACCOUNT_DELETION_COPY — 30-day recovery sentence', () => {
   )
 })
 
+/*
+ * `DELETE /users/me/account` sólo DESACTIVA la cuenta (`isActive: false`,
+ * `deletedAt`) y cierra las sesiones: no borra nada. El cuerpo decía «Todos
+ * tus datos, documentos e historial serán eliminados» y salía en la «Zona de
+ * peligro» de Configuración. Nico, 02-10: que diga lo que pasa de verdad.
+ */
+describe('ACCOUNT_DELETION_COPY — dice lo que el back hace', () => {
+  it('es: no promete borrar los datos, y dice que se cierran las sesiones y que los contratos quedan', () => {
+    const { warningBody } = ACCOUNT_DELETION_COPY.es
+    expect(warningBody).not.toMatch(/serán eliminad|se borrarán|se eliminarán/i)
+    expect(warningBody).toContain('se cierran tus sesiones')
+    expect(warningBody).toContain('quedan registrados')
+  })
+
+  it('en: no promete borrar los datos, y dice que se cierran las sesiones y que los contratos quedan', () => {
+    const { warningBody } = ACCOUNT_DELETION_COPY.en
+    expect(warningBody).not.toMatch(/will be deleted\. Your account/i)
+    expect(warningBody).not.toMatch(/all your data, documents/i)
+    expect(warningBody).toContain('sessions are closed')
+    expect(warningBody).toContain('stay on record')
+  })
+
+  it.each([
+    ['es', esLocale],
+    ['en', enLocale],
+  ] as const)('%s.json: la «Zona de peligro» tampoco lo promete', (_locale, json) => {
+    const texto = JSON.stringify(
+      (json as unknown as { landlordSettings: { dangerZone: unknown } }).landlordSettings.dangerZone,
+    )
+    expect(texto).not.toMatch(/serán eliminad|irreversible|is permanent|will be deleted/i)
+  })
+})
+
 describe('accountDeletionCopy() locale accessor', () => {
   it("returns es for 'es' and en for anything else (app convention)", () => {
     expect(accountDeletionCopy('es')).toBe(ACCOUNT_DELETION_COPY.es)

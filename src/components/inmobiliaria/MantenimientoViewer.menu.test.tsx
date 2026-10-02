@@ -161,3 +161,40 @@ describe('<MantenimientoViewer> — los tres puntos del detalle', () => {
     expect(menu()).toBeNull();
   });
 });
+
+/**
+ * «Marcar como completada» pedía «Notas sobre la finalización del trabajo…»
+ * y `onStatusChange(id, 'completed')` no las llevaba a ningún lado: lo que la
+ * persona escribía se perdía al confirmar. Nico, 02-10: sin ese campo.
+ */
+describe('<MantenimientoViewer> — marcar como completada', () => {
+  function abrirLaConfirmacion() {
+    const boton = [...document.body.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent?.includes('inmobiliaria.mantenimiento.markCompleted'),
+    );
+    expect(boton).toBeDefined();
+    act(() => boton!.click());
+  }
+
+  it('no pide notas de cierre que no se guardan', () => {
+    montar({ solicitud: hacerSolicitud({ status: 'in_progress' }) });
+    abrirLaConfirmacion();
+    const confirmacion = [...document.body.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) =>
+      d.textContent?.includes('inmobiliaria.mantenimiento.markAsCompleted'),
+    );
+    expect(confirmacion).toBeDefined();
+    expect(confirmacion!.querySelector('textarea')).toBeNull();
+    expect(confirmacion!.textContent).not.toContain('completionNotesPlaceholder');
+  });
+
+  it('confirmar marca la solicitud como completada', () => {
+    const onStatusChange = vi.fn();
+    montar({ solicitud: hacerSolicitud({ id: 'sol-7', status: 'in_progress' }), onStatusChange });
+    abrirLaConfirmacion();
+    const confirmar = [...document.body.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent?.includes('inmobiliaria.mantenimiento.confirmCompleted'),
+    );
+    act(() => confirmar!.click());
+    expect(onStatusChange).toHaveBeenCalledWith('sol-7', 'completed');
+  });
+});

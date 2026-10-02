@@ -233,7 +233,8 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano. La base caída (5xx con `servicio: 'base'`)
   también va por acá: sin Postgres no funciona nada. Cualquier otra respuesta del back → `bien`.
   Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
-  abajo (sube 5rem bajo `lg` por `MobileNavBar`) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
+  abajo (sube 5rem bajo `lg` por `MobileNavBar`, y con `translateY` por encima del pie de un cajón
+  abierto para no tapar sus acciones) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
   primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
   NO pasan por acá (son capa 2, servicio `asistente`).
 - **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): 502 o 503

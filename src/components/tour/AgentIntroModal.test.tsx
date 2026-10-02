@@ -6,8 +6,12 @@
  *
  *   · `null` (no se sabe si la agencia ya la vio) → no sale;
  *   · `true` → no sale;
- *   · `false` → sale, y al cerrarla queda vista para la agencia: el fondo y
- *     Esc la dejan `omitido`, «Entendido» `completo`.
+ *   · `false` → sale, y al cerrarla queda vista para la agencia: el fondo,
+ *     Esc y la ✕ la dejan `omitido`, «Entendido» `completo`.
+ *
+ * Desde el 02-10 es el `Dialog` de Radix, como `PilotoNovedad`: la tarjeta de
+ * `FeatureAnnouncement` adentro de un Content transparente, con la ✕ del
+ * producto.
  */
 
 import * as React from 'react'
@@ -123,12 +127,57 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
     expect(prefs.marcarVista).toHaveBeenCalledWith(CLAVE, 'omitido')
   })
 
+  it('la ✕ también la deja OMITIDA, y es el aspa del producto', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    const aspa = document.querySelector('[data-testid="presentacion-del-agente-cerrar"]') as HTMLButtonElement
+    expect(aspa.getAttribute('aria-label')).toBe('common.close')
+    expect(aspa.className).toContain('rounded-full')
+    act(() => aspa.click())
+    expect(prefs.marcarVista).toHaveBeenCalledWith(CLAVE, 'omitido')
+    expect(dialogo()).toBeNull()
+  })
+
   it('el clic en el fondo también la deja OMITIDA', () => {
     prefs.vistas[CLAVE] = false
     pintar()
-    const fondo = dialogo()!.parentElement as HTMLElement
-    act(() => fondo.click())
+    // Radix mira el `pointerdown` fuera del contenido (el velo es hermano del Content).
+    const velo = document.body.querySelector('[data-state="open"]:not([role="dialog"])') as HTMLElement
+    expect(velo).not.toBeNull()
+    // Radix empieza a escuchar el `pointerdown` de afuera un tic después de abrir.
+    act(() => {
+      vi.advanceTimersByTime(10)
+    })
+    act(() => {
+      velo.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
+    })
     expect(prefs.marcarVista).toHaveBeenCalledWith(CLAVE, 'omitido')
+  })
+
+  it('es el Dialog de la plataforma: capa de los modales, título anunciado, y la tarjeta adentro', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    const modal = dialogo() as HTMLElement
+    expect(modal.className).toContain('z-[300]')
+    // El título lo pinta la tarjeta; Radix lo anuncia con `aria-labelledby`.
+    const titulo = document.getElementById(modal.getAttribute('aria-labelledby') ?? '')
+    expect(titulo?.textContent).toBe('inmobiliaria.ai.intro.cobranza.title')
+    expect(modal.querySelector('[data-testid="presentacion-cta"]')).not.toBeNull()
+  })
+
+  it('al cerrarse devuelve el foco a donde estaba', () => {
+    prefs.vistas[CLAVE] = false
+    const boton = document.createElement('button')
+    document.body.appendChild(boton)
+    boton.focus()
+    pintar()
+    const cta = document.querySelector('[data-testid="presentacion-cta"]') as HTMLElement
+    act(() => cta.click())
+    // Radix devuelve el foco un tic después de desmontar el contenido.
+    act(() => {
+      vi.advanceTimersByTime(10)
+    })
+    expect(document.activeElement).toBe(boton)
   })
 
   it('ya no guarda nada en localStorage: la marca es de la agencia', () => {

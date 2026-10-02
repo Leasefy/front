@@ -28,15 +28,35 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+/**
+ * A dónde se puede volver sin salir del registro. Depende de dónde está la
+ * persona (Nico, 01-10-2026: «deberíamos de tener dos opciones, el devolverse
+ * a lo de formulario de inmobiliaria o seleccionar rol, dependiendo de en qué
+ * pasos estaba, y también la opción de salir por si se quiere salir del todo»).
+ */
+export interface VolverDelRegistro {
+  /** El botón: «Volver a los datos de la inmobiliaria», «Volver a elegir tu perfil»… */
+  etiqueta: string
+  /** Una frase sobre para qué sirve volver ahí. */
+  descripcion?: string
+  onVolver: () => void
+}
+
 export interface SalirDelRegistroProps {
   /**
    * Se corre antes de cerrar sesión — para soltar el borrador local, si la
    * pantalla guarda alguno. No debe lanzar: salir nunca puede quedar trabado.
    */
   onAntesDeSalir?: () => void
+  /**
+   * Con esto el diálogo ofrece volver un paso atrás además de salir. Antes la
+   * única salida cerraba la sesión: quien quería corregir la razón social
+   * terminaba en el login (Alexis, 01-10-2026).
+   */
+  volver?: VolverDelRegistro
 }
 
-export function SalirDelRegistro({ onAntesDeSalir }: SalirDelRegistroProps) {
+export function SalirDelRegistro({ onAntesDeSalir, volver }: SalirDelRegistroProps) {
   const router = useRouter()
   // A propósito el contexto crudo y no `useAuth()`: ese lanza si no hay
   // AuthProvider arriba, y el botón de salir no puede ser lo que tumba la
@@ -74,14 +94,27 @@ export function SalirDelRegistro({ onAntesDeSalir }: SalirDelRegistroProps) {
       <AlertDialog open={abierto} onOpenChange={setAbierto}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Salir del registro?</AlertDialogTitle>
+            <AlertDialogTitle>{volver ? '¿Qué quieres hacer?' : '¿Salir del registro?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Guardamos lo que ya llenaste. Cuando vuelvas a entrar con tu correo, sigues
-              justo donde quedaste.
+              {volver?.descripcion ? `${volver.descripcion} ` : ''}
+              {volver ? 'Si sales, guardamos' : 'Guardamos'} lo que ya llenaste. Cuando vuelvas a
+              entrar con tu correo, sigues justo donde quedaste.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          {/* Con tres salidas no caben en una fila (la primera quedaba cortada):
+              van una debajo de otra, a lo ancho. */}
+          <AlertDialogFooter className={volver ? 'sm:flex-col-reverse sm:justify-start [&>*]:w-full' : undefined}>
             <AlertDialogCancel disabled={saliendo}>Seguir aquí</AlertDialogCancel>
+            {volver ? (
+              // Volver no cierra la sesión: cierra el diálogo y lleva al paso.
+              <AlertDialogCancel
+                disabled={saliendo}
+                onClick={() => volver.onVolver()}
+                data-testid="volver-del-registro"
+              >
+                {volver.etiqueta}
+              </AlertDialogCancel>
+            ) : null}
             <AlertDialogAction
               onClick={(event) => {
                 // Sin esto Radix cierra el diálogo y desmonta el botón antes
@@ -91,7 +124,7 @@ export function SalirDelRegistro({ onAntesDeSalir }: SalirDelRegistroProps) {
               }}
               disabled={saliendo}
             >
-              {saliendo ? 'Saliendo...' : 'Salir'}
+              {saliendo ? 'Saliendo...' : volver ? 'Salir del registro' : 'Salir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

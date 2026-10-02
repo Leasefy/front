@@ -132,7 +132,9 @@ export function SeccionEquipo() {
           const descripcion =
             result.emailStatus === 'not_configured'
               ? `${invite.name || invite.email} quedó invitado, pero el servidor todavía no manda correos. Pásale tú el enlace.`
-              : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
+              : result.emailStatus === 'suppressed'
+                ? `${invite.name || invite.email} quedó invitado. Este entorno es de pruebas y no manda correos: pásale tú el enlace.`
+                : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
           toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
             description: descripcion,
             action: accionDelCorreoCaido(result, invite.email),
@@ -194,7 +196,9 @@ export function SeccionEquipo() {
             description:
               result.emailStatus === 'not_configured'
                 ? `El servidor todavía no tiene correo configurado. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
-                : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
+                : result.emailStatus === 'suppressed'
+                  ? `Este entorno es de pruebas y no manda correos. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
+                  : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
             action: accionDelCorreoCaido(result, user?.email ?? ''),
             duration: 12000,
           });

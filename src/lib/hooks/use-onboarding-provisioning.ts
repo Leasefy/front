@@ -134,6 +134,17 @@ export interface UseOnboardingProvisioningResult {
   retry: () => void
   /** Provisions with the explicitly captured owner + agency data. */
   provision: (input: ProvisioningInput) => void
+  /**
+   * La persona volvió desde el asistente a corregir los datos de la
+   * inmobiliaria (Nico, 01-10-2026). La inmobiliaria y la sesión ya existen:
+   * el formulario vuelve lleno, el NIT queda fijo y al guardar sigue en el
+   * asistente con la misma sesión.
+   */
+  corrigiendo: boolean
+  /** Del asistente al formulario de la inmobiliaria. Sólo con la sesión lista. */
+  corregirDatos: () => void
+  /** Del formulario de vuelta al asistente, sin guardar nada. */
+  volverAlAsistente: () => void
 }
 
 /** El código del 409 del back (`AgencyService.createAgency`). */
@@ -237,6 +248,13 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
   const [agencyPrefill, setAgencyPrefill] = useState<AgencyPrefill | null>(null)
   const [valoresGuardados, setValoresGuardados] = useState<ValoresGuardados | null>(null)
   const [fallo, setFallo] = useState<FalloDeAprovisionamiento | null>(null)
+  const [corrigiendo, setCorrigiendo] = useState(false)
+  // La sesión del asistente mientras se corrige: un fallo al guardar la
+  // corrección no puede dejar a nadie sin el asistente que ya tenía.
+  const sessionIdRef = useRef<string | null>(null)
+  sessionIdRef.current = sessionId
+  const corrigiendoRef = useRef(false)
+  corrigiendoRef.current = corrigiendo
 
   const mountedRef = useRef(true)
   // Guards against a stale response overwriting state after a later retry.
@@ -335,6 +353,9 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (res.agentSessionId) {
           setSessionId(res.agentSessionId)
           setAgencyPrefill({ legalName: input.agencyName, nit: input.nit })
+          // Para poder volver a corregirlos sin recargar la página.
+          setValoresGuardados(valoresDelEnvio(input))
+          setCorrigiendo(false)
           setStatus('ready')
         } else {
           // El back creó las filas pero el traspaso al agente no minteó la
@@ -354,13 +375,18 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
       .catch((error: unknown) => {
         inFlightRef.current = false
         if (!mountedRef.current || requestIdRef.current !== requestId) return
-        setSessionId(null)
+        // Corrigiendo, la sesión del asistente sigue siendo válida: se
+        // conserva para que «Volver al asistente» funcione después del fallo.
+        if (!corrigiendoRef.current) setSessionId(null)
         setValoresGuardados(valoresDelEnvio(input))
         const fallo = interpretarFallo(error)
         setFallo(fallo)
         // Si lo que falló fueron los datos, se vuelve al formulario para
-        // corregirlos; lo demás (una caída, un 409) va al cartel.
-        setStatus(fallo.paraCorregir ? 'needs-info' : 'error')
+        // corregirlos; lo demás (una caída, un 409) va al cartel. Corrigiendo,
+        // siempre al formulario: el aviso va arriba y el asistente sigue a un
+        // clic (`volverAlAsistente`).
+        setStatus(fallo.paraCorregir || corrigiendoRef.current ? 'needs-info' : 'error')
+        if (corrigiendoRef.current && !fallo.paraCorregir) setFallo({ ...fallo, paraCorregir: true })
       })
   }, [])
 
@@ -372,6 +398,20 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
     [runProvision],
   )
 
+  const corregirDatos = useCallback(() => {
+    if (!sessionIdRef.current || inFlightRef.current) return
+    setFallo(null)
+    setCorrigiendo(true)
+    setStatus('needs-info')
+  }, [])
+
+  const volverAlAsistente = useCallback(() => {
+    if (!sessionIdRef.current || inFlightRef.current) return
+    setFallo(null)
+    setCorrigiendo(false)
+    setStatus('ready')
+  }, [])
+
   return {
     status,
     sessionId,
@@ -380,5 +420,8 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
     fallo,
     retry: runProvision,
     provision,
+    corrigiendo,
+    corregirDatos,
+    volverAlAsistente,
   }
 }

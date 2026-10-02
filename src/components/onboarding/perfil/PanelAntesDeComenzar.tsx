@@ -19,12 +19,18 @@ import { PERFIL_INMOBILIARIA } from './perfiles'
 export type AprovisionamientoDelPanel = Pick<
   UseOnboardingProvisioningResult,
   'status' | 'valoresGuardados' | 'fallo' | 'retry' | 'provision'
->
+> &
+  Partial<Pick<UseOnboardingProvisioningResult, 'corrigiendo'>>
 
 export interface PanelAntesDeComenzarProps {
   aprovisionamiento: AprovisionamientoDelPanel
   /** Cierra el panel y devuelve las tarjetas al centro. */
   onCerrar: () => void
+  /**
+   * Avisa si se puede cambiar de perfil, para que el «Salir» de arriba ofrezca
+   * «Volver a elegir tu perfil» sólo cuando de verdad se puede (ver la regla 🔴).
+   */
+  onPuedeCambiarDePerfil?: (puede: boolean) => void
 }
 
 /**
@@ -40,9 +46,17 @@ export interface PanelAntesDeComenzarProps {
  * la ✕ y el «Cambiar» desaparecen mientras se envía, cuando el back ya tiene
  * una agencia de esta persona (`valoresGuardados`) y si algo falló al crearla.
  */
-export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntesDeComenzarProps) {
-  const { status, valoresGuardados, fallo, retry, provision } = aprovisionamiento
+export function PanelAntesDeComenzar({
+  aprovisionamiento,
+  onCerrar,
+  onPuedeCambiarDePerfil,
+}: PanelAntesDeComenzarProps) {
+  const { status, valoresGuardados, fallo, retry, provision, corrigiendo = false } = aprovisionamiento
   const sePuedeCambiar = !valoresGuardados && (status === 'resuming' || status === 'needs-info')
+
+  useEffect(() => {
+    onPuedeCambiarDePerfil?.(sePuedeCambiar)
+  }, [sePuedeCambiar, onPuedeCambiarDePerfil])
 
   // «Abriendo tu registro…» va solo y centrado, sin el marco de la tarjeta:
   // las tarjetas de perfil también se esconden (Nico, 2026-09-30: «que se
@@ -140,6 +154,7 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
               onSubmit={provision}
               isSubmitting={status === 'provisioning'}
               valoresIniciales={valoresGuardados ?? undefined}
+              corrigiendo={corrigiendo}
             />
           </>
         ) : (
@@ -167,10 +182,12 @@ function esLaApertura(status: AprovisionamientoDelPanel['status']): boolean {
 export function PanelAntesDeComenzarConAprovisionamiento({
   onCerrar,
   onApertura,
+  onPuedeCambiarDePerfil,
 }: {
   onCerrar: () => void
   /** Avisa cuando el panel pasa a «Abriendo tu registro…», para esconder las tarjetas. */
   onApertura?: (abriendo: boolean) => void
+  onPuedeCambiarDePerfil?: (puede: boolean) => void
 }) {
   const router = useRouter()
   const aprovisionamiento = useOnboardingProvisioning()
@@ -185,5 +202,11 @@ export function PanelAntesDeComenzarConAprovisionamiento({
     onApertura?.(abriendo)
   }, [abriendo, onApertura])
 
-  return <PanelAntesDeComenzar aprovisionamiento={aprovisionamiento} onCerrar={onCerrar} />
+  return (
+    <PanelAntesDeComenzar
+      aprovisionamiento={aprovisionamiento}
+      onCerrar={onCerrar}
+      onPuedeCambiarDePerfil={onPuedeCambiarDePerfil}
+    />
+  )
 }

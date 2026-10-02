@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
-import { crearInvitacionesDelEquipo } from './crear-invitaciones'
+import { correosConInvitacion, crearInvitacionesDelEquipo } from './crear-invitaciones'
 import { buildMemberInviteLink } from './invite-link'
 
 /**
@@ -98,5 +98,51 @@ describe('crearInvitacionesDelEquipo', () => {
     const invitar = vi.fn()
     expect(await crearInvitacionesDelEquipo([], invitar)).toEqual([])
     expect(invitar).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * 🔴 01-10-2026 (Alexis): el back rechazó a una persona (el tope del plan), la
+ * persona volvió a Miembros, guardó, «le dio»… y nunca llegó el correo. «Quién
+ * ya está invitado» se sacaba del borrador del micro, que guarda el paso ANTES
+ * de que el back invite. Ahora lo dice el back.
+ */
+describe('correosConInvitacion', () => {
+  it('cuenta lo vigente y lo aceptado del BACK, en minúsculas', async () => {
+    const listar = vi.fn().mockResolvedValue([
+      { email: 'Alex.Dev+8@leasefy.co', status: 'invited' },
+      { email: 'duena@inmo.co', status: 'active' },
+      { email: 'se-fue@inmo.co', status: 'inactive' },
+    ])
+    const correos = await correosConInvitacion(listar)
+    expect(correos).toEqual(new Set(['alex.dev+8@leasefy.co', 'duena@inmo.co']))
+  })
+
+  it('quien el back rechazó NO está, aunque haya quedado en el borrador del paso', async () => {
+    const listar = vi.fn().mockResolvedValue([{ email: 'alex.dev+8@leasefy.co', status: 'invited' }])
+    const correos = await correosConInvitacion(listar)
+    expect(correos?.has('alex.dev+9@leasefy.co')).toBe(false)
+  })
+
+  it('si no se puede preguntar, devuelve null (el llamador decide el respaldo)', async () => {
+    const listar = vi.fn().mockRejectedValue(new Error('network down'))
+    expect(await correosConInvitacion(listar)).toBeNull()
+  })
+})
+
+describe('crearInvitacionesDelEquipo — entorno de pruebas', () => {
+  it('un correo retenido por el entorno de pruebas queda sin enviar y con su enlace', async () => {
+    const invitar = vi.fn().mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'suppressed',
+      invitationToken: 'tok-9',
+    })
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+9@leasefy.co', nombre: '', role: 'ADMIN' }],
+      invitar,
+    )
+    expect(creada.correoEnviado).toBe(false)
+    expect(creada.estadoDelCorreo).toBe('suppressed')
+    expect(creada.enlace).toContain('/invitacion/tok-9')
   })
 })

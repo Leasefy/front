@@ -371,3 +371,62 @@ describe('<MembersStepForm> — resultado de las invitaciones (`pendingInvites`)
     expect(onContinueAfterInvites).toHaveBeenCalledTimes(1)
   })
 })
+
+/**
+ * 01-10-2026 (Alexis): una invitación rechazada sólo se podía reintentar desde
+ * el panel, después del registro; y en su máquina, donde el entorno de pruebas
+ * retiene los correos, la pantalla decía que el correo no salió como si fuera
+ * una falla.
+ */
+describe('<MembersStepForm> — reintentar y entorno de pruebas', () => {
+  const conUnaFallida: React.ComponentProps<typeof MembersStepForm>['pendingInvites'] = {
+    invitaciones: [
+      {
+        email: 'alex.dev+8@leasefy.co',
+        role: 'AGENTE',
+        nombre: '',
+        enlace: 'https://app.leasefy.co/invitacion/tok-8',
+        correoEnviado: false,
+        estadoDelCorreo: 'suppressed',
+        error: null,
+      },
+      {
+        email: 'alex.dev+9@leasefy.co',
+        role: 'ADMIN',
+        nombre: '',
+        enlace: null,
+        correoEnviado: false,
+        error: 'Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.',
+      },
+    ],
+  }
+
+  it('«Reintentar» vuelve a pedir las fallidas', async () => {
+    const onReintentarInvitaciones = vi.fn().mockResolvedValue(undefined)
+    render({ pendingInvites: conUnaFallida, onReintentarInvitaciones })
+
+    clickButton('members-invite-retry')
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onReintentarInvitaciones).toHaveBeenCalledTimes(1)
+  })
+
+  it('sin quién reintente, no hay botón (y se dice dónde hacerlo después)', () => {
+    render({ pendingInvites: conUnaFallida })
+
+    expect(container.querySelector('[data-testid="members-invite-retry"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="members-invite-errors"]')?.textContent).toContain(
+      'Configuración',
+    )
+  })
+
+  it('un correo retenido por el entorno de pruebas se dice como tal, con el enlace a la mano', () => {
+    render({ pendingInvites: conUnaFallida })
+
+    const aviso = container.querySelector('[data-testid="members-invite-warning"]')
+    expect(aviso?.textContent).toContain('entorno es de pruebas')
+    expect(container.querySelector('[data-testid="invite-copy-alex.dev+8@leasefy.co"]')).toBeTruthy()
+  })
+})

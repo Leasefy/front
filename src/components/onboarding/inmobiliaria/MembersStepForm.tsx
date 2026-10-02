@@ -54,6 +54,8 @@ export interface MembersStepFormProps {
   guardados?: MembersStepFormValues['members']
   /** La persona ya leyó el resultado y quiere seguir. */
   onContinueAfterInvites: () => void
+  /** Vuelve a pedir SÓLO las invitaciones que fallaron. Sin esto no hay botón. */
+  onReintentarInvitaciones?: () => Promise<void>
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -68,11 +70,24 @@ function roleLabel(role: string | undefined): string {
 function MembersInviteLinksScreen({
   pendingInvites,
   onContinueAfterInvites,
+  onReintentarInvitaciones,
 }: {
   pendingInvites: PendingMembersInvites
   onContinueAfterInvites: () => void
+  onReintentarInvitaciones?: () => Promise<void>
 }) {
   const [copiado, setCopiado] = useState<string | null>(null)
+  const [reintentando, setReintentando] = useState(false)
+
+  const reintentar = async () => {
+    if (!onReintentarInvitaciones || reintentando) return
+    setReintentando(true)
+    try {
+      await onReintentarInvitaciones()
+    } finally {
+      setReintentando(false)
+    }
+  }
 
   const copiar = async (email: string, link: string) => {
     try {
@@ -89,6 +104,9 @@ function MembersInviteLinksScreen({
   const conError = invitaciones.filter((i) => i.error !== null)
   const enviadas = invitaciones.filter((i) => i.error === null && i.correoEnviado)
   const sinCorreo = invitaciones.filter((i) => i.error === null && !i.correoEnviado)
+  // Un entorno de pruebas retiene los correos a propósito: no es una falla.
+  const sinCorreoPorPruebas =
+    sinCorreo.length > 0 && sinCorreo.every((i) => i.estadoDelCorreo === 'suppressed')
 
   return (
     <div
@@ -122,9 +140,13 @@ function MembersInviteLinksScreen({
           <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
           <div>
             <p className="text-sm font-medium text-warning">
-              {sinCorreo.length === 1
-                ? 'Una invitación quedó creada, pero el correo no salió.'
-                : `${sinCorreo.length} invitaciones quedaron creadas, pero el correo no salió.`}
+              {sinCorreoPorPruebas
+                ? sinCorreo.length === 1
+                  ? 'La invitación quedó creada. Este entorno es de pruebas y no manda correos.'
+                  : `${sinCorreo.length} invitaciones quedaron creadas. Este entorno es de pruebas y no manda correos.`
+                : sinCorreo.length === 1
+                  ? 'Una invitación quedó creada, pero el correo no salió.'
+                  : `${sinCorreo.length} invitaciones quedaron creadas, pero el correo no salió.`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
               Copia el enlace y pásaselo tú. También puedes reenviarlo más tarde desde
@@ -147,9 +169,22 @@ function MembersInviteLinksScreen({
                 : `No pudimos invitar a ${conError.length} personas.`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Puedes intentarlo de nuevo desde Configuración → Equipo cuando termines el
-              registro.
+              Inténtalo de nuevo ahora, o más tarde desde Configuración → Equipo.
             </p>
+            {onReintentarInvitaciones && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                className="mt-2"
+                onClick={reintentar}
+                disabled={reintentando}
+                data-testid="members-invite-retry"
+              >
+                {reintentando ? 'Reintentando...' : 'Reintentar'}
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -223,6 +258,7 @@ export function MembersStepForm({
   submitError,
   pendingInvites,
   onContinueAfterInvites,
+  onReintentarInvitaciones,
   sessionId,
   guardados,
 }: MembersStepFormProps) {
@@ -266,7 +302,11 @@ export function MembersStepForm({
 
   if (pendingInvites) {
     return (
-      <MembersInviteLinksScreen pendingInvites={pendingInvites} onContinueAfterInvites={onContinueAfterInvites} />
+      <MembersInviteLinksScreen
+        pendingInvites={pendingInvites}
+        onContinueAfterInvites={onContinueAfterInvites}
+        onReintentarInvitaciones={onReintentarInvitaciones}
+      />
     )
   }
 

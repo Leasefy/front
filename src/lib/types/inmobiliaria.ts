@@ -3283,8 +3283,12 @@ export interface AgencyInviteResult extends AgencyMember {
    *
    * Opcional: un backend viejo no lo manda, y en ese caso se cae al mensaje
    * genérico en vez de romper.
+   *
+   * `suppressed` (01-10-2026) = un entorno de pruebas retuvo el correo a
+   * propósito (el interruptor de correo del back). La invitación vale; el
+   * enlace hay que pasarlo a mano.
    */
-  emailStatus?: 'sent' | 'not_configured' | 'failed';
+  emailStatus?: 'sent' | 'suppressed' | 'not_configured' | 'failed';
   /**
    * El token de la invitación, para armar el enlace cuando el correo no salió.
    *

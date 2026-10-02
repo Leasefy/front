@@ -26,6 +26,14 @@ export interface OwnerNameStepFormProps {
     nit?: string
     representanteLegal?: string
   }
+  /**
+   * Volvió desde el asistente a corregir los datos (Nico, 01-10-2026). La
+   * inmobiliaria YA existe: la razón social y los nombres se corrigen; el NIT
+   * no, porque con él quedó creada en el asistente y el back ignora un NIT
+   * nuevo de una inmobiliaria ya creada — dejarlo editable sería decir que se
+   * guardó algo que no se guardó.
+   */
+  corrigiendo?: boolean
 }
 
 type Campo = 'nombre' | 'razonSocial' | 'nit' | 'representante'
@@ -74,6 +82,7 @@ export function OwnerNameStepForm({
   onSubmit,
   isSubmitting,
   valoresIniciales,
+  corrigiendo = false,
 }: OwnerNameStepFormProps) {
   const [displayName, setDisplayName] = useState(valoresIniciales?.nombreCompleto ?? '')
   const [agencyName, setAgencyName] = useState(valoresIniciales?.razonSocial ?? '')
@@ -172,10 +181,12 @@ export function OwnerNameStepForm({
           a la derecha es el de la ✕ del panel, que va en esta misma fila. */}
       <div className="pb-1 lg:pr-12">
         <h1 className="text-balance font-heading text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
-          Antes de comenzar
+          {corrigiendo ? 'Datos de tu inmobiliaria' : 'Antes de comenzar'}
         </h1>
         <p className="mt-2 text-pretty text-[14px] leading-relaxed text-fg-subtle">
-          Con esto creamos tu cuenta y la de tu inmobiliaria. Toma menos de un minuto.
+          {corrigiendo
+            ? 'Corrige lo que necesites y sigues en el asistente donde ibas.'
+            : 'Con esto creamos tu cuenta y la de tu inmobiliaria. Toma menos de un minuto.'}
         </p>
       </div>
 
@@ -293,14 +304,16 @@ export function OwnerNameStepForm({
             inputMode="numeric"
             autoComplete="off"
             className={claseDeCampo(
-              !!errorDe('nit') || (revisados.nit && !!revision.nitBueno),
-              'font-mono tabular-nums',
+              !corrigiendo && (!!errorDe('nit') || (revisados.nit && !!revision.nitBueno)),
+              cn('font-mono tabular-nums', corrigiendo && 'bg-surface-muted text-fg-subtle cursor-not-allowed'),
             )}
             placeholder="Ej: 900123456-8"
             maxLength={LARGO_MAXIMO_AL_ESCRIBIR}
             value={nit}
+            readOnly={corrigiendo}
+            aria-readonly={corrigiendo || undefined}
             invalid={!!errorDe('nit')}
-            valid={revisados.nit && !!revision.nitBueno}
+            valid={!corrigiendo && revisados.nit && !!revision.nitBueno}
             onBlur={() => marcarRevisado('nit')}
             // El guion lo pone el campo; la persona sólo teclea números y
             // no puede pasarse del largo (ver `formatearNitAlEscribir`).
@@ -316,6 +329,10 @@ export function OwnerNameStepForm({
             cuál es, en neutro y sin ✓. */}
         {errorDe('nit') ? (
           <FormError>{errorDe('nit')}</FormError>
+        ) : corrigiendo ? (
+          <FormHint data-testid="nit-registrado">
+            Con este NIT quedó creada tu inmobiliaria en el asistente.
+          </FormHint>
         ) : revisados.nit && revision.nitBueno && !revision.nitBueno.traiaDv ? (
           <FormHint data-testid="nit-digito-sugerido">
             Su dígito de verificación es{' '}
@@ -331,11 +348,11 @@ export function OwnerNameStepForm({
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Creando tu cuenta...
+            {corrigiendo ? 'Guardando...' : 'Creando tu cuenta...'}
           </>
         ) : (
           <>
-            Continuar
+            {corrigiendo ? 'Guardar y volver al asistente' : 'Continuar'}
             <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
           </>
         )}

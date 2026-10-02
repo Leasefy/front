@@ -46,8 +46,8 @@ export interface InvitacionCreada {
   enlace: string | null
   /** `true` sólo cuando el servidor confirmó que el correo salió. */
   correoEnviado: boolean
-  /** Por qué no salió, cuando el back lo dice. */
-  estadoDelCorreo?: 'sent' | 'not_configured' | 'failed'
+  /** Por qué no salió, cuando el back lo dice (`suppressed`: entorno de pruebas). */
+  estadoDelCorreo?: 'sent' | 'suppressed' | 'not_configured' | 'failed'
   /** El motivo del rechazo, en las palabras del back. */
   error: string | null
 }
@@ -61,7 +61,7 @@ export async function crearInvitacionesDelEquipo(
   miembros: MembersStepFormValues['members'],
   invitar: (invite: UserInvite) => Promise<{
     emailDelivered: boolean
-    emailStatus?: 'sent' | 'not_configured' | 'failed'
+    emailStatus?: 'sent' | 'suppressed' | 'not_configured' | 'failed'
     invitationToken?: string
   }> = inmobiliariaConfigApi.inviteUser,
 ): Promise<InvitacionCreada[]> {
@@ -103,4 +103,32 @@ export async function crearInvitacionesDelEquipo(
   }
 
   return creadas
+}
+
+/**
+ * Los correos que YA tienen invitación en el back (vigente o aceptada), en
+ * minúsculas. `null` si no se pudo preguntar.
+ *
+ * 🔴 01-10-2026 (Alexis): «quién ya está invitado» se sacaba del borrador del
+ * micro, y el borrador NO dice eso — dice a quién se escribió en el paso. El
+ * micro guarda el paso ANTES de que el back invite, así que una invitación que
+ * el back rechazó quedaba en el borrador igual. Al volver a Miembros y guardar,
+ * esa persona se daba por invitada, no se le pedía nada al back y la pantalla
+ * decía que todo había salido bien: no llegó ningún correo. Quién está invitado
+ * lo sabe el back, y sólo él.
+ */
+export async function correosConInvitacion(
+  listar: () => Promise<Array<{ email: string; status: string }>> = inmobiliariaConfigApi.getUsers,
+): Promise<Set<string> | null> {
+  try {
+    const miembros = await listar()
+    return new Set(
+      miembros
+        .filter((m) => m.status === 'active' || m.status === 'invited')
+        .map((m) => m.email.trim().toLowerCase())
+        .filter(Boolean),
+    )
+  } catch {
+    return null
+  }
 }

@@ -100,3 +100,48 @@ describe('<SalirDelRegistro>', () => {
     expect(replaceMock).toHaveBeenCalledWith('/auth')
   })
 })
+
+/**
+ * Nico, 01-10-2026: «ese salir lo saca y lo deja en el login, y él necesita
+ * editar la razón social; ahí deberíamos tener dos opciones, el devolverse…
+ * y también la opción de salir por si se quiere salir del todo».
+ */
+describe('<SalirDelRegistro> con a dónde volver', () => {
+  const volver = (onVolver = vi.fn()) => ({
+    etiqueta: 'Volver a los datos de la inmobiliaria',
+    descripcion: 'Ahí corriges la razón social.',
+    onVolver,
+  })
+
+  it('ofrece volver Y salir del todo', () => {
+    act(() => root.render(<SalirDelRegistro volver={volver()} />))
+    clickPorTexto('Salir')
+
+    expect(document.body.textContent).toContain('¿Qué quieres hacer?')
+    expect(document.body.textContent).toContain('Volver a los datos de la inmobiliaria')
+    expect(document.body.textContent).toContain('Salir del registro')
+  })
+
+  it('volver lleva al paso y NO cierra la sesión', () => {
+    const onVolver = vi.fn()
+    act(() => root.render(<SalirDelRegistro volver={volver(onVolver)} />))
+    clickPorTexto('Salir')
+    clickPorTexto('Volver a los datos de la inmobiliaria')
+
+    expect(onVolver).toHaveBeenCalledTimes(1)
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('«Salir del registro» sigue mandando a /auth', async () => {
+    act(() => root.render(<SalirDelRegistro volver={volver()} />))
+    clickPorTexto('Salir')
+    const salir = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Salir del registro',
+    )!
+    await act(async () => {
+      salir.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
+  })
+})

@@ -11,7 +11,7 @@ import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { Spinner } from '@/components/ui/spinner'
 import { LeasefyLogotype } from '@/components/brand'
-import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
+import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
 
@@ -37,10 +37,21 @@ export interface EleccionDePerfilProps {
   abiertaAlInicio?: boolean
   /**
    * Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo
-   * cerrarse y cómo avisar que está «Abriendo tu registro…» (ahí las
-   * tarjetas se esconden y la carga queda sola, centrada).
+   * cerrarse, cómo avisar que está «Abriendo tu registro…» (ahí las
+   * tarjetas se esconden y la carga queda sola, centrada) y cómo avisar si
+   * todavía se puede cambiar de perfil (el «Salir» lo ofrece sólo entonces).
    */
-  panelDeInmobiliaria: (cerrar: () => void, alAbrirRegistro: (abriendo: boolean) => void) => ReactNode
+  panelDeInmobiliaria: (
+    cerrar: () => void,
+    alAbrirRegistro: (abriendo: boolean) => void,
+    alSaberSiPuedeCambiar: (puede: boolean) => void,
+  ) => ReactNode
+  /**
+   * El formulario se abrió desde el asistente para corregir los datos de la
+   * inmobiliaria: el «Salir» ofrece volver al asistente en vez de volver a
+   * elegir perfil (la inmobiliaria ya existe; cambiar de perfil no se puede).
+   */
+  volverAlAsistente?: () => void
 }
 
 /**
@@ -61,7 +72,11 @@ export interface EleccionDePerfilProps {
  * Se guarda en segundo plano y sin retener a nadie: si falla, a lo sumo la
  * próxima entrada vuelve a este selector (Nico, 2026-09-07).
  */
-export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria }: EleccionDePerfilProps) {
+export function EleccionDePerfil({
+  abiertaAlInicio = false,
+  panelDeInmobiliaria,
+  volverAlAsistente,
+}: EleccionDePerfilProps) {
   const router = useRouter()
   const { user, elegirPerfil } = useAuth()
   // El admin puede apagar perfiles (/admin/registration-profiles). Falla
@@ -110,13 +125,36 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
 
   const cerrar = () => setAbierta(false)
 
+  // Lo dice el panel: mientras no exista la inmobiliaria.
+  const [puedeCambiarDePerfil, setPuedeCambiarDePerfil] = useState(false)
+
+  /*
+   * Qué ofrece «Salir» además de salir, según dónde está la persona (Nico,
+   * 01-10-2026): corrigiendo desde el asistente, volver al asistente; con el
+   * formulario abierto y todavía sin inmobiliaria, volver a elegir perfil; con
+   * las tarjetas a la vista ya está eligiendo perfil, así que sólo salir.
+   */
+  const volver: VolverDelRegistro | undefined = volverAlAsistente
+    ? {
+        etiqueta: 'Volver al asistente',
+        descripcion: 'Puedes volver al asistente sin cambiar nada.',
+        onVolver: volverAlAsistente,
+      }
+    : abierta && puedeCambiarDePerfil && !abriendoRegistro
+      ? {
+          etiqueta: 'Volver a elegir tu perfil',
+          descripcion: 'Puedes volver a elegir tu perfil.',
+          onVolver: cerrar,
+        }
+      : undefined
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="flex min-h-screen flex-col bg-bg">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
           <LeasefyLogotype className="h-6 w-auto" />
-          <SalirDelRegistro />
+          <SalirDelRegistro volver={volver} />
         </header>
 
         {/* flex-1 + justify-center: la escena se centra en el alto que sobra
@@ -213,7 +251,7 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
                     exit={{ opacity: 0, x: 32, transition: { duration: 0.16 } }}
                     className={cn('min-w-0', abriendoRegistro && 'mx-auto w-full max-w-md')}
                   >
-                    {panelDeInmobiliaria(cerrar, setAbriendoRegistro)}
+                    {panelDeInmobiliaria(cerrar, setAbriendoRegistro, setPuedeCambiarDePerfil)}
                   </motion.section>
                 ) : null}
               </AnimatePresence>

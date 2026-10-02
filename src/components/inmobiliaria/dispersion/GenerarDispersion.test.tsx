@@ -647,7 +647,7 @@ describe('02-10 — confirmar con la regla de oro', () => {
   });
 
   it('un 400 con campos (la selección se pasó del tope) dice el mensaje del back', async () => {
-    const mensaje = 'Puedes mandar hasta 10.000 propietarios a la vez.';
+    const mensaje = 'Puedes mandar hasta 50.000 propietarios a la vez.';
     const { descripcion } = await confirmarCon(
       new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
         statusCode: 400,

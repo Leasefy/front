@@ -18,6 +18,7 @@ import { ClockCounterClockwise } from '@phosphor-icons/react'
 
 import type { ActorType, TrazaEntry } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { relativeTime, type TranslateFn } from './ColaHumana'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
@@ -109,12 +110,11 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
   }
 
   if (error) {
+    // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar la traza:
+    // 500». Sin marco y más bajo: vive en la columna angosta del detalle.
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-        data-testid="traza-caso-error"
-      >
-        {t('inmobiliaria.ai.workspace.traza.error', { error })}
+      <div className="rounded-lg border border-border bg-card" data-testid="traza-caso-error">
+        <FalloDeCarga error={error} queEs="la traza del caso" enmarcado={false} className="py-8" />
       </div>
     )
   }

@@ -34,6 +34,7 @@ import { MonoLabel } from '@leasefy/cadence'
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { AccionSugerida } from './AccionSugerida'
 import { TrazaCaso } from './TrazaCaso'
 import {
@@ -133,13 +134,16 @@ export function WorkItemDetalle({
 
   // ── Error ─────────────────────────────────────────────────────────────────
   if (error) {
+    // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar el caso:
+    // 500». Con la salida a la cola: sobre un 404 o un 403 reintentar no sirve.
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        <div
-          className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-          data-testid="caso-error"
-        >
-          {t(`${NS}.error`, { error })}
+        <div data-testid="caso-error">
+          <FalloDeCarga
+            error={error}
+            queEs="el caso"
+            volverA={{ label: t(`${NS}.volverACola`), href: colaHref }}
+          />
         </div>
       </div>
     )

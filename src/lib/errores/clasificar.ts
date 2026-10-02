@@ -37,6 +37,7 @@ import {
   textoDeServicioNoDisponible,
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
+import { suenaARedCaida } from '@/lib/conexion/leer-el-error'
 
 export type TipoDeFallo =
   | 'noExiste'
@@ -82,6 +83,13 @@ export type TipoDeFallo =
    * `src/lib/conexion/estado-de-conexion.ts`.
    */
   | 'leasefyNoResponde'
+  /**
+   * 02-10-2026 · Un 4xx de una ACCIÓN (`accion` en el contexto): el servidor
+   * dijo que no a lo que se mandó —un dato que no cumple (400/422), algo que
+   * choca con lo que ya hay (409)—. No es «un problema nuestro»: la
+   * descripción dice qué está mal, con las palabras del back.
+   */
+  | 'rechazado'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -113,6 +121,15 @@ export interface Contexto {
    * es nuestro, no mandarte a pedir un permiso que ya tienes.
    */
   creoQueTengoAcceso?: boolean
+  /**
+   * 02-10-2026 · Lo que se estaba HACIENDO, en infinitivo («resolver el
+   * caso»). Sin esto se clasifica una LECTURA, como siempre. Con esto, un
+   * 4xx que no tiene su propio cartel (400, 409, 422…) no se titula «fue un
+   * problema nuestro»: se titula «No pudimos resolver el caso» y la
+   * descripción dice qué está mal. Lo demás (404, 403, 401, 429, red, 5xx)
+   * sigue igual.
+   */
+  accion?: string
 }
 
 /**
@@ -135,16 +152,8 @@ function haySesionViva(): boolean {
 /** Un mensaje que ES el status y nada más: lo que tiran los hooks del micro. */
 const SOLO_EL_STATUS = /^[1-5]\d\d$/
 
-/**
- * Lo que dice cada navegador cuando el pedido NO llegó a salir.
- * Chrome, Firefox, Safari y React Native, en ese orden.
- */
-const ASI_SUENA_LA_RED_CAIDA = [
-  'failed to fetch',
-  'networkerror',
-  'load failed',
-  'network request failed',
-]
+// Lo que dice cada navegador (y Node) cuando el pedido NO llegó a salir vive
+// en `src/lib/conexion/leer-el-error.ts` (`RED_CAIDA`): una sola lista.
 
 /** El texto del error, venga como Error o como string ya aplanado. */
 function textoDe(error: unknown): string | null {
@@ -187,8 +196,8 @@ function statusDe(error: unknown): number | null {
   // navegador. Sin esto, quedarse sin red se anunciaba como «fue un problema
   // nuestro» — y la rama `status === 0` de acá abajo era código muerto para
   // todo el panel.
-  const enMinuscula = texto.toLowerCase()
-  if (ASI_SUENA_LA_RED_CAIDA.some((senal) => enMinuscula.includes(senal))) return 0
+  // (Node dice «fetch failed»: también está en la lista.)
+  if (suenaARedCaida(texto)) return 0
 
   return null
 }
@@ -629,6 +638,29 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         ? `Espera ${cuantoEsperar(espera)} y vuelve a intentar — no es un error, es el sistema protegiéndose de una ráfaga.`
         : 'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
       sePuedeReintentar: true,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  /*
+   * 02-10-2026 · Un 4xx de una ACCIÓN. Hasta hoy un 400 o un 409 caían al
+   * cartel genérico de abajo —«No pudimos cargar esto · Fue un problema
+   * nuestro, no tuyo»—, que en una acción es doblemente falso: no se estaba
+   * cargando nada y el back sí dijo qué estaba mal. Sólo con `accion`: en una
+   * LECTURA un 400 sí delata un pedido mal armado por nosotros.
+   */
+  const accion = ctx.accion?.trim()
+  if (accion && status !== null && status >= 400 && status < 500) {
+    return {
+      tipo: 'rechazado',
+      titulo: `No pudimos ${accion}`,
+      descripcion: mensajeParaLaPersona(error, {
+        porDefecto: 'No se aceptó tal como está. Revisa los datos e intenta de nuevo.',
+        accion,
+      }),
+      // Mandar lo mismo otra vez da la misma respuesta: hay que cambiar algo.
+      sePuedeReintentar: false,
       status,
       mensajeOriginal,
     }

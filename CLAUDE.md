@@ -293,6 +293,15 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
   hooks que devuelven `{ ok: false, error }` conservan `error` (hay pantallas que deciden con
   `'not_configured'`) y suman `fallo` (ese `ApiError`, o el `TypeError` de red tal cual):
   `lib/hooks/ai/accion-del-micro.ts`. La pantalla pinta `mensajeParaLaPersona(r.fallo, …)`.
+- **Acciones que declaran su cuerpo (cola humana, 02-10-2026)**: `WorkItemAction.campos?: CampoDeLaAccion[]`
+  (`lib/api/work-item.ts`). Con `campos`, la cola (`ColaHumana`) y el detalle (`AccionSugerida`) pintan
+  `FormularioDeLaAccion` (valida con `ai/campos-de-la-accion.ts`, manda esas claves, un 400 con `campos` va a
+  cada campo); sin `campos`, el motivo de siempre (`{ reason }`).
+- **Acción vs lectura (02-10-2026)**: `clasificarFallo(e, { accion: 'resolver el caso' })` no titula un 4xx
+  como «problema nuestro» (tipo `rechazado`, la descripción dice qué está mal); sin `accion`, igual que
+  siempre. `mensajeDelFallo(e, porDefecto, accion?)`. `FalloDeCarga` no muestra referencia sin respuesta
+  (red, corte por tiempo). El «fetch failed» de Node es red caída: `RED_CAIDA` de `lib/conexion/leer-el-error.ts`
+  (la usa `clasificarFallo`) y `leerElError` da `status: 0` a ese `TypeError` (así lo lee el traductor).
 - **Configuración**: los topes de `UpdateAgencyDto`/`InviteMemberDto` y de los medios de pago tienen
   su espejo en `src/lib/configuracion/limites-de-la-inmobiliaria.ts` y `limites-de-los-medios-de-pago.ts`
   (sólo se mira lo que cambió: un dato viejo no impide guardar lo demás). `SeccionPerfil` toastea por
@@ -306,7 +315,10 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
   🔴 `FalloDeCarga` es para LECTURAS: `clasificarFallo` titula un 400/409 como «problema nuestro». En una
   ACCIÓN, el 4xx va por `mensajeParaLaPersona` (ver `GenerarCobrosDialog`). Los 400 de caja sin `campos`
   que son de un campo (`FECHA_FUTURA`, `FECHA_NO_VALIDA`, el 409 del número de factura repetido) van bajo
-  ese campo, no al banner.
+  ese campo, no al banner. **Extracto bancario** (Nico, 02-10 tarde): hasta 20.000 líneas y
+  ±$1.000.000.000.000 por línea (`lib/cobros/limites-del-extracto.ts`); una línea de más de
+  $2.000.000.000 SÍ viaja («columna más grande»): sin la migración del back se descarta allá y vuelve en
+  `avisos` + `descartadasPorValor`.
 
 ## Carga de inmuebles reanudable (T-0130)
 

@@ -37,8 +37,12 @@ export function isPermissionError(err: unknown): boolean {
  * 02-10-2026: delega en el traductor único (`lib/errores/traductor-de-errores`),
  * que aplica la regla de oro: «conexión» sólo si no hubo respuesta; un 5xx dice
  * que fue nuestro, con la referencia, y no el «Error interno del servidor.».
+ *
+ * `accion` (opcional, en infinitivo: «cancelar el contrato») es lo que se
+ * estaba haciendo: un 5xx dice «No pudimos cancelar el contrato: algo falló de
+ * nuestro lado…» en vez de la frase general. Sin ella, todo sigue igual.
  */
-export function mensajeDelFallo(err: unknown, porDefecto: string): string {
+export function mensajeDelFallo(err: unknown, porDefecto: string, accion?: string): string {
   // 01-10-2026: si se cayó una parte de Leasefy (503 `SERVICIO_NO_DISPONIBLE`)
   // o Leasefy entero no respondió, se dice eso —qué se cayó y que reintentar en
   // unos minutos sirve— y no el `message` crudo ni «Error 503». Ver
@@ -48,7 +52,7 @@ export function mensajeDelFallo(err: unknown, porDefecto: string): string {
   // T-0128: propietario sin documento / pagaré con datos incompletos.
   const delDocumento = mensajeDeDocumentoFaltante(err);
   if (delDocumento) return delDocumento;
-  return mensajeParaLaPersona(err, { porDefecto });
+  return mensajeParaLaPersona(err, { porDefecto, ...(accion?.trim() ? { accion: accion.trim() } : {}) });
 }
 
 /** El status HTTP del fallo, si vino del back; `null` si no se sabe. */

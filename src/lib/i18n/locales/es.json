@@ -1066,7 +1066,6 @@
         "vaciaHint": "Cuando un agente necesite tu decisión, aparece aquí.",
         "error": "No se pudo cargar la bandeja: {{error}}",
         "toastOk": "{{label}} · listo",
-        "toastFail": "No se pudo: {{error}}",
         "contador": "{{total}} en total",
         "contadorFiltrado": "{{visibles}} de {{total}}",
         "filtrarPorTipo": "Filtrar por tipo de decisión",
@@ -1122,7 +1121,6 @@
         "cancelar": "Cancelar",
         "toastOk": "Piloto en {{modo}} para todos los agentes",
         "toastParcial": "Piloto en {{modo}}, salvo: {{agentes}}",
-        "toastFail": "No se pudo cambiar el modo: {{error}}",
         "ahora": "Ahora mismo",
         "llamadas": "{{n}} llamada(s) en curso",
         "conciliando": "{{n}} depósito(s) conciliándose",
@@ -1156,7 +1154,6 @@
         "vacioHint": "Cuando el Piloto detecte un depósito, llame a alguien o escriba por WhatsApp, aparece aquí con sus pasos.",
         "vacioFiltro": "Nada con ese filtro",
         "vacioFiltroHint": "Hay {{n}} procesos en total; prueba con otro tipo o estado.",
-        "error": "No se pudieron cargar los procesos: {{error}}",
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
         "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
@@ -1194,7 +1191,6 @@
         "error": "No se pudo cargar la autonomía: {{error}}",
         "grupoAria": "Modo de autonomía de {{agente}}",
         "toastOk": "{{agente}} ahora en modo {{modo}}",
-        "toastFail": "No se pudo cambiar el modo: {{error}}",
         "modo": {
           "sombra": "Manual",
           "copiloto": "Copiloto",
@@ -7751,10 +7747,8 @@
         },
         "error": {
           "load": "No pudimos cargar las solicitudes.",
-          "resolve": "No se pudo guardar la resolución. Verifica la conexión e intenta de nuevo.",
           "retry": "Reintentar",
           "loadHint": "Se reintenta sola en un minuto. También puedes reintentar ahora.",
-          "reject": "No se pudo rechazar la solicitud. Verifica la conexión e intenta de nuevo.",
           "triage": "No se pudo tomar la solicitud."
         },
         "public": {
@@ -7926,8 +7920,6 @@
         "notFound": "Esta plantilla no está en el catálogo.",
         "error": {
           "load": "No se pudo cargar las plantillas. Intenta de nuevo.",
-          "saveDraft": "No se pudo guardar el borrador. Intenta de nuevo.",
-          "publish": "No se pudo publicar la plantilla. Intenta de nuevo.",
           "waStatus": "No se pudo obtener el estado de Meta. Intenta de nuevo.",
           "retry": "Reintentar"
         }
@@ -8161,7 +8153,6 @@
         "sala": {
           "eyebrow": "Agente · {{titulo}}",
           "irACola": "Por revisar",
-          "error": "No se pudo cargar la sala: {{error}}",
           "emptyTitle": "Aún no hay actividad",
           "emptyBody": "La actividad del agente aparecerá aquí en cuanto empiece a trabajar.",
           "pipelineTitle": "Casos por etapa",
@@ -8171,7 +8162,6 @@
           "feedEmpty": "Sin actividad reciente."
         },
         "traza": {
-          "error": "No se pudo cargar la traza: {{error}}",
           "emptyTitle": "Sin actividad registrada",
           "emptyBody": "Las acciones del agente y del equipo aparecerán aquí.",
           "detalles": "Detalles",
@@ -8226,7 +8216,6 @@
           "sinSeries": "Sin series para mostrar."
         },
         "detalle": {
-          "error": "No se pudo cargar el caso: {{error}}",
           "notFoundTitle": "Caso no encontrado",
           "notFoundBody": "Puede que ya se haya resuelto o que el enlace no sea válido.",
           "volverACola": "Volver a la cola",
@@ -8237,7 +8226,6 @@
           "migaCaso": "Caso"
         },
         "equipo": {
-          "error": "No se pudo cargar el equipo de agentes: {{error}}",
           "emptyTitle": "El equipo aún no reporta sus colas",
           "emptyBody": "Este panel se activa cuando los agentes empiecen a reportar su actividad.",
           "enColaAhora": "En cola ahora: {{n}}",

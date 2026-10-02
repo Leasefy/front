@@ -4,7 +4,6 @@ import { useState, useCallback, useId } from 'react';
 import {
   User,
   Envelope,
-  Phone,
   MapPin,
   Percent,
   Buildings,
@@ -65,9 +64,17 @@ interface AgenteFormModalProps {
   isLoading?: boolean;
 }
 
-/** Los campos del formulario que pueden traer un error del servidor. */
-type CampoDelFormulario = 'name' | 'email' | 'phone' | 'zone' | 'commissionSplit';
-const CAMPOS_DEL_FORMULARIO: readonly CampoDelFormulario[] = ['name', 'email', 'phone', 'zone', 'commissionSplit'];
+/**
+ * Los campos del formulario que pueden traer un error del servidor.
+ *
+ * 02-10-2026 · Sin teléfono: el modal lo pedía (obligatorio para un asesor) y
+ * NUNCA se guardaba. `InviteMemberDto` no tiene `phone`, `inviteUser` lo
+ * quitaba del cuerpo antes de mandarlo y la fila del equipo muestra el
+ * teléfono del USUARIO (su perfil), no uno escrito al invitar. Se le pedía a
+ * la persona un dato que se tiraba a la basura.
+ */
+type CampoDelFormulario = 'name' | 'email' | 'zone' | 'commissionSplit';
+const CAMPOS_DEL_FORMULARIO: readonly CampoDelFormulario[] = ['name', 'email', 'zone', 'commissionSplit'];
 
 /** Dónde se ven y se cambian los planes (el 402 del tope de asesores). */
 const PAGINA_DE_LOS_PLANES = '/panel/inmobiliaria/upgrade';
@@ -126,7 +133,6 @@ export function AgenteFormModal({
   // Shared fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [systemRole, setSystemRole] = useState<AgencyRole>(variant === 'agent' ? 'agente' : 'agente');
 
   // Agent-specific fields
@@ -170,7 +176,7 @@ export function AgenteFormModal({
   ];
 
   const resetForm = useCallback(() => {
-    setName(''); setEmail(''); setPhone('');
+    setName(''); setEmail('');
     setSystemRole(variant === 'agent' ? 'agente' : 'agente');
     setAgentRole('agent'); setZone(''); setSpecialization('all');
     setCommissionSplit(50); setMessage('');
@@ -183,13 +189,12 @@ export function AgenteFormModal({
     else if (name.trim().length > MAX_LARGO_NOMBRE_DEL_INVITADO) newErrors.name = MENSAJES_DE_LA_INMOBILIARIA.nombreDelInvitadoLargo;
     if (!email.trim()) newErrors.email = t('inmobiliaria.agente.errorEmailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t('inmobiliaria.agente.errorEmailInvalid');
-    if (showAgentFields && !phone.trim()) newErrors.phone = t('inmobiliaria.agente.errorPhoneRequired');
     if (showAgentFields && agentRole === 'agent' && (commissionSplit < 0 || commissionSplit > 100)) newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
     setErrors(newErrors);
     const primero = CAMPOS_DEL_FORMULARIO.find((c) => newErrors[c]);
     if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
     return Object.keys(newErrors).length === 0;
-  }, [name, email, phone, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
+  }, [name, email, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +214,6 @@ export function AgenteFormModal({
       }
 
       if (showAgentFields) {
-        invite.phone = phone || undefined;
         invite.zone = zone || undefined;
         invite.specialization = specialization.toUpperCase() as UserInvite['specialization'];
         if (agentRole === 'agent') invite.commissionSplit = commissionSplit;
@@ -316,18 +320,6 @@ export function AgenteFormModal({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          {/* Phone — always for agent, shown for member when agente */}
-          {(variant === 'agent' || showAgentFields) && (
-            <div className="space-y-2">
-              <label htmlFor={`${idDelFormulario}-phone`} className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                {t('inmobiliaria.agente.phone')} {showAgentFields ? '*' : ''}
-              </label>
-              <Input id={`${idDelFormulario}-phone`} aria-invalid={!!errors.phone || undefined} aria-describedby={`${idDelFormulario}-phone-error`} type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
-              <ErrorDelCampo id={`${idDelFormulario}-phone-error`} mensaje={errors.phone} className="mt-0" />
             </div>
           )}
 

@@ -1066,7 +1066,6 @@
         "vaciaHint": "When an agent needs your decision, it shows up here.",
         "error": "Could not load the inbox: {{error}}",
         "toastOk": "{{label}} · done",
-        "toastFail": "Failed: {{error}}",
         "contador": "{{total}} total",
         "contadorFiltrado": "{{visibles}} of {{total}}",
         "filtrarPorTipo": "Filter by decision type",
@@ -1122,7 +1121,6 @@
         "cancelar": "Cancel",
         "toastOk": "Pilot in {{modo}} for every agent",
         "toastParcial": "Pilot in {{modo}}, except: {{agentes}}",
-        "toastFail": "Couldn't change the mode: {{error}}",
         "ahora": "Right now",
         "llamadas": "{{n}} call(s) in progress",
         "conciliando": "{{n}} deposit(s) being reconciled",
@@ -1155,7 +1153,6 @@
         "vacioHint": "When the Pilot detects a deposit, calls someone or writes on WhatsApp, it shows up here with its steps.",
         "vacioFiltro": "Nothing with that filter",
         "vacioFiltroHint": "There are {{n}} processes in total; try another type or state.",
-        "error": "Couldn't load the processes: {{error}}",
         "sinFuente": "We couldn't query the processes",
         "sinFuenteHint": "The source didn't answer; that doesn't mean nothing happened.",
         "fuenteCaida": "{{fuente}} didn't answer: those processes aren't in this list.",
@@ -1193,7 +1190,6 @@
         "error": "Could not load autonomy: {{error}}",
         "grupoAria": "Autonomy mode for {{agente}}",
         "toastOk": "{{agente}} is now in {{modo}} mode",
-        "toastFail": "Could not change the mode: {{error}}",
         "modo": {
           "sombra": "Manual",
           "copiloto": "Copilot",
@@ -7717,10 +7713,8 @@
         },
         "error": {
           "load": "We couldn't load the requests.",
-          "resolve": "Couldn't save the resolution. Check your connection and try again.",
           "retry": "Retry",
           "loadHint": "It retries on its own in a minute. You can also retry now.",
-          "reject": "Couldn't reject the request. Check your connection and try again.",
           "triage": "Could not take the request."
         },
         "public": {
@@ -7892,8 +7886,6 @@
         "notFound": "This template is not in the catalog.",
         "error": {
           "load": "Could not load templates. Please try again.",
-          "saveDraft": "Could not save draft. Please try again.",
-          "publish": "Could not publish template. Please try again.",
           "waStatus": "Could not get Meta status. Please try again.",
           "retry": "Retry"
         }
@@ -8127,7 +8119,6 @@
         "sala": {
           "eyebrow": "Agent · {{titulo}}",
           "irACola": "To review",
-          "error": "Could not load the room: {{error}}",
           "emptyTitle": "No activity yet",
           "emptyBody": "The agent's activity will appear here as soon as it starts working.",
           "pipelineTitle": "Cases by stage",
@@ -8137,7 +8128,6 @@
           "feedEmpty": "No recent activity."
         },
         "traza": {
-          "error": "Could not load the trace: {{error}}",
           "emptyTitle": "No recorded activity",
           "emptyBody": "Agent and team actions will appear here.",
           "detalles": "Details",
@@ -8192,7 +8182,6 @@
           "sinSeries": "No series to show."
         },
         "detalle": {
-          "error": "Could not load the case: {{error}}",
           "notFoundTitle": "Case not found",
           "notFoundBody": "It may already be resolved, or the link is invalid.",
           "volverACola": "Back to the queue",
@@ -8203,7 +8192,6 @@
           "migaCaso": "Case"
         },
         "equipo": {
-          "error": "Could not load the agent team: {{error}}",
           "emptyTitle": "The team has not reported its queues yet",
           "emptyBody": "This panel activates once the agents start reporting their activity.",
           "enColaAhora": "In queue now: {{n}}",

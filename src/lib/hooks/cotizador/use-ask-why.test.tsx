@@ -152,7 +152,9 @@ describe('useAskWhy', () => {
     expect(result.current!.error?.code).toBe('network')
   })
 
-  it('Test 6 — on 400 error code=400 with message from body.error', async () => {
+  // 02-10-2026: el `error` del cuerpo viejo («invalid_variable») va en inglés y
+  // NO es para la persona: el mensaje es español (ver use-ask-why.sobre.test.tsx).
+  it('Test 6 — on 400 error code=400 with a Spanish message (never body.error)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'invalid_variable' }), { status: 400 }),
     )
@@ -165,7 +167,9 @@ describe('useAskWhy', () => {
     const err = result.current!.error
     expect(err?.code).toBe(400)
     if (err?.code === 400) {
-      expect(err.message).toBe('invalid_variable')
+      expect(err.message).not.toContain('invalid_variable')
+      expect(err.message).toBe(err.mensaje)
+      expect(err.mensaje).toMatch(/Revisa el valor/)
     }
   })
 

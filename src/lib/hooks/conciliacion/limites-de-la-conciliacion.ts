@@ -24,8 +24,8 @@ export const LARGO_MAXIMO_DEL_PROPIETARIO = 200
 /**
  * Las cifras son `Int` en la base (`OwnerSettlement.grossCop`, `commissionCop`,
  * `otherDeductionsCop`, `netCop`): por encima de 2.147.483.647 la escritura
- * revienta con un 500. El micro sólo pide `.int().nonnegative()`; el tope va
- * acá, en una cifra que se lee, por debajo del máximo de la columna.
+ * revienta con un 500. Desde el 02-10-2026 (ola de seguimiento) el micro topa
+ * igual, con la misma frase; acá se ataja antes de enviar.
  */
 export const MONTO_MAXIMO_DE_LA_LIQUIDACION = 2_000_000_000
 
@@ -67,7 +67,8 @@ export function erroresDeLaLiquidacion(
     if (!Number.isFinite(n) || n < 0) {
       errores[campo] = `${nombre} debe ser una cifra en pesos, sin signos.`
     } else if (Math.trunc(n) > MONTO_MAXIMO_DE_LA_LIQUIDACION) {
-      errores[campo] = `${nombre} no puede pasar de $${MONTO.format(MONTO_MAXIMO_DE_LA_LIQUIDACION)}.`
+      // Misma frase que el micro (`conciliacion-settlements.ts`, 02-10-2026).
+      errores[campo] = `${nombre} no puede pasar de $${MONTO.format(MONTO_MAXIMO_DE_LA_LIQUIDACION)}. Revisa que no sobren ceros.`
     }
   }
   return errores

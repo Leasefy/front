@@ -2871,8 +2871,8 @@ export interface UserInvite {
   name: string;
   role: AgencyRole;
   message?: string;
-  // Extended fields used by AgenteFormModal and ConfigUsuarios
-  phone?: string;
+  // Extended fields used by AgenteFormModal and ConfigUsuarios.
+  // Sin `phone` (02-10-2026): `InviteMemberDto` no lo tiene y nunca se guardó.
   zone?: string;
   specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
   commissionSplit?: number;

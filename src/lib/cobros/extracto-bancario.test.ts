@@ -123,21 +123,24 @@ describe('armarFilasDeExtracto', () => {
   });
 
   /*
-   * 🔴 02-10-2026 · espejo del tope del back (`movimientos_bancarios.valor_cop`
-   * es int4): una celda con ceros de más tumbaba el extracto ENTERO con un 500.
-   * Ahora esa línea se descarta al leer, con la misma frase del back, y el
-   * resto viaja. El tope exacto sí entra.
+   * 🔴 02-10-2026 · espejo del tope del back: una celda con ceros de más
+   * tumbaba el extracto ENTERO con un 500. Esa línea se descarta al leer, con
+   * la misma frase del back, y el resto viaja. El tope exacto sí entra.
+   * Ola de seguimiento (Nico, 02-10, tarde: «columna más grande»): el tope es
+   * ±$1.000.000.000.000, y un movimiento de $3.000.000.000 VIAJA (lo decide el
+   * back según su columna).
    */
-  it('🔴 una línea que no cabe (±$2.000.000.000) se descarta con la frase del back', () => {
+  it('🔴 una línea que no cabe (±$1.000.000.000.000) se descarta con la frase del back; una de $3.000.000.000 viaja', () => {
     const r = armarFilasDeExtracto(
       [
-        { Fecha: '03/09/2026', Detalle: 'PAGO PEREZ', Ref: '', Valor: '18.000.000.000' },
-        { Fecha: '03/09/2026', Detalle: 'TRASLADO', Ref: '', Valor: '-2.500.000.000' },
-        { Fecha: '03/09/2026', Detalle: 'TOPE', Ref: '', Valor: '2.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'PAGO PEREZ', Ref: '', Valor: '18.000.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TRASLADO', Ref: '', Valor: '-2.500.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TOPE', Ref: '', Valor: '1.000.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'VENTA APTO 1201', Ref: '', Valor: '3.000.000.000' },
       ],
       mapeo,
     );
-    expect(r.filas.map((f) => f.valorCop)).toEqual([2_000_000_000]);
+    expect(r.filas.map((f) => f.valorCop)).toEqual([1_000_000_000_000, 3_000_000_000]);
     expect(r.descartadas).toEqual([
       { fila: 2, motivo: MENSAJES_DEL_EXTRACTO.valorMaximo },
       { fila: 3, motivo: MENSAJES_DEL_EXTRACTO.valorMinimo },

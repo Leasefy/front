@@ -19,6 +19,12 @@ export interface ResultadoDeCarga {
   repetidas: number;
   salidas: number;
   descartadas: number;
+  /**
+   * 🔴 (02-10-2026) De las `descartadas`, las que pasaban de $2.000.000.000 y
+   * no se guardaron porque la columna del back todavía es int4 (falta su
+   * migración). La frase va en `avisos`. Opcional: un back de antes no lo manda.
+   */
+  descartadasPorValor?: number;
   /** Líneas nuevas que ya estaban pagadas por la pasarela: quedan ignoradas con su motivo. */
   yaPagadasPorPasarela: number;
   /** Entradas pendientes de conciliar en la agencia, después de esta carga. */

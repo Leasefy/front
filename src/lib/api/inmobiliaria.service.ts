@@ -2208,8 +2208,9 @@ export const inmobiliariaConfigApi = {
 
   async inviteUser(invite: UserInvite): Promise<AgencyInviteResult> {
     // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
-    // Backend DTO rejects: message (UI-only), phone (not in DTO)
-    const { message: _msg, phone: _phone, ...rest } = invite;
+    // Backend DTO rejects: message (UI-only). (El teléfono ya no se pide al
+    // invitar: `InviteMemberDto` no lo tiene y nunca se guardó.)
+    const { message: _msg, ...rest } = invite;
     const payload = {
       ...rest,
       role: invite.role.toUpperCase(),

@@ -48,6 +48,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
+import { tieneCampos } from './campos-de-la-accion'
+import { FormularioDeLaAccion } from './FormularioDeLaAccion'
 import {
   Table,
   TableBody,
@@ -265,7 +267,8 @@ function FilaDeCaso({
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
   const motivoId = `reason-${item.id}`
 
-  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+  /** Manda la acción; si sale bien, avisa y cierra el panel. Devuelve lo que dijo el micro. */
+  async function ejecutar(action: WorkItemAction, body?: Record<string, unknown>) {
     setBusyActionId(action.id)
     const res = await onAction(item, action, body)
     setBusyActionId(null)
@@ -274,7 +277,14 @@ function FilaDeCaso({
       setReasonForActionId(null)
       setReasonText('')
       setErrorDelMotivo(null)
-    } else {
+    }
+    return res
+  }
+
+  /** El flujo de siempre: sin cuerpo, o con el motivo. */
+  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+    const res = await ejecutar(action, body)
+    if (!res.ok) {
       // Con la regla de oro: el error del motivo a su campo (y el foco ahí);
       // al toast lo demás. Antes: «No se pudo: 403» o el código del micro.
       const { motivo, sueltos } = repartirFalloDeLaAccion(res.fallo, action.label, body?.reason !== undefined)
@@ -284,8 +294,11 @@ function FilaDeCaso({
     }
   }
 
+  /** La acción pide algo antes de mandarse: sus campos declarados o el motivo. */
+  const pideAlgo = (action: WorkItemAction) => tieneCampos(action) || Boolean(action.requiresReason)
+
   function handleClick(action: WorkItemAction) {
-    if (action.requiresReason) {
+    if (pideAlgo(action)) {
       // El primer clic despliega el motivo; el envío sale del panel de abajo.
       setReasonForActionId((cur) => (cur === action.id ? null : action.id))
       setErrorDelMotivo(null)
@@ -404,7 +417,7 @@ function FilaDeCaso({
                   size="sm"
                   hideArrow
                   disabled={busyActionId !== null}
-                  aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
+                  aria-pressed={pideAlgo(action) ? reasonForActionId === action.id : undefined}
                   onClick={() => handleClick(action)}
                 >
                   {action.kind === 'primary' && <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -417,8 +430,26 @@ function FilaDeCaso({
         </TableCell>
       </TableRow>
 
-      {/* El motivo, a todo el ancho y pegado a su caso. */}
-      {pendingReasonAction && (
+      {/* Lo que la acción pide (sus campos declarados, 02-10-2026), a todo el
+          ancho y pegado a su caso. */}
+      {pendingReasonAction && tieneCampos(pendingReasonAction) && (
+        <TableRow data-testid={`work-item-motivo-${item.id}`}>
+          <TableCell colSpan={columnas} className="bg-surface-muted/40">
+            <FormularioDeLaAccion
+              key={pendingReasonAction.id}
+              idBase={`accion-${item.id}-${pendingReasonAction.id}`}
+              action={pendingReasonAction}
+              onEnviar={(cuerpo) => ejecutar(pendingReasonAction, cuerpo)}
+              onCancelar={() => setReasonForActionId(null)}
+              deshabilitado={busyActionId !== null && busyActionId !== pendingReasonAction.id}
+            />
+          </TableCell>
+        </TableRow>
+      )}
+
+      {/* El motivo (una acción sin campos declarados), a todo el ancho y
+          pegado a su caso. */}
+      {pendingReasonAction && !tieneCampos(pendingReasonAction) && (
         <TableRow data-testid={`work-item-motivo-${item.id}`}>
           <TableCell colSpan={columnas} className="bg-surface-muted/40">
             <div className="space-y-1.5">

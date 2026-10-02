@@ -25,6 +25,7 @@ import {
   Plugs,
   CloudSlash,
   HourglassMedium,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -64,6 +65,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   servicioNoDisponible: Plugs,
   // Leasefy entero no contestó.
   leasefyNoResponde: CloudSlash,
+  // Un 4xx de una acción (`clasificarFallo` con `accion`): algo por corregir,
+  // no una alarma.
+  rechazado: WarningCircle,
 }
 
 export interface FalloDeCargaProps {
@@ -162,7 +166,15 @@ export function FalloDeCarga({
         : 'Apenas responda, prueba de nuevo.'
     Icono = HourglassMedium
   }
-  const conReferencia = !servicioCaido && !esperandoConexion
+  /*
+   * 02-10-2026 · Sin respuesta no hay referencia. La «referencia» de un fallo
+   * de red era «0-1432» (status 0 + la hora): un número que no está en ningún
+   * log, porque el pedido nunca llegó. Y la descripción de la red no pide
+   * escribirnos con nada. Lo mismo un corte por tiempo («TAR-1432»): tampoco
+   * hubo respuesta.
+   */
+  const sinRespuesta = fallo.tipo === 'red' || fallo.tipo === 'tardo' || fallo.status === 0
+  const conReferencia = !servicioCaido && !esperandoConexion && !sinRespuesta
   // Para volver a donde estaba después de entrar de nuevo.
   const rutaActual =
     typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'

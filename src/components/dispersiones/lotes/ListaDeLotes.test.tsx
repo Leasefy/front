@@ -516,7 +516,7 @@ describe('<ListaDeLotes> — los fallos (02-10)', () => {
   });
 
   it('armar con un 400 dice lo que escribió el back', async () => {
-    const mensaje = 'Puedes mandar hasta 10.000 dispersiones a la vez.';
+    const mensaje = 'Puedes mandar hasta 50.000 dispersiones a la vez.';
     const texto = await armarCon(
       new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
         statusCode: 400,

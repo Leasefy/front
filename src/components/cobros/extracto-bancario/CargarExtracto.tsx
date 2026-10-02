@@ -81,7 +81,7 @@ export function CargarExtracto({ onCargado }: Props) {
 
   const armadas = useMemo(() => armarFilasDeExtracto(crudas, mapeo), [crudas, mapeo]);
   const faltan = faltantesDelMapeo(mapeo);
-  /** 🔁 Espejo del tope del back: más de 5.000 líneas no se mandan. */
+  /** 🔁 Espejo del tope del back: más de 20.000 líneas no se mandan. */
   const demasiadas = errorDeLasFilasDelExtracto(armadas.filas.length);
 
   const leer = async (f: File) => {
@@ -248,7 +248,12 @@ export function CargarExtracto({ onCargado }: Props) {
       {resultado && (
         <Banner variant={resultado.nuevas > 0 ? 'success' : 'info'} title="Extracto cargado">
           {resultado.nuevas} nuevas · {resultado.repetidas} ya estaban · {resultado.salidas} salidas de plata
-          {resultado.descartadas > 0 ? ` · ${resultado.descartadas} descartadas por ilegibles` : ''}
+          {resultado.descartadas - (resultado.descartadasPorValor ?? 0) > 0
+            ? ` · ${resultado.descartadas - (resultado.descartadasPorValor ?? 0)} descartadas por ilegibles`
+            : ''}
+          {(resultado.descartadasPorValor ?? 0) > 0
+            ? ` · ${resultado.descartadasPorValor} sin cargar por su valor`
+            : ''}
           {resultado.yaPagadasPorPasarela > 0
             ? ` · ${resultado.yaPagadasPorPasarela} ya ${resultado.yaPagadasPorPasarela === 1 ? 'pagada' : 'pagadas'} por la pasarela`
             : ''}

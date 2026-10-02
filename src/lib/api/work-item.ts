@@ -39,6 +39,30 @@ export type WorkItemFlag = 'necesita_humano' | 'en_espera' | 't323'
 /** Mapped from domain urgency or amount thresholds. */
 export type Severidad = 'baja' | 'media' | 'alta' | 'critica'
 
+/**
+ * Un campo que la acción pide antes de mandarse (02-10-2026).
+ *
+ * El micro DECLARA qué lleva el cuerpo de la acción: «Resolver» una escalación
+ * pide `category` (una de cinco) y `resolution_text` (1 a 2.000 caracteres).
+ * Antes la cola mandaba `{ reason }` a todas las acciones con motivo y ésa
+ * respondía 400 siempre. Con `campos`, la cola pinta un formulario con esos
+ * campos, los valida con estos topes y manda el cuerpo con estas claves.
+ */
+export interface CampoDeLaAccion {
+  /** Clave en el cuerpo: `category`, `resolution_text`… */
+  nombre: string
+  /** Cómo se llama en pantalla, en español. */
+  etiqueta: string
+  tipo: 'opcion' | 'texto'
+  obligatorio: boolean
+  /** Sólo `opcion`. */
+  opciones?: Array<{ valor: string; etiqueta: string }>
+  /** Largo mínimo (texto, ya sin espacios a los lados). */
+  minimo?: number
+  /** Largo máximo (texto, ya sin espacios a los lados). */
+  maximo?: number
+}
+
 /** A real, already-existing backend action surfaced on the item. */
 export interface WorkItemAction {
   id: string
@@ -50,6 +74,12 @@ export interface WorkItemAction {
   bodyHint?: Record<string, 'string' | 'number' | 'enum' | 'empty'>
   requiresReason?: boolean
   perm?: string
+  /**
+   * Lo que el cuerpo lleva, declarado por el micro. Si viene, manda sobre
+   * `requiresReason` (el textarea del motivo de siempre); si no, sigue el
+   * flujo del motivo.
+   */
+  campos?: CampoDeLaAccion[]
 }
 
 /** How the agent's suggestion surfaces to the operator. */

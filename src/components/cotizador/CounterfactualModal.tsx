@@ -484,7 +484,8 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {error && error.code === 'timeout' && (
               <div className="mt-2 space-y-2">
                 <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
-                  {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
+                  {/* La frase del hook, ya en español y por el traductor (02-10-2026). */}
+                  {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
                   type="button"
@@ -500,7 +501,8 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {error && (error.code === 500 || error.code === 'network') && (
               <div className="mt-2 space-y-2">
                 <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
-                  {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
+                  {/* 5xx: «de nuestro lado» + referencia; la red: la conexión. */}
+                  {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
                   type="button"
@@ -515,7 +517,8 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             )}
             {error && error.code === 400 && (
               <p role="alert" className="mt-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
-                {t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
+                {/* Lo que el micro dijo que está mal, en español; nunca su `error` en inglés. */}
+                {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
               </p>
             )}
           </section>

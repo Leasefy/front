@@ -347,8 +347,10 @@ export function armarFilasDeExtracto(
       descartadas.push({ fila: numero, motivo: 'Valor en cero.' });
       return;
     }
-    // 🔴 Una línea que no cabe en la columna del back (int4) tumbaba el
-    // extracto entero con un 500: se descarta ESA, con la frase del tope.
+    // 🔴 Una celda con ceros de más tumbaba el extracto entero con un 500: se
+    // descarta ESA, con la frase del tope del back (±$1.000.000.000.000).
+    // Lo que pasa de $2.000.000.000 sí viaja: lo decide el back según su
+    // columna (Nico, 02-10: «columna más grande»).
     const fueraDeRango = errorDelValorDelMovimiento(valor);
     if (fueraDeRango) {
       descartadas.push({ fila: numero, motivo: fueraDeRango });

@@ -36,6 +36,7 @@ import type { AiHubResumenResponse } from '@/lib/api/agent-workspace'
 import type { AgenteId } from '@/lib/api/work-item'
 import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav'
 import { useI18n } from '@/lib/i18n'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { relativeTime, workspaceVocab, type TranslateFn } from './ColaHumana'
 
 const NS = 'inmobiliaria.ai.workspace.equipo'
@@ -200,12 +201,11 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
   }
 
   if (error) {
+    // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar el equipo
+    // de agentes: 500».
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-        data-testid="equipo-agentes-error"
-      >
-        {t(`${NS}.error`, { error })}
+      <div data-testid="equipo-agentes-error">
+        <FalloDeCarga error={error} queEs="el equipo de agentes" />
       </div>
     )
   }

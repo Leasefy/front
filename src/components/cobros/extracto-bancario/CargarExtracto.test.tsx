@@ -6,9 +6,12 @@
  * salía como «Error interno del servidor» sin referencia, y una celda con
  * ceros de más tumbaba el extracto ENTERO con un 500 de Postgres. Ahora:
  *
- *   · la línea que no cabe en la columna del back se descarta AL LEER, con la
- *     misma frase del back, y no viaja; un archivo de más de 5.000 líneas no
- *     se manda;
+ *   · la línea con ceros de más (±$1.000.000.000.000) se descarta AL LEER,
+ *     con la misma frase del back, y no viaja; un archivo de más de 20.000
+ *     líneas no se manda (Nico, 02-10, tarde);
+ *   · una línea de más de $2.000.000.000 SÍ viaja (columna más grande): si el
+ *     back todavía no la puede guardar, lo dice en `avisos` y en
+ *     `descartadasPorValor`, y la pantalla lo muestra;
  *   · un 400 dice lo que mandó el back; un 5xx, «de nuestro lado» con la
  *     referencia; sólo la falta de respuesta habla de la conexión.
  *
@@ -122,7 +125,7 @@ afterEach(async () => {
 
 describe('CargarExtracto — el espejo del tope del back', () => {
   it('🔴 la línea con ceros de más NO viaja: se descarta con la frase del back y el resto se carga', async () => {
-    archivo.filas = [fila('$ 1.800.000'), fila('18.000.000.000', 'SALDO LEIDO COMO VALOR')];
+    archivo.filas = [fila('$ 1.800.000'), fila('18.000.000.000.000', 'SALDO LEIDO COMO VALOR')];
     api.cargarExtracto.mockResolvedValue({
       nuevas: 1,
       repetidas: 0,
@@ -146,8 +149,35 @@ describe('CargarExtracto — el espejo del tope del back', () => {
     expect(filas.map((f) => f.valorCop)).toEqual([1_800_000]);
   });
 
-  it('🔴 más de 5.000 líneas no se mandan: se dice antes cómo dividirlo', async () => {
-    archivo.filas = Array.from({ length: 5_001 }, () => fila('$ 10.000'));
+  it('🔴 una línea de $3.000.000.000 viaja; si el back todavía no la puede guardar, la pantalla lo dice', async () => {
+    archivo.filas = [fila('$ 1.800.000'), fila('$ 3.000.000.000', 'VENTA APTO 1201')];
+    const aviso =
+      'Un movimiento de más de $2.000.000.000 no se cargó: todavía no podemos guardar valores tan grandes. Revisa que no sobren ceros; el resto del extracto sí entró.';
+    api.cargarExtracto.mockResolvedValue({
+      nuevas: 1,
+      repetidas: 0,
+      salidas: 0,
+      descartadas: 1,
+      descartadasPorValor: 1,
+      yaPagadasPorPasarela: 0,
+      pendientes: 1,
+      seguras: 0,
+      avisos: [aviso],
+    });
+    await montar();
+    await elegirArchivo();
+    await cargar();
+
+    const filas = api.cargarExtracto.mock.calls[0]![1] as { valorCop: number }[];
+    expect(filas.map((f) => f.valorCop)).toEqual([1_800_000, 3_000_000_000]);
+    expect(toastMock.info).toHaveBeenCalledWith(aviso);
+    const banner = document.body.textContent ?? '';
+    expect(banner).toContain('1 sin cargar por su valor');
+    expect(banner).not.toContain('descartadas por ilegibles');
+  });
+
+  it('🔴 más de 20.000 líneas no se mandan: se dice antes cómo dividirlo', async () => {
+    archivo.filas = Array.from({ length: 20_001 }, () => fila('$ 10.000'));
     await montar();
     await elegirArchivo();
 

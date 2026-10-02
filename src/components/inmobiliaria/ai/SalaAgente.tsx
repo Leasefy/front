@@ -20,6 +20,7 @@ import type { Icon } from '@phosphor-icons/react'
 import type { AgenteId, WorkItemEstado } from '@/lib/api/work-item'
 import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
 
@@ -121,12 +122,12 @@ function OverviewBody({
   }
 
   if (error) {
+    // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar la sala:
+    // 500». Lo que el hook guardó (el status, «Failed to fetch») lo clasifica
+    // `FalloDeCarga`: un 403 no se dice como una red caída.
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-        data-testid="sala-agente-error"
-      >
-        {t(`${WORKSPACE_NS}.sala.error`, { error })}
+      <div data-testid="sala-agente-error">
+        <FalloDeCarga error={error} queEs="la sala del agente" />
       </div>
     )
   }

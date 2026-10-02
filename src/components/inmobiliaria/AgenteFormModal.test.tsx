@@ -99,7 +99,6 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
   const PLACEHOLDER: Record<string, string> = {
     name: 'Juan Perez',
     email: 'juan@inmobiliaria.com',
-    phone: '+57 300 123 4567',
   };
   const campo = (sufijo: string) =>
     dialogo().querySelector<HTMLInputElement>(`input[placeholder="${PLACEHOLDER[sufijo]}"]`)!;
@@ -115,7 +114,6 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
     act(() => {
       escribir(campo('name'), 'Carlos Asesor');
       escribir(campo('email'), 'carlos@inmobiliaria.co');
-      escribir(campo('phone'), '3001234567');
     });
     await act(async () => {
       dialogo().querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -193,7 +191,6 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
     act(() => {
       escribir(campo('name'), 'a'.repeat(121));
       escribir(campo('email'), 'carlos@inmobiliaria.co');
-      escribir(campo('phone'), '3001234567');
     });
     await act(async () => {
       dialogo().querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -201,5 +198,54 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
     });
     expect(onSubmit).not.toHaveBeenCalled();
     expect(errorDe('name')?.textContent).toBe('El nombre puede tener hasta 120 caracteres.');
+  });
+});
+
+/**
+ * 02-10-2026 · El teléfono se pedía (obligatorio para un asesor) y NUNCA se
+ * guardaba: `InviteMemberDto` no tiene `phone` y `inviteUser` lo tiraba antes
+ * de mandar. Ya no se pide ni viaja.
+ */
+describe('AgenteFormModal — no pide el teléfono', () => {
+  const dialogo = () => document.body.querySelector('[role="dialog"]') as HTMLElement;
+
+  function escribir(input: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(input, valor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function montarCon(variant: 'agent' | 'member', onSubmit: (invite: unknown) => Promise<void>) {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root!.render(<AgenteFormModal isOpen onClose={vi.fn()} onSubmit={onSubmit} variant={variant} />);
+    });
+  }
+
+  it.each(['agent', 'member'] as const)('🔴 la variante «%s» no tiene campo de teléfono', (variant) => {
+    montarCon(variant, vi.fn().mockResolvedValue(undefined));
+    expect(dialogo().querySelector('input[type="tel"]')).toBeNull();
+    expect(dialogo().querySelector('[id$="-phone"]')).toBeNull();
+    expect(dialogo().textContent).not.toContain('inmobiliaria.agente.phone');
+  });
+
+  it.each(['agent', 'member'] as const)('🔴 «%s»: se envía sin teléfono y el cuerpo no lo lleva', async (variant) => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    montarCon(variant, onSubmit);
+    act(() => {
+      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="Juan Perez"]')!, 'Carlos Asesor');
+      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="juan@inmobiliaria.com"]')!, 'carlos@inmobiliaria.co');
+    });
+    await act(async () => {
+      dialogo().querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const invite = onSubmit.mock.calls[0][0] as Record<string, unknown>;
+    expect(invite).toMatchObject({ name: 'Carlos Asesor', email: 'carlos@inmobiliaria.co', role: 'agente' });
+    expect('phone' in invite).toBe(false);
+    expect(document.body.querySelector('[id$="-phone-error"]')).toBeNull();
   });
 });

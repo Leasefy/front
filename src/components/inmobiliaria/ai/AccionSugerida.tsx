@@ -28,6 +28,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { ACTION_KIND_VARIANT } from './ColaHumana'
 import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
+import { tieneCampos } from './campos-de-la-accion'
+import { FormularioDeLaAccion } from './FormularioDeLaAccion'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -53,7 +55,8 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
 
-  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+  /** Manda la acción; si sale bien, avisa y cierra el panel. Devuelve lo que dijo el micro. */
+  async function ejecutar(action: WorkItemAction, body?: Record<string, unknown>) {
     setBusyActionId(action.id)
     const res = await onAction(action, body)
     setBusyActionId(null)
@@ -62,7 +65,14 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       setReasonForActionId(null)
       setReasonText('')
       setErrorDelMotivo(null)
-    } else {
+    }
+    return res
+  }
+
+  /** El flujo de siempre: sin cuerpo, o con el motivo. */
+  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+    const res = await ejecutar(action, body)
+    if (!res.ok) {
       // Con la regla de oro: el error del motivo a su campo (y el foco ahí);
       // al toast lo demás. Antes: «No se pudo: 403» o el código del micro.
       const { motivo, sueltos } = repartirFalloDeLaAccion(res.fallo, action.label, body?.reason !== undefined)
@@ -72,8 +82,11 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
     }
   }
 
+  /** La acción pide algo antes de mandarse: sus campos declarados (02-10-2026) o el motivo. */
+  const pideAlgo = (action: WorkItemAction) => tieneCampos(action) || Boolean(action.requiresReason)
+
   function handleClick(action: WorkItemAction) {
-    if (action.requiresReason) {
+    if (pideAlgo(action)) {
       // First click reveals the reason input; submit happens from the panel.
       setReasonForActionId((cur) => (cur === action.id ? null : action.id))
       setErrorDelMotivo(null)
@@ -120,8 +133,23 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
         )}
       </div>
 
-      {/* Reason input (revealed by a requiresReason action) */}
-      {pendingReasonAction && (
+      {/* Los campos que la acción declara (02-10-2026): «Resolver» pide la
+          categoría y el texto de la resolución, no un motivo. */}
+      {pendingReasonAction && tieneCampos(pendingReasonAction) && (
+        <div className="rounded-lg border border-border p-2">
+          <FormularioDeLaAccion
+            key={pendingReasonAction.id}
+            idBase={`accion-sugerida-${pendingReasonAction.id}`}
+            action={pendingReasonAction}
+            onEnviar={(cuerpo) => ejecutar(pendingReasonAction, cuerpo)}
+            onCancelar={() => setReasonForActionId(null)}
+            deshabilitado={disabled || (busyActionId !== null && busyActionId !== pendingReasonAction.id)}
+          />
+        </div>
+      )}
+
+      {/* Reason input (revealed by a requiresReason action without declared fields) */}
+      {pendingReasonAction && !tieneCampos(pendingReasonAction) && (
         <div className="space-y-1.5 rounded-lg border border-border p-2">
           <label className="text-[11px] text-muted-foreground" htmlFor="accion-sugerida-reason">
             {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
@@ -187,7 +215,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               size="sm"
               hideArrow
               disabled={disabled || busyActionId !== null}
-              aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
+              aria-pressed={pideAlgo(action) ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}

@@ -115,7 +115,9 @@ describe('Generar liquidación — lo que no sale', () => {
     await abrirYLlenar('25000000000')
     await generar()
     expect(liq.generateSettlement).not.toHaveBeenCalled()
-    expect($('#liq-gross-error').textContent).toBe('El canon recaudado no puede pasar de $2.000.000.000.')
+    expect($('#liq-gross-error').textContent).toBe(
+      'El canon recaudado no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    )
     expect($('#liq-gross').getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe($('#liq-gross'))
     expect(toasts.error).toEqual([])

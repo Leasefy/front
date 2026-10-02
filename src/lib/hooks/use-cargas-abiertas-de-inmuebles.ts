@@ -45,10 +45,12 @@ export function useCargasAbiertasDeInmuebles(clave: unknown): {
         if (!vigente) return
         const ordenados = lotesParaRetomar(ls)
         setLotes(ordenados)
+        // T-0131: también mientras el servidor CREA (el avance cambia solo).
         const hayJob = ordenados.some(
           (l) =>
-            (l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO') &&
-            etapaDeLaCarga(l) === 'revision',
+            ((l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO') &&
+              etapaDeLaCarga(l) === 'revision') ||
+            (etapaDeLaCarga(l) === 'creando' && l.estado !== 'FALLIDO'),
         )
         if (hayJob) timeoutId = setTimeout(() => setRecarga((n) => n + 1), INTERVALO_MS)
       } catch {

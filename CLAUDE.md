@@ -222,14 +222,33 @@ congelado en `.orchestration/tasks/T-0130-migracion-inmuebles-reanudable/contrac
   leído sin subir (`ImportWizard`). Activar y la revisión son reanudables y ya no lo piden.
 - **Tarjeta «Tienes una carga a medias»** (`CargasAMedias.tsx` + `use-cargas-abiertas-de-inmuebles.ts`): en
   CUALQUIER paso del asistente, con o sin archivo leído; Continuar / Reintentar / Descartar (con confirmación).
-- **Activar de a 50** (`activarLoteCompleto`, `maximo: 50`): «X de Y creadas» sale de `progreso`; las filas
-  `fallidas` no frenan el resto, se listan con su motivo y «Reintentar las fallidas» las libera (todas juntas:
-  el back no libera una por una). Con fallidas NO se muestra «Importación completada».
+- **Crear** (T-0131): ya NO hay bucle de activación en el navegador — ver «Carga de inmuebles en 4 pasos» abajo.
 - **Sesión** (`asegurarSesionVigente`, `client.ts`): antes de cada tanda/llamada/sondeo se renueva el token si le
   queda < 90 s. Con la sesión muerta se corta y se dice que lo subido está guardado; al volver a entrar la
   tarjeta lo ofrece. No se guarda nada sensible en el navegador (sólo la clave de idempotencia, un UUID).
 - **409** `LOTE_INCOMPLETO` / `LOTE_EN_PROCESO` / `LOTE_FALLIDO` / `LOTE_NO_REINTENTABLE` / `LOTE_YA_CERRADO` /
   `TOTAL_DEL_ARCHIVO_DISTINTO` se traducen en `lib/mensajeDeCarga.ts`.
+
+## Carga de inmuebles en 4 pasos (T-0131)
+
+El asistente (`ImportWizard`) muestra SIEMPRE cuatro pasos: **1 Subir y mapear columnas** (elegir método, subir
+archivo, mapear; el análisis local corre al salir del mapeo con `prepararFilas`, sin espera, y pone los títulos
+sugeridos) · **2 Ubicar direcciones** (automático tras subir; guarda de a 50) · **3 Revisar lo que falta** (UNA lista de
+filas por revisar + herramientas en bloque de T-0129 + «N listas para crear» + aviso del canon por confirmar) ·
+**4 Crear todas**. El paso visible sale de `fase` del lote (`pasoVisibleDeLaCarga`); el indicador es sólo informativo.
+La «Revisión con IA» (espera inventada de 2 s) se eliminó.
+
+- **«Crear todas»** = UN `POST lotes/:lote/crear` (202) que encola el proceso del servidor; no hay bucle en el navegador.
+  La vista de progreso sondea `GET lotes/:lote` cada 4 s mientras `fase === 'CREANDO'` y lee `creacion`
+  (`creadas`/`fallidas`/`pendientes`/`total`): «1.850 de 2.000 creadas», «Puedes cerrar esta página: las seguimos creando».
+  Las fallidas se piden a `GET filas?estado=LISTO` (traen `errorDeActivacion`) y SÓLO se reintentan con
+  `POST lotes/:lote/reintentar` (nunca llamando `crear` otra vez: `crear` con sólo fallidas = 409 `NADA_PARA_CREAR`).
+- **Al volver** (tarjeta de cargas / muro): `CREANDO` abre directo la vista de progreso; `TERMINADA` sin fallidas abre el
+  resumen; `LISTA` con `creacion.creadas > 0` (una fila corregida después de terminar) abre el paso 4 con «Crear las N que faltan».
+  `GET lotes` deja una carga TERMINADA 24 h: `CargasAMedias` la dibuja aparte («Terminada: X creadas, Y fallidas»), no «a medias».
+- **409** `LOTE_INCOMPLETO` (aún se sube, ubica o revisa) y `NADA_PARA_CREAR` se traducen en `lib/mensajeDeCarga.ts`.
+- `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
+- `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
 
 ## Agente de proyecto y skills
 

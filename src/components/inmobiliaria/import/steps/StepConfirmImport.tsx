@@ -5,7 +5,6 @@ import {
   useContext,
   useEffect,
   useCallback,
-  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
@@ -35,7 +34,12 @@ import { resumenDeLecturaDeInmuebles } from "../lib/resumenDeLectura";
 import type { ImportProperty } from "../lib/importTypes";
 import { subirPorTandas, SubidaInterrumpida } from "../lib/subirPorTandas";
 import { ubicarPorTandas, UbicacionInterrumpida } from "../lib/ubicarPorTandas";
-import { etapaDeLaCarga, ubicacionCompleta } from "../lib/describirCargaAbierta";
+import {
+  etapaDeLaCarga,
+  pasoVisibleDeLaCarga,
+  ubicacionCompleta,
+  type PasoVisible,
+} from "../lib/describirCargaAbierta";
 import {
   guardarClaveDeCarga,
   guardarClaveEnCurso,
@@ -49,11 +53,6 @@ import {
 import { huellaDelArchivo } from "../lib/huellaDelArchivo";
 import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
 import { generarIdempotencyKey } from "../lib/idempotencia";
-import {
-  activarLoteCompleto,
-  ActivacionInterrumpida,
-  type ProgresoDeActivacion,
-} from "../lib/activarLoteCompleto";
 import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
 import { traerFotoComoArchivo } from "@/lib/inmuebles/enlaces.service";
@@ -79,7 +78,6 @@ import {
   type FilaDeImportacion,
   type ResolverInmuebleDto,
   type ResumenLoteInmuebles,
-  type FilaOmitida,
   type EstadoDeLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
 
@@ -107,6 +105,10 @@ import {
  */
 
 const POR_PAGINA = 25;
+const MENSAJE_CREANDO_NO_SE_EDITA =
+  "Se están creando las propiedades; espera a que termine para editar.";
+/** T-0131 — cada cuánto se pregunta cómo va la creación en el servidor. */
+const INTERVALO_DE_CREACION_MS = 4_000;
 
 /**
  * Lo que la pantalla de cierre puede afirmar de la comisión: sólo lo que el
@@ -133,6 +135,7 @@ export function StepConfirmImport({
   onSalir,
   onContinuar,
   onOcupado,
+  onPasoVisible,
 }: ImportStepProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -156,13 +159,6 @@ export function StepConfirmImport({
   const selectedProperties = properties.filter(
     (p) => p.hasErrors || p.selected,
   );
-  const excludedCount = properties.filter(
-    (p) => !p.selected && !p.hasErrors,
-  ).length;
-  const acceptedSuggestionsCount = properties.reduce(
-    (sum, p) => sum + p.suggestions.filter((s) => s.accepted === true).length,
-    0,
-  );
   // Las que entran PENDIENTES: van al back con lo que les falta a la vista.
   const remainingErrorsCount = properties.filter((p) => p.hasErrors).length;
 
@@ -178,7 +174,6 @@ export function StepConfirmImport({
       bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase())),
     ),
   ];
-  const importCount = importables.length;
   /*
    * TODO lo seleccionado viaja al back, también lo que le falta algo. Antes
    * las «bloqueadas» se separaban acá y no se mandaban: 31 filas del archivo
@@ -235,7 +230,7 @@ export function StepConfirmImport({
   const [reintentando, setReintentando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* El aviso nativo de cerrar la pestaña, SÓLO mientras algo vive en el navegador. */
-  useAvisoAlSalir(subiendo || ubicando);
+  const hayFotosPorEnlace = properties.some((p) => (p.imagenes?.length ?? 0) > 0);
   const [lote, setLote] = useState<string | null>(
     // El ?lote= (la notificación) gana; sin él, el lote que el wizard guardó
     // en su estado — sobrevive a «Anterior»/«Siguiente» y a la tarjeta de
@@ -296,6 +291,8 @@ export function StepConfirmImport({
   const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(
     null,
   );
+  /* T-0129 — cuántas de las listas se crean con el canon por confirmar. */
+  const [sinCanon, setSinCanon] = useState(0);
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -318,8 +315,12 @@ export function StepConfirmImport({
    */
   const [otrasCargas, setOtrasCargas] = useState<EstadoDeLoteInmuebles[] | null>(null);
 
-  // ── Phase 3: activation ──────────────────────────────────────────────
-  const [activando, setActivando] = useState(false);
+  // ── Phase 3: «Crear todas» (T-0131) ─────────────────────────────────
+  const [iniciandoCreacion, setIniciandoCreacion] = useState(false);
+  /* El paso 4 antes de tocar «Crear todas»: se llega con «Continuar» desde la revisión. */
+  const [irACrear, setIrACrear] = useState(false);
+  /* Con una carga TERMINADA que aún tiene filas por revisar: volver a la lista. */
+  const [verRevisionDeNuevo, setVerRevisionDeNuevo] = useState(false);
   const [revisando, setRevisando] = useState(false);
   /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
      minutos, y un botón que sólo gira no dice si avanza. */
@@ -328,40 +329,12 @@ export function StepConfirmImport({
      llamadas, y en estado sólo para que el botón diga «Deteniendo…». */
   const detenerRevisionRef = useRef(false);
   const [deteniendoRevision, setDeteniendoRevision] = useState(false);
-  const [resultadoActivacion, setResultadoActivacion] = useState<{
-    activados: number;
-    /* Los que ya existían por «Código» y se re-apuntaron. La pantalla final
-       los cuenta: ver el mensaje de «Importación completada». */
-    reusados: number;
-    /* Mandatos que quedaron con varios dueños y su reparto (Nico, 2026-09-13). */
-    mandatosConVariosDuenos?: number;
-    omitidas: FilaOmitida[];
-  } | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  /*
-   * 🔴 Lo que va pasando mientras se activa. El 2026-09-11 Nico miró
-   * «Activando…» girando cinco minutos y preguntó si se había dañado: iban
-   * 1.809 de 2.824 a 40 por minuto, y un lote de inmuebles nuevos tarda
-   * ~1,5 s por fila contra la base remota. Sin un número, 40 minutos de
-   * espera son idénticos a un cuelgue. Con el número, la persona sabe que
-   * avanza, cuánto falta, y que puede parar.
-   */
-  const [progresoDeActivacion, setProgresoDeActivacion] =
-    useState<ProgresoDeActivacion | null>(null);
-  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra. */
-  /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
-     sólo para que el botón diga «Deteniendo…». */
-  const detenerActivacionRef = useRef(false);
-  const [deteniendoActivacion, setDeteniendoActivacion] = useState(false);
 
   /**
    * Las fotos de los inmuebles traídos por ENLACE se suben después de que el
    * lote los creó (ver `subirFotosDelLote`). `fotosSubidas` guarda a qué
    * inmuebles ya se les subió, para no repetir en una segunda tanda.
    */
-  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra
-     mientras la primera llamada todavía no volvió. */
-  const totalAActivarRef = useRef(0);
   const [fotosProgreso, setFotosProgreso] = useState<{ hechos: number; total: number } | null>(null);
   const [fotosSubidas] = useState(() => new Set<string>());
   const subirFotosDeLosActivados = useCallback(
@@ -467,49 +440,6 @@ export function StepConfirmImport({
    * agotado nadie está mirando el job, y el muro no puede quedar clavado en
    * «ocupado» para siempre.
    */
-  /*
-   * ── Cuánto va y cuánto falta de la activación ──────────────────────────
-   *
-   * Mismo criterio que la geocodificación: el ritmo REAL de esta corrida, no
-   * una constante. Y acá importa más, porque el ritmo cambia solo: las filas
-   * cuyo inmueble YA existe se re-apuntan a ~170/min, y las que crean uno
-   * nuevo van a ~40/min (13 idas y vueltas a la base por fila). Una
-   * estimación hecha con los primeros segundos prometería diez minutos para
-   * una espera de cuarenta.
-   */
-  const hechasEnActivacion = progresoDeActivacion
-    ? progresoDeActivacion.progreso
-      ? // T-0130: el servidor dice cuántas lleva el LOTE (también las de antes
-        // del corte), no sólo las de esta corrida.
-        progresoDeActivacion.progreso.activadas ?? 0
-      : progresoDeActivacion.activados +
-        progresoDeActivacion.reusados +
-        progresoDeActivacion.omitidas
-    : 0;
-  /* El total es lo que HAY que hacer: lo hecho más lo que el back dice que
-     queda. Sale del propio servidor en cada vuelta, así que una fila que
-     aparece o se va no desincroniza la barra. El `listos` del arranque es el
-     respaldo para la primera llamada, cuando todavía no hay respuesta. */
-  const totalDeActivacion = progresoDeActivacion
-    ? progresoDeActivacion.progreso
-      ? // «X de Y creadas»: lo creado más lo que falta crear (las fallidas y las
-        // que faltan datos no entran: no se van a crear en esta pasada).
-        (progresoDeActivacion.progreso.activadas ?? 0) +
-        (progresoDeActivacion.progreso.listas ?? 0)
-      : hechasEnActivacion + progresoDeActivacion.restantes
-    : totalAActivarRef.current;
-
-  /**
-   * Pide parar la activación. No corta a mitad de una tanda: la que está en
-   * vuelo termina y el bucle sale en la siguiente vuelta. Lo que esa tanda
-   * activó queda activado — el back no deshace filas— y volver a tocar
-   * «Activar» sigue exactamente donde quedó.
-   */
-  const detenerActivacion = useCallback(() => {
-    detenerActivacionRef.current = true;
-    setDeteniendoActivacion(true);
-  }, []);
-
   /**
    * Pide parar la subida. No corta a mitad de una tanda: la que está en vuelo
    * llega y el bucle sale en la siguiente vuelta. Lo que llegó queda guardado y
@@ -536,7 +466,7 @@ export function StepConfirmImport({
    * de cargas — justo cuando puede irse tranquila. Sólo congela lo que vive acá.
    */
   const hayOperacionEnVuelo =
-    subiendo || ubicando || activando || revisando || descartandoLote || reintentando;
+    subiendo || ubicando || iniciandoCreacion || revisando || descartandoLote || reintentando;
   const detenerLoQueCorre = ubicando ? detenerUbicacion : detenerSubida;
   useEffect(() => {
     /*
@@ -562,14 +492,13 @@ export function StepConfirmImport({
    * bucle siguió corriendo detrás, en un componente que ya no existía, y 26
    * minutos después mandó datos viejos. Un bucle que nadie ve no puede seguir
    * mandando cosas al servidor. Subir y ubicar se cortan en la siguiente vuelta
-   * (guardando lo hecho: es reanudable); activar y revisar también.
+   * (guardando lo hecho: es reanudable); la revisión también.
    */
   useEffect(
     () => () => {
       detenerSubidaRef.current = true;
       detenerUbicacionRef.current = true;
       detenerRevisionRef.current = true;
-      detenerActivacionRef.current = true;
     },
     [],
   );
@@ -601,7 +530,7 @@ export function StepConfirmImport({
 
   const refrescarRevision = useCallback(async (elLote: string, pag = 1) => {
     try {
-      const [r, p, e] = await Promise.all([
+      const [r, p, e, m] = await Promise.all([
         inmueblesImportacionApi.resumen(elLote),
         inmueblesImportacionApi.filas(elLote, {
           pagina: pag,
@@ -611,8 +540,11 @@ export function StepConfirmImport({
         // T-0130: «X de Y creadas» y las fallidas salen del lote, no de las filas.
         // Si esta lectura falla no tumba la revisión.
         inmueblesImportacionApi.estadoDeLote(elLote).catch(() => null),
+        // El aviso del canon por confirmar es informativo: si no llega, no se afirma nada.
+        inmueblesImportacionApi.motivos(elLote).catch(() => null),
       ]);
       if (e) setEstadoManual(e);
+      setSinCanon(m?.sinCanon ?? 0);
       setResumenLote(r);
       setPendientes(p.filas);
       setTotalPendientes(p.total);
@@ -678,13 +610,127 @@ export function StepConfirmImport({
 
   // El lote pasó a LISTO (por el sondeo, o porque llegamos por el ?lote= de
   // la notificación con el batch ya terminado): recién ahí tiene sentido
-  // cargar la lista de trabajo real.
+  // cargar la lista de trabajo real. T-0131: también al llegar a un lote
+  // TERMINADA, y al terminar de crear (para contar lo que quedó por revisar).
+  const faseDelLote = estadoLote?.fase;
   useEffect(() => {
     if (!lote) return;
-    if (estadoLote?.estado === "LISTO") {
+    if (faseDelLote === "CREANDO") return;
+    if (
+      estadoLote?.estado === "LISTO" ||
+      faseDelLote === "LISTA" ||
+      faseDelLote === "TERMINADA"
+    ) {
       refrescarRevision(lote);
     }
-  }, [lote, estadoLote?.estado, refrescarRevision]);
+  }, [lote, estadoLote?.estado, faseDelLote, refrescarRevision]);
+
+  /*
+   * ── T-0131 · mientras el servidor CREA ───────────────────────────────────
+   *
+   * La creación es UN proceso del servidor: la página no hace nada salvo mirar
+   * cómo va. El sondeo del lote (`useEstadoDeLoteInmuebles`) se detiene en
+   * LISTO, que puede ser el estado de este job, así que acá hay uno propio que
+   * corre sólo mientras `fase === CREANDO` y entrega el estado completo.
+   */
+  const creandoEnElServidor = faseDelLote === "CREANDO";
+  /* El proceso se rindió tras sus reintentos (`FALLIDO` + `error`): nadie lo está creando. */
+  const creacionFallida = creandoEnElServidor && estadoLote?.estado === "FALLIDO";
+  const creandoActivo = creandoEnElServidor && !creacionFallida;
+  /*
+   * Las fotos por ENLACE se suben desde ESTA pestaña cuando termina la creación
+   * (el back no ve archivos): con ellas pendientes —esperando o subiendo—,
+   * cerrar la pestaña las pierde. El aviso nativo sigue activo hasta que acaban.
+   */
+  useAvisoAlSalir(
+    subiendo ||
+      ubicando ||
+      fotosProgreso !== null ||
+      (hayFotosPorEnlace && (iniciandoCreacion || creandoActivo)),
+  );
+  useEffect(() => {
+    if (!lote || !creandoActivo) return;
+    let vigente = true;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const vuelta = async () => {
+      try {
+        await asegurarSesionVigente();
+        const e = await inmueblesImportacionApi.estadoDeLote(lote);
+        if (!vigente) return;
+        setEstadoManual(e);
+        if (e.fase !== "CREANDO" || e.estado === "FALLIDO") return;
+      } catch (err) {
+        // Sin sesión no hay a quién preguntarle; el resto es un corte pasajero.
+        if (esSesionMuerta(err)) return;
+        // El lote ya no existe (se descartó en otra pestaña): se vuelve al inicio.
+        if (err instanceof ApiError && err.status === 404) {
+          toast.error("Esta carga ya no existe", {
+            description: "Se descartó o se cerró. Empieza de nuevo cuando quieras.",
+          });
+          updateState({ loteRetomado: null, subidaRetomada: null });
+          if (onSalir) onSalir();
+          else router.push("/panel/inmobiliaria/inmuebles/importar");
+          return;
+        }
+      }
+      if (vigente) timeoutId = setTimeout(() => void vuelta(), INTERVALO_DE_CREACION_MS);
+    };
+    timeoutId = setTimeout(() => void vuelta(), INTERVALO_DE_CREACION_MS);
+    return () => {
+      vigente = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [lote, creandoActivo, updateState, onSalir, router]);
+
+  /* Lo que ya se creó o falló, según el lote (nunca según lo que hay en pantalla). */
+  const creacion = estadoLote?.creacion ?? null;
+  const nFallidas = creacion?.fallidas ?? estadoLote?.fallidas ?? 0;
+  const nCreadas = creacion?.creadas ?? estadoLote?.activadas ?? 0;
+  const terminadaSinFallas =
+    faseDelLote === "TERMINADA" && nFallidas === 0 && !verRevisionDeNuevo;
+  const terminadaConFallas =
+    faseDelLote === "TERMINADA" && nFallidas > 0 && !verRevisionDeNuevo;
+  /*
+   * Las que de verdad se pueden crear: `listas` ya descuenta las fallidas (que
+   * siguen LISTO pero sólo se retoman con «Reintentar», nunca con `crear`).
+   */
+  const listasParaCrear = estadoLote?.listas ?? resumenLote?.listos ?? 0;
+  /* Ya se crearon algunas (el lote volvió a LISTA porque se corrigió una fila). */
+  const yaSeCrearonAlgunas = (creacion?.creadas ?? 0) > 0;
+
+  /*
+   * Volver a una carga que ya creó algunas y tiene más listas (una fila corregida
+   * después de TERMINADA): se cae directo en el paso 4 con «Crear las N que
+   * faltan». Sólo la PRIMERA vez que se lee el lote: quien está corrigiendo no
+   * puede ser arrastrado fuera de la lista a mitad.
+   */
+  const entradaResuelta = useRef(false);
+  useEffect(() => {
+    if (entradaResuelta.current || !estadoLote) return;
+    entradaResuelta.current = true;
+    if (
+      estadoLote.fase === "LISTA" &&
+      (estadoLote.creacion?.creadas ?? 0) > 0 &&
+      (estadoLote.listas ?? 0) > 0
+    ) {
+      setIrACrear(true);
+    }
+  }, [estadoLote]);
+  const cierreAplicado = useRef<string | null>(null);
+
+  /* En cuál de los 4 pasos visibles va la carga: el asistente lo dibuja en su indicador. */
+  const pasoVisible: PasoVisible = subiendo
+    ? 1
+    : ubicando
+      ? 2
+      : irACrear
+        ? 4
+        : verRevisionDeNuevo
+          ? 3
+          : pasoVisibleDeLaCarga(lote ? estadoLote : null);
+  useEffect(() => {
+    onPasoVisible?.(pasoVisible);
+  }, [pasoVisible, onPasoVisible]);
 
   /*
    * ── Subir el archivo ─────────────────────────────────────────────────────
@@ -927,10 +973,15 @@ export function StepConfirmImport({
       setEstadoManual(r.lote);
       setUbicacionEnPausa(false);
       setReinicioDelSondeo((n) => n + 1);
-      if (r.accion === "FILAS_LIBERADAS") {
+      if (!omitirUbicacion && r.lote.fase === "CREANDO") {
+        // T-0131: reintentar las fallidas re-encola la creación en el servidor.
+        toast.success("Seguimos creando las que fallaron", {
+          description: "Puedes cerrar esta página: las seguimos creando.",
+        });
+      } else if (r.accion === "FILAS_LIBERADAS") {
         toast.success(
           `${r.filasLiberadas} ${r.filasLiberadas === 1 ? "fila liberada" : "filas liberadas"}`,
-          { description: "Toca «Activar» para volver a intentar sólo esas." },
+          { description: "Quedaron listas: toca «Continuar» y «Crear todas» para intentarlas de nuevo." },
         );
         await refrescarRevision(lote, pagina);
       }
@@ -948,7 +999,10 @@ export function StepConfirmImport({
       await inmueblesImportacionApi.resolver(id, cambios);
       await refrescarRevision(lote, pagina);
     } catch (e) {
-      if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
+      if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
+        toast.error(MENSAJE_CREANDO_NO_SE_EDITA);
+        await refrescarRevision(lote, pagina);
+      } else if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
         toast.error(
           "Esta fila ya se activó — no se puede editar. La lista se actualizó.",
         );
@@ -973,7 +1027,11 @@ export function StepConfirmImport({
       await refrescarRevision(lote, pagina);
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "No pudimos descartar la fila.",
+        e instanceof ApiError && e.code === "LOTE_EN_PROCESO"
+          ? MENSAJE_CREANDO_NO_SE_EDITA
+          : e instanceof Error
+            ? e.message
+            : "No pudimos descartar la fila.",
       );
     } finally {
       setFilaBusy(null);
@@ -1091,30 +1149,6 @@ export function StepConfirmImport({
     </div>
   );
 
-  /*
-   * ── La barra de la activación ───────────────────────────────────────────
-   *
-   * 🔴 Nico, 2026-09-11: «¿es normal que lleve activando más de 5 min?».
-   * Sí lo era —2.824 filas, ~40 por minuto cuando el inmueble es nuevo— pero
-   * la pantalla no tenía forma de decirlo: un botón con «Activando…» y un
-   * spinner. La cara visible de una espera larga son tres cosas, las mismas
-   * que ya tiene la geocodificación: en qué va, cuánto falta, y cómo salir.
-   *
-   * Sale por la ranura viva igual que las otras dos: mientras se activa, el
-   * muro pone `inert` sobre el paso entero y un «Detener» adentro se vería
-   * vivo y estaría muerto (costó media hora el 2026-09-10).
-   */
-  const barraDeActivacion = (
-    <BarraDeTrabajo
-      testid="activacion"
-      titulo="Creando los inmuebles"
-      hechas={hechasEnActivacion}
-      total={totalDeActivacion}
-      onDetener={detenerActivacion}
-      deteniendo={deteniendoActivacion}
-    />
-  );
-
   const avisoDeCargaTerminada = (
     <div
       className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4 dark:border-border-strong dark:bg-white/[0.02]"
@@ -1122,7 +1156,7 @@ export function StepConfirmImport({
     >
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm font-medium text-fg dark:text-white">
-          Esta carga ya está activada — {resumenLote?.activados}{" "}
+          Los inmuebles de esta carga ya se crearon — {resumenLote?.activados}{" "}
           {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
           portafolio.
         </p>
@@ -1185,121 +1219,56 @@ export function StepConfirmImport({
       </Button>
     ) : null;
 
-  const handleActivar = async () => {
+  /**
+   * T-0131 — «Crear todas»: UN `POST` que encola el proceso del servidor. No hay
+   * bucle acá: la persona puede cerrar la página. Es idempotente, así que un
+   * doble clic o un reintento tras un corte devuelve el mismo lote CREANDO.
+   */
+  const handleCrearTodas = async () => {
     if (!lote) return;
-    setActivando(true);
+    setIniciandoCreacion(true);
     setError(null);
-    setProgresoDeActivacion(null);
-    totalAActivarRef.current = resumenLote?.listos ?? 0;
-    detenerActivacionRef.current = false;
-    setDeteniendoActivacion(false);
     try {
-      const resultado = await activarLoteCompleto(
-        lote,
-        // De a 50 por llamada (T-0130): cada una dura segundos y la barra se mueve.
-        (l, maximo) => inmueblesImportacionApi.activar(l, maximo),
-        setProgresoDeActivacion,
-        {
-          debeParar: () => detenerActivacionRef.current,
-          // Un lote grande cruza renovaciones del token: se renueva antes de cada tanda.
-          antesDeCada: asegurarSesionVigente,
-        },
-      );
-      /*
-       * «Detener» a mitad: lo que pasó, pasó — el back no deshace tandas— y
-       * la lista se refresca para que las tarjetas cuenten lo activado.
-       * Tocar «Activar» de nuevo sigue donde quedó, sin repetir nada.
-       */
-      if (resultado.detenidoPorPersona) {
-        await refrescarRevision(lote, pagina);
-        toast.info("Activación detenida", {
-          description: `Se activaron ${resultado.activados} inmuebles y quedaron otros por activar. Nada se pierde ni se duplica: toca «Activar» para seguir donde quedó.`,
-        });
-        return;
-      }
-      /*
-       * El techo de llamadas NO es éxito: quedan filas sin activar. Decir
-       * «¡Importación completada!» acá le mentiría a la persona con filas
-       * vivas en el lote. Se refresca el resumen (las tandas que sí pasaron
-       * cuentan) y se ofrece seguir — reintentar continúa donde quedó.
-       */
-      if (resultado.detenidoPorLimite || resultado.detenidoSinAvance) {
-        await refrescarRevision(lote, pagina);
-        setError(
-          resultado.detenidoSinAvance
-            ? `Se activaron ${resultado.activados} inmuebles y el lote dejó de avanzar: ` +
-              `la última tanda no movió ninguna fila. Nada se repite ni se duplica — ` +
-              `revisa lo que quedó pendiente abajo y vuelve a tocar «Activar».`
-            : `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
-              `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
-        );
-        return;
-      }
-      /*
-       * T-0130 — filas que no se pudieron crear: NO es «Importación completada».
-       * El lote sigue con lo que falló a la vista (motivo por fila) y se
-       * reintenta con «Reintentar las fallidas»; lo ya creado queda creado.
-       */
-      if (resultado.fallidas.length > 0) {
-        await refrescarRevision(lote, pagina);
-        toast.warning(
-          `${resultado.fallidas.length} ${resultado.fallidas.length === 1 ? "inmueble no se pudo crear" : "inmuebles no se pudieron crear"}`,
-          {
-            description: `Se crearon ${resultado.activados + resultado.reusados}. Abajo ves el motivo de cada una: corrígelas o toca «Reintentar las fallidas».`,
-          },
-        );
-        return;
-      }
-      setResultadoActivacion(resultado);
-      updateState({ importedCount: resultado.activados, importProgress: 100 });
-      setIsComplete(true);
-      // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
-      // comisión salen del propio archivo, fila por fila, y lo que quede sin
-      // dueño se resuelve con el selector por fila. El diálogo pone UN
-      // propietario a todos los inmuebles del lote — para una migración de
-      // dueños distintos es la asociación equivocada, y «mandato» es una
-      // palabra que la inmobiliaria no usa (Nico, 2026-09-01).
-      if (resultado.activados > 0 && !onSalir) void buscarSinMandato(lote);
-      // Las fotos van después de crear: el back no ve archivos.
-      if (resultado.activados > 0) void subirFotosDeLosActivados(lote);
-      if (resultado.omitidas.length > 0) {
-        toast.warning("Importación parcial", {
-          description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
-        });
-      } else {
-        toast.success("Importación exitosa", {
-          description: `${resultado.activados} propiedades importadas correctamente`,
-        });
-      }
+      await asegurarSesionVigente();
+      const r = await inmueblesImportacionApi.crear(lote);
+      setEstadoManual((previo) => {
+        const base = previo ?? estadoLote;
+        return base ? { ...base, fase: r.fase, creacion: r.creacion } : previo;
+      });
+      setIrACrear(false);
+      setVerRevisionDeNuevo(false);
+      cierreAplicado.current = null;
+      updateState({ importedCount: 0 });
+      setReinicioDelSondeo((n) => n + 1);
     } catch (e) {
-      /*
-       * Un corte a mitad de las tandas trae su progreso: sin esto, la
-       * pantalla decía «no pudimos activar» habiendo activado 1.000, y la
-       * persona no sabía si reintentar duplicaba. No duplica — el back no
-       * repite filas — y hay que decirlo.
-       */
-      if (e instanceof ActivacionInterrumpida) {
-        // Con la sesión muerta no se puede pedir nada más: el avance ya está en
-        // el servidor y la tarjeta de cargas lo ofrece al volver a entrar.
-        if (!esSesionMuerta(e.causa)) await refrescarRevision(lote, pagina);
-        const motivo = mensajeDeCarga(e.causa, e.message);
-        setError(
-          esSesionMuerta(e.causa)
-            ? motivo
-            : e.progreso.activados > 0
-              ? `Se activaron ${e.progreso.activados} inmuebles antes del corte (${motivo}). ` +
-                `Nada se pierde ni se duplica: toca «Activar» de nuevo y sigue donde quedó.`
-              : `${motivo} No se activó ninguno todavía — toca «Activar» de nuevo para reintentar.`,
-        );
-      } else {
-        setError(mensajeDeCarga(e, "No pudimos activar el lote."));
+      if (e instanceof ApiError && e.code === "NADA_PARA_CREAR") {
+        // La lista que se veía estaba vieja: se vuelve a la revisión con lo de hoy.
+        setIrACrear(false);
+        await refrescarRevision(lote, pagina);
       }
+      setError(
+        esSesionMuerta(e)
+          ? MENSAJE_SESION_TERMINADA
+          : mensajeDeCarga(e, "No pudimos empezar a crear los inmuebles."),
+      );
     } finally {
-      setActivando(false);
-      setProgresoDeActivacion(null);
-      setDeteniendoActivacion(false);
-      }
+      setIniciandoCreacion(false);
+    }
   };
+
+  /* Al llegar a TERMINADA sin fallas: lo que se hace una sola vez por lote. */
+  useEffect(() => {
+    if (!lote || !terminadaSinFallas || cierreAplicado.current === lote) return;
+    cierreAplicado.current = lote;
+    updateState({ importedCount: nCreadas, importProgress: 100 });
+    // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
+    // comisión salen del propio archivo, fila por fila (Nico, 2026-09-01).
+    if (nCreadas > 0 && !onSalir) void buscarSinMandato(lote);
+    // Las fotos van después de crear: el back no ve archivos. Sólo si esta
+    // pestaña conserva los inmuebles leídos (enlaces); al volver a una carga
+    // TERMINADA no hay de dónde sacar las URLs y se salta sin ruido.
+    if (nCreadas > 0) void subirFotosDeLosActivados(lote);
+  }, [lote, terminadaSinFallas, nCreadas, updateState, onSalir, buscarSinMandato, subirFotosDeLosActivados]);
 
   /*
    * ── Las barras de lo que corre en el navegador ───────────────────────────
@@ -1348,12 +1317,88 @@ export function StepConfirmImport({
       <FileArrowUp className="w-4 h-4" />
       {subiendo
         ? "Subiendo..."
-        : t("inmobiliaria.import.confirm.importButton", { count: totalAEnviar })}
+        : `Subir ${totalAEnviar.toLocaleString("es-CO")} ${totalAEnviar === 1 ? "inmueble" : "inmuebles"} y ubicar direcciones`}
     </Button>
   );
 
-  // ── Success state ────────────────────────────────────────────────────
-  if (isComplete) {
+  /*
+   * T-0131 — las filas que no se pudieron crear, con su motivo, y la salida.
+   * Se usa en la vista de creación y, para una carga vieja con fallidas, en la
+   * revisión. El back re-encola TODAS a la vez: no hay reintento fila por fila.
+   */
+  const panelDeFallidas =
+    nFallidas > 0 ? (
+      <div
+        className="space-y-3 rounded-lg border border-border bg-danger-soft p-4"
+        data-testid="filas-fallidas"
+        role="region"
+        aria-label="Inmuebles que no se pudieron crear"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-medium text-danger">
+            {nFallidas === 1
+              ? "1 inmueble no se pudo crear"
+              : `${nFallidas.toLocaleString("es-CO")} inmuebles no se pudieron crear`}
+          </p>
+          {!creandoActivo ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              hideArrow
+              disabled={reintentando || revisando || descartandoLote}
+              isLoading={reintentando}
+              onClick={() => void handleReintentar()}
+              data-testid="reintentar-fallidas"
+            >
+              Reintentar las fallidas
+            </Button>
+          ) : null}
+        </div>
+        {creandoActivo ? (
+          <p className="text-xs text-fg-muted">
+            Cuando termine ves el motivo de cada una y puedes reintentarlas.
+          </p>
+        ) : (
+          <>
+            <ul className="max-h-64 space-y-2 overflow-y-auto" data-lenis-prevent>
+              {filasFallidas.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex flex-wrap items-start justify-between gap-2 text-sm"
+                  data-testid={`fila-fallida-${f.fila}`}
+                >
+                  <span className="min-w-0 text-fg">
+                    <span className="font-mono tabular-nums">Fila {f.fila}</span>
+                    {" · "}
+                    {f.datos?.title ?? f.datos?.address ?? "Sin dirección"}
+                    <span className="block text-xs text-danger">{f.errorDeActivacion}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    hideArrow
+                    disabled={filaBusy === f.id}
+                    onClick={() => void handleDescartarFila(f.id)}
+                  >
+                    Descartar
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            {filasFallidas.length > 0 && filasFallidas.length < nFallidas ? (
+              <p className="text-xs text-fg-muted">
+                Mostramos {filasFallidas.length} de {nFallidas.toLocaleString("es-CO")}.
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
+    ) : null;
+
+  // ── Success state: el lote TERMINÓ sin fallidas ──────────────────────
+  if (lote && terminadaSinFallas) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="animate-scale-in">
@@ -1377,52 +1422,39 @@ export function StepConfirmImport({
            * entraron; decir sólo las nuevas hacía ver una importación
            * completa como un fracaso de 679.
            */}
-          {resultadoActivacion && resultadoActivacion.reusados > 0 ? (
-            <>
-              <p className="text-fg-muted dark:text-fg-subtle">
-                <span className="font-semibold text-fg dark:text-white">
-                  {resultadoActivacion.activados + resultadoActivacion.reusados}{" "}
-                  inmuebles
-                </span>{" "}
-                de este archivo están en tu portafolio
+          <p className="text-fg-muted dark:text-fg-subtle" data-testid="resumen-creadas">
+            Se crearon{" "}
+            <span className="font-semibold text-fg dark:text-white">
+              {nCreadas.toLocaleString("es-CO")}{" "}
+              {nCreadas === 1 ? "inmueble" : "inmuebles"}
+            </span>{" "}
+            en tu portafolio
+          </p>
+          {(resumenLote?.pendientes ?? 0) > 0 && (
+            <div className="space-y-2" data-testid="quedan-por-revisar">
+              <p className="text-sm text-warning">
+                Quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")}{" "}
+                {resumenLote?.pendientes === 1 ? "fila" : "filas"} con datos por
+                corregir. No frenan nada: puedes arreglarlas ahora o dejarlas fuera.
               </p>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="detalle-reusados">
-                {resultadoActivacion.activados}{" "}
-                {resultadoActivacion.activados === 1 ? "nuevo" : "nuevos"} ·{" "}
-                {resultadoActivacion.reusados} ya
-                {resultadoActivacion.reusados === 1 ? " estaba" : " estaban"} cargados de
-                antes, así que se reusaron en vez de duplicarse.
-              </p>
-            </>
-          ) : (
-            <p className="text-fg-muted dark:text-fg-subtle">
-              Se importaron{" "}
-              <span className="font-semibold text-fg dark:text-white">
-                {state.importedCount} propiedades
-              </span>{" "}
-              a tu portafolio
-            </p>
-          )}
-          {/* Varios dueños con su % (Nico, 2026-09-13): cuántos mandatos
-              quedaron repartidos según el archivo, para no tener que abrir
-              cada ficha a comprobarlo. */}
-          {resultadoActivacion && (resultadoActivacion.mandatosConVariosDuenos ?? 0) > 0 && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="mandatos-varios-duenos">
-              {resultadoActivacion.mandatosConVariosDuenos === 1
-                ? '1 mandato quedó con varios dueños y el reparto que traía el archivo.'
-                : `${resultadoActivacion.mandatosConVariosDuenos} mandatos quedaron con varios dueños y el reparto que traía el archivo.`}
-            </p>
+              <Button
+                type="button"
+                variant="outline"
+                hideArrow
+                data-testid="revisar-las-que-faltan"
+                onClick={() => {
+                  setVerRevisionDeNuevo(true);
+                  updateState({ importedCount: 0 });
+                }}
+              >
+                Revisar las que faltan
+              </Button>
+            </div>
           )}
           {fotosProgreso && (
             <p className="text-sm text-fg-muted" data-testid="fotos-progreso" aria-live="polite">
               Subiendo las fotos de las fichas… {fotosProgreso.hechos} de {fotosProgreso.total}{" "}
               {fotosProgreso.total === 1 ? "inmueble" : "inmuebles"}. No cierres esta pestaña.
-            </p>
-          )}
-          {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
-            <p className="text-sm text-warning">
-              {resultadoActivacion.omitidas.length} filas quedaron pendientes de
-              datos — vuelve a «Revisión» para completarlas.
             </p>
           )}
           {/*
@@ -1460,7 +1492,7 @@ export function StepConfirmImport({
             no venía queda VACÍA («no venía en el archivo») y la llena el
             contrato vigente al activarlo, o una persona en la ficha.
           */}
-          {onSalir && (state.importedCount ?? 0) > 0 && (
+          {onSalir && aEnviar.length > 0 && nCreadas > 0 && (
             <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
               {fraseDeLaComision(aEnviar)} Los puedes cambiar cuando quieras
               desde la ficha de cada inmueble.
@@ -1540,6 +1572,108 @@ export function StepConfirmImport({
             {onSalir ? "Seguir con las demás cargas" : "Importar más"}
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // ── Paso 4: el servidor está creando (o terminó con fallidas) ─────────
+  if (lote && estadoLote && (creandoEnElServidor || terminadaConFallas)) {
+    const total = creacion?.total ?? estadoLote.total;
+    const hechas = nCreadas;
+    const pct = total > 0 ? Math.min(100, Math.round((hechas / total) * 100)) : 0;
+    return (
+      <div className="space-y-6" data-testid="creacion-progreso">
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            {creacionFallida
+              ? "La creación se detuvo"
+              : creandoEnElServidor
+                ? "Creando tus inmuebles"
+                : "Terminamos, pero algunos no se pudieron crear"}
+          </h2>
+          {creacionFallida ? (
+            <p className="text-sm text-danger" data-testid="creacion-detenida">
+              {estadoLote.error ?? "El proceso se detuvo por un error."} Lo que ya se creó está en tu
+              portafolio y no se repite: toca «Reintentar» para que siga donde quedó.
+            </p>
+          ) : creandoEnElServidor ? (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="creacion-puedes-cerrar">
+              Puedes cerrar esta página: las seguimos creando.
+            </p>
+          ) : (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              Los que se crearon ya están en tu portafolio. Abajo ves el motivo de cada fallida.
+            </p>
+          )}
+        </div>
+
+        <div
+          className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+          aria-live="polite"
+          data-testid="creacion-avance"
+        >
+          <p className="text-sm text-fg">
+            <span className="font-mono text-2xl font-semibold tabular-nums">
+              {hechas.toLocaleString("es-CO")}
+            </span>{" "}
+            de{" "}
+            <span className="font-mono tabular-nums">{total.toLocaleString("es-CO")}</span>{" "}
+            creadas
+          </p>
+          <Progress value={pct} size="xs" />
+          {(creacion?.pendientes ?? 0) > 0 && creandoActivo ? (
+            <p className="text-xs text-fg-muted">
+              Faltan {(creacion?.pendientes ?? 0).toLocaleString("es-CO")}.
+            </p>
+          ) : null}
+        </div>
+
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
+        {creacionFallida && estadoLote.puedeReintentar ? (
+          <Button
+            type="button"
+            hideArrow
+            disabled={reintentando}
+            isLoading={reintentando}
+            onClick={() => void handleReintentar()}
+            data-testid="reintentar-lote"
+          >
+            Reintentar
+          </Button>
+        ) : null}
+
+        {panelDeFallidas}
+
+        {(resumenLote?.pendientes ?? 0) > 0 && !creandoEnElServidor ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-fg-muted">
+              Además quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")} filas con datos por
+              corregir.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              hideArrow
+              data-testid="revisar-las-que-faltan"
+              onClick={() => setVerRevisionDeNuevo(true)}
+            >
+              Revisar las que faltan
+            </Button>
+          </div>
+        ) : null}
+
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert" data-testid="import-error">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -1786,19 +1920,111 @@ export function StepConfirmImport({
     );
   }
 
-  // ── Batch LISTO — review + activate ─────────────────────────────────
+  // ── Paso 4 antes del clic: «Crear todas» ──────────────────────────────
+  if (lote && irACrear && listasParaCrear > 0) {
+    const listas = listasParaCrear;
+    const porRevisar = resumenLote?.pendientes ?? 0;
+    return (
+      <div className="space-y-6" data-testid="crear-todas-paso">
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            {yaSeCrearonAlgunas
+              ? `Faltan ${listas.toLocaleString("es-CO")} por crear`
+              : "Todo listo para crear"}
+          </h2>
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            Se crean{" "}
+            <span className="font-mono tabular-nums font-medium text-fg">
+              {listas.toLocaleString("es-CO")}
+            </span>{" "}
+            {listas === 1 ? "inmueble" : "inmuebles"} en un solo proceso del servidor. Puedes cerrar
+            esta página: las seguimos creando.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-md bg-success-soft p-4">
+            <MonoLabel className="block text-xs text-success mb-1">Listas para crear</MonoLabel>
+            <p className="text-2xl font-bold text-success">{listas.toLocaleString("es-CO")}</p>
+          </div>
+          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
+            <MonoLabel className="block text-xs text-fg-muted mb-1">Por revisar (no se tocan)</MonoLabel>
+            <p className="text-2xl font-bold text-fg-muted">{porRevisar.toLocaleString("es-CO")}</p>
+          </div>
+        </div>
+
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
+        {sinCanon > 0 ? (
+          <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
+            {sinCanon === 1
+              ? "1 inmueble se crea con el canon por confirmar"
+              : `${sinCanon.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
+            : no se usa para contratos, cobros ni facturas hasta que lo pongas a mano en el inmueble.
+          </p>
+        ) : null}
+        {porRevisar > 0 ? (
+          <p className="text-sm text-fg-muted">
+            Las filas por revisar no se crean ahora: se quedan en la carga y las completas cuando
+            quieras.
+          </p>
+        ) : null}
+
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert" data-testid="import-error">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            hideArrow
+            disabled={iniciandoCreacion}
+            onClick={() => {
+              setIrACrear(false);
+              setError(null);
+            }}
+          >
+            Volver a la revisión
+          </Button>
+          <Button
+            type="button"
+            hideArrow
+            disabled={iniciandoCreacion}
+            isLoading={iniciandoCreacion}
+            onClick={handleCrearTodas}
+            data-testid="crear-todas"
+          >
+            {yaSeCrearonAlgunas
+              ? `Crear las ${listas.toLocaleString("es-CO")} que faltan`
+              : "Crear todas"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Paso 3: revisar lo que falta ─────────────────────────────────────
   if (lote) {
-    const puedeActivar = (resumenLote?.listos ?? 0) > 0;
+    const listas = listasParaCrear;
+    const puedeContinuar = listas > 0 && estadoLote?.fase !== "REVISANDO";
 
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-            Revisa lo que falta antes de activar
+            Revisa lo que falta
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Las filas listas se activan cuando quieras — cerrar esta pestaña no
-            pierde nada.
+            Una sola lista con todo lo que necesita una decisión. Lo que ya está completo no aparece:
+            se crea al final, todo junto. Cerrar esta pestaña no pierde nada.
           </p>
         </div>
 
@@ -1812,7 +2038,7 @@ export function StepConfirmImport({
             </div>
             <div className="rounded-md bg-warning-soft p-4">
               <MonoLabel className="block text-xs text-warning mb-1">
-                Pendientes
+                Por revisar
               </MonoLabel>
               <p className="text-2xl font-bold text-warning">
                 {resumenLote.pendientes}
@@ -1820,15 +2046,15 @@ export function StepConfirmImport({
             </div>
             <div className="rounded-md bg-success-soft p-4">
               <MonoLabel className="block text-xs text-success mb-1">
-                Listas
+                Listas para crear
               </MonoLabel>
               <p className="text-2xl font-bold text-success">
-                {resumenLote.listos}
+                {listasParaCrear}
               </p>
             </div>
             <div className="rounded-md bg-primary-soft p-4">
               <MonoLabel className="block text-xs text-primary mb-1">
-                Activadas
+                Ya creadas
               </MonoLabel>
               <p className="text-2xl font-bold text-primary">
                 {resumenLote.activados}
@@ -1837,103 +2063,24 @@ export function StepConfirmImport({
           </div>
         )}
 
-        {/*
-          T-0130 — «a medias» a la vista: al volver a una carga cortada el avance
-          está acá, no hay que adivinarlo. «X de Y creadas» sale del servidor.
-        */}
-        {!activando &&
-        (estadoLote?.activadas ?? 0) > 0 &&
-        (estadoLote?.listas ?? 0) > 0 ? (
-          <div
-            className="space-y-2 rounded-lg border border-border bg-surface-muted p-4"
-            data-testid="carga-a-medias"
+        {sinCanon > 0 ? (
+          <p
+            className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted"
+            data-testid="aviso-canon-por-confirmar"
           >
-            <p className="text-sm text-fg">
-              Esta carga sigue a medias:{" "}
-              <span className="font-mono tabular-nums">
-                {(estadoLote?.activadas ?? 0).toLocaleString("es-CO")}
-              </span>{" "}
-              de{" "}
-              <span className="font-mono tabular-nums">
-                {((estadoLote?.activadas ?? 0) + (estadoLote?.listas ?? 0)).toLocaleString("es-CO")}
-              </span>{" "}
-              creadas. Toca «Activar» para seguir con las que faltan: no se repite ninguna.
-            </p>
-            <Progress
-              value={Math.round(
-                ((estadoLote?.activadas ?? 0) /
-                  ((estadoLote?.activadas ?? 0) + (estadoLote?.listas ?? 0))) *
-                  100,
-              )}
-              size="xs"
-            />
-          </div>
+            {sinCanon === 1
+              ? "1 inmueble no trae canon: se crea con el canon por confirmar."
+              : `${sinCanon.toLocaleString("es-CO")} inmuebles no traen canon: se crean con el canon por confirmar.`}{" "}
+            No bloquea nada; el canon se completa después, en bloque o en cada inmueble.
+          </p>
         ) : null}
 
-        {!activando && (estadoLote?.fallidas ?? 0) > 0 ? (
-          <div
-            className="space-y-3 rounded-lg border border-border bg-danger-soft p-4"
-            data-testid="filas-fallidas"
-            role="region"
-            aria-label="Inmuebles que no se pudieron crear"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm font-medium text-danger">
-                {estadoLote?.fallidas === 1
-                  ? "1 inmueble no se pudo crear"
-                  : `${estadoLote?.fallidas} inmuebles no se pudieron crear`}
-              </p>
-              {/* El back libera TODAS las fallidas a la vez: no hay reintento fila por fila. */}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                hideArrow
-                disabled={reintentando || revisando || descartandoLote}
-                isLoading={reintentando}
-                onClick={() => void handleReintentar()}
-                data-testid="reintentar-fallidas"
-              >
-                Reintentar las fallidas
-              </Button>
-            </div>
-            <ul className="max-h-64 space-y-2 overflow-y-auto" data-lenis-prevent>
-              {filasFallidas.map((f) => (
-                <li
-                  key={f.id}
-                  className="flex flex-wrap items-start justify-between gap-2 text-sm"
-                  data-testid={`fila-fallida-${f.fila}`}
-                >
-                  <span className="min-w-0 text-fg">
-                    <span className="font-mono tabular-nums">Fila {f.fila}</span>
-                    {" · "}
-                    {f.datos?.title ?? f.datos?.address ?? "Sin dirección"}
-                    <span className="block text-xs text-danger">{f.errorDeActivacion}</span>
-                  </span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    hideArrow
-                    disabled={filaBusy === f.id}
-                    onClick={() => void handleDescartarFila(f.id)}
-                  >
-                    Descartar
-                  </Button>
-                </li>
-              ))}
-            </ul>
-            {filasFallidas.length > 0 && filasFallidas.length < (estadoLote?.fallidas ?? 0) ? (
-              <p className="text-xs text-fg-muted">
-                Mostramos {filasFallidas.length} de {estadoLote?.fallidas}.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        {/* Una carga vieja pudo dejar fallidas: se ven y se reintentan acá también. */}
+        {panelDeFallidas}
 
         <LoteInmueblesMasivo
           lote={lote}
-          deshabilitado={activando || revisando || descartandoLote}
+          deshabilitado={revisando || descartandoLote || iniciandoCreacion}
           onCambio={() => void refrescarRevision(lote, 1)}
         />
 
@@ -1945,7 +2092,7 @@ export function StepConfirmImport({
                 fila={fila}
                 onResolver={handleResolver}
                 onDescartar={handleDescartarFila}
-                isBusy={filaBusy === fila.id}
+                isBusy={filaBusy === fila.id || creandoEnElServidor}
               />
             ))}
             {/* Pie del design system: dice cuántas filas quedan por revisar
@@ -1979,7 +2126,7 @@ export function StepConfirmImport({
               variant="outline"
               hideArrow
               disabled={
-                filaBusy !== null || activando || descartandoLote || refrescando
+                filaBusy !== null || descartandoLote || refrescando
               }
               /* Gira mientras consulta: sin esto, un back que tarda dos
                  segundos se ve igual que un botón muerto. */
@@ -2000,7 +2147,7 @@ export function StepConfirmImport({
         )}
 
         {/*
-         * ── ESTE LOTE YA NO TIENE NADA QUE ACTIVAR ──────────────────────
+         * ── ESTE LOTE YA NO TIENE NADA QUE CREAR ────────────────────────
          *
          * 🔴 Nico, 2026-09-11, mirando 2.864 total · 40 pendientes · 0 listas
          * · 2.824 activadas: «no hay nada de cómo continuar, cómo pasar de
@@ -2017,15 +2164,6 @@ export function StepConfirmImport({
          * ofrece Contratos.
          */}
 
-        {/*
-          La barra de la activación. Con muro sale por la ranura viva (fuera
-          del `inert`, con su «Detener» vivo); sin muro vive acá mismo, pegada
-          a los botones que controla.
-        */}
-        {activando && !ranuraViva ? barraDeActivacion : null}
-        {activando && ranuraViva
-          ? createPortal(barraDeActivacion, ranuraViva)
-          : null}
         {revisando && !ranuraViva ? barraDeRevision : null}
         {revisando && ranuraViva
           ? createPortal(barraDeRevision, ranuraViva)
@@ -2040,7 +2178,7 @@ export function StepConfirmImport({
               // Congelado se ve congelado: mientras se revisa o se activa el
               // paso entero está `inert`, y un botón que se ve vivo y está
               // muerto cuesta media hora de clics.
-              disabled={descartandoLote || revisando || activando || reintentando}
+              disabled={descartandoLote || revisando || reintentando || iniciandoCreacion}
               isLoading={descartandoLote}
               onClick={handleDescartarLote}
             >
@@ -2059,7 +2197,7 @@ export function StepConfirmImport({
                 type="button"
                 variant="ghost"
                 hideArrow
-                disabled={revisando || activando || descartandoLote}
+                disabled={revisando || descartandoLote}
                 isLoading={revisando}
                 onClick={handleRevisarDeNuevo}
                 data-testid="revisar-de-nuevo"
@@ -2072,22 +2210,26 @@ export function StepConfirmImport({
               </Button>
             ) : null}
           </div>
-          <Button
-            type="button"
-            hideArrow
-            disabled={!puedeActivar || activando || revisando}
-            isLoading={activando}
-            onClick={handleActivar}
-          >
-            {activando
-              ? /* El botón también cuenta: es lo que la persona mira mientras
-                   espera, y «Activando...» a secas fue exactamente lo que la
-                   dejó sin saber si seguía vivo (Nico, 2026-09-11). */
-                totalDeActivacion > 0
-                ? `Activando… ${hechasEnActivacion} de ${totalDeActivacion}`
-                : "Activando…"
-              : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? "inmueble" : "inmuebles"}`}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <p className="text-sm text-fg-muted" data-testid="listas-para-crear">
+              <span className="font-mono font-medium tabular-nums text-fg">
+                {listas.toLocaleString("es-CO")}
+              </span>{" "}
+              {listas === 1 ? "lista para crear" : "listas para crear"}
+            </p>
+            <Button
+              type="button"
+              hideArrow
+              disabled={!puedeContinuar || revisando || descartandoLote}
+              onClick={() => {
+                setError(null);
+                setIrACrear(true);
+              }}
+              data-testid="continuar-a-crear"
+            >
+              Continuar
+            </Button>
+          </div>
         </div>
 
         {/* El aviso, último del cuerpo: queda pegado al pie gris, que es donde
@@ -2116,7 +2258,8 @@ export function StepConfirmImport({
           Resumen de importación
         </h2>
         <p className="text-sm text-fg-muted dark:text-fg-subtle">
-          Revisa el resumen antes de ejecutar la importación.
+          Subimos tu archivo, ubicamos las direcciones en el mapa y te mostramos lo que falta.
+          Los inmuebles se crean al final, todos juntos.
         </p>
       </div>
 
@@ -2138,47 +2281,29 @@ export function StepConfirmImport({
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="rounded-md bg-primary-soft p-4">
             <MonoLabel className="block text-xs text-primary mb-1">
-              {t("inmobiliaria.import.confirm.propertiesToImport")}
+              Inmuebles del archivo
             </MonoLabel>
-            <p className="text-3xl font-bold text-primary">{importCount}</p>
-          </div>
-
-          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
-            <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
-              {t("inmobiliaria.import.confirm.propertiesExcluded")}
-            </MonoLabel>
-            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">
-              {excludedCount}
-            </p>
-          </div>
-
-          <div className="rounded-md bg-success-soft p-4">
-            <MonoLabel className="block text-xs text-success mb-1">
-              {t("inmobiliaria.import.confirm.suggestionsAccepted")}
-            </MonoLabel>
-            <p className="text-3xl font-bold text-success">
-              {acceptedSuggestionsCount}
-            </p>
+            <p className="text-3xl font-bold text-primary">{totalAEnviar}</p>
           </div>
 
           <div
             className={cn(
               "rounded-md p-4",
-              remainingErrorsCount > 0 ? "bg-danger-soft" : "bg-success-soft",
+              remainingErrorsCount > 0 ? "bg-warning-soft" : "bg-success-soft",
             )}
           >
             <MonoLabel
               className={cn(
                 "block text-xs mb-1",
-                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+                remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
-              {t("inmobiliaria.import.confirm.remainingErrors")}
+              Con datos por completar
             </MonoLabel>
             <p
               className={cn(
                 "text-3xl font-bold",
-                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+                remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
               {remainingErrorsCount}
@@ -2238,10 +2363,9 @@ export function StepConfirmImport({
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
               Les falta {motivosBloqueo.join(", ")}. Entran igual, marcados con
-              lo que les falta, y los completas en el paso siguiente fila por
-              fila — o antes, en{" "}
-              <span className="font-medium text-fg">Revisión</span> con
-              «Anterior». Nada del archivo se queda por fuera.
+              lo que les falta, y los completas en{" "}
+              <span className="font-medium text-fg">Revisar lo que falta</span>.
+              Nada del archivo se queda por fuera.
             </p>
           </div>
         </div>

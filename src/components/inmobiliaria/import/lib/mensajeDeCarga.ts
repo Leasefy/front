@@ -14,7 +14,9 @@ const MENSAJES: Record<string, string> = {
   // Dos causas con el mismo código: todavía llegan filas, o faltan direcciones
   // por ubicar. La salida de las dos es la misma: seguir con esa etapa.
   LOTE_INCOMPLETO:
-    'Faltan direcciones por ubicar o filas por subir: continúa ubicando (o subiendo) o sigue sin ubicar en el mapa.',
+    'Todavía no se puede crear: faltan filas por subir, direcciones por ubicar o la revisión de las filas no terminó. Espera a que termine esa etapa (o sigue sin ubicar en el mapa).',
+  NADA_PARA_CREAR:
+    'No hay inmuebles listos para crear. Corrige o completa las filas que faltan, o descarta las que no vas a cargar.',
   LOTE_EN_PROCESO:
     'Esta carga se está procesando en este momento. Espera a que termine y vuelve a intentarlo.',
   LOTE_FALLIDO:

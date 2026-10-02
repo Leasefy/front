@@ -70,7 +70,7 @@ export function CargasAMedias({
           {
             description:
               r.accion === 'FILAS_LIBERADAS'
-                ? 'Entra a la carga y vuelve a activar: sólo se intentan las que fallaron.'
+                ? 'Quedaron listas: entra a la carga y toca «Crear todas» para intentarlas de nuevo.'
                 : 'Entra a la carga para ver cómo avanza.',
           },
         );
@@ -108,21 +108,88 @@ export function CargasAMedias({
     [onDescartada],
   );
 
+  /*
+   * T-0131 — el servidor deja una carga TERMINADA a la vista 24 h para que quien
+   * vuelve vea cómo acabó. NO está «a medias»: va aparte, como resumen.
+   */
+  const abiertas = lotes.filter((l) => l.fase !== 'TERMINADA');
+  const terminadas = lotes.filter((l) => l.fase === 'TERMINADA');
   if (lotes.length === 0) return null;
 
   return (
+    <>
+    {terminadas.length > 0 ? (
+      <section
+        className="mb-6 space-y-3 rounded-lg border border-border bg-surface-muted p-5"
+        data-testid="lotes-inmuebles-terminados"
+        aria-label="Cargas terminadas"
+      >
+        {terminadas.map((l) => {
+          const d = describirCargaAbierta(l, new Date());
+          const ocupada = trabajando === l.lote;
+          return (
+            <div
+              key={l.lote}
+              className="flex flex-wrap items-center justify-between gap-3"
+              data-testid={`carga-terminada-${l.lote}`}
+            >
+              <p className="min-w-0 text-sm text-fg">
+                {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
+                {d.cuando ? ' · ' : null}
+                <span className="font-mono tabular-nums" data-testid={`avance-${l.lote}`}>
+                  {d.avance}
+                </span>
+                {d.porRevisar > 0 ? (
+                  <span className="text-fg-muted">
+                    {' '}
+                    · {d.porRevisar.toLocaleString('es-CO')} por revisar
+                  </span>
+                ) : null}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {d.fallidas > 0 && d.puedeReintentar ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    disabled={ocupada}
+                    isLoading={ocupada}
+                    data-testid={`reintentar-${l.lote}`}
+                    onClick={() => void reintentar(l)}
+                  >
+                    Reintentar las fallidas
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  disabled={ocupada}
+                  data-testid={`retomar-${l.lote}`}
+                  onClick={() => onRetomar(l)}
+                >
+                  Ver resumen
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+    ) : null}
+
+    {abiertas.length > 0 ? (
     <section
       className="mb-6 space-y-4 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
       data-testid="lotes-inmuebles-abiertos"
       aria-label="Cargas a medias"
     >
       <p className="text-sm font-medium text-fg">
-        {lotes.length === 1
+        {abiertas.length === 1
           ? 'Tienes una carga a medias'
-          : `Tienes ${lotes.length} cargas a medias`}
+          : `Tienes ${abiertas.length} cargas a medias`}
       </p>
 
-      {lotes.map((l) => {
+      {abiertas.map((l) => {
         const d = describirCargaAbierta(l, new Date());
         const ocupada = trabajando === l.lote;
         // Seguir subiendo exige la clave con la que se abrió la carga; sin ella
@@ -156,6 +223,8 @@ export function CargasAMedias({
                   <span className="text-danger">
                     {l.error ?? 'La carga se detuvo por un error.'}
                   </span>
+                ) : d.queHacer === 'creando' ? (
+                  'Las estamos creando en el servidor. Puedes cerrar esta página: las seguimos creando.'
                 ) : d.queHacer === 'procesando' ? (
                   'Todavía procesándose en el servidor'
                 ) : d.queHacer === 'frena' ? (
@@ -180,7 +249,7 @@ export function CargasAMedias({
                 size="sm"
                 variant="ghost"
                 hideArrow
-                disabled={ocupada || d.enVuelo}
+                disabled={ocupada || d.enVuelo || d.etapa === 'creando'}
                 data-testid={`descartar-${l.lote}`}
                 onClick={() => setADescartar(l)}
               >
@@ -238,7 +307,9 @@ export function CargasAMedias({
                 >
                   {d.etapa === 'subiendo'
                     ? 'Continuar subiendo'
-                    : d.etapa === 'ubicando'
+                    : d.etapa === 'creando'
+                      ? 'Ver cómo va'
+                      : d.etapa === 'ubicando'
                       ? ubicacionCompleta(l)
                         ? 'Continuar'
                         : 'Continuar ubicando'
@@ -253,6 +324,8 @@ export function CargasAMedias({
       <p className="text-xs text-fg-subtle">
         Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
       </p>
+    </section>
+    ) : null}
 
       <AlertDialog open={aDescartar !== null} onOpenChange={(a) => !a && setADescartar(null)}>
         <AlertDialogContent data-testid="dialogo-descartar-carga">
@@ -277,6 +350,6 @@ export function CargasAMedias({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </>
   );
 }

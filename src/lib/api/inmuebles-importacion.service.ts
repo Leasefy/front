@@ -44,9 +44,17 @@ export type EstadoFilaImportacion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCAR
  * `RECIBIENDO`: todavía llegan filas del navegador. `UBICANDO`: el NAVEGADOR
  * busca cada dirección en el mapa y el servidor guarda lo que va ubicando
  * (`ubicacion`; en esta etapa no hay job). `REVISANDO`: el job del servidor
- * revisa las filas. `LISTA`: ya se puede revisar a mano y activar.
+ * revisa las filas. `LISTA`: ya se puede revisar a mano y crear todas (T-0131: `CREANDO`, `TERMINADA`).
  */
-export type FaseDeLoteInmuebles = 'RECIBIENDO' | 'UBICANDO' | 'REVISANDO' | 'LISTA';
+export type FaseDeLoteInmuebles =
+  | 'RECIBIENDO'
+  | 'UBICANDO'
+  | 'REVISANDO'
+  | 'LISTA'
+  /** T-0131 — el servidor está creando los inmuebles (un solo proceso). */
+  | 'CREANDO'
+  /** T-0131 — no quedan filas LISTO y el proceso terminó (puede haber fallidas). */
+  | 'TERMINADA';
 
 /** T-0130 — cómo quedó ubicada una fila en el mapa. */
 export type UbicacionDeFila = 'PENDIENTE' | 'DIRECCION' | 'MUNICIPIO' | 'NINGUNA' | 'OMITIDA';
@@ -258,6 +266,26 @@ export interface EstadoDeLoteInmuebles {
   puedeReintentar?: boolean;
   omitirUbicacion?: boolean;
   actualizadoEn?: string;
+  /** T-0131 — `null` antes del primer «Crear todas»; ausente = back anterior. */
+  creacion?: CreacionDeLote | null;
+}
+
+/**
+ * T-0131 — avance de «Crear todas». `null` en el lote hasta el primer `crear`.
+ * `creadas + fallidas + pendientes === total`.
+ */
+export interface CreacionDeLote {
+  total: number;
+  creadas: number;
+  fallidas: number;
+  pendientes: number;
+}
+
+/** `POST .../lotes/:lote/crear` — 202. Llamarlo con el lote ya CREANDO devuelve lo mismo. */
+export interface RespuestaDeCreacion {
+  lote: string;
+  fase: FaseDeLoteInmuebles;
+  creacion: CreacionDeLote;
 }
 
 /** Avance de la ubicación de un lote; `siguienteDesde` es el cursor para seguir. */
@@ -308,13 +336,6 @@ export interface RespuestaDeReintento {
   lote: EstadoDeLoteInmuebles;
 }
 
-/** Una fila que no se pudo crear al activar (T-0130). */
-export interface FilaFallidaAlActivar {
-  id: string;
-  fila: number;
-  motivo: string;
-}
-
 export interface PaginaDeFilasInmuebles {
   filas: FilaDeImportacion[];
   total: number;
@@ -343,14 +364,7 @@ export interface DescarteDeLoteInmuebles {
   yaDescartadas: number;
 }
 
-export interface FilaOmitida {
-  id: string;
-  fila: number;
-  faltantes: string[];
-}
-
-/** `POST .../activar` — call again while `restantes > 0` (500 rows per
- * call, resumable, nothing repeats, wu-4-report.md §6). */
+/** `POST .../revisar` — una vuelta por cursor sobre las filas pendientes. */
 export interface ResumenRevisionInmuebles {
   lote: string;
   /** Filas miradas en ESTA llamada (el presupuesto de tiempo la acota). */
@@ -369,28 +383,6 @@ export interface ResumenRevisionInmuebles {
    * ESTO lo que corta el bucle, no `restantes > 0` (ver `revisarLoteCompleto`).
    */
   terminado: boolean;
-}
-
-export interface ResumenActivacionInmuebles {
-  lote: string;
-  activados: number;
-  /**
-   * Filas que ya tenían su `Property` (mismo «Código») y se re-apuntaron en
-   * vez de duplicarlo. Cuentan como AVANCE: una llamada que sólo reusa sí
-   * movió el lote, y sin este número el loop la leería como estancada.
-   */
-  reusados?: number;
-  omitidas: FilaOmitida[];
-  restantes: number;
-  /** Mandatos creados en esta llamada que quedaron con varios dueños y su reparto. */
-  mandatosConVariosDuenos?: number;
-  /**
-   * T-0130 — filas que fallaron en ESTA llamada, con el motivo. Ya no cuentan
-   * en `restantes`: el bucle sigue con las demás.
-   */
-  fallidas?: FilaFallidaAlActivar[];
-  /** T-0130 — el lote entero tras la llamada: «X de Y creadas». Puede ser `null`. */
-  progreso?: EstadoDeLoteInmuebles | null;
 }
 
 /**
@@ -507,8 +499,6 @@ export interface ResultadoMasivoInmuebles {
 const BASE = '/inmobiliaria/inmuebles/importar';
 /** Capped at 200 by the back (wu-4-report.md §6). */
 export const POR_PAGINA_MAX = 200;
-/** T-0130 — filas por llamada a `activar`: cada una dura segundos, no minutos. */
-export const TANDA_DE_ACTIVACION = 50;
 /** T-0130 — filas por llamada a `preparar` si el back no recomienda otra cosa. */
 export const TANDA_DE_SUBIDA = 500;
 /** T-0130 — direcciones por vuelta de ubicación: es lo máximo que se pierde en un corte. */
@@ -704,11 +694,18 @@ export const inmueblesImportacionApi = {
     return apiClient.delete<DescarteDeLoteInmuebles>(`${BASE}/lotes/${encodeURIComponent(lote)}`);
   },
 
-  /** 3. Converts LISTO rows into real properties — `maximo` per call (T-0130:
-   * 50 por defecto; antes 500 o 15 s). Call again while `restantes > 0`;
-   * resumable, nothing repeats. */
-  async activar(lote: string, maximo = TANDA_DE_ACTIVACION): Promise<ResumenActivacionInmuebles> {
-    return apiClient.post<ResumenActivacionInmuebles>(`${BASE}/activar`, { lote, maximo });
+  /**
+   * T-0131 — «Crear todas»: encola UN proceso del servidor que crea todas las
+   * filas LISTO. Es idempotente (con el lote ya CREANDO devuelve lo mismo) y la
+   * persona puede cerrar la página: el avance se lee con `estadoDeLote`.
+   * 409 `LOTE_INCOMPLETO` (todavía se sube, se ubica o se revisa) y 409
+   * `NADA_PARA_CREAR` (no hay filas listas).
+   */
+  async crear(lote: string): Promise<RespuestaDeCreacion> {
+    return apiClient.post<RespuestaDeCreacion>(
+      `${BASE}/lotes/${encodeURIComponent(lote)}/crear`,
+      {},
+    );
   },
 
   /**

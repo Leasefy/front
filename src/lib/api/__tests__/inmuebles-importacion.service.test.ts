@@ -129,20 +129,18 @@ describe('inmueblesImportacionApi.descartarLote — 409/404 pass through, never 
   });
 });
 
-describe('inmueblesImportacionApi.activar — the restantes loop shape', () => {
-  it('POSTs { lote } only — no row ids, no count', async () => {
-    const fetchMock = mockFetchOnce({ lote: 'lote-1', activados: 500, omitidas: [], restantes: 300 });
-    const result = await inmueblesImportacionApi.activar('lote-1');
+describe('inmueblesImportacionApi.crear — «Crear todas»', () => {
+  it('POSTs an empty body to lotes/:lote/crear and returns the creacion counters', async () => {
+    const fetchMock = mockFetchOnce({
+      lote: 'lote-1',
+      fase: 'CREANDO',
+      creacion: { total: 2000, creadas: 0, fallidas: 0, pendientes: 2000 },
+    });
+    const result = await inmueblesImportacionApi.crear('lote-1');
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain('/inmobiliaria/inmuebles/importar/activar');
-    expect(JSON.parse(init?.body as string)).toEqual({ lote: 'lote-1' });
-    expect(result.restantes).toBe(300);
-  });
-
-  it('a zero-restantes response signals the loop is done', async () => {
-    mockFetchOnce({ lote: 'lote-1', activados: 42, omitidas: [{ id: 'f1', fila: 3, faltantes: ['canon'] }], restantes: 0 });
-    const result = await inmueblesImportacionApi.activar('lote-1');
-    expect(result.restantes).toBe(0);
-    expect(result.omitidas).toHaveLength(1);
+    expect(String(url)).toContain('/inmobiliaria/inmuebles/importar/lotes/lote-1/crear');
+    expect(JSON.parse(init?.body as string)).toEqual({});
+    expect(result.fase).toBe('CREANDO');
+    expect(result.creacion.pendientes).toBe(2000);
   });
 });

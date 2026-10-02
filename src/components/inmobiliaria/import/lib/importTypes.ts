@@ -163,6 +163,12 @@ export interface ImportWizardState {
    * remount: perderlo hacía re-subir el archivo y duplicar el lote.
    */
   loteRetomado?: string | null;
+  /**
+   * T-0130 — una subida cortada que se está retomando. El servidor guardó las
+   * filas que llegaron pero no el archivo: la persona lo vuelve a elegir y el
+   * último paso sigue desde `siguienteDesde` en vez de abrir otro lote.
+   */
+  subidaRetomada?: { lote: string; total: number; recibidas: number } | null;
 }
 
 // Target fields that columns can map to

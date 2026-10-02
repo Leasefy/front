@@ -29,7 +29,6 @@ import { StepPortalImport } from './steps/StepPortalImport';
 import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
-import { lotesParaRetomar } from './lib/lotesParaRetomar';
 import { destinosDe } from './lib/columnaCompuesta';
 import { ponerTitulosATodas, sinTitulo } from './lib/ponerTitulos';
 import {
@@ -42,13 +41,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from '@/components/ui/toast';
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
-import { describirCargaAbierta } from './lib/describirCargaAbierta';
-import {
-  inmueblesImportacionApi,
-  type EstadoDeLoteInmuebles,
-} from '@/lib/api/inmuebles-importacion.service';
+import { etapaDeLaCarga } from './lib/describirCargaAbierta';
+import { CargasAMedias } from './CargasAMedias';
+import { useCargasAbiertasDeInmuebles } from '@/lib/hooks/use-cargas-abiertas-de-inmuebles';
+import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
 const STEPS = [
   { id: 1, labelKey: 'inmobiliaria.import.steps.method', icon: FileArrowUp },
@@ -74,6 +71,7 @@ const INITIAL_STATE: ImportWizardState = {
   importProgress: 0,
   importedCount: 0,
   loteRetomado: null,
+  subidaRetomada: null,
 };
 
 export interface ImportStepProps {
@@ -164,86 +162,32 @@ export function ImportWizard({
   }, []);
 
   /*
-   * T-0125 · aviso nativo antes de cerrar la pestaña. Dos cosas viven sólo en
-   * el navegador: un archivo leído que todavía no se preparó (`loteRetomado`
-   * se escribe al preparar: desde ahí el lote vive en el servidor y se
-   * retoma), y el trabajo de un paso en vuelo —geocodificar, preparar,
-   * activar—, que el paso reporta con `onOcupado`. El asistente lo escucha y
-   * se lo sigue pasando al muro tal cual.
+   * T-0125 · aviso nativo antes de cerrar la pestaña. T-0130 lo acota: sólo lo
+   * que vive ÚNICAMENTE en el navegador. Un archivo leído que todavía no se
+   * subió (`loteRetomado` se escribe con la primera tanda: desde ahí el lote vive
+   * en el servidor y se retoma) — y, mientras corre, la subida por tandas y la
+   * búsqueda de direcciones, de las que se ocupa `StepConfirmImport` (lo suyo es
+   * reanudable: crear los inmuebles ya no pide quedarse). El asistente sólo le
+   * sigue pasando al muro el «ocupado» tal cual.
    */
-  const [pasoTrabajando, setPasoTrabajando] = useState(false);
   const avisarOcupado = useCallback(
     (ocupado: boolean, cancelar?: () => void) => {
-      setPasoTrabajando(ocupado);
       onOcupado?.(ocupado, cancelar);
     },
     [onOcupado],
   );
-  useAvisoAlSalir(
-    pasoTrabajando || (wizardState.rawRows.length > 0 && !wizardState.loteRetomado),
-  );
+  useAvisoAlSalir(wizardState.rawRows.length > 0 && !wizardState.loteRetomado);
 
   /*
-   * La tarjeta de «tienes una importación sin terminar» — mismo patrón que
-   * MigrarTerceros. El lote vive en el servidor desde `preparar()`: una
-   * recarga o un «cancelar» a mitad no pierde nada, pero sin esta tarjeta la
-   * persona no tenía cómo VOLVER a él — re-subía el archivo y duplicaba el
-   * lote. No poder listarlos jamás frena empezar de cero: el catch es mudo.
+   * La tarjeta de «tienes una carga a medias» — en CUALQUIER paso, con o sin
+   * archivo leído (T-0130). El lote vive en el servidor desde la primera tanda:
+   * una recarga o un corte no pierde nada, pero sin esta tarjeta la persona no
+   * tenía cómo VOLVER a él — re-subía el archivo y duplicaba el lote. Se vuelve
+   * a leer en cada cambio de paso. No poder listarlas jamás frena empezar de
+   * cero: el hook calla el error.
    */
-  const [lotesAbiertos, setLotesAbiertos] = useState<EstadoDeLoteInmuebles[]>([]);
-  useEffect(() => {
-    let vigente = true;
-    inmueblesImportacionApi
-      .lotesAbiertos()
-      .then((lotes) => vigente && setLotesAbiertos(lotesParaRetomar(lotes)))
-      .catch(() => {
-        // Sin lista no hay tarjeta, y empezar de nuevo sigue abierto.
-      });
-    return () => {
-      vigente = false;
-    };
-  }, []);
-
-  /*
-   * Descartar una carga desde la tarjeta, sin entrar.
-   *
-   * El back rechaza con 409 `LOTE_EN_PROCESO` si el job todavía corre; eso NO
-   * es un fallo de la persona, es «esperá», y se dice tal cual en vez de
-   * reintentar en silencio (mismo criterio que `handleDescartarLote`).
-   */
-  const [descartando, setDescartando] = useState<string | null>(null);
-  const descartarLote = useCallback(async (lote: string) => {
-    setDescartando(lote);
-    try {
-      const r = await inmueblesImportacionApi.descartarLote(lote);
-      setLotesAbiertos((prev) => prev.filter((l) => l.lote !== lote));
-      toast.success('Carga descartada', {
-        description: `${r.descartadas} ${r.descartadas === 1 ? 'fila quedó fuera' : 'filas quedaron fuera'}. Los inmuebles que ya se habían creado no se tocan.`,
-      });
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : 'No pudimos descartar esa carga.',
-      );
-    } finally {
-      setDescartando(null);
-    }
-  }, []);
-
-  const retomarLote = useCallback(
-    (l: EstadoDeLoteInmuebles) => {
-      updateState({ loteRetomado: l.lote });
-      // Directo al último paso (posición 5: con method null se ven los 5
-      // pasos). StepConfirmImport lee `loteRetomado` al montar.
-      setCurrentStep(5);
-    },
-    [updateState],
-  );
-
-  const mostrarRetomar =
-    lotesAbiertos.length > 0 &&
-    currentStep === 1 &&
-    wizardState.method === null &&
-    wizardState.rawRows.length === 0;
+  const { lotes: cargasAbiertas, recargar: recargarCargas, quitar: quitarCarga } =
+    useCargasAbiertasDeInmuebles(currentStep);
 
   // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
   //
@@ -288,6 +232,53 @@ export function ImportWizard({
   }, [wizardState.method]);
 
   const pasoActual = visibleSteps[currentStep - 1]?.id ?? 1;
+
+  const retomarLote = useCallback(
+    (l: EstadoDeLoteInmuebles) => {
+      const etapa = etapaDeLaCarga(l);
+      const aEnviar = wizardState.properties.filter((p) => p.hasErrors || p.selected).length;
+      if (etapa === 'subiendo') {
+        /*
+         * Seguir SUBIENDO necesita las filas: el servidor guarda lo que llegó,
+         * no el archivo. Con el mismo archivo ya leído (misma cuenta de filas)
+         * se va derecho al último paso, que retoma desde `siguienteDesde`; si
+         * no, se pide el archivo y se retoma cuando llegue al último paso.
+         */
+        const subida = { lote: l.lote, total: l.total, recibidas: l.recibidas ?? 0 };
+        const filasListas = aEnviar === l.total && wizardState.aiAnalyzed;
+        updateState({ subidaRetomada: subida, loteRetomado: l.lote });
+        setCurrentStep(filasListas ? visibleSteps.length : wizardState.method === null ? 1 : 2);
+        return;
+      }
+      // Ubicando o ya en revisión: el lote entero está en el servidor.
+      // El portal de enlaces sólo tiene 2 pasos: sin método no hay último paso.
+      updateState({
+        loteRetomado: l.lote,
+        subidaRetomada: null,
+        ...(wizardState.method === 'portal' ? { method: null } : {}),
+      });
+      setCurrentStep(wizardState.method === 'portal' ? STEPS.length : visibleSteps.length);
+    },
+    [updateState, wizardState.properties, wizardState.aiAnalyzed, wizardState.method, visibleSteps.length],
+  );
+
+  const alDescartarCarga = useCallback(
+    (lote: string) => {
+      quitarCarga(lote);
+      if (wizardState.loteRetomado === lote || wizardState.subidaRetomada?.lote === lote) {
+        updateState({
+          loteRetomado: wizardState.loteRetomado === lote ? null : wizardState.loteRetomado,
+          subidaRetomada: wizardState.subidaRetomada?.lote === lote ? null : wizardState.subidaRetomada,
+        });
+      }
+    },
+    [quitarCarga, updateState, wizardState.loteRetomado, wizardState.subidaRetomada],
+  );
+
+  // La carga que el último paso ya está mostrando no se repite en la tarjeta.
+  const cargasParaOfrecer = cargasAbiertas.filter(
+    (l) => !(currentStep === visibleSteps.length && l.lote === wizardState.loteRetomado),
+  );
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -447,119 +438,46 @@ export function ImportWizard({
 
   return (
     <div className="max-w-4xl mx-auto">
-      {mostrarRetomar && (
-        <section
-          className="mb-6 space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
-          data-testid="lotes-inmuebles-abiertos"
+      <CargasAMedias
+        lotes={cargasParaOfrecer}
+        onRetomar={retomarLote}
+        onDescartada={alDescartarCarga}
+        onCambio={recargarCargas}
+      />
+
+      {/*
+       * T-0130 — se retoma una subida cortada: el servidor guardó lo que llegó,
+       * pero no el archivo. Hay que volver a elegirlo y pasarlo por los pasos
+       * (las filas se arman igual); el último paso sigue desde donde quedó.
+       */}
+      {wizardState.subidaRetomada && currentStep < visibleSteps.length ? (
+        <div
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted p-4"
+          data-testid="subida-retomada"
         >
-          <p className="text-sm font-medium text-fg">
-            {lotesAbiertos.length === 1
-              ? 'Tienes una importación sin terminar'
-              : `Tienes ${lotesAbiertos.length} importaciones sin terminar`}
+          <p className="min-w-0 text-sm text-fg">
+            Seguimos la carga que dejaste a medias: llegaron{' '}
+            <span className="font-mono tabular-nums">
+              {wizardState.subidaRetomada.recibidas.toLocaleString('es-CO')}
+            </span>{' '}
+            de{' '}
+            <span className="font-mono tabular-nums">
+              {wizardState.subidaRetomada.total.toLocaleString('es-CO')}
+            </span>{' '}
+            filas. Selecciona el MISMO archivo y avanza hasta el último paso: retomamos desde
+            donde quedó.
           </p>
-          {/*
-           * 🔴 «¿Cuál de esos retomo?» (Nico, 2026-09-11, con cinco cargas en
-           * pantalla). No podía saberlo: las cinco eran del MISMO archivo, así
-           * que las cinco líneas empezaban con «2864 inmuebles» y se
-           * diferenciaban en dos conteos sin contexto.
-           *
-           * Ahora cada fila dice cuándo se subió, cuántos inmuebles entraron
-           * por ella, y —lo que de verdad decide— si frena el paso. Sólo las
-           * filas LISTO lo frenan: una carga con 2.864 «por revisar» y cero
-           * listas no frena nada, y hasta hoy se veía igual de alarmante que
-           * una que sí.
-           */}
-          {lotesAbiertos.map((l) => {
-            const d = describirCargaAbierta(l, new Date());
-            return (
-            <div
-              key={l.lote}
-              className="flex flex-wrap items-center justify-between gap-2"
-              data-testid={`carga-${l.lote}`}
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-fg">
-                  {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
-                  {d.cuando && d.yaEntraron > 0 ? ' · ' : null}
-                  {d.yaEntraron > 0 ? (
-                    <>
-                      <span className="font-mono tabular-nums">{d.yaEntraron}</span> ya
-                      en tu portafolio
-                    </>
-                  ) : null}
-                </p>
-                <p className="text-sm text-fg-muted">
-                  {d.queHacer === 'procesando' ? (
-                    'Todavía procesándose'
-                  ) : d.queHacer === 'frena' ? (
-                    <>
-                      <span className="font-mono tabular-nums">{d.frena}</span> listos
-                      sin activar — <span className="text-warning">frenan este paso</span>
-                      {d.porRevisar > 0 ? (
-                        <>
-                          {' · '}
-                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
-                          por revisar
-                        </>
-                      ) : null}
-                    </>
-                  ) : d.queHacer === 'terminada' ? (
-                    <>
-                      Sin nada que activar
-                      {d.porRevisar > 0 ? (
-                        <>
-                          {' · '}
-                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
-                          por revisar, no frenan
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-mono tabular-nums">{d.porRevisar}</span> por
-                      revisar · no frenan este paso
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {/*
-                 * 🔴 DESCARTAR SIN TENER QUE ENTRAR.
-                 *
-                 * Una carga abandonada frena el paso entero del muro
-                 * —cualquier fila LISTO lo deja «pendiente»— y hasta hoy la
-                 * única forma de sacarla del medio era retomarla, esperar a
-                 * que cargara la revisión y buscar «Descartar lote completo»
-                 * adentro. Con cuatro cargas viejas encima, eso son cuatro
-                 * viajes para tirar algo que ya se decidió tirar (Nico,
-                 * 2026-09-11).
-                 *
-                 * Va en `ghost` y a la izquierda del primario: descartar es
-                 * destructivo y no puede competir por el clic con «Retomar».
-                 */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  hideArrow
-                  disabled={descartando === l.lote || l.estado !== 'LISTO'}
-                  isLoading={descartando === l.lote}
-                  data-testid={`descartar-${l.lote}`}
-                  onClick={() => void descartarLote(l.lote)}
-                >
-                  Descartar
-                </Button>
-                <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
-                  Retomar
-                </Button>
-              </div>
-            </div>
-            );
-          })}
-          <p className="text-xs text-fg-subtle">
-            Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
-          </p>
-        </section>
-      )}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            hideArrow
+            onClick={() => updateState({ subidaRetomada: null })}
+          >
+            Dejar esta carga para después
+          </Button>
+        </div>
+      ) : null}
 
       {/* Step Indicator */}
       <div className="mb-8">

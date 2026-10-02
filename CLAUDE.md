@@ -250,6 +250,29 @@ La «Revisión con IA» (espera inventada de 2 s) se eliminó.
 - `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
 - `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
 
+## Procesos de migración reanudables (T-0135)
+
+Regla del dueño: todo proceso de migración guarda por lotes; un corte nunca obliga a empezar de 0, y lo que falta lo dice
+el SERVIDOR (no `localStorage` ni la memoria de la pestaña). El back es la misma unidad (WU-1).
+
+- **`ResolucionMasiva`** (contratos): con `lote`, antes de aplicar pregunta `GET migrar/filas/ids?faltante=` y sólo manda
+  las seleccionadas que aún no tienen el dato (excluye ACTIVADO/DESCARTADO); repite hasta que no queden. Progreso
+  «Aplicando X/N» con el N del servidor, `useAvisoAlSalir` mientras corre. En la lista, el panel «Lo que todavía falta
+  resolver en bloque» (de `resumen.porMotivo.uso|propietario`) ofrece «Seguir con las N que faltan»: selecciona sólo esas y
+  abre la acción en su modo (`modoInicial`).
+- **Propietario del archivo**: `consignarDesdeElArchivo` lee `fila.datos.propietario` (guardado en `preparar`), ya no un
+  `useRef` con el archivo; continúa con las filas sin propietario aunque se recargue o se vuelva otro día.
+- **`CrearInmueblesFaltantes`**: tandas de 25 (`limite` + cursor `despuesDeFila`/`siguienteFila`), avance a la vista,
+  `useAvisoAlSalir`; si se corta, el botón pasa a «Continuar» y el conteo del servidor dice cuántas faltan. Se conserva el
+  resultado agrupado de T-0134.
+- **`DocumentosContables`**: cada lote de `migrar` manda `lote` (nombre+peso del archivo, o el de la carga que se continúa)
+  + `totalDelArchivo` (lo que contó la revisión) + `desde`. `CargasDeComprobantesAbiertas` lista las cargas a medias con
+  «Continuar» (pide el MISMO archivo y no reenvía el prefijo ya procesado) y «Descartar». Rutas nuevas:
+  `GET/POST …/migracion/documentos/cargas[/descartar]` (`rutas-del-back.json` regenerado).
+- **Orden de despliegue**: el back primero (`lote`/`totalDelArchivo`/`desde`/`faltante`/`limite` pasan por
+  `forbidNonWhitelisted`; contra un back anterior, esas claves son un 400). Sin tests por decisión del dueño: ver el
+  `WU-1-report.md` de la tarea.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

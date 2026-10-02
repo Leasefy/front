@@ -18,6 +18,13 @@
  * El número que muestra sale del back (`GET migrar/inmuebles-faltantes`),
  * contado con el MISMO criterio que la acción. Contarlo acá desde la página
  * visible diría «3» con 90 filas en el lote.
+ *
+ * T-0135 — reanudable y a la vista. Ya no es UNA petición larga: se piden
+ * tandas de `TANDA` filas (`limite` + cursor `despuesDeFila`) y cada una sólo
+ * toma las filas que TODAVÍA no tienen inmueble, así que lo creado queda
+ * guardado tanda por tanda y repetir la acción nunca duplica. Se ve el avance;
+ * si se corta (pestaña cerrada, red), al volver el conteo del servidor dice
+ * cuántas faltan y el mismo botón continúa con ésas.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -40,6 +47,27 @@ import {
   type PrevisualizacionInmueblesFaltantes,
   type ResultadoInmueblesFaltantes,
 } from '@/lib/api/contracts.service'
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
+
+/** Filas por petición: cada inmueble reserva su código bajo lock, así que tandas cortas. */
+const TANDA = 25
+/** Tope duro de tandas: 200 × 25 = 5.000, el máximo de un lote. */
+const MAX_TANDAS = 220
+
+/** Suma el resultado de una tanda al acumulado, sin pisar lo anterior. */
+function acumular(
+  acc: ResultadoInmueblesFaltantes,
+  t: ResultadoInmueblesFaltantes,
+): ResultadoInmueblesFaltantes {
+  return {
+    pedidas: acc.pedidas + t.pedidas,
+    creados: acc.creados + t.creados,
+    vinculados: acc.vinculados + t.vinculados,
+    consignados: acc.consignados + t.consignados,
+    omitidas: [...acc.omitidas, ...t.omitidas],
+    fallidas: [...acc.fallidas, ...t.fallidas],
+  }
+}
 
 interface Props {
   lote: string
@@ -52,6 +80,10 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   const [confirmando, setConfirmando] = useState(false)
   const [ciudad, setCiudad] = useState('')
   const [corriendo, setCorriendo] = useState(false)
+  /** Filas que ya pasaron por una tanda en esta corrida (creadas, resueltas u omitidas). */
+  const [revisadas, setRevisadas] = useState(0)
+  /** La corrida se cortó: el botón pasa a decir «Continuar». */
+  const [seCorto, setSeCorto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resultado, setResultado] = useState<ResultadoInmueblesFaltantes | null>(null)
 
@@ -68,23 +100,58 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
     void contar()
   }, [contar])
 
+  // Mientras corre, cerrar la pestaña la corta (lo creado queda guardado, pero
+  // la persona tiene que saberlo antes de irse).
+  useAvisoAlSalir(corriendo)
+
   async function crear() {
     setCorriendo(true)
     setError(null)
+    setSeCorto(false)
+    setRevisadas(0)
+    let acumulado: ResultadoInmueblesFaltantes = {
+      pedidas: 0,
+      creados: 0,
+      vinculados: 0,
+      consignados: 0,
+      omitidas: [],
+      fallidas: [],
+    }
     try {
-      const r = await contractsApi.migracion.crearInmueblesFaltantes({ lote }, ciudad)
-      setResultado(r)
+      let cursor: number | undefined
+      for (let i = 0; i < MAX_TANDAS; i++) {
+        const t = await contractsApi.migracion.crearInmueblesFaltantes({ lote }, ciudad, {
+          limite: TANDA,
+          despuesDeFila: cursor,
+        })
+        acumulado = acumular(acumulado, t)
+        setResultado(acumulado)
+        setRevisadas(acumulado.pedidas)
+        // Sin cursor (`undefined`: un back anterior lo hizo todo de una vez) o
+        // `null` (ya no hay más filas): terminó.
+        if (t.siguienteFila == null) break
+        cursor = t.siguienteFila
+      }
       setConfirmando(false)
-      await contar()
-      onListo()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos crear los inmuebles.')
+      // Lo creado en las tandas anteriores YA quedó guardado: se dice, y el
+      // mismo botón continúa con las filas que falten.
+      setSeCorto(true)
+      setError(
+        `${e instanceof Error ? e.message : 'No pudimos crear los inmuebles.'} — se alcanzaron a crear ${acumulado.creados}. Lo creado quedó guardado: pulsa «Continuar» para seguir con los que faltan.`,
+      )
     } finally {
       setCorriendo(false)
+      await contar()
+      // Si se creó algo, la lista de trabajo tiene que refrescarse aunque una
+      // tanda posterior haya fallado.
+      if (acumulado.pedidas > 0) onListo()
     }
   }
 
   const n = previa?.candidatas ?? 0
+  // Para el avance: todas las filas sin inmueble que la corrida va a mirar.
+  const porMirar = previa ? previa.candidatas + previa.ambiguas + previa.sinDireccion : 0
   if (!previa || (n === 0 && !resultado)) return null
 
   return (
@@ -102,7 +169,8 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
           <p className="mt-1 text-caption text-muted-foreground">
             Ninguna dirección coincidió con tu portafolio. Podemos crear los inmuebles
             desde el archivo, consignarlos al propietario que trae cada fila y, si el
-            contrato ya está activo, vincularlo — de una.
+            contrato ya está activo, vincularlo. Se hace por tandas y lo creado queda
+            guardado: si se corta, aquí mismo continúas con los que falten.
             {previa.ambiguas > 0
               ? ` ${previa.ambiguas} ${previa.ambiguas === 1 ? 'fila tiene' : 'filas tienen'} dos inmuebles con la misma dirección: esas se eligen a mano.`
               : ''}
@@ -117,7 +185,9 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               onClick={() => setConfirmando(true)}
               data-testid="crear-inmuebles-faltantes-abrir"
             >
-              Crear los {n} inmuebles que faltan
+              {seCorto
+                ? `Continuar: crear los ${n} que faltan`
+                : `Crear los ${n} inmuebles que faltan`}
             </Button>
           </div>
         </div>
@@ -160,6 +230,18 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               data-testid="crear-inmuebles-faltantes-ciudad"
             />
           </div>
+          {corriendo ? (
+            <p
+              className="text-caption text-muted-foreground"
+              aria-live="polite"
+              data-testid="crear-inmuebles-faltantes-progreso"
+            >
+              Creando… {nf.format(Math.min(revisadas, porMirar || revisadas))} de{' '}
+              {nf.format(porMirar || revisadas)} filas revisadas
+              {resultado ? ` · ${nf.format(resultado.creados)} inmuebles creados` : ''}. Puedes
+              esperar aquí: lo creado se va guardando.
+            </p>
+          ) : null}
           {error ? (
             <p className="flex items-center gap-1.5 text-sm text-destructive">
               <WarningCircle className="h-4 w-4" />
@@ -178,7 +260,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               disabled={corriendo}
               data-testid="crear-inmuebles-faltantes-confirmar"
             >
-              {corriendo ? 'Creando…' : `Crear ${n}`}
+              {corriendo ? 'Creando…' : seCorto ? `Continuar con ${n}` : `Crear ${n}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

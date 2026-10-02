@@ -90,7 +90,7 @@ import {
   resumenDeLectura,
   vistaPreviaDeFilas,
 } from "@/lib/contratos/vista-previa-de-migracion";
-import { armarFilaAMigrar, leerFilaDelArchivo } from "@/lib/contratos/armar-fila";
+import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { motivoDeFilaConCanonPorConfirmar } from "@/lib/inmuebles/canon-por-confirmar";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
@@ -183,47 +183,27 @@ type DuenoDelArchivo = {
 };
 
 /**
- * Los propietarios del archivo, por número de fila (0 = primera de datos, el
- * mismo `fila` que devuelve el back). Sólo cuentan las filas con documento:
- * sin documento no hay a quién enlazar y el nombre solo crearía homónimos.
+ * El propietario que el archivo dijo para esta fila, leído de lo que el SERVIDOR
+ * guardó (`datos.propietario`, que viaja en `preparar`) — no del archivo que
+ * quedó en la memoria del navegador. T-0135: antes vivía en un `useRef` y una
+ * recarga a mitad de la consignación lo perdía; ahora cualquier sesión que
+ * abra el lote ve lo mismo y la consignación continúa sola con lo que falte.
+ * Sólo cuentan las filas con documento: sin documento no hay a quién enlazar y
+ * el nombre solo crearía homónimos.
  */
-function duenosDe(
-  filas: Fila[],
-  mapeo: MapeoDeColumna[],
-): Map<number, DuenoDelArchivo> {
-  const col = (campo: CampoDeContrato) =>
-    mapeo.find((m) => m.campo === campo)?.columna;
-  const cNombre = col("propietarioNombre");
-  const cDoc = col("propietarioDocumento");
-  const cCorreo = col("propietarioCorreo");
-  const cTel = col("propietarioTelefono");
-  const out = new Map<number, DuenoDelArchivo>();
-  /*
-   * 🔴 Sin `cDoc` NO se sale de una: el export real no trae una columna de
-   * cédula del propietario, trae «Propietario de Propiedad» con el documento
-   * y el nombre pegados («[1] 900111222 - CONSTRUCTORA…»). `leerFilaDelArchivo`
-   * ya los separa; salir acá dejaba 1.850 contratos sin propietario habiendo
-   * el documento en el archivo.
-   */
-  if (!cDoc && !cNombre) return out;
-  filas.forEach((fila, i) => {
-    const texto = (c?: string) => (c ? String(fila[c] ?? "").trim() : "");
-    const { fila: leida } = leerFilaDelArchivo(fila, mapeo);
-    // La MISMA llave que usa la migración de terceros: «1.004.997.858» del
-    // archivo de contratos tiene que caer en el propietario que terceros ya
-    // creó como «1004997858», no crear un duplicado.
-    const documento = documentoComoLlave(
-      texto(cDoc) || leida.propietario?.documento || "",
-    );
-    if (!documento) return;
-    out.set(i, {
-      nombre: leida.propietario?.nombre || texto(cNombre) || documento,
-      documento,
-      correo: texto(cCorreo) || undefined,
-      telefono: texto(cTel) || undefined,
-    });
-  });
-  return out;
+function duenoDeLaFila(fila: FilaDeMigracion): DuenoDelArchivo | null {
+  const p = fila.datos?.propietario;
+  // La MISMA llave que usa la migración de terceros: «1.004.997.858» del
+  // archivo de contratos tiene que caer en el propietario que terceros ya
+  // creó como «1004997858», no crear un duplicado.
+  const documento = documentoComoLlave(p?.documento ?? "");
+  if (!documento) return null;
+  return {
+    nombre: p?.nombre?.trim() || documento,
+    documento,
+    correo: p?.correo?.trim() || undefined,
+    telefono: p?.telefono?.trim() || undefined,
+  };
 }
 
 export interface MigrarContratosProps {
@@ -572,11 +552,11 @@ export function MigrarContratos({
    * vez de elegir uno y quedar perfecto y equivocado.
    */
   /*
-   * Lo que el archivo dice del propietario no viaja al back (el DTO no lo
-   * admite): se guarda acá y, con el lote listo, se consigna solo. Se pierde
-   * si la persona recarga a mitad — esas filas quedan con su formulario.
+   * Lo que el archivo dice del propietario SÍ viaja al back (`datos.propietario`)
+   * y queda guardado con la fila (T-0135): con el lote listo se consigna solo, y
+   * si la persona recarga o vuelve otro día, la consignación continúa con las
+   * filas que todavía no tienen propietario — sin volver a subir el archivo.
    */
-  const duenosDelArchivo = useRef<Map<number, DuenoDelArchivo>>(new Map());
   const lotesConsignados = useRef<Set<string>>(new Set());
 
   /**
@@ -587,8 +567,7 @@ export function MigrarContratos({
    */
   const consignarDesdeElArchivo = useCallback(
     async (elLote: string) => {
-      const duenos = duenosDelArchivo.current;
-      if (duenos.size === 0 || lotesConsignados.current.has(elLote)) return;
+      if (lotesConsignados.current.has(elLote)) return;
       lotesConsignados.current.add(elLote);
       setConsignando(true);
       const candidatas: FilaDeMigracion[] = [];
@@ -604,7 +583,7 @@ export function MigrarContratos({
               (f) =>
                 f.faltantes.includes("propietario") &&
                 !f.propietarioId &&
-                duenos.has(f.fila),
+                duenoDeLaFila(f) !== null,
             ),
           );
           if (p.filas.length < POR_PAGINA || pag * POR_PAGINA >= p.total)
@@ -632,7 +611,7 @@ export function MigrarContratos({
       let hechas = 0;
       let fallidas = 0;
       for (const f of candidatas) {
-        const d = duenos.get(f.fila)!;
+        const d = duenoDeLaFila(f)!;
         try {
           await contractsApi.migracion.registrarPropietario(f.id, {
             nombre: d.nombre,
@@ -681,7 +660,6 @@ export function MigrarContratos({
     try {
       // Cada campo mapeado viaja; lo que no se mapeó (o quedó vacío) viaja
       // ausente, nunca un default inventado — ver `armar-fila.ts`.
-      duenosDelArchivo.current = duenosDe(filas, mapeo);
       const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo));
 
       const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey);
@@ -1925,6 +1903,22 @@ function ListaDeTrabajo({
   // de cada fila. Estado local: sólo le importa a este control.
   const [seleccionandoTodo, setSeleccionandoTodo] = useState(false);
   const [notaSeleccion, setNotaSeleccion] = useState<string | null>(null);
+  /**
+   * T-0135 — «Seguir con las N que faltan»: qué acción en bloque se retoma. Se
+   * pasa a `ResolucionMasiva` (con `key`) para que abra ya en ese modo.
+   */
+  const [modoMasivo, setModoMasivo] = useState<"uso" | "propietario" | null>(
+    null,
+  );
+  const [versionMasivo, setVersionMasivo] = useState(0);
+  const [seleccionandoFaltantes, setSeleccionandoFaltantes] = useState<
+    "uso" | "propietario" | null
+  >(null);
+  // Lo que todavía falta, con el número DEL SERVIDOR (`porMotivo` cuenta las
+  // filas PENDIENTES con ese faltante: las ya resueltas, activadas o
+  // descartadas no están). Un back viejo no lo manda: no se afirma nada.
+  const faltanUso = resumen.porMotivo?.uso ?? 0;
+  const faltanPropietario = resumen.porMotivo?.propietario ?? 0;
 
   // T-0036 §3.2.C6 — el modal de confirmación de "Descartar este lote".
   // Vive acá (no en el padre): en éxito el padre desmonta este componente
@@ -1933,6 +1927,48 @@ function ListaDeTrabajo({
   // igual (nunca rechaza) y el `.then` de abajo lo cierra.
   const [confirmarDescarte, setConfirmarDescarte] = useState(false);
   const puedeDescartarLote = resumen.pendientes + resumen.listos > 0;
+
+  /**
+   * T-0135 — retoma una acción en bloque: selecciona SÓLO las filas a las que
+   * todavía les falta ese dato (las que una corrida cortada ya resolvió no
+   * vuelven) y abre la acción en su modo. El estado sale del servidor, no de
+   * la memoria de esta pestaña: sirve igual tras cerrar y volver.
+   */
+  async function seguirConLasQueFaltan(faltante: "uso" | "propietario") {
+    setSeleccionandoFaltantes(faltante);
+    setNotaSeleccion(null);
+    try {
+      const r = await contractsApi.migracion.idsDeFilas(
+        lote,
+        undefined,
+        faltante,
+      );
+      if (r.ids.length === 0) {
+        setNotaSeleccion(
+          faltante === "uso"
+            ? "A ninguna fila le falta el uso: no hay nada que seguir."
+            : "A ninguna fila le falta el propietario: no hay nada que seguir.",
+        );
+        return;
+      }
+      onSeleccionCambia(new Set(r.ids));
+      setModoMasivo(faltante);
+      setVersionMasivo((v) => v + 1);
+      setNotaSeleccion(
+        r.truncado
+          ? `Se seleccionaron las primeras ${r.ids.length} de ${r.total} — al terminar, vuelve a pulsar «Seguir con las que faltan».`
+          : null,
+      );
+    } catch (e) {
+      setNotaSeleccion(
+        e instanceof Error
+          ? e.message
+          : "No pudimos traer las filas que faltan.",
+      );
+    } finally {
+      setSeleccionandoFaltantes(null);
+    }
+  }
 
   async function seleccionarTodoElLote() {
     setSeleccionandoTodo(true);
@@ -2403,6 +2439,73 @@ function ListaDeTrabajo({
         </div>
       ) : null}
 
+      {/* T-0135 — lo que sigue pendiente de las acciones en bloque, con el
+          número del servidor. Si se cerró la pestaña a mitad de «Aplicar a N»,
+          lo ya aplicado quedó guardado y acá se ve cuánto falta. */}
+      {faltanUso > 0 || faltanPropietario > 0 ? (
+        <div
+          className="space-y-2 rounded-lg border border-border bg-surface-muted p-3"
+          data-testid="faltan-en-bloque"
+        >
+          <p className="text-sm font-medium text-foreground">
+            Lo que todavía falta resolver en bloque
+          </p>
+          <p className="text-caption text-muted-foreground">
+            Lo que ya aplicaste quedó guardado. Si una acción en bloque se
+            cortó, aquí ves cuántas filas quedan y puedes seguir sólo con ellas.
+          </p>
+          {faltanUso > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-foreground" data-testid="faltan-uso">
+                A {faltanUso}{" "}
+                {faltanUso === 1 ? "contrato le falta" : "contratos les falta"}{" "}
+                el uso del inmueble.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                hideArrow
+                disabled={seleccionandoFaltantes !== null}
+                isLoading={seleccionandoFaltantes === "uso"}
+                onClick={() => void seguirConLasQueFaltan("uso")}
+                data-testid="seguir-uso"
+              >
+                Seguir con {faltanUso === 1 ? "la" : "las"} {faltanUso} que
+                faltan
+              </Button>
+            </div>
+          ) : null}
+          {faltanPropietario > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p
+                className="text-sm text-foreground"
+                data-testid="faltan-propietario"
+              >
+                A {faltanPropietario}{" "}
+                {faltanPropietario === 1
+                  ? "contrato le falta"
+                  : "contratos les falta"}{" "}
+                el propietario.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                hideArrow
+                disabled={seleccionandoFaltantes !== null}
+                isLoading={seleccionandoFaltantes === "propietario"}
+                onClick={() => void seguirConLasQueFaltan("propietario")}
+                data-testid="seguir-propietario"
+              >
+                Seguir con {faltanPropietario === 1 ? "la" : "las"}{" "}
+                {faltanPropietario} que faltan
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {notaSeleccion ? (
         <p
           className="text-caption text-muted-foreground"
@@ -2422,9 +2525,13 @@ function ListaDeTrabajo({
 
       {seleccion.size > 0 ? (
         <ResolucionMasiva
+          // `key`: «Seguir con las que faltan» reabre la acción en su modo.
+          key={versionMasivo}
           ids={Array.from(seleccion)}
           seleccionadas={filas.filter((f) => seleccion.has(f.id))}
           onListo={onFilaResuelta}
+          lote={lote}
+          modoInicial={modoMasivo}
         />
       ) : null}
 

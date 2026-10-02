@@ -400,6 +400,49 @@ function errorDeRed(err: unknown): ApiError {
   return new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
 }
 
+/**
+ * ¿Este 402 se lleva a la persona a la página del plan? (02-10-2026)
+ *
+ * Antes, CUALQUIER 402 de una ruta `/inmobiliaria/*` navegaba a
+ * `/panel/inmobiliaria/upgrade`. Pero el back manda 402 por tres motivos:
+ *
+ *  · la inmobiliaria no tiene un plan activo (`AgencyActiveSubscriptionGuard`,
+ *    sin `code`): corta TODO el panel, y ahí sí va la página del plan;
+ *  · llegó al tope de su plan (`assertCanAddAgente`, `assertCanAddConsignacion`:
+ *    «Alcanzaste el límite de agentes de tu plan…»): nace de una ACCIÓN —invitar
+ *    a alguien, consignar un inmueble— y la pantalla lo dice en su sitio con
+ *    «Ver planes» (`InvitarAlEquipo`), con lo que la persona escribió intacto;
+ *  · un módulo de pago sin contratar (`NOMINA_NO_HABILITADA`, con `code`): lo
+ *    activa Leasefy, no la página del plan.
+ *
+ * Y el fundador que invita a su equipo desde el ASISTENTE DE REGISTRO
+ * (`/onboarding/inmobiliaria`) salía del asistente a mitad de camino.
+ *
+ * Regla: sólo un GET (cargar una pantalla del panel), sin `code` propio, y
+ * sólo si la persona está en el panel (nunca desde el registro, el onboarding
+ * o la página del plan / el pago, que haría un bucle).
+ */
+export function el402LlevaAlPlan({
+  method,
+  path,
+  code,
+  pagina,
+}: {
+  method: string
+  path: string
+  code?: string
+  pagina: string
+}): boolean {
+  if (method.toUpperCase() !== 'GET') return false
+  if (code) return false
+  if (!path.startsWith('/inmobiliaria')) return false
+  if (!pagina.startsWith('/panel/inmobiliaria')) return false
+  return (
+    !pagina.startsWith('/panel/inmobiliaria/upgrade') &&
+    !pagina.startsWith('/panel/inmobiliaria/checkout')
+  )
+}
+
 /** El cuerpo de un error como objeto: un `null` o un texto suelto no traen claves. */
 function cuerpoComoObjeto(cuerpo: unknown): Record<string, unknown> {
   return cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)
@@ -590,22 +633,20 @@ async function request<T>(
   }
 
   if (res.status === 402) {
-    // Payment Required — the backend gates agency endpoints when the agency has
-    // no active paid plan. Backstop the client-side AgencySubscriptionGuard:
-    // bounce any gated /inmobiliaria/* call to the upgrade flow. Skip when we're
-    // already on the upgrade/checkout pages to avoid a redirect loop.
+    // Payment Required — respaldo del `AgencySubscriptionGuard` del cliente:
+    // con el plan vencido, el panel va a la página del plan. SÓLO en ese caso
+    // (ver `el402LlevaAlPlan`): el tope de un plan o un módulo sin contratar se
+    // dicen donde está la persona.
     const errorBody = await res.json().catch(() => ({}))
+    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
     if (
       typeof window !== 'undefined' &&
-      path.startsWith('/inmobiliaria') &&
-      !window.location.pathname.startsWith('/panel/inmobiliaria/upgrade') &&
-      !window.location.pathname.startsWith('/panel/inmobiliaria/checkout')
+      el402LlevaAlPlan({ method, path, code: code402, pagina: window.location.pathname })
     ) {
       window.location.href = '/panel/inmobiliaria/upgrade'
     }
     // El mismo reenvío que el 403 y que la rama general: esta rama también
     // devolvía el error pelado por estar antes de aquélla.
-    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
     throw new ApiError(
       402,
       errorBody.message || 'Se requiere un plan activo para continuar',

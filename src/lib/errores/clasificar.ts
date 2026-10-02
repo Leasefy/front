@@ -24,6 +24,7 @@ import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } fr
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
+import { leerFallo } from './traductor-de-errores'
 import {
   esCaidaDeLaBase,
   esServicioNoDisponible,
@@ -87,6 +88,12 @@ export interface FalloDeCarga {
   status: number | null
   /** El mensaje original, para diagnóstico. Nunca se muestra tal cual. */
   mensajeOriginal: string | null
+  /**
+   * La `referencia` que el back (o el micro) le puso a un 5xx y que también
+   * quedó en su log (02-10-2026). `<FalloDeCarga>` la muestra en vez de la
+   * suya (status + hora): con ésta, soporte encuentra el error exacto.
+   */
+  referencia?: string
 }
 
 /** El nombre de lo que se estaba cargando, para que el cartel no sea genérico. */
@@ -638,6 +645,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
+  const referencia = leerFallo(error).referencia
   return {
     tipo: 'servidor',
     titulo: 'No pudimos cargar esto',
@@ -646,6 +654,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     sePuedeReintentar: true,
     status,
     mensajeOriginal,
+    ...(referencia ? { referencia } : {}),
   }
 }
 

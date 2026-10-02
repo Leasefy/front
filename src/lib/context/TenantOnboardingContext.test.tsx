@@ -454,7 +454,10 @@ describe('TenantOnboardingContext — blank-name defense (restored draft)', () =
 })
 
 describe('TenantOnboardingContext — split error handling (POST vs refreshUser)', () => {
-  const SAVE_ERROR = 'No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.'
+  // 02-10-2026: ya no culpa a la conexión ante cualquier fallo (regla de oro):
+  // un 500 dice que fue nuestro.
+  const SAVE_ERROR =
+    'No pudimos guardar tu perfil: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.'
   const REFRESH_ERROR =
     'Tu perfil se guardó correctamente, pero no pudimos actualizar tu sesión. Intenta de nuevo.'
 
@@ -555,5 +558,128 @@ describe('TenantOnboardingContext — rejected submit', () => {
       expect.objectContaining({ firstName: 'Ana', lastName: 'Pérez' }),
     )
     expect(captured!.isComplete).toBe(true)
+  })
+})
+
+/**
+ * 🔴 02-10-2026 · El caso de QA: paso 2 con un presupuesto de once cifras →
+ * el back respondía 500 (P2020) y aquí salía «Revisa tu conexión». Ahora:
+ *  · el cliente lo ataja ANTES (las mismas reglas que el back);
+ *  · si el back igual lo rechaza, el error va a SU campo y al paso de ese campo;
+ *  · «conexión» sólo cuando no hubo respuesta; un 5xx dice que fue nuestro.
+ */
+describe('TenantOnboardingContext — errores del servidor en su campo (02-10-2026)', () => {
+  /** Un error con la forma de `ApiError` (el cliente está mockeado en esta suite). */
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    const mensaje = Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')
+    return Object.assign(new Error(mensaje), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  const PREFERENCIAS_VALIDAS = { budgetMin: 1_000_000, budgetMax: 2_000_000 }
+  const TOPE = 'El presupuesto no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.'
+
+  async function listoParaGuardar() {
+    await renderProvider()
+    await act(async () => {
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS, ...PREFERENCIAS_VALIDAS })
+    })
+  }
+
+  async function guardar() {
+    await act(async () => {
+      await expect(captured!.submitOnboarding()).rejects.toThrow()
+    })
+  }
+
+  it('🔴 el cliente ataja el presupuesto de once cifras: el paso 2 no es válido', async () => {
+    await renderProvider()
+    await act(async () => {
+      captured!.updateDraft({ displayName: 'Ana Pérez', ...DATOS_VALIDOS, budgetMin: 1_000_000, budgetMax: 30_000_000_000 })
+    })
+    expect(captured!.isStepValid(2)).toBe(false)
+    await act(async () => {
+      captured!.updateDraft({ budgetMax: 2_000_000_000 })
+    })
+    expect(captured!.isStepValid(2)).toBe(true)
+  })
+
+  it('🔴 un 400 DATOS_INVALIDOS en budgetMax: el error va al campo, sin toast y sin «conexión»', async () => {
+    postMock.mockRejectedValue(
+      errorDelBack(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE],
+        campos: [{ campo: 'budgetMax', regla: 'maximo', mensaje: TOPE, valor: 30_000_000_000 }],
+      }),
+    )
+    await listoParaGuardar()
+    await guardar()
+
+    expect(captured!.erroresDelServidor).toEqual({ budgetMax: TOPE })
+    expect(captured!.currentStep).toBe(2)
+    expect(toastErrorMock).not.toHaveBeenCalled()
+
+    // Al editar el presupuesto, el error del servidor se va.
+    await act(async () => {
+      captured!.updateDraft({ budgetMax: 3_000_000 })
+    })
+    expect(captured!.erroresDelServidor).toEqual({})
+  })
+
+  it('un 400 en el celular vuelve al paso 1 con el error en «telefono»', async () => {
+    postMock.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: ['Numero de telefono invalido.'],
+        campos: [{ campo: 'phone', regla: 'formato', mensaje: 'Numero de telefono invalido.' }],
+      }),
+    )
+    await listoParaGuardar()
+    await guardar()
+    expect(captured!.currentStep).toBe(1)
+    expect(captured!.erroresDelServidor).toEqual({ telefono: 'Numero de telefono invalido.' })
+  })
+
+  it('lo que no tiene campo en el asistente va al toast', async () => {
+    postMock.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: ['Elige cómo prefieres que te contactemos.'],
+        campos: [{ campo: 'preferredContact', regla: 'opcion', mensaje: 'Elige cómo prefieres que te contactemos.' }],
+      }),
+    )
+    await listoParaGuardar()
+    await guardar()
+    expect(toastErrorMock).toHaveBeenCalledWith('Elige cómo prefieres que te contactemos.')
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    postMock.mockRejectedValue(
+      errorDelBack(500, {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await listoParaGuardar()
+    await guardar()
+    const texto = String(toastErrorMock.mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tu perfil: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    postMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await listoParaGuardar()
+    await guardar()
+    expect(String(toastErrorMock.mock.calls[0][0])).toMatch(/conexión/)
   })
 })

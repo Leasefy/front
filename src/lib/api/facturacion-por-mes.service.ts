@@ -39,6 +39,7 @@
  */
 
 import { apiClient, ApiError } from './client'
+import { camposDelError } from '@/lib/errores/traductor-de-errores'
 import { anunciarProceso, RECURSO_DE_PROCESOS } from './procesos.service'
 import { invalidar } from './refresco-de-datos'
 import type {
@@ -573,7 +574,11 @@ export const facturacionPorMesService = {
        * ellas: cada tanda es su proceso, como antes. No se emite dos veces:
        * el 400 llega antes de tocar nada.
        */
-      if (e instanceof ApiError && e.status === 400 && /should not exist/i.test(e.message)) {
+      // `no_permitido` es la regla del contrato de errores (02-10-2026); el
+      // texto en inglés, el de un back anterior.
+      const claveDesconocida =
+        camposDelError(e).some((c) => c.regla === 'no_permitido') || /should not exist/i.test(String((e as Error)?.message))
+      if (e instanceof ApiError && e.status === 400 && claveDesconocida) {
         return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
       }
       throw e

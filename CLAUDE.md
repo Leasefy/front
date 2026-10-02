@@ -250,6 +250,34 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
 - Mientras la franja esté, un fallo de red en pantalla no repite el rojo: «Esperando a Leasefy…»
   con su reintento.
 
+## Errores: un solo traductor y la regla de oro (02-10-2026)
+
+Nico: «no hay ningún sistema de errores completo». El back y el micro mandan el mismo sobre
+(`back/src/common/errores/contrato-de-error.ts`): `{ statusCode, code, message, campos?:
+[{ campo, regla, mensaje, valor? }], servicio?, referencia? }`. `ApiError` lo guarda entero en
+`detalle`.
+
+- **Fuente de verdad**: `src/lib/errores/traductor-de-errores.ts` (`leerFallo`,
+  `camposDelError`, `mensajeParaLaPersona(error, { porDefecto, accion })`). `mensajeDelFallo`,
+  `errorEnCristiano`, `descripcionDelError` y `motivosDelError` delegan ahí; no escribas otro.
+- 🔴 **Regla de oro**: «conexión» SÓLO cuando no hubo respuesta (status 0 / `fetch` que no
+  salió). Un 4xx dice qué está mal. Un 5xx dice que falló de nuestro lado, sin culpar a nadie,
+  con la `referencia` del back. Las caídas (503 `SERVICIO_NO_DISPONIBLE`) siguen con
+  `src/lib/conexion/`.
+- **Formularios**: `aplicarErroresDelServidor(error, form, { mapa, campos })`
+  (`src/lib/errores/errores-en-el-formulario.ts`) hace `setError` en cada campo (mapa servidor →
+  formulario), enfoca el primero y deja en un toast SÓLO lo que quedó sin campo. Sin RHF:
+  `repartirErroresDelServidor`. La validación del cliente usa los MISMOS topes y frases que el
+  DTO del back. Referencia: el onboarding del inquilino (`TenantOnboardingContext` +
+  `lib/onboarding/preferencias-del-inquilino.ts`, espejo de `back/src/users/dto/limites-del-perfil.ts`).
+- **El error bajo el campo entra suave**: `<ErrorDelCampo id mensaje pista? />`
+  (`src/components/estado/ErrorDelCampo.tsx`, `Presence`/`CrossFade` de Cadence; con `pista`, la ayuda
+  y el error se cruzan). `id` = el de `aria-describedby` (`${id}-error` en un `FormField`).
+- **402**: sólo un GET del panel sin `code` (plan vencido) lleva a `/panel/inmobiliaria/upgrade`
+  (`el402LlevaAlPlan`, `client.ts`). El tope del plan en una acción y el registro se quedan donde están.
+- Un `code` estable decide; nunca el texto (P2002 del back viejo → `YA_EXISTE`; «should not
+  exist» → `campos[].regla === 'no_permitido'`).
+
 ## Carga de inmuebles reanudable (T-0130)
 
 La carga de inmuebles (`ImportWizard`, paso 3 del muro) ya no vive y muere con la pestaña. Contrato

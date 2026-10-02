@@ -189,6 +189,8 @@ export function FalloDeCarga({
   // si se recomputara en cada render, la referencia cambiaria mientras la
   // persona la esta copiando.
   const [referencia] = useState(() => {
+    // La del back (02-10-2026) es la que está en su log: si vino, va ésa.
+    if (fallo.referencia) return fallo.referencia
     const ahora = new Date()
     const hhmm =
       String(ahora.getHours()).padStart(2, '0') +

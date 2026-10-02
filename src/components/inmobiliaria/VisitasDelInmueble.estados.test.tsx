@@ -111,7 +111,7 @@ describe('<VisitasDelInmueble> — sin inmueble, fallo de carga y motivo al guar
     })
   })
 
-  it('un 500 al guardar no pinta «Internal server error»: queda el «intenta de nuevo»', async () => {
+  it('un 500 al guardar no pinta «Internal server error»: dice que fue de nuestro lado (02-10-2026)', async () => {
     agenda.getDisponibilidad.mockResolvedValueOnce({ windows: [], agendas: null, visitTypes: [] })
     agenda.setDisponibilidad.mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
     await montar('prop-1')
@@ -122,7 +122,8 @@ describe('<VisitasDelInmueble> — sin inmueble, fallo de carga y motivo al guar
     await tick()
 
     expect(toastMock.error).toHaveBeenCalledWith('No pudimos guardar los horarios', {
-      description: 'Intenta de nuevo en unos segundos.',
+      description: expect.stringMatching(/de nuestro lado/),
     })
+    expect(JSON.stringify(toastMock.error.mock.calls)).not.toContain('Internal server error')
   })
 })

@@ -20,6 +20,7 @@
  */
 
 import { ApiError } from '@/lib/api/client';
+import { camposDelError, conReferencia, leerFallo } from '@/lib/errores/traductor-de-errores';
 import type { PropietarioFormData } from '@/lib/types/inmobiliaria';
 
 export type CampoDelPropietario = keyof PropietarioFormData;
@@ -111,7 +112,18 @@ function duplicadoDe(err: ApiError): ErrorAlGuardarPropietario {
   if (/correo|email/.test(texto)) {
     return { campo: { field: 'email', message: CORREO_YA_CARGADO }, general: null };
   }
-  if (err.code === 'P2002' || /documento|document/.test(texto)) {
+  // `YA_EXISTE` es el code del contrato de errores (02-10-2026); `P2002`, el de
+  // un back anterior. Los `campos` del 409 dicen cuál columna chocó.
+  const choco = camposDelError(err).map((c) => c.campo);
+  if (choco.includes('email')) {
+    return { campo: { field: 'email', message: CORREO_YA_CARGADO }, general: null };
+  }
+  if (
+    err.code === 'YA_EXISTE' ||
+    err.code === 'P2002' ||
+    choco.includes('documentNumber') ||
+    /documento|document/.test(texto)
+  ) {
     return { campo: { field: 'documentNumber', message: DOCUMENTO_YA_CARGADO }, general: null };
   }
   // Un 409 que no es un duplicado conocido: su propio motivo, arriba.
@@ -129,6 +141,19 @@ export function errorAlGuardarPropietario(err: unknown): ErrorAlGuardarPropietar
     let campo: ErrorAlGuardarPropietario['campo'] = null;
     const sueltos: string[] = [];
     let hayValidadorSinCampo = false;
+
+    // 02-10-2026: el back manda `campos` con el nombre del DTO y una frase en
+    // español. Primero eso; el texto en inglés de abajo es de un back anterior.
+    const delServidor = camposDelError(err);
+    if (delServidor.length > 0) {
+      for (const c of delServidor) {
+        const field = CAMPO_DEL_DTO[c.campo.split('.').pop() ?? c.campo] ?? null;
+        if (field && !campo) campo = { field, message: c.mensaje };
+        else if (!field || campo?.field !== field) sueltos.push(c.mensaje);
+      }
+      const general = sueltos.length ? Array.from(new Set(sueltos)).join(' · ') : null;
+      return { campo, general: campo || general ? general : NO_PUDIMOS_GUARDAR };
+    }
 
     for (const m of mensajesDe(err)) {
       const field = campoDelMensaje(m);
@@ -148,11 +173,13 @@ export function errorAlGuardarPropietario(err: unknown): ErrorAlGuardarPropietar
     return { campo, general: campo || general ? general : NO_PUDIMOS_GUARDAR };
   }
 
-  // Otro 4xx con explicación del back: se dice lo que dijo. 5xx: reintentar sí sirve.
+  // Otro 4xx con explicación del back: se dice lo que dijo. 5xx o sin
+  // respuesta: «prueba de nuevo» sí sirve ahí.
   if (err.status >= 400 && err.status < 500 && err.message) {
     return { campo: null, general: err.message };
   }
-  return { campo: null, general: NO_PUDIMOS_GUARDAR };
+  // Un 5xx: el texto de siempre (no culpa a nadie) + la referencia de soporte.
+  return { campo: null, general: conReferencia(NO_PUDIMOS_GUARDAR, leerFallo(err)) };
 }
 
 /**

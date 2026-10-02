@@ -10,6 +10,7 @@ import {
   clearInFlightGets,
   setMfaPendingFlag,
   estaMfaPendiente,
+  el402LlevaAlPlan,
 } from './client'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
@@ -596,4 +597,70 @@ describe('esCodigoDeSesionMuerta', () => {
     'no reconoce %p',
     (code) => expect(esCodigoDeSesionMuerta(code)).toBe(false),
   )
+})
+
+/**
+ * 02-10-2026 · El 402 que sacaba al fundador del asistente de registro.
+ *
+ * Antes, todo 402 de `/inmobiliaria/*` navegaba a la página del plan. El back
+ * manda 402 también por el TOPE del plan al invitar o consignar («Alcanzaste el
+ * límite de agentes…») y por un módulo sin contratar (`NOMINA_NO_HABILITADA`):
+ * ésos se dicen donde está la persona. Y desde `/onboarding/inmobiliaria` (el
+ * asistente) nunca se navega: se perdería lo que llenó.
+ */
+describe('402: sólo el panel bloqueado por el plan va a la página del plan', () => {
+  const PLAN_INACTIVO = {
+    message: 'Necesitas una suscripción activa para acceder al panel de tu inmobiliaria. Actualiza tu plan para continuar.',
+  }
+  const TOPE = { message: 'Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.' }
+
+  it('cargar una pantalla del panel sin plan activo → la página del plan', async () => {
+    setLocation('/panel/inmobiliaria/inmuebles')
+    vi.stubGlobal('fetch', stubFetch(402, PLAN_INACTIVO))
+    const err = (await apiClient.get('/inmobiliaria/consignaciones').catch((e) => e)) as ApiError
+    expect(err.status).toBe(402)
+    expect(window.location.href).toBe('/panel/inmobiliaria/upgrade')
+  })
+
+  it('🔴 el tope del plan al invitar desde el ASISTENTE de registro: no saca al fundador', async () => {
+    setLocation('/onboarding/inmobiliaria')
+    vi.stubGlobal('fetch', stubFetch(402, TOPE))
+    const err = (await apiClient.post('/inmobiliaria/agency/members/invite', {}).catch((e) => e)) as ApiError
+    expect(window.location.href).toBe('')
+    expect(err.status).toBe(402)
+    expect(err.message).toBe(TOPE.message)
+  })
+
+  it('el tope del plan en una acción dentro del panel: el mensaje queda en la pantalla', async () => {
+    setLocation('/panel/inmobiliaria/configuracion')
+    vi.stubGlobal('fetch', stubFetch(402, TOPE))
+    await apiClient.post('/inmobiliaria/agency/members/invite', {}).catch(() => null)
+    expect(window.location.href).toBe('')
+  })
+
+  it('un GET del asistente de registro tampoco navega', async () => {
+    setLocation('/onboarding/inmobiliaria')
+    vi.stubGlobal('fetch', stubFetch(402, PLAN_INACTIVO))
+    await apiClient.get('/inmobiliaria/agency').catch(() => null)
+    expect(window.location.href).toBe('')
+  })
+
+  it('un 402 con `code` propio (módulo sin contratar) lo explica su pantalla', async () => {
+    setLocation('/panel/inmobiliaria/nomina')
+    vi.stubGlobal('fetch', stubFetch(402, { code: 'NOMINA_NO_HABILITADA', message: 'El módulo de Nómina no está habilitado.' }))
+    const err = (await apiClient.get('/inmobiliaria/nomina/empleados').catch((e) => e)) as ApiError
+    expect(window.location.href).toBe('')
+    expect(err.code).toBe('NOMINA_NO_HABILITADA')
+  })
+
+  it.each([
+    ['/panel/inmobiliaria/upgrade', 'GET', '/inmobiliaria/agency', undefined, false],
+    ['/panel/inmobiliaria/checkout', 'GET', '/inmobiliaria/agency', undefined, false],
+    ['/panel/inmobiliaria', 'GET', '/users/me', undefined, false],
+    ['/registro', 'GET', '/inmobiliaria/agency', undefined, false],
+    ['/panel/inmobiliaria/pipeline', 'get', '/inmobiliaria/pipeline', undefined, true],
+    ['/panel/inmobiliaria/inmuebles', 'PATCH', '/inmobiliaria/consignaciones/1', undefined, false],
+  ] as const)('desde %s, %s %s (code %s) → %s', (pagina, method, path, code, esperado) => {
+    expect(el402LlevaAlPlan({ method, path, code, pagina })).toBe(esperado)
+  })
 })

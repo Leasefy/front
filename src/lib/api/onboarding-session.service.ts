@@ -22,6 +22,7 @@
  */
 
 import { VERSION_TERMINOS } from '@/lib/legal/versiones'
+import { camposDelError, type CampoConError } from '@/lib/errores/traductor-de-errores'
 import { agentAuthHeaders } from './agent-auth'
 import type {
   OnboardingSessionAgencyRequest,
@@ -58,18 +59,27 @@ export class OnboardingSessionError extends Error {
   readonly status: number | null
   /** Only populated for `kind === 'conflict'` — the real current step. */
   readonly conflict?: OnboardingSessionStepConflict
+  /**
+   * 02-10-2026 · Los problemas por campo del sobre de error del micro
+   * (`DATOS_INVALIDOS`), para ponerlos en su campo con
+   * `aplicarErroresDelServidor` (`lib/errores/errores-en-el-formulario.ts`).
+   * Vacío si la respuesta no los trae.
+   */
+  readonly campos: CampoConError[]
 
   constructor(
     kind: OnboardingSessionErrorKind,
     status: number | null,
     message: string,
     conflict?: OnboardingSessionStepConflict,
+    campos: CampoConError[] = [],
   ) {
     super(message)
     this.name = 'OnboardingSessionError'
     this.kind = kind
     this.status = status
     this.conflict = conflict
+    this.campos = campos
   }
 }
 
@@ -175,8 +185,15 @@ async function throwForErrorResponse(res: Response): Promise<never> {
     parsedBody = null
   }
 
+  // 02-10-2026 · El micro manda el sobre de error del back
+  // (`{ code: 'DATOS_INVALIDOS', message[], campos[] }`) con frases en español
+  // que ya nombran el campo. Se usan primero; el `error.issues` de Zod (en
+  // inglés) queda para un micro anterior.
+  const campos = camposDelError(parsedBody)
   let message: string
-  if (isZodValidationBody(parsedBody)) {
+  if (campos.length > 0) {
+    message = Array.from(new Set(campos.map((c) => c.mensaje))).join('; ')
+  } else if (isZodValidationBody(parsedBody)) {
     message = formatZodValidationMessage(parsedBody)
   } else if (isErrorLike(parsedBody)) {
     message = parsedBody.error
@@ -191,9 +208,10 @@ async function throwForErrorResponse(res: Response): Promise<never> {
       status,
       message,
       parsedBody as OnboardingSessionStepConflict,
+      campos,
     )
   }
-  throw new OnboardingSessionError(kind, status, message)
+  throw new OnboardingSessionError(kind, status, message, undefined, campos)
 }
 
 // ── Fetch helpers ─────────────────────────────────────────────────────────

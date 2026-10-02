@@ -1,0 +1,88 @@
+/**
+ * 02-10-2026 · El error bajo un campo, con su entrada suave (`Presence` /
+ * `CrossFade` de Cadence). En las pruebas las animaciones de framer saltan a su
+ * valor final (`vitest.setup.ts`), así que se mira el estado, no el viaje.
+ */
+import * as React from 'react'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
+import { ErrorDelCampo, type ErrorDelCampoProps } from './ErrorDelCampo'
+
+void React
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+let container: HTMLDivElement
+let root: Root
+
+beforeEach(() => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+})
+
+afterEach(() => {
+  act(() => root.unmount())
+  container.remove()
+})
+
+function pintar(props: ErrorDelCampoProps) {
+  act(() => root.render(<ErrorDelCampo {...props} />))
+}
+
+const alerta = () => container.querySelector('[role="alert"]')
+
+/** Espera a que termine una salida de AnimatePresence (un par de cuadros). */
+async function esperarLaSalida() {
+  for (let i = 0; i < 10; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+  }
+}
+
+describe('<ErrorDelCampo>', () => {
+  it('sin mensaje no pinta nada', () => {
+    pintar({ id: 'budgetMax-error', mensaje: undefined })
+    expect(container.textContent).toBe('')
+    expect(alerta()).toBeNull()
+  })
+
+  it('con mensaje: un alert con el id que nombra el campo y el estilo de error', () => {
+    pintar({ id: 'budgetMax-error', mensaje: 'El presupuesto no puede pasar de $2.000.000.000 al mes.' })
+    expect(alerta()?.id).toBe('budgetMax-error')
+    expect(alerta()?.textContent).toBe('El presupuesto no puede pasar de $2.000.000.000 al mes.')
+    expect(alerta()?.className).toContain('text-danger')
+  })
+
+  it('al corregirse, el error se va', async () => {
+    pintar({ id: 'x-error', mensaje: 'Falta el nombre.' })
+    expect(alerta()).not.toBeNull()
+    pintar({ id: 'x-error', mensaje: null })
+    await esperarLaSalida()
+    expect(alerta()).toBeNull()
+  })
+
+  it('con pista: la ayuda sin error; el error la reemplaza y al corregirse vuelve la ayuda', async () => {
+    const pista = 'En pesos colombianos, lo que pagarías al mes.'
+    pintar({ id: 'presupuesto-error', pista, mensaje: null })
+    expect(container.textContent).toBe(pista)
+    expect(alerta()).toBeNull()
+
+    pintar({ id: 'presupuesto-error', pista, mensaje: 'El máximo no puede ser menor que el mínimo.' })
+    await esperarLaSalida()
+    expect(alerta()?.textContent).toBe('El máximo no puede ser menor que el mínimo.')
+    expect(container.textContent).not.toContain(pista)
+
+    pintar({ id: 'presupuesto-error', pista, mensaje: null })
+    await esperarLaSalida()
+    expect(container.textContent).toBe(pista)
+    expect(alerta()).toBeNull()
+  })
+
+  it('un mensaje que cambia se lee nuevo (el del servidor reemplaza al del cliente)', () => {
+    pintar({ id: 'x-error', mensaje: 'Uno' })
+    pintar({ id: 'x-error', mensaje: 'Otro' })
+    expect(alerta()?.textContent).toBe('Otro')
+  })
+})

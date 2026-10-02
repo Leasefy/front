@@ -15,6 +15,7 @@
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDocumentoFaltante } from '@/lib/errores/documento-del-propietario';
 import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /**
  * ¿Es un 403? Con status manda el status; sin él (errores viejos que no son
@@ -32,6 +33,10 @@ export function isPermissionError(err: unknown): boolean {
  * El motivo del back en palabras, para el toast o el campo. Un 400 del
  * ValidationPipe trae `messages[]`: se listan todos, no sólo el primero.
  * Si el error no trae nada legible, va `porDefecto`.
+ *
+ * 02-10-2026: delega en el traductor único (`lib/errores/traductor-de-errores`),
+ * que aplica la regla de oro: «conexión» sólo si no hubo respuesta; un 5xx dice
+ * que fue nuestro, con la referencia, y no el «Error interno del servidor.».
  */
 export function mensajeDelFallo(err: unknown, porDefecto: string): string {
   // 01-10-2026: si se cayó una parte de Leasefy (503 `SERVICIO_NO_DISPONIBLE`)
@@ -43,12 +48,7 @@ export function mensajeDelFallo(err: unknown, porDefecto: string): string {
   // T-0128: propietario sin documento / pagaré con datos incompletos.
   const delDocumento = mensajeDeDocumentoFaltante(err);
   if (delDocumento) return delDocumento;
-  if (err instanceof ApiError) {
-    if (err.messages?.length) return err.messages.join(' · ');
-    return err.message || porDefecto;
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return porDefecto;
+  return mensajeParaLaPersona(err, { porDefecto });
 }
 
 /** El status HTTP del fallo, si vino del back; `null` si no se sabe. */

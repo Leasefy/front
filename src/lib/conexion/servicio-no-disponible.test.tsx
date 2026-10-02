@@ -164,9 +164,9 @@ describe('los ayudantes de mensajes de error dicen la caída, no el crudo', () =
   it('errorEnCristiano', () => {
     expect(errorEnCristiano(error, 'No se pudo')).toBe(esperado)
   })
-  it('descripcionDelError, que a un 5xx normal lo calla', () => {
+  it('descripcionDelError: la caída con su texto; un 5xx normal dice que fue nuestro (02-10-2026)', () => {
     expect(descripcionDelError(error)).toBe(esperado)
-    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toBeUndefined()
+    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toMatch(/de nuestro lado/)
   })
   it('motivosDelError', () => {
     expect(motivosDelError(error)).toEqual([esperado])

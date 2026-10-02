@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { pipelineApi } from '@/lib/api/inmobiliaria.service';
 import { leadsApi } from '@/lib/api/crm.service';
 import { useCrm } from '@/lib/hooks/use-crm';
@@ -109,6 +110,20 @@ export function nombreDelOrigen(codigo: string): string {
 export function erroresDelLead(error: unknown): ErroresDelLead {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      // 02-10-2026: el back manda `campos` (DATOS_INVALIDOS) con el nombre del
+      // DTO y una frase en español. Se usan primero; los mensajes en inglés con
+      // el nombre adentro quedan sólo para un back anterior.
+      const delServidor = camposDelError(error);
+      if (delServidor.length > 0) {
+        const porCampo: ErroresDelLead['porCampo'] = {};
+        const sueltos: string[] = [];
+        for (const c of delServidor) {
+          const campo = CAMPOS.find((x) => x === c.campo.split('.').pop());
+          if (campo) porCampo[campo] = porCampo[campo] ?? MENSAJE_DEL_CAMPO[campo];
+          else sueltos.push(c.mensaje);
+        }
+        return { porCampo, general: sueltos.length ? Array.from(new Set(sueltos)).join(' · ') : undefined };
+      }
       const mensajes = error.messages ?? [error.message];
       const porCampo: ErroresDelLead['porCampo'] = {};
       const sueltos: string[] = [];
@@ -126,13 +141,14 @@ export function erroresDelLead(error: unknown): ErroresDelLead {
         },
       };
     }
-    if (error.status < 500 && error.message) {
+    if (error.status < 500 && error.status !== 0 && error.message) {
       return { porCampo: {}, general: error.message };
     }
   }
+  // Regla de oro (02-10-2026): «conexión» sólo si no hubo respuesta; un 5xx es nuestro.
   return {
     porCampo: {},
-    general: 'No se pudo guardar el lead. Revisa tu conexión e intenta de nuevo.',
+    general: mensajeParaLaPersona(error, { porDefecto: 'No se pudo guardar el lead. Prueba de nuevo en un momento.' }),
   };
 }
 

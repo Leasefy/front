@@ -201,6 +201,26 @@ en `.orchestration/tasks/T-0128-migracion-terceros-incompletos-y-masivo/contract
   `PROPIETARIO_SIN_DOCUMENTO` y `PAGARE_DATOS_INCOMPLETOS` se explican en
   `src/lib/errores/documento-del-propietario.ts` (enchufado en `mensajeDelFallo` y `errorEnCristiano`).
 
+## Centro de procesos — la base común (01-10-2026)
+
+Toda carga, descarga o acción masiva larga corre en el centro de procesos, por una de dos puertas
+(`src/lib/procesos/en-el-centro.ts`, con sus pruebas al lado):
+
+- **`lanzarEnElCentro({ titulo, tipoDeProceso, pedir, recursos?, alTerminar? })`** — el trabajo lo
+  hace el SERVIDOR (`procesos.lanzar`, 202 `{ procesoId }`). Anuncia, pide, abre el centro con el
+  proceso arriba y lo sigue (`procesosApi.ver` cada 2,5 s) hasta TERMINADO/FALLO/CANCELADO; entonces
+  invalida `recursos` y llama `alTerminar`. Devuelve `{ procesoId }` de una; un error de `pedir()`
+  sube tal cual. `seguirProceso(id, opciones)` sirve si el id ya se tiene.
+- **`correrEnElNavegador({ tipo, titulo, total?, trabajo, recursos? })`** — el trabajo lo hace la
+  PESTAÑA (`POST /inmobiliaria/procesos` y `:id/avance|terminar|fallar`). `trabajo(ctx)` usa
+  `ctx.avanzar(hechos, extra?)` (como mucho 1/s; `false` = parar: «Detener» acá o «Cancelar» desde
+  el centro) y `ctx.debeParar()`; devuelve `{ archivo?: { blob, nombre }, mensaje?, titulo? }`. Si el
+  back no puede abrir el proceso (503 sin migración) el trabajo corre igual sin el centro y el
+  archivo se baja directo: lo que funcionaba no se rompe.
+- **`concurrencia(items, n, fn)`** para bucles que hoy disparan todo junto con `Promise.allSettled`.
+- Tipos nuevos: `CARGA`, `ENVIO_MASIVO`, `GENERACION`, `APROBACION_MASIVA` (nombre e ícono en
+  `estado-del-proceso.ts` / `FilaDeProceso.tsx`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

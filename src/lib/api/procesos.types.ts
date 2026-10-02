@@ -14,6 +14,14 @@ export type TipoDeProceso =
   | 'MIGRACION_INMUEBLES'
   | 'EXPORTACION'
   | 'ENVIO_A_WOMPI'
+  /** Subir un archivo para ingerirlo: extracto bancario, recaudo, lista restrictiva. */
+  | 'CARGA'
+  /** Mandar N correos, mensajes o documentos: extractos, recordatorios, invitaciones. */
+  | 'ENVIO_MASIVO'
+  /** Generar lo del mes: cobros, dispersiones, certificados de retención. */
+  | 'GENERACION'
+  /** Aprobar o reversar muchos de una vez. */
+  | 'APROBACION_MASIVA'
 
 export interface Proceso {
   id: string

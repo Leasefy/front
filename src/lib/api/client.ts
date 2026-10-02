@@ -15,8 +15,9 @@ import {
   MENSAJE_LEASEFY_NO_RESPONDE,
 } from '@/lib/conexion/estado-de-conexion'
 import {
-  CODIGO_SERVICIO_NO_DISPONIBLE,
-  esServicioConocido,
+  esCaidaDeLaBase,
+  esServicioNoDisponible,
+  servicioDelError,
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
 
@@ -343,22 +344,6 @@ function errorDeRed(err: unknown): ApiError {
   return new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
 }
 
-/**
- * Un no-2xx que no es 401/402/403/429, leído y convertido en `ApiError`.
- *
- * Dos casos se separan acá, por el contrato de caídas del 01-10-2026:
- *
- *   · 502/503/504 SIN el `statusCode` de nuestro filtro: no contestó el back
- *     sino el balanceador. Es «Leasefy entero no responde» (capa 1): se avisa
- *     a la franja global y el error sale con un mensaje humano en vez de
- *     «Error 503».
- *   · 503 `SERVICIO_NO_DISPONIBLE`: el back contestó para decir que se cayó
- *     UNA parte (capa 2). El `message` pasa a ser el texto que la nombra, así
- *     todo toast que pinte `error.message` dice qué se cayó y qué hacer; lo
- *     que mandó el back sigue entero en `detalle`.
- *
- * Todo lo demás es el back contestando: la conexión está bien.
- */
 /** El cuerpo de un error como objeto: un `null` o un texto suelto no traen claves. */
 function cuerpoComoObjeto(cuerpo: unknown): Record<string, unknown> {
   return cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)
@@ -366,8 +351,31 @@ function cuerpoComoObjeto(cuerpo: unknown): Record<string, unknown> {
     : {}
 }
 
+/**
+ * Un no-2xx que no es 401/402/403/429, leído y convertido en `ApiError`.
+ *
+ * Tres casos se separan acá, por el contrato de caídas del 01-10-2026 (las
+ * reglas viven en `src/lib/conexion/`; acá sólo se aplican):
+ *
+ *   · Leasefy entero no responde (capa 1): un 502/503/504 que NO mandó el
+ *     back (sin `statusCode` ni `code`: el balanceador), o la base caída
+ *     (`servicio: 'base'`; sin Postgres no funciona nada). Se avisa a la
+ *     franja global y el error sale con `code: 'LEASEFY_NO_RESPONDE'` y un
+ *     mensaje humano en vez de «Error 503».
+ *   · Se cayó UNA parte (capa 2): 502/503 `SERVICIO_NO_DISPONIBLE` (los
+ *     proxies de avalúos y del cotizador siguen en 502), o cualquier 5xx con
+ *     `servicio` (el 502 `WOMPI_NO_RESPONDIO` cuando Wompi se cayó). El
+ *     `status` y el `code` no se tocan —la página de avalúos mira el 502 y
+ *     dispersiones el code—; el `message` pasa a ser el texto que nombra lo
+ *     caído, así todo toast que pinte `error.message` dice qué se cayó y qué
+ *     hacer. Lo que mandó el back sigue entero en `detalle`.
+ *
+ * Todo lo que no es capa 1 es el back contestando: la conexión está bien.
+ */
 function errorDeLaRespuesta(status: number, errorBody: Record<string, unknown>): ApiError {
-  if (esRespuestaDeCaidaGeneral(status, errorBody)) {
+  // La respuesta con la forma que leen las reglas de `src/lib/conexion/`.
+  const respuesta = { status, detalle: errorBody }
+  if (esCaidaDeLaBase(respuesta) || esRespuestaDeCaidaGeneral(status, errorBody)) {
     avisarQueLeasefyNoResponde()
     return new ApiError(status, MENSAJE_LEASEFY_NO_RESPONDE, CODIGO_LEASEFY_NO_RESPONDE, errorBody)
   }
@@ -377,9 +385,8 @@ function errorDeLaRespuesta(status: number, errorBody: Record<string, unknown>):
   // the same, so a caller can branch on a machine-readable code instead of
   // pattern-matching a human `.message` string.
   const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
-  if (status === 503 && code === CODIGO_SERVICIO_NO_DISPONIBLE) {
-    const servicio = esServicioConocido(errorBody.servicio) ? errorBody.servicio : null
-    return new ApiError(status, textoParaUnAviso(servicio), code, errorBody)
+  if (esServicioNoDisponible(respuesta)) {
+    return new ApiError(status, textoParaUnAviso(servicioDelError(respuesta)), code, errorBody)
   }
   return new ApiError(
     status,

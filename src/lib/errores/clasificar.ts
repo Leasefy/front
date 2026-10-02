@@ -25,6 +25,7 @@ import { sesionTerminada } from '@/lib/auth/session-terminal'
 import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
 import {
+  esCaidaDeLaBase,
   esServicioNoDisponible,
   servicioDelError,
   textoDeServicioNoDisponible,
@@ -325,6 +326,21 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
+  // Capa 1: el balanceador contestó por un back que no está, o se cayó la
+  // base (sin ella no funciona nada). No es «un problema nuestro,
+  // escríbenos»: es una caída que se arregla sola. Va ANTES de la capa 2
+  // porque la base caída también trae `servicio`.
+  if (cuerpoDelNo(error).code === CODIGO_LEASEFY_NO_RESPONDE || esCaidaDeLaBase(error)) {
+    return {
+      tipo: 'leasefyNoResponde',
+      titulo: 'Leasefy no respondió',
+      descripcion: 'No es nada que hayas hecho. Prueba de nuevo en un momento.',
+      sePuedeReintentar: true,
+      status,
+      mensajeOriginal,
+    }
+  }
+
   /*
    * Capa 2 (01-10-2026): se cayó UNA parte. El título la nombra; la
    * descripción es la línea que se basta sola —la que usan quienes pintan
@@ -337,19 +353,6 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'servicioNoDisponible',
       titulo: textoDeServicioNoDisponible(servicio).titulo,
       descripcion: textoParaUnAviso(servicio),
-      sePuedeReintentar: true,
-      status,
-      mensajeOriginal,
-    }
-  }
-
-  // Capa 1: el balanceador contestó por un back que no está. No es «un
-  // problema nuestro, escríbenos»: es una caída que se arregla sola.
-  if (cuerpoDelNo(error).code === CODIGO_LEASEFY_NO_RESPONDE) {
-    return {
-      tipo: 'leasefyNoResponde',
-      titulo: 'Leasefy no respondió',
-      descripcion: 'No es nada que hayas hecho. Prueba de nuevo en un momento.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,

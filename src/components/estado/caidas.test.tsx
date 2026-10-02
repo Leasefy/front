@@ -122,6 +122,16 @@ describe('<FalloDeCarga> con una parte caída', () => {
     expect(f).not.toHaveBeenCalled()
   })
 
+  it('el 502 del proxy de avalúos con el contrato nombra los avalúos', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }))
+    const cuerpo = { statusCode: 502, code: 'SERVICIO_NO_DISPONIBLE', servicio: 'avaluos', message: 'x' }
+    await render(
+      <FalloDeCarga error={new ApiError(502, 'x', 'SERVICIO_NO_DISPONIBLE', cuerpo)} onReintentar={vi.fn()} />,
+    )
+    expect(cartel().getAttribute('data-tipo')).toBe('servicioNoDisponible')
+    expect(texto()).toContain('Los avalúos no están disponibles en este momento')
+  })
+
   it('un 503 con otro code sigue siendo lo de antes, no una caída', async () => {
     const error = new ApiError(503, 'falta', 'FALTA_UNA_MIGRACION', { statusCode: 503 })
     await render(<FalloDeCarga error={error} onReintentar={vi.fn()} />)
@@ -142,6 +152,18 @@ describe('<FalloDeCarga> con Leasefy entero caído', () => {
     expect(texto()).toContain('Esperando a Leasefy…')
     expect(texto()).not.toContain('Referencia')
     expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
+  })
+
+  it('la base caída, con la franja prendida: también «Esperando a Leasefy…», no «la base de datos»', async () => {
+    avisarQueLeasefyNoResponde()
+    const base = new ApiError(503, MENSAJE_LEASEFY_NO_RESPONDE, CODIGO_LEASEFY_NO_RESPONDE, {
+      statusCode: 503,
+      code: 'SERVICIO_NO_DISPONIBLE',
+      servicio: 'base',
+    })
+    await render(<FalloDeCarga error={base} onReintentar={vi.fn()} />)
+    expect(texto()).toContain('Esperando a Leasefy…')
+    expect(texto()).not.toContain('base de datos')
   })
 
   it('un fallo de red sin internet: «Esperando la conexión…»', async () => {

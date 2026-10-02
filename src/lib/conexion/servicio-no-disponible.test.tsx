@@ -17,6 +17,7 @@ import { clasificarFallo } from '@/lib/errores/clasificar'
 import { CODIGO_LEASEFY_NO_RESPONDE, MENSAJE_LEASEFY_NO_RESPONDE } from './estado-de-conexion'
 import {
   consultarEstadoDeLosServicios,
+  esCaidaDeLaBase,
   esServicioNoDisponible,
   mensajeDeCaida,
   olvidarEstadoDeLosServicios,
@@ -55,6 +56,40 @@ describe('el clasificador', () => {
 
   it('el code con otro status tampoco', () => {
     expect(esServicioNoDisponible(new ApiError(500, 'x', 'SERVICIO_NO_DISPONIBLE'))).toBe(false)
+  })
+
+  it('reconoce el 502 de los proxies de avalúos y cotizador, que traen el contrato', () => {
+    expect(esServicioNoDisponible(new ApiError(502, 'x', 'SERVICIO_NO_DISPONIBLE', { servicio: 'avaluos' }))).toBe(true)
+  })
+
+  it('un 5xx con `servicio` es una caída aunque el code sea otro (WOMPI_NO_RESPONDIO)', () => {
+    const wompi = new ApiError(502, 'fetch failed', 'WOMPI_NO_RESPONDIO', {
+      statusCode: 502,
+      code: 'WOMPI_NO_RESPONDIO',
+      servicio: 'pagos',
+    })
+    expect(esServicioNoDisponible(wompi)).toBe(true)
+    expect(servicioDelError(wompi)).toBe('pagos')
+  })
+
+  it('el mismo 502 de Wompi SIN `servicio` es un «no» de Wompi, no una caída', () => {
+    const noDeWompi = new ApiError(502, 'Cuenta inválida', 'WOMPI_NO_RESPONDIO', {
+      statusCode: 502,
+      code: 'WOMPI_NO_RESPONDIO',
+    })
+    expect(esServicioNoDisponible(noDeWompi)).toBe(false)
+  })
+
+  it('la base caída se reconoce aparte: va por la capa 1', () => {
+    const base = new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE', {
+      statusCode: 503,
+      code: 'SERVICIO_NO_DISPONIBLE',
+      servicio: 'base',
+    })
+    expect(esCaidaDeLaBase(base)).toBe(true)
+    expect(esCaidaDeLaBase(caido('pagos'))).toBe(false)
+    expect(mensajeDeCaida(base)).toBe(MENSAJE_LEASEFY_NO_RESPONDE)
+    expect(clasificarFallo(base).tipo).toBe('leasefyNoResponde')
   })
 
   it('lo reconoce aunque el error haya perdido la clase (re-envuelto o plano)', () => {

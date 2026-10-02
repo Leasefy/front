@@ -230,15 +230,19 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   fuera de React que alimenta `apiClient` con cada respuesta. `fetch` que no sale → `sin-internet`
   (si `navigator.onLine === false`) o `leasefy-no-responde`; un 502/503/504 cuyo cuerpo no trae
   `statusCode` ni `code` (el balanceador) → `leasefy-no-responde`, y el `ApiError` sale con
-  `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano; cualquier otra respuesta del back → `bien`.
+  `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano. La base caída (5xx con `servicio: 'base'`)
+  también va por acá: sin Postgres no funciona nada. Cualquier otra respuesta del back → `bien`.
   Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
   arriba que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
   primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
   NO pasan por acá (son capa 2, servicio `asistente`).
-- **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): el back manda 503
-  `{ code: 'SERVICIO_NO_DISPONIBLE', servicio? }`. Otro 503 (`FALTA_UNA_MIGRACION`,
-  `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída. `apiClient` le pone al error el texto que
-  nombra lo caído; `clasificarFallo` tiene el tipo `servicioNoDisponible`; `FalloDeCarga` (y por él
+- **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): 502 o 503
+  `{ code: 'SERVICIO_NO_DISPONIBLE', servicio? }` (los proxies de avalúos y del cotizador siguen
+  en 502: la página de avalúos mira ese status), o cualquier 5xx con `servicio` (el 502
+  `WOMPI_NO_RESPONDIO` cuando Wompi se cayó). Otro 503 sin `servicio` (`FALTA_UNA_MIGRACION`,
+  `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída. `apiClient` no toca `status` ni `code`; le
+  pone al error el texto que nombra lo caído; `clasificarFallo` tiene el tipo
+  `servicioNoDisponible`; `FalloDeCarga` (y por él
   `EstadoDeDatos`), los banners del registro y `mensajeDelFallo` / `errorEnCristiano` /
   `descripcionDelError` / `motivosDelError` dicen el texto de capa 2. «Nuestro equipo ya está
   avisado» sale SÓLO si `GET /health/servicios` lo confirma para ese servicio

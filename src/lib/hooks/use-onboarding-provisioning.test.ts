@@ -484,6 +484,17 @@ describe('interpretarFallo ante una caída', () => {
     expect(general.reintentable).toBe(true)
   })
 
+  it('la base caída no es «el asistente»: es Leasefy sin responder', () => {
+    const fallo = interpretarFallo(
+      new ApiError(503, 'x', 'SERVICIO_NO_DISPONIBLE', {
+        statusCode: 503,
+        code: 'SERVICIO_NO_DISPONIBLE',
+        servicio: 'base',
+      }),
+    )
+    expect(fallo.caida).toEqual({ tipo: 'conexion' })
+  })
+
   it('un 503 viejo, sin el code, sigue como antes (sin caída)', () => {
     const fallo = interpretarFallo(new ApiError(503, 'Intenta en unos minutos.'))
     expect(fallo.caida).toBeUndefined()

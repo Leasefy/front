@@ -15,9 +15,15 @@
  *
  *     { statusCode: 503, code: 'SERVICIO_NO_DISPONIBLE', servicio?, message }
  *
- * Un 503 con OTRO `code` (`FALTA_UNA_MIGRACION`,
+ * Los proxies de avalúos y del cotizador mandan ese mismo cuerpo con 502, y
+ * un 5xx con otro `code` puede traer `servicio` cuando fue una caída
+ * (`WOMPI_NO_RESPONDIO`) — ver `esServicioNoDisponible`. Un 503 con OTRO
+ * `code` y sin `servicio` (`FALTA_UNA_MIGRACION`,
  * `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída y no se trata como tal.
- * Y `GET /health/servicios` (público) dice, por servicio, si está caído y si
+ * Y la base caída (`servicio: 'base'`) no es «una parte»: sin Postgres no
+ * funciona nada, así que va por la capa 1 (la franja global).
+ *
+ * `GET /health/servicios` (público) dice, por servicio, si está caído y si
  * el equipo ya está avisado:
  *
  *     { revisadoEn, servicios: [{ servicio, estado: 'arriba'|'caido', desde, equipoAvisado }] }
@@ -28,6 +34,7 @@
 
 import { useEffect, useState } from 'react'
 import { CODIGO_LEASEFY_NO_RESPONDE, MENSAJE_LEASEFY_NO_RESPONDE } from './estado-de-conexion'
+import { esCincoCientos, leerElError } from './leer-el-error'
 
 export const CODIGO_SERVICIO_NO_DISPONIBLE = 'SERVICIO_NO_DISPONIBLE'
 
@@ -70,50 +77,42 @@ export function nombreDelServicio(servicio: string | null | undefined): string |
 
 // ── Reconocer el error ──────────────────────────────────────────────────────
 
-interface LoQueDiceElError {
-  status?: number
-  code?: string
-  servicio?: string
-}
-
 /**
- * Lo que trae el error, venga como venga: el `ApiError` sube `code` a una
- * propiedad suya y deja el cuerpo en `detalle`; un error re-envuelto por un
- * servicio lo trae en `body`. Mismo criterio que `cuerpoDelNo` en
- * `clasificar.ts`: el discriminante es el código, no la clase.
+ * ¿Se cayó una parte? Dos formas, las dos confirmadas por el back el 01-10:
+ *
+ *   · 502 o 503 con `code: 'SERVICIO_NO_DISPONIBLE'`. Los proxies de avalúos
+ *     y del cotizador siguen contestando 502 (la página de avalúos mira ese
+ *     status), pero con el cuerpo del contrato.
+ *   · cualquier 5xx que traiga `servicio`, aunque su `code` sea otro: el 502
+ *     `WOMPI_NO_RESPONDIO` de dispersiones lo trae sólo cuando fue una caída
+ *     de Wompi, y no un «no» suyo.
+ *
+ * Un 503 con OTRO code y sin `servicio` (`FALTA_UNA_MIGRACION`,
+ * `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída.
+ *
+ * Ojo: la base caída también cumple, pero no se dice como «una parte» — ver
+ * `esCaidaDeLaBase`, que quien decide el texto mira ANTES.
  */
-function leer(error: unknown): LoQueDiceElError {
-  if (!error || typeof error !== 'object') return {}
-  const sitios = [
-    error as Record<string, unknown>,
-    (error as { detalle?: unknown }).detalle,
-    (error as { body?: unknown }).body,
-  ].filter((s): s is Record<string, unknown> => Boolean(s) && typeof s === 'object')
-  const primero = <T>(campo: string, es: (v: unknown) => v is T): T | undefined => {
-    for (const s of sitios) if (es(s[campo])) return s[campo] as T
-    return undefined
-  }
-  const esNumero = (v: unknown): v is number => typeof v === 'number'
-  const esTexto = (v: unknown): v is string => typeof v === 'string'
-  return {
-    // `status` del error primero; `statusCode` del cuerpo como respaldo.
-    status: primero('status', esNumero) ?? primero('statusCode', esNumero),
-    code: primero('code', esTexto),
-    servicio: primero('servicio', esTexto),
-  }
-}
-
-/** ¿Es un 503 `SERVICIO_NO_DISPONIBLE`? Sólo ése: otro 503 no es una caída. */
 export function esServicioNoDisponible(error: unknown): boolean {
-  const { status, code } = leer(error)
-  return status === 503 && code === CODIGO_SERVICIO_NO_DISPONIBLE
+  const { status, code, servicio } = leerElError(error)
+  if ((status === 502 || status === 503) && code === CODIGO_SERVICIO_NO_DISPONIBLE) return true
+  return esCincoCientos(status) && typeof servicio === 'string' && servicio.length > 0
 }
 
 /** Qué parte se cayó, si el back lo dijo y es una que conocemos. */
 export function servicioDelError(error: unknown): ServicioId | null {
   if (!esServicioNoDisponible(error)) return null
-  const { servicio } = leer(error)
+  const { servicio } = leerElError(error)
   return esServicioConocido(servicio) ? servicio : null
+}
+
+/**
+ * ¿Lo caído es la base de datos? Sin Postgres no funciona nada, así que no se
+ * dice como «se cayó una parte» sino como capa 1: Leasefy no está
+ * respondiendo (la franja global). Ver `estado-de-conexion.ts`.
+ */
+export function esCaidaDeLaBase(error: unknown): boolean {
+  return esServicioNoDisponible(error) && leerElError(error).servicio === 'base'
 }
 
 // ── Qué se le dice a la persona ─────────────────────────────────────────────
@@ -176,8 +175,10 @@ export function textoParaUnAviso(servicio: ServicioId | null | undefined): strin
  * Leasefy entero. `null` si no es una caída: el ayudante sigue como siempre.
  */
 export function mensajeDeCaida(error: unknown): string | null {
+  // La base caída es «Leasefy no responde», no una parte: va primero.
+  if (esCaidaDeLaBase(error)) return MENSAJE_LEASEFY_NO_RESPONDE
   if (esServicioNoDisponible(error)) return textoParaUnAviso(servicioDelError(error))
-  if (leer(error).code === CODIGO_LEASEFY_NO_RESPONDE) return MENSAJE_LEASEFY_NO_RESPONDE
+  if (leerElError(error).code === CODIGO_LEASEFY_NO_RESPONDE) return MENSAJE_LEASEFY_NO_RESPONDE
   return null
 }
 

@@ -116,6 +116,47 @@ describe('apiClient le cuenta a la franja si Leasefy responde', () => {
     expect(estadoDeConexion()).toBe('bien')
   })
 
+  it('502 SERVICIO_NO_DISPONIBLE de los avalúos: nombra lo caído y la franja NO se prende', async () => {
+    const cuerpo = {
+      statusCode: 502,
+      code: 'SERVICIO_NO_DISPONIBLE',
+      servicio: 'avaluos',
+      message: 'Los avalúos no están respondiendo.',
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta(502, cuerpo)))
+    const e = await fallo(apiClient.get('/inmobiliaria/avaluos'))
+    expect(e.status).toBe(502)
+    expect(e.code).toBe('SERVICIO_NO_DISPONIBLE')
+    expect(e.message).toBe(textoParaUnAviso('avaluos'))
+    expect(estadoDeConexion()).toBe('bien')
+  })
+
+  it('la base caída es Leasefy entero sin responder: se prende la franja', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        respuesta(503, { statusCode: 503, code: 'SERVICIO_NO_DISPONIBLE', servicio: 'base', message: 'x' }),
+      ),
+    )
+    const e = await fallo(apiClient.get('/inmobiliaria/agenda'))
+    expect(e.code).toBe(CODIGO_LEASEFY_NO_RESPONDE)
+    expect(estadoDeConexion()).toBe('leasefy-no-responde')
+  })
+
+  it('502 WOMPI_NO_RESPONDIO con servicio: capa 2, el code de dispersiones intacto', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        respuesta(502, { statusCode: 502, code: 'WOMPI_NO_RESPONDIO', servicio: 'pagos', message: 'fetch failed' }),
+      ),
+    )
+    const e = await fallo(apiClient.post('/inmobiliaria/dispersiones/lotes/x/girar', {}))
+    expect(e.status).toBe(502)
+    expect(e.code).toBe('WOMPI_NO_RESPONDIO')
+    expect(e.message).toBe(textoParaUnAviso('pagos'))
+    expect(estadoDeConexion()).toBe('bien')
+  })
+
   it('502 de nuestro back (Wompi falló, BadGatewayException): no es caída general', async () => {
     vi.stubGlobal(
       'fetch',

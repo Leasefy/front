@@ -25,9 +25,12 @@
  *   · 502/503/504 cuyo cuerpo NO es de nuestro filtro      → leasefy-no-responde.
  *     El filtro global del back (`http-exception.filter.ts`) SIEMPRE manda
  *     `statusCode` (y a veces un `code`); el balanceador, ninguno de los dos.
- *     Un 502 CON `statusCode` es el back contándonos que Wompi o Supabase
- *     fallaron (`BadGatewayException`): el back contestó, así que no es
- *     «Leasefy entero caído».
+ *     Un 502 CON `statusCode` y `code` es el back contándonos que Wompi, el
+ *     micro de avalúos o Supabase fallaron: el back contestó, así que no es
+ *     «Leasefy entero caído» (es capa 2 si trae `SERVICIO_NO_DISPONIBLE` o
+ *     `servicio`).
+ *   · 5xx con `servicio: 'base'`: el back contestó, pero sin Postgres no
+ *     funciona nada                                        → leasefy-no-responde.
  *   · cualquier otra respuesta del back                    → bien.
  *
  * Las llamadas DIRECTAS del front al micro de agentes no pasan por acá: un
@@ -36,6 +39,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
+import { esCincoCientos, leerElError } from './leer-el-error'
 
 export type EstadoDeConexion = 'bien' | 'sin-internet' | 'leasefy-no-responde'
 
@@ -149,14 +153,17 @@ export function esRespuestaDeCaidaGeneral(status: number, cuerpo: unknown): bool
 }
 
 /**
- * ¿Este error es de conexión —no salió el pedido, o Leasefy entero no
- * respondió— y no algo de lo que se pidió? Es lo que la franja global ya está
- * avisando, así que la pantalla no tiene por qué repetirlo en rojo.
+ * ¿Este error es de conexión —no salió el pedido, Leasefy entero no respondió
+ * o se cayó la base, sin la cual no funciona nada— y no algo de lo que se
+ * pidió? Es lo que la franja global ya está avisando, así que la pantalla no
+ * tiene por qué repetirlo en rojo.
  */
 export function esErrorDeConexion(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false
-  const e = error as { status?: unknown; code?: unknown }
-  return e.status === 0 || e.code === CODIGO_LEASEFY_NO_RESPONDE
+  const { status, code, servicio } = leerElError(error)
+  if (status === 0 || code === CODIGO_LEASEFY_NO_RESPONDE) return true
+  // La base caída llega como 503 `SERVICIO_NO_DISPONIBLE` con `servicio:
+  // 'base'` (o ya convertida por `apiClient` al code de arriba).
+  return servicio === 'base' && esCincoCientos(status)
 }
 
 // ── Preguntar si ya volvió ──────────────────────────────────────────────────

@@ -130,6 +130,12 @@ describe('qué error es de conexión', () => {
     expect(esErrorDeConexion({ status: 503, code: CODIGO_LEASEFY_NO_RESPONDE })).toBe(true)
   })
 
+  it('la base caída también: sin ella no funciona nada', () => {
+    expect(
+      esErrorDeConexion({ status: 503, detalle: { code: 'SERVICIO_NO_DISPONIBLE', servicio: 'base' } }),
+    ).toBe(true)
+  })
+
   it('un 503 de servicio o un 500 no lo son', () => {
     expect(esErrorDeConexion({ status: 503, code: 'SERVICIO_NO_DISPONIBLE' })).toBe(false)
     expect(esErrorDeConexion({ status: 500 })).toBe(false)

@@ -151,22 +151,24 @@ export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
    * había perdido lo escrito. Una caída se dice como caída: qué se cayó, que
    * no es su culpa, que lo escrito se queda y que reintentar sirve.
    */
-  if (esServicioNoDisponible(error)) {
-    const servicio = servicioDelError(error)
-    return {
-      mensaje: textoDeServicioNoDisponible(servicio, { tranquilidad: LO_ESCRITO_NO_SE_PIERDE })
-        .detalle,
-      reintentable: true,
-      status: 503,
-      caida: { tipo: 'servicio', servicio },
-    }
-  }
+  // Primero la conexión: incluye la base caída, que también trae `servicio`
+  // pero no es «una parte» — sin ella no funciona nada.
   if (esErrorDeConexion(error)) {
     return {
       mensaje: `${LO_ESCRITO_NO_SE_PIERDE} Apenas Leasefy responda, vuelve a intentar.`,
       reintentable: true,
       status: error instanceof ApiError ? error.status : null,
       caida: { tipo: 'conexion' },
+    }
+  }
+  if (esServicioNoDisponible(error)) {
+    const servicio = servicioDelError(error)
+    return {
+      mensaje: textoDeServicioNoDisponible(servicio, { tranquilidad: LO_ESCRITO_NO_SE_PIERDE })
+        .detalle,
+      reintentable: true,
+      status: error instanceof ApiError ? error.status : 503,
+      caida: { tipo: 'servicio', servicio },
     }
   }
   if (error instanceof ApiError) {

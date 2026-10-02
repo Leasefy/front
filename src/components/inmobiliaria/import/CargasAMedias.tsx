@@ -34,7 +34,7 @@ import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
 } from '@/lib/api/inmuebles-importacion.service';
-import { describirCargaAbierta } from './lib/describirCargaAbierta';
+import { describirCargaAbierta, ubicacionCompleta } from './lib/describirCargaAbierta';
 import { leerClaveDeCarga, olvidarClaveDeCarga } from './lib/claveDeCarga';
 import { mensajeDeCarga } from './lib/mensajeDeCarga';
 
@@ -187,7 +187,7 @@ export function CargasAMedias({
                 Descartar
               </Button>
 
-              {d.etapa === 'ubicando' && l.puedeOmitirUbicacion !== false ? (
+              {d.etapa === 'ubicando' && l.puedeOmitirUbicacion !== false && !ubicacionCompleta(l) ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -233,12 +233,15 @@ export function CargasAMedias({
                   hideArrow
                   disabled={ocupada || d.enVuelo}
                   data-testid={`retomar-${l.lote}`}
-                  onClick={() => onRetomar(l)}
+                  // Con todas ubicadas, «Continuar» da el paso a la revisión.
+                  onClick={() => (ubicacionCompleta(l) ? void reintentar(l, true) : onRetomar(l))}
                 >
                   {d.etapa === 'subiendo'
                     ? 'Continuar subiendo'
                     : d.etapa === 'ubicando'
-                      ? 'Continuar ubicando'
+                      ? ubicacionCompleta(l)
+                        ? 'Continuar'
+                        : 'Continuar ubicando'
                       : 'Continuar'}
                 </Button>
               ) : null}

@@ -297,6 +297,8 @@ export interface OpcionesDeTanda {
   totalDelArchivo: number;
   /** Índice (base 0) de la primera fila de esta tanda. */
   desde: number;
+  /** Huella de las primeras filas del archivo; el back responde 409 `ARCHIVO_DISTINTO` si cambia. */
+  huellaDelArchivo?: string;
 }
 
 /** `POST .../lotes/:lote/reintentar` (T-0130). */
@@ -534,7 +536,13 @@ export const inmueblesImportacionApi = {
        * archivo entero y la posición de esta tanda. Reenviar una tanda que ya
        * llegó no hace nada.
        */
-      ...(tanda ? { totalDelArchivo: tanda.totalDelArchivo, desde: tanda.desde } : {}),
+      ...(tanda
+        ? {
+            totalDelArchivo: tanda.totalDelArchivo,
+            desde: tanda.desde,
+            ...(tanda.huellaDelArchivo ? { huellaDelArchivo: tanda.huellaDelArchivo } : {}),
+          }
+        : {}),
     });
   },
 

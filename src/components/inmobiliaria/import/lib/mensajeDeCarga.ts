@@ -25,6 +25,8 @@ const MENSAJES: Record<string, string> = {
     'Esta carga ya no recibe más filas. Revisa lo que llegó o descártala y sube el archivo otra vez.',
   TOTAL_DEL_ARCHIVO_DISTINTO:
     'El archivo que elegiste no tiene las mismas filas que la carga que dejaste a medias. Sube el mismo archivo para continuar.',
+  ARCHIVO_DISTINTO:
+    'Este archivo no es el mismo de la carga que estabas subiendo. Elige el archivo original o descarta esa carga.',
   CLAVE_REQUERIDA: 'No pudimos identificar esta carga. Vuelve a intentarlo.',
   TOTAL_REQUERIDO: 'No pudimos identificar esta carga. Vuelve a intentarlo.',
   TANDA_FUERA_DE_RANGO:

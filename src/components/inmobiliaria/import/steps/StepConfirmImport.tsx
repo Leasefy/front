@@ -35,8 +35,18 @@ import { resumenDeLecturaDeInmuebles } from "../lib/resumenDeLectura";
 import type { ImportProperty } from "../lib/importTypes";
 import { subirPorTandas, SubidaInterrumpida } from "../lib/subirPorTandas";
 import { ubicarPorTandas, UbicacionInterrumpida } from "../lib/ubicarPorTandas";
-import { etapaDeLaCarga } from "../lib/describirCargaAbierta";
-import { guardarClaveDeCarga, leerClaveDeCarga, olvidarClaveDeCarga } from "../lib/claveDeCarga";
+import { etapaDeLaCarga, ubicacionCompleta } from "../lib/describirCargaAbierta";
+import {
+  guardarClaveDeCarga,
+  guardarClaveEnCurso,
+  guardarHuellaDeCarga,
+  leerClaveDeCarga,
+  leerClaveEnCurso,
+  leerHuellaDeCarga,
+  olvidarClaveDeCarga,
+  olvidarClaveEnCurso,
+} from "../lib/claveDeCarga";
+import { huellaDelArchivo } from "../lib/huellaDelArchivo";
 import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
 import { generarIdempotencyKey } from "../lib/idempotencia";
 import {
@@ -698,6 +708,7 @@ export function StepConfirmImport({
     let loteConocido: string | null = loteEnSubida;
     try {
       const dtos = aEnviar.map((p) => toImportarInmuebleDto(p));
+      const huella = await huellaDelArchivo(dtos);
       let clave = idempotencyKey;
       let desdeInicial = 0;
 
@@ -707,6 +718,13 @@ export function StepConfirmImport({
           setError(
             "No podemos seguir subiendo esta carga desde este navegador. Descártala y sube el archivo otra vez.",
           );
+          return;
+        }
+        // Mismo conteo de filas NO basta: otro archivo se mezclaría con el
+        // primero. Si se guardó la huella de la carga, tiene que coincidir.
+        const huellaGuardada = leerHuellaDeCarga(loteEnSubida);
+        if (huella && huellaGuardada && huella !== huellaGuardada) {
+          setError(mensajeDeCarga(new ApiError(409, "", "ARCHIVO_DISTINTO"), ""));
           return;
         }
         clave = guardada;
@@ -725,12 +743,19 @@ export function StepConfirmImport({
           return;
         }
         desdeInicial = e.siguienteDesde ?? 0;
+      } else {
+        // Un intento cortado antes de la primera respuesta pudo crear el lote:
+        // con el MISMO archivo se reusa su clave y el back devuelve ese lote.
+        clave = leerClaveEnCurso(huella) ?? idempotencyKey;
       }
+      // Antes de la primera petición: si la respuesta no llega, la clave sigue.
+      if (!loteEnSubida) guardarClaveEnCurso(clave, huella);
 
       const r = await subirPorTandas({
         filas: dtos,
         claveDeIdempotencia: clave,
         desdeInicial,
+        huella,
         enviar: (tanda, k, opciones) =>
           inmueblesImportacionApi.preparar(tanda, k, opciones),
         antesDeCada: asegurarSesionVigente,
@@ -747,6 +772,8 @@ export function StepConfirmImport({
             setLote(p.lote);
             updateState({ loteRetomado: p.lote });
             guardarClaveDeCarga(p.lote, clave);
+            if (huella) guardarHuellaDeCarga(p.lote, huella);
+            olvidarClaveEnCurso();
           }
         },
       });
@@ -881,11 +908,13 @@ export function StepConfirmImport({
       !ubicando &&
       !subiendo &&
       !ubicacionEnPausa &&
-      !ubicandoRef.current
+      !ubicandoRef.current &&
+      // Con todas ubicadas no hay nada que buscar: la persona da el paso.
+      !(estadoLote && ubicacionCompleta(estadoLote))
     ) {
       void handleUbicar();
     }
-  }, [lote, etapaDelLote, ubicando, subiendo, ubicacionEnPausa, handleUbicar]);
+  }, [lote, etapaDelLote, ubicando, subiendo, ubicacionEnPausa, handleUbicar, estadoLote]);
 
   /** «Continuar sin ubicar en el mapa» y «Reintentar» (job muerto / filas fallidas). */
   const handleReintentar = async (omitirUbicacion = false) => {
@@ -1582,7 +1611,11 @@ export function StepConfirmImport({
             data-testid="carga-ubicando"
           >
             <p className="text-sm font-medium text-fg">
-              {ubicando ? "Ubicando las direcciones en el mapa" : "Faltan direcciones por ubicar"}
+              {ubicando
+                ? "Ubicando las direcciones en el mapa"
+                : estadoLote && ubicacionCompleta(estadoLote)
+                  ? "Todas las direcciones están ubicadas"
+                  : "Faltan direcciones por ubicar"}
             </p>
             <p className="text-sm text-fg-muted">
               <span className="font-mono tabular-nums">
@@ -1597,15 +1630,30 @@ export function StepConfirmImport({
             </p>
             {!ubicando ? (
               <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  hideArrow
-                  onClick={() => void handleUbicar()}
-                  data-testid="continuar-ubicando"
-                >
-                  Continuar ubicando
-                </Button>
-                {estadoLote?.puedeOmitirUbicacion !== false ? (
+                {estadoLote && ubicacionCompleta(estadoLote) ? (
+                  // Todo ubicado: «Continuar» da el paso a la revisión.
+                  <Button
+                    type="button"
+                    hideArrow
+                    disabled={reintentando}
+                    isLoading={reintentando}
+                    onClick={() => void handleReintentar(true)}
+                    data-testid="continuar-ubicando"
+                  >
+                    Continuar
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    hideArrow
+                    onClick={() => void handleUbicar()}
+                    data-testid="continuar-ubicando"
+                  >
+                    Continuar ubicando
+                  </Button>
+                )}
+                {estadoLote?.puedeOmitirUbicacion !== false &&
+                !(estadoLote && ubicacionCompleta(estadoLote)) ? (
                   <Button
                     type="button"
                     variant="outline"

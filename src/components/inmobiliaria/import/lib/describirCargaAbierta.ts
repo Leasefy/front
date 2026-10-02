@@ -104,10 +104,19 @@ export function etapaDeLaCarga(lote: EstadoDeLoteInmuebles): 'subiendo' | 'ubica
   return 'revision';
 }
 
-/** ¿Quedan direcciones por buscar en el mapa? (las busca el navegador) */
+/**
+ * ¿El lote sigue en la etapa de ubicar? Incluye el caso `ubicadas === total`
+ * sin avanzar (un corte justo antes de que el back pasara a revisar): ahí no hay
+ * nada que buscar pero sí hay que dar el paso, y «Continuar» lo da.
+ */
 export function faltaUbicar(lote: EstadoDeLoteInmuebles): boolean {
+  return lote.fase === 'UBICANDO' && lote.ubicacion !== undefined;
+}
+
+/** Todas ubicadas pero el lote no avanzó: sólo falta darle «Continuar». */
+export function ubicacionCompleta(lote: EstadoDeLoteInmuebles): boolean {
   const u = lote.ubicacion;
-  return lote.fase === 'UBICANDO' && u !== undefined && u.ubicadas < u.total;
+  return lote.fase === 'UBICANDO' && u !== undefined && u.ubicadas >= u.total;
 }
 
 const n = (x: number) => x.toLocaleString('es-CO');

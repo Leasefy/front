@@ -37,6 +37,59 @@ export function leerClaveDeCarga(lote: string): string | null {
 export function olvidarClaveDeCarga(lote: string): void {
   try {
     window.localStorage.removeItem(PREFIJO + lote);
+    window.localStorage.removeItem('leasefy-carga-inmuebles-huella:' + lote);
+  } catch {
+    // nada que borrar
+  }
+}
+
+const PREFIJO_HUELLA = 'leasefy-carga-inmuebles-huella:';
+const EN_CURSO = 'leasefy-carga-inmuebles-en-curso';
+
+export function guardarHuellaDeCarga(lote: string, huella: string): void {
+  try {
+    window.localStorage.setItem(PREFIJO_HUELLA + lote, huella);
+  } catch {
+    // sin almacenamiento sólo se pierde la comparación local
+  }
+}
+
+export function leerHuellaDeCarga(lote: string): string | null {
+  try {
+    return window.localStorage.getItem(PREFIJO_HUELLA + lote);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * La clave del intento en curso, guardada ANTES de la primera petición: si la
+ * respuesta nunca llega (corte) el lote igual pudo crearse, y reintentar con el
+ * MISMO archivo reusa la clave en vez de abrir otro lote. Sólo vale con la misma
+ * huella; con otro archivo se descarta.
+ */
+export function guardarClaveEnCurso(clave: string, huella: string | null): void {
+  try {
+    window.localStorage.setItem(EN_CURSO, JSON.stringify({ clave, huella }));
+  } catch {
+    // ver arriba
+  }
+}
+
+export function leerClaveEnCurso(huella: string | null): string | null {
+  try {
+    const bruto = window.localStorage.getItem(EN_CURSO);
+    if (!bruto) return null;
+    const v = JSON.parse(bruto) as { clave?: unknown; huella?: unknown };
+    return typeof v.clave === 'string' && (v.huella ?? null) === huella ? v.clave : null;
+  } catch {
+    return null;
+  }
+}
+
+export function olvidarClaveEnCurso(): void {
+  try {
+    window.localStorage.removeItem(EN_CURSO);
   } catch {
     // nada que borrar
   }

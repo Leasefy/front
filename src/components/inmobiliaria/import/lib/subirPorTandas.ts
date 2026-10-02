@@ -72,6 +72,8 @@ export interface OpcionesDeSubida {
   ) => Promise<EstadoDeLoteInmuebles>;
   /** Desde qué fila (base 0) se reanuda. 0 = desde el principio. */
   desdeInicial?: number;
+  /** Huella del archivo: viaja en CADA tanda. */
+  huella?: string | null;
   tanda?: number;
   alAvanzar?: (p: ProgresoDeSubida) => void;
   debeParar?: () => boolean;
@@ -100,7 +102,11 @@ export async function subirPorTandas(o: OpcionesDeSubida): Promise<ResultadoDeSu
     for (let intento = 0; r === null; intento += 1) {
       try {
         await o.antesDeCada?.();
-        r = await o.enviar(trozo, o.claveDeIdempotencia, { totalDelArchivo: total, desde });
+        r = await o.enviar(trozo, o.claveDeIdempotencia, {
+          totalDelArchivo: total,
+          desde,
+          ...(o.huella ? { huellaDelArchivo: o.huella } : {}),
+        });
       } catch (e) {
         if (esTransitorio(e) && intento < REINTENTOS.length) {
           await esperar(REINTENTOS[intento]);

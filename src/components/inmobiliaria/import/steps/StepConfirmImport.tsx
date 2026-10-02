@@ -105,6 +105,8 @@ import {
  */
 
 const POR_PAGINA = 25;
+const MENSAJE_CREANDO_NO_SE_EDITA =
+  "Se están creando las propiedades; espera a que termine para editar.";
 /** T-0131 — cada cuánto se pregunta cómo va la creación en el servidor. */
 const INTERVALO_DE_CREACION_MS = 4_000;
 
@@ -228,7 +230,7 @@ export function StepConfirmImport({
   const [reintentando, setReintentando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* El aviso nativo de cerrar la pestaña, SÓLO mientras algo vive en el navegador. */
-  useAvisoAlSalir(subiendo || ubicando);
+  const hayFotosPorEnlace = properties.some((p) => (p.imagenes?.length ?? 0) > 0);
   const [lote, setLote] = useState<string | null>(
     // El ?lote= (la notificación) gana; sin él, el lote que el wizard guardó
     // en su estado — sobrevive a «Anterior»/«Siguiente» y a la tarjeta de
@@ -635,6 +637,17 @@ export function StepConfirmImport({
   /* El proceso se rindió tras sus reintentos (`FALLIDO` + `error`): nadie lo está creando. */
   const creacionFallida = creandoEnElServidor && estadoLote?.estado === "FALLIDO";
   const creandoActivo = creandoEnElServidor && !creacionFallida;
+  /*
+   * Las fotos por ENLACE se suben desde ESTA pestaña cuando termina la creación
+   * (el back no ve archivos): con ellas pendientes —esperando o subiendo—,
+   * cerrar la pestaña las pierde. El aviso nativo sigue activo hasta que acaban.
+   */
+  useAvisoAlSalir(
+    subiendo ||
+      ubicando ||
+      fotosProgreso !== null ||
+      (hayFotosPorEnlace && (iniciandoCreacion || creandoActivo)),
+  );
   useEffect(() => {
     if (!lote || !creandoActivo) return;
     let vigente = true;
@@ -649,6 +662,16 @@ export function StepConfirmImport({
       } catch (err) {
         // Sin sesión no hay a quién preguntarle; el resto es un corte pasajero.
         if (esSesionMuerta(err)) return;
+        // El lote ya no existe (se descartó en otra pestaña): se vuelve al inicio.
+        if (err instanceof ApiError && err.status === 404) {
+          toast.error("Esta carga ya no existe", {
+            description: "Se descartó o se cerró. Empieza de nuevo cuando quieras.",
+          });
+          updateState({ loteRetomado: null, subidaRetomada: null });
+          if (onSalir) onSalir();
+          else router.push("/panel/inmobiliaria/inmuebles/importar");
+          return;
+        }
       }
       if (vigente) timeoutId = setTimeout(() => void vuelta(), INTERVALO_DE_CREACION_MS);
     };
@@ -657,7 +680,7 @@ export function StepConfirmImport({
       vigente = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [lote, creandoActivo]);
+  }, [lote, creandoActivo, updateState, onSalir, router]);
 
   /* Lo que ya se creó o falló, según el lote (nunca según lo que hay en pantalla). */
   const creacion = estadoLote?.creacion ?? null;
@@ -976,7 +999,10 @@ export function StepConfirmImport({
       await inmueblesImportacionApi.resolver(id, cambios);
       await refrescarRevision(lote, pagina);
     } catch (e) {
-      if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
+      if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
+        toast.error(MENSAJE_CREANDO_NO_SE_EDITA);
+        await refrescarRevision(lote, pagina);
+      } else if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
         toast.error(
           "Esta fila ya se activó — no se puede editar. La lista se actualizó.",
         );
@@ -1001,7 +1027,11 @@ export function StepConfirmImport({
       await refrescarRevision(lote, pagina);
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "No pudimos descartar la fila.",
+        e instanceof ApiError && e.code === "LOTE_EN_PROCESO"
+          ? MENSAJE_CREANDO_NO_SE_EDITA
+          : e instanceof Error
+            ? e.message
+            : "No pudimos descartar la fila.",
       );
     } finally {
       setFilaBusy(null);
@@ -1598,6 +1628,13 @@ export function StepConfirmImport({
           ) : null}
         </div>
 
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
         {creacionFallida && estadoLote.puedeReintentar ? (
           <Button
             type="button"
@@ -1916,6 +1953,13 @@ export function StepConfirmImport({
           </div>
         </div>
 
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
         {sinCanon > 0 ? (
           <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
             {sinCanon === 1
@@ -2048,7 +2092,7 @@ export function StepConfirmImport({
                 fila={fila}
                 onResolver={handleResolver}
                 onDescartar={handleDescartarFila}
-                isBusy={filaBusy === fila.id}
+                isBusy={filaBusy === fila.id || creandoEnElServidor}
               />
             ))}
             {/* Pie del design system: dice cuántas filas quedan por revisar

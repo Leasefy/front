@@ -50,7 +50,7 @@ export function useCargasAbiertasDeInmuebles(clave: unknown): {
           (l) =>
             ((l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO') &&
               etapaDeLaCarga(l) === 'revision') ||
-            etapaDeLaCarga(l) === 'creando',
+            (etapaDeLaCarga(l) === 'creando' && l.estado !== 'FALLIDO'),
         )
         if (hayJob) timeoutId = setTimeout(() => setRecarga((n) => n + 1), INTERVALO_MS)
       } catch {

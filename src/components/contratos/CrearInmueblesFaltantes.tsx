@@ -187,13 +187,97 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   )
 }
 
+type Nota = { id: string; fila: number; motivo: string }
+
+interface GrupoDeNotas {
+  motivo: string
+  /** Número de fila como lo ve la persona en su archivo (Excel: +2). */
+  filas: number[]
+  informativo: boolean
+}
+
+/** Resultados esperados: no hay nada que corregir, no se muestran como alerta. */
+const MOTIVOS_INFORMATIVOS = new Set(['Ya tiene inmueble.', 'Fila descartada.'])
+
+const EJEMPLOS_VISIBLES = 5
+const nf = new Intl.NumberFormat('es-CO')
+
+/** Agrupa por texto del motivo; los problemas reales primero. */
+function agruparNotas(notas: Nota[]): GrupoDeNotas[] {
+  const porMotivo = new Map<string, number[]>()
+  for (const n of notas) {
+    const lista = porMotivo.get(n.motivo)
+    if (lista) lista.push(n.fila + 2)
+    else porMotivo.set(n.motivo, [n.fila + 2])
+  }
+  return [...porMotivo.entries()]
+    .map(([motivo, filas]) => ({
+      motivo,
+      filas: filas.sort((a, b) => a - b),
+      informativo: MOTIVOS_INFORMATIVOS.has(motivo),
+    }))
+    .sort((a, b) => Number(a.informativo) - Number(b.informativo) || b.filas.length - a.filas.length)
+}
+
+function titularGrupo(g: GrupoDeNotas): string {
+  const n = g.filas.length
+  const cuantas = nf.format(n)
+  if (g.motivo === 'Ya tiene inmueble.') {
+    return n === 1
+      ? '1 fila ya tenía inmueble (no hacía falta crearlo)'
+      : `${cuantas} filas ya tenían inmueble (no hacía falta crearlo)`
+  }
+  if (g.motivo === 'Fila descartada.') {
+    return n === 1 ? '1 fila descartada' : `${cuantas} filas descartadas`
+  }
+  const motivo = g.motivo.replace(/\.$/, '')
+  return n === 1 ? `1 fila — ${motivo}` : `${cuantas} filas — ${motivo}`
+}
+
+function GrupoDeFilas({ grupo }: { grupo: GrupoDeNotas }) {
+  const ejemplos = grupo.filas.slice(0, EJEMPLOS_VISIBLES)
+  const resto = grupo.filas.length - ejemplos.length
+  return (
+    <li
+      className="flex items-start gap-1.5"
+      data-testid={grupo.informativo ? 'resultado-grupo-informativo' : 'resultado-grupo-problema'}
+    >
+      {grupo.informativo ? null : (
+        <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+      )}
+      <div className="min-w-0">
+        <p className={grupo.informativo ? undefined : 'text-foreground'}>
+          {titularGrupo(grupo)}
+        </p>
+        <p>
+          {grupo.filas.length === 1 ? 'Fila ' : 'Filas '}
+          {ejemplos.join(', ')}
+          {resto > 0 ? '…' : ''}
+        </p>
+        {resto > 0 ? (
+          <details className="mt-1">
+            <summary className="cursor-pointer select-none underline-offset-2 hover:underline">
+              Ver todas las filas ({nf.format(grupo.filas.length)})
+            </summary>
+            <p className="mt-1 max-h-40 overflow-y-auto break-words rounded-md border border-border bg-background p-2">
+              {grupo.filas.join(', ')}
+            </p>
+          </details>
+        ) : null}
+      </div>
+    </li>
+  )
+}
+
 /**
- * Lo que pasó, fila por fila. Un «listo» que tapa 12 omitidas deja a la
+ * Lo que pasó, agrupado por motivo. Un «listo» que tapa 12 omitidas deja a la
  * inmobiliaria creyendo que los 90 cobran, y el hueco aparece cuando no le
- * llega la plata.
+ * llega la plata. Pero una línea por fila con 1.850 «Ya tiene inmueble» es un
+ * scroll infinito que esconde las 2 filas que sí requieren atención: por eso
+ * se agrupa, los problemas van primero y las filas completas quedan plegadas.
  */
 function ResultadoDeCreacion({ resultado }: { resultado: ResultadoInmueblesFaltantes }) {
-  const problemas = [...resultado.omitidas, ...resultado.fallidas]
+  const grupos = agruparNotas([...resultado.omitidas, ...resultado.fallidas])
   return (
     <div
       className="rounded-lg border border-border bg-surface-muted p-4 text-sm"
@@ -210,15 +294,10 @@ function ResultadoDeCreacion({ resultado }: { resultado: ResultadoInmueblesFalta
           su documento. Se registra desde la fila o desde Inmuebles.
         </p>
       ) : null}
-      {problemas.length > 0 ? (
-        <ul className="mt-2 space-y-1 text-caption text-muted-foreground">
-          {problemas.map((p) => (
-            <li key={p.id} className="flex items-start gap-1.5">
-              <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-              <span>
-                Fila {p.fila + 2}: {p.motivo}
-              </span>
-            </li>
+      {grupos.length > 0 ? (
+        <ul className="mt-2 space-y-2 text-caption text-muted-foreground">
+          {grupos.map((g) => (
+            <GrupoDeFilas key={g.motivo} grupo={g} />
           ))}
         </ul>
       ) : null}

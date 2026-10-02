@@ -505,29 +505,34 @@ export function ActivarSegundoFactorPasoAPaso({
                 {errorDelCodigo}
               </p>
             ) : null}
-            <Button
-              type="button"
-              hideArrow
-              onClick={() => void verificar(codigo)}
-              disabled={verificando || codigo.length !== 6}
-              isLoading={verificando}
-              className="w-full"
-              data-testid="activar-segundo-factor"
-            >
-              {verificando ? 'Verificando…' : 'Activar segundo factor'}
-            </Button>
             <p className="text-pretty text-center text-caption text-fg-subtle">
               El código cambia cada 30 segundos. Si te lo rechaza, espera al siguiente.
             </p>
-            <div className="text-center">
+            {/* El mismo pie del paso del QR (Nico, 02-10: «ahí con un link y el
+                otro bello con algo mejor, déjalo como está en el paso del QR»). */}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
               <Button
                 type="button"
-                variant="link"
-                size="sm"
+                variant="ghost"
+                hideArrow
                 onClick={() => setPaso('escanear')}
                 disabled={verificando}
+                className="sm:flex-none"
+                data-testid="volver-al-qr"
               >
-                Volver al código QR
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Atrás
+              </Button>
+              <Button
+                type="button"
+                hideArrow
+                onClick={() => void verificar(codigo)}
+                disabled={verificando || codigo.length !== 6}
+                isLoading={verificando}
+                className="flex-1"
+                data-testid="activar-segundo-factor"
+              >
+                {verificando ? 'Verificando…' : 'Activar segundo factor'}
               </Button>
             </div>
           </div>

@@ -5,19 +5,44 @@ import Link from 'next/link'
 import { SignIn } from '@phosphor-icons/react'
 import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
 import { Input } from '@/components/ui/input'
+import { PhoneField } from '@/components/ui/phone-field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 import { useAuth } from '@/lib/auth/use-auth'
+import { recortarAlPais } from '@/lib/phone/countries'
+import {
+  TIPOS_DE_DOCUMENTO_DEL_INQUILINO,
+  TIPO_DE_DOCUMENTO_POR_DEFECTO,
+  esTipoDeDocumentoDelInquilino,
+  revisarDatosDelInquilino,
+  type ErroresDelInquilino,
+} from '@/lib/onboarding/datos-del-inquilino'
 import { useIntentosDeAvanzar } from './intento-de-avanzar'
+
+type Campo = keyof ErroresDelInquilino
 
 export function StepTenantWelcome() {
   const { draft, updateDraft } = useTenantOnboarding()
   const { user } = useAuth()
   const intentos = useIntentosDeAvanzar()
   const nombreRef = useRef<HTMLInputElement>(null)
+  const documentoRef = useRef<HTMLInputElement>(null)
+  const telefonoRef = useRef<HTMLDivElement>(null)
 
   // The document number is immutable once set on the backend profile —
   // changes go through Leasefy support (the backend enforces this too).
   const rutLocked = user?.profileSource === 'backend' && !!user.rut
+
+  const tipo = esTipoDeDocumentoDelInquilino(draft.documentType)
+    ? draft.documentType
+    : TIPO_DE_DOCUMENTO_POR_DEFECTO
+  const ejemplo = TIPOS_DE_DOCUMENTO_DEL_INQUILINO.find((t) => t.value === tipo)?.ejemplo
 
   // Set WhatsApp as default contact preference
   useEffect(() => {
@@ -27,28 +52,36 @@ export function StepTenantWelcome() {
   }, [draft.preferredContact, updateDraft])
 
   /*
-   * El aviso «Ingresa tu nombre para continuar» ya no es un bloque amarillo
-   * fijo desde que se abre el paso (se sentía a error sin haber hecho nada,
-   * Nico 30-09). Sale en el campo, con el estilo de error de la casa, cuando
-   * corresponde: al intentar «Continuar» sin nombre, o al dejar el campo vacío
-   * después de haber escrito. La regla es la de siempre (`isStepValid(1)`).
+   * Los errores salen en el campo, con el estilo de la casa, cuando
+   * corresponde: al intentar «Continuar» con algo mal, o al salir de un campo
+   * después de haber escrito en él. Pasar por un campo sin escribir no es un
+   * error (Nico 30-09: un aviso fijo desde que se abre «se siente a error sin
+   * haber hecho nada»). Las reglas son las de `isStepValid(1)`.
    */
-  const nombreValido = !!draft.displayName && draft.displayName.trim().length > 0
-  const [nombreEscrito, setNombreEscrito] = useState(false)
-  const [nombreRevisado, setNombreRevisado] = useState(false)
-  const errorDelNombre = !nombreValido && (intentos > 0 || nombreRevisado)
+  const errores = revisarDatosDelInquilino(draft, { documentoBloqueado: rutLocked })
+  const [escritos, setEscritos] = useState<Partial<Record<Campo, boolean>>>({})
+  const [revisados, setRevisados] = useState<Partial<Record<Campo, boolean>>>({})
+  const errorDe = (campo: Campo) =>
+    intentos > 0 || revisados[campo] ? errores[campo] : undefined
+  const escribio = (campo: Campo) => setEscritos((p) => (p[campo] ? p : { ...p, [campo]: true }))
+  const revisar = (campo: Campo) => {
+    if (escritos[campo]) setRevisados((p) => (p[campo] ? p : { ...p, [campo]: true }))
+  }
 
-  // Cada intento fallido lleva el foco al campo que falta.
+  // Cada intento fallido lleva el foco al primer campo que falta.
   useEffect(() => {
-    if (intentos > 0 && !nombreValido) nombreRef.current?.focus()
+    if (intentos === 0) return
+    if (errores.nombre) nombreRef.current?.focus()
+    else if (errores.documento) documentoRef.current?.focus()
+    else if (errores.telefono) telefonoRef.current?.querySelector('input')?.focus()
     // Sólo al intentar: no robar el foco mientras la persona escribe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intentos])
 
   return (
     <div className="space-y-5">
-      {/* Name */}
-      <FormField id="displayName" required invalid={errorDelNombre}>
+      {/* Nombre */}
+      <FormField id="displayName" required invalid={!!errorDe('nombre')}>
         <FormLabel>¿Cómo te llamas?</FormLabel>
         <FormControl>
           <Input
@@ -57,51 +90,78 @@ export function StepTenantWelcome() {
             autoComplete="name"
             value={draft.displayName || ''}
             onChange={(e) => {
-              setNombreEscrito(true)
+              escribio('nombre')
               updateDraft({ displayName: e.target.value })
             }}
-            // Pasar por el campo sin escribir no es un error; salir de él
-            // después de escribir, sí cuenta como revisado.
-            onBlur={() => {
-              if (nombreEscrito) setNombreRevisado(true)
-            }}
+            onBlur={() => revisar('nombre')}
             placeholder="Tu nombre completo"
           />
         </FormControl>
-        <FormError>Ingresa tu nombre para continuar</FormError>
+        <FormError>{errorDe('nombre')}</FormError>
       </FormField>
 
-      {/* CC */}
-      <FormField id="rut" disabled={rutLocked}>
-        <FormLabel>Cédula de Ciudadanía</FormLabel>
-        <FormControl>
-          <Input
-            type="text"
-            inputMode="numeric"
-            value={draft.rut || ''}
-            onChange={(e) => updateDraft({ rut: e.target.value })}
-            placeholder="Ej: 1090525663"
+      {/* Documento: tipo + número, como en el resto de la plataforma. */}
+      <FormField id="rut" required disabled={rutLocked} invalid={!!errorDe('documento')}>
+        <FormLabel>Documento de identidad</FormLabel>
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+          <Select
+            value={tipo}
+            onValueChange={(v) => {
+              if (esTipoDeDocumentoDelInquilino(v)) updateDraft({ documentType: v })
+            }}
             disabled={rutLocked}
-          />
-        </FormControl>
-        {rutLocked && (
+          >
+            <SelectTrigger aria-label="Tipo de documento" data-testid="tipo-de-documento-inquilino">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPOS_DE_DOCUMENTO_DEL_INQUILINO.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormControl>
+            <Input
+              ref={documentoRef}
+              type="text"
+              inputMode={tipo === 'PASSPORT' ? 'text' : 'numeric'}
+              autoComplete="off"
+              value={draft.rut || ''}
+              onChange={(e) => {
+                escribio('documento')
+                updateDraft({ rut: e.target.value })
+              }}
+              onBlur={() => revisar('documento')}
+              placeholder={ejemplo}
+              disabled={rutLocked}
+              aria-label="Número de documento"
+            />
+          </FormControl>
+        </div>
+        {rutLocked ? (
           <FormHint>Para modificar tu número de documento, contacta al soporte de Leasefy.</FormHint>
-        )}
+        ) : null}
+        <FormError>{errorDe('documento')}</FormError>
       </FormField>
 
-      {/* Phone */}
-      <FormField id="phone">
-        <FormLabel>Tu número de teléfono</FormLabel>
-        <FormControl>
-          <Input
-            type="tel"
-            autoComplete="tel"
-            value={draft.phone || ''}
-            onChange={(e) => updateDraft({ phone: e.target.value })}
-            placeholder="+57 300 123 4567"
+      {/* Celular: indicativo, largo y validación del país (`PhoneField`). */}
+      <FormField id="phone" required invalid={!!errorDe('telefono')}>
+        <FormLabel>Tu celular</FormLabel>
+        <div ref={telefonoRef} onBlur={() => revisar('telefono')}>
+          <PhoneField
+            id="phone"
+            value={recortarAlPais(draft.phone || '')}
+            onChange={(nacional) => {
+              escribio('telefono')
+              updateDraft({ phone: nacional })
+            }}
+            invalid={!!errorDe('telefono')}
           />
-        </FormControl>
-        <FormHint>Para que propietarios puedan contactarte sobre tus aplicaciones</FormHint>
+        </div>
+        <FormHint>Para que los propietarios puedan contactarte sobre tus aplicaciones.</FormHint>
+        <FormError>{errorDe('telefono')}</FormError>
       </FormField>
 
       {/* Already have account */}

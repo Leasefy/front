@@ -37,6 +37,7 @@ import {
   type ReporteFiltersState,
 } from '@/components/inmobiliaria';
 import { apiClient, ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { abrirCentroDeProcesos, procesosApi, type PedidoDeReporte } from '@/lib/api/procesos.service';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 // Local storage key for favorites
@@ -322,11 +323,17 @@ function ReportesContent() {
       toast.success('Descargado', { description: `${report.title} · CSV · ${nota}` });
       return true;
     } catch (error) {
+      // El 403 con su texto propio; lo demás con la regla de oro (02-10-2026):
+      // un 5xx «de nuestro lado» con la referencia, un 4xx con su motivo y
+      // «conexión» sólo sin respuesta. Antes todo era «Prueba de nuevo».
       toast.error('No pudimos generar el reporte', {
         description:
           error instanceof ApiError && error.status === 403
             ? 'Tu rol no incluye descargar reportes.'
-            : 'Prueba de nuevo en un momento.',
+            : mensajeParaLaPersona(error, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'generar el reporte',
+              }),
       });
       return false;
     } finally {
@@ -424,7 +431,10 @@ function ReportesContent() {
         description:
           error instanceof ApiError && error.status === 403
             ? 'Tu rol no incluye descargar reportes.'
-            : 'Prueba de nuevo en un momento.',
+            : mensajeParaLaPersona(error, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'armar el archivo de los reportes',
+              }),
       });
     } finally {
       setEnviandoTodos(false);

@@ -47,11 +47,13 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { formatCurrency } from '@/lib/format';
 import { netoDelPropietario } from '@/lib/dinero/neto-del-propietario';
 import { apiClient, ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useRentabilidadReport } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
 import {
@@ -161,7 +163,11 @@ function RentabilidadContent() {
         description:
           error instanceof ApiError && error.status === 403
             ? t('inmobiliaria.reportes.rentabilidad.downloadForbidden')
-            : t('inmobiliaria.reportes.rentabilidad.tryAgain'),
+            : // Con la regla de oro (02-10-2026): un 5xx con la referencia.
+              mensajeParaLaPersona(error, {
+                porDefecto: t('inmobiliaria.reportes.rentabilidad.tryAgain'),
+                accion: 'descargar la rentabilidad',
+              }),
       });
     } finally {
       setBajando(false);
@@ -277,19 +283,21 @@ function RentabilidadContent() {
               />
             </div>
           </div>
-          {errorDeRango ? (
-            <p id="rentabilidad-rango-error" role="alert" className="text-xs text-danger">
-              {errorDeRango}
-            </p>
-          ) : (
-            <p className="text-xs text-fg-muted" data-testid="rango-consultado">
-              {t('inmobiliaria.reportes.rentabilidad.period.showing', {
-                desde: etiquetaDelMes(consulta.desde, locale),
-                hasta: etiquetaDelMes(consulta.hasta, locale),
-                meses,
-              })}
-            </p>
-          )}
+          {/* El error del rango, bajo los dos campos, con su entrada suave: se
+              cruza con la línea de lo consultado (02-10-2026). */}
+          <ErrorDelCampo
+            id="rentabilidad-rango-error"
+            mensaje={errorDeRango}
+            pista={
+              <span data-testid="rango-consultado">
+                {t('inmobiliaria.reportes.rentabilidad.period.showing', {
+                  desde: etiquetaDelMes(consulta.desde, locale),
+                  hasta: etiquetaDelMes(consulta.hasta, locale),
+                  meses,
+                })}
+              </span>
+            }
+          />
         </div>
       </section>
 

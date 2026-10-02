@@ -342,3 +342,44 @@ describe('AsientoDeApertura — T-0125: la apertura se identifica por su fecha, 
     expect(alerta?.textContent).toMatch(/revers/i);
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): un 5xx dice «de nuestro lado» con la
+ * referencia (antes salía «Error interno del servidor» tal cual); el corte de
+ * red sigue con su texto propio, que explica que reintentar es seguro.
+ */
+describe('AsientoDeApertura — la regla de oro', () => {
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await pintar();
+    const { ApiError } = await import('@/lib/api/client');
+    api.asientos.crear.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '1a2b3c4d',
+      }),
+    );
+    await llenarUnAsientoQueCuadra();
+    await click(q('apertura-enviar'));
+    await act(async () => {});
+
+    const texto = container.textContent ?? '';
+    expect(texto).toMatch(/No pudimos registrar el asiento: algo falló de nuestro lado/);
+    expect(texto).toContain('1a2b3c4d');
+    expect(texto).not.toContain('Error interno del servidor');
+  });
+
+  it('el corte de red (status 0) sigue diciendo que reintentar es seguro', async () => {
+    await pintar();
+    const { ApiError } = await import('@/lib/api/client');
+    api.asientos.crear.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await llenarUnAsientoQueCuadra();
+    await click(q('apertura-enviar'));
+    await act(async () => {});
+
+    const texto = container.textContent ?? '';
+    expect(texto).toMatch(/conexión/);
+    expect(texto).toMatch(/no se registra dos veces/);
+  });
+});

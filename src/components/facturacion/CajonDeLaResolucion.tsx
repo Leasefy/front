@@ -27,6 +27,9 @@
 import { useState } from 'react'
 import { Certificate } from '@phosphor-icons/react'
 
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,6 +46,52 @@ import {
   erroresDeLaResolucion,
   hayErrores,
 } from '@/lib/facturacion/errores-de-la-resolucion'
+
+/** Los campos que pueden traer un error (del navegador o del back). */
+type CampoConError =
+  | 'numero'
+  | 'fechaResolucion'
+  | 'prefijo'
+  | 'desde'
+  | 'hasta'
+  | 'vigenteDesde'
+  | 'vigenteHasta'
+  | 'ultimoNumeroUsado'
+
+const CAMPOS_CON_ERROR: readonly CampoConError[] = [
+  'numero',
+  'fechaResolucion',
+  'prefijo',
+  'desde',
+  'hasta',
+  'vigenteDesde',
+  'vigenteHasta',
+  'ultimoNumeroUsado',
+]
+
+/** El `id` del input de cada campo (para el foco y el `aria-describedby`). */
+const ID_DEL_CAMPO: Record<CampoConError, string> = {
+  numero: 'resolucion-numero',
+  fechaResolucion: 'resolucion-fecha',
+  prefijo: 'resolucion-prefijo',
+  desde: 'resolucion-desde',
+  hasta: 'resolucion-hasta',
+  vigenteDesde: 'resolucion-vigente-desde',
+  vigenteHasta: 'resolucion-vigente-hasta',
+  ultimoNumeroUsado: 'resolucion-ultimo',
+}
+
+/** El `id` del error de cada campo. Los de siempre se conservan. */
+const ID_DEL_ERROR: Record<CampoConError, string> = {
+  numero: 'resolucion-error-numero',
+  fechaResolucion: 'resolucion-error-fecha',
+  prefijo: 'resolucion-error-prefijo',
+  desde: 'resolucion-error-desde',
+  hasta: 'resolucion-error-hasta',
+  vigenteDesde: 'resolucion-error-vigente-desde',
+  vigenteHasta: 'resolucion-error-vigente-hasta',
+  ultimoNumeroUsado: 'resolucion-error-ultimo',
+}
 import { toast } from '@/components/ui/toast'
 import {
   facturacionPorMesService,
@@ -108,9 +157,23 @@ export function CajonDeLaResolucion({
 }: CajonDeLaResolucionProps) {
   const [form, setForm] = useState<Formulario>(VACIO)
   const [guardando, setGuardando] = useState(false)
+  /**
+   * Lo que el BACK dijo de cada campo (02-10-2026): va debajo de su campo, no
+   * en un toast. Se borra al corregir ese campo.
+   */
+  const [delServidor, setDelServidor] = useState<
+    Partial<Record<CampoConError, string>>
+  >({})
 
-  const campo = (clave: keyof Formulario) => (valor: string) =>
+  const campo = (clave: keyof Formulario) => (valor: string) => {
     setForm((previo) => ({ ...previo, [clave]: valor }))
+    setDelServidor((previo) => {
+      if (!(clave in previo)) return previo
+      const { [clave as CampoConError]: _borrado, ...resto } = previo
+      void _borrado
+      return resto
+    })
+  }
 
   /*
    * El formulario está completo cuando están los seis campos obligatorios. El
@@ -125,6 +188,17 @@ export function CajonDeLaResolucion({
    * sigue aplicando: esto no lo reemplaza, lo adelanta.
    */
   const errores = erroresDeLaResolucion(form)
+  /** El error que se ve: el del navegador primero (el que se puede corregir ya). */
+  const errorDe = (c: CampoConError): string | undefined =>
+    (errores as Partial<Record<CampoConError, string>>)[c] ?? delServidor[c]
+  /** Lo que el input dice de su error, para el lector de pantalla. */
+  const aria = (c: CampoConError) => {
+    const hay = Boolean(errorDe(c))
+    return {
+      'aria-invalid': hay ? true : undefined,
+      'aria-describedby': hay ? ID_DEL_ERROR[c] : undefined,
+    } as const
+  }
 
   const completo =
     form.numero.trim() !== '' &&
@@ -159,10 +233,18 @@ export function CajonDeLaResolucion({
       await onCargada()
     } catch (e) {
       // El cajón queda abierto y con lo escrito: reintentar no obliga a
-      // copiar el papel de la DIAN otra vez.
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudo cargar la resolución.',
-      )
+      // copiar el papel de la DIAN otra vez. Lo que el back dijo de un campo
+      // va debajo de él, con el foco en el primero; el resto, al toast, con la
+      // regla de oro (un 5xx dice «de nuestro lado» con la referencia).
+      const reparto = repartirErroresDelServidor<CampoConError>(e, {
+        campos: CAMPOS_CON_ERROR,
+        porDefecto: 'No se pudo cargar la resolución.',
+        accion: 'cargar la resolución',
+      })
+      setDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -201,7 +283,9 @@ export function CajonDeLaResolucion({
               onChange={(e) => campo('numero')(e.target.value)}
               placeholder="18764003394379"
               data-testid="resolucion-campo-numero"
+              {...aria('numero')}
             />
+            <ErrorDelCampo id={ID_DEL_ERROR.numero} mensaje={errorDe('numero')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-fecha">Fecha de la resolución</Label>
@@ -211,7 +295,9 @@ export function CajonDeLaResolucion({
               value={form.fechaResolucion}
               onChange={(e) => campo('fechaResolucion')(e.target.value)}
               data-testid="resolucion-campo-fecha"
+              {...aria('fechaResolucion')}
             />
+            <ErrorDelCampo id={ID_DEL_ERROR.fechaResolucion} mensaje={errorDe('fechaResolucion')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-prefijo">Prefijo</Label>
@@ -221,10 +307,13 @@ export function CajonDeLaResolucion({
               onChange={(e) => campo('prefijo')(e.target.value)}
               placeholder="FE"
               data-testid="resolucion-campo-prefijo"
+              {...aria('prefijo')}
             />
-            <p className="text-caption text-fg-muted">
-              Déjalo vacío si tu resolución no tiene prefijo.
-            </p>
+            <ErrorDelCampo
+              id={ID_DEL_ERROR.prefijo}
+              mensaje={errorDe('prefijo')}
+              pista="Déjalo vacío si tu resolución no tiene prefijo."
+            />
           </div>
           {datos?.porTipoDisponible && (
             <div className="space-y-1.5">
@@ -268,19 +357,9 @@ export function CajonDeLaResolucion({
               onChange={(e) => campo('desde')(e.target.value)}
               placeholder="1"
               data-testid="resolucion-campo-desde"
-              aria-invalid={errores.desde ? true : undefined}
-              aria-describedby={errores.desde ? 'resolucion-error-desde' : undefined}
+              {...aria('desde')}
             />
-            {errores.desde ? (
-              <p
-                id="resolucion-error-desde"
-                role="alert"
-                className="text-caption text-danger"
-                data-testid="resolucion-error-desde"
-              >
-                {errores.desde}
-              </p>
-            ) : null}
+            <ErrorDelCampo id={ID_DEL_ERROR.desde} mensaje={errorDe('desde')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-hasta">Rango hasta</Label>
@@ -291,19 +370,9 @@ export function CajonDeLaResolucion({
               onChange={(e) => campo('hasta')(e.target.value)}
               placeholder="5000"
               data-testid="resolucion-campo-hasta"
-              aria-invalid={errores.hasta ? true : undefined}
-              aria-describedby={errores.hasta ? 'resolucion-error-hasta' : undefined}
+              {...aria('hasta')}
             />
-            {errores.hasta ? (
-              <p
-                id="resolucion-error-hasta"
-                role="alert"
-                className="text-caption text-danger"
-                data-testid="resolucion-error-hasta"
-              >
-                {errores.hasta}
-              </p>
-            ) : null}
+            <ErrorDelCampo id={ID_DEL_ERROR.hasta} mensaje={errorDe('hasta')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-desde">Vigente desde</Label>
@@ -313,21 +382,9 @@ export function CajonDeLaResolucion({
               value={form.vigenteDesde}
               onChange={(e) => campo('vigenteDesde')(e.target.value)}
               data-testid="resolucion-campo-vigente-desde"
-              aria-invalid={errores.vigenteDesde ? true : undefined}
-              aria-describedby={
-                errores.vigenteDesde ? 'resolucion-error-vigente-desde' : undefined
-              }
+              {...aria('vigenteDesde')}
             />
-            {errores.vigenteDesde ? (
-              <p
-                id="resolucion-error-vigente-desde"
-                role="alert"
-                className="text-caption text-danger"
-                data-testid="resolucion-error-vigente-desde"
-              >
-                {errores.vigenteDesde}
-              </p>
-            ) : null}
+            <ErrorDelCampo id={ID_DEL_ERROR.vigenteDesde} mensaje={errorDe('vigenteDesde')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-hasta">Vigente hasta</Label>
@@ -337,21 +394,9 @@ export function CajonDeLaResolucion({
               value={form.vigenteHasta}
               onChange={(e) => campo('vigenteHasta')(e.target.value)}
               data-testid="resolucion-campo-vigente-hasta"
-              aria-invalid={errores.vigenteHasta ? true : undefined}
-              aria-describedby={
-                errores.vigenteHasta ? 'resolucion-error-vigente-hasta' : undefined
-              }
+              {...aria('vigenteHasta')}
             />
-            {errores.vigenteHasta ? (
-              <p
-                id="resolucion-error-vigente-hasta"
-                role="alert"
-                className="text-caption text-danger"
-                data-testid="resolucion-error-vigente-hasta"
-              >
-                {errores.vigenteHasta}
-              </p>
-            ) : null}
+            <ErrorDelCampo id={ID_DEL_ERROR.vigenteHasta} mensaje={errorDe('vigenteHasta')} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
@@ -362,11 +407,13 @@ export function CajonDeLaResolucion({
               onChange={(e) => campo('ultimoNumeroUsado')(e.target.value)}
               placeholder="opcional"
               data-testid="resolucion-campo-ultimo"
+              {...aria('ultimoNumeroUsado')}
             />
-            <p className="text-caption text-fg-muted">
-              Sólo si ya gastaste parte del rango en otro sistema. Con esto, la
-              próxima factura sigue desde ahí y no desde el principio del rango.
-            </p>
+            <ErrorDelCampo
+              id={ID_DEL_ERROR.ultimoNumeroUsado}
+              mensaje={errorDe('ultimoNumeroUsado')}
+              pista="Sólo si ya gastaste parte del rango en otro sistema. Con esto, la próxima factura sigue desde ahí y no desde el principio del rango."
+            />
           </div>
         </div>
       </CajonCuerpo>

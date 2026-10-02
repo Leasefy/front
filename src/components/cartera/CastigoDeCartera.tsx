@@ -40,6 +40,9 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
   Table,
   TableBody,
@@ -180,6 +183,8 @@ export function CastigoDeCartera() {
     accion: 'rechazar' | 'reversar'
   } | null>(null)
   const [motivo, setMotivo] = useState('')
+  /** El error del motivo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [trabajando, setTrabajando] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
@@ -213,7 +218,10 @@ export function CastigoDeCartera() {
       await cargar()
     } catch (e) {
       toast.error('No se pudo firmar', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'firmar el castigo',
+        }),
       })
     } finally {
       setTrabajando(null)
@@ -225,6 +233,7 @@ export function CastigoDeCartera() {
     const texto = motivo.trim()
     if (texto.length === 0) return
     setTrabajando(conMotivo.id)
+    setErrorDelMotivo(null)
     try {
       if (conMotivo.accion === 'rechazar') {
         await castigoApi.rechazar(conMotivo.id, texto)
@@ -237,9 +246,20 @@ export function CastigoDeCartera() {
       setMotivo('')
       await cargar()
     } catch (e) {
-      toast.error('No se pudo guardar', {
-        description: e instanceof Error ? e.message : undefined,
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'] as const,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion:
+          conMotivo.accion === 'rechazar' ? 'rechazar el castigo' : 'volver a cobrar la cartera',
       })
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo)
+        document.getElementById('motivo-del-castigo-texto')?.focus()
+      }
+      if (sueltos.length > 0) {
+        toast.error('No se pudo guardar', { description: sueltos.join(' · ') })
+      }
     } finally {
       setTrabajando(null)
     }
@@ -413,6 +433,7 @@ export function CastigoDeCartera() {
                                 onClick={() => {
                                   setConMotivo({ id: c.id, accion: 'rechazar' })
                                   setMotivo('')
+                                  setErrorDelMotivo(null)
                                 }}
                                 data-testid="rechazar-castigo"
                               >
@@ -429,6 +450,7 @@ export function CastigoDeCartera() {
                               onClick={() => {
                                 setConMotivo({ id: c.id, accion: 'reversar' })
                                 setMotivo('')
+                                setErrorDelMotivo(null)
                               }}
                               data-testid="reversar-castigo"
                             >
@@ -445,18 +467,32 @@ export function CastigoDeCartera() {
 
                           {conMotivo?.id === c.id && (
                             <div className="mt-2 space-y-2 text-left" data-testid="motivo-del-castigo">
-                              <Textarea
-                                value={motivo}
-                                onChange={(e) => setMotivo(e.target.value)}
-                                rows={2}
-                                maxLength={500}
-                                placeholder={
-                                  conMotivo.accion === 'rechazar'
-                                    ? 'Por qué no se castiga. Lo lee quien lo propuso.'
-                                    : 'Por qué vuelve a cobrarse.'
-                                }
-                                aria-label="Motivo"
-                              />
+                              <div>
+                                <Textarea
+                                  id="motivo-del-castigo-texto"
+                                  value={motivo}
+                                  onChange={(e) => {
+                                    setMotivo(e.target.value)
+                                    setErrorDelMotivo(null)
+                                  }}
+                                  rows={2}
+                                  maxLength={500}
+                                  placeholder={
+                                    conMotivo.accion === 'rechazar'
+                                      ? 'Por qué no se castiga. Lo lee quien lo propuso.'
+                                      : 'Por qué vuelve a cobrarse.'
+                                  }
+                                  aria-label="Motivo"
+                                  aria-invalid={errorDelMotivo ? true : undefined}
+                                  aria-describedby={
+                                    errorDelMotivo ? 'motivo-del-castigo-texto-error' : undefined
+                                  }
+                                />
+                                <ErrorDelCampo
+                                  id="motivo-del-castigo-texto-error"
+                                  mensaje={errorDelMotivo}
+                                />
+                              </div>
                               <div className="flex justify-end gap-2">
                                 <Button
                                   hideArrow

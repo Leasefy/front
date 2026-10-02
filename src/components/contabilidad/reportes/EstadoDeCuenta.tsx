@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { contabilidadApi, type EstadoDeCuenta as Estado } from '@/lib/api/contabilidad.service';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { inquilinosApi } from '@/lib/api/inquilinos.service';
@@ -283,12 +284,20 @@ export function EstadoDeCuenta() {
                 className="font-mono"
                 autoComplete="off"
                 aria-invalid={(idManual.trim() !== '' && !UUID.test(idManual.trim())) || undefined}
+                aria-describedby={
+                  idManual.trim() !== '' && !UUID.test(idManual.trim())
+                    ? 'tercero-busqueda-error'
+                    : undefined
+                }
               />
-              {idManual.trim() !== '' && !UUID.test(idManual.trim()) ? (
-                <p className="text-caption text-danger" role="alert">
-                  Tiene que ser un id (uuid).
-                </p>
-              ) : null}
+              <ErrorDelCampo
+                id="tercero-busqueda-error"
+                mensaje={
+                  idManual.trim() !== '' && !UUID.test(idManual.trim())
+                    ? 'Tiene que ser un id (uuid).'
+                    : null
+                }
+              />
             </>
           )}
         </div>

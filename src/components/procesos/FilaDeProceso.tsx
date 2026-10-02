@@ -48,6 +48,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { procesosApi } from '@/lib/api/procesos.service'
 import { contabilidadApi } from '@/lib/api/contabilidad.service'
 import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service'
@@ -168,7 +169,14 @@ export function FilaDeProceso({
       const nombre = await descargarArchivoDelProceso(p.id, navegar)
       toast.success('Descargando', { description: nombre })
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo descargar el archivo.')
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+      // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo descargar el archivo.',
+          accion: 'descargar el archivo',
+        }),
+      )
     } finally {
       setBajando(false)
     }
@@ -185,7 +193,9 @@ export function FilaDeProceso({
       )
       onCambio?.()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo detener.')
+      toast.error(
+        mensajeParaLaPersona(e, { porDefecto: 'No se pudo detener.', accion: 'detener el proceso' }),
+      )
     } finally {
       setCancelando(false)
     }
@@ -198,7 +208,12 @@ export function FilaDeProceso({
       await reintentar()
       onCambio?.()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo volver a lanzar.')
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo volver a lanzar.',
+          accion: 'volver a lanzar el proceso',
+        }),
+      )
     } finally {
       setReintentando(false)
     }

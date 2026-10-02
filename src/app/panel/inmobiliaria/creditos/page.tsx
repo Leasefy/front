@@ -35,6 +35,8 @@ import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
 import { useAuth } from '@/lib/auth';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type {
   AgentCreditsBalance,
   AgentCreditPack,
@@ -301,6 +303,17 @@ const DOCUMENT_TYPES: Array<{ value: PseLegalIdType; label: string }> = [
 /** La misma regla que el back (`PseCreditsCheckoutDto.legalId`). */
 const DOCUMENTO_VALIDO = /^\d{6,15}$/;
 
+/** Los campos del pagador que pueden traer un error del back (02-10-2026). */
+type CampoDelPagador = 'banco' | 'documento' | 'nombre' | 'correo';
+
+/** El `id` de cada campo, para el foco y el `aria-describedby` de su error. */
+const ID_DEL_CAMPO: Record<CampoDelPagador, string> = {
+  banco: 'creditos-banco',
+  documento: 'creditos-documento',
+  nombre: 'creditos-nombre',
+  correo: 'creditos-correo',
+};
+
 function PurchaseModal({
   pack,
   onClose,
@@ -312,7 +325,8 @@ function PurchaseModal({
 }) {
   const { user } = useAuth();
   const [bancos, setBancos] = useState<PseFinancialInstitution[]>([]);
-  const [bancosError, setBancosError] = useState(false);
+  /** El fallo al traer los bancos; se dice con el traductor bajo el campo. */
+  const [bancosError, setBancosError] = useState<unknown>(null);
   const [banco, setBanco] = useState('');
   const [tipoDePersona, setTipoDePersona] = useState<PseUserType>('NATURAL');
   const [tipoDeDocumento, setTipoDeDocumento] = useState<PseLegalIdType>('CC');
@@ -321,6 +335,15 @@ function PurchaseModal({
   const [correo, setCorreo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /** Lo que el back dijo de cada campo del pagador: va debajo de su campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelPagador, string>>>({});
+  const olvidar = (campo: CampoDelPagador) =>
+    setDelServidor((previo) => (campo in previo ? { ...previo, [campo]: undefined } : previo));
+  /** Lo que el input dice de su error, para el lector de pantalla. */
+  const aria = (campo: CampoDelPagador, mensaje?: string | null) => ({
+    'aria-invalid': mensaje ? true : undefined,
+    'aria-describedby': mensaje ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
+  });
 
   useEffect(() => {
     if (user?.email) setCorreo((actual) => actual || user.email);
@@ -330,8 +353,16 @@ function PurchaseModal({
     pseCheckoutApi
       .getFinancialInstitutions()
       .then(setBancos)
-      .catch(() => setBancosError(true));
+      .catch((e: unknown) => setBancosError(e ?? new Error('Sin bancos')));
   }, []);
+
+  /** El error del banco: la lista que no llegó, o lo que dijo el back. */
+  const errorDelBanco = bancosError
+    ? mensajeParaLaPersona(bancosError, {
+        porDefecto: 'No pudimos traer la lista de bancos de PSE. Cierra y vuelve a intentar.',
+        accion: 'traer la lista de bancos de PSE',
+      })
+    : (delServidor.banco ?? null);
 
   const datosCompletos =
     !!banco &&
@@ -345,6 +376,7 @@ function PurchaseModal({
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setDelServidor({});
     try {
       const res = await agentCreditsApi.startPseCheckout({
         packSize: pack.packSize,
@@ -363,12 +395,23 @@ function PurchaseModal({
         'El banco todavía no devolvió el enlace de pago. Intenta de nuevo en un momento.'
       );
     } catch (err) {
-      setSubmitError(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No se pudo iniciar el pago por PSE.',
-          accion: 'iniciar el pago por PSE',
-        })
-      );
+      // Lo que el back dijo de un dato del pagador va debajo de ese dato, con
+      // el foco ahí (02-10-2026); lo demás, al aviso, con la regla de oro.
+      const reparto = repartirErroresDelServidor<CampoDelPagador>(err, {
+        mapa: {
+          legalId: 'documento',
+          email: 'correo',
+          fullName: 'nombre',
+          financialInstitutionCode: 'banco',
+        },
+        campos: ['banco', 'documento', 'nombre', 'correo'],
+        porDefecto: 'No se pudo iniciar el pago por PSE.',
+        accion: 'iniciar el pago por PSE',
+      });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+      setSubmitError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
     }
     setIsSubmitting(false);
   };
@@ -399,10 +442,13 @@ function PurchaseModal({
             </label>
             <Select
               value={banco || undefined}
-              onValueChange={setBanco}
-              disabled={bancosError || bancos.length === 0}
+              onValueChange={(v) => {
+                setBanco(v);
+                olvidar('banco');
+              }}
+              disabled={Boolean(bancosError) || bancos.length === 0}
             >
-              <SelectTrigger id="creditos-banco">
+              <SelectTrigger id="creditos-banco" {...aria('banco', errorDelBanco)}>
                 <SelectValue placeholder="Selecciona tu banco" />
               </SelectTrigger>
               <SelectContent>
@@ -413,11 +459,7 @@ function PurchaseModal({
                 ))}
               </SelectContent>
             </Select>
-            {bancosError && (
-              <p className="text-sm text-danger mt-1">
-                No pudimos traer la lista de bancos de PSE. Cierra y vuelve a intentar.
-              </p>
-            )}
+            <ErrorDelCampo id="creditos-banco-error" mensaje={errorDelBanco} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -467,8 +509,13 @@ function PurchaseModal({
               autoComplete="off"
               className="font-mono"
               value={documento}
-              onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15))}
+              onChange={(e) => {
+                setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15));
+                olvidar('documento');
+              }}
+              {...aria('documento', delServidor.documento)}
             />
+            <ErrorDelCampo id="creditos-documento-error" mensaje={delServidor.documento} />
           </div>
 
           <div>
@@ -480,8 +527,13 @@ function PurchaseModal({
               autoComplete="name"
               maxLength={200}
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                setNombre(e.target.value);
+                olvidar('nombre');
+              }}
+              {...aria('nombre', delServidor.nombre)}
             />
+            <ErrorDelCampo id="creditos-nombre-error" mensaje={delServidor.nombre} />
           </div>
 
           <div>
@@ -493,8 +545,13 @@ function PurchaseModal({
               type="email"
               autoComplete="email"
               value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
+              onChange={(e) => {
+                setCorreo(e.target.value);
+                olvidar('correo');
+              }}
+              {...aria('correo', delServidor.correo)}
             />
+            <ErrorDelCampo id="creditos-correo-error" mensaje={delServidor.correo} />
           </div>
 
           {submitError && (

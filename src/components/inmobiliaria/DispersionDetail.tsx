@@ -49,6 +49,9 @@ import {
   type EleccionDelOrigenDelGiro,
 } from '@/components/dispersiones/ElegirCuentaDeOrigenDelGiro';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { errorDeLaReferenciaDelGiro } from '@/lib/dispersiones/limites-de-las-dispersiones';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -269,6 +272,7 @@ export function DispersionDetail({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
   const [errorDeReferencia, setErrorDeReferencia] = React.useState<string | null>(null);
+  const referenciaRef = React.useRef<HTMLInputElement>(null);
   /**
    * Desde qué cuenta salió el giro (Nico, 23-09). Hasta que el selector
    * diga `listo` —cargó, y hay banco y número válidos, o el back no tiene la
@@ -307,40 +311,67 @@ export function DispersionDetail({
     }
   };
 
-  /** Anotar la referencia del giro. Sin referencia el back responde 400. */
-  const handleProcess = async () => {
-    if (!dispersion || !onProcess) return;
+  /** El error de la referencia, debajo de ella y con el foco ahí. */
+  const marcarLaReferencia = (mensaje: string) => {
+    setErrorDeReferencia(mensaje);
+    referenciaRef.current?.focus();
+  };
+
+  /**
+   * Anotar el giro (marcar girada o reintentar una fallida): la misma
+   * referencia obligatoria y el mismo tope que el back (02-10-2026).
+   *
+   *  · vacía o de más de 100 caracteres (`dispersions.transfer_reference` es
+   *    `VarChar(100)`) se dice ANTES de mandar, con la frase del back;
+   *  · si el back igual la rechaza (un 400 con `campos`), el motivo va debajo
+   *    de la referencia; lo que no es de la referencia (la cuenta de origen,
+   *    un 5xx, la red) va en un toast, con la regla de oro del traductor.
+   */
+  const anotarElGiro = async (
+    enviar: (ref: string) => Promise<void> | void,
+  ) => {
     const ref = referencia.trim();
     if (!ref) {
-      setErrorDeReferencia(t('inmobiliaria.dispersiones.detailView.referenciaFalta'));
+      marcarLaReferencia(t('inmobiliaria.dispersiones.detailView.referenciaFalta'));
+      return;
+    }
+    const demasiadoLarga = errorDeLaReferenciaDelGiro(ref);
+    if (demasiadoLarga) {
+      marcarLaReferencia(demasiadoLarga);
       return;
     }
     setErrorDeReferencia(null);
     setIsProcessing(true);
     try {
-      await onProcess(dispersion, ref, origenDelGiro.origen);
+      await enviar(ref);
       setReferencia('');
+    } catch (error) {
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        mapa: { transferReference: 'referencia' },
+        campos: ['referencia'],
+        accion: 'guardar la referencia del giro',
+      });
+      if (porCampo.referencia) marcarLaReferencia(porCampo.referencia);
+      if (sueltos.length > 0) {
+        toast.error('No se pudo guardar la referencia del giro', {
+          description: sueltos.join(' · '),
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
+  /** Anotar la referencia del giro. Sin referencia el back responde 400. */
+  const handleProcess = async () => {
+    if (!dispersion || !onProcess) return;
+    await anotarElGiro((ref) => onProcess(dispersion, ref, origenDelGiro.origen));
+  };
+
   /** Reintentar una fallida: mismo camino, misma referencia obligatoria. */
   const handleRetry = async () => {
     if (!dispersion || !onRetry) return;
-    const ref = referencia.trim();
-    if (!ref) {
-      setErrorDeReferencia(t('inmobiliaria.dispersiones.detailView.referenciaFalta'));
-      return;
-    }
-    setErrorDeReferencia(null);
-    setIsProcessing(true);
-    try {
-      await onRetry(dispersion, ref, origenDelGiro.origen);
-      setReferencia('');
-    } finally {
-      setIsProcessing(false);
-    }
+    await anotarElGiro((ref) => onRetry(dispersion, ref, origenDelGiro.origen));
   };
 
   // Handle download PDF
@@ -445,11 +476,18 @@ export function DispersionDetail({
                 {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
               </label>
               <input
+                ref={referenciaRef}
                 id="dispersion-referencia"
                 data-testid="dispersion-referencia"
                 value={referencia}
                 disabled={esQuienAprobo}
-                aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : 'dispersion-referencia-ayuda'}
+                aria-invalid={errorDeReferencia ? true : undefined}
+                aria-describedby={[
+                  esQuienAprobo ? 'dispersion-aprobador-no-gira' : 'dispersion-referencia-ayuda',
+                  errorDeReferencia ? 'dispersion-referencia-error' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 onChange={(e) => {
                   setReferencia(e.target.value);
                   if (errorDeReferencia) setErrorDeReferencia(null);
@@ -462,11 +500,7 @@ export function DispersionDetail({
                   {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
                 </p>
               )}
-              {errorDeReferencia && (
-                <p role="alert" className="text-caption text-danger">
-                  {errorDeReferencia}
-                </p>
-              )}
+              <ErrorDelCampo id="dispersion-referencia-error" mensaje={errorDeReferencia} />
             </div>
           )}
 

@@ -88,7 +88,22 @@ const SIN_MIGRACION = {
   ultima: null,
 };
 
+// El toast, para mirar qué se dice cuando anotar el giro falla (02-10-2026).
+const toastMock = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  loading: vi.fn(),
+  dismiss: vi.fn(),
+}));
+vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+
 import { DispersionDetail } from './DispersionDetail';
+import { ApiError } from '@/lib/api/client';
+import {
+  MAX_LARGO_REFERENCIA_DEL_GIRO,
+  MENSAJES_DE_LAS_DISPERSIONES,
+} from '@/lib/dispersiones/limites-de-las-dispersiones';
 
 const BASE_PROPIETARIO: Propietario = {
   id: 'own1',
@@ -625,5 +640,102 @@ describe('<DispersionDetail> el pie queda con los botones', () => {
     renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
     await act(async () => {});
     expect(container.innerHTML).not.toContain('text-[11px]');
+  });
+});
+
+/*
+ * 02-10-2026 · Anotar el giro con el sistema de errores. La referencia del
+ * giro es `VarChar(100)` en la base: la de más se ataja ANTES de mandar, con
+ * la frase del back; lo que el back diga de ella va debajo del campo, con el
+ * foco ahí; un 5xx dice «de nuestro lado» con la referencia de soporte, y
+ * «conexión» sólo cuando no hubo respuesta.
+ */
+describe('<DispersionDetail> la referencia del giro y sus errores (02-10)', () => {
+  const aprobada: Dispersion = { ...BASE_DISPERSION, status: 'processing', approvedBy: 'u-1' };
+
+  function escribir(el: HTMLInputElement, valor: string) {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  type AlAnotar = NonNullable<React.ComponentProps<typeof DispersionDetail>['onProcess']>;
+
+  async function anotar(onProcess: AlAnotar, referencia: string) {
+    renderConProps(aprobada, { onProcess, usuarioActualId: 'u-2' });
+    await act(async () => {});
+    act(() => escribir(q('dispersion-referencia') as HTMLInputElement, referencia));
+    await act(async () => (q('dispersion-marcar-girada') as HTMLButtonElement).click());
+    await act(async () => {});
+  }
+
+  const errorDelCampo = () => container.querySelector('#dispersion-referencia-error');
+
+  beforeEach(() => {
+    Object.values(toastMock).forEach((f) => f.mockReset());
+  });
+
+  it('🔴 una referencia de más de 100 caracteres se ataja ANTES de mandar, con la frase del back', async () => {
+    const onProcess = vi.fn();
+    await anotar(onProcess, 'R'.repeat(MAX_LARGO_REFERENCIA_DEL_GIRO + 1));
+
+    expect(onProcess).not.toHaveBeenCalled();
+    expect(errorDelCampo()?.textContent).toBe(MENSAJES_DE_LAS_DISPERSIONES.referenciaDelGiroLarga);
+    expect(document.activeElement?.id).toBe('dispersion-referencia');
+    expect(q('dispersion-referencia')?.getAttribute('aria-invalid')).toBe('true');
+    expect(q('dispersion-referencia')?.getAttribute('aria-describedby')).toContain(
+      'dispersion-referencia-error',
+    );
+  });
+
+  it('una de 100 caracteres justos sí se manda', async () => {
+    const onProcess = vi.fn();
+    await anotar(onProcess, 'R'.repeat(MAX_LARGO_REFERENCIA_DEL_GIRO));
+    expect(onProcess).toHaveBeenCalledWith(aprobada, 'R'.repeat(MAX_LARGO_REFERENCIA_DEL_GIRO), null);
+    expect(errorDelCampo()?.textContent ?? '').toBe('');
+  });
+
+  it('🔴 un 400 con campos pinta el error DEBAJO de la referencia y le da el foco, sin toast', async () => {
+    const mensaje = MENSAJES_DE_LAS_DISPERSIONES.referenciaDelGiroLarga;
+    const onProcess = vi.fn().mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'transferReference', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await anotar(onProcess, 'TRF-9');
+
+    expect(onProcess).toHaveBeenCalled();
+    expect(errorDelCampo()?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('dispersion-referencia');
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia de soporte, y no culpa a la conexión', async () => {
+    const onProcess = vi.fn().mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await anotar(onProcess, 'TRF-9');
+
+    expect(toastMock.error).toHaveBeenCalledTimes(1);
+    const [, opciones] = toastMock.error.mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toContain('de nuestro lado');
+    expect(opciones.description).toContain('ab12cd34');
+    expect(opciones.description).not.toMatch(/conexi[oó]n/);
+    expect(errorDelCampo()?.textContent ?? '').toBe('');
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    const onProcess = vi.fn().mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await anotar(onProcess, 'TRF-9');
+
+    const [, opciones] = toastMock.error.mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toMatch(/conexi[oó]n/);
   });
 });

@@ -250,3 +250,68 @@ describe('sin diálogos del navegador', () => {
     expect(testId('quitar-nomina')).toBeNull();
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): 🔁 el valor presupuestado con ceros de más
+ * (para arriba o para abajo: puede ser negativo) dice la frase del back bajo
+ * el campo y no viaja; un 5xx dice «de nuestro lado» con la referencia.
+ */
+describe('cargar el presupuesto · errores en su campo', () => {
+  const enDoc = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  function escribir(el: HTMLInputElement, valor: string) {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  async function abrirYEscribir(valor: string) {
+    await pintar();
+    await act(async () => {
+      (testId('cargar-presupuesto') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      escribir(enDoc('presupuesto-rubro') as HTMLInputElement, 'comisiones');
+      escribir(enDoc('presupuesto-valor') as HTMLInputElement, valor);
+    });
+  }
+  async function guardar() {
+    await act(async () => {
+      (enDoc('guardar-presupuesto') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔁 un valor con ceros de más se ataja antes de enviar, con la frase del back', async () => {
+    await abrirYEscribir('120000000000');
+    expect(document.getElementById('presupuesto-valor-error')?.textContent).toBe(
+      'El valor presupuestado no puede pasar de $2.000.000.000 (ni de -$2.000.000.000). Revisa que no sobren ceros.',
+    );
+    await guardar();
+    expect(h.guardar).not.toHaveBeenCalled();
+  });
+
+  it('un valor negativo dentro del rango sí se manda (un rubro de costo)', async () => {
+    h.guardar.mockResolvedValue({});
+    await abrirYEscribir('-35000000');
+    expect(document.getElementById('presupuesto-valor-error')?.textContent ?? '').toBe('');
+    await guardar();
+    expect(h.guardar).toHaveBeenCalledWith(expect.objectContaining({ valorCop: -35_000_000 }));
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const { toast } = await import('@/components/ui/toast');
+    h.guardar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ffff6666',
+      }),
+    );
+    await abrirYEscribir('120000000');
+    await guardar();
+
+    const texto = vi.mocked(toast.error).mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos cargar el presupuesto: algo falló de nuestro lado/);
+    expect(texto).toContain('ffff6666');
+  });
+});

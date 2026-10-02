@@ -411,13 +411,64 @@ describe('FacturaProveedorIACapture', () => {
     expect(api.extractBill).not.toHaveBeenCalled();
   });
 
-  it('si la API rechaza el alta, el error se muestra en un toast y no se redirige', async () => {
+  it('si la API rechaza el alta por número repetido, se dice bajo el número (con el foco) y no se redirige', async () => {
+    /*
+     * 02-10-2026 · Antes iba a un toast. El 409 es del NÚMERO de la factura:
+     * va bajo ese campo, con el foco, para que se corrija ahí mismo.
+     */
     const { onRegistrada } = await montar();
     await subirYLeer(respuesta({ sugerencia: { ...respuesta().sugerencia, dueDate: '2026-10-01T00:00:00.000Z' } }));
     api.createBill.mockRejectedValue(new ApiError(409, 'Ya hay una factura con ese número para este proveedor.'));
     await click('[data-testid="factura-registrar"]');
-    expect(toastError).toHaveBeenCalledWith('Ya hay una factura con ese número para este proveedor.');
+    expect($('#factura-numero-error')?.textContent).toBe('Ya hay una factura con ese número para este proveedor.');
+    expect(document.activeElement?.id).toBe('factura-numero');
+    expect(toastError).not.toHaveBeenCalled();
     expect(onRegistrada).not.toHaveBeenCalled();
+  });
+
+  /*
+   * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 con `campos` va a
+   * SU campo con el foco; un 5xx dice «de nuestro lado» con la referencia; sólo
+   * sin respuesta se habla de la conexión. Nada de `err.message` crudo.
+   */
+  it('🔴 un 400 con `campos` en `amountCop` va bajo el total, con el foco', async () => {
+    await montar();
+    await subirYLeer(respuesta({ sugerencia: { ...respuesta().sugerencia, dueDate: '2026-10-01T00:00:00.000Z' } }));
+    const frase = 'El total debe ser un número entero de pesos mayor que cero.';
+    api.createBill.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'amountCop', regla: 'minimo', mensaje: frase }],
+      }),
+    );
+    await click('[data-testid="factura-registrar"]');
+    expect($('#factura-total-error')?.textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('factura-total');
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx al registrar dice «de nuestro lado» con la referencia', async () => {
+    await montar();
+    await subirYLeer(respuesta({ sugerencia: { ...respuesta().sugerencia, dueDate: '2026-10-01T00:00:00.000Z' } }));
+    api.createBill.mockRejectedValue(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { referencia: '5e6f7a8b' }),
+    );
+    await click('[data-testid="factura-registrar"]');
+    const dicho = String(toastError.mock.calls.at(-1)?.[0] ?? '');
+    expect(dicho).toContain('No pudimos registrar la factura: algo falló de nuestro lado');
+    expect(dicho).toContain('5e6f7a8b');
+  });
+
+  it('sin respuesta (status 0) al leer la factura habla de la conexión, no del texto crudo', async () => {
+    await montar();
+    api.extractBill.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await elegir([archivo('factura.jpg', 'image/jpeg')]);
+    await click('[data-testid="factura-ia-extraer"]');
+    const texto = $('[data-testid="factura-error"]')?.textContent ?? '';
+    expect(texto).toMatch(/conexión/);
+    expect(texto).not.toContain('Failed to fetch');
   });
 
   it('Storage en stub-mode (adjuntoUrl null): se avisa y el alta va sin adjunto', async () => {

@@ -65,6 +65,9 @@ import { toast } from '@/components/ui/toast';
 import { codigoSinMigrar, finanzasApi } from '@/lib/api/finanzas.service';
 import type { TasaDeUsura, TasasDeUsura as Respuesta } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { LARGO_MAXIMO_DE_LA_FUENTE, problemaDeLaUsura } from '@/lib/finanzas/limites-de-finanzas';
 import { avisoDeMesesQueFaltan, esMesValido, mesesAtras, mesesQueFaltan } from '@/lib/finanzas/usura';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 
@@ -326,6 +329,14 @@ export function explicar(error: unknown, porDefecto: string): string {
   return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
+/** Los campos de la tasa, con el nombre del DTO, y el id de su control. */
+type CampoDeLaTasa = 'mes' | 'efectivaAnualPct' | 'fuente';
+const ID_DE_LA_TASA: Record<CampoDeLaTasa, string> = {
+  mes: 'tasa-mes',
+  efectivaAnualPct: 'tasa-efectiva',
+  fuente: 'tasa-fuente',
+};
+
 function EditorDeTasa({
   abierto,
   tasa,
@@ -353,9 +364,22 @@ function EditorDeTasa({
 
   const numero = Number(efectiva.replace(',', '.'));
   const valida = esMesValido(mes) && Number.isFinite(numero) && numero > 0 && numero <= 500;
+  /** Lo que el back dijo de un campo (un 400 con `campos`). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaTasa, string>>>({});
+  // 🔁 El tope del back (0 < tasa ≤ 500), con su frase, bajo el campo.
+  const problemaDeLaTasa = efectiva.trim() === '' ? null : problemaDeLaUsura(numero);
+  const errorDe = (campo: CampoDeLaTasa): string | undefined =>
+    (campo === 'efectivaAnualPct' ? problemaDeLaTasa : null) ?? delServidor[campo];
+  const olvidar = (campo: CampoDeLaTasa) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
+  const describir = (campo: CampoDeLaTasa) =>
+    errorDe(campo)
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DE_LA_TASA[campo]}-error` }
+      : {};
 
   async function guardar() {
     setGuardando(true);
+    setDelServidor({});
     try {
       await finanzasApi.guardarUsura({
         mes,
@@ -368,9 +392,21 @@ function EditorDeTasa({
       });
       onGuardada();
     } catch (e) {
-      toast.error('No se pudo guardar la tasa.', {
-        description: explicar(e, 'No se pudo guardar la tasa.'),
+      // Lo que es de un campo va bajo ese campo; lo demás, al toast (con
+      // `explicar`, que sabe del 503 de la migración).
+      const reparto = repartirErroresDelServidor<CampoDeLaTasa>(e, {
+        campos: ['mes', 'efectivaAnualPct', 'fuente'],
       });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(ID_DE_LA_TASA[primero])?.focus();
+      if (reparto.delServidor.length === 0) {
+        toast.error('No se pudo guardar la tasa.', {
+          description: explicar(e, 'No se pudo guardar la tasa.'),
+        });
+      } else if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo guardar la tasa.', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -393,8 +429,13 @@ function EditorDeTasa({
               id="tasa-mes"
               type="month"
               value={mes}
-              onChange={(e) => setMes(e.target.value)}
+              onChange={(e) => {
+                olvidar('mes');
+                setMes(e.target.value);
+              }}
+              {...describir('mes')}
             />
+            <ErrorDelCampo id="tasa-mes-error" mensaje={errorDe('mes')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tasa-efectiva">Efectiva anual (%)</Label>
@@ -404,11 +445,18 @@ function EditorDeTasa({
               className="font-mono"
               placeholder="24,86"
               value={efectiva}
-              onChange={(e) => setEfectiva(e.target.value)}
+              onChange={(e) => {
+                olvidar('efectivaAnualPct');
+                setEfectiva(e.target.value);
+              }}
+              data-testid="tasa-efectiva"
+              {...describir('efectivaAnualPct')}
             />
-            <p className="text-caption text-fg-muted">
-              En porcentaje, mayor que 0. Una tasa en cero apagaría el tope sin decirlo.
-            </p>
+            <ErrorDelCampo
+              id="tasa-efectiva-error"
+              mensaje={errorDe('efectivaAnualPct')}
+              pista="En porcentaje, mayor que 0. Una tasa en cero apagaría el tope sin decirlo."
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tasa-fuente">Fuente</Label>
@@ -416,8 +464,14 @@ function EditorDeTasa({
               id="tasa-fuente"
               placeholder="Resolución 1234 de la Superfinanciera"
               value={fuente}
-              onChange={(e) => setFuente(e.target.value)}
+              maxLength={LARGO_MAXIMO_DE_LA_FUENTE}
+              onChange={(e) => {
+                olvidar('fuente');
+                setFuente(e.target.value);
+              }}
+              {...describir('fuente')}
             />
+            <ErrorDelCampo id="tasa-fuente-error" mensaje={errorDe('fuente')} />
           </div>
           <label className="flex items-start gap-2 text-sm text-fg">
             <Checkbox className="mt-1" checked={general} onCheckedChange={(marcada: boolean) => setGeneral(marcada)} data-testid="guardar-en-la-general" />

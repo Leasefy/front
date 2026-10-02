@@ -31,6 +31,7 @@ vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancaria
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/hooks/usePermissions', () => ({ usePermissions: () => permisos }));
 
+import { ApiError } from '@/lib/api/client';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
 
 function lote(sobre: Partial<LoteDeConciliacion> = {}): LoteDeConciliacion {
@@ -232,5 +233,56 @@ describe('el lote de lo que calza exacto', () => {
     api.loteActual.mockResolvedValue({ disponible: false, propuesto: null, recientes: [] });
     await montar();
     expect($('[data-testid="lote-no-disponible"]').textContent).toContain('20260917160000');
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026): el lote decía el
+ * `error.message` crudo. Un 5xx ahora dice que fue nuestro con la referencia;
+ * un 400 del motivo de la reversa va debajo del motivo.
+ */
+describe('el lote — los errores en palabras', () => {
+  it('🔴 un 5xx al aprobar dice «de nuestro lado» con la referencia', async () => {
+    api.loteActual.mockResolvedValue({ disponible: true, propuesto: lote(), recientes: [] });
+    api.aprobarLote.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar();
+    await clic($('[data-testid="aprobar-lote"]'));
+    await clic($('[data-testid="confirmar-aprobar-lote"]'));
+    const dicho = String(toastMock.error.mock.calls[0]![0]);
+    expect(dicho).toContain('No pudimos aprobar el lote: algo falló de nuestro lado');
+    expect(dicho).toContain('ab12cd34');
+  });
+
+  it('un 400 del motivo de la reversa va debajo del motivo, con el foco', async () => {
+    permisos.isAdmin = true;
+    permisos.agencyRole = 'ADMIN';
+    const frase = 'El motivo no puede tener más de 280 caracteres.';
+    api.loteActual.mockResolvedValue({ disponible: true, propuesto: null, recientes: [APROBADO] });
+    api.reversarLote.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await clic($('[data-testid="reversar-lote-l-0"]'));
+    await act(async () => {
+      escribir($('#motivo-reversa') as HTMLTextAreaElement, 'Se cargó el extracto de otra cuenta.');
+    });
+    await esperar();
+    await clic($('[data-testid="confirmar-reversar-lote"]'));
+
+    expect($('#motivo-reversa-error').textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('motivo-reversa');
+    expect(toastMock.error).not.toHaveBeenCalled();
   });
 });

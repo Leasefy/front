@@ -46,6 +46,8 @@ import type {
 } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 /** `YYYY-MM` del mes pasado en Bogotá: el que normalmente se acaba de liquidar. */
 function mesAnterior(): string {
@@ -70,6 +72,8 @@ export function TrasladoDeComisionPanel() {
   const [trabajando, setTrabajando] = useState(false);
   const [rechazando, setRechazando] = useState<Traslado | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** El error del motivo del rechazo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -105,7 +109,12 @@ export function TrasladoDeComisionPanel() {
       }
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo proponer el traslado.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo proponer el traslado.',
+          accion: 'proponer el traslado',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -121,7 +130,12 @@ export function TrasladoDeComisionPanel() {
       for (const aviso of r.avisos) toast.warning(aviso);
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo aprobar el traslado.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo aprobar el traslado.',
+          accion: 'aprobar el traslado',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -130,6 +144,7 @@ export function TrasladoDeComisionPanel() {
   const rechazar = async () => {
     if (!rechazando) return;
     setTrabajando(true);
+    setErrorDelMotivo(null);
     try {
       await tesoreriaApi.rechazarTraslado(rechazando.id, motivo);
       toast.success('Traslado rechazado. La comisión se queda en la cuenta de recaudo.');
@@ -137,7 +152,17 @@ export function TrasladoDeComisionPanel() {
       setMotivo('');
       await cargar();
     } catch (error) {
-      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo rechazar el traslado.' }));
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo rechazar el traslado.',
+        accion: 'rechazar el traslado',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-del-rechazo')?.focus();
+      }
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -222,6 +247,7 @@ export function TrasladoDeComisionPanel() {
                       onClick={() => {
                         setRechazando(t);
                         setMotivo('');
+                        setErrorDelMotivo(null);
                       }}
                       disabled={trabajando}
                       data-testid={`rechazar-${t.id}`}
@@ -276,13 +302,23 @@ export function TrasladoDeComisionPanel() {
               por qué.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
-            placeholder="Se traslada junto con la comisión de octubre."
-            maxLength={300}
-            data-testid="motivo-del-rechazo"
-          />
+          <div>
+            <Textarea
+              id="motivo-del-rechazo"
+              value={motivo}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
+              placeholder="Se traslada junto con la comisión de octubre."
+              maxLength={300}
+              aria-label="Por qué se rechaza"
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-del-rechazo-error' : undefined}
+              data-testid="motivo-del-rechazo"
+            />
+            <ErrorDelCampo id="motivo-del-rechazo-error" mensaje={errorDelMotivo} />
+          </div>
           <DialogFooter>
             <Button
               variant="outline"

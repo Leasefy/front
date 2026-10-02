@@ -651,6 +651,41 @@ describe('<RegistrarPagoModal> los rechazos del back', () => {
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
   });
 
+  it('🔴 conciliar: un 400 sobre `origen` va bajo el campo con el foco; un 5xx dice «de nuestro lado» (02-10-2026)', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'sin conciliar', 'PLATA_SIN_RECIBO', { cobroId: 'c-jun' }));
+    const frase = 'El origen puede tener hasta 300 caracteres.';
+    const onConciliar = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: [frase],
+          campos: [{ campo: 'origen', regla: 'maximo', mensaje: frase }],
+        }),
+      )
+      .mockRejectedValueOnce(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'feedbeef' }));
+    await abrir({ onSubmit: onSubmit as never, onConciliar: onConciliar as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    escribir('#origen-conciliacion', 'Consignación en Bancolombia');
+    await act(async () => {
+      porTexto('recibos.conciliar.confirmar')[0].click();
+    });
+    expect(document.body.querySelector('#origen-conciliacion-error')?.textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('origen-conciliacion');
+
+    await act(async () => {
+      porTexto('recibos.conciliar.confirmar')[0].click();
+    });
+    const panel = document.body.querySelector('[data-testid="panel-conciliacion"]')?.textContent ?? '';
+    expect(panel).toContain('No pudimos conciliar el pago: algo falló de nuestro lado');
+    expect(panel).toContain('feedbeef');
+  });
+
   it('sin onConciliar no ofrece un botón que no puede cumplir', async () => {
     const onSubmit = vi
       .fn()
@@ -1207,6 +1242,110 @@ describe('<RegistrarPagoModal> los rechazos pasan por el traductor', () => {
   });
 });
 
+/*
+ * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 del back con `campos`
+ * va a SU campo con el foco, y el tope de la columna (`valor_cop`, int4) se
+ * ataja ANTES de enviar con la misma frase del back.
+ */
+describe('<RegistrarPagoModal> los errores van a su campo', () => {
+  const banner = () => document.body.querySelector('[data-testid="error-del-back"]');
+  const errorDe = (id: string) => document.body.querySelector(`#${id}-error`)?.textContent ?? '';
+  /** El error sale con su animación (`ErrorDelCampo`): se deja terminar. */
+  async function esperarLaSalida() {
+    for (let i = 0; i < 10; i++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
+    }
+  }
+
+  function datosInvalidos(campos: { campo: string; regla: string; mensaje: string }[]) {
+    return new ApiError(
+      400,
+      campos.map((c) => c.mensaje),
+      'DATOS_INVALIDOS',
+      { statusCode: 400, code: 'DATOS_INVALIDOS', message: campos.map((c) => c.mensaje), campos },
+    );
+  }
+
+  it('🔴 un 400 en `valorCop` se pinta bajo el monto, le da el foco y no va al banner', async () => {
+    const frase = 'El valor del pago no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(datosInvalidos([{ campo: 'valorCop', regla: 'maximo', mensaje: frase }]));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(errorDe('monto-recibo')).toBe(frase);
+    expect(document.activeElement?.id).toBe('monto-recibo');
+    expect(document.body.querySelector('#monto-recibo')?.getAttribute('aria-describedby')).toBe(
+      'monto-recibo-error',
+    );
+    expect(banner()).toBeNull();
+  });
+
+  it('un 400 en `notas` va bajo los saludos, y se va en cuanto se corrigen', async () => {
+    const frase = 'Los saludos pueden tener hasta 380 caracteres.';
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(datosInvalidos([{ campo: 'notas', regla: 'maximo', mensaje: frase }]));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(errorDe('saludos-recibo')).toBe(frase);
+    expect(document.activeElement?.id).toBe('saludos-recibo');
+
+    escribir('#saludos-recibo', 'Gracias por tu pago.');
+    await esperarLaSalida();
+    expect(document.body.querySelector('#saludos-recibo-error')).toBeNull();
+  });
+
+  it('un campo que el formulario no muestra va al banner, sin perder el resto', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(
+      datosInvalidos([
+        { campo: 'referencia', regla: 'maximo', mensaje: 'La referencia puede tener hasta 120 caracteres.' },
+        { campo: 'medio', regla: 'requerido', mensaje: 'Elige cómo pagó.' },
+      ]),
+    );
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(errorDe('medio-recibo')).toBe('Elige cómo pagó.');
+    expect(banner()?.textContent).toContain('La referencia puede tener hasta 120 caracteres.');
+    // El medio es un grupo de chips: el foco va al primero.
+    expect(document.activeElement?.closest('#medio-recibo')).toBeTruthy();
+  });
+
+  it('🔴 el `FECHA_FUTURA` del envío (sin `campos`) va bajo la fecha, no al banner', async () => {
+    const mensaje = 'El recibo no puede quedar fechado el 13 de septiembre de 2026: todavía no llega ese día.';
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(400, mensaje, 'FECHA_FUTURA', { hoy: '2026-09-12', fecha: '2026-09-13' }));
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(errorDe('fecha-recibo')).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('fecha-recibo');
+    expect(banner()).toBeNull();
+  });
+
+  it('🔴 un monto con ceros de más se ataja ANTES de enviar, con la frase del back', async () => {
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+    escribir('#monto-recibo', '30000000000');
+    await enviar();
+
+    expect(errorDe('monto-recibo')).toBe(
+      'El valor del pago no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    );
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
 describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
   /*
    * 🔴 Prueba en vivo en QA (2026-09-16, contrato #69): al cambiar la fecha
@@ -1440,7 +1579,8 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
     await pasaLaEspera();
 
     expect(pedidosConFecha()).toEqual([['c-ago', '2026-05-15']]);
-    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')).toBeNull();
+    // El error de la fecha vive bajo el campo (`ErrorDelCampo`, 02-10-2026).
+    expect(document.body.querySelector('#fecha-recibo-error')).toBeNull();
     await enviar();
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ fecha: '2026-05-15' });
@@ -1454,7 +1594,7 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
     await pasaLaEspera();
 
     expect(pedidosConFecha()).toEqual([]);
-    expect(document.body.querySelector('[data-testid="fecha-futura"]')).toBeTruthy();
+    expect(document.body.querySelector('#fecha-recibo-error')?.textContent).toBe('recibos.form.fechaFutura');
     await enviar();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -1482,7 +1622,7 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
     escribir('#fecha-recibo', '2026-08-20');
     await pasaLaEspera();
 
-    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')?.textContent).toBe(mensaje);
+    expect(document.body.querySelector('#fecha-recibo-error')?.textContent).toBe(mensaje);
     expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
     expect(total()).toContain('3120000');
     await enviar();

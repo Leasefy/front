@@ -287,3 +287,38 @@ describe('E3 — un enlace revocado no se vuelve a copiar', () => {
     );
   });
 });
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026): `motivoDeCompartir` se queda
+ * con lo suyo (rol, sesión, red, ráfaga) y delega lo demás al traductor de la
+ * casa. Un 5xx ya no dice «Fue un problema del servidor» a secas: dice «de
+ * nuestro lado» con la referencia para soporte.
+ */
+describe('E5 — un 5xx dice «de nuestro lado» con la referencia', () => {
+  const cincoXX = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  it('🔴 mandar el correo con un 5xx', async () => {
+    enviar.mockRejectedValue(cincoXX());
+    await montar();
+    await apretar('correo');
+    const dicho = String(error.mock.calls[0]![0]);
+    expect(dicho).toContain('No pudimos mandar el correo: algo falló de nuestro lado');
+    expect(dicho).toContain('ab12cd34');
+    expect(dicho).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('copiar el enlace con un 5xx', async () => {
+    compartir.mockRejectedValue(cincoXX());
+    await montar();
+    await apretar('enlace');
+    const dicho = String(error.mock.calls[0]![0]);
+    expect(dicho).toContain('No pudimos crear el enlace: algo falló de nuestro lado');
+    expect(dicho).toContain('ab12cd34');
+  });
+});

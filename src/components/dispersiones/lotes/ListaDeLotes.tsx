@@ -53,6 +53,7 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
@@ -109,10 +110,6 @@ function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
   return lote.estado === filtro;
 }
 
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
-}
-
 export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
@@ -141,7 +138,16 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
         setPendientes({ esperan: r.candidatos.length, girables: r.cantidad, totalCop: r.totalCop, sinDatos });
       })
       .catch((e: unknown) => {
-        if (vigente) setErrorDePendientes(mensajeDe(e, 'No se pudieron contar las dispersiones del mes.'));
+        // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+        // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+        if (vigente) {
+          setErrorDePendientes(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No se pudieron contar las dispersiones del mes.',
+              accion: 'contar las dispersiones del mes',
+            }),
+          );
+        }
       });
     return () => {
       vigente = false;
@@ -484,7 +490,7 @@ function ArmarLoteDialog({
       }
       onArmado(lote.id);
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo armar el lote.'));
+      setError(mensajeParaLaPersona(e, { porDefecto: 'No se pudo armar el lote.', accion: 'armar el lote' }));
     } finally {
       setEnviando(false);
     }

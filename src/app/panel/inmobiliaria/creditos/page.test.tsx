@@ -231,3 +231,58 @@ describe('compra de créditos por PSE real', () => {
     expect(dialogo().querySelector('[role="alert"]')?.textContent).toContain('enlace de pago')
   })
 })
+
+/*
+ * 02-10-2026 · La compra con el sistema de errores. `@/lib/api/client` está
+ * doblado en este archivo (sin `ApiError`): los errores se arman por forma,
+ * que es como los lee el traductor. Nada de cobros reales: el checkout PSE es
+ * un doble.
+ */
+function falloHttp(status: number, cuerpo: Record<string, unknown>, mensaje = '') {
+  return Object.assign(new Error(mensaje), {
+    status,
+    code: cuerpo.code,
+    detalle: { statusCode: status, ...cuerpo },
+    ...(Array.isArray(cuerpo.message) ? { messages: cuerpo.message } : {}),
+  })
+}
+
+describe('compra de créditos — el sistema de errores (02-10)', () => {
+  async function pagarCon(error: unknown) {
+    startPseCheckout.mockRejectedValue(error)
+    await abrirCompra()
+    llenarPagador()
+    await act(async () => {
+      botonDeLaCompra('Pagar').click()
+    })
+    await flush()
+  }
+
+  it('🔴 un 400 con campos pinta el error en SU campo y le da el foco', async () => {
+    const mensaje = 'El documento debe tener entre 6 y 15 dígitos.'
+    await pagarCon(
+      falloHttp(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'legalId', regla: 'formato', mensaje }],
+      }, mensaje),
+    )
+    expect(document.querySelector('#creditos-documento-error')?.textContent).toBe(mensaje)
+    expect(document.activeElement?.id).toBe('creditos-documento')
+    expect(dialogo().querySelector('[role="alert"].bg-danger-soft')).toBeNull()
+  })
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await pagarCon(
+      falloHttp(500, { code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'ab12cd34' }, 'Error interno del servidor'),
+    )
+    const aviso = dialogo().textContent ?? ''
+    expect(aviso).toContain('No pudimos iniciar el pago por PSE: algo falló de nuestro lado')
+    expect(aviso).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    await pagarCon(falloHttp(0, {}, 'Failed to fetch'))
+    expect(dialogo().textContent).toMatch(/conexi[oó]n/)
+  })
+})

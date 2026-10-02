@@ -58,10 +58,13 @@ import { ApiError } from '@/lib/api/client';
 import {
   contabilidadApi,
   LARGO_MAXIMO_DEL_MOTIVO_DE_REAPERTURA,
+  LARGO_MINIMO_DEL_MOTIVO_DE_REAPERTURA,
   type BitacoraDeReaperturas,
   type ResultadoDeReapertura,
 } from '@/lib/api/contabilidad.service';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { diaLegible } from '@/lib/contabilidad/fechas';
 import {
   frasesDeLaReapertura,
@@ -98,6 +101,14 @@ function mensajeDeReapertura(e: unknown): string {
   return mensajeDeContabilidad(e, 'No se pudo reabrir el período.');
 }
 
+type CampoDeLaReapertura = 'hasta' | 'motivo';
+
+/** Los códigos de negocio del back que son de UN campo. */
+const CAMPO_DEL_CODIGO: Record<string, CampoDeLaReapertura> = {
+  MOTIVO_OBLIGATORIO: 'motivo',
+  NO_ES_UNA_REAPERTURA: 'hasta',
+};
+
 export function Reapertura({
   cerradaHasta,
   onReabierto,
@@ -116,6 +127,8 @@ export function Reapertura({
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Lo que el back puso en un campo (un 400 con `campos`, o un código de un campo). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaReapertura, string>>>({});
   const [aviso, setAviso] = useState<string | null>(null);
 
   const cargarBitacora = useCallback(async () => {
@@ -143,17 +156,31 @@ export function Reapertura({
     setHasta(primerDiaDelMesDe(cerradaHasta));
     setMotivo('');
     setError(null);
+    setDelServidor({});
     setAbierto(true);
   }, [cerradaHasta]);
 
   const fechaPedida = todo ? '' : hasta;
   const problema = problemaDeReapertura({ cerradaHasta, hasta: fechaPedida, motivo });
+  /*
+   * De qué campo es el problema local: el del motivo va bajo el motivo; el
+   * de la fecha (o «no hay nada que reabrir») va bajo la fecha.
+   */
+  const campoDelProblema: CampoDeLaReapertura | null =
+    problema === null
+      ? null
+      : cerradaHasta && motivo.trim().length < LARGO_MINIMO_DEL_MOTIVO_DE_REAPERTURA
+        ? 'motivo'
+        : 'hasta';
+  const errorDe = (campo: CampoDeLaReapertura): string | undefined =>
+    (campoDelProblema === campo ? problema : null) ?? delServidor[campo];
   const frases = frasesDeLaReapertura(fechaPedida, cerradaHasta);
 
   const confirmar = useCallback(async () => {
     if (problema) return;
     setEnviando(true);
     setError(null);
+    setDelServidor({});
     try {
       const r = await contabilidadApi.asientos.reabrir(fechaPedida || null, motivo.trim());
       setAviso(r.aviso);
@@ -167,7 +194,21 @@ export function Reapertura({
       await cargarBitacora();
       onReabierto?.(r);
     } catch (e) {
-      setError(mensajeDeReapertura(e));
+      // Un 400 con `campos` (o un código de un campo) va bajo ese campo; el
+      // resto —el 403 propio, un 5xx, la red— al banner.
+      const reparto = repartirErroresDelServidor<CampoDeLaReapertura>(e, {
+        campos: ['hasta', 'motivo'],
+      });
+      const codigo = e instanceof ApiError ? e.code : undefined;
+      const campoDelCodigo = codigo ? CAMPO_DEL_CODIGO[codigo] : undefined;
+      if (reparto.delServidor.length > 0) {
+        setDelServidor(reparto.porCampo);
+        if (reparto.sueltos.length > 0) setError(reparto.sueltos.join(' · '));
+      } else if (campoDelCodigo) {
+        setDelServidor({ [campoDelCodigo]: mensajeDeReapertura(e) });
+      } else {
+        setError(mensajeDeReapertura(e));
+      }
     } finally {
       setEnviando(false);
     }
@@ -357,11 +398,19 @@ export function Reapertura({
                 id={`${id}-hasta`}
                 type="date"
                 value={hasta}
-                onChange={(e) => setHasta(e.target.value)}
+                onChange={(e) => {
+                  setDelServidor((d) => ({ ...d, hasta: undefined }));
+                  setHasta(e.target.value);
+                }}
                 disabled={enviando || todo}
+                aria-invalid={Boolean(errorDe('hasta')) || undefined}
+                aria-describedby={errorDe('hasta') ? `${id}-hasta-error` : undefined}
                 className="w-48"
                 data-testid="reapertura-hasta"
               />
+              <div data-testid={campoDelProblema === 'hasta' ? 'problema-de-reapertura' : undefined}>
+                <ErrorDelCampo id={`${id}-hasta-error`} mensaje={errorDe('hasta')} />
+              </div>
             </div>
 
             <label className="flex items-start gap-2 text-sm text-fg">
@@ -393,24 +442,26 @@ export function Reapertura({
               <Textarea
                 id={`${id}-motivo`}
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setDelServidor((d) => ({ ...d, motivo: undefined }));
+                  setMotivo(e.target.value);
+                }}
                 maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_REAPERTURA}
                 rows={3}
                 placeholder="Faltó causar la factura de diciembre del proveedor de aseo"
                 disabled={enviando}
+                aria-invalid={Boolean(delServidor.motivo) || undefined}
+                aria-describedby={errorDe('motivo') ? `${id}-motivo-error` : undefined}
                 data-testid="reapertura-motivo"
               />
-              <p className="text-caption text-fg-muted">
-                Queda en la bitácora, con tu nombre y la fecha. Es lo que hace que un cierre se
-                pueda deshacer sin perder el rastro.
-              </p>
+              <div data-testid={campoDelProblema === 'motivo' ? 'problema-de-reapertura' : undefined}>
+                <ErrorDelCampo
+                  id={`${id}-motivo-error`}
+                  mensaje={errorDe('motivo')}
+                  pista="Queda en la bitácora, con tu nombre y la fecha. Es lo que hace que un cierre se pueda deshacer sin perder el rastro."
+                />
+              </div>
             </div>
-
-            {problema ? (
-              <p className="text-caption text-danger" role="alert" data-testid="problema-de-reapertura">
-                {problema}
-              </p>
-            ) : null}
             {error ? (
               <Banner variant="danger" role="alert">
                 {error}

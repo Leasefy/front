@@ -223,3 +223,24 @@ describe('M1: la usura se ve mientras se escribe la tasa', () => {
     expect(topeDeUsuraDe(undefined)).toBeNull();
   });
 });
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026): los topes de las columnas
+ * (`valor` Decimal(12,4), `tope_cop` int4) con las MISMAS frases del back
+ * (`back/src/inmobiliaria/cobros/reglas-de-mora/limites-de-la-regla-de-mora.ts`).
+ */
+describe('esquemaDeRegla — los topes de la columna, con la frase del back', () => {
+  it('un monto fijo por encima de 99.999.999 se frena en `valor`', () => {
+    expect(erroresDe(valores({ formula: 'MONTO_FIJO', valor: 100_000_000 })).valor).toBe(
+      'El valor de la regla no puede pasar de 99.999.999. Revisa que no sobren ceros.',
+    );
+    expect(erroresDe(valores({ formula: 'MONTO_FIJO', valor: 99_999_999 })).valor).toBeUndefined();
+  });
+
+  it('un tope con ceros de más se frena en `topeCop`; el tope exacto pasa', () => {
+    expect(erroresDe(valores({ topeCop: 2_000_000_001 })).topeCop).toBe(
+      'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    );
+    expect(erroresDe(valores({ topeCop: 2_000_000_000 })).topeCop).toBeUndefined();
+  });
+});

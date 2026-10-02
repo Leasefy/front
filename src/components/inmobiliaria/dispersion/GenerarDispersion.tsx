@@ -65,7 +65,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
+import { leerLiquidacionFrenada, motivoDeUnaAccion } from '@/lib/api/dispersiones-errores';
 import {
   ROTULO_DEL_CANON,
   baseDeLaLiquidacion,
@@ -399,8 +399,11 @@ export function GenerarDispersion({
        */
       setErrorAlGenerar(e);
       const frenada = leerLiquidacionFrenada(e);
+      // Lo que no es un dato del inmueble va con la regla de oro: un 5xx dice
+      // «de nuestro lado» con la referencia; «conexión», sólo sin respuesta.
+      // Antes un 5xx o la red dejaban el toast sin una palabra de por qué.
       toast.error(frenada?.titulo ?? 'No se generaron las dispersiones', {
-        description: frenada?.mensaje ?? motivoLegible(e) ?? undefined,
+        description: frenada?.mensaje ?? motivoDeUnaAccion(e, 'generar las dispersiones'),
       });
     } finally {
       setEnviando(false);

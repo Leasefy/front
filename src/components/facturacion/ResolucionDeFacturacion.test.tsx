@@ -46,6 +46,8 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { ResolucionDeFacturacion } from './ResolucionDeFacturacion';
+import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DE_LA_FACTURACION } from '@/lib/facturacion/limites-de-la-facturacion';
 
 function respuesta(
   over: Partial<ResolucionesDeLaAgencia> = {},
@@ -458,7 +460,7 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
   it('🔴 un rango que termina antes de empezar se dice en el campo y NO se manda', async () => {
     await llenar({ 'resolucion-campo-desde': '5000', 'resolucion-campo-hasta': '10' });
 
-    const error = q('[data-testid="resolucion-error-hasta"]');
+    const error = q('#resolucion-error-hasta');
     expect(error).not.toBeNull();
     expect(error?.textContent).toContain('termina antes de empezar');
     expect(error?.getAttribute('role')).toBe('alert');
@@ -478,7 +480,7 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
       'resolucion-campo-vigente-desde': '2028-01-15',
       'resolucion-campo-vigente-hasta': '2026-01-15',
     });
-    expect(q('[data-testid="resolucion-error-vigente-hasta"]')?.textContent).toContain(
+    expect(q('#resolucion-error-vigente-hasta')?.textContent).toContain(
       'La vigencia termina antes de empezar',
     );
     expect(crearMock).not.toHaveBeenCalled();
@@ -486,10 +488,157 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
 
   it('bien escrita, no hay ningún aviso y el botón deja guardar', async () => {
     await llenar();
-    expect(q('[data-testid="resolucion-error-hasta"]')).toBeNull();
-    expect(q('[data-testid="resolucion-error-vigente-hasta"]')).toBeNull();
+    expect(q('#resolucion-error-hasta')).toBeNull();
+    expect(q('#resolucion-error-vigente-hasta')).toBeNull();
     expect(
       (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
     ).toBe(false);
+  });
+});
+
+/*
+ * 02-10-2026 · La resolución con el sistema de errores. El error del campo es
+ * `<ErrorDelCampo>` (se busca por su `id`, el de su `aria-describedby`); los
+ * topes del DTO se atajan antes de mandar con la MISMA frase del back; lo que
+ * el back diga de un campo va debajo de él con el foco; un 5xx dice «de
+ * nuestro lado» con la referencia; «conexión», sólo sin respuesta.
+ */
+describe('ResolucionDeFacturacion · el sistema de errores (02-10)', () => {
+  async function llenarYGuardar(over: Record<string, string> = {}) {
+    await montar();
+    await abrirCarga();
+    const valores: Record<string, string> = {
+      'resolucion-campo-numero': '18764003394379',
+      'resolucion-campo-fecha': '2026-01-15',
+      'resolucion-campo-desde': '1',
+      'resolucion-campo-hasta': '5000',
+      'resolucion-campo-vigente-desde': '2026-01-15',
+      'resolucion-campo-vigente-hasta': '2028-01-15',
+      ...over,
+    };
+    for (const [testid, valor] of Object.entries(valores)) {
+      await act(async () => escribir(testid, valor));
+    }
+    await act(async () => {
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('🔴 un rango con ceros de más se ataja ANTES de mandar, con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-hasta': '15000000000' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-hasta')?.textContent).toBe(MENSAJES_DE_LA_FACTURACION.hastaMaximo);
+    expect(q('#resolucion-hasta')?.getAttribute('aria-describedby')).toBe('resolucion-error-hasta');
+  });
+
+  it('🔴 una fecha de la resolución fuera de 2000–2100 se ataja con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-fecha': '1999-12-31' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-fecha')?.textContent).toBe(
+      MENSAJES_DE_LA_FACTURACION.fechaDeLaResolucionFueraDeRango,
+    );
+  });
+
+  it('🔴 el último número usado fuera del rango se ataja con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-ultimo': '6000' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-ultimo')?.textContent).toBe(
+      'El último número usado (6000) tiene que estar entre 0 y 5000.',
+    );
+  });
+
+  it('🔴 un 400 con campos pinta el error en SU campo y le da el foco, sin toast', async () => {
+    const mensaje = 'El último número usado (5001) tiene que estar entre 0 y 5000.';
+    crearMock.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'ultimoNumeroUsado', regla: 'rango', mensaje }],
+      }),
+    );
+    await llenarYGuardar();
+
+    expect(crearMock).toHaveBeenCalled();
+    expect(q('#resolucion-error-ultimo')?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('resolucion-ultimo');
+    expect(toastErr).not.toHaveBeenCalled();
+
+    // Al corregir el campo, el error del back se va.
+    await act(async () => escribir('resolucion-campo-ultimo', '10'));
+    expect(q('#resolucion-error-ultimo')?.textContent ?? '').not.toContain(mensaje);
+  });
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    crearMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await llenarYGuardar();
+    const texto = toastErr.mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos cargar la resolución: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+    expect(texto).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    crearMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await llenarYGuardar();
+    expect(toastErr.mock.calls[0]?.[0]).toMatch(/conexi[oó]n/);
+  });
+});
+
+describe('ResolucionDeFacturacion · anular con el sistema de errores (02-10)', () => {
+  async function anularCon(error: unknown) {
+    anularMock.mockRejectedValue(error);
+    await montar();
+    const kebab = q('[data-testid="acciones-res-1"]') as HTMLButtonElement;
+    await act(async () => {
+      kebab.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      );
+    });
+    await act(async () => {
+      (q('[data-testid="anular-res-1"]') as HTMLElement).click();
+    });
+    const area = q('[data-testid="motivo-anulacion"]') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!.call(area, 'Rango nuevo');
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (q('[data-testid="confirmar-anular"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('🔴 un 400 sobre el motivo va DEBAJO del motivo, sin toast', async () => {
+    const mensaje = 'El motivo de la anulación puede tener hasta 500 caracteres.';
+    await anularCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    expect(q('#motivo-anulacion-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('motivo-anulacion');
+    expect(toastErr).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx: «de nuestro lado» con la referencia', async () => {
+    await anularCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+    );
+    const texto = toastErr.mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos anular la resolución: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
   });
 });

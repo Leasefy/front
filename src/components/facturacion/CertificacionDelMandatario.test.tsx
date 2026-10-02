@@ -63,6 +63,8 @@ import {
   comoCsv,
 } from './CertificacionDelMandatario';
 import { TercerosSinCorreo } from './TercerosSinCorreo';
+import { toast } from '@/components/ui/toast';
+import { ApiError } from '@/lib/api/client';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -383,5 +385,40 @@ describe('TercerosSinCorreo', () => {
     const resumen = q('[data-testid="terceros-resumen"]')!;
     expect(resumen.textContent).toContain('está apagado');
     expect(resumen.textContent).toContain('migración');
+  });
+});
+
+describe('CertificacionDelMandatario · el sistema de errores (02-10)', () => {
+  it('🔴 generar con un 5xx dice «de nuestro lado» con la referencia', async () => {
+    certificaciones.mockResolvedValue({
+      disponible: true,
+      migracion: null,
+      certificaciones: [],
+      explicacion: null,
+    });
+    buscarPropietarios.mockResolvedValue([
+      { id: 'p-1', name: 'Ana Propietaria', documentNumber: '71234567', propertyCount: 3 },
+    ]);
+    await pintar(<CertificacionDelMandatario />);
+    await act(async () => {
+      (q('[data-testid="cert-abrir"]') as HTMLButtonElement).click();
+    });
+    await escribir('cert-propietario', 'Ana');
+    await dejarQueBusque();
+    await act(async () => {
+      (q('[data-testid="cert-resultado-p-1"]') as HTMLButtonElement).click();
+    });
+    generarCertificacion.mockRejectedValue(new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }));
+    await act(async () => {
+      (q('[data-testid="cert-generar"]') as HTMLButtonElement).click();
+    });
+    const texto = vi.mocked(toast.error).mock.calls.at(-1)?.[0] as string;
+    expect(texto).toContain('No pudimos generar la certificación: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
   });
 });

@@ -12,8 +12,9 @@
  * `parseFloat` de un texto formateado — así fue como el recibo de caja
  * registraba la milésima parte del pago.
  *
- * El mensaje de error del back (400 con texto en español) se muestra tal
- * cual, adentro del modal, al lado del formulario que lo causó.
+ * El error del back pasa por el traductor (02-10-2026): un 400 con `campos`
+ * va a SU campo con el foco (`aplicarErroresDelServidor`); lo que no tiene
+ * campo se muestra adentro del modal, al lado del formulario que lo causó.
  */
 
 import { useEffect, useState } from 'react';
@@ -39,6 +40,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { ReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import {
   BASES_DE_CALCULO,
@@ -94,12 +97,27 @@ function valoresDe(regla: ReglaDeMora): ValoresDeRegla {
   };
 }
 
-function mensajeDe(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return 'No se pudo guardar la regla. Prueba de nuevo.';
-}
+/** Los campos del formulario: los mismos nombres que el cuerpo del back. */
+const CAMPOS_DE_LA_REGLA = [
+  'nombre',
+  'concepto',
+  'disparador',
+  'disparadorDia',
+  'formula',
+  'valor',
+  'base',
+  'topeCop',
+  'orden',
+  'activa',
+] as const satisfies readonly (keyof ValoresDeRegla)[];
 
 export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura }: EditorDeReglaProps) {
+  const form = useForm<ValoresDeRegla>({
+    resolver: resolverDeZod(esquemaDeRegla),
+    defaultValues: VALORES_INICIALES,
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+  });
   const {
     register,
     control,
@@ -107,12 +125,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
     reset,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<ValoresDeRegla>({
-    resolver: resolverDeZod(esquemaDeRegla),
-    defaultValues: VALORES_INICIALES,
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
-  });
+  } = form;
   const [errorDelBack, setErrorDelBack] = useState<string | null>(null);
 
   // Cada apertura arranca limpia: con la regla a editar, o en blanco.
@@ -134,7 +147,18 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
       await onGuardar(valores);
       onCerrar();
     } catch (error) {
-      setErrorDelBack(mensajeDe(error));
+      /*
+       * 02-10-2026 · Un 400 con `campos` va a SU campo y enfoca el primero; al
+       * banner va sólo lo que no tiene campo (un 409, un 5xx con su referencia,
+       * la red). Nada de `error.message` crudo.
+       */
+      const { sueltos } = aplicarErroresDelServidor(error, form, {
+        campos: CAMPOS_DE_LA_REGLA,
+        porDefecto: 'No se pudo guardar la regla. Prueba de nuevo.',
+        accion: 'guardar la regla',
+        toast: false,
+      });
+      setErrorDelBack(sueltos.length > 0 ? sueltos.join(' · ') : null);
     }
   });
 
@@ -168,6 +192,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 placeholder="Interés de mora"
                 autoComplete="off"
                 aria-invalid={Boolean(errors.nombre)}
+                aria-describedby="regla-nombre-error"
                 {...register('nombre')}
               />
             </Campo>
@@ -177,7 +202,12 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="regla-concepto" aria-invalid={Boolean(errors.concepto)}>
+                    <SelectTrigger
+                      id="regla-concepto"
+                      ref={field.ref}
+                      aria-invalid={Boolean(errors.concepto)}
+                      aria-describedby="regla-concepto-error"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -203,7 +233,12 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="regla-disparador" aria-invalid={Boolean(errors.disparador)}>
+                      <SelectTrigger
+                      id="regla-disparador"
+                      ref={field.ref}
+                      aria-invalid={Boolean(errors.disparador)}
+                      aria-describedby="regla-disparador-error"
+                    >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -236,6 +271,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                   step={1}
                   className="font-mono tabular-nums"
                   aria-invalid={Boolean(errors.disparadorDia)}
+                  aria-describedby="regla-disparador-dia-error"
                   {...register('disparadorDia', { valueAsNumber: true })}
                 />
               </Campo>
@@ -257,7 +293,12 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="regla-formula" aria-invalid={Boolean(errors.formula)}>
+                      <SelectTrigger
+                      id="regla-formula"
+                      ref={field.ref}
+                      aria-invalid={Boolean(errors.formula)}
+                      aria-describedby="regla-formula-error"
+                    >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -290,9 +331,11 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                     render={({ field }) => (
                       <CurrencyInput
                         id="regla-valor"
+                        ref={field.ref}
                         value={Number.isFinite(field.value) ? field.value : undefined}
                         onChange={(v) => field.onChange(v)}
                         invalid={Boolean(errors.valor)}
+                        aria-describedby="regla-valor-error"
                       />
                     )}
                   />
@@ -307,6 +350,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                       placeholder={formula === 'INTERES_DIARIO' ? '0,0667' : '10'}
                       className={cn('font-mono tabular-nums', unidadDelValor && 'pr-24')}
                       aria-invalid={Boolean(errors.valor)}
+                      aria-describedby="regla-valor-error"
                       {...register('valor', { valueAsNumber: true })}
                     />
                     {unidadDelValor && (
@@ -337,7 +381,12 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="regla-base" aria-invalid={Boolean(errors.base)}>
+                    <SelectTrigger
+                      id="regla-base"
+                      ref={field.ref}
+                      aria-invalid={Boolean(errors.base)}
+                      aria-describedby="regla-base-error"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -367,6 +416,8 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 render={({ field }) => (
                   <CurrencyInput
                     id="regla-tope"
+                    ref={field.ref}
+                    aria-describedby="regla-tope-error"
                     value={field.value ?? undefined}
                     onChange={(v) => field.onChange(Number.isFinite(v) ? v : null)}
                     invalid={Boolean(errors.topeCop)}
@@ -390,6 +441,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 step={1}
                 className="font-mono tabular-nums"
                 aria-invalid={Boolean(errors.orden)}
+                aria-describedby="regla-orden-error"
                 {...register('orden', { valueAsNumber: true })}
               />
             </Campo>
@@ -460,13 +512,11 @@ function Campo({
         {etiqueta}
       </Label>
       {children}
-      {error ? (
-        <p className="text-caption text-danger" role="alert" data-testid={`error-${id}`}>
-          {error}
-        </p>
-      ) : ayuda ? (
-        <p className="text-caption text-fg-muted">{ayuda}</p>
-      ) : null}
+      {/*
+        El error del campo (el de zod o el del servidor) reemplaza la ayuda con
+        un cruce: nunca se ven las dos ni salta el alto (02-10-2026).
+      */}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={ayuda} className="mt-0" />
     </div>
   );
 }

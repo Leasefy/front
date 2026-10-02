@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatDate } from '@/lib/format';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
@@ -166,8 +167,15 @@ function AgencyUpgradeContent() {
     try {
       await agencySubscriptionApi.cancelPendingChange();
       toast.success('Deshecho: tu plan no va a cambiar.');
-    } catch {
-      toast.error('No pudimos deshacer el cambio. Intenta de nuevo.');
+    } catch (e) {
+      // Con la regla de oro (02-10-2026): antes decía lo mismo pasara lo que
+      // pasara (y se leía como un problema de conexión).
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos deshacer el cambio. Intenta de nuevo.',
+          accion: 'deshacer el cambio de plan',
+        }),
+      );
     } finally {
       reset();
       void subscriptionRefetch();

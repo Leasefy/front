@@ -25,7 +25,9 @@ import {
   type CampoDeExtracto,
   type MapeoDeExtracto,
 } from '@/lib/cobros/extracto-bancario';
-import { mensajeDe, plata } from './formato';
+import { errorDeLasFilasDelExtracto } from '@/lib/cobros/limites-del-extracto';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { plata } from './formato';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { CuentaDeclarada } from '@/lib/api/tesoreria.types';
 
@@ -79,6 +81,8 @@ export function CargarExtracto({ onCargado }: Props) {
 
   const armadas = useMemo(() => armarFilasDeExtracto(crudas, mapeo), [crudas, mapeo]);
   const faltan = faltantesDelMapeo(mapeo);
+  /** 🔁 Espejo del tope del back: más de 5.000 líneas no se mandan. */
+  const demasiadas = errorDeLasFilasDelExtracto(armadas.filas.length);
 
   const leer = async (f: File) => {
     setLeyendo(true);
@@ -98,7 +102,8 @@ export function CargarExtracto({ onCargado }: Props) {
       setCrudas(r.rows as Record<string, unknown>[]);
       setMapeo(mapearColumnasDeExtracto(r.headers));
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo leer el archivo.'));
+      // Un fallo al LEER el archivo es del navegador, no del servidor.
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo leer el archivo.' }));
     } finally {
       setLeyendo(false);
     }
@@ -114,6 +119,10 @@ export function CargarExtracto({ onCargado }: Props) {
 
   const cargar = async () => {
     if (!archivo || faltan.length > 0 || armadas.filas.length === 0) return;
+    if (demasiadas) {
+      toast.error(demasiadas);
+      return;
+    }
     setCargando(true);
     try {
       const r = await conciliacionBancariaApi.cargarExtracto(
@@ -144,7 +153,14 @@ export function CargarExtracto({ onCargado }: Props) {
       for (const aviso of r.avisos ?? []) toast.info(aviso);
       limpiar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo cargar el extracto.'));
+      // El 409 de la cuenta que recauda por archivo y los 400 por línea traen
+      // su motivo en palabras; un 5xx dice que fue nuestro, con la referencia.
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo cargar el extracto.',
+          accion: 'cargar el extracto',
+        }),
+      );
     } finally {
       setCargando(false);
     }
@@ -283,6 +299,11 @@ export function CargarExtracto({ onCargado }: Props) {
             </Banner>
           ) : (
             <>
+              {demasiadas ? (
+                <Banner variant="warning" title="El extracto es muy largo" data-testid="extracto-muy-largo">
+                  {demasiadas}
+                </Banner>
+              ) : null}
               <div className="overflow-x-auto rounded-md border border-border">
                 <Table>
                   <TableHeader>
@@ -329,7 +350,8 @@ export function CargarExtracto({ onCargado }: Props) {
                   disabled={
                     cargando ||
                     armadas.filas.length === 0 ||
-                    laCuentaEntraPorArchivo !== undefined
+                    laCuentaEntraPorArchivo !== undefined ||
+                    demasiadas !== null
                   }
                   data-testid="cargar"
                 >

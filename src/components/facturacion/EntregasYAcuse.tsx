@@ -47,6 +47,7 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   facturacionElectronicaService,
   type EntregaDeDocumento,
@@ -102,8 +103,12 @@ export function EntregasYAcuse() {
       toast.success('Queda registrado que el cliente la aceptó')
       await cargar()
     } catch (err) {
+      // Con la regla de oro (02-10-2026).
       toast.error(
-        err instanceof Error ? err.message : 'No se pudo registrar el acuse.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo registrar el acuse.',
+          accion: 'registrar el acuse',
+        }),
       )
     } finally {
       setGuardando(null)
@@ -129,7 +134,10 @@ export function EntregasYAcuse() {
       await cargar()
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'No se pudo registrar el rechazo.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo registrar el rechazo.',
+          accion: 'registrar el rechazo',
+        }),
       )
     } finally {
       setGuardando(null)

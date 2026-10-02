@@ -61,6 +61,7 @@ import type {
   ResultadoDeImportar,
 } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** El tope del back (4 MB): se dice antes de subir, no después del 400. */
 const TOPE_BYTES = 4_000_000;
@@ -334,10 +335,13 @@ function ImportarArchivo({
       setContenido(texto);
       setPrevia(await tesoreriaApi.previa(texto, archivo.name, convenioId || undefined));
     } catch (error) {
+      // El 400 del formato trae su motivo en palabras; un 5xx dice que fue
+      // nuestro, con la referencia; sólo sin respuesta se habla de la conexión.
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo leer el archivo con el formato de este convenio.',
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo leer el archivo con el formato de este convenio.',
+          accion: 'leer el archivo con el formato del convenio',
+        }),
       );
     } finally {
       setLeyendo(false);
@@ -359,7 +363,10 @@ function ImportarArchivo({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'No se pudo importar el archivo.',
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo importar el archivo.',
+          accion: 'importar el archivo',
+        }),
       );
     } finally {
       setImportando(false);

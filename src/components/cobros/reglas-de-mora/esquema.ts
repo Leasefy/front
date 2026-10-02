@@ -15,6 +15,11 @@ import { z } from 'zod';
 import type { FieldErrors, Resolver } from 'react-hook-form';
 import type { NuevaReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import {
+  MENSAJES_DE_LA_REGLA_DE_MORA,
+  TOPE_MAXIMO_DE_LA_REGLA_COP,
+  VALOR_MAXIMO_DE_LA_REGLA,
+} from '@/lib/cobros/limites-de-la-regla-de-mora';
+import {
   BASES_DE_CALCULO,
   CONCEPTOS_DE_REGLA,
   DISPARADORES_DE_REGLA,
@@ -38,12 +43,16 @@ export const esquemaDeRegla = z
     formula: z.enum(FORMULAS_DE_REGLA),
     valor: z
       .number({ invalid_type_error: 'Pon el valor.', required_error: 'Pon el valor.' })
-      .min(0, 'No puede ser negativo.'),
+      .min(0, 'No puede ser negativo.')
+      // El techo de la columna (Decimal(12,4)), con la frase del back: 02-10-2026.
+      .max(VALOR_MAXIMO_DE_LA_REGLA, MENSAJES_DE_LA_REGLA_DE_MORA.valorMaximo),
     base: z.enum(BASES_DE_CALCULO),
     topeCop: z
       .number({ invalid_type_error: 'El tope es un monto en pesos.' })
       .int('El tope va en pesos enteros.')
       .min(0, 'El tope no puede ser negativo.')
+      // `tope_cop` es int4: la misma frase del back (02-10-2026).
+      .max(TOPE_MAXIMO_DE_LA_REGLA_COP, MENSAJES_DE_LA_REGLA_DE_MORA.topeMaximo)
       .nullable(),
     orden: z
       .number({ invalid_type_error: 'Pon el orden.', required_error: 'Pon el orden.' })

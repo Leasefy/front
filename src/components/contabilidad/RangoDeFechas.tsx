@@ -7,6 +7,7 @@
 
 import { useId } from 'react';
 
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { rangoInvertido } from '@/lib/contabilidad/fechas';
@@ -33,6 +34,7 @@ export function RangoDeFechas({ desde, hasta, onChange, disabled }: RangoDeFecha
           max={hasta || undefined}
           disabled={disabled}
           aria-invalid={invertido || undefined}
+          aria-describedby={invertido ? `${id}-rango-error` : undefined}
           onChange={(e) => onChange({ desde: e.target.value, hasta })}
           data-testid="rango-desde"
         />
@@ -46,15 +48,17 @@ export function RangoDeFechas({ desde, hasta, onChange, disabled }: RangoDeFecha
           min={desde || undefined}
           disabled={disabled}
           aria-invalid={invertido || undefined}
+          aria-describedby={invertido ? `${id}-rango-error` : undefined}
           onChange={(e) => onChange({ desde, hasta: e.target.value })}
           data-testid="rango-hasta"
         />
       </div>
-      {invertido ? (
-        <p className="col-span-2 text-caption text-danger" role="alert">
-          «Desde» es posterior a «hasta».
-        </p>
-      ) : null}
+      {/* El error es de los DOS campos: los dos lo nombran en `aria-describedby`. */}
+      <ErrorDelCampo
+        id={`${id}-rango-error`}
+        className="col-span-2 mt-0"
+        mensaje={invertido ? '«Desde» es posterior a «hasta».' : null}
+      />
     </div>
   );
 }

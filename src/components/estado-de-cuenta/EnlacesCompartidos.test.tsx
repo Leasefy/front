@@ -137,3 +137,26 @@ describe('<EnlacesCompartidos>', () => {
     expect(vacio.textContent).toContain('No hay enlaces abiertos');
   });
 });
+
+describe('<EnlacesCompartidos> — un 5xx al revocar (tanda 2, 02-10-2026)', () => {
+  it('🔴 dice «de nuestro lado» con la referencia y la fila se queda', async () => {
+    api.revocarEnlace.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      $('[data-testid="revocar-e-1"]')!.click();
+    });
+    await esperar();
+
+    const dicho = String(toastMock.error.mock.calls[0]![0]);
+    expect(dicho).toContain('No pudimos revocar el enlace: algo falló de nuestro lado');
+    expect(dicho).toContain('ab12cd34');
+    expect($('[data-testid="enlace-e-1"]')).not.toBeNull();
+  });
+});

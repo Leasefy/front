@@ -148,8 +148,10 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
     try {
       onCambio(await wompiPagosApi.consultar(loteId));
     } catch (e) {
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+      // referencia; Wompi caído (502 con `servicio`) lo dice la capa de caídas.
       toast.error('No se pudo consultar a Wompi', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'consultar a Wompi' }),
       });
     } finally {
       setConsultando(false);

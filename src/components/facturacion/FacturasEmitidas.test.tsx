@@ -40,6 +40,8 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { FacturasEmitidas, motivoSuficiente } from './FacturasEmitidas';
+import { toast } from '@/components/ui/toast';
+import { ApiError } from '@/lib/api/client';
 
 function factura(over: Record<string, unknown> = {}) {
   return {
@@ -177,5 +179,63 @@ describe('FacturasEmitidas', () => {
     expect(motivoSuficiente('   ')).toBe(false);
     expect(motivoSuficiente('error')).toBe(false);
     expect(motivoSuficiente('se facturó de más')).toBe(true);
+  });
+});
+
+/*
+ * 02-10-2026 · La nota crédito con el sistema de errores: lo que el back diga
+ * del motivo o del concepto va debajo de su campo; un 5xx dice «de nuestro
+ * lado» con la referencia.
+ */
+describe('FacturasEmitidas · el sistema de errores (02-10)', () => {
+  async function anularCon(error: unknown) {
+    emitirNotaCredito.mockRejectedValue(error);
+    vi.mocked(toast.error).mockReset();
+    await pintar({ mes: '2026-09', anulacionDisponible: true, facturas: [factura()] });
+    await act(async () => {
+      (q('[data-testid="anular-3"]') as HTMLButtonElement).click();
+    });
+    const area = document.querySelector('#nc-motivo') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(
+        area,
+        'El contrato se terminó el 3 y el mes se facturó completo.',
+      );
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (document.querySelector('[data-testid="confirmar-nota-credito"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('🔴 un 400 sobre el motivo va DEBAJO del motivo, con el foco, sin toast', async () => {
+    const mensaje = 'El motivo puede tener hasta 500 caracteres.';
+    await anularCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    expect(document.querySelector('#nc-motivo-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('nc-motivo');
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx: «de nuestro lado» con la referencia', async () => {
+    await anularCon(new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }));
+    const texto = vi.mocked(toast.error).mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos emitir la nota crédito: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    await anularCon(new ApiError(0, 'Failed to fetch'));
+    expect(vi.mocked(toast.error).mock.calls[0]?.[0]).toMatch(/conexi[oó]n/);
   });
 });

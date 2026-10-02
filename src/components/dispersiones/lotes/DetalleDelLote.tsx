@@ -71,6 +71,9 @@ import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SectionLabel } from '@/components/ui/section-label';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
@@ -266,10 +269,6 @@ function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
       </span>
     </Banner>
   );
-}
-
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
 }
 
 function ultimos4(cuenta: string): string {
@@ -1048,7 +1047,12 @@ function PedirAprobacionDialog({
             : 'Lote enviado a aprobación',
       );
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo mandar el lote a aprobación.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo mandar el lote a aprobación.',
+          accion: 'mandar el lote a aprobación',
+        }),
+      );
     } finally {
       setEnviando(false);
     }
@@ -1192,21 +1196,30 @@ function AprobarDialog({
   const [codigo, setCodigo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DEL CÓDIGO, debajo del campo (02-10-2026). */
+  const [errorDelCodigo, setErrorDelCodigo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setCodigo('');
       setError(null);
+      setErrorDelCodigo(null);
     }
   }, [abierto]);
 
+  const marcarElCodigo = (mensaje: string) => {
+    setErrorDelCodigo(mensaje);
+    document.getElementById('codigo-de-aprobacion')?.focus();
+  };
+
   const aprobar = async () => {
     if (exigeCodigo && !codigoValido(codigo)) {
-      setError('El código son 6 dígitos, tal como llegó en el correo.');
+      marcarElCodigo('El código son 6 dígitos, tal como llegó en el correo.');
       return;
     }
     setEnviando(true);
     setError(null);
+    setErrorDelCodigo(null);
     try {
       const aprobado = await lotesDeDispersionApi.aprobar(lote.id, exigeCodigo ? codigo : undefined);
       onListo(aprobado);
@@ -1215,8 +1228,15 @@ function AprobarDialog({
       });
       onCerrar();
     } catch (e) {
-      // Tal cual: el back dice cuántos intentos quedan, o que se venció.
-      setError(mensajeDe(e, 'No se pudo aprobar el lote.'));
+      // Tal cual: el back dice cuántos intentos quedan, o que se venció. Un
+      // 400 sobre el código (`campos`) va debajo del campo; lo demás al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['codigo'],
+        porDefecto: 'No se pudo aprobar el lote.',
+        accion: 'aprobar el lote',
+      });
+      if (porCampo.codigo) marcarElCodigo(porCampo.codigo);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
       onFallo();
     } finally {
       setEnviando(false);
@@ -1251,11 +1271,17 @@ function AprobarDialog({
                 autoComplete="one-time-code"
                 maxLength={6}
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) => {
+                  setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  if (errorDelCodigo) setErrorDelCodigo(null);
+                }}
+                aria-invalid={errorDelCodigo ? true : undefined}
+                aria-describedby={errorDelCodigo ? 'codigo-de-aprobacion-error' : undefined}
                 className="font-mono text-lg tracking-[0.4em]"
                 placeholder="000000"
                 autoFocus
               />
+              <ErrorDelCampo id="codigo-de-aprobacion-error" mensaje={errorDelCodigo} />
               <p className="text-xs text-fg-muted">
                 Te llegó por correo.{' '}
                 <span className="font-mono">{intentosRestantes}</span>{' '}
@@ -1326,7 +1352,12 @@ function ArchivoDialog({
       setArchivo(r);
       if (!r.reenvio) onGenerado();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo generar el archivo.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo generar el archivo.',
+          accion: 'generar el archivo del lote',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -1358,7 +1389,12 @@ function ArchivoDialog({
       guardar(blob, archivo.nombreArchivo);
       toast.success('Archivo guardado', { description: archivo.nombreArchivo });
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo descargar el archivo.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo descargar el archivo.',
+          accion: 'descargar el archivo del lote',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -1583,22 +1619,31 @@ function MarcarPagadoDialog({
   const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DE LA REFERENCIA, debajo del campo (02-10-2026). */
+  const [errorDeReferencia, setErrorDeReferencia] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setReferencia('');
       setFacturarAhora(false);
       setError(null);
+      setErrorDeReferencia(null);
     }
   }, [abierto]);
 
+  const marcarLaReferencia = (mensaje: string) => {
+    setErrorDeReferencia(mensaje);
+    document.getElementById('referencia-del-banco')?.focus();
+  };
+
   const marcar = async () => {
     if (!referencia.trim()) {
-      setError('Hace falta la referencia con la que el banco confirmó el pago.');
+      marcarLaReferencia('Hace falta la referencia con la que el banco confirmó el pago.');
       return;
     }
     setEnviando(true);
     setError(null);
+    setErrorDeReferencia(null);
     try {
       const pagado = await lotesDeDispersionApi.marcarPagado(
         lote.id,
@@ -1622,7 +1667,14 @@ function MarcarPagadoDialog({
       });
       onCerrar();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo marcar el lote como pagado.'));
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        mapa: { referenciaBanco: 'referencia' },
+        campos: ['referencia'],
+        porDefecto: 'No se pudo marcar el lote como pagado.',
+        accion: 'marcar el lote como pagado',
+      });
+      if (porCampo.referencia) marcarLaReferencia(porCampo.referencia);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviando(false);
     }
@@ -1649,12 +1701,18 @@ function MarcarPagadoDialog({
             id="referencia-del-banco"
             data-testid="referencia-del-banco"
             value={referencia}
-            onChange={(e) => setReferencia(e.target.value)}
+            onChange={(e) => {
+              setReferencia(e.target.value);
+              if (errorDeReferencia) setErrorDeReferencia(null);
+            }}
             maxLength={120}
+            aria-invalid={errorDeReferencia ? true : undefined}
+            aria-describedby={errorDeReferencia ? 'referencia-del-banco-error' : undefined}
             placeholder="BC-20260907-00123"
             className="font-mono"
             autoFocus
           />
+          <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDeReferencia} />
           <p className="text-xs text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
           </p>
@@ -1709,6 +1767,8 @@ function AnularDialog({
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DEL MOTIVO, debajo del campo (02-10-2026). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   /*
    * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
    * procesó en el banco (back, 23-09-2026: 409
@@ -1723,13 +1783,19 @@ function AnularDialog({
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setErrorDelMotivo(null);
       setConfirmo(false);
     }
   }, [abierto]);
 
+  const marcarElMotivo = (mensaje: string) => {
+    setErrorDelMotivo(mensaje);
+    document.getElementById('motivo-de-anulacion')?.focus();
+  };
+
   const anular = async () => {
     if (!motivoValido(motivo)) {
-      setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
+      marcarElMotivo('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
     if (conArchivo && !confirmo) {
@@ -1738,6 +1804,7 @@ function AnularDialog({
     }
     setEnviando(true);
     setError(null);
+    setErrorDelMotivo(null);
     try {
       const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
@@ -1746,7 +1813,13 @@ function AnularDialog({
       });
       onCerrar();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo anular el lote.'));
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'],
+        porDefecto: 'No se pudo anular el lote.',
+        accion: 'anular el lote',
+      });
+      if (porCampo.motivo) marcarElMotivo(porCampo.motivo);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviando(false);
     }
@@ -1773,12 +1846,18 @@ function AnularDialog({
             id="motivo-de-anulacion"
             data-testid="motivo-de-anulacion"
             value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              if (errorDelMotivo) setErrorDelMotivo(null);
+            }}
             maxLength={300}
             rows={3}
+            aria-invalid={errorDelMotivo ? true : undefined}
+            aria-describedby={errorDelMotivo ? 'motivo-de-anulacion-error' : undefined}
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          <ErrorDelCampo id="motivo-de-anulacion-error" mensaje={errorDelMotivo} />
           {conArchivo && (
             <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
               <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>

@@ -28,7 +28,3 @@ export function mesesLegibles(meses: string[]): string {
   if (meses.length === 2) return `${mesLegible(meses[0])} y ${mesLegible(meses[1])}`;
   return `${mesLegible(meses[0])} → ${mesLegible(meses[meses.length - 1])} (${meses.length} meses)`;
 }
-
-export function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
-}

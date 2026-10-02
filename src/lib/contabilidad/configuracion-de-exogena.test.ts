@@ -130,6 +130,12 @@ describe('topeDelBorrador', () => {
     expect(topeDelBorrador('1000000')).toBe(1_000_000);
   });
 
+  it('🔁 con ceros de más es FUERA_DE_RANGO: el mismo tope del back', () => {
+    expect(topeDelBorrador('2000000000')).toBe(2_000_000_000);
+    expect(topeDelBorrador('2000000001')).toBe('FUERA_DE_RANGO');
+    expect(topeDelBorrador('99999999999999999999')).toBe('FUERA_DE_RANGO');
+  });
+
   it('cero, negativos y texto no pasan (el DTO es @Min(1))', () => {
     expect(topeDelBorrador('0')).toBe('INVALIDO');
     expect(topeDelBorrador('-5')).toBe('INVALIDO');

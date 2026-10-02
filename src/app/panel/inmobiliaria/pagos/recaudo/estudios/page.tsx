@@ -34,7 +34,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { formatCurrency } from '@/lib/format';
 import { estudiosApi, type PagoDeEstudio } from '@/lib/api/estudios.service';
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 function Contenido() {
   const { isAdmin, agencyRole } = usePermissions();
@@ -47,6 +48,8 @@ function Contenido() {
   const [anulando, setAnulando] = useState<PagoDeEstudio | null>(null);
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
+  /** El error del motivo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -68,6 +71,7 @@ function Contenido() {
     const pago = anulando;
     if (!pago || motivo.trim().length < 5 || enviando) return;
     setEnviando(true);
+    setErrorDelMotivo(null);
     try {
       await estudiosApi.anular(pago.id, motivo.trim());
       toast.success(`Recibo #${pago.numeroRecibo} anulado`);
@@ -75,9 +79,17 @@ function Contenido() {
       setMotivo('');
       await cargar();
     } catch (e) {
-      toast.error('No se pudo anular', {
-        description: mensajeParaLaPersona(e, { accion: 'anular el recibo' }),
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'] as const,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'anular el recibo',
       });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-anular-estudio')?.focus();
+      }
+      if (sueltos.length > 0) toast.error('No se pudo anular', { description: sueltos.join(' · ') });
     } finally {
       setEnviando(false);
     }
@@ -140,6 +152,7 @@ function Contenido() {
                         onClick={() => {
                           setAnulando(p);
                           setMotivo('');
+                          setErrorDelMotivo(null);
                         }}
                         data-testid={`anular-${p.id}`}
                       >
@@ -178,12 +191,21 @@ function Contenido() {
             <Textarea
               id="motivo-anular-estudio"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder="Se registró dos veces el mismo pago."
               rows={3}
               maxLength={300}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-anular-estudio-error' : undefined}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+            <ErrorDelCampo
+              id="motivo-anular-estudio-error"
+              mensaje={errorDelMotivo}
+              pista="Entre 5 y 300 caracteres."
+            />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={enviando}>Cancelar</AlertDialogCancel>

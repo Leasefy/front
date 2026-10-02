@@ -38,7 +38,16 @@ import { formatCurrency } from '@/lib/format';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import { estaVivo, type ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
 import type { FilaDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+
+/**
+ * 🔁 Los topes del motivo, espejo de `AnularReciboDeCajaDto` del back
+ * (`@MinLength(5)`, `@MaxLength(300)`): con menos de 5 el botón no se aprieta y
+ * más de 300 no se puede escribir.
+ */
+const MOTIVO_MINIMO = 5;
+const MOTIVO_MAXIMO = 300;
 
 const ContextoDeAnular = React.createContext<((fila: FilaDelEstadoDeCuenta) => void) | null>(null);
 
@@ -88,21 +97,26 @@ export function ProveedorDeAnularRecibo({
   const [fila, setFila] = React.useState<FilaDelEstadoDeCuenta | null>(null);
   const [motivo, setMotivo] = React.useState('');
   const [anulando, setAnulando] = React.useState(false);
+  /** Lo que no es del motivo: va al aviso del diálogo. */
   const [error, setError] = React.useState<string | null>(null);
+  /** El error del motivo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = React.useState<string | null>(null);
 
   const cerrar = () => {
     setFila(null);
     setMotivo('');
     setError(null);
+    setErrorDelMotivo(null);
   };
 
   const confirmar = async () => {
     const doc = fila?.documentoDePago;
     if (!fila || !doc) return;
     const limpio = motivo.trim();
-    if (!limpio) return;
+    if (limpio.length < MOTIVO_MINIMO) return;
     setAnulando(true);
     setError(null);
+    setErrorDelMotivo(null);
     try {
       const dia = fila.fechaDePago?.slice(0, 10);
       const delDia = await recibosDeCajaApi.listar(dia ? { desde: dia, hasta: dia } : {});
@@ -120,10 +134,19 @@ export function ProveedorDeAnularRecibo({
       cerrar();
       onAnulado();
     } catch (e) {
-      // El mensaje del back va tal cual: dice POR QUÉ no se pudo.
-      setError(
-        mensajeParaLaPersona(e, { porDefecto: 'No se pudo anular el recibo.', accion: 'anular el recibo' }),
-      );
+      // Un 400 del motivo va debajo del motivo, con el foco. Lo demás —el
+      // mensaje del back que dice POR QUÉ no se pudo, o un 5xx con su
+      // referencia— va al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo anular el recibo.',
+        accion: 'anular el recibo',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-anular-recibo')?.focus();
+      }
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setAnulando(false);
     }
@@ -156,9 +179,20 @@ export function ProveedorDeAnularRecibo({
               id="motivo-anular-recibo"
               rows={3}
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder="Por qué se anula (queda en la bitácora)"
               className="w-full resize-none"
+              maxLength={MOTIVO_MAXIMO}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-anular-recibo-error' : undefined}
+            />
+            <ErrorDelCampo
+              id="motivo-anular-recibo-error"
+              mensaje={errorDelMotivo}
+              pista={`Entre ${MOTIVO_MINIMO} y ${MOTIVO_MAXIMO} caracteres.`}
             />
           </div>
           {error && <Banner variant="danger">{error}</Banner>}
@@ -171,7 +205,7 @@ export function ProveedorDeAnularRecibo({
               variant="destructive"
               hideArrow
               onClick={() => void confirmar()}
-              disabled={anulando || motivo.trim().length === 0}
+              disabled={anulando || motivo.trim().length < MOTIVO_MINIMO}
               isLoading={anulando}
               data-testid="anular-recibo-confirmar"
             >

@@ -32,6 +32,7 @@ import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { clasificarFallo } from '@/lib/errores/clasificar';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type {
   EnlaceCompartido,
   FiltrosDelEstadoDeCuenta,
@@ -97,11 +98,18 @@ const SIN_RECORTE: FiltrosDelEstadoDeCuenta = {
  * Por qué falló compartir, en palabras (E5).
  *
  * El `respaldo` es lo que se estaba intentando («No se pudo mandar el
- * correo.»); se usa cuando el fallo es del servidor y no hay nada más preciso
- * que decir. Un 4xx del back trae su mensaje en castellano y dice QUÉ pasó
- * (el cliente no tiene contratos, el enlace no existe): ése gana.
+ * correo.»); se usa cuando el error no trae nada legible. Un 4xx del back trae
+ * su mensaje en castellano y dice QUÉ pasó (el cliente no tiene contratos, el
+ * enlace no existe): ése gana.
+ *
+ * Tanda 2 (02-10-2026): se queda con lo SUYO —el rol que no puede compartir,
+ * la sesión vencida, la red (que acá dice además que el envío no se pudo
+ * confirmar) y la ráfaga de envíos—; todo lo demás lo dice el traductor de la
+ * casa (`mensajeParaLaPersona`): un 4xx con su mensaje, un 5xx «de nuestro
+ * lado» con la referencia para soporte. `accion` va en infinitivo («mandar el
+ * correo»).
  */
-export function motivoDeCompartir(error: unknown, respaldo: string): string {
+export function motivoDeCompartir(error: unknown, respaldo: string, accion?: string): string {
   const fallo = clasificarFallo(error);
   switch (fallo.tipo) {
     case 'sinPermiso':
@@ -119,15 +127,7 @@ export function motivoDeCompartir(error: unknown, respaldo: string): string {
     case 'limitado':
       return 'Hubo demasiados envíos seguidos. Espera un momento y prueba de nuevo.';
     default:
-      if (
-        error instanceof ApiError &&
-        error.status >= 400 &&
-        error.status < 500 &&
-        error.message
-      ) {
-        return error.message;
-      }
-      return `${respaldo} Fue un problema del servidor: prueba de nuevo en un momento.`;
+      return mensajeParaLaPersona(error, { porDefecto: respaldo, accion });
   }
 }
 
@@ -188,7 +188,7 @@ export function useCompartirEstado({
         });
       }
     } catch (error) {
-      toast.error(motivoDeCompartir(error, texto('estadoDeCuenta.falloEnlace')));
+      toast.error(motivoDeCompartir(error, texto('estadoDeCuenta.falloEnlace'), 'crear el enlace'));
     } finally {
       setOcupado(null);
     }
@@ -229,7 +229,13 @@ export function useCompartirEstado({
           toast.error(r.motivo ?? respaldo);
         }
       } catch (error) {
-        toast.error(motivoDeCompartir(error, respaldo));
+        toast.error(
+          motivoDeCompartir(
+            error,
+            respaldo,
+            canal === 'CORREO' ? 'mandar el correo' : 'mandar el WhatsApp',
+          ),
+        );
       } finally {
         setOcupado(null);
       }

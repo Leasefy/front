@@ -65,10 +65,13 @@ import type {
   MovimientoBancario,
   ResumenDeConciliacion,
 } from '@/lib/api/conciliacion-bancaria.types';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { CargarExtracto } from './CargarExtracto';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
 import { MovimientoFila } from './MovimientoFila';
-import { diaLegible, mensajeDe, plata } from './formato';
+import { diaLegible, plata } from './formato';
 
 /**
  * Cuántas líneas se traen por página.
@@ -141,6 +144,8 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const [conCliente, setConCliente] = useState<MovimientoBancario | null>(null);
   const [clienteElegido, setClienteElegido] = useState<string | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** El error del motivo de ignorar que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   /*
    * 🔴 (17-09-2026) Sube cuando cambia el extracto: el lote de lo que calza
    * exacto se vuelve a leer (al cargar, el back lo arma solo).
@@ -206,7 +211,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       );
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo conciliar el movimiento.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar el movimiento.',
+          accion: 'conciliar el movimiento',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -238,7 +248,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       setClienteElegido(null);
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo conciliar contra el cliente.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar contra el cliente.',
+          accion: 'conciliar el movimiento contra el cliente',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -248,6 +263,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     if (!ignorando) return;
     const m = ignorando;
     marcar(m.id, true);
+    setErrorDelMotivo(null);
     try {
       await conciliacionBancariaApi.ignorar(m.id, motivo.trim());
       toast.success('Movimiento ignorado.');
@@ -255,7 +271,17 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       setMotivo('');
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo ignorar el movimiento.'));
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo ignorar el movimiento.',
+        accion: 'ignorar el movimiento',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-ignorar')?.focus();
+      }
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       marcar(m.id, false);
     }
@@ -268,7 +294,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       toast.success('El movimiento volvió a pendientes.');
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo reabrir el movimiento.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo reabrir el movimiento.',
+          accion: 'volver el movimiento a pendiente',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -386,6 +417,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                     onIgnorar={(mov) => {
                       setIgnorando(mov);
                       setMotivo('');
+                      setErrorDelMotivo(null);
                     }}
                     onReabrir={(mov) => void reabrir(mov)}
                   />
@@ -477,12 +509,21 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             <Textarea
               id="motivo-ignorar"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder="Es la nómina de la oficina, no un pago de canon."
               rows={3}
               maxLength={300}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-ignorar-error' : undefined}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+            <ErrorDelCampo
+              id="motivo-ignorar-error"
+              mensaje={errorDelMotivo}
+              pista="Entre 5 y 300 caracteres."
+            />
           </div>
           <DialogFooter>
             <Button

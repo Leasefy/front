@@ -32,6 +32,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+import { ApiError } from '@/lib/api/client';
 import { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
 
 const VIVO: ReciboDeCaja = {
@@ -227,5 +228,76 @@ describe('<RecibosDeCajaHistorial> anular', () => {
     });
 
     expect(document.body.textContent).toContain('Un recibo conciliado no se puede anular');
+  });
+});
+
+/*
+ * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 del back sobre el
+ * motivo va bajo el campo con el foco; un 5xx dice «de nuestro lado» con la
+ * referencia; sólo sin respuesta se habla de la conexión. Y el mínimo del
+ * motivo (5) se ataja antes de enviar, con la frase del back.
+ */
+describe('<RecibosDeCajaHistorial> los errores de anular', () => {
+  async function anularCon(motivo: string, onAnular: ReturnType<typeof vi.fn>) {
+    render({ recibos: [VIVO], onAnular: onAnular as never });
+    act(() => {
+      botonesConTexto('recibos.historial.anular')[0].click();
+    });
+    const campo = document.body.querySelector<HTMLTextAreaElement>('#motivo-anulacion');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    act(() => {
+      setter.call(campo, motivo);
+      campo!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const confirmar = Array.from(document.body.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('recibos.anular.confirmar'),
+    ) as HTMLButtonElement;
+    await act(async () => {
+      confirmar.click();
+    });
+  }
+  const errorDelMotivo = () => document.body.querySelector('#motivo-anulacion-error')?.textContent ?? '';
+
+  it('🔴 un 400 en `motivo` va bajo el campo y le da el foco', async () => {
+    const frase = 'El motivo de la anulación puede tener hasta 300 caracteres.';
+    const onAnular = vi.fn().mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'maximo', mensaje: frase }],
+      }),
+    );
+    await anularCon('se devolvió el cheque', onAnular);
+
+    expect(errorDelMotivo()).toBe(frase);
+    expect(document.activeElement?.id).toBe('motivo-anulacion');
+  });
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia', async () => {
+    const onAnular = vi
+      .fn()
+      .mockRejectedValue(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: '0a1b2c3d' }));
+    await anularCon('se devolvió el cheque', onAnular);
+
+    expect(document.body.textContent).toContain('No pudimos anular el recibo: algo falló de nuestro lado');
+    expect(document.body.textContent).toContain('0a1b2c3d');
+    expect(errorDelMotivo()).toBe('');
+  });
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    const onAnular = vi.fn().mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await anularCon('se devolvió el cheque', onAnular);
+
+    expect(document.body.textContent).toMatch(/conexión/);
+    expect(document.body.textContent).not.toContain('Failed to fetch');
+  });
+
+  it('un motivo de menos de 5 caracteres se ataja antes de enviar, con la frase del back', async () => {
+    const onAnular = vi.fn();
+    await anularCon('no', onAnular);
+
+    expect(onAnular).not.toHaveBeenCalled();
+    expect(errorDelMotivo()).toBe('Escribe el motivo de la anulación (al menos 5 caracteres).');
   });
 });

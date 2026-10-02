@@ -73,7 +73,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ApiError } from '@/lib/api/client';
 import {
   APROBADOR_ES_EL_MISMO,
@@ -115,6 +117,21 @@ const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destruc
     PAGADO: 'default',
     ANULADO: 'destructive',
   };
+
+/**
+ * Los campos de los tres diálogos (pago, anulación, conciliación), con el
+ * nombre que el back usa en `campos[].campo`, y el id de su control.
+ */
+type CampoDeUnDialogo = 'fecha' | 'referenciaBanco' | 'motivo' | 'movimientoBancarioId';
+const ID_DEL_CAMPO: Record<CampoDeUnDialogo, string> = {
+  fecha: 'fecha-del-pago',
+  referenciaBanco: 'referencia-del-banco',
+  motivo: 'motivo-de-la-anulacion',
+  movimientoBancarioId: 'movimiento-bancario',
+};
+/** 🔁 Los topes de `GastoMotivoDto` y `MarcarLotePagadoDto` (back). */
+const LARGO_MAXIMO_DEL_MOTIVO = 300;
+const LARGO_MAXIMO_DE_LA_REFERENCIA = 120;
 
 export type ParteDeEgresos = 'egresos' | 'lotes';
 
@@ -165,6 +182,29 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   /** El egreso que se está conciliando contra el extracto. */
   const [conciliando, setConciliando] = useState<Egreso | null>(null);
   const [movimientoBancarioId, setMovimientoBancarioId] = useState('');
+
+  /**
+   * Lo que el back dijo de un campo de los diálogos (un 400 con `campos`). Se
+   * borra el de un campo cuando la persona lo cambia, y todos al cerrar.
+   */
+  const [errorDelCampo, setErrorDelCampo] = useState<Partial<Record<CampoDeUnDialogo, string>>>({});
+  const olvidar = (campo: CampoDeUnDialogo) =>
+    setErrorDelCampo((e) => (e[campo] ? { ...e, [campo]: undefined } : e));
+  const describir = (campo: CampoDeUnDialogo) =>
+    errorDelCampo[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {};
+  /**
+   * El fallo de una acción de un diálogo: lo que trae campo va a su campo (y se
+   * enfoca); lo demás, al toast con la regla de oro.
+   */
+  const falloDelDialogo = (e: unknown, respaldo: string, campos: CampoDeUnDialogo[]) => {
+    const reparto = repartirErroresDelServidor<CampoDeUnDialogo>(e, { campos });
+    setErrorDelCampo(reparto.porCampo);
+    if (reparto.orden[0]) document.getElementById(ID_DEL_CAMPO[reparto.orden[0]])?.focus();
+    if (reparto.delServidor.length === 0) toast.error(mensajeDeContabilidad(e, respaldo));
+    else if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
+  };
 
   const escritura = usePuedeEscribir();
   // 🔴 22-09: corregir un egreso ya registrado es un permiso PROPIO, no la
@@ -299,7 +339,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setReferencia('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo marcar el lote como pagado.'));
+      falloDelDialogo(e, 'No se pudo marcar el lote como pagado.', ['fecha', 'referenciaBanco']);
     } finally {
       setOcupado(null);
     }
@@ -321,7 +361,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setMotivo('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo anular.'));
+      falloDelDialogo(e, 'No se pudo anular.', ['motivo']);
     } finally {
       setOcupado(null);
     }
@@ -337,7 +377,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setMovimientoBancarioId('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo conciliar.'));
+      falloDelDialogo(e, 'No se pudo conciliar.', ['movimientoBancarioId']);
     } finally {
       setOcupado(null);
     }
@@ -841,7 +881,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       <AlertDialog
         open={pagando !== null}
         onOpenChange={(a) => {
-          if (!a && ocupado === null) setPagando(null);
+          if (!a && ocupado === null) {
+            setPagando(null);
+            setErrorDelCampo({});
+          }
         }}
       >
         <AlertDialogContent
@@ -866,19 +909,30 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 id="fecha-del-pago"
                 type="date"
                 value={fechaDelPago}
-                onChange={(e) => setFechaDelPago(e.target.value)}
+                onChange={(e) => {
+                  olvidar('fecha');
+                  setFechaDelPago(e.target.value);
+                }}
                 data-testid="fecha-del-pago"
+                {...describir('fecha')}
               />
+              <ErrorDelCampo id="fecha-del-pago-error" mensaje={errorDelCampo.fecha} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="referencia-del-banco">Referencia del banco</Label>
               <Input
                 id="referencia-del-banco"
                 value={referencia}
-                onChange={(e) => setReferencia(e.target.value)}
+                onChange={(e) => {
+                  olvidar('referenciaBanco');
+                  setReferencia(e.target.value);
+                }}
+                maxLength={LARGO_MAXIMO_DE_LA_REFERENCIA}
                 placeholder="PAB-771"
                 data-testid="referencia-del-banco"
+                {...describir('referenciaBanco')}
               />
+              <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDelCampo.referenciaBanco} />
             </div>
           </div>
           <AlertDialogFooter>
@@ -904,6 +958,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           if (!a && ocupado === null) {
             setAnulando(null);
             setMotivo('');
+            setErrorDelCampo({});
           }
         }}
       >
@@ -932,10 +987,16 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <Textarea
               id="motivo-de-la-anulacion"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                olvidar('motivo');
+                setMotivo(e.target.value);
+              }}
+              maxLength={LARGO_MAXIMO_DEL_MOTIVO}
               rows={3}
               data-testid="motivo-de-la-anulacion"
+              {...describir('motivo')}
             />
+            <ErrorDelCampo id="motivo-de-la-anulacion-error" mensaje={errorDelCampo.motivo} />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado !== null}>Cancelar</AlertDialogCancel>
@@ -957,7 +1018,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       <AlertDialog
         open={conciliando !== null}
         onOpenChange={(a) => {
-          if (!a && ocupado === null) setConciliando(null);
+          if (!a && ocupado === null) {
+            setConciliando(null);
+            setErrorDelCampo({});
+          }
         }}
       >
         <AlertDialogContent
@@ -977,8 +1041,16 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <Input
               id="movimiento-bancario"
               value={movimientoBancarioId}
-              onChange={(e) => setMovimientoBancarioId(e.target.value)}
+              onChange={(e) => {
+                olvidar('movimientoBancarioId');
+                setMovimientoBancarioId(e.target.value);
+              }}
               data-testid="movimiento-bancario"
+              {...describir('movimientoBancarioId')}
+            />
+            <ErrorDelCampo
+              id="movimiento-bancario-error"
+              mensaje={errorDelCampo.movimientoBancarioId}
             />
           </div>
           <AlertDialogFooter>

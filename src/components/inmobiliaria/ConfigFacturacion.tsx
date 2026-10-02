@@ -37,6 +37,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   Table,
   TableHeader,
@@ -141,8 +142,16 @@ export function ConfigFacturacion({
       toast.success('Cancelación programada: tu plan cambia al final de tu período actual.');
       setCancelDialogOpen(false);
       void subRefetch();
-    } catch {
-      toast.error('No pudimos cancelar el plan. Intenta de nuevo.');
+    } catch (e) {
+      // Con la regla de oro (02-10-2026): antes decía lo mismo pasara lo que
+      // pasara. Un 4xx dice qué está mal; un 5xx, que falló de nuestro lado
+      // con la referencia; «conexión», sólo sin respuesta.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos cancelar el plan. Intenta de nuevo.',
+          accion: 'cancelar el plan',
+        }),
+      );
     } finally {
       setCancelling(false);
     }
@@ -154,8 +163,13 @@ export function ConfigFacturacion({
       await agencySubscriptionApi.cancelPendingChange();
       toast.success('Deshecho: tu plan no va a cambiar.');
       void subRefetch();
-    } catch {
-      toast.error('No pudimos deshacer el cambio. Intenta de nuevo.');
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos deshacer el cambio. Intenta de nuevo.',
+          accion: 'deshacer el cambio de plan',
+        }),
+      );
     } finally {
       setUndoing(false);
     }

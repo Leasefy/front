@@ -43,6 +43,7 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   ESTADOS_DE_TRANSMISION,
   facturacionElectronicaService,
@@ -92,8 +93,12 @@ export function ColaDeTransmision() {
       toast.success('El documento volvió a la cola')
       await cargar()
     } catch (e) {
+      // Con la regla de oro (02-10-2026).
       toast.error(
-        e instanceof Error ? e.message : 'No se pudo volver a encolar.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo volver a encolar.',
+          accion: 'volver a encolar el documento',
+        }),
       )
     } finally {
       setReintentando(null)
@@ -113,7 +118,10 @@ export function ColaDeTransmision() {
       await cargar()
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : 'No se pudieron volver a encolar.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudieron volver a encolar.',
+          accion: 'volver a encolar los documentos',
+        }),
       )
     } finally {
       setReintentando(null)

@@ -66,13 +66,23 @@ import {
   type Regiro,
 } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 
-/** El fallo en palabras y, si es el 503 de la migración, quién la aplica. */
-export function explicarGiro(error: unknown, porDefecto: string): string {
-  const mensaje = mensajeDelFallo(error, porDefecto);
+/**
+ * El fallo en palabras y, si es el 503 de la migración, quién la aplica.
+ *
+ * Con `accion` (02-10-2026), un 5xx dice QUÉ no se pudo hacer: «No pudimos
+ * marcar el giro como devuelto: algo falló de nuestro lado…», con la
+ * referencia. Lo demás sigue por `mensajeDelFallo` (la regla de oro).
+ */
+export function explicarGiro(error: unknown, porDefecto: string, accion?: string): string {
+  const mensaje =
+    accion && leerFallo(error).tipo === 'nuestro'
+      ? mensajeParaLaPersona(error, { porDefecto, accion })
+      : mensajeDelFallo(error, porDefecto);
   return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
@@ -291,7 +301,11 @@ export function MarcarDevueltoDialog({
       onListo();
     } catch (e) {
       toast.error('No se pudo marcar el giro como devuelto.', {
-        description: explicarGiro(e, 'No se pudo marcar el giro como devuelto.'),
+        description: explicarGiro(
+          e,
+          'No se pudo marcar el giro como devuelto.',
+          'marcar el giro como devuelto',
+        ),
       });
     } finally {
       setEnviando(false);
@@ -479,7 +493,7 @@ export function RegirarDialog({
       onListo();
     } catch (e) {
       toast.error('No se pudo registrar el nuevo giro.', {
-        description: explicarGiro(e, 'No se pudo registrar el nuevo giro.'),
+        description: explicarGiro(e, 'No se pudo registrar el nuevo giro.', 'registrar el nuevo giro'),
       });
     } finally {
       setEnviando(false);

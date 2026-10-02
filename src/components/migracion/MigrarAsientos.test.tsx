@@ -546,3 +546,48 @@ describe('aviso antes de cerrar la pestaña', () => {
   });
 });
 
+
+/*
+ * Sistema de errores (02-10-2026): un 5xx al revisar dice «de nuestro lado»
+ * con la referencia; lo que el back dice del nombre del lote va bajo el campo.
+ */
+describe('revisar que falla · la regla de oro', () => {
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.migracion.revisar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '5ca1ab1e',
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/No pudimos revisar el archivo: algo falló de nuestro lado/);
+    expect(alerta?.textContent).toContain('5ca1ab1e');
+  });
+
+  it('🔴 un 400 con `campos` en `lote` va bajo el nombre del lote', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const mensaje = 'El nombre del lote puede tener hasta 60 caracteres.';
+    api.migracion.revisar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'lote', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+
+    const campo = q('nombre-del-lote-asientos') as HTMLInputElement;
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    expect(container.querySelector('#lote-asientos-error')?.textContent).toBe(mensaje);
+  });
+});

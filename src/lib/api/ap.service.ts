@@ -45,16 +45,29 @@ function agentUrl(): string {
  * Errores de la API en español. El micro ya escribe en español los 400 de la
  * extracción y los 429; los del alta (`{error}` en inglés) se traducen acá
  * por status para que la persona entienda qué pasó.
+ *
+ * 02-10-2026 · El cuerpo ENTERO viaja en `detalle` (y su `code`): así el
+ * traductor ve los `campos` de un 400 (van a su campo en el formulario) y la
+ * `referencia` de un 5xx (soporte la encuentra en el log). Se lee también el
+ * `message` del sobre de error, no sólo el `error` de antes.
  */
+function textoDelMicro(body: Record<string, unknown>): string {
+  if (Array.isArray(body.message)) return body.message.map(String).filter(Boolean).join(' · ');
+  if (typeof body.message === 'string' && body.message) return body.message;
+  return typeof body.error === 'string' ? body.error : '';
+}
+
 async function lanzarError(res: Response, contexto: 'extract' | 'bill' | 'vendor' | 'read'): Promise<never> {
-  if (res.status === 401) throw new ApiError(401, 'Tu sesión expiró. Vuelve a iniciar sesión.');
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
-  const delMicro = typeof body.error === 'string' ? body.error : '';
-  if (res.status === 403) throw new ApiError(403, 'No tienes permiso para registrar facturas en esta agencia.');
-  if (res.status === 413) throw new ApiError(413, 'Los archivos son demasiado grandes (máximo 20 MB en total).');
-  if (res.status === 429) throw new ApiError(429, delMicro || 'Demasiadas solicitudes. Intenta de nuevo en un momento.');
+  const body = ((await res.json().catch(() => ({}))) ?? {}) as Record<string, unknown>;
+  const delMicro = textoDelMicro(body);
+  const code = typeof body.code === 'string' ? body.code : undefined;
+  const falla = (status: number, mensaje: string) => new ApiError(status, mensaje, code, body);
+  if (res.status === 401) throw falla(401, 'Tu sesión expiró. Vuelve a iniciar sesión.');
+  if (res.status === 403) throw falla(403, 'No tienes permiso para registrar facturas en esta agencia.');
+  if (res.status === 413) throw falla(413, 'Los archivos son demasiado grandes (máximo 20 MB en total).');
+  if (res.status === 429) throw falla(429, delMicro || 'Demasiadas solicitudes. Intenta de nuevo en un momento.');
   if (res.status === 409) {
-    throw new ApiError(
+    throw falla(
       409,
       contexto === 'vendor'
         ? 'Ya existe un proveedor con ese NIT o cédula en esta agencia.'
@@ -62,14 +75,16 @@ async function lanzarError(res: Response, contexto: 'extract' | 'bill' | 'vendor
     );
   }
   if (res.status === 400) {
-    if (contexto === 'extract' && delMicro) throw new ApiError(400, delMicro);
+    if (contexto === 'extract' && delMicro) throw falla(400, delMicro);
     if (contexto === 'bill' && /costCenterCode/i.test(delMicro)) {
-      throw new ApiError(400, 'El centro de costo no es válido para esta agencia.');
+      throw falla(400, 'El centro de costo no es válido para esta agencia.');
     }
-    throw new ApiError(400, 'Revisa los datos: hay campos incompletos o inválidos.');
+    // Con `campos` en español (el sobre de error), el formulario los reparte.
+    if (Array.isArray(body.campos) && body.campos.length > 0 && delMicro) throw falla(400, delMicro);
+    throw falla(400, 'Revisa los datos: hay campos incompletos o inválidos.');
   }
-  if (res.status === 503) throw new ApiError(503, 'El servicio no está disponible en este momento. Intenta más tarde.');
-  throw new ApiError(res.status, delMicro || `Error ${res.status}`);
+  if (res.status === 503) throw falla(503, 'El servicio no está disponible en este momento. Intenta más tarde.');
+  throw falla(res.status, delMicro || `Error ${res.status}`);
 }
 
 async function getJson<T>(path: string): Promise<T> {

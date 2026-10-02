@@ -7,6 +7,7 @@ import {
   parsearFechaDeExtracto,
   parsearValorCop,
 } from './extracto-bancario';
+import { MENSAJES_DEL_EXTRACTO } from './limites-del-extracto';
 
 describe('parsearValorCop — los formatos con los que llega la plata', () => {
   it.each([
@@ -118,6 +119,28 @@ describe('armarFilasDeExtracto', () => {
       { fila: 5, motivo: 'Valor ilegible.' },
       { fila: 6, motivo: 'Valor en cero.' },
       { fila: 7, motivo: 'Sin descripción ni referencia.' },
+    ]);
+  });
+
+  /*
+   * 🔴 02-10-2026 · espejo del tope del back (`movimientos_bancarios.valor_cop`
+   * es int4): una celda con ceros de más tumbaba el extracto ENTERO con un 500.
+   * Ahora esa línea se descarta al leer, con la misma frase del back, y el
+   * resto viaja. El tope exacto sí entra.
+   */
+  it('🔴 una línea que no cabe (±$2.000.000.000) se descarta con la frase del back', () => {
+    const r = armarFilasDeExtracto(
+      [
+        { Fecha: '03/09/2026', Detalle: 'PAGO PEREZ', Ref: '', Valor: '18.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TRASLADO', Ref: '', Valor: '-2.500.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TOPE', Ref: '', Valor: '2.000.000.000' },
+      ],
+      mapeo,
+    );
+    expect(r.filas.map((f) => f.valorCop)).toEqual([2_000_000_000]);
+    expect(r.descartadas).toEqual([
+      { fila: 2, motivo: MENSAJES_DEL_EXTRACTO.valorMaximo },
+      { fila: 3, motivo: MENSAJES_DEL_EXTRACTO.valorMinimo },
     ]);
   });
 

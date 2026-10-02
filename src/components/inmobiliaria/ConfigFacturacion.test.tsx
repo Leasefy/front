@@ -52,6 +52,7 @@ vi.mock('@/lib/hooks/useSubscription', () => ({
   useAgencyPlans: () => plansState.value,
 }))
 
+import { ApiError } from '@/lib/api/client'
 import { ConfigFacturacion } from './ConfigFacturacion'
 import type { AgencyBilling, BillingInvoice } from '@/lib/types/inmobiliaria'
 import type { AgencyPlan } from '@/lib/types/subscription'
@@ -346,5 +347,67 @@ describe('ConfigFacturacion — cancel at period end / pending change (T-0089)',
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
     expect(findButton('Cancelar plan')).toBeFalsy()
+  })
+})
+
+/*
+ * 02-10-2026 · Cancelar el plan y deshacer el cambio con la regla de oro:
+ * antes decían «No pudimos … Intenta de nuevo.» pasara lo que pasara. Un 5xx
+ * dice «de nuestro lado» con la referencia; un 4xx, lo que escribió el back;
+ * «conexión», sólo sin respuesta. Nada de cobros reales: el servicio es un doble.
+ */
+describe('ConfigFacturacion — los errores con la regla de oro (02-10)', () => {
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      referencia: 'ab12cd34',
+    })
+
+  it('🔴 deshacer con un 5xx: «de nuestro lado» con la referencia', async () => {
+    mockCancelPendingChange.mockRejectedValue(fallo500())
+    subState.value = makeSub({
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'starter',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    await act(async () => {
+      findButton('Deshacer')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const texto = mockToastError.mock.calls.at(-1)?.[0] as string
+    expect(texto).toContain('No pudimos deshacer el cambio de plan: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+  })
+
+  it('🔴 cancelar el plan con un 409: el motivo del back, no la frase fija', async () => {
+    mockSelectPlan.mockRejectedValue(new ApiError(409, 'Ya hay un cambio de plan programado.'))
+    subState.value = makeSub({ currentPlanId: 'pro' })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    await act(async () => {
+      findButton('Cancelar plan')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      findButton('Sí, cancelar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mockToastError.mock.calls.at(-1)?.[0]).toBe('Ya hay un cambio de plan programado.')
+  })
+
+  it('cancelar el plan sin respuesta: ahí sí habla de la conexión', async () => {
+    mockSelectPlan.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    subState.value = makeSub({ currentPlanId: 'pro' })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    await act(async () => {
+      findButton('Cancelar plan')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      findButton('Sí, cancelar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mockToastError.mock.calls.at(-1)?.[0]).toMatch(/conexi[oó]n/)
   })
 })

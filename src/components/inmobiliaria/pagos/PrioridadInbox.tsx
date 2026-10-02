@@ -16,6 +16,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Warning } from '@phosphor-icons/react'
 
 import {
@@ -61,7 +62,7 @@ export interface PrioridadInboxProps {
     item: WorkItem,
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   isLoading?: boolean
 }
 
@@ -89,7 +90,16 @@ function InboxRow({
     const res = await onAction(item, accionReal)
     setBusy(false)
     if (res.ok) toast.success(`${accionReal.label} · listo`)
-    else toast.error(`No se pudo completar: ${res.error ?? 'error'}`)
+    // 02-10-2026 · Por el traductor, no el código crudo del micro («403»,
+    // «not_configured»): un 4xx dice qué pasó, un 5xx que fue nuestro con la
+    // referencia, y sólo sin respuesta se habla de la conexión.
+    else
+      toast.error(
+        mensajeParaLaPersona(res.fallo ?? null, {
+          porDefecto: `No se pudo completar «${accionReal.label}». Prueba de nuevo en un momento.`,
+          accion: `completar «${accionReal.label}»`,
+        }),
+      )
   }
 
   const prioridadVariant =

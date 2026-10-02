@@ -37,6 +37,7 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { propietariosApi } from '@/lib/api/inmobiliaria.service'
 import type { Propietario } from '@/lib/types/inmobiliaria'
 import {
@@ -143,8 +144,13 @@ export function CajonDeLaCertificacion({
       )
       await onGenerada()
     } catch (e) {
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con
+      // la referencia; «conexión», sólo sin respuesta.
       toast.error(
-        e instanceof Error ? e.message : 'No se pudo generar la certificación.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo generar la certificación.',
+          accion: 'generar la certificación',
+        }),
       )
     } finally {
       setGenerando(false)

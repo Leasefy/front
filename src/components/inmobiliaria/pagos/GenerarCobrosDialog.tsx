@@ -42,6 +42,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { Banner } from '@leasefy/cadence'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   cobrosApi,
   type ConsignacionConContratoVencido,
@@ -49,6 +51,20 @@ import {
 } from '@/lib/api/inmobiliaria.service'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
+
+/**
+ * ¿El back RECHAZÓ la corrida (un 4xx que dice por qué)? (02-10-2026)
+ *
+ * `FalloDeCarga` está hecho para una LECTURA: para él un 400 o un 409 es
+ * inesperado y lo titula «problema nuestro». Generar es una ACCIÓN: un 409
+ * («ya hay una corrida en curso») o un 400 dicen qué pasó y hay que leerlo tal
+ * cual. Los 5xx, la red y las caídas siguen con `FalloDeCarga`, que sabe
+ * nombrar el servicio caído y dar la referencia.
+ */
+function esUnRechazo(error: unknown): boolean {
+  const { tipo } = leerFallo(error)
+  return tipo === 'datos' || tipo === 'conflicto' || tipo === 'rechazo' || tipo === 'noExiste'
+}
 
 export interface GenerarCobrosDialogProps {
   open: boolean
@@ -270,6 +286,10 @@ export function GenerarCobrosDialog({
 
         {omitidos ? (
           <OmitidosPorVencido omitidos={omitidos} />
+        ) : error && esUnRechazo(error) ? (
+          <Banner variant="danger" role="alert" data-testid="generar-rechazo">
+            {mensajeParaLaPersona(error, { accion: 'generar los cobros' })}
+          </Banner>
         ) : error ? (
           <FalloDeCarga
             error={error}

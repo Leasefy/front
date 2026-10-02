@@ -36,7 +36,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import {
   contabilidadApi,
   type Cierre,
@@ -93,6 +95,12 @@ export function CierreDePeriodo({
   const [escrito, setEscrito] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * El error que el back puso en `hasta` (un 400 con `campos`). Va bajo la
+   * fecha escrita en el diálogo, que es donde está la persona y es el mismo
+   * dato.
+   */
+  const [errorDeLaFecha, setErrorDeLaFecha] = useState<string | null>(null);
 
   const problema = useMemo(() => {
     if (!diaDe(hasta)) return 'Elige un día.';
@@ -105,6 +113,7 @@ export function CierreDePeriodo({
   const abrir = useCallback(() => {
     setEscrito('');
     setError(null);
+    setErrorDeLaFecha(null);
     setConfirmando(true);
   }, []);
 
@@ -117,6 +126,7 @@ export function CierreDePeriodo({
     if (escrito !== hasta) return;
     setEnviando(true);
     setError(null);
+    setErrorDeLaFecha(null);
     try {
       const r = await contabilidadApi.asientos.cerrar(hasta);
       toast.success(`Contabilidad cerrada hasta el ${diaLegible(r.hasta)}`, {
@@ -133,7 +143,15 @@ export function CierreDePeriodo({
       setHasta(finDelMesSiguiente(r.hasta));
       onCerrado?.(r);
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No se pudo cerrar el período.'));
+      // Un 400 con `campos` en `hasta` va bajo la fecha; el resto (un código
+      // de negocio, un 5xx, la red) al banner, con la regla de oro.
+      const reparto = repartirErroresDelServidor(e, { campos: ['hasta'] });
+      if (reparto.porCampo.hasta) setErrorDeLaFecha(reparto.porCampo.hasta);
+      if (reparto.delServidor.length === 0) {
+        setError(mensajeDeContabilidad(e, 'No se pudo cerrar el período.'));
+      } else if (reparto.sueltos.length > 0) {
+        setError(reparto.sueltos.join(' · '));
+      }
     } finally {
       setEnviando(false);
     }
@@ -236,6 +254,7 @@ export function CierreDePeriodo({
               onChange={(e) => setHasta(e.target.value)}
               disabled={cargando || enviando}
               aria-invalid={Boolean(problema) || undefined}
+              aria-describedby={problema && !cargando ? `${id}-hasta-error` : undefined}
               className="w-44 bg-surface font-mono tabular-nums"
               data-testid="cierre-hasta"
             />
@@ -252,11 +271,7 @@ export function CierreDePeriodo({
             Cerrar período…
           </Button>
         </div>
-        {problema && !cargando ? (
-          <p className="text-caption text-danger" role="alert">
-            {problema}
-          </p>
-        ) : null}
+        <ErrorDelCampo id={`${id}-hasta-error`} mensaje={!cargando ? problema : null} />
       </div>
 
       <Reapertura
@@ -285,13 +300,19 @@ export function CierreDePeriodo({
             <Input
               id={`${id}-escribir`}
               value={escrito}
-              onChange={(e) => setEscrito(e.target.value.trim())}
+              onChange={(e) => {
+                setErrorDeLaFecha(null);
+                setEscrito(e.target.value.trim());
+              }}
               placeholder="AAAA-MM-DD"
               autoComplete="off"
               disabled={enviando}
+              aria-invalid={Boolean(errorDeLaFecha) || undefined}
+              aria-describedby={errorDeLaFecha ? `${id}-escribir-error` : undefined}
               className="font-mono"
               data-testid="cierre-escribir"
             />
+            <ErrorDelCampo id={`${id}-escribir-error`} mensaje={errorDeLaFecha} />
             {error ? (
               <Banner variant="danger" role="alert">
                 {error}

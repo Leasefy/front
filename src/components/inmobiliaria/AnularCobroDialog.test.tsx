@@ -142,6 +142,57 @@ describe('<AnularCobroDialog>', () => {
   });
 });
 
+/*
+ * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 sobre el motivo va
+ * bajo el campo con el foco; un código que no conocemos ya no cae a la frase
+ * genérica sino al traductor (5xx = «de nuestro lado» + referencia, status 0 =
+ * conexión).
+ */
+describe('<AnularCobroDialog> los errores, cada uno en su lugar', () => {
+  const aviso = () => contenedor.querySelector('[data-testid="anular-cobro-error"]')?.textContent ?? '';
+
+  it('🔴 un 400 con `campos` en `motivo` va bajo el campo y le da el foco', async () => {
+    const frase = 'El motivo puede tener hasta 500 caracteres.';
+    api.anular.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'maximo', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await escribir('Se generó por error');
+    await confirmar();
+
+    expect(contenedor.querySelector('#anular-cobro-motivo-error')?.textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('anular-cobro-motivo');
+    expect(aviso()).toBe('');
+  });
+
+  it('🔴 un 5xx sin código propio dice «de nuestro lado» con la referencia', async () => {
+    api.anular.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'c0ffee42' }),
+    );
+    await montar();
+    await escribir('Se generó por error');
+    await confirmar();
+
+    expect(aviso()).toContain('No pudimos anular el cobro: algo falló de nuestro lado');
+    expect(aviso()).toContain('c0ffee42');
+  });
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    api.anular.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await escribir('Se generó por error');
+    await confirmar();
+
+    expect(aviso()).toMatch(/conexión/);
+    expect(aviso()).not.toContain('Failed to fetch');
+  });
+});
+
 describe('<CobroCard> anular y anulado (2026-09-16)', () => {
   it('ofrece «Anular cobro» con callback, y un cobro anulado muestra su motivo sin la acción', async () => {
     const { CobroCard } = await import('./CobroCard');

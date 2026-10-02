@@ -69,6 +69,12 @@ import type {
   RubroDelPresupuesto,
 } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  LARGO_MAXIMO_DEL_RUBRO,
+  problemaDelPresupuesto,
+} from '@/lib/finanzas/limites-de-finanzas';
 import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesActual } from '@/lib/recaudo/meses';
@@ -388,13 +394,23 @@ function DialogoDeCarga({
   const [rubro, setRubro] = useState('');
   const [valor, setValor] = useState('');
   const [guardando, setGuardando] = useState(false);
+  /** Lo que el back dijo de un campo (un 400 con `campos`). */
+  const [delServidor, setDelServidor] = useState<{ rubro?: string; valorCop?: string }>({});
 
   const elegido = rubros.find((r) => r.rubro === rubro);
+  // 🔁 El tope del back (±$2.000.000.000, puede ser negativo), con su frase.
+  const problemaDelValor = valor === '' ? null : problemaDelPresupuesto(Number(valor));
+  const errorDelValor = problemaDelValor ?? delServidor.valorCop;
 
   const guardar = useCallback(async () => {
     const valorCop = Number(valor);
     if (!rubro.trim() || !Number.isFinite(valorCop)) return;
+    if (problemaDelPresupuesto(valorCop)) {
+      document.getElementById('presupuesto-valor')?.focus();
+      return;
+    }
     setGuardando(true);
+    setDelServidor({});
     try {
       await finanzasApi.guardarPresupuesto({
         mes,
@@ -408,11 +424,25 @@ function DialogoDeCarga({
       await onGuardado();
     } catch (error) {
       const codigo = codigoSinMigrar(error);
-      toast.error(
-        codigo
-          ? 'Todavía no se puede cargar el presupuesto: esta función aún no está disponible. Nuestro equipo la está habilitando.'
-          : mensajeDelFallo(error, 'No se pudo cargar el presupuesto.'),
-      );
+      if (codigo) {
+        toast.error(
+          'Todavía no se puede cargar el presupuesto: esta función aún no está disponible. Nuestro equipo la está habilitando.',
+        );
+        return;
+      }
+      // Lo que es de un campo va bajo ese campo; lo demás, al toast con la
+      // regla de oro.
+      const reparto = repartirErroresDelServidor<'rubro' | 'valorCop'>(error, {
+        campos: ['rubro', 'valorCop'],
+        porDefecto: 'No se pudo cargar el presupuesto.',
+        accion: 'cargar el presupuesto',
+      });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) {
+        document.getElementById(primero === 'rubro' ? 'presupuesto-rubro' : 'presupuesto-valor')?.focus();
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
@@ -434,10 +464,17 @@ function DialogoDeCarga({
               id="presupuesto-rubro"
               list="rubros-sugeridos"
               value={rubro}
-              onChange={(e) => setRubro(e.target.value)}
+              maxLength={LARGO_MAXIMO_DEL_RUBRO}
+              onChange={(e) => {
+                setDelServidor((d) => ({ ...d, rubro: undefined }));
+                setRubro(e.target.value);
+              }}
               placeholder="comisiones"
+              aria-invalid={Boolean(delServidor.rubro) || undefined}
+              aria-describedby={delServidor.rubro ? 'presupuesto-rubro-error' : undefined}
               data-testid="presupuesto-rubro"
             />
+            <ErrorDelCampo id="presupuesto-rubro-error" mensaje={delServidor.rubro} />
             <datalist id="rubros-sugeridos">
               {rubros.map((r) => (
                 <option key={r.rubro} value={r.rubro}>
@@ -458,9 +495,15 @@ function DialogoDeCarga({
               type="number"
               inputMode="numeric"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
+              onChange={(e) => {
+                setDelServidor((d) => ({ ...d, valorCop: undefined }));
+                setValor(e.target.value);
+              }}
+              aria-invalid={Boolean(errorDelValor) || undefined}
+              aria-describedby={errorDelValor ? 'presupuesto-valor-error' : undefined}
               data-testid="presupuesto-valor"
             />
+            <ErrorDelCampo id="presupuesto-valor-error" mensaje={errorDelValor} />
           </div>
         </div>
         <DialogFooter>

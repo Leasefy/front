@@ -36,6 +36,24 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { CalendarioDelAnio } from '@/lib/api/tesoreria.types';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  errorDeLaFechaDelFestivo,
+  errorDelNombreDelFestivo,
+} from '@/lib/tesoreria/limites-de-tesoreria';
+
+/** Los dos campos de «Agregar un día», y el id de cada uno. */
+type CampoDelFestivo = 'fecha' | 'nombre';
+const ID_DEL_CAMPO: Record<CampoDelFestivo, string> = {
+  fecha: 'fecha-del-festivo',
+  nombre: 'nombre-del-festivo',
+};
+
+function enfocar(campo: CampoDelFestivo | undefined) {
+  if (campo) document.getElementById(ID_DEL_CAMPO[campo])?.focus();
+}
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -55,6 +73,7 @@ export function CalendarioDeFestivosPanel() {
   const [fecha, setFecha] = useState('');
   const [nombre, setNombre] = useState('');
   const [nacional, setNacional] = useState(false);
+  const [errores, setErrores] = useState<Partial<Record<CampoDelFestivo, string>>>({});
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -73,6 +92,18 @@ export function CalendarioDeFestivosPanel() {
   }, [cargar]);
 
   const agregar = async () => {
+    // 🔁 Espejo del tope del back: un día real, entre el 2000 y el 2100.
+    const delCliente: Partial<Record<CampoDelFestivo, string>> = {};
+    const eFecha = errorDeLaFechaDelFestivo(fecha);
+    const eNombre = errorDelNombreDelFestivo(nombre);
+    if (eFecha) delCliente.fecha = eFecha;
+    if (eNombre) delCliente.nombre = eNombre;
+    if (delCliente.fecha || delCliente.nombre) {
+      setErrores(delCliente);
+      enfocar(delCliente.fecha ? 'fecha' : 'nombre');
+      return;
+    }
+    setErrores({});
     setTrabajando(true);
     try {
       await tesoreriaApi.corregirCalendario({
@@ -86,7 +117,15 @@ export function CalendarioDeFestivosPanel() {
       setNombre('');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo guardar el día.');
+      // Un 400 por campo va debajo de su campo; lo demás, al aviso.
+      const reparto = repartirErroresDelServidor<CampoDelFestivo>(error, {
+        campos: ['fecha', 'nombre'],
+        porDefecto: 'No se pudo guardar el día.',
+        accion: 'agregar el día al calendario',
+      });
+      setErrores(reparto.porCampo);
+      enfocar(reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -104,7 +143,12 @@ export function CalendarioDeFestivosPanel() {
       toast.success(`${dia.fecha} deja de contar como festivo para esta inmobiliaria.`);
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo apagar el día.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo apagar el día.',
+          accion: 'marcar el día como hábil',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -117,7 +161,12 @@ export function CalendarioDeFestivosPanel() {
       toast.success('La corrección se borró: el día vuelve a lo que diga el cálculo.');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo borrar la corrección.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo borrar la corrección.',
+          accion: 'borrar la corrección',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -243,20 +292,32 @@ export function CalendarioDeFestivosPanel() {
                       id="fecha-del-festivo"
                       type="date"
                       value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      onChange={(e) => {
+                        setFecha(e.target.value);
+                        setErrores((previos) => ({ ...previos, fecha: undefined }));
+                      }}
+                      aria-invalid={errores.fecha ? true : undefined}
+                      aria-describedby={errores.fecha ? 'fecha-del-festivo-error' : undefined}
                       data-testid="fecha-del-festivo"
                     />
+                    <ErrorDelCampo id="fecha-del-festivo-error" mensaje={errores.fecha} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="nombre-del-festivo">Nombre</Label>
                     <Input
                       id="nombre-del-festivo"
                       value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
+                      onChange={(e) => {
+                        setNombre(e.target.value);
+                        setErrores((previos) => ({ ...previos, nombre: undefined }));
+                      }}
                       placeholder="Día de la familia"
                       maxLength={120}
+                      aria-invalid={errores.nombre ? true : undefined}
+                      aria-describedby={errores.nombre ? 'nombre-del-festivo-error' : undefined}
                       data-testid="nombre-del-festivo"
                     />
+                    <ErrorDelCampo id="nombre-del-festivo-error" mensaje={errores.nombre} />
                   </div>
                   <div className="flex items-end">
                     <Button

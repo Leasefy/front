@@ -81,6 +81,9 @@ import {
   type EstadoDelMapeo,
 } from '@/components/contabilidad/mapeo/MapeoContable';
 
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ApiError } from '@/lib/api/client';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeDeContabilidad } from './contabilidad-errores';
 import { ImportarCuentas } from './ImportarCuentas';
 
@@ -88,6 +91,29 @@ export const RUTA_DEL_PASO_5 = '/panel/inmobiliaria/migracion/contables';
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const SIN_PADRE = '__raiz__';
+
+/** Los campos del formulario de una cuenta que pueden llevar un error propio. */
+type CampoDeLaCuenta = 'codigo' | 'nombre' | 'naturaleza' | 'padreId';
+
+/** El id del control de cada campo (para enfocarlo y para su error). */
+const ID_DEL_CAMPO_DE_LA_CUENTA: Record<CampoDeLaCuenta, string> = {
+  codigo: 'puc-codigo',
+  nombre: 'puc-nombre',
+  naturaleza: 'puc-naturaleza',
+  padreId: 'puc-padre',
+};
+
+/**
+ * Los códigos de `puc.service.ts` que son de UN campo: van bajo ese campo,
+ * con la frase de `mensajeDeContabilidad`, en vez de un aviso suelto abajo.
+ */
+const CAMPO_DEL_CODIGO_DE_LA_CUENTA: Record<string, CampoDeLaCuenta> = {
+  CODIGO_FUERA_DEL_ARBOL: 'codigo',
+  CODIGO_DUPLICADO: 'codigo',
+  PADRE_DESCONOCIDO: 'padreId',
+  PADRE_CON_MOVIMIENTOS: 'padreId',
+  NATURALEZA_CON_MOVIMIENTOS: 'naturaleza',
+};
 
 // ── Helpers puros ───────────────────────────────────────────────────────────
 
@@ -901,6 +927,10 @@ function FormularioDeCuenta({
   const frasesNoDeducible = frasesDeLoNoDeducible(soportaLoNoDeducible);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Lo que el back dijo de un campo (un 400 con `campos`, o un código de un campo). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaCuenta, string>>>({});
+  const olvidar = (campo: CampoDeLaCuenta) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
 
   const ordenadas = useMemo(
     () => [...cuentas].sort((a, b) => a.codigo.localeCompare(b.codigo)),
@@ -920,6 +950,7 @@ function FormularioDeCuenta({
   const guardar = async () => {
     setGuardando(true);
     setError(null);
+    setDelServidor({});
     try {
       if (editando) {
         await contabilidadApi.puc.actualizar(
@@ -940,10 +971,37 @@ function FormularioDeCuenta({
       }
       await onGuardado();
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.'));
+      /*
+       * Lo que es de un campo va bajo ese campo (un 400 con `campos`, o un
+       * código como `CODIGO_DUPLICADO`); el resto, al aviso de abajo con la
+       * regla de oro. Al editar no se ven ni el código ni el padre: lo de esos
+       * dos va al aviso.
+       */
+      const visibles: CampoDeLaCuenta[] = editando
+        ? ['nombre', 'naturaleza']
+        : ['codigo', 'nombre', 'naturaleza', 'padreId'];
+      const reparto = repartirErroresDelServidor<CampoDeLaCuenta>(e, { campos: visibles });
+      const codigoDelError = e instanceof ApiError ? e.code : undefined;
+      const campoDelCodigo = codigoDelError ? CAMPO_DEL_CODIGO_DE_LA_CUENTA[codigoDelError] : undefined;
+      let primero: CampoDeLaCuenta | undefined;
+      if (reparto.delServidor.length > 0) {
+        setDelServidor(reparto.porCampo);
+        primero = reparto.orden[0];
+        if (reparto.sueltos.length > 0) setError(reparto.sueltos.join(' · '));
+      } else if (campoDelCodigo && visibles.includes(campoDelCodigo)) {
+        setDelServidor({ [campoDelCodigo]: mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.') });
+        primero = campoDelCodigo;
+      } else {
+        setError(mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.'));
+      }
+      if (primero) document.getElementById(ID_DEL_CAMPO_DE_LA_CUENTA[primero])?.focus();
       setGuardando(false);
     }
   };
+
+  const errorDelCodigo = fueraDelArbol
+    ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
+    : delServidor.codigo;
 
   return (
     <section
@@ -988,20 +1046,28 @@ function FormularioDeCuenta({
             inputMode="numeric"
             maxLength={LARGO_MAXIMO_DE_CODIGO}
             disabled={Boolean(editando)}
-            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
-            aria-invalid={codigo.length > 0 && (!codigoValido || fueraDelArbol)}
-            aria-describedby="puc-codigo-ayuda"
+            onChange={(e) => {
+              olvidar('codigo');
+              setCodigo(e.target.value.replace(/\D/g, ''));
+            }}
+            aria-invalid={
+              (codigo.length > 0 && (!codigoValido || fueraDelArbol)) || Boolean(delServidor.codigo) || undefined
+            }
+            aria-describedby={errorDelCodigo ? 'puc-codigo-error' : undefined}
             data-testid="puc-codigo"
           />
-          <p id="puc-codigo-ayuda" className="text-caption text-fg-subtle">
-            {fueraDelArbol
-              ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
-              : sugerido
+          <ErrorDelCampo
+            id="puc-codigo-error"
+            className="mt-0"
+            mensaje={errorDelCodigo}
+            pista={
+              sugerido
                 ? `${nombreDeNivel(codigo)} · va a colgar de ${sugerido.codigo} ${sugerido.nombre}.`
                 : codigo
                   ? `${nombreDeNivel(codigo)}.`
-                  : 'Sólo dígitos.'}
-          </p>
+                  : 'Sólo dígitos.'
+            }
+          />
         </div>
 
         <div className="space-y-1">
@@ -1012,19 +1078,40 @@ function FormularioDeCuenta({
             id="puc-nombre"
             value={nombre}
             maxLength={LARGO_MAXIMO_DE_NOMBRE}
-            onChange={(e) => setNombre(e.target.value)}
-            aria-invalid={nombre.length > 0 && !nombreValido}
+            onChange={(e) => {
+              olvidar('nombre');
+              setNombre(e.target.value);
+            }}
+            aria-invalid={(nombre.length > 0 && !nombreValido) || Boolean(delServidor.nombre) || undefined}
+            aria-describedby={delServidor.nombre ? 'puc-nombre-error' : undefined}
             data-testid="puc-nombre"
           />
-          <p className="text-caption text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
+          <ErrorDelCampo
+            id="puc-nombre-error"
+            className="mt-0"
+            mensaje={delServidor.nombre}
+            pista="Como lo llama tu contador. Mínimo 3 letras."
+          />
         </div>
 
         <div className="space-y-1">
           <label id="puc-naturaleza-etiqueta" className="text-sm font-medium text-fg">
             Naturaleza
           </label>
-          <Select value={naturaleza} onValueChange={(v) => setNaturaleza(v as NaturalezaContable)}>
-            <SelectTrigger aria-labelledby="puc-naturaleza-etiqueta" data-testid="puc-naturaleza">
+          <Select
+            value={naturaleza}
+            onValueChange={(v) => {
+              olvidar('naturaleza');
+              setNaturaleza(v as NaturalezaContable);
+            }}
+          >
+            <SelectTrigger
+              id="puc-naturaleza"
+              aria-labelledby="puc-naturaleza-etiqueta"
+              aria-invalid={Boolean(delServidor.naturaleza) || undefined}
+              aria-describedby={delServidor.naturaleza ? 'puc-naturaleza-error' : undefined}
+              data-testid="puc-naturaleza"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1032,6 +1119,7 @@ function FormularioDeCuenta({
               <SelectItem value="CREDITO">Crédito (pasivos, patrimonio, ingresos)</SelectItem>
             </SelectContent>
           </Select>
+          <ErrorDelCampo id="puc-naturaleza-error" className="mt-0" mensaje={delServidor.naturaleza} />
         </div>
 
         {!editando ? (
@@ -1039,8 +1127,20 @@ function FormularioDeCuenta({
             <label id="puc-padre-etiqueta" className="text-sm font-medium text-fg">
               Cuenta padre
             </label>
-            <Select value={padreId} onValueChange={setPadreId}>
-              <SelectTrigger aria-labelledby="puc-padre-etiqueta" data-testid="puc-padre">
+            <Select
+              value={padreId}
+              onValueChange={(v) => {
+                olvidar('padreId');
+                setPadreId(v);
+              }}
+            >
+              <SelectTrigger
+                id="puc-padre"
+                aria-labelledby="puc-padre-etiqueta"
+                aria-invalid={Boolean(delServidor.padreId) || undefined}
+                aria-describedby={delServidor.padreId ? 'puc-padre-error' : undefined}
+                data-testid="puc-padre"
+              >
                 <SelectValue placeholder="Automática por el código" />
               </SelectTrigger>
               <SelectContent>
@@ -1052,9 +1152,12 @@ function FormularioDeCuenta({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-caption text-fg-subtle">
-              Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas.
-            </p>
+            <ErrorDelCampo
+              id="puc-padre-error"
+              className="mt-0"
+              mensaje={delServidor.padreId}
+              pista="Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas."
+            />
           </div>
         ) : null}
       </div>

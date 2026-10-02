@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { MovimientoBancario, ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types';
+import { ApiError } from '@/lib/api/client';
 
 const { api, toastMock, permisos } = vi.hoisted(() => ({
   api: {
@@ -403,5 +404,95 @@ describe('ExtractoBancario — las otras pestañas', () => {
     api.listar.mockRejectedValue(new Error('Se cayó la red.'));
     await montar();
     expect($('[data-testid="fallo-de-carga"]').textContent).toContain('Se cayó la red.');
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026). La pantalla decía el
+ * `error.message` crudo: un 5xx salía como «Error interno del servidor» sin
+ * referencia, y nada distinguía la red caída de un dato mal puesto. Ahora:
+ * un 400 dice lo que mandó el back (el del motivo, debajo del motivo y con el
+ * foco), un 5xx dice que fue nuestro con la referencia, y sólo la falta de
+ * respuesta habla de la conexión.
+ */
+describe('ExtractoBancario — los errores en palabras', () => {
+  const REFERENCIA = 'ab12cd34';
+  const cincoXX = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: REFERENCIA,
+    });
+
+  it('un 400 al conciliar dice lo que mandó el back', async () => {
+    api.conciliar.mockRejectedValue(
+      new ApiError(400, 'El movimiento ($ 1.800.000) supera lo que falta por pagar de ese cobro.', 'EXCEDE_EL_SALDO', {
+        statusCode: 400,
+        code: 'EXCEDE_EL_SALDO',
+        message: 'El movimiento ($ 1.800.000) supera lo que falta por pagar de ese cobro.',
+      }),
+    );
+    await montar();
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'El movimiento ($ 1.800.000) supera lo que falta por pagar de ese cobro.',
+    );
+  });
+
+  it('🔴 un 5xx al conciliar dice «de nuestro lado» con la referencia, no la conexión', async () => {
+    api.conciliar.mockRejectedValue(cincoXX());
+    await montar();
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
+    const dicho = String(toastMock.error.mock.calls[0]![0]);
+    expect(dicho).toContain('No pudimos conciliar el movimiento: algo falló de nuestro lado');
+    expect(dicho).toContain(REFERENCIA);
+    expect(dicho).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    api.conciliar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
+    expect(String(toastMock.error.mock.calls[0]![0])).toMatch(/conexión/);
+  });
+
+  it('🔴 un 400 del motivo al ignorar va DEBAJO del motivo, con el foco, y no al aviso', async () => {
+    const frase = 'El motivo debe tener al menos 5 caracteres.';
+    api.ignorar.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'longitud_minima', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await clic(botonConTexto('Ignorar', $('[data-testid="movimiento-m-1"]')));
+    await act(async () => {
+      escribir($('#motivo-ignorar') as HTMLTextAreaElement, 'Nómina     ');
+    });
+    await esperar();
+    await clic($('[data-testid="confirmar-ignorar"]'));
+
+    expect($('#motivo-ignorar-error').textContent).toBe(frase);
+    expect($('#motivo-ignorar').getAttribute('aria-describedby')).toBe('motivo-ignorar-error');
+    expect(document.activeElement?.id).toBe('motivo-ignorar');
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('un 5xx al ignorar va al aviso, con la referencia', async () => {
+    api.ignorar.mockRejectedValue(cincoXX());
+    await montar();
+    await clic(botonConTexto('Ignorar', $('[data-testid="movimiento-m-1"]')));
+    await act(async () => {
+      escribir($('#motivo-ignorar') as HTMLTextAreaElement, 'Es la nómina de la oficina.');
+    });
+    await esperar();
+    await clic($('[data-testid="confirmar-ignorar"]'));
+    const dicho = String(toastMock.error.mock.calls[0]![0]);
+    expect(dicho).toContain('de nuestro lado');
+    expect(dicho).toContain(REFERENCIA);
+    expect(document.querySelector('#motivo-ignorar-error')).toBeNull();
   });
 });

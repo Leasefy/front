@@ -616,6 +616,51 @@ describe('D7 — el motivo del back cuando no liquida', () => {
   });
 });
 
+describe('02-10 — confirmar con la regla de oro', () => {
+  async function confirmarCon(error: unknown) {
+    preview.mockResolvedValue(previaCon([MARCELA]));
+    generate.mockRejectedValue(error);
+    await montar();
+    await clic(q('confirmar')!);
+    const [titulo, opciones] = toastError.mock.calls[0] as [string, { description?: string }];
+    return { titulo, descripcion: opciones?.description ?? '' };
+  }
+
+  it('🔴 un 5xx: el toast dice «de nuestro lado» con la referencia, no se queda mudo', async () => {
+    const { titulo, descripcion } = await confirmarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    expect(titulo).toBe('No se generaron las dispersiones');
+    expect(descripcion).toContain('No pudimos generar las dispersiones: algo falló de nuestro lado');
+    expect(descripcion).toContain('ab12cd34');
+    expect(descripcion).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 sin respuesta: ahí sí habla de la conexión', async () => {
+    const { descripcion } = await confirmarCon(new ApiError(0, 'Failed to fetch'));
+    expect(descripcion).toMatch(/conexi[oó]n/);
+  });
+
+  it('un 400 con campos (la selección se pasó del tope) dice el mensaje del back', async () => {
+    const mensaje = 'Puedes mandar hasta 10.000 propietarios a la vez.';
+    const { descripcion } = await confirmarCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'propietarioIds', regla: 'lista_maxima', mensaje }],
+      }),
+    );
+    expect(descripcion).toBe(mensaje);
+    expect(q('asistente-motivo')?.textContent).toContain(mensaje);
+  });
+});
+
 describe('un mes sin nada que girar dice la razón que contó el back', () => {
   it('agosto con sus cuotas del sistema anterior: lo dice, y ni una palabra de cobros pagados', async () => {
     preview.mockResolvedValue(

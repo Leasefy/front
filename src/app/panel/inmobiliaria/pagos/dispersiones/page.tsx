@@ -79,8 +79,9 @@ import {
   esAprobadorYEjecutor,
   esAprobarPorLote,
   loteQueTieneLaDispersion,
-  motivoLegible,
+  motivoDeUnaAccion,
 } from '@/lib/api/dispersiones-errores';
+import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { SegmentedControl } from '@leasefy/cadence';
@@ -98,15 +99,13 @@ function getCurrentMonth(): string {
 
 /**
  * Por qué falló UNA acción (aprobar, girar), en una frase que se puede leer.
- * Un 4xx trae su motivo escrito por el back; la red y el servidor, no.
+ * Un 4xx trae su motivo escrito por el back; un 5xx dice «de nuestro lado» con
+ * la referencia, y «conexión» sólo sale si no hubo respuesta (el traductor,
+ * `motivoDeUnaAccion`). Antes cualquier fallo que no fuera un 4xx o un status
+ * 0 decía lo mismo, sin referencia para soporte.
  */
-function motivoDeLaAccion(error: unknown): string {
-  const motivo = motivoLegible(error);
-  if (motivo) return motivo;
-  if (error instanceof ApiError && error.status === 0) {
-    return 'No llegó al servidor: revisa tu conexión y vuelve a intentarlo.';
-  }
-  return 'Falló de nuestro lado; vuelve a intentarlo en un momento.';
+function motivoDeLaAccion(error: unknown, accion: string): string {
+  return motivoDeUnaAccion(error, accion);
 }
 
 /**
@@ -444,7 +443,7 @@ function DispersionesContent() {
       }
       toast.error('No se pudo aprobar la dispersión', {
         id,
-        description: motivoDeLaAccion(error),
+        description: motivoDeLaAccion(error, 'aprobar la dispersión'),
       });
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -495,6 +494,16 @@ function DispersionesContent() {
 
       setIsDetailOpen(false);
     } catch (error) {
+      /*
+       * Un 400 con `campos` (la referencia de más de 100 caracteres, la cuenta
+       * de origen) es del FORMULARIO del cajón: se le devuelve para que lo
+       * ponga debajo de su campo, con el foco ahí, y no en un toast que se va
+       * solo. Lo que no tiene campo lo dice el cajón en un toast.
+       */
+      if (traeErroresPorCampo(error)) {
+        toast.dismiss(id);
+        throw error;
+      }
       await refetchDispersiones();
       if (esAprobarPorLote(error)) {
         avisarQueEsPorLote(error, id);
@@ -509,7 +518,7 @@ function DispersionesContent() {
         esAprobadorYEjecutor(error)
           ? 'El giro lo anota otra persona'
           : 'No se pudo guardar la referencia del giro',
-        { id, description: motivoDeLaAccion(error) },
+        { id, description: motivoDeLaAccion(error, 'guardar la referencia del giro') },
       );
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -562,7 +571,13 @@ function DispersionesContent() {
     const resultados = await Promise.allSettled(lote.map((d) => dispersionesApi.approve(d.id)));
     const errores = resultados.flatMap((r, i) =>
       r.status === 'rejected'
-        ? [{ id: lote[i].id, nombre: lote[i].propietarioName, motivo: motivoDeLaAccion(r.reason) }]
+        ? [
+            {
+              id: lote[i].id,
+              nombre: lote[i].propietarioName,
+              motivo: motivoDeLaAccion(r.reason, 'aprobar la dispersión'),
+            },
+          ]
         : [],
     );
     const aprobadas = lote.length - errores.length;
@@ -611,7 +626,7 @@ function DispersionesContent() {
       });
     } catch (error) {
       toast.error('No se pudo descargar el extracto', {
-        description: motivoDeLaAccion(error),
+        description: motivoDeLaAccion(error, 'descargar el extracto'),
       });
     }
   }, [t]);

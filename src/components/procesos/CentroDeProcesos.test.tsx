@@ -68,6 +68,7 @@ vi.mock('@/lib/api/procesos.service', () => ({
 }))
 
 import { procesosApi, anunciarProceso } from '@/lib/api/procesos.service'
+import { ApiError } from '@/lib/api/client'
 import { BotonDelCentroDeProcesos, resumenDelCentro } from './BotonDelCentroDeProcesos'
 import { FilaDeProceso } from './FilaDeProceso'
 import { HistorialDeProcesos, fraseDelHistorial } from './HistorialDeProcesos'
@@ -378,6 +379,70 @@ describe('<FilaDeProceso>', () => {
     })
     expect(procesosApi.cancelar).toHaveBeenCalledWith('p-1')
     expect(onCambio).toHaveBeenCalled()
+  })
+})
+
+describe('<FilaDeProceso> — los errores con la regla de oro (02-10)', () => {
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    })
+
+  it('🔴 relanzar con un 5xx: «de nuestro lado» con la referencia, no el texto crudo', async () => {
+    reprocesarMock.mockRejectedValue(fallo500())
+    await montar(
+      <ul>
+        <FilaDeProceso proceso={FALLIDO} ahora={AHORA} />
+      </ul>,
+    )
+    await act(async () => {
+      ;(q('reintentar-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = toastMock.error.mock.calls[0]?.[0] as string
+    expect(texto).toContain('No pudimos volver a lanzar el proceso: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toBe('Error interno del servidor')
+  })
+
+  it('🔴 detener con un 5xx: lo mismo, con la referencia', async () => {
+    vi.mocked(procesosApi.cancelar).mockRejectedValue(fallo500())
+    await montar(
+      <ul>
+        <FilaDeProceso proceso={proceso({ sePuedeCancelar: true })} ahora={AHORA} />
+      </ul>,
+    )
+    await act(async () => {
+      ;(q('cancelar-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = toastMock.error.mock.calls[0]?.[0] as string
+    expect(texto).toContain('No pudimos detener el proceso: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+  })
+
+  it('detener con un 409 dice lo que escribió el back; sin respuesta, la conexión', async () => {
+    vi.mocked(procesosApi.cancelar).mockRejectedValueOnce(new ApiError(409, 'Ese proceso ya terminó.'))
+    await montar(
+      <ul>
+        <FilaDeProceso proceso={proceso({ sePuedeCancelar: true })} ahora={AHORA} />
+      </ul>,
+    )
+    await act(async () => {
+      ;(q('cancelar-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(toastMock.error).toHaveBeenLastCalledWith('Ese proceso ya terminó.')
+
+    vi.mocked(procesosApi.cancelar).mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
+    await act(async () => {
+      ;(q('cancelar-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(toastMock.error.mock.calls.at(-1)?.[0]).toMatch(/conexi[oó]n/)
   })
 })
 

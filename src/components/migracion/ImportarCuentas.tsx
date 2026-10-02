@@ -69,6 +69,7 @@ import {
 } from "@/lib/migracion/columnas-de-cuenta";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
@@ -173,10 +174,10 @@ export function ImportarCuentas({
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+      // El archivo se lee en el navegador: su error es un texto propio (o un
+      // `TypeError` que no es para nadie, y entonces va la frase de respaldo).
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "No pudimos leer el archivo. ¿Es Excel o CSV?",
+        mensajeParaLaPersona(e, { porDefecto: "No pudimos leer el archivo. ¿Es Excel o CSV?" }),
       );
     } finally {
       setLeyendo(false);

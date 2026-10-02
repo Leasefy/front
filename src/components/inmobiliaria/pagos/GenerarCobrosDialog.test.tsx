@@ -29,6 +29,7 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   },
 }))
 
+import { ApiError } from '@/lib/api/client'
 import { GenerarCobrosDialog, ordenarVencidos } from './GenerarCobrosDialog'
 
 // El diálogo del DS usa un portal: el contenido NO cuelga del container.
@@ -129,6 +130,51 @@ describe('GenerarCobrosDialog', () => {
     // La variante sigue al estado: el medallón y el título dicen que falló.
     expect(dialogo()?.getAttribute('data-variant')).toBe('error')
     expect(dialogo()?.textContent).toContain('inmobiliaria.ai.pagos_home.resumen.generar.errorTitulo')
+  })
+})
+
+/*
+ * 🔴 Tanda 2 del sistema de errores (02-10-2026): el fallo de la corrida sigue
+ * la regla de oro (por `FalloDeCarga` → `clasificarFallo`): un 5xx dice que fue
+ * nuestro con la referencia, un 4xx dice lo que mandó el back, y sólo sin
+ * respuesta se habla de la conexión.
+ */
+describe('<GenerarCobrosDialog> el fallo de la corrida, con la regla de oro', () => {
+  async function fallaCon(error: unknown) {
+    generate.mockRejectedValue(error)
+    montar()
+    await act(async () => {
+      porTestId('generar-confirmar')!.click()
+    })
+    const fallo =
+      document.body.querySelector('[data-testid="fallo-de-carga"]') ??
+      document.body.querySelector('[data-testid="generar-rechazo"]')
+    // Lo que se VE: el detalle técnico es `sr-only` + `aria-hidden` (es para soporte).
+    const copia = fallo?.cloneNode(true) as HTMLElement | undefined
+    copia?.querySelector('[data-testid="fallo-detalle-tecnico"]')?.remove()
+    return copia?.textContent ?? ''
+  }
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    const texto = await fallaCon(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    )
+    expect(texto).toMatch(/nuestro/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexión/)
+  })
+
+  it('un 409 dice lo que mandó el back', async () => {
+    const texto = await fallaCon(
+      new ApiError(409, 'Ya hay una corrida de octubre en curso: espera a que termine.', 'CORRIDA_EN_CURSO'),
+    )
+    expect(texto).toContain('Ya hay una corrida de octubre en curso')
+  })
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    const texto = await fallaCon(new ApiError(0, 'Failed to fetch'))
+    expect(texto).toMatch(/conexión|internet|Leasefy/)
+    expect(texto).not.toContain('Failed to fetch')
   })
 })
 

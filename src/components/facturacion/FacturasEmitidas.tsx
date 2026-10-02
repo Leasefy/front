@@ -23,6 +23,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Prohibit, Receipt, SealWarning } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -93,6 +95,16 @@ export function FacturasEmitidas({ mes, vista }: Props) {
   const [concepto, setConcepto] = useState<ConceptoDeNotaCredito>('ANULACION')
   const [motivo, setMotivo] = useState('')
   const [anulando, setAnulando] = useState(false)
+  /** Lo que el back dijo del concepto o del motivo (02-10-2026): bajo su campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<'concepto' | 'motivo', string>>>({})
+  // El foco va al primer campo rechazado cuando el diálogo vuelve a estar
+  // habilitado (mientras viaja la orden, los campos están apagados).
+  const [enfocar, setEnfocar] = useState<string | null>(null)
+  useEffect(() => {
+    if (anulando || !enfocar) return
+    document.getElementById(enfocar)?.focus()
+    setEnfocar(null)
+  }, [enfocar, anulando])
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -127,10 +139,19 @@ export function FacturasEmitidas({ mes, vista }: Props) {
       await cargar()
     } catch (e) {
       // El back manda el porqué con su `code`; mostrarlo es la diferencia
-      // entre «no se pudo» y saber qué hacer.
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudo emitir la nota crédito.',
-      )
+      // entre «no se pudo» y saber qué hacer. Con la regla de oro
+      // (02-10-2026): lo que es del concepto o del motivo va debajo de su
+      // campo; lo demás al toast (un 5xx dice «de nuestro lado» con la
+      // referencia; «conexión», sólo sin respuesta).
+      const { porCampo, sueltos } = repartirErroresDelServidor<'concepto' | 'motivo'>(e, {
+        campos: ['concepto', 'motivo'],
+        porDefecto: 'No se pudo emitir la nota crédito.',
+        accion: 'emitir la nota crédito',
+      })
+      setDelServidor(porCampo)
+      if (porCampo.concepto) setEnfocar('nc-concepto')
+      else if (porCampo.motivo) setEnfocar('nc-motivo')
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
     } finally {
       setAnulando(false)
     }
@@ -256,6 +277,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                           setConcepto('ANULACION')
                           setMotivo('')
                           setPorAnular(f)
+                          setDelServidor({})
                         }}
                         data-testid={`anular-${f.numero}`}
                       >
@@ -347,10 +369,13 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                 id="nc-concepto"
                 className="h-9 w-full rounded-md border border-border bg-surface px-3 text-sm"
                 value={concepto}
-                onChange={(e) =>
+                onChange={(e) => {
                   setConcepto(e.target.value as ConceptoDeNotaCredito)
-                }
+                  setDelServidor((d) => ({ ...d, concepto: undefined }))
+                }}
                 disabled={anulando}
+                aria-invalid={delServidor.concepto ? true : undefined}
+                aria-describedby={delServidor.concepto ? 'nc-concepto-error' : undefined}
               >
                 {CONCEPTOS.map((c) => (
                   <option key={c} value={c}>
@@ -358,6 +383,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   </option>
                 ))}
               </select>
+              <ErrorDelCampo id="nc-concepto-error" mensaje={delServidor.concepto} />
             </div>
 
             <div className="space-y-1.5">
@@ -365,15 +391,21 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               <Textarea
                 id="nc-motivo"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value)
+                  setDelServidor((d) => ({ ...d, motivo: undefined }))
+                }}
                 placeholder="El contrato se terminó el 3 y el mes se facturó completo."
                 maxLength={500}
                 disabled={anulando}
+                aria-invalid={delServidor.motivo ? true : undefined}
+                aria-describedby={delServidor.motivo ? 'nc-motivo-error' : undefined}
               />
               <p className="text-caption text-fg-muted">
                 Queda en la nota crédito: la leen tu contador y la DIAN. Al menos{' '}
                 {MOTIVO_MINIMO} caracteres.
               </p>
+              <ErrorDelCampo id="nc-motivo-error" mensaje={delServidor.motivo} />
             </div>
           </div>
 

@@ -50,6 +50,7 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
 }));
 
 import { CastigoDeCartera } from './CastigoDeCartera';
+import { ApiError } from '@/lib/api/client';
 import { AuthContext } from '@/lib/auth/auth-context';
 import { contratosConCartera } from './ProponerCastigo';
 import type { CarteraItem } from '@/lib/types/inmobiliaria';
@@ -436,5 +437,68 @@ describe('contratosConCartera', () => {
   it('sin inquilino lo dice, no deja la fila en blanco', () => {
     const r = contratosConCartera([item({ tenantName: null })]);
     expect(r[0]!.inquilino).toBe('Sin inquilino');
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026). El castigo pintaba el
+ * `error.message` crudo como descripción, y la propuesta se tragaba un fallo
+ * al leer la cartera («No hay cartera», que nadie podía afirmar). Ahora: un
+ * 5xx dice «de nuestro lado» con la referencia, un 400 del motivo va debajo
+ * del motivo con el foco, y la cartera que no se leyó se dice.
+ */
+describe('el castigo — los errores en palabras', () => {
+  const cincoXX = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  it('🔴 firmar con un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.firmar.mockRejectedValue(cincoXX());
+    await montar();
+    await clic($('[data-testid="firmar-castigo"]'));
+    expect(toastMock.error.mock.calls[0]![0]).toBe('No se pudo firmar');
+    const descripcion = String(toastMock.error.mock.calls[0]![1]?.description);
+    expect(descripcion).toContain('No pudimos firmar el castigo: algo falló de nuestro lado');
+    expect(descripcion).toContain('ab12cd34');
+  });
+
+  it('un 400 del motivo del rechazo va debajo del motivo, con el foco', async () => {
+    const frase = 'El motivo no puede tener más de 500 caracteres.';
+    api.rechazar.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await clic($('[data-testid="rechazar-castigo"]'));
+    const area = $('#motivo-del-castigo-texto') as HTMLTextAreaElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+      setter.call(area, 'Tiene codeudor: todavía se le puede cobrar.');
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clic($('[data-testid="confirmar-motivo"]'));
+
+    expect($('#motivo-del-castigo-texto-error').textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('motivo-del-castigo-texto');
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 si la cartera no se pudo leer, la propuesta lo DICE (no «no hay cartera»)', async () => {
+    permisos.isAdmin = true;
+    reportes.getCartera.mockRejectedValue(cincoXX());
+    await montar();
+    await clic($('[data-testid="abrir-proponer-castigo"]'));
+    const aviso = $('[data-testid="cartera-sin-leer"]').textContent ?? '';
+    expect(aviso).toContain('No pudimos leer la cartera');
+    expect(aviso).toContain('ab12cd34');
+    expect(document.body.textContent).not.toContain('No hay cartera: no hay nada que castigar');
   });
 });

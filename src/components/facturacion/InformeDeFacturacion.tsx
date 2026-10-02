@@ -24,15 +24,23 @@ import { mesLegible } from '@/lib/api/facturacion-por-mes.service'
 import { cn } from '@/lib/utils'
 import { quedaronPendientes, type ResultadoDeLaCorrida } from './facturasPorTandas'
 import { motivoParaNoDescargarLote, useDescargarFacturas, vaPorElCentro } from './useDescargarFacturas'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const numero = (n: number) => n.toLocaleString('es-CO')
 const facturas = (n: number) => `${numero(n)} ${n === 1 ? 'factura' : 'facturas'}`
 
-/** El mensaje del back si lo hay (vienen en castellano), o uno honesto. */
+/**
+ * El mensaje del back si lo hay (vienen en castellano), o uno honesto.
+ *
+ * Con la regla de oro (02-10-2026): un 4xx dice lo que escribió el back; un
+ * 5xx, que falló DE NUESTRO LADO, con la referencia de soporte (antes salía
+ * «Error interno del servidor» pelado); «conexión», sólo sin respuesta.
+ */
 export function mensajeDelFalloDeEmision(error: unknown): string {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'No se pudieron emitir las facturas.'
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudieron emitir las facturas.',
+    accion: 'emitir las facturas',
+  })
 }
 
 export function InformeDeFacturacion({

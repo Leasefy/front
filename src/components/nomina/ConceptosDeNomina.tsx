@@ -41,7 +41,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
 import type { ClaseDeConcepto, Conceptos } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
 
@@ -70,7 +70,7 @@ export function ConceptosDeNominaPanel() {
       );
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudieron sembrar los conceptos.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudieron sembrar los conceptos.', accion: 'sembrar los conceptos' }));
     } finally {
       setSembrando(false);
     }
@@ -86,7 +86,7 @@ export function ConceptosDeNominaPanel() {
       toast.success('Cuenta guardada.');
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo guardar la cuenta.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo guardar la cuenta.', accion: 'guardar la cuenta' }));
     }
   };
 

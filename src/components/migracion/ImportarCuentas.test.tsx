@@ -290,3 +290,61 @@ describe('aviso antes de cerrar la pestaña', () => {
   });
 });
 
+
+/*
+ * Sistema de errores (02-10-2026): la regla de oro también al importar el
+ * plan. Un 5xx dice «de nuestro lado» con la referencia; sin respuesta, la
+ * conexión; un 400 dice lo que mandó el back.
+ */
+describe('ImportarCuentas · la regla de oro', () => {
+  it('🔴 un 5xx al revisar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.puc.revisarImportacion.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'c0ffee00',
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/No pudimos revisar el archivo: algo falló de nuestro lado/);
+    expect(alerta?.textContent).toContain('c0ffee00');
+  });
+
+  it('🔴 sin respuesta (status 0) al importar habla de la conexión y de que no se duplica', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.puc.importar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/conexión/);
+    expect(alerta?.textContent).toMatch(/no se duplican/);
+    expect(alerta?.textContent).not.toContain('Failed to fetch');
+  });
+
+  it('un 400 dice lo que mandó el back', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const mensaje = 'Puedes mandar hasta 5.000 cuentas a la vez.';
+    api.puc.revisarImportacion.mockRejectedValueOnce(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'cuentas', regla: 'lista_maxima', mensaje }],
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(mensaje);
+  });
+});

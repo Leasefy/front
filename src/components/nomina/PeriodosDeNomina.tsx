@@ -53,7 +53,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { detalleDelFallo, nominaApi } from '@/lib/api/nomina.service';
 import type { PeriodoDeNomina, Periodos } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { mesActual } from '@/lib/recaudo/meses';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
@@ -99,7 +99,7 @@ export function PeriodosDeNominaPanel() {
           `No se puede liquidar: falta ${detalle.queFalta.join(', ')}. Cárgalo en Configuración.`,
         ]);
       }
-      toast.error(mensajeDelFallo(error, 'No se pudo armar el borrador.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo armar el borrador.', accion: 'armar el borrador' }));
     } finally {
       setArmando(false);
     }
@@ -130,7 +130,7 @@ export function PeriodosDeNominaPanel() {
       }
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo aprobar el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo aprobar el período.', accion: 'aprobar el período' }));
     }
   };
 
@@ -150,7 +150,7 @@ export function PeriodosDeNominaPanel() {
           `No se asentó: estas cuentas no existen en tu PUC — ${detalle.cuentas.join(', ')}. Créalas en Contabilidad → PUC o cambia el mapeo. Nómina no crea cuentas.`,
         ]);
       }
-      toast.error(mensajeDelFallo(error, 'No se pudo asentar el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo asentar el período.', accion: 'asentar el período' }));
     }
   };
 
@@ -161,7 +161,7 @@ export function PeriodosDeNominaPanel() {
       if (r.aviso) setAvisos([r.aviso]);
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo marcar como pagado.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo marcar como pagado.', accion: 'marcar el período como pagado' }));
     }
   };
 
@@ -176,7 +176,7 @@ export function PeriodosDeNominaPanel() {
       setMotivo('');
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo anular el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo anular el período.', accion: 'anular el período' }));
     } finally {
       setEnviandoAnulacion(false);
     }

@@ -805,6 +805,29 @@ describe('🔴 el cajón del egreso', () => {
     expect(toastMock.error).toHaveBeenCalledWith(MOTIVO_SIN_CAMBIO_DE_EGRESO);
   });
 
+  it('🔴 un 5xx al corregir dice «de nuestro lado» con la referencia, no «Error interno»', async () => {
+    gastos.egresos.cambiar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'dead0042',
+      }),
+    );
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-10');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'Rechazo');
+    });
+    await act(async () => {
+      (q('guardar-cambio-del-egreso') as HTMLButtonElement).click();
+    });
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/de nuestro lado/);
+    expect(texto).toContain('dead0042');
+    expect(texto).not.toContain('Error interno del servidor');
+  });
+
   it('un egreso sin pagar no deja cambiar la fecha, pero sí la nota', async () => {
     await abrir(egreso());
     expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
@@ -853,5 +876,86 @@ describe('🔴 el cajón del egreso', () => {
     expect(q('cambios-sin-migracion')!.textContent).not.toContain('20260922150000');
     expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
     expect(q('guardar-cambio-del-egreso')).toBeNull();
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): lo que el back dice de un campo de un
+ * diálogo va bajo ese campo; lo demás, al toast con la regla de oro.
+ */
+describe('Egresos · errores de los diálogos', () => {
+  async function abrirPago() {
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      lotes: [lote({ estado: 'ARCHIVO_GENERADO', cantidad: 2 })],
+    });
+    await pintar('lotes');
+    await act(async () => {
+      (q('pagado-l1') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+  }
+
+  async function confirmarPago() {
+    await act(async () => {
+      (q('confirmar-pago') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 un 400 con `campos` en `referenciaBanco` va bajo la referencia y la enfoca', async () => {
+    const mensaje = 'La referencia del banco puede tener hasta 120 caracteres.';
+    gastos.lotes.pagado.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'referenciaBanco', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await abrirPago();
+    await confirmarPago();
+
+    const campo = q('referencia-del-banco')!;
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(campo.getAttribute('aria-describedby')!)?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(campo);
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    gastos.lotes.pagado.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'beef0001',
+      }),
+    );
+    await abrirPago();
+    await confirmarPago();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos marcar el lote como pagado: algo falló de nuestro lado/);
+    expect(texto).toContain('beef0001');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    gastos.lotes.pagado.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await abrirPago();
+    await confirmarPago();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/conexi[oó]n/i);
+    expect(texto).not.toContain('Failed to fetch');
+  });
+
+  it('🔁 la referencia y el motivo no dejan escribir más de lo que el back acepta', async () => {
+    await abrirPago();
+    expect((q('referencia-del-banco') as HTMLInputElement).maxLength).toBe(120);
   });
 });

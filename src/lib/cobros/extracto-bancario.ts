@@ -12,6 +12,7 @@
 
 import { normalizarEncabezado } from '@/lib/migracion/columnas-de-tercero';
 import type { FilaDeExtracto } from '@/lib/api/conciliacion-bancaria.types';
+import { errorDelValorDelMovimiento } from './limites-del-extracto';
 
 export type CampoDeExtracto =
   | 'fecha'
@@ -344,6 +345,13 @@ export function armarFilasDeExtracto(
     }
     if (valor === 0) {
       descartadas.push({ fila: numero, motivo: 'Valor en cero.' });
+      return;
+    }
+    // 🔴 Una línea que no cabe en la columna del back (int4) tumbaba el
+    // extracto entero con un 500: se descarta ESA, con la frase del tope.
+    const fueraDeRango = errorDelValorDelMovimiento(valor);
+    if (fueraDeRango) {
+      descartadas.push({ fila: numero, motivo: fueraDeRango });
       return;
     }
 

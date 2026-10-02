@@ -62,9 +62,11 @@ import {
   MarcarDevueltoDialog,
   RegirarDialog,
   estaSinResolver,
+  explicarGiro,
   hoyEnBogota,
   useGirosDevueltos,
 } from './GirosDevueltos';
+import { ApiError } from '@/lib/api/client';
 
 function giro(extra: Partial<GiroDevuelto> = {}): GiroDevuelto {
   return {
@@ -339,6 +341,31 @@ describe('la lectura falla ABIERTO', () => {
       root.render(<Sonda activo />);
     });
     expect(container.querySelector('[data-testid="sonda"]')?.textContent).toBe('true:1');
+  });
+});
+
+describe('explicarGiro con la regla de oro (02-10)', () => {
+  it('🔴 un 5xx dice qué no se pudo hacer, de nuestro lado, con la referencia', () => {
+    const texto = explicarGiro(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+      'No se pudo registrar el nuevo giro.',
+      'registrar el nuevo giro',
+    );
+    expect(texto).toContain('No pudimos registrar el nuevo giro: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('un 4xx dice lo que escribió el back; sin respuesta, la conexión', () => {
+    expect(
+      explicarGiro(new ApiError(409, 'Ese giro ya se volvió a girar.'), 'x', 'registrar el nuevo giro'),
+    ).toBe('Ese giro ya se volvió a girar.');
+    expect(explicarGiro(new ApiError(0, 'Failed to fetch'), 'x', 'registrar el nuevo giro')).toMatch(
+      /conexi[oó]n/,
+    );
   });
 });
 

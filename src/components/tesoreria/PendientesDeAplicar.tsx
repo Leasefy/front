@@ -49,7 +49,21 @@ import { toast } from '@/components/ui/toast';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { ListaDeAplicables, PendienteAplicable } from '@/lib/api/tesoreria.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDelMotivo, errorDelValorADevolver } from '@/lib/tesoreria/limites-de-tesoreria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+
+/** Los dos campos del diálogo de devolver, y el id de cada uno. */
+type CampoDeLaDevolucion = 'valor' | 'motivo';
+const ID_DEL_CAMPO: Record<CampoDeLaDevolucion, string> = {
+  valor: 'valor-a-devolver',
+  motivo: 'motivo-de-la-devolucion',
+};
+
+function enfocar(campo: CampoDeLaDevolucion | undefined) {
+  if (campo) document.getElementById(ID_DEL_CAMPO[campo])?.focus();
+}
 
 export function PendientesDeAplicarPanel() {
   const [datos, setDatos] = useState<ListaDeAplicables | null>(null);
@@ -59,6 +73,7 @@ export function PendientesDeAplicarPanel() {
   const [devolviendo, setDevolviendo] = useState<PendienteAplicable | null>(null);
   const [motivo, setMotivo] = useState('');
   const [valor, setValor] = useState('');
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaDevolucion, string>>>({});
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -85,7 +100,12 @@ export function PendientesDeAplicarPanel() {
       );
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo aplicar.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo aplicar.',
+          accion: 'aplicar la plata pendiente',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -93,13 +113,28 @@ export function PendientesDeAplicarPanel() {
 
   const devolver = async () => {
     if (!devolviendo) return;
+    /*
+     * 🔁 Espejo del tope del back (`limites-de-tesoreria.ts`), antes de mandar.
+     * 🔴 Y un campo vacío ya no viaja como «devolver todo»: antes se mandaba
+     * sin valor y el back devolvía el saldo entero sin que nadie lo dijera.
+     */
+    const delCliente: Partial<Record<CampoDeLaDevolucion, string>> = {};
+    const eValor = errorDelValorADevolver(valor, devolviendo.pendiente.saldoCop);
+    const eMotivo = errorDelMotivo(motivo);
+    if (eValor) delCliente.valor = eValor;
+    if (eMotivo) delCliente.motivo = eMotivo;
+    if (delCliente.valor || delCliente.motivo) {
+      setErrores(delCliente);
+      enfocar(delCliente.valor ? 'valor' : 'motivo');
+      return;
+    }
+    setErrores({});
     setTrabajando(true);
     try {
-      const pedido = Number(valor);
       const r = await tesoreriaApi.devolverPendiente(
         devolviendo.pendiente.id,
-        motivo,
-        Number.isFinite(pedido) && pedido > 0 ? pedido : undefined,
+        motivo.trim(),
+        Number(valor.trim()),
       );
       toast.success('Devolución registrada.');
       for (const aviso of r.avisos) toast.info(aviso);
@@ -108,9 +143,16 @@ export function PendientesDeAplicarPanel() {
       setValor('');
       await cargar();
     } catch (error) {
-      toast.error(
-        mensajeParaLaPersona(error, { porDefecto: 'No se pudo registrar la devolución.' }),
-      );
+      // Un 400 por campo va debajo de su campo; lo demás, al aviso.
+      const reparto = repartirErroresDelServidor<CampoDeLaDevolucion>(error, {
+        mapa: { valorCop: 'valor', motivo: 'motivo', fecha: null },
+        campos: ['valor', 'motivo'],
+        porDefecto: 'No se pudo registrar la devolución.',
+        accion: 'registrar la devolución',
+      });
+      setErrores(reparto.porCampo);
+      enfocar(reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -252,6 +294,7 @@ export function PendientesDeAplicarPanel() {
                         setDevolviendo(item);
                         setMotivo('');
                         setValor(String(item.pendiente.saldoCop));
+                        setErrores({});
                       }}
                       disabled={trabajando}
                       data-testid={`devolver-${item.pendiente.id}`}
@@ -286,20 +329,32 @@ export function PendientesDeAplicarPanel() {
                 min={1}
                 max={devolviendo?.pendiente.saldoCop}
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  setValor(e.target.value);
+                  setErrores((previos) => ({ ...previos, valor: undefined }));
+                }}
+                aria-invalid={errores.valor ? true : undefined}
+                aria-describedby={errores.valor ? 'valor-a-devolver-error' : undefined}
                 data-testid="valor-a-devolver"
               />
+              <ErrorDelCampo id="valor-a-devolver-error" mensaje={errores.valor} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="motivo-de-la-devolucion">Por qué</Label>
               <Textarea
                 id="motivo-de-la-devolucion"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value);
+                  setErrores((previos) => ({ ...previos, motivo: undefined }));
+                }}
                 placeholder="La aseguradora reclamó el excedente del siniestro."
                 maxLength={300}
+                aria-invalid={errores.motivo ? true : undefined}
+                aria-describedby={errores.motivo ? 'motivo-de-la-devolucion-error' : undefined}
                 data-testid="motivo-de-la-devolucion"
               />
+              <ErrorDelCampo id="motivo-de-la-devolucion-error" mensaje={errores.motivo} />
             </div>
           </div>
           <DialogFooter>

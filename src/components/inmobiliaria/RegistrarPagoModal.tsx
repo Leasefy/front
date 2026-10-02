@@ -112,6 +112,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { MENSAJES_DEL_RECIBO, superaElTopeDelRecibo } from '@/lib/recaudo/limites-del-recibo';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -243,6 +246,37 @@ export function mesesEnPalabras(
 /** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
 
+/**
+ * Los campos del recibo que pueden traer un error del servidor (02-10-2026).
+ * El 400 `DATOS_INVALIDOS` trae `campos[]` con la ruta del cuerpo; acá se
+ * reparte cada uno a SU campo (`valorCop` → el monto, `notas` → los saludos).
+ */
+type CampoDelRecibo = 'monto' | 'medio' | 'fecha' | 'saludos';
+const CAMPOS_DEL_RECIBO: readonly CampoDelRecibo[] = ['monto', 'medio', 'fecha', 'saludos'];
+const CAMPO_DEL_SERVIDOR: Partial<Record<string, CampoDelRecibo | null>> = {
+  valorCop: 'monto',
+  medio: 'medio',
+  fecha: 'fecha',
+  notas: 'saludos',
+};
+/** El control que recibe el foco cuando el servidor señala ese campo. */
+const ID_DEL_CAMPO: Record<CampoDelRecibo, string> = {
+  monto: 'monto-recibo',
+  medio: 'medio-recibo',
+  fecha: 'fecha-recibo',
+  saludos: 'saludos-recibo',
+};
+/** Los 400 de la fecha que el back manda sin `campos` (`fecha-del-recibo.ts`). */
+const CODIGOS_DE_LA_FECHA = new Set(['FECHA_FUTURA', 'FECHA_NO_VALIDA']);
+
+function enfocarElCampo(campo: CampoDelRecibo | undefined) {
+  if (!campo || typeof document === 'undefined') return;
+  const el = document.getElementById(ID_DEL_CAMPO[campo]);
+  // El medio es un grupo de chips: el foco va al primero.
+  const destino = el && el.tagName === 'DIV' ? el.querySelector<HTMLElement>('button') : el;
+  destino?.focus();
+}
+
 export interface RegistrarPagoModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -354,6 +388,22 @@ export function RegistrarPagoModal({
   /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
   const [tituloDelError, setTituloDelError] = React.useState<string | null>(null);
   const [tocado, setTocado] = React.useState(false);
+  /**
+   * Lo que el servidor dijo de cada campo (02-10-2026). Se pinta bajo el campo
+   * y se va en cuanto la persona lo corrige: si no, el error del envío anterior
+   * seguiría señalando un dato que ya cambió.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = React.useState<
+    Partial<Record<CampoDelRecibo, string>>
+  >({});
+  const olvidarDelServidor = React.useCallback((campo: CampoDelRecibo) => {
+    setErroresDelServidor((previos) => {
+      if (!(campo in previos)) return previos;
+      const { [campo]: _quitado, ...resto } = previos;
+      void _quitado;
+      return resto;
+    });
+  }, []);
 
   /*
    * 🔴 La fecha con la que se pide la VISTA PREVIA (2026-09-16). No es `fecha`
@@ -399,6 +449,8 @@ export function RegistrarPagoModal({
   const [origen, setOrigen] = React.useState('');
   const [enviandoConciliacion, setEnviandoConciliacion] = React.useState(false);
   const [errorDeConciliacion, setErrorDeConciliacion] = React.useState<string | null>(null);
+  /** El error del ORIGEN de la plata (el campo): el corto de la pantalla o el del back. */
+  const [errorDelOrigen, setErrorDelOrigen] = React.useState<string | null>(null);
 
   const cobroId = cobroDeEntrada?.id ?? null;
   const {
@@ -452,7 +504,17 @@ export function RegistrarPagoModal({
   // 🔴 D11: la plata de una aseguradora nunca queda a favor del inquilino.
   const seExcede = excedente > 0 && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
 
-  const errorDeMonto = !tocado
+  /*
+   * 🔴 El tope de la COLUMNA (02-10-2026): `recibos_de_caja.valor_cop` es int4.
+   * No es el tope inventado que el comentario de `aFavorConfirmado` descarta
+   * —pagar de más sigue siendo legítimo—: es lo que cabe en la base. Más allá,
+   * el back respondía un 500; ahora se ataja acá con la frase del back
+   * (`lib/recaudo/limites-del-recibo.ts`) y el back lo rechaza igual.
+   */
+  const superaElTope = superaElTopeDelRecibo(monto);
+  const errorDeMonto = superaElTope
+    ? MENSAJES_DEL_RECIBO.valorMaximo
+    : !tocado
     ? null
     : !Number.isFinite(monto) || monto === 0
       ? t('recibos.form.montoRequerido')
@@ -500,6 +562,7 @@ export function RegistrarPagoModal({
     // Sin deuda se puede recibir plata SÓLO si hay dónde guardarla a favor.
     (cartera.total > 0 || puedeGuardarAFavor) &&
     montoValido &&
+    !superaElTope &&
     !seExcede &&
     (excedente === 0 || aFavorConfirmado === monto) &&
     medio !== '' &&
@@ -545,10 +608,12 @@ export function RegistrarPagoModal({
       setQuienPaga(PAGA_EL_CLIENTE);
       setErrorDelBack(null);
       setTituloDelError(null);
+      setErroresDelServidor({});
       setTocado(false);
       setConciliando(null);
       setOrigen('');
       setErrorDeConciliacion(null);
+      setErrorDelOrigen(null);
       return;
     }
     if (origenDelMonto.current === 'vencido') {
@@ -571,10 +636,12 @@ export function RegistrarPagoModal({
     setQuienPaga(PAGA_EL_CLIENTE);
     setErrorDelBack(null);
     setTituloDelError(null);
+    setErroresDelServidor({});
     setTocado(false);
     setConciliando(null);
     setOrigen('');
     setErrorDeConciliacion(null);
+    setErrorDelOrigen(null);
     onClose();
   }, [hoy, onClose]);
 
@@ -725,13 +792,33 @@ export function RegistrarPagoModal({
        * que cambia es el resto: un 5xx dice que fue nuestro con la referencia
        * (no «Error interno del servidor»), sin respuesta habla de la red, y un
        * volcado o un HTML no llegan a la pantalla.
+       *
+       * Tanda 2 (02-10-2026) · Un 400 con `campos` va a SU campo, con el foco
+       * en el primero; al banner va sólo lo que no tiene campo. Los 400 de la
+       * fecha (`FECHA_FUTURA`, `FECHA_NO_VALIDA`) llegan sin `campos` pero son
+       * de un campo: van bajo la fecha.
        */
-      setErrorDelBack(
-        mensajeParaLaPersona(e, {
-          porDefecto: 'Prueba de nuevo en un momento.',
-          accion: 'registrar el pago',
-        }),
-      );
+      const opciones = { porDefecto: 'Prueba de nuevo en un momento.', accion: 'registrar el pago' };
+      const reparto = repartirErroresDelServidor<CampoDelRecibo>(e, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_RECIBO,
+        ...opciones,
+      });
+      const porCampo = { ...reparto.porCampo };
+      const orden = [...reparto.orden];
+      let sueltos = reparto.sueltos;
+      if (
+        e instanceof ApiError &&
+        reparto.delServidor.length === 0 &&
+        CODIGOS_DE_LA_FECHA.has(e.code ?? '')
+      ) {
+        porCampo.fecha = mensajeParaLaPersona(e, opciones);
+        orden.push('fecha');
+        sueltos = [];
+      }
+      setErroresDelServidor(porCampo);
+      setErrorDelBack(sueltos.length > 0 ? sueltos.join(' · ') : null);
+      enfocarElCampo(orden[0]);
     } finally {
       setEnviando(false);
     }
@@ -760,9 +847,10 @@ export function RegistrarPagoModal({
     if (!conciliando || !onConciliar) return;
     const limpio = origen.trim();
     if (limpio.length < ORIGEN_MINIMO) {
-      setErrorDeConciliacion(t('recibos.conciliar.origenRequerido'));
+      setErrorDelOrigen(t('recibos.conciliar.origenRequerido'));
       return;
     }
+    setErrorDelOrigen(null);
     setEnviandoConciliacion(true);
     setErrorDeConciliacion(null);
     try {
@@ -778,9 +866,18 @@ export function RegistrarPagoModal({
       setOrigen('');
       await recargar();
     } catch (e) {
-      setErrorDeConciliacion(
-        mensajeParaLaPersona(e, { porDefecto: t('recibos.conciliar.fallo'), accion: 'conciliar el pago' }),
-      );
+      // 02-10-2026 · Un 400 sobre el origen va bajo el campo, con el foco; lo
+      // demás, al aviso, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['origen'] as const,
+        porDefecto: t('recibos.conciliar.fallo'),
+        accion: 'conciliar el pago',
+      });
+      if (porCampo.origen) {
+        setErrorDelOrigen(porCampo.origen);
+        document.getElementById('origen-conciliacion')?.focus();
+      }
+      setErrorDeConciliacion(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviandoConciliacion(false);
     }
@@ -894,11 +991,18 @@ export function RegistrarPagoModal({
                 <Textarea
                   id="origen-conciliacion"
                   rows={2}
+                  maxLength={300}
                   value={origen}
-                  onChange={(e) => setOrigen(e.target.value)}
+                  onChange={(e) => {
+                    setOrigen(e.target.value);
+                    setErrorDelOrigen(null);
+                  }}
                   placeholder={t('recibos.conciliar.origenPlaceholder')}
+                  aria-invalid={Boolean(errorDelOrigen) || undefined}
+                  aria-describedby="origen-conciliacion-error"
                   className="w-full resize-none"
                 />
+                <ErrorDelCampo id="origen-conciliacion-error" mensaje={errorDelOrigen} />
               </div>
 
               {errorDeConciliacion && <Banner variant="danger">{errorDeConciliacion}</Banner>}
@@ -965,11 +1069,16 @@ export function RegistrarPagoModal({
                     // El campo avisa también al perder el foco, con el mismo
                     // valor: eso no es escribir un monto.
                     const mismo = v === monto || (Number.isNaN(v) && Number.isNaN(monto));
-                    if (!mismo) origenDelMonto.current = 'manual';
+                    if (!mismo) {
+                      origenDelMonto.current = 'manual';
+                      olvidarDelServidor('monto');
+                    }
                     setMonto(v);
                     setTocado(true);
                   }}
-                  invalid={Boolean(errorDeMonto)}
+                  invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto)}
+                  aria-invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto) || undefined}
+                  aria-describedby="monto-recibo-error"
                   className="h-12 text-lg font-semibold"
                 />
                 <p className="text-xs text-fg-muted">
@@ -1024,7 +1133,8 @@ export function RegistrarPagoModal({
                     </span>
                   </label>
                 )}
-                {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
+                {/* El de la pantalla (vacío, negativo, el tope) o el del servidor. */}
+                <ErrorDelCampo id="monto-recibo-error" mensaje={errorDeMonto ?? erroresDelServidor.monto} />
               </div>
 
               {/* 🔴 A dónde va la plata. El punto del cambio entero. */}
@@ -1101,14 +1211,23 @@ export function RegistrarPagoModal({
                 <span className="text-sm font-medium text-foreground">
                   {t('recibos.form.medioLabel')}
                 </span>
-                <div className="flex flex-wrap gap-2">
+                <div
+                  id="medio-recibo"
+                  role="group"
+                  aria-label={t('recibos.form.medioLabel')}
+                  aria-describedby="medio-recibo-error"
+                  className="flex flex-wrap gap-2"
+                >
                   {opcionesDeMedio.map((m) => {
                     const Icono = m.icono;
                     return (
                       <Chip
                         key={m.valor}
                         selected={medio === m.valor}
-                        onClick={() => setMedio(m.valor)}
+                        onClick={() => {
+                          setMedio(m.valor);
+                          olvidarDelServidor('medio');
+                        }}
                         icon={<Icono className="h-4 w-4" />}
                       >
                         {m.etiqueta ?? t(m.clave!)}
@@ -1116,9 +1235,10 @@ export function RegistrarPagoModal({
                     );
                   })}
                 </div>
-                {tocado && !medio && (
-                  <p className="text-xs text-destructive">{t('recibos.form.medioRequerido')}</p>
-                )}
+                <ErrorDelCampo
+                  id="medio-recibo-error"
+                  mensaje={tocado && !medio ? t('recibos.form.medioRequerido') : erroresDelServidor.medio}
+                />
               </div>
 
               {/* Qué día entró */}
@@ -1140,35 +1260,44 @@ export function RegistrarPagoModal({
                    */
                   max={hoy}
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    olvidarDelServidor('fecha');
+                  }}
                   aria-invalid={
                     (problemaDeLaFecha !== null && problemaDeLaFecha !== 'vacia') ||
                     errorDeLaFecha !== null ||
-                    (tocado && !fecha)
+                    (tocado && !fecha) ||
+                    Boolean(erroresDelServidor.fecha)
                   }
+                  aria-describedby="fecha-recibo-error"
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||
                       problemaDeLaFecha === 'futura' ||
-                      errorDeLaFecha !== null
+                      errorDeLaFecha !== null ||
+                      erroresDelServidor.fecha
                       ? 'border-destructive'
                       : '',
                   )}
                 />
-                {tocado && !fecha && (
-                  <p className="text-xs text-destructive">{t('recibos.form.fechaRequerida')}</p>
-                )}
-                {problemaDeLaFecha === 'futura' && (
-                  <p className="text-xs text-destructive" data-testid="fecha-futura">
-                    {t('recibos.form.fechaFutura')}
-                  </p>
-                )}
-                {/* El rechazo del back sobre ESTA fecha, tal cual: dice qué hacer. */}
-                {problemaDeLaFecha === null && errorDeLaFecha !== null && (
-                  <p className="text-xs text-destructive" data-testid="error-de-la-fecha">
-                    {errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')}
-                  </p>
-                )}
+                {/*
+                  Un solo lugar para lo que le pasa a la fecha, en orden: vacía,
+                  futura, el rechazo de la vista previa (tal cual: dice qué
+                  hacer) o el del envío.
+                */}
+                <ErrorDelCampo
+                  id="fecha-recibo-error"
+                  mensaje={
+                    tocado && !fecha
+                      ? t('recibos.form.fechaRequerida')
+                      : problemaDeLaFecha === 'futura'
+                        ? t('recibos.form.fechaFutura')
+                        : problemaDeLaFecha === null && errorDeLaFecha !== null
+                          ? errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')
+                          : erroresDelServidor.fecha
+                  }
+                />
                 {/*
                   Los números a la vista son de otro día mientras llega la
                   cartera nueva: se dice, y el botón espera.
@@ -1202,10 +1331,16 @@ export function RegistrarPagoModal({
                   rows={2}
                   maxLength={largoDeLosSaludos}
                   value={saludos}
-                  onChange={(e) => setSaludos(e.target.value)}
+                  onChange={(e) => {
+                    setSaludos(e.target.value);
+                    olvidarDelServidor('saludos');
+                  }}
                   placeholder={t('recibos.form.saludosPlaceholder')}
+                  aria-invalid={Boolean(erroresDelServidor.saludos) || undefined}
+                  aria-describedby="saludos-recibo-error"
                   className="w-full resize-none"
                 />
+                <ErrorDelCampo id="saludos-recibo-error" mensaje={erroresDelServidor.saludos} />
               </div>
 
               {/* El rechazo del back, por el traductor */}

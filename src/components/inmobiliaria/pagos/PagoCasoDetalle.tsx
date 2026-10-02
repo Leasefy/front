@@ -67,7 +67,7 @@ export interface PagoCasoDetalleProps {
   onAction: (
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Cross-link a la operación profunda (Tesorería · AP). */
   crossLink?: { pregunta: string; destino: string; href: string }
 }

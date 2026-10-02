@@ -45,6 +45,7 @@ vi.mock('@/lib/i18n', () => ({
 }));
 
 import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DE_GASTOS } from '@/lib/contabilidad/limites-de-contabilidad';
 import { FormularioDeFactura } from './FormularioDeFactura';
 
 let container: HTMLDivElement;
@@ -460,5 +461,166 @@ describe('<FormularioDeFactura>', () => {
   it('una línea sin cuenta se explica en vez de exigirla', async () => {
     await pintar();
     expect(q('nota-de-la-cuenta')!.textContent).toContain('Gasto sin rubro');
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): el error va en SU campo, con la frase del
+ * back, y lo que el back rechazaría por un tope (un cero de más) se ataja
+ * antes de enviar. Al toast va sólo lo que no tiene campo, con la regla de oro:
+ * «conexión» sólo sin respuesta, un 5xx «de nuestro lado» con la referencia.
+ */
+describe('<FormularioDeFactura> · errores en su campo', () => {
+  const id = (x: string) => document.getElementById(x);
+
+  async function registrar() {
+    await act(async () => {
+      (q('registrar-factura') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 un 400 con `campos` pinta el error bajo la base del renglón y le da el foco', async () => {
+    const mensaje = MENSAJES_DE_GASTOS.baseMaxima;
+    gastos.facturas.registrar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'lineas.0.baseCop', regla: 'maximo', mensaje }],
+      }),
+    );
+    await pintar();
+    await llenarTodo();
+    await registrar();
+
+    expect(id('linea-base-0-error')?.textContent).toBe(mensaje);
+    expect(q('linea-base-0')!.getAttribute('aria-invalid')).toBe('true');
+    expect(q('linea-base-0')!.getAttribute('aria-describedby')).toContain('linea-base-0-error');
+    expect(document.activeElement).toBe(q('linea-base-0'));
+    // Todo tuvo campo: no hay toast que repita lo mismo.
+    expect(toastMock.error).not.toHaveBeenCalled();
+    expect(cerrar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 la SUMA fuera de rango que ve el back (`TOTAL_FUERA_DE_RANGO`) va bajo los renglones', async () => {
+    const mensaje = MENSAJES_DE_GASTOS.sumaMaxima;
+    gastos.facturas.registrar.mockRejectedValue(
+      new ApiError(400, mensaje, 'TOTAL_FUERA_DE_RANGO', {
+        statusCode: 400,
+        code: 'TOTAL_FUERA_DE_RANGO',
+        message: mensaje,
+        campos: [{ campo: 'lineas', regla: 'maximo', mensaje }],
+      }),
+    );
+    await pintar();
+    await llenarTodo();
+    await registrar();
+
+    expect(id('factura-lineas-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(q('linea-base-0'));
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, y no culpa a la conexión', async () => {
+    gastos.facturas.registrar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'a1b2c3d4',
+      }),
+    );
+    await pintar();
+    await llenarTodo();
+    await registrar();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/de nuestro lado/);
+    expect(texto).toContain('a1b2c3d4');
+    expect(texto).toMatch(/registrar la factura/);
+    expect(texto).not.toMatch(/conexi[oó]n/i);
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    gastos.facturas.registrar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await pintar();
+    await llenarTodo();
+    await registrar();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/conexi[oó]n/i);
+    expect(texto).not.toContain('Failed to fetch');
+  });
+
+  it('🔴 una base con ceros de más se ataja ANTES de enviar, con la frase del back', async () => {
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      escribir('linea-base-0', '40000000000');
+      await Promise.resolve();
+    });
+
+    // Se ve mientras se escribe, en su campo…
+    expect(id('linea-base-0-error')?.textContent).toBe(MENSAJES_DE_GASTOS.baseMaxima);
+    // …y al registrar no viaja nada: se enfoca el campo.
+    await registrar();
+    expect(gastos.facturas.registrar).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(q('linea-base-0'));
+  });
+
+  it('🔴 dos renglones que suman más que el tope se atajan aunque cada uno quepa', async () => {
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      (q('agregar-linea') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      escribir('linea-base-0', '1500000000');
+      escribir('linea-descripcion-1', 'Obra');
+      escribir('linea-base-1', '1500000000');
+      await Promise.resolve();
+    });
+
+    expect(id('factura-lineas-error')?.textContent).toBe(MENSAJES_DE_GASTOS.sumaMaxima);
+    expect(id('linea-base-0-error')?.textContent ?? '').toBe('');
+    await registrar();
+    expect(gastos.facturas.registrar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 una retención con ceros de más se ataja en su campo', async () => {
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      escribir('factura-retefuente', '9000000000');
+      await Promise.resolve();
+    });
+
+    expect(id('factura-retefuente-error')?.textContent).toBe(MENSAJES_DE_GASTOS.retefuenteMaxima);
+    expect(q('factura-retefuente')!.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('corregir el campo borra el error que puso el back', async () => {
+    const mensaje = 'El número de la factura puede tener hasta 40 caracteres.';
+    gastos.facturas.registrar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'numeroDelProveedor', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await pintar();
+    await llenarTodo();
+    await registrar();
+    expect(id('factura-numero-error')?.textContent).toBe(mensaje);
+
+    await act(async () => {
+      escribir('factura-numero', '4522');
+      await Promise.resolve();
+    });
+    expect(q('factura-numero')!.getAttribute('aria-invalid')).toBeNull();
   });
 });

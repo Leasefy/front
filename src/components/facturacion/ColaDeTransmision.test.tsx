@@ -51,6 +51,8 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { ColaDeTransmision } from './ColaDeTransmision';
+import { toast } from '@/components/ui/toast';
+import { ApiError } from '@/lib/api/client';
 
 function documento(over: Record<string, unknown> = {}) {
   return {
@@ -243,5 +245,35 @@ describe('ColaDeTransmision', () => {
     expect((q('[data-testid="sin-datos"]')?.textContent ?? '').toLowerCase()).not.toContain(
       'no tienes',
     );
+  });
+});
+
+describe('ColaDeTransmision · el sistema de errores (02-10)', () => {
+  it('🔴 volver a encolar con un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await pintar(
+      respuesta({
+        documentos: [
+          documento({
+            id: 't-rechazada',
+            estado: 'RECHAZADA_DIAN',
+            estadoNombre: 'Rechazada por la DIAN',
+            ultimoError: 'NIT del adquirente inválido',
+            reintentable: true,
+          }),
+        ],
+      }),
+    );
+    reintentarTransmision.mockRejectedValue(new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }));
+    await act(async () => {
+      (q('[data-testid="transmision-reintentar-t-rechazada"]') as HTMLButtonElement).click();
+    });
+    const texto = vi.mocked(toast.error).mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos volver a encolar el documento: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
   });
 });

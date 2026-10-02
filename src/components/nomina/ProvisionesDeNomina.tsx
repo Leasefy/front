@@ -45,7 +45,9 @@ import {
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
 import type { Provisiones } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { atributosDelError, useErroresDelFormulario } from './errores-del-formulario';
+import { MENSAJES_DE_NOMINA, PAGO_MAXIMO_DE_NOMINA_COP, pasaDe } from './limites-de-nomina';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, Cifra, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
@@ -237,6 +239,19 @@ export function ProvisionesDeNominaPanel() {
   );
 }
 
+/** Los campos del pago, con el nombre del DTO, y el id de su control. */
+type CampoDelPago = 'personaId' | 'tipo' | 'desde' | 'hasta' | 'valorCop' | 'fechaPago';
+const ID_DEL_CAMPO_DEL_PAGO: Record<CampoDelPago, string> = {
+  personaId: 'persona-del-pago',
+  tipo: 'tipo-del-pago',
+  desde: 'desde-del-pago',
+  hasta: 'hasta-del-pago',
+  valorCop: 'valor-del-pago',
+  fechaPago: 'fecha-del-pago',
+};
+const CAMPOS_DEL_PAGO = Object.keys(ID_DEL_CAMPO_DEL_PAGO) as CampoDelPago[];
+const idDelPago = (c: CampoDelPago) => ID_DEL_CAMPO_DEL_PAGO[c];
+
 function PagoDePrestacion({
   abierto,
   personas,
@@ -255,9 +270,23 @@ function PagoDePrestacion({
   const [valor, setValor] = useState('');
   const [fechaPago, setFechaPago] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const errores = useErroresDelFormulario<CampoDelPago>(idDelPago);
+
+  // 🔁 El tope del back (`PAGO_MAXIMO_DE_NOMINA_COP`), con su misma frase.
+  const valorFueraDeRango = pasaDe(valor, PAGO_MAXIMO_DE_NOMINA_COP)
+    ? MENSAJES_DE_NOMINA.valorDelPagoMaximo
+    : null;
+  const errorDe = (campo: CampoDelPago): string | undefined =>
+    (campo === 'valorCop' ? valorFueraDeRango : null) ?? errores.delServidor[campo];
+  const conError = (campo: CampoDelPago) => atributosDelError(idDelPago(campo), errorDe(campo));
 
   const registrar = async () => {
+    if (valorFueraDeRango) {
+      document.getElementById(idDelPago('valorCop'))?.focus();
+      return;
+    }
     setGuardando(true);
+    errores.limpiar();
     try {
       const r = await nominaApi.registrarPagoDePrestacion({
         personaId,
@@ -270,7 +299,11 @@ function PagoDePrestacion({
       toast.success('Pago registrado y cruzado contra la provisión.');
       await onRegistrado(r.cruce.explicacion, r.aviso);
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo registrar el pago.'));
+      errores.repartir(error, {
+        campos: CAMPOS_DEL_PAGO,
+        porDefecto: 'No se pudo registrar el pago.',
+        accion: 'registrar el pago',
+      });
     } finally {
       setGuardando(false);
     }
@@ -295,8 +328,12 @@ function PagoDePrestacion({
               id="persona-del-pago"
               className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
               value={personaId}
-              onChange={(e) => setPersonaId(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('personaId');
+                setPersonaId(e.target.value);
+              }}
               data-testid="campo-persona"
+              {...conError('personaId')}
             >
               <option value="">Elige a quién le pagas</option>
               {personas.map((p) => (
@@ -305,6 +342,7 @@ function PagoDePrestacion({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="persona-del-pago-error" mensaje={errorDe('personaId')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tipo-del-pago">Prestación</Label>
@@ -312,8 +350,12 @@ function PagoDePrestacion({
               id="tipo-del-pago"
               className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
               value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('tipo');
+                setTipo(e.target.value);
+              }}
               data-testid="campo-tipo-prestacion"
+              {...conError('tipo')}
             >
               {TIPOS.map((t) => (
                 <option key={t.tipo} value={t.tipo}>
@@ -321,6 +363,7 @@ function PagoDePrestacion({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="tipo-del-pago-error" mensaje={errorDe('tipo')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="valor-del-pago">Valor pagado</Label>
@@ -328,9 +371,14 @@ function PagoDePrestacion({
               id="valor-del-pago"
               type="number"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('valorCop');
+                setValor(e.target.value);
+              }}
               data-testid="campo-valor"
+              {...conError('valorCop')}
             />
+            <ErrorDelCampo id="valor-del-pago-error" mensaje={errorDe('valorCop')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="desde-del-pago">Período causado, desde</Label>
@@ -338,9 +386,14 @@ function PagoDePrestacion({
               id="desde-del-pago"
               type="date"
               value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('desde');
+                setDesde(e.target.value);
+              }}
               data-testid="campo-desde"
+              {...conError('desde')}
             />
+            <ErrorDelCampo id="desde-del-pago-error" mensaje={errorDe('desde')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="hasta-del-pago">hasta</Label>
@@ -348,9 +401,14 @@ function PagoDePrestacion({
               id="hasta-del-pago"
               type="date"
               value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('hasta');
+                setHasta(e.target.value);
+              }}
               data-testid="campo-hasta"
+              {...conError('hasta')}
             />
+            <ErrorDelCampo id="hasta-del-pago-error" mensaje={errorDe('hasta')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="fecha-del-pago">Fecha de pago</Label>
@@ -358,9 +416,14 @@ function PagoDePrestacion({
               id="fecha-del-pago"
               type="date"
               value={fechaPago}
-              onChange={(e) => setFechaPago(e.target.value)}
+              onChange={(e) => {
+                errores.olvidar('fechaPago');
+                setFechaPago(e.target.value);
+              }}
               data-testid="campo-fecha-pago"
+              {...conError('fechaPago')}
             />
+            <ErrorDelCampo id="fecha-del-pago-error" mensaje={errorDe('fechaPago')} />
           </div>
         </div>
         <DialogFooter>

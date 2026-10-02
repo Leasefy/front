@@ -50,6 +50,7 @@ vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
+import { ApiError } from '@/lib/api/client';
 import { CierreDePeriodo } from './CierreDePeriodo';
 import { MOTIVO_SIN_REAPERTURA } from '../use-puede-escribir';
 
@@ -213,5 +214,87 @@ describe('<CierreDePeriodo> · la confirmación dice cómo se deshace', () => {
       'Sólo se deshace reabriendo, y queda en la bitácora con el motivo.',
     );
     expect(dialogo!.textContent).not.toContain('Esto no se deshace');
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): el error de la fecha va en su campo, y lo
+ * que no tiene campo dice la regla de oro (un 5xx «de nuestro lado» con la
+ * referencia; «conexión» sólo sin respuesta).
+ */
+describe('<CierreDePeriodo> · errores en su campo', () => {
+  function escribirEn(el: HTMLInputElement, valor: string) {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  async function confirmar() {
+    await act(async () => {
+      q('abrir-cierre')!.click();
+    });
+    const hasta = (q('cierre-hasta') as HTMLInputElement).value;
+    await act(async () => {
+      escribirEn(q('cierre-escribir') as HTMLInputElement, hasta);
+    });
+    await act(async () => {
+      q('confirmar-cierre')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 la fecha ya cerrada se dice bajo el campo, con su id en aria-describedby', async () => {
+    await pintar({ cierre: { cerradaHasta: '2999-12-31' } as Cierre });
+    const campo = q('cierre-hasta')!;
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    const error = document.getElementById(campo.getAttribute('aria-describedby')!);
+    expect(error?.textContent).toMatch(/Ya está cerrada hasta el/);
+  });
+
+  it('🔴 un 400 con `campos` en `hasta` va bajo la fecha del diálogo', async () => {
+    const mensaje = 'La fecha del cierre no es un día real del calendario (usa AAAA-MM-DD).';
+    api.asientos.cerrar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'hasta', regla: 'fecha', mensaje }],
+      }),
+    );
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const escribir = q('cierre-escribir')!;
+    expect(escribir.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(escribir.getAttribute('aria-describedby')!)?.textContent).toBe(
+      mensaje,
+    );
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.asientos.cerrar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '0badc0de',
+      }),
+    );
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialogo.textContent).toMatch(/No pudimos cerrar el período: algo falló de nuestro lado/);
+    expect(dialogo.textContent).toContain('0badc0de');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    api.asientos.cerrar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialogo.textContent).toMatch(/conexi[oó]n/i);
+    expect(dialogo.textContent).not.toContain('Failed to fetch');
   });
 });

@@ -12,19 +12,32 @@
  */
 
 import { toast } from '@/components/ui/toast';
-import { ApiError } from '@/lib/api/client';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
-/** Por qué no salió, en palabras de quien lo lee (nunca «Forbidden resource»). */
+/** El 403 genérico de Nest, en inglés: no le dice nada a nadie. */
+const PERMISO_SIN_EXPLICAR = /^forbidden( resource)?\.?$/i;
+
+/**
+ * Por qué no salió, en palabras de quien lo lee (nunca «Forbidden resource»).
+ *
+ * 02-10-2026 · Delega en el traductor (la regla de oro): «conexión» SÓLO
+ * cuando no hubo respuesta —antes cualquier error que no fuera un `ApiError`
+ * (un `TypeError` del código, por ejemplo) se leía como «revisa tu conexión»—;
+ * un 4xx dice la razón concreta del back; un 5xx dice que fue nuestro, con la
+ * referencia. Se quedan las dos frases propias: la sesión vencida y el 403 sin
+ * explicación.
+ */
 export function motivoDelFalloDelRecordatorio(error: unknown): string {
-  if (!(error instanceof ApiError) || error.status === 0) {
-    return 'No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.';
+  const fallo = leerFallo(error);
+  if (fallo.status === 401) return 'Tu sesión se cerró. Vuelve a entrar e intenta de nuevo.';
+  if (fallo.status === 403) {
+    const legible = fallo.mensajes.find((m) => m.trim() && !PERMISO_SIN_EXPLICAR.test(m.trim()));
+    if (!legible) return 'No tienes permiso para enviar recordatorios.';
   }
-  if (error.status === 401) return 'Tu sesión se cerró. Vuelve a entrar e intenta de nuevo.';
-  if (error.status === 403) return 'No tienes permiso para enviar recordatorios.';
-  // Un 4xx con mensaje es la razón concreta (sin datos de contacto, ya se
-  // mandó hoy…): se muestra tal cual.
-  if (error.status < 500 && error.message) return error.message;
-  return 'Tuvimos un problema de nuestro lado. Intenta de nuevo en unos minutos.';
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No pudimos enviar el recordatorio. Intenta de nuevo en unos minutos.',
+    accion: 'enviar el recordatorio',
+  });
 }
 
 /**

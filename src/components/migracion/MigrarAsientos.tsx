@@ -79,6 +79,9 @@ import {
 } from "@/lib/migracion/columnas-de-asiento";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
@@ -129,6 +132,24 @@ export function MigrarAsientos({
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
   const [nombreDeArchivo, setNombreDeArchivo] = useState("");
   const [lote, setLote] = useState("");
+  /**
+   * Lo que el back dijo del nombre del lote (un 400 con `campos` en `lote`).
+   * Va bajo el campo; lo demás del fallo, al aviso de la pantalla.
+   */
+  const [errorDelLote, setErrorDelLote] = useState<string | null>(null);
+  /**
+   * El fallo de revisar o aplicar: lo que es del nombre del lote va a su
+   * campo; el resto se devuelve para el aviso, con la regla de oro.
+   */
+  const repartirElFallo = (e: unknown, respaldo: string): string | null => {
+    const reparto = repartirErroresDelServidor(e, { campos: ["lote"] });
+    if (reparto.porCampo.lote) {
+      setErrorDelLote(reparto.porCampo.lote);
+      document.getElementById("lote-asientos")?.focus();
+    }
+    if (reparto.delServidor.length === 0) return mensajeDeContabilidad(e, respaldo);
+    return reparto.sueltos.length > 0 ? reparto.sueltos.join(" · ") : null;
+  };
   const [asientos, setAsientos] = useState<AsientoMigrado[]>([]);
   const [revision, setRevision] = useState<RevisionDeLote | null>(null);
   const [informe, setInforme] = useState<InformeDeMigracion | null>(null);
@@ -216,10 +237,10 @@ export function MigrarAsientos({
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+      // El archivo se lee en el navegador: su error es un texto propio (o un
+      // `TypeError` que no es para nadie, y entonces va la frase de respaldo).
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "No pudimos leer el archivo. ¿Es Excel o CSV?",
+        mensajeParaLaPersona(e, { porDefecto: "No pudimos leer el archivo. ¿Es Excel o CSV?" }),
       );
     } finally {
       setLeyendo(false);
@@ -296,12 +317,7 @@ export function MigrarAsientos({
         );
       }
     } catch (e) {
-      setError(
-        mensajeDeContabilidad(
-          e,
-          "No pudimos revisar el archivo. Intenta de nuevo.",
-        ),
-      );
+      setError(repartirElFallo(e, "No pudimos revisar el archivo. Intenta de nuevo."));
     } finally {
       setCargando(false);
       setProgreso(null);
@@ -348,14 +364,12 @@ export function MigrarAsientos({
         );
       }
     } catch (e) {
+      const motivo = repartirElFallo(e, "No pudimos aplicar el lote.");
       setError(
         // La segunda frase es un hecho del back, no un consuelo: cada fila
         // lleva llave de idempotencia y `aplicar` re-prepara antes de
         // escribir, así que lo ya escrito vuelve como «ya migrado».
-        `${mensajeDeContabilidad(
-          e,
-          "No pudimos aplicar el lote.",
-        )} Tu avance está guardado: los asientos que ya entraron no se pierden y no se duplican. ` +
+        `${motivo ?? "No pudimos aplicar el lote."} Tu avance está guardado: los asientos que ya entraron no se pierden y no se duplican. ` +
           "Vuelve a tocar «Aplicar», o más tarde sube el mismo archivo: " +
           "te va a aparecer la carga pendiente para continuarla.",
       );
@@ -712,16 +726,26 @@ export function MigrarAsientos({
                 id="lote-asientos"
                 value={lote}
                 maxLength={LARGO_MAXIMO_DE_LOTE}
-                onChange={(e) => setLote(e.target.value)}
+                onChange={(e) => {
+                  setErrorDelLote(null);
+                  setLote(e.target.value);
+                }}
                 disabled={Boolean(continuar)}
+                aria-invalid={Boolean(errorDelLote) || undefined}
+                aria-describedby={errorDelLote ? "lote-asientos-error" : undefined}
                 className="w-72"
                 data-testid="nombre-del-lote-asientos"
               />
-              <p className="text-caption text-fg-subtle">
-                {continuar
-                  ? "Es el nombre de la carga que continúas: cambiarlo abriría otra."
-                  : "Para reconocerlo después. Subir el mismo archivo dos veces no duplica nada."}
-              </p>
+              <ErrorDelCampo
+                id="lote-asientos-error"
+                mensaje={errorDelLote}
+                className="mt-0"
+                pista={
+                  continuar
+                    ? "Es el nombre de la carga que continúas: cambiarlo abriría otra."
+                    : "Para reconocerlo después. Subir el mismo archivo dos veces no duplica nada."
+                }
+              />
             </div>
             <Button
               onClick={revisar}

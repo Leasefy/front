@@ -154,4 +154,29 @@ describe('apApi.createBill / createVendor / listados', () => {
     expect(agentFetchMock.mock.calls[1][0]).toBe(`http://agent.test/api/agency/${AGENCY}/ap/vendors`);
     expect(agentFetchMock.mock.calls[2][0]).toBe(`http://agent.test/api/agency/${AGENCY}/ap/cost-centers`);
   });
+
+  /*
+   * 02-10-2026 (tanda 2 del sistema de errores): el cuerpo ENTERO viaja en
+   * `detalle`, así el traductor ve los `campos` de un 400 y la `referencia` de
+   * un 5xx. Y se lee el `message` del sobre, no sólo el `error` de antes.
+   */
+  it('el sobre de error del micro llega entero al ApiError (campos, referencia y code)', async () => {
+    const body = { vendorId: 'v1', invoiceNumber: 'FE-1', amountCop: 1, costCenterCode: 'x', issuedAt: 'a', dueDate: 'b' };
+    const campos = [{ campo: 'amountCop', regla: 'minimo', mensaje: 'El total debe ser mayor que cero.' }];
+    agentFetchMock.mockResolvedValueOnce(
+      respuesta(400, { statusCode: 400, code: 'DATOS_INVALIDOS', message: ['El total debe ser mayor que cero.'], campos }),
+    );
+    const de400 = await apApi.createBill(AGENCY, body).catch((e: unknown) => e);
+    expect(de400).toBeInstanceOf(ApiError);
+    expect((de400 as ApiError).code).toBe('DATOS_INVALIDOS');
+    expect((de400 as ApiError).message).toBe('El total debe ser mayor que cero.');
+    expect((de400 as ApiError).detalle?.campos).toEqual(campos);
+
+    agentFetchMock.mockResolvedValueOnce(
+      respuesta(500, { statusCode: 500, code: 'LECTURA_DE_FACTURA_FALLIDA', message: 'No se pudo leer la factura.', referencia: 'abcd1234' }),
+    );
+    const de500 = await apApi.extractBill(AGENCY, [archivo('f.jpg', 'image/jpeg')]).catch((e: unknown) => e);
+    expect((de500 as ApiError).status).toBe(500);
+    expect((de500 as ApiError).detalle?.referencia).toBe('abcd1234');
+  });
 });

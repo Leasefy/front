@@ -58,7 +58,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { Monto } from '../Monto';
 import { Nota } from '../piezas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
@@ -78,6 +80,8 @@ import type { ProveedorNoObligado } from '@/lib/api/facturacion-electronica.serv
 import type { RubroDelPresupuesto, Sede } from '@/lib/api/finanzas.types';
 import {
   avisoDeTotalQueNoCuadra,
+  camposDeLaFactura,
+  erroresDeLosTopes,
   ivaDeLaLinea,
   lineaVacia,
   lineasParaElBack,
@@ -86,6 +90,7 @@ import {
   sumaDeRetenciones,
   totalesDeLasLineas,
   type BorradorDeFactura,
+  type CampoDeLaFactura,
   type LineaEnCurso,
 } from '@/lib/contabilidad/factura-de-proveedor';
 import { hoy } from '@/lib/contabilidad/fechas';
@@ -100,6 +105,46 @@ export interface FormularioDeFacturaProps {
   proveedores: readonly ProveedorNoObligado[];
   rubros: readonly RubroDelPresupuesto[];
   sedes: readonly Sede[];
+}
+
+/**
+ * El id del control de cada campo, para enfocarlo cuando el back o el tope del
+ * cliente le ponen un error y para el `aria-describedby` de su `ErrorDelCampo`.
+ */
+function idDelCampo(campo: CampoDeLaFactura): string {
+  const linea = /^lineas\.(\d+)\.(descripcion|baseCop|ivaPct)$/.exec(campo);
+  if (linea) {
+    const [, i, cual] = linea;
+    return cual === 'descripcion' ? `linea-desc-${i}` : cual === 'baseCop' ? `linea-base-${i}` : `linea-iva-${i}`;
+  }
+  const ids: Record<string, string> = {
+    proveedorNombre: 'factura-nombre',
+    proveedorTipoDocumento: 'factura-tipo-doc',
+    proveedorDocumento: 'factura-doc',
+    proveedorCiudad: 'factura-ciudad',
+    proveedorDireccion: 'factura-direccion',
+    prefijoDelProveedor: 'factura-prefijo',
+    numeroDelProveedor: 'factura-numero',
+    fecha: 'factura-fecha',
+    fechaDeVencimiento: 'factura-vence',
+    concepto: 'factura-concepto',
+    totalCop: 'factura-total',
+    retefuenteCop: 'factura-retefuente',
+    reteivaCop: 'factura-reteiva',
+    reteicaCop: 'factura-reteica',
+    // La suma de los renglones no tiene un control propio: se enfoca la
+    // primera base, que es por donde se empieza a revisar.
+    lineas: 'linea-base-0',
+  };
+  return ids[campo] ?? 'factura-nombre';
+}
+
+/** El error de la lista de renglones entera (la suma, o demasiados). */
+const ID_DEL_ERROR_DE_LAS_LINEAS = 'factura-lineas-error';
+
+function enfocar(campo: CampoDeLaFactura) {
+  if (typeof document === 'undefined') return;
+  document.getElementById(idDelCampo(campo))?.focus();
 }
 
 /** Un número que puede estar vacío: `''` no es `0`. */
@@ -152,6 +197,14 @@ export function FormularioDeFactura({
    * pegado haría que un fallo de red pareciera un descuadre.
    */
   const [descuadreDelBack, setDescuadreDelBack] = useState<TotalesQueNoCuadran | null>(null);
+  /**
+   * Los errores que el back mandó en `campos` (400 `DATOS_INVALIDOS`, o el
+   * `TOTAL_FUERA_DE_RANGO` de la suma), cada uno en su campo. Se borra el de
+   * un campo apenas la persona lo cambia: el error ya no habla de lo que hay.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDeLaFactura, string>>
+  >({});
 
   const borrador: BorradorDeFactura = {
     proveedorNombre,
@@ -167,6 +220,33 @@ export function FormularioDeFactura({
   };
 
   const totales = useMemo(() => totalesDeLasLineas(lineas), [lineas]);
+  /**
+   * 🔁 Los topes del back (`limites-de-gastos.ts`), con su misma frase y en su
+   * campo, mientras se escribe: un cero de más se ve antes de enviar.
+   */
+  const erroresDelCliente = erroresDeLosTopes(borrador);
+  const errorDe = (campo: CampoDeLaFactura): string | undefined =>
+    erroresDelCliente[campo] ?? erroresDelServidor[campo];
+  /**
+   * Las props del control de un campo que puede tener error. La primera base
+   * nombra además el error de la lista entera (la suma), que es el que recibe
+   * el foco cuando la suma no cabe.
+   */
+  const conError = (campo: CampoDeLaFactura) => {
+    const ids: string[] = [];
+    if (errorDe(campo)) ids.push(`${idDelCampo(campo)}-error`);
+    if (campo === 'lineas.0.baseCop' && errorDe('lineas')) ids.push(ID_DEL_ERROR_DE_LAS_LINEAS);
+    return ids.length > 0
+      ? { 'aria-invalid': true as const, 'aria-describedby': ids.join(' ') }
+      : {};
+  };
+  const olvidarError = (...campos: CampoDeLaFactura[]) =>
+    setErroresDelServidor((previos) => {
+      if (!campos.some((c) => previos[c] !== undefined)) return previos;
+      const siguientes = { ...previos };
+      for (const c of campos) delete siguientes[c];
+      return siguientes;
+    });
   const problemas = useMemo(() => problemasDeLaFactura(borrador), [borrador]);
   const avisoDelTotal = avisoDeTotalQueNoCuadra(borrador, formatCurrency);
   const retenciones = sumaDeRetenciones(borrador);
@@ -238,12 +318,27 @@ export function FormularioDeFactura({
     if (p.direccion) setProveedorDireccion(p.direccion);
   };
 
-  const cambiarLinea = (indice: number, cambios: Partial<LineaEnCurso>) =>
+  const cambiarLinea = (indice: number, cambios: Partial<LineaEnCurso>) => {
+    olvidarError(
+      'lineas',
+      ...(Object.keys(cambios).map((k) => `lineas.${indice}.${k}`) as CampoDeLaFactura[]),
+    );
     setLineas((previas) => previas.map((l, i) => (i === indice ? { ...l, ...cambios } : l)));
+  };
 
   const guardar = async (causar: boolean) => {
+    /*
+     * 🔁 Lo que el back rechazaría por un tope (un cero de más) se ataja acá,
+     * con la misma frase, y se enfoca el campo: no viaja nada.
+     */
+    const fueraDeRango = (Object.keys(erroresDelCliente) as CampoDeLaFactura[])[0];
+    if (fueraDeRango) {
+      enfocar(fueraDeRango);
+      return;
+    }
     setGuardando(true);
     setDescuadreDelBack(null);
+    setErroresDelServidor({});
     try {
       const cuerpo: FacturaNueva = {
         tipo,
@@ -289,7 +384,22 @@ export function FormularioDeFactura({
        */
       setDescuadreDelBack(totalesQueNoCuadran(e));
       // El diálogo queda abierto: no se pierde lo digitado.
-      toast.error(mensajeDeContabilidad(e, 'No se pudo registrar la factura.'));
+      /*
+       * Un 400 con `campos` va a cada campo (la base del renglón 2, el total) y
+       * se enfoca el primero; al toast va SÓLO lo que no tiene dónde ir. Sin
+       * `campos` (un código de negocio, un 5xx, la red) habla
+       * `mensajeDeContabilidad`, con la regla de oro.
+       */
+      const reparto = repartirErroresDelServidor<CampoDeLaFactura>(e, {
+        campos: camposDeLaFactura(lineas.length),
+      });
+      setErroresDelServidor(reparto.porCampo);
+      if (reparto.orden[0]) enfocar(reparto.orden[0]);
+      if (reparto.delServidor.length === 0) {
+        toast.error(mensajeDeContabilidad(e, 'No se pudo registrar la factura.'));
+      } else if (reparto.sueltos.length > 0) {
+        toast.error(reparto.sueltos.join(' · '));
+      }
     } finally {
       setGuardando(false);
     }
@@ -354,16 +464,29 @@ export function FormularioDeFactura({
                 <Input
                   id="factura-nombre"
                   value={proveedorNombre}
-                  onChange={(e) => setProveedorNombre(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('proveedorNombre');
+                    setProveedorNombre(e.target.value);
+                  }}
                   data-testid="factura-nombre"
+                  {...conError('proveedorNombre')}
                 />
+                <ErrorDelCampo id="factura-nombre-error" mensaje={errorDe('proveedorNombre')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-tipo-doc">Tipo de documento del proveedor</Label>
                 <Input
                   id="factura-tipo-doc"
                   value={proveedorTipoDocumento}
-                  onChange={(e) => setProveedorTipoDocumento(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('proveedorTipoDocumento');
+                    setProveedorTipoDocumento(e.target.value);
+                  }}
+                  {...conError('proveedorTipoDocumento')}
+                />
+                <ErrorDelCampo
+                  id="factura-tipo-doc-error"
+                  mensaje={errorDe('proveedorTipoDocumento')}
                 />
               </div>
               <div className="space-y-1.5">
@@ -371,24 +494,42 @@ export function FormularioDeFactura({
                 <Input
                   id="factura-doc"
                   value={proveedorDocumento}
-                  onChange={(e) => setProveedorDocumento(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('proveedorDocumento');
+                    setProveedorDocumento(e.target.value);
+                  }}
                   data-testid="factura-documento"
+                  {...conError('proveedorDocumento')}
                 />
+                <ErrorDelCampo id="factura-doc-error" mensaje={errorDe('proveedorDocumento')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-ciudad">Ciudad</Label>
                 <Input
                   id="factura-ciudad"
                   value={proveedorCiudad}
-                  onChange={(e) => setProveedorCiudad(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('proveedorCiudad');
+                    setProveedorCiudad(e.target.value);
+                  }}
+                  {...conError('proveedorCiudad')}
                 />
+                <ErrorDelCampo id="factura-ciudad-error" mensaje={errorDe('proveedorCiudad')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-direccion">Dirección</Label>
                 <Input
                   id="factura-direccion"
                   value={proveedorDireccion}
-                  onChange={(e) => setProveedorDireccion(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('proveedorDireccion');
+                    setProveedorDireccion(e.target.value);
+                  }}
+                  {...conError('proveedorDireccion')}
+                />
+                <ErrorDelCampo
+                  id="factura-direccion-error"
+                  mensaje={errorDe('proveedorDireccion')}
                 />
               </div>
             </div>
@@ -411,18 +552,28 @@ export function FormularioDeFactura({
                 <Input
                   id="factura-prefijo"
                   value={prefijo}
-                  onChange={(e) => setPrefijo(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('prefijoDelProveedor');
+                    setPrefijo(e.target.value);
+                  }}
                   placeholder="FE"
+                  {...conError('prefijoDelProveedor')}
                 />
+                <ErrorDelCampo id="factura-prefijo-error" mensaje={errorDe('prefijoDelProveedor')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-numero">Número</Label>
                 <Input
                   id="factura-numero"
                   value={numero}
-                  onChange={(e) => setNumero(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('numeroDelProveedor');
+                    setNumero(e.target.value);
+                  }}
                   data-testid="factura-numero"
+                  {...conError('numeroDelProveedor')}
                 />
+                <ErrorDelCampo id="factura-numero-error" mensaje={errorDe('numeroDelProveedor')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-fecha">Fecha</Label>
@@ -430,9 +581,14 @@ export function FormularioDeFactura({
                   id="factura-fecha"
                   type="date"
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('fecha');
+                    setFecha(e.target.value);
+                  }}
                   data-testid="factura-fecha"
+                  {...conError('fecha')}
                 />
+                <ErrorDelCampo id="factura-fecha-error" mensaje={errorDe('fecha')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-vence">Vence</Label>
@@ -441,18 +597,28 @@ export function FormularioDeFactura({
                   type="date"
                   value={vencimiento}
                   min={fecha || undefined}
-                  onChange={(e) => setVencimiento(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('fechaDeVencimiento');
+                    setVencimiento(e.target.value);
+                  }}
+                  {...conError('fechaDeVencimiento')}
                 />
+                <ErrorDelCampo id="factura-vence-error" mensaje={errorDe('fechaDeVencimiento')} />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="factura-concepto">Concepto</Label>
                 <Input
                   id="factura-concepto"
                   value={concepto}
-                  onChange={(e) => setConcepto(e.target.value)}
+                  onChange={(e) => {
+                    olvidarError('concepto');
+                    setConcepto(e.target.value);
+                  }}
                   placeholder="Cerraduras para la oficina"
                   data-testid="factura-concepto"
+                  {...conError('concepto')}
                 />
+                <ErrorDelCampo id="factura-concepto-error" mensaje={errorDe('concepto')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-rubro">Rubro del P&G</Label>
@@ -521,6 +687,11 @@ export function FormularioDeFactura({
                       value={l.descripcion}
                       onChange={(e) => cambiarLinea(i, { descripcion: e.target.value })}
                       data-testid={`linea-descripcion-${i}`}
+                      {...conError(`lineas.${i}.descripcion`)}
+                    />
+                    <ErrorDelCampo
+                      id={`linea-desc-${i}-error`}
+                      mensaje={errorDe(`lineas.${i}.descripcion`)}
                     />
                   </div>
                   <div className="space-y-1.5 sm:col-span-3">
@@ -542,6 +713,11 @@ export function FormularioDeFactura({
                       value={l.baseCop === null ? '' : String(l.baseCop)}
                       onChange={(e) => cambiarLinea(i, { baseCop: aNumero(e.target.value) })}
                       data-testid={`linea-base-${i}`}
+                      {...conError(`lineas.${i}.baseCop`)}
+                    />
+                    <ErrorDelCampo
+                      id={`linea-base-${i}-error`}
+                      mensaje={errorDe(`lineas.${i}.baseCop`)}
                     />
                   </div>
                   <div className="space-y-1.5 sm:col-span-1">
@@ -552,6 +728,11 @@ export function FormularioDeFactura({
                       value={String(l.ivaPct)}
                       onChange={(e) => cambiarLinea(i, { ivaPct: aNumero(e.target.value) ?? 0 })}
                       data-testid={`linea-iva-${i}`}
+                      {...conError(`lineas.${i}.ivaPct`)}
+                    />
+                    <ErrorDelCampo
+                      id={`linea-iva-${i}-error`}
+                      mensaje={errorDe(`lineas.${i}.ivaPct`)}
                     />
                   </div>
                   <div className="flex items-end justify-between gap-2 sm:col-span-2">
@@ -577,6 +758,10 @@ export function FormularioDeFactura({
                 </li>
               ))}
             </ul>
+            {/* El error de la lista entera (la SUMA de los renglones, o
+                demasiados renglones): va debajo de los renglones y lo nombra la
+                primera base, que es por donde se empieza a revisar. */}
+            <ErrorDelCampo id={ID_DEL_ERROR_DE_LAS_LINEAS} mensaje={errorDe('lineas')} />
 
             <Nota testId="nota-de-la-cuenta">
               <p>
@@ -596,12 +781,18 @@ export function FormularioDeFactura({
                   id="factura-total"
                   inputMode="numeric"
                   value={totalDelPapel === null ? '' : String(totalDelPapel)}
-                  onChange={(e) => setTotalDelPapel(aNumero(e.target.value))}
+                  onChange={(e) => {
+                    olvidarError('totalCop');
+                    setTotalDelPapel(aNumero(e.target.value));
+                  }}
                   data-testid="factura-total"
+                  {...conError('totalCop')}
                 />
-                <p className="text-caption text-fg-muted">
-                  El número que dice el papel, no el que calculamos.
-                </p>
+                <ErrorDelCampo
+                  id="factura-total-error"
+                  mensaje={errorDe('totalCop')}
+                  pista="El número que dice el papel, no el que calculamos."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-retefuente">Retefuente</Label>
@@ -609,9 +800,14 @@ export function FormularioDeFactura({
                   id="factura-retefuente"
                   inputMode="numeric"
                   value={String(retefuente)}
-                  onChange={(e) => setRetefuente(aNumero(e.target.value) ?? 0)}
+                  onChange={(e) => {
+                    olvidarError('retefuenteCop');
+                    setRetefuente(aNumero(e.target.value) ?? 0);
+                  }}
                   data-testid="factura-retefuente"
+                  {...conError('retefuenteCop')}
                 />
+                <ErrorDelCampo id="factura-retefuente-error" mensaje={errorDe('retefuenteCop')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-reteiva">ReteIVA</Label>
@@ -619,8 +815,14 @@ export function FormularioDeFactura({
                   id="factura-reteiva"
                   inputMode="numeric"
                   value={String(reteiva)}
-                  onChange={(e) => setReteiva(aNumero(e.target.value) ?? 0)}
+                  onChange={(e) => {
+                    olvidarError('reteivaCop');
+                    setReteiva(aNumero(e.target.value) ?? 0);
+                  }}
+                  data-testid="factura-reteiva"
+                  {...conError('reteivaCop')}
                 />
+                <ErrorDelCampo id="factura-reteiva-error" mensaje={errorDe('reteivaCop')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-reteica">ReteICA</Label>
@@ -628,9 +830,14 @@ export function FormularioDeFactura({
                   id="factura-reteica"
                   inputMode="numeric"
                   value={String(reteica)}
-                  onChange={(e) => setReteica(aNumero(e.target.value) ?? 0)}
+                  onChange={(e) => {
+                    olvidarError('reteicaCop');
+                    setReteica(aNumero(e.target.value) ?? 0);
+                  }}
                   data-testid="factura-reteica"
+                  {...conError('reteicaCop')}
                 />
+                <ErrorDelCampo id="factura-reteica-error" mensaje={errorDe('reteicaCop')} />
               </div>
             </div>
 

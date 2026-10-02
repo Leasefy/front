@@ -11,6 +11,7 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 import type { FacturaDelMes, FacturasPorGenerar } from '@/lib/api/facturacion-por-mes.service';
 
@@ -272,7 +273,19 @@ async function clic(sel: string) {
   });
 }
 
+/*
+ * 🔴 El reloj de estas pruebas está parado en septiembre de 2026 (02-10-2026).
+ *
+ * La pantalla abre en `mesActual()` y la tabla muestra SÓLO las filas de ese
+ * mes; todos los datos de abajo son de septiembre («Septiembre es el mes en
+ * curso de estas pruebas»). El 1 de octubre el mes en curso pasó a ser octubre
+ * y las 62 pruebas se quedaron mirando una tabla vacía. Se para el reloj en
+ * vez de cambiar las fechas: otra fecha fija se vuelve a romper el mes que
+ * viene. Sólo `Date`: los `setTimeout` de las esperas siguen siendo reales.
+ */
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 8, 15, 10, 0, 0));
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
   pdfMock.mockReset().mockResolvedValue(new Blob(['%PDF']));
@@ -288,6 +301,7 @@ afterEach(() => {
     root.unmount();
   });
   host.remove();
+  vi.useRealTimers();
 });
 
 const q = (s: string) => host.querySelector(s);
@@ -540,6 +554,41 @@ describe('NuevaFactura', () => {
       'Sólo el administrador o el contador pueden facturar.',
     );
     expect(toastOk).not.toHaveBeenCalled();
+  });
+
+  /*
+   * 02-10-2026 · Emitir con la regla de oro: un 5xx dice «de nuestro lado» con
+   * la referencia de soporte (antes salía «Error interno del servidor»); un
+   * 4xx, lo que escribió el back; «conexión», sólo sin respuesta. El reloj
+   * falso de este archivo sigue puesto (septiembre de 2026).
+   */
+  it('🔴 un 5xx al generar dice «de nuestro lado» con la referencia', async () => {
+    generarMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+    });
+    const textos = toastErr.mock.calls.map((c) => String(c[0]));
+    expect(textos.some((t) => t.includes('No pudimos emitir las facturas: algo falló de nuestro lado'))).toBe(true);
+    expect(textos.some((t) => t.includes('ab12cd34'))).toBe(true);
+    expect(textos).not.toContain('Error interno del servidor');
+    expect(toastOk).not.toHaveBeenCalled();
+  });
+
+  it('sin respuesta al generar: ahí sí habla de la conexión', async () => {
+    generarMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+    });
+    expect(toastErr.mock.calls.some((c) => /conexi[oó]n/.test(String(c[0])))).toBe(true);
   });
 
   it('un mes sin contratos muestra el vacío, no una tabla en blanco', async () => {

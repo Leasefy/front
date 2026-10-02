@@ -360,6 +360,22 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect(document.querySelector('[data-testid="reglas-vacio"]')).not.toBeNull();
   });
 
+  it('🔴 un 5xx al usar la plantilla dice que fue nuestro, con la referencia', async () => {
+    listarMock.mockResolvedValueOnce([]);
+    crearMock.mockRejectedValueOnce(
+      new ApiError(500, 'Internal Server Error', 'ERROR_INTERNO', { referencia: 'beef1234' }),
+    );
+    await montar();
+
+    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-gasto-administrativo"]')));
+
+    const dicho = String(toastMock.error.mock.calls.at(-1)?.[0] ?? '');
+    expect(dicho).toContain('No pudimos crear la regla: algo falló de nuestro lado');
+    expect(dicho).toContain('beef1234');
+    expect(dicho).not.toContain('Internal Server Error');
+    expect(dicho).not.toMatch(/conexión/);
+  });
+
   it('sin permiso de creación no se ofrecen plantillas ni el botón de crear', async () => {
     permisos.canAccess.mockImplementation((_m: string, accion: string) => accion === 'view');
     listarMock.mockResolvedValueOnce([]);
@@ -431,6 +447,85 @@ describe('ReglasDeMora — el editor', () => {
     expect(document.querySelector('[data-testid="editor-de-regla"]')).not.toBeNull();
   });
 
+  /*
+   * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 con `campos` va a
+   * SU campo con el foco; un 5xx dice que fue nuestro con la referencia; sólo
+   * sin respuesta se habla de la conexión. Y el tope de la columna se ataja
+   * antes de enviar, con la frase del back.
+   */
+  it('🔴 un 400 con `campos` pinta el error en su campo, le da el foco y no va al banner', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    const frase = 'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+    crearMock.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'topeCop', regla: 'maximo', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    expect(crearMock).toHaveBeenCalledTimes(1);
+    expect($('#regla-tope-error').textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('regla-tope');
+    expect(document.querySelector('[data-testid="error-del-back"]')).toBeNull();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, nunca «Error interno»', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    crearMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'f00dcafe' }),
+    );
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    const banner = $('[data-testid="error-del-back"]').textContent ?? '';
+    expect(banner).toContain('No pudimos guardar la regla: algo falló de nuestro lado');
+    expect(banner).toContain('f00dcafe');
+    expect(banner).not.toContain('Error interno del servidor');
+  });
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    crearMock.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    const banner = $('[data-testid="error-del-back"]').textContent ?? '';
+    expect(banner).toMatch(/conexión/);
+    expect(banner).not.toContain('Failed to fetch');
+  });
+
+  it('🔴 un tope con ceros de más se ataja ANTES de enviar, con la frase del back', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    escribir($('#regla-tope') as HTMLInputElement, '50000000000');
+    await enviarFormulario();
+
+    expect(crearMock).not.toHaveBeenCalled();
+    expect($('#regla-tope-error').textContent).toBe(
+      'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    );
+  });
+
   it('las validaciones locales frenan el envío: sin nombre y sin valor no se llama al back', async () => {
     listarMock.mockResolvedValueOnce([regla()]);
     await montar();
@@ -439,8 +534,8 @@ describe('ReglasDeMora — el editor', () => {
     await enviarFormulario();
 
     expect(crearMock).not.toHaveBeenCalled();
-    expect($('[data-testid="error-regla-nombre"]').textContent).toContain('El nombre necesita al menos 3 letras.');
-    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Pon el valor.');
+    expect($('#regla-nombre-error').textContent).toContain('El nombre necesita al menos 3 letras.');
+    expect($('#regla-valor-error').textContent).toContain('Pon el valor.');
   });
 
   it('una tasa diaria mayor que 1 % se frena localmente con el mensaje del back', async () => {
@@ -453,7 +548,7 @@ describe('ReglasDeMora — el editor', () => {
     await enviarFormulario();
 
     expect(crearMock).not.toHaveBeenCalled();
-    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Una tasa DIARIA de 2% son 60.0% al mes.');
+    expect($('#regla-valor-error').textContent).toContain('Una tasa DIARIA de 2% son 60.0% al mes.');
   });
 
   it('editar abre el modal con la regla cargada y guarda por PUT', async () => {

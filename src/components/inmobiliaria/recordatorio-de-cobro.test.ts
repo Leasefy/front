@@ -42,10 +42,22 @@ describe('enviarRecordatorio (C1: el recordatorio no miente)', () => {
     expect(toastMock.error).not.toHaveBeenCalled();
   });
 
-  it('un 500 no muestra el mensaje crudo del servidor', () => {
-    expect(motivoDelFalloDelRecordatorio(new ApiError(500, 'Internal server error'))).toBe(
-      'Tuvimos un problema de nuestro lado. Intenta de nuevo en unos minutos.',
+  it('un 500 no muestra el mensaje crudo del servidor: dice que fue nuestro, con la referencia', () => {
+    const motivo = motivoDelFalloDelRecordatorio(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { referencia: '9f8e7d6c' }),
     );
+    // 02-10-2026: por el traductor (la regla de oro), con la referencia para soporte.
+    expect(motivo).toContain('No pudimos enviar el recordatorio: algo falló de nuestro lado');
+    expect(motivo).toContain('9f8e7d6c');
+    expect(motivo).not.toContain('Internal server error');
+  });
+
+  it('el 403 del back que ya explica qué cuenta hace falta se dice tal cual', () => {
+    expect(
+      motivoDelFalloDelRecordatorio(
+        new ApiError(403, 'Esta acción es para cuentas de inmobiliaria con permiso de cobros.'),
+      ),
+    ).toBe('Esta acción es para cuentas de inmobiliaria con permiso de cobros.');
   });
 
   it('un 403 dice que falta el permiso, no «Forbidden resource»', () => {
@@ -55,7 +67,14 @@ describe('enviarRecordatorio (C1: el recordatorio no miente)', () => {
   });
 
   it('sin respuesta del servidor habla de la conexión', () => {
-    expect(motivoDelFalloDelRecordatorio(new TypeError('fetch failed'))).toContain('conexión');
+    // El texto con el que el NAVEGADOR dice que el pedido no salió (Chrome).
+    expect(motivoDelFalloDelRecordatorio(new TypeError('Failed to fetch'))).toContain('conexión');
     expect(motivoDelFalloDelRecordatorio(new ApiError(0, 'fetch failed'))).toContain('conexión');
+  });
+
+  it('🔴 un error del código (no de la red) NO culpa a la conexión (02-10-2026)', () => {
+    const motivo = motivoDelFalloDelRecordatorio(new TypeError('enviar is not a function'));
+    expect(motivo).not.toContain('conexión');
+    expect(motivo).not.toContain('is not a function');
   });
 });

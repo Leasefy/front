@@ -297,6 +297,16 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
   su espejo en `src/lib/configuracion/limites-de-la-inmobiliaria.ts` y `limites-de-los-medios-de-pago.ts`
   (sólo se mira lo que cambió: un dato viejo no impide guardar lo demás). `SeccionPerfil` toastea por
   el traductor; con `campos`, los datos de la empresa los pintan en su campo y el toast calla.
+- **La plata (pagos, caja, dispersiones, tesorería, cartera, contabilidad, facturación, nómina; 02-10-2026)**:
+  la plata en `int4` se topa en **$2.000.000.000** («… no puede pasar de $2.000.000.000. Revisa que no
+  sobren ceros.»); espejos en `src/lib/{recaudo,cobros,tesoreria,cartera,dispersiones,facturacion,contabilidad,finanzas}/limites-*.ts`
+  y `components/nomina/limites-de-nomina.ts`, cada uno con su archivo del back. Los traductores del módulo
+  (`mensajeDeContabilidad`, `motivoLegible`/`motivoDeLaAccion`, `explicarGiro`, `mensajeDelFalloDeEmision`,
+  `motivoDeCompartir`, `motivoDelFalloDelRecordatorio`) se quedan SÓLO con sus códigos; lo demás, al traductor.
+  🔴 `FalloDeCarga` es para LECTURAS: `clasificarFallo` titula un 400/409 como «problema nuestro». En una
+  ACCIÓN, el 4xx va por `mensajeParaLaPersona` (ver `GenerarCobrosDialog`). Los 400 de caja sin `campos`
+  que son de un campo (`FECHA_FUTURA`, `FECHA_NO_VALIDA`, el 409 del número de factura repetido) van bajo
+  ese campo, no al banner.
 
 ## Carga de inmuebles reanudable (T-0130)
 

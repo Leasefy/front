@@ -87,7 +87,7 @@ export function EnlacesCompartidos({
       onRevocado(enlace.id);
       toast.success('Enlace revocado: quien lo abra ya no ve el estado de cuenta.');
     } catch (e) {
-      toast.error(motivoDeCompartir(e, 'No se pudo revocar el enlace.'));
+      toast.error(motivoDeCompartir(e, 'No se pudo revocar el enlace.', 'revocar el enlace'));
     } finally {
       setRevocando(null);
     }

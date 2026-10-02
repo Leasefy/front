@@ -77,6 +77,8 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
   facturacionPorMesService,
   fechaLegible,
@@ -112,6 +114,13 @@ export function ResolucionDeFacturacion({
   /** La resolución que se está por anular: abre el diálogo que pide el motivo. */
   const [porAnular, setPorAnular] = useState<Resolucion | null>(null)
   const [motivo, setMotivo] = useState('')
+  /** Lo que el back dijo del motivo (02-10-2026): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
+  // El foco va al motivo cuando el back lo rechazó, ya con el campo habilitado
+  // (mientras viaja la orden está apagado y no recibe el foco).
+  useEffect(() => {
+    if (errorDelMotivo && anulando === null) document.getElementById('motivo-anulacion')?.focus()
+  }, [errorDelMotivo, anulando])
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -138,6 +147,7 @@ export function ResolucionDeFacturacion({
 
   function pedirAnulacion(r: Resolucion) {
     setMotivo('')
+    setErrorDelMotivo(null)
     setPorAnular(r)
   }
 
@@ -157,10 +167,15 @@ export function ResolucionDeFacturacion({
       await cargar()
     } catch (e) {
       // El diálogo queda abierto y con el motivo escrito: reintentar no obliga
-      // a escribirlo de nuevo.
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudo anular la resolución.',
-      )
+      // a escribirlo de nuevo. Lo que el back diga del motivo va debajo de él;
+      // lo demás, al toast con la regla de oro (02-10-2026).
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'],
+        porDefecto: 'No se pudo anular la resolución.',
+        accion: 'anular la resolución',
+      })
+      if (porCampo.motivo) setErrorDelMotivo(porCampo.motivo)
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
     } finally {
       setAnulando(null)
     }
@@ -396,13 +411,19 @@ export function ResolucionDeFacturacion({
             <Textarea
               id="motivo-anulacion"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value)
+                if (errorDelMotivo) setErrorDelMotivo(null)
+              }}
               placeholder="La DIAN autorizó un rango nuevo y este quedó sin uso."
               rows={3}
               maxLength={MAX_MOTIVO_DE_ANULACION}
               disabled={anulando !== null}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-anulacion-error' : undefined}
               data-testid="motivo-anulacion"
             />
+            <ErrorDelCampo id="motivo-anulacion-error" mensaje={errorDelMotivo} />
             <p className="text-caption text-fg-muted">
               Obligatorio: queda guardado con la resolución. Hasta{' '}
               {MAX_MOTIVO_DE_ANULACION} caracteres.

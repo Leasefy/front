@@ -22,6 +22,7 @@ vi.mock('@/lib/api/recibos-de-caja.service', () => ({
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+import { ApiError } from '@/lib/api/client';
 import { BotonAnularRecibo, mismoNumero, ProveedorDeAnularRecibo } from './AnularReciboDeLaFila';
 import { fila } from './ejemplo-de-prueba';
 
@@ -118,8 +119,85 @@ describe('BotonAnularRecibo', () => {
         <BotonAnularRecibo fila={PAGADA} />
       </ProveedorDeAnularRecibo>,
     );
-    await anularConMotivo('x');
+    // (Un motivo de verdad: desde el 02-10 con menos de 5 caracteres el botón no se aprieta.)
+    await anularConMotivo('Se registró dos veces');
     expect(anular).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('No encontramos el recibo RC-0011');
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026): el motivo tiene los topes del
+ * back (5 a 300 caracteres); un 400 del motivo va DEBAJO del motivo con el
+ * foco; un 5xx dice «de nuestro lado» con la referencia; sólo sin respuesta se
+ * habla de la conexión.
+ */
+describe('anular el recibo de la fila — los errores en palabras', () => {
+  const REFERENCIA = 'ab12cd34';
+
+  async function montarConElRecibo() {
+    listar.mockResolvedValue([{ id: 'r-11', numero: 11, valorCop: 500_000, anuladoAt: null }]);
+    await montar(
+      <ProveedorDeAnularRecibo habilitado onAnulado={() => {}}>
+        <BotonAnularRecibo fila={PAGADA} />
+      </ProveedorDeAnularRecibo>,
+    );
+  }
+
+  const banner = () => document.body.querySelector('[data-testid="anular-recibo-dialogo"]')?.textContent ?? '';
+
+  it('🔴 con menos de 5 caracteres el botón no se aprieta (el back lo rechazaría)', async () => {
+    await montarConElRecibo();
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="anular-recibo-de-la-fila"]')!.click();
+    });
+    const area = document.body.querySelector<HTMLTextAreaElement>('#motivo-anular-recibo')!;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(area, 'Mal');
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const boton = document.body.querySelector<HTMLButtonElement>('[data-testid="anular-recibo-confirmar"]')!;
+    expect(boton.disabled).toBe(true);
+    expect(area.maxLength).toBe(300);
+  });
+
+  it('🔴 un 400 del motivo va debajo del motivo, con el foco', async () => {
+    const frase = 'El motivo debe tener al menos 5 caracteres.';
+    anular.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'motivo', regla: 'longitud_minima', mensaje: frase }],
+      }),
+    );
+    await montarConElRecibo();
+    await anularConMotivo('Se registró dos veces');
+    expect(document.body.querySelector('#motivo-anular-recibo-error')?.textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('motivo-anular-recibo');
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, no la conexión', async () => {
+    anular.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: REFERENCIA,
+      }),
+    );
+    await montarConElRecibo();
+    await anularConMotivo('Se registró dos veces');
+    expect(banner()).toContain('No pudimos anular el recibo: algo falló de nuestro lado');
+    expect(banner()).toContain(REFERENCIA);
+    expect(banner()).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    anular.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montarConElRecibo();
+    await anularConMotivo('Se registró dos veces');
+    expect(banner()).toMatch(/conexión/);
   });
 });

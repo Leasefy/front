@@ -41,6 +41,7 @@ import {
   type TipoDeCuentaDeOrigen,
 } from '@/lib/api/lotes-de-dispersion.service';
 import { cn } from '@/lib/utils';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { CamposDeLaCuentaDeOrigen, cuentaEscritaValida } from './CamposDeLaCuentaDeOrigen';
 import { entregaDe, ETIQUETA_DE_LA_ENTREGA, fuenteCorta, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
@@ -86,7 +87,16 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
         }
       })
       .catch((e: unknown) => {
-        if (vigente) setError(e instanceof Error && e.message ? e.message : 'No se pudo cargar la lista de bancos.');
+        // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+        // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+        if (vigente) {
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No se pudo cargar la lista de bancos.',
+              accion: 'cargar la lista de bancos',
+            }),
+          );
+        }
       });
     return () => {
       vigente = false;

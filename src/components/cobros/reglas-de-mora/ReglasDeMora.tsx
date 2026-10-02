@@ -54,6 +54,7 @@ import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { ordenarReglas, reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service';
 import type { ReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import { cn } from '@/lib/utils';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EditorDeRegla } from './EditorDeRegla';
 import { PLANTILLAS, type PlantillaDeRegla, type ValoresDeRegla, topeDeUsuraDe } from './esquema';
 import {
@@ -91,10 +92,6 @@ export function plantillasQueFaltan(reglas: readonly ReglaDeMora[]): PlantillaDe
           regla.formula === plantilla.valores.formula,
       ),
   );
-}
-
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
 }
 
 export function ReglasDeMora() {
@@ -187,7 +184,11 @@ export function ReglasDeMora() {
       ponerRegla(regla);
       toast.success(`«${regla.nombre}» quedó creada.`);
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo crear la regla.'));
+      // Por el traductor (02-10-2026): un 5xx dice que fue nuestro, con la
+      // referencia; «conexión» sólo cuando no hubo respuesta.
+      toast.error(
+        mensajeParaLaPersona(error, { porDefecto: 'No se pudo crear la regla.', accion: 'crear la regla' }),
+      );
     } finally {
       setPlantillaEnCurso(null);
     }
@@ -198,7 +199,12 @@ export function ReglasDeMora() {
     try {
       ponerRegla(await reglasDeMoraApi.actualizar(regla.id, { activa }));
     } catch (error) {
-      toast.error(mensajeDe(error, activa ? 'No se pudo prender la regla.' : 'No se pudo apagar la regla.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: activa ? 'No se pudo prender la regla.' : 'No se pudo apagar la regla.',
+          accion: activa ? 'prender la regla' : 'apagar la regla',
+        }),
+      );
     } finally {
       marcarOcupada(regla.id, false);
     }

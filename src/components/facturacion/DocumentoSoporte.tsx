@@ -39,6 +39,7 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   facturacionElectronicaService,
   pesos,
@@ -128,8 +129,12 @@ export function DocumentoSoporte() {
         }),
       )
     } catch (e) {
+      // Con la regla de oro (02-10-2026).
       toast.error(
-        e instanceof Error ? e.message : 'No se pudo calcular el documento.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo calcular el documento.',
+          accion: 'calcular el documento soporte',
+        }),
       )
     } finally {
       setTrabajando(false)
@@ -154,7 +159,10 @@ export function DocumentoSoporte() {
       await cargar()
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : 'No se pudo emitir el documento.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo emitir el documento.',
+          accion: 'emitir el documento soporte',
+        }),
       )
     } finally {
       setTrabajando(false)

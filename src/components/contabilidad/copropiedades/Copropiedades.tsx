@@ -44,6 +44,8 @@ import {
   type Copropiedad,
 } from '@/lib/api/copropiedades.service';
 import { clasificarFallo } from '@/lib/errores/clasificar';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
 import { FaltaLaMigracion, TarjetaDeInforme } from '../piezas';
 
@@ -257,6 +259,8 @@ export function Copropiedades() {
   );
 }
 
+type CampoDeLaCopropiedad = 'nombre' | 'nit' | 'direccion';
+
 function FormularioDeCopropiedad({
   onListo,
   onCancelar,
@@ -268,6 +272,14 @@ function FormularioDeCopropiedad({
   const [nit, setNit] = useState('');
   const [direccion, setDireccion] = useState('');
   const [guardando, setGuardando] = useState(false);
+  /** Lo que el back dijo de un campo (un 400 con `campos`). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaCopropiedad, string>>>({});
+  const olvidar = (campo: CampoDeLaCopropiedad) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
+  const describir = (campo: CampoDeLaCopropiedad) =>
+    delServidor[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `copro-${campo}-error` }
+      : {};
 
   const soloDigitos = nit.replace(/\D/g, '');
   const puede = nombre.trim().length >= 3 && soloDigitos.length >= 5;
@@ -285,7 +297,20 @@ function FormularioDeCopropiedad({
       );
       onListo();
     } catch (e) {
-      toast.error(clasificarFallo(e).descripcion);
+      /*
+       * Lo que es de un campo va bajo ese campo (y se enfoca); lo demás al
+       * toast, con la regla de oro (un 5xx «de nuestro lado» con la referencia).
+       * `clasificarFallo` es para un fallo de CARGA, con su título: acá es una
+       * acción.
+       */
+      const reparto = repartirErroresDelServidor<CampoDeLaCopropiedad>(e, {
+        campos: ['nombre', 'nit', 'direccion'],
+        porDefecto: 'No se pudo registrar la copropiedad.',
+        accion: 'registrar la copropiedad',
+      });
+      setDelServidor(reparto.porCampo);
+      if (reparto.orden[0]) document.getElementById(`copro-${reparto.orden[0]}`)?.focus();
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
@@ -298,34 +323,50 @@ function FormularioDeCopropiedad({
         <Input
           id="copro-nombre"
           value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
+          onChange={(e) => {
+            olvidar('nombre');
+            setNombre(e.target.value);
+          }}
           placeholder="Conjunto Residencial Altos del Poblado"
+          {...describir('nombre')}
         />
+        <ErrorDelCampo id="copro-nombre-error" mensaje={delServidor.nombre} />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="copro-nit">NIT</Label>
         <Input
           id="copro-nit"
           value={nit}
-          onChange={(e) => setNit(e.target.value)}
+          onChange={(e) => {
+            olvidar('nit');
+            setNit(e.target.value);
+          }}
           placeholder="900123456"
           inputMode="numeric"
           className="tabular-nums"
+          {...describir('nit')}
         />
         {/* El DV se calcula, no se pide: quien lo teclea se equivoca y el
             error sólo aparece cuando la DIAN rechaza el archivo. */}
-        <p className="text-caption text-fg-subtle">
-          Sin puntos ni dígito de verificación: ese lo calcula el sistema.
-        </p>
+        <ErrorDelCampo
+          id="copro-nit-error"
+          mensaje={delServidor.nit}
+          pista="Sin puntos ni dígito de verificación: ese lo calcula el sistema."
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="copro-direccion">Dirección (opcional)</Label>
         <Input
           id="copro-direccion"
           value={direccion}
-          onChange={(e) => setDireccion(e.target.value)}
+          onChange={(e) => {
+            olvidar('direccion');
+            setDireccion(e.target.value);
+          }}
           placeholder="Cra. 43A #7-50"
+          {...describir('direccion')}
         />
+        <ErrorDelCampo id="copro-direccion-error" mensaje={delServidor.direccion} />
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
         <Button

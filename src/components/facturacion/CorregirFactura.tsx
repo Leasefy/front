@@ -41,6 +41,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  MENSAJES_DE_LA_FACTURACION,
+  VALOR_MAXIMO_DE_LA_NOTA_COP,
+} from '@/lib/facturacion/limites-de-la-facturacion'
 import {
   NOMBRE_DEL_CONCEPTO_DEBITO,
   facturacionElectronicaService,
@@ -64,6 +70,31 @@ export interface CorregirFacturaProps {
 
 type Cual = 'PARCIAL' | 'DEBITO' | null
 
+/** Los campos del diálogo que pueden traer un error del back. */
+type CampoDeLaNota = 'valor' | 'motivo' | 'concepto'
+
+/**
+ * Lo que está mal con el valor, o `null` si se puede mandar (02-10-2026).
+ * La parcial tiene el techo del saldo de la factura; la débito, el del DTO
+ * del back (`int4`, $2.000.000.000), con su MISMA frase.
+ */
+export function errorDelValorDeLaNota(
+  valor: string,
+  cual: Exclude<Cual, null>,
+  maximoParcialCop: number,
+): string | null {
+  if (valor === '') return null
+  const n = Number(valor)
+  if (cual === 'PARCIAL') {
+    return Number.isInteger(n) && n > 0 && n <= maximoParcialCop
+      ? null
+      : `Escribe un valor entre $1 y ${pesos(maximoParcialCop)}.`
+  }
+  if (!Number.isInteger(n) || n <= 0) return 'Escribe un valor mayor que cero.'
+  if (n > VALOR_MAXIMO_DE_LA_NOTA_COP) return MENSAJES_DE_LA_FACTURACION.valorDeLaNotaMaximo
+  return null
+}
+
 export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
   const [cual, setCual] = useState<Cual>(null)
   const [motivo, setMotivo] = useState('')
@@ -72,6 +103,8 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
     'INTERESES_DE_MORA',
   )
   const [guardando, setGuardando] = useState(false)
+  /** Lo que el back dijo de cada campo (02-10-2026): va debajo del campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaNota, string>>>({})
 
   // El back puede no traer `correccion` (un back anterior): sin ella no se
   // ofrece nada, que es exactamente lo de antes.
@@ -79,15 +112,24 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
   if (!c) return null
 
   const valorCop = Number(valor)
-  const valorValido =
-    Number.isInteger(valorCop) &&
-    valorCop > 0 &&
-    (cual !== 'PARCIAL' || valorCop <= c.maximoParcialCop)
+  const errorLocalDelValor = cual ? errorDelValorDeLaNota(valor, cual, c.maximoParcialCop) : null
+  const valorValido = valor !== '' && errorLocalDelValor === null
+  const errorDelValor = errorLocalDelValor ?? delServidor.valor ?? null
+
+  function olvidar(campo: CampoDeLaNota) {
+    setDelServidor((previo) => {
+      if (!(campo in previo)) return previo
+      const resto = { ...previo }
+      delete resto[campo]
+      return resto
+    })
+  }
 
   function cerrar() {
     setCual(null)
     setMotivo('')
     setValor('')
+    setDelServidor({})
   }
 
   async function emitir() {
@@ -113,10 +155,18 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
       await onHecho()
     } catch (e) {
       // El diálogo queda abierto con lo escrito: reintentar no obliga a
-      // volver a escribirlo.
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudo emitir el documento.',
-      )
+      // volver a escribirlo. Lo que el back dijo de un campo va debajo de él;
+      // lo demás, al toast con la regla de oro (02-10-2026).
+      const reparto = repartirErroresDelServidor<CampoDeLaNota>(e, {
+        mapa: { valorCop: 'valor' },
+        campos: ['valor', 'motivo', 'concepto'],
+        porDefecto: 'No se pudo emitir el documento.',
+        accion: cual === 'PARCIAL' ? 'emitir la nota crédito' : 'emitir la nota débito',
+      })
+      setDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) document.getElementById(`corregir-${primero}`)?.focus()
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -203,9 +253,12 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                   id="corregir-concepto"
                   className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
                   value={concepto}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setConcepto(e.target.value as ConceptoDeNotaDebito)
-                  }
+                    olvidar('concepto')
+                  }}
+                  aria-invalid={delServidor.concepto ? true : undefined}
+                  aria-describedby={delServidor.concepto ? 'corregir-concepto-error' : undefined}
                   data-testid="corregir-concepto"
                 >
                   {(
@@ -216,6 +269,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                     </option>
                   ))}
                 </select>
+                <ErrorDelCampo id="corregir-concepto-error" mensaje={delServidor.concepto} />
               </div>
             )}
             <div className="space-y-1.5">
@@ -224,9 +278,13 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                 id="corregir-valor"
                 type="number"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  setValor(e.target.value)
+                  olvidar('valor')
+                }}
                 data-testid="corregir-valor"
-                aria-invalid={valor !== '' && !valorValido ? true : undefined}
+                aria-invalid={errorDelValor ? true : undefined}
+                aria-describedby={errorDelValor ? 'corregir-valor-error' : undefined}
               />
               {cual === 'PARCIAL' && (
                 <p className="text-caption text-fg-muted">
@@ -234,25 +292,20 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                   saldo a la factura.
                 </p>
               )}
-              {valor !== '' && !valorValido && (
-                <p
-                  role="alert"
-                  className="text-caption text-danger"
-                  data-testid="corregir-valor-error"
-                >
-                  {cual === 'PARCIAL'
-                    ? `Escribe un valor entre $1 y ${pesos(c.maximoParcialCop)}.`
-                    : 'Escribe un valor mayor que cero.'}
-                </p>
-              )}
+              <ErrorDelCampo id="corregir-valor-error" mensaje={errorDelValor} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="corregir-motivo">Por qué</Label>
               <Textarea
                 id="corregir-motivo"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value)
+                  olvidar('motivo')
+                }}
                 maxLength={500}
+                aria-invalid={delServidor.motivo ? true : undefined}
+                aria-describedby={delServidor.motivo ? 'corregir-motivo-error' : undefined}
                 placeholder={
                   cual === 'PARCIAL'
                     ? 'Se cobró el parqueadero y el contrato no lo tiene.'
@@ -263,6 +316,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
               <p className="text-caption text-fg-muted">
                 Lo lee tu contador y la DIAN. Al menos {MIN_MOTIVO} caracteres.
               </p>
+              <ErrorDelCampo id="corregir-motivo-error" mensaje={delServidor.motivo} />
             </div>
           </div>
 

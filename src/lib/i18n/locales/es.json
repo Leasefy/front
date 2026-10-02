@@ -72,7 +72,16 @@
     "settings": "Configuración",
     "help": "Ayuda",
     "logout": "Cerrar sesión",
-    "approval": "Mi tope de arriendo"
+    "approval": "Mi tope de arriendo",
+    "barra": {
+      "ocultar": "Ocultar barra",
+      "mostrar": "Mostrar barra",
+      "ocultarAria": "Ocultar la barra lateral",
+      "mostrarAria": "Mostrar la barra lateral",
+      "atajoMac": "⌘B",
+      "atajoOtros": "Ctrl B",
+      "menuDelCelular": "Menú de navegación"
+    }
   },
   "header": {
     "search": "Buscar propiedades, pagos, documentos...",

@@ -72,7 +72,16 @@
     "settings": "Settings",
     "help": "Help",
     "logout": "Log out",
-    "approval": "My rental cap"
+    "approval": "My rental cap",
+    "barra": {
+      "ocultar": "Hide sidebar",
+      "mostrar": "Show sidebar",
+      "ocultarAria": "Hide the sidebar",
+      "mostrarAria": "Show the sidebar",
+      "atajoMac": "⌘B",
+      "atajoOtros": "Ctrl B",
+      "menuDelCelular": "Navigation menu"
+    }
   },
   "header": {
     "search": "Search properties, payments, documents...",

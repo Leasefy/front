@@ -329,8 +329,24 @@ The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the cano
 - **Botón de plegar** (`BotonDeLaBarra`, 02-10-2026): cuadrado de 36 px, `rounded-[12px]`,
   `bg-surface` + `border-border`, ícono `SidebarSimple` de Phosphor (el mismo en los dos estados).
   Abierta, a la derecha del logo; plegada, debajo del símbolo. Tooltip neutro (`bg-fg text-bg`)
-  «Ocultar barra» / «Mostrar barra». No existe atajo de teclado para plegar. En el cajón del
-  celular no aparece. Se hunde al apretarlo (`whileTap` 0,94, framer).
+  «Ocultar barra» / «Mostrar barra» seguido de la tecla en el `Kbd` de Cadence (`size="sm"`, el
+  mismo del ⌘K): «⌘B» en macOS, «Ctrl B» en el resto; el botón lleva `aria-keyshortcuts`. En el
+  cajón del celular no aparece. Se hunde al apretarlo (`whileTap` 0,94, framer).
+- **Atajo ⌘B / Ctrl+B** (02-10-2026): pliega y despliega la barra de escritorio (⌘ en macOS, Ctrl en
+  el resto; nunca con Mayúscula ni Alt: ⌘⇧B es la barra de favoritos del navegador). No actúa con
+  el foco en un `input`, `textarea`, `select` o `contenteditable`; con un modal abierto (diálogo de
+  Radix con `data-state="open"` o cualquiera con `aria-modal="true"`); bajo `lg`, donde está el
+  cajón; si otro ya atendió la tecla (`defaultPrevented`), ni al dejarla apretada. El movimiento es
+  el mismo de plegar con el botón. Si el foco estaba en la barra y quien plegó iba con el teclado,
+  pasa al botón de plegar (la cabecera se monta de nuevo y el foco caía al `<body>`). Reglas en
+  `src/lib/nav/atajo-de-la-barra.ts`. Ningún otro atajo usa B (⌘K es el buscador).
+- **Cajón del celular — el foco**: al abrir cae en el logo (`onOpenAutoFocus`). Radix enfoca el
+  primer control que no sea enlace, que era el campo «Buscar», y el `SidebarSearch` de Cadence
+  pinta el anillo con `focus:`: salía azul apenas se abría. El logo y no la ✕ porque es lo primero
+  en el orden de lectura y del Tab (la ✕ va última en el DOM); su anillo es `focus-visible`, se ve
+  sólo yendo con el teclado. Queda atrapado y al cerrar vuelve al botón que lo abrió
+  (`openPlanMobileSidebar(evento)`; sin `SheetTrigger` Radix no sabe cuál es), salvo que otro ya
+  tenga el foco (el ⌘K que abre «Buscar»). El diálogo se llama «Menú de navegación».
 - **Al plegar/desplegar**: la cabecera y la navegación nuevas entran con un fundido de 200 ms
   (sólo `opacity`) mientras la barra cambia de ancho; lo que ya estaba al cargar la página NO se
   anima ni sale con `opacity: 0` en el HTML del servidor (`useDespuesDelPrimerPintado`). El ancho

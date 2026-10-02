@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
@@ -11,6 +11,14 @@ import { LeasefyLogo, LeasefySymbol, LeasefyLogotype } from '@/components/brand'
 import { SidebarThemeToggle } from './SidebarThemeToggle';
 import { useAuth } from '@/lib/auth';
 import { useSidebar } from '@/lib/context/SidebarContext';
+import { useOptionalI18n } from '@/lib/i18n';
+import {
+  atajoParaAria,
+  esElAtajoDeLaBarra,
+  esMac,
+  hayUnModalAbierto,
+  seEstaEscribiendo,
+} from '@/lib/nav/atajo-de-la-barra';
 import { hrefDeLaFilaActiva } from '@/lib/nav/fila-activa-del-menu';
 import {
   agruparEnSecciones,
@@ -35,6 +43,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 // CADENCE-COMPONENTS.md). Expanded leaf rows + group labels ARE the real
 // components so they inherit the DS hover/active/focus states.
 import {
+  Kbd,
   SidebarItem,
   SidebarSearch,
   SidebarInviteCard,
@@ -50,14 +59,61 @@ import {
 // pub-sub avoids threading open-state through each layout. No-op when no
 // PlanSidebar is mounted.
 // ─────────────────────────────────────────────────────────────────────────────
-type MobileSidebarListener = () => void;
+type MobileSidebarListener = (abridor: HTMLElement | null) => void;
 const mobileSidebarListeners = new Set<MobileSidebarListener>();
 
-/** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
 const INVITE_DISMISSED_KEY = 'leasefy-sidebar-invite-dismissed';
 
-export function openPlanMobileSidebar() {
-  mobileSidebarListeners.forEach((listener) => listener());
+/**
+ * Quién abrió el cajón, para devolverle el foco al cerrar. El cajón no tiene
+ * `SheetTrigger` (el botón vive en `PlanHeader`), así que Radix no sabe a
+ * quién volver y el foco caía al `<body>`. PlanHeader lo usa como
+ * `onClick={openPlanMobileSidebar}`: llega el evento y su `currentTarget` es
+ * el botón (también en Safari, que no enfoca un botón al hacerle clic). Sin
+ * evento, el elemento con el foco.
+ */
+function quienAbreElCajon(origen: unknown): HTMLElement | null {
+  if (typeof HTMLElement === 'undefined') return null;
+  if (origen instanceof HTMLElement) return origen;
+  const delEvento = (origen as { currentTarget?: unknown } | null | undefined)?.currentTarget;
+  if (delEvento instanceof HTMLElement) return delEvento;
+  const activo = typeof document === 'undefined' ? null : document.activeElement;
+  return activo instanceof HTMLElement && activo !== document.body ? activo : null;
+}
+
+/** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
+export function openPlanMobileSidebar(origen?: HTMLElement | { currentTarget?: EventTarget | null } | null) {
+  const abridor = quienAbreElCajon(origen);
+  mobileSidebarListeners.forEach((listener) => listener(abridor));
+}
+
+/**
+ * Los textos de la barra (es.json / en.json, `nav.barra`). Con respaldo en
+ * castellano porque la vitrina `/sidebar-preview` y las pruebas montan la
+ * barra sin `I18nProvider`.
+ */
+function useTextosDeLaBarra() {
+  const i18n = useOptionalI18n();
+  return {
+    ocultar: i18n?.t('nav.barra.ocultar') ?? 'Ocultar barra',
+    mostrar: i18n?.t('nav.barra.mostrar') ?? 'Mostrar barra',
+    ocultarAria: i18n?.t('nav.barra.ocultarAria') ?? 'Ocultar la barra lateral',
+    mostrarAria: i18n?.t('nav.barra.mostrarAria') ?? 'Mostrar la barra lateral',
+    atajoMac: i18n?.t('nav.barra.atajoMac') ?? '⌘B',
+    atajoOtros: i18n?.t('nav.barra.atajoOtros') ?? 'Ctrl B',
+    menuDelCelular: i18n?.t('nav.barra.menuDelCelular') ?? 'Menú de navegación',
+  };
+}
+
+const sinSuscripcion = () => () => {};
+
+/**
+ * ⌘ o Ctrl. El servidor no sabe en qué máquina se va a ver: dice «no es Mac»
+ * y el navegador lo corrige al hidratar (`useSyncExternalStore` hace ese
+ * cambio sin desajuste de hidratación).
+ */
+function useEsMac(): boolean {
+  return useSyncExternalStore(sinSuscripcion, () => esMac(), () => false);
 }
 
 export interface NavItem {
@@ -729,6 +785,8 @@ interface SidebarContentProps {
    * página actual fuera ésta. En el panel no se pasa y manda la URL real.
    */
   rutaActual?: string;
+  /** El enlace del logo: el cajón del celular pone ahí el foco al abrir. */
+  refDelInicio?: React.Ref<HTMLAnchorElement>;
 }
 
 /**
@@ -758,6 +816,7 @@ export function SidebarContent({
   onInvite,
   footerCards,
   rutaActual,
+  refDelInicio,
 }: SidebarContentProps) {
   const pathnameReal = usePathname();
   const pathname = rutaActual ?? pathnameReal;
@@ -850,7 +909,7 @@ export function SidebarContent({
           animate={{ opacity: 1 }}
           transition={FUNDIDO_DE_LA_BARRA}
         >
-          <Link href={logo?.href ?? '/'} className="flex h-9 items-center" onClick={onItemClick}>
+          <Link ref={refDelInicio} href={logo?.href ?? '/'} className="flex h-9 items-center" onClick={onItemClick}>
             {workspaceLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -889,11 +948,15 @@ export function SidebarContent({
           animate={{ opacity: 1 }}
           transition={FUNDIDO_DE_LA_BARRA}
         >
+          {/* Del ancho del logo y no de la fila (`mr-auto`, no `flex-1`): en
+              el cajón del celular el foco cae acá al abrir, y con la fila
+              entera el anillo pasaba por debajo de la ✕. */}
           <Link
+            ref={refDelInicio}
             href={logo?.href ?? '/'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
-            className="flex min-w-0 flex-1 items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mr-auto flex min-w-0 items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LeasefyLogotype size={26} />
           </Link>
@@ -1147,8 +1210,10 @@ export function SidebarContent({
  * cuadrado de esquinas muy redondeadas (12 px), fondo de superficie y filete,
  * con el ícono de «panel lateral» (`SidebarSimple` de Phosphor: un rectángulo
  * con la franja de la izquierda). El mismo ícono en los dos estados — es el
- * nombre de la cosa, no una flecha — y el tooltip dice qué va a pasar. No hay
- * atajo de teclado para plegar, así que el tooltip no promete ninguno.
+ * nombre de la cosa, no una flecha — y el tooltip dice qué va a pasar y con
+ * qué tecla: «Ocultar barra ⌘B» en macOS, «Ocultar barra Ctrl B» en el resto
+ * (el atajo, `useAtajoDeLaBarra`; la tecla en el `Kbd` de Cadence, el mismo
+ * del ⌘K). Para el lector de pantalla, `aria-keyshortcuts`.
  *
  * 36 px de lado: con el aire del encabezado, el blanco táctil pasa de 44.
  *
@@ -1157,7 +1222,9 @@ export function SidebarContent({
  * movimiento» no se hunde (`MotionConfig reducedMotion="user"`).
  */
 function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar: () => void }) {
-  const texto = plegada ? 'Mostrar barra' : 'Ocultar barra';
+  const textos = useTextosDeLaBarra();
+  const mac = useEsMac();
+  const texto = plegada ? textos.mostrar : textos.ocultar;
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
@@ -1165,8 +1232,9 @@ function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar:
           <motion.button
             type="button"
             onClick={onAlternar}
-            aria-label={plegada ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
+            aria-label={plegada ? textos.mostrarAria : textos.ocultarAria}
             aria-expanded={!plegada}
+            aria-keyshortcuts={atajoParaAria(mac)}
             data-testid="boton-de-la-barra"
             whileTap={PRESION_DEL_BOTON}
             transition={{ duration: 0.15, ease: 'easeOut' }}
@@ -1183,12 +1251,92 @@ function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar:
         </TooltipTrigger>
         {/* Tinta sobre papel (al revés en oscuro), no el cobalto del tooltip
             por defecto: es un rótulo del chrome, no una llamada a la acción. */}
-        <TooltipContent side={plegada ? 'right' : 'bottom'} sideOffset={6} className="bg-fg text-bg">
-          {texto}
+        <TooltipContent
+          side={plegada ? 'right' : 'bottom'}
+          sideOffset={6}
+          className="flex items-center gap-2 bg-fg text-bg"
+          data-testid="tooltip-de-la-barra"
+        >
+          <span>{texto}</span>
+          <Kbd size="sm">{mac ? textos.atajoMac : textos.atajoOtros}</Kbd>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+type OrigenDelCambio = 'boton' | 'atajo';
+
+/** ¿El elemento se enfocó con el teclado? Sin soporte de `:focus-visible`, no. */
+function seVeElFoco(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Plegar o desplegar sin perder el foco. Al cambiar, la cabecera y la
+ * navegación se montan de nuevo (así entran con su fundido) y lo que tenía el
+ * foco adentro de la barra desaparece: el foco caía al `<body>` y el Tab
+ * siguiente arrancaba desde arriba de la página. Si quien plegó iba con el
+ * teclado —el atajo, o Enter/Espacio sobre el botón— el foco pasa al botón de
+ * plegar, que está en los dos estados. Con el mouse no: enfocarlo abriría su
+ * tooltip donde nadie lo pidió.
+ */
+function useAlternarLaBarra(
+  toggle: () => void,
+  isCollapsed: boolean,
+  asideRef: React.RefObject<HTMLElement | null>,
+) {
+  const devolverElFoco = useRef(false);
+
+  const alternar = useCallback(
+    (origen: OrigenDelCambio) => {
+      const activo = document.activeElement;
+      const focoEnLaBarra = !!activo && !!asideRef.current?.contains(activo);
+      devolverElFoco.current = focoEnLaBarra && (origen === 'atajo' || seVeElFoco(activo));
+      toggle();
+    },
+    [toggle, asideRef],
+  );
+
+  useEffect(() => {
+    if (!devolverElFoco.current) return;
+    devolverElFoco.current = false;
+    const activo = document.activeElement;
+    if (activo && activo !== document.body && activo.isConnected) return;
+    asideRef.current?.querySelector<HTMLElement>('[data-testid="boton-de-la-barra"]')?.focus();
+  }, [isCollapsed, asideRef]);
+
+  return alternar;
+}
+
+/** Desde `lg` (1024 px) se ve la barra de escritorio; abajo está el cajón, y ahí el atajo no aplica. */
+const CON_BARRA_DE_ESCRITORIO = '(min-width: 1024px)';
+
+/**
+ * ⌘B en macOS, Ctrl+B en el resto: pliega y despliega la barra (Nico,
+ * 02-10-2026). Las reglas viven en `atajo-de-la-barra.ts`: no actúa mientras
+ * se escribe en un campo, con un modal abierto, en el celular, si otro ya
+ * atendió la tecla (`defaultPrevented`) ni al dejarla apretada.
+ */
+function useAtajoDeLaBarra(alternar: (origen: OrigenDelCambio) => void) {
+  useEffect(() => {
+    const mac = esMac();
+    const alTeclear = (e: KeyboardEvent) => {
+      if (!esElAtajoDeLaBarra(e, mac) || e.defaultPrevented) return;
+      if (seEstaEscribiendo(e.target) || seEstaEscribiendo(document.activeElement)) return;
+      if (hayUnModalAbierto(document)) return;
+      if (typeof window.matchMedia === 'function' && !window.matchMedia(CON_BARRA_DE_ESCRITORIO).matches) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      alternar('atajo');
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [alternar]);
 }
 
 export function PlanSidebar({
@@ -1213,21 +1361,67 @@ export function PlanSidebar({
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const textos = useTextosDeLaBarra();
+  const asideRef = useRef<HTMLElement>(null);
+  const inicioDelCajonRef = useRef<HTMLAnchorElement>(null);
+  const abridorDelCajonRef = useRef<HTMLElement | null>(null);
+
+  const alternar = useAlternarLaBarra(toggle, isCollapsed, asideRef);
+  const alternarConElBoton = useCallback(() => alternar('boton'), [alternar]);
+  useAtajoDeLaBarra(alternar);
 
   // Register with the module-level opener so PlanHeader's menu button
   // (rendered in a sibling tree) can open this Sheet.
   useEffect(() => {
-    const listener = () => setMobileOpen(true);
+    const listener: MobileSidebarListener = (abridor) => {
+      abridorDelCajonRef.current = abridor;
+      setMobileOpen(true);
+    };
     mobileSidebarListeners.add(listener);
     return () => {
       mobileSidebarListeners.delete(listener);
     };
   }, []);
 
+  /**
+   * Al abrir el cajón, el foco va al logo. Radix enfoca el primer control
+   * que NO sea un enlace —salta los enlaces a propósito— y ése era el campo
+   * «Buscar», que se pintaba con el anillo azul (el `SidebarSearch` de
+   * Cadence lo dibuja con `focus:`, no `focus-visible:`) apenas se abría,
+   * aunque nadie fuera a escribir: ese campo sólo abre el buscador ⌘K.
+   *
+   * El logo y no la ✕: es lo primero del cajón en el orden de lectura y del
+   * Tab, así el lector de pantalla empieza arriba, el Tab baja por el menú y
+   * Mayús+Tab da la vuelta a la ✕, que está a su lado. La ✕ va última en el
+   * DOM: empezar ahí hacía saltar el primer Tab de la esquina derecha a la
+   * izquierda, y el primer Mayús+Tab al pie del cajón. Su anillo es
+   * `focus-visible`: se ve yendo con el teclado y no después de tocar el menú.
+   */
+  const alAbrirElCajon = useCallback((e: Event) => {
+    e.preventDefault();
+    const destino = inicioDelCajonRef.current ?? (e.currentTarget as HTMLElement | null);
+    destino?.focus();
+  }, []);
+
+  /**
+   * Al cerrar, el foco vuelve al botón que lo abrió (sin `SheetTrigger`,
+   * Radix no lo sabe). Salvo que otro ya lo tenga: «Buscar» cierra el cajón y
+   * abre el ⌘K en el mismo clic, y el foco es del buscador.
+   */
+  const alCerrarElCajon = useCallback((e: Event) => {
+    e.preventDefault();
+    const abridor = abridorDelCajonRef.current;
+    abridorDelCajonRef.current = null;
+    const activo = document.activeElement;
+    const focoSuelto = !activo || activo === document.body || !activo.isConnected;
+    if (focoSuelto && abridor?.isConnected) abridor.focus();
+  }, []);
+
   return (
     <>
       {/* Desktop Sidebar */}
       <aside
+        ref={asideRef}
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
           'bg-bg border-r border-border',
@@ -1240,7 +1434,7 @@ export function PlanSidebar({
           navItems={navItems}
           logo={logo}
           isCollapsed={isCollapsed}
-          onCollapse={toggle}
+          onCollapse={alternarConElBoton}
           showUpgrade={showUpgrade}
           upgradeHref={upgradeHref}
           upgradeLabel={upgradeLabel}
@@ -1262,14 +1456,21 @@ export function PlanSidebar({
           openPlanMobileSidebar() (the old floating hamburger overlapped the
           header search input and was removed). */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[280px] p-0 bg-bg border-r-0">
+        <SheetContent
+          side="left"
+          className="w-[280px] p-0 bg-bg border-r-0"
+          aria-describedby={undefined}
+          onOpenAutoFocus={alAbrirElCajon}
+          onCloseAutoFocus={alCerrarElCajon}
+        >
           <SheetHeader className="sr-only">
-            <SheetTitle>List de navegacion</SheetTitle>
+            <SheetTitle>{textos.menuDelCelular}</SheetTitle>
           </SheetHeader>
           <SidebarContent
             navItems={navItems}
             logo={logo}
             isCollapsed={false}
+            refDelInicio={inicioDelCajonRef}
             onCollapse={() => {}}
             onItemClick={() => setMobileOpen(false)}
             showUpgrade={showUpgrade}

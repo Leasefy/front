@@ -30,7 +30,7 @@
  * original.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Users, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -117,6 +117,14 @@ export function ResolucionMasiva({
   const [porHacer, setPorHacer] = useState(0)
   /** De las seleccionadas, cuántas ya tenían el dato (o ya están activadas) y no se tocaron. */
   const [yaResueltas, setYaResueltas] = useState(0)
+  /**
+   * Cuántas de las seleccionadas necesitan la acción elegida, según el servidor.
+   * `null` = todavía no se sabe (sin `lote`, sin modo o preguntando): no se
+   * bloquea nada. `0` = no hay nada que resolver: se dice y no se aplica.
+   */
+  const [faltanAhora, setFaltanAhora] = useState<number | null>(null)
+  /** La acción terminó sin tener nada que hacer (no es un resultado de «0 de 0»). */
+  const [nadaQueHacer, setNadaQueHacer] = useState(false)
 
   // Mientras corre la acción, cerrar la pestaña la corta: lo aplicado queda
   // guardado en el servidor, pero la persona tiene que saberlo antes de irse.
@@ -161,10 +169,36 @@ export function ResolucionMasiva({
     }
   }
 
+  // Antes de aplicar, se le pregunta al servidor cuántas de las seleccionadas
+  // necesitan de verdad la acción elegida: si son 0, se dice y no se ofrece.
+  const llaveDeLaSeleccion = `${ids.length}:${ids[0] ?? ''}:${ids[ids.length - 1] ?? ''}`
+  useEffect(() => {
+    setNadaQueHacer(false)
+    if (modo === null || !lote || ids.length === 0) {
+      setFaltanAhora(null)
+      return
+    }
+    let vigente = true
+    setFaltanAhora(null)
+    pendientesAhora(modo, new Set())
+      .then((p) => {
+        if (vigente) setFaltanAhora(p.length)
+      })
+      .catch(() => {
+        if (vigente) setFaltanAhora(null)
+      })
+    return () => {
+      vigente = false
+    }
+    // `pendientesAhora` lee sólo props; la selección se compara por su llave.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, lote, llaveDeLaSeleccion])
+
   async function aplicar() {
     if (modo === null) return
     setCorriendo(true)
     setError(null)
+    setNadaQueHacer(false)
     setHechas(0)
     setPorHacer(0)
     setYaResueltas(0)
@@ -196,7 +230,15 @@ export function ResolucionMasiva({
           totalPorHacer += pendientes.length
           setPorHacer(totalPorHacer)
         }
-        if (pendientes.length === 0) break
+        if (pendientes.length === 0) {
+          // Nada que resolver desde el principio: no hay resultado que mostrar.
+          if (vuelta === 0) {
+            setNadaQueHacer(true)
+            setFaltanAhora(0)
+            setResultado(null)
+          }
+          break
+        }
 
         for (let i = 0; i < pendientes.length; i += CHUNK_MASIVA) {
           const trozo = pendientes.slice(i, i + CHUNK_MASIVA)
@@ -226,12 +268,23 @@ export function ResolucionMasiva({
     }
   }
 
+  const nadaParaResolver = faltanAhora === 0 || nadaQueHacer
   const puedeAplicar =
-    modo === 'uso'
+    !nadaParaResolver &&
+    (modo === 'uso'
       ? uso !== ''
       : modo === 'propietario'
         ? nombre.trim() !== '' && documento.trim() !== ''
-        : false
+        : false)
+
+  const mensajeNada =
+    modo === 'uso'
+      ? ids.length === 1
+        ? 'La fila seleccionada ya tiene uso: no hay nada que resolver.'
+        : `Ninguna de las ${ids.length} filas necesita uso: todas ya lo tienen.`
+      : ids.length === 1
+        ? 'La fila seleccionada ya tiene propietario: no hay nada que resolver.'
+        : `Ninguna de las ${ids.length} filas necesita propietario: todas ya lo tienen.`
 
   return (
     <Card className="space-y-4 border-primary/30 p-5" data-testid="resolucion-masiva">
@@ -312,6 +365,15 @@ export function ResolucionMasiva({
         </div>
       ) : null}
 
+      {modo && nadaParaResolver ? (
+        <p
+          className="rounded-lg border border-border bg-muted/40 p-2.5 text-caption text-foreground"
+          data-testid="nada-que-resolver-masivo"
+        >
+          {mensajeNada}
+        </p>
+      ) : null}
+
       {modo ? (
         <Button
           size="sm"
@@ -342,7 +404,7 @@ export function ResolucionMasiva({
         </p>
       ) : null}
 
-      {resultado ? (
+      {resultado && !nadaQueHacer ? (
         <div className="space-y-2 rounded-lg border border-border p-3" data-testid="resultado-masivo">
           <p className="text-sm text-foreground">
             {resultado.aplicadas} de {resultado.pedidas} resueltas.

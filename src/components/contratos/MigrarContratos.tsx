@@ -2371,6 +2371,148 @@ function ListaDeTrabajo({
         </div>
       ) : null}
 
+      {/* ── Activar ──────────────────────────────────────────────────────
+       * Con todo activado esta tarjeta no tiene nada que decir, y una tarjeta
+       * vacía en pantalla se lee como algo que falta cargar.
+       */}
+      {resumen.activables > 0 || resumen.pendientes > 0 ? (
+      <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
+        {resumen.activables > 0 ? (
+          <>
+            <label className="flex cursor-pointer items-start gap-3">
+              <Checkbox
+                id="revisado"
+                checked={confirmado}
+                onCheckedChange={(c) => setConfirmado(c === true)}
+                className="mt-0.5"
+                data-testid="confirmar-revision"
+              />
+              <span className="text-sm text-foreground">
+                Revisé estos contratos: cada uno está con su propietario y su
+                porcentaje.
+                <span className="block text-caption text-muted-foreground">
+                  Activar crea los contratos y las consignaciones de verdad.
+                  Después se corrige desde cada contrato, no desde acá.
+                </span>
+              </span>
+            </label>
+
+            {confirmado ? (
+              <>
+                <FechaDeCorteDeLaMigracion onCambio={setFechaDeCorte} />
+                <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
+                  <Checkbox
+                    id="invitar-inquilinos"
+                    checked={invitar}
+                    onCheckedChange={(c) => setInvitar(c === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm text-foreground/80">
+                    Invitar a los inquilinos al portal
+                    <span className="block text-caption text-muted-foreground">
+                      Se manda por tandas, no todo de golpe.
+                    </span>
+                  </span>
+                </label>
+
+                {/*
+                 * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada
+                 * de lo que en realidad pasa. Surface A dejó de crear una
+                 * cuenta silenciosa (I1): sin invitar, el contrato se crea
+                 * igual y el correo queda guardado, pero nadie se entera hasta
+                 * que alguien invite desde el contrato. Frozen: no puede
+                 * insinuar nada de cobros — `CobrosService.generate` factura
+                 * desde `Consignacion.monthlyRent`, no depende de un `Lease`.
+                 */}
+                {!invitar ? (
+                  <p
+                    className="text-caption text-muted-foreground"
+                    data-testid="aviso-sin-invitar"
+                  >
+                    No se crea ninguna cuenta: el correo del inquilino queda
+                    guardado en cada contrato, y puedes invitarlo cuando quieras
+                    desde ahí.
+                  </p>
+                ) : null}
+
+                {/*
+                 * `resumen.listos` son las que no les falta NADA. Todo lo que
+                 * `activables` suma por encima de eso son filas PENDIENTE que
+                 * el modo sparse va a activar igual, con lo que les falte —
+                 * la advertencia es honesta sobre qué va a pasar, no presenta
+                 * el lote como si ya estuviera resuelto (T-0035 brief, punto 2).
+                 */}
+                {resumen.activables > resumen.listos ? (
+                  <p
+                    className="text-caption text-muted-foreground"
+                    data-testid="aviso-incompletos"
+                  >
+                    {resumen.activables - resumen.listos} de estos contratos
+                    todavía{" "}
+                    {resumen.activables - resumen.listos === 1
+                      ? "tiene"
+                      : "tienen"}{" "}
+                    algo pendiente — por ejemplo, sin inmueble asignado. Se van
+                    a crear igual, van a decir «Sin inmueble» (o lo que les
+                    falte), y vas a poder completarlos después.
+                  </p>
+                ) : null}
+
+                {!fechaDeCorte ? (
+                  <p
+                    className="text-caption text-muted-foreground"
+                    data-testid="falta-fecha-de-corte"
+                  >
+                    Guarda la fecha de corte para poder activar.
+                  </p>
+                ) : null}
+                <Button
+                  onClick={onActivar}
+                  disabled={cargando || reconciliando || !fechaDeCorte}
+                  isLoading={cargando}
+                  hideArrow
+                  data-testid="activar-contratos"
+                >
+                  {progresoDeActivacion
+                    ? `Activando… ${progresoDeActivacion.hechas} de ${progresoDeActivacion.hechas + progresoDeActivacion.restantes}`
+                    : `Activar ${resumen.activables} contratos`}
+                </Button>
+
+                {/*
+                 * 🔴 La barra, pedida por Nico el 2026-09-12: «el activar
+                 * contratos también puede tomar mucho tiempo, debemos colocar
+                 * una progress bar real que muestre porcentaje y tiempo».
+                 *
+                 * El total sale del SERVIDOR en cada vuelta (hechas +
+                 * restantes), no de una foto del arranque: entre tandas
+                 * alguien puede resolver una fila y cambiar el denominador.
+                 */}
+                {progresoDeActivacion ? (
+                  <BarraDeTrabajo
+                    testid="activacion-contratos"
+                    titulo="Creando los contratos"
+                    hechas={progresoDeActivacion.hechas}
+                    total={
+                      progresoDeActivacion.hechas + progresoDeActivacion.restantes
+                    }
+                    onDetener={onDetenerActivacion}
+                    deteniendo={deteniendoActivacion}
+                  />
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : null}
+
+        {resumen.activables === 0 && resumen.pendientes > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Ninguno se puede activar todavía. Resuelve lo de abajo y van pasando
+            a listos solos.
+          </p>
+        ) : null}
+      </Card>
+      ) : null}
+
       {listaVisible ? (
         <>
       {/* ── La revisión ────────────────────────────────────────────────── */}
@@ -2568,148 +2710,6 @@ function ListaDeTrabajo({
         </div>
       ) : null}
         </>
-      ) : null}
-
-      {/* ── Activar ──────────────────────────────────────────────────────
-       * Con todo activado esta tarjeta no tiene nada que decir, y una tarjeta
-       * vacía en pantalla se lee como algo que falta cargar.
-       */}
-      {resumen.activables > 0 || resumen.pendientes > 0 ? (
-      <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
-        {resumen.activables > 0 ? (
-          <>
-            <label className="flex cursor-pointer items-start gap-3">
-              <Checkbox
-                id="revisado"
-                checked={confirmado}
-                onCheckedChange={(c) => setConfirmado(c === true)}
-                className="mt-0.5"
-                data-testid="confirmar-revision"
-              />
-              <span className="text-sm text-foreground">
-                Revisé estos contratos: cada uno está con su propietario y su
-                porcentaje.
-                <span className="block text-caption text-muted-foreground">
-                  Activar crea los contratos y las consignaciones de verdad.
-                  Después se corrige desde cada contrato, no desde acá.
-                </span>
-              </span>
-            </label>
-
-            {confirmado ? (
-              <>
-                <FechaDeCorteDeLaMigracion onCambio={setFechaDeCorte} />
-                <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
-                  <Checkbox
-                    id="invitar-inquilinos"
-                    checked={invitar}
-                    onCheckedChange={(c) => setInvitar(c === true)}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm text-foreground/80">
-                    Invitar a los inquilinos al portal
-                    <span className="block text-caption text-muted-foreground">
-                      Se manda por tandas, no todo de golpe.
-                    </span>
-                  </span>
-                </label>
-
-                {/*
-                 * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada
-                 * de lo que en realidad pasa. Surface A dejó de crear una
-                 * cuenta silenciosa (I1): sin invitar, el contrato se crea
-                 * igual y el correo queda guardado, pero nadie se entera hasta
-                 * que alguien invite desde el contrato. Frozen: no puede
-                 * insinuar nada de cobros — `CobrosService.generate` factura
-                 * desde `Consignacion.monthlyRent`, no depende de un `Lease`.
-                 */}
-                {!invitar ? (
-                  <p
-                    className="text-caption text-muted-foreground"
-                    data-testid="aviso-sin-invitar"
-                  >
-                    No se crea ninguna cuenta: el correo del inquilino queda
-                    guardado en cada contrato, y puedes invitarlo cuando quieras
-                    desde ahí.
-                  </p>
-                ) : null}
-
-                {/*
-                 * `resumen.listos` son las que no les falta NADA. Todo lo que
-                 * `activables` suma por encima de eso son filas PENDIENTE que
-                 * el modo sparse va a activar igual, con lo que les falte —
-                 * la advertencia es honesta sobre qué va a pasar, no presenta
-                 * el lote como si ya estuviera resuelto (T-0035 brief, punto 2).
-                 */}
-                {resumen.activables > resumen.listos ? (
-                  <p
-                    className="text-caption text-muted-foreground"
-                    data-testid="aviso-incompletos"
-                  >
-                    {resumen.activables - resumen.listos} de estos contratos
-                    todavía{" "}
-                    {resumen.activables - resumen.listos === 1
-                      ? "tiene"
-                      : "tienen"}{" "}
-                    algo pendiente — por ejemplo, sin inmueble asignado. Se van
-                    a crear igual, van a decir «Sin inmueble» (o lo que les
-                    falte), y vas a poder completarlos después.
-                  </p>
-                ) : null}
-
-                {!fechaDeCorte ? (
-                  <p
-                    className="text-caption text-muted-foreground"
-                    data-testid="falta-fecha-de-corte"
-                  >
-                    Guarda la fecha de corte para poder activar.
-                  </p>
-                ) : null}
-                <Button
-                  onClick={onActivar}
-                  disabled={cargando || reconciliando || !fechaDeCorte}
-                  isLoading={cargando}
-                  hideArrow
-                  data-testid="activar-contratos"
-                >
-                  {progresoDeActivacion
-                    ? `Activando… ${progresoDeActivacion.hechas} de ${progresoDeActivacion.hechas + progresoDeActivacion.restantes}`
-                    : `Activar ${resumen.activables} contratos`}
-                </Button>
-
-                {/*
-                 * 🔴 La barra, pedida por Nico el 2026-09-12: «el activar
-                 * contratos también puede tomar mucho tiempo, debemos colocar
-                 * una progress bar real que muestre porcentaje y tiempo».
-                 *
-                 * El total sale del SERVIDOR en cada vuelta (hechas +
-                 * restantes), no de una foto del arranque: entre tandas
-                 * alguien puede resolver una fila y cambiar el denominador.
-                 */}
-                {progresoDeActivacion ? (
-                  <BarraDeTrabajo
-                    testid="activacion-contratos"
-                    titulo="Creando los contratos"
-                    hechas={progresoDeActivacion.hechas}
-                    total={
-                      progresoDeActivacion.hechas + progresoDeActivacion.restantes
-                    }
-                    onDetener={onDetenerActivacion}
-                    deteniendo={deteniendoActivacion}
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </>
-        ) : null}
-
-        {resumen.activables === 0 && resumen.pendientes > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Ninguno se puede activar todavía. Resuelve lo de arriba y van pasando
-            a listos solos.
-          </p>
-        ) : null}
-      </Card>
       ) : null}
 
       <Button variant="outline" onClick={onOtroArchivo} hideArrow>

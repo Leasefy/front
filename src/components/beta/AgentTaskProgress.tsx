@@ -1,140 +1,102 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { CaretDown } from '@phosphor-icons/react';
+import { Collapse, motionDuration, motionEase } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { TurnStep } from '@/lib/types/beta-chat';
-import { ChatOrb } from './ChatOrb';
-import { GlifoPaso, LineaDeActividad, useActividadPaso, useTextoPaso, ClasePaso } from './turn-steps';
+import type { LecturaDelTurno } from '@/lib/agentes/agente-que-habla';
+import { nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo';
+import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
+import { estadoDelTurno, GlifoPaso, ListaDePasos, useTextoPaso } from './turn-steps';
 
 interface AgentTaskProgressProps {
   /** Los pasos del turno en curso, en orden. Vacío = no hay turno. */
   steps: TurnStep[];
+  /** La lectura del turno (02-10): el orbe de quien trabaja y las delegaciones. */
+  turno?: LecturaDelTurno | null;
+  onAbrirEquipo?: (id: IdDeAgente) => void;
   className?: string;
 }
 
-function Fila({ step }: { step: TurnStep }) {
-  const { label, detail } = useTextoPaso(step);
-  const actividad = useActividadPaso(step, detail);
-  const corriendo = step.status === 'running';
-  const fallo = step.status === 'failed';
-
-  // Sin reloj (Nico, 23-09). Terminados y pendientes en UNA línea; el activo
-  // dice qué hace; el fallido, por qué.
-  return (
-    <li className={cn('flex items-start gap-3', step.kind === 'herramienta' && 'pl-6')} data-estado={step.status}>
-      <span className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center">
-        <GlifoPaso estado={step.status} size={13} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span
-          title={[label, !corriendo && !fallo ? detail : null].filter(Boolean).join(' — ')}
-          className={cn(
-            'block font-body text-[13.5px]',
-            corriendo ? 'line-clamp-2 font-medium' : 'truncate',
-            ClasePaso(step.status)
-          )}
-        >
-          {label}
-        </span>
-        {actividad && <LineaDeActividad texto={actividad} avance={step.avance} className="mt-0.5" />}
-        {fallo && detail && (
-          <span className="mt-0.5 block line-clamp-2 font-body text-[13.5px] text-danger" title={detail}>
-            {detail}
-          </span>
-        )}
-      </span>
-    </li>
-  );
-}
-
 /**
- * Encabezado: lo que se está haciendo AHORA. Si el paso activo avisó qué hace
- * («Leyendo contratos…»), eso; si no, su nombre. Sin reloj (Nico, 23-09).
- */
-function Encabezado({ step }: { step: TurnStep }) {
-  const { label } = useTextoPaso(step);
-  const texto = step.actividad || label;
-  return (
-    <span
-      key={texto}
-      className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg animate-in fade-in duration-300 motion-reduce:animate-none"
-    >
-      {texto}
-    </span>
-  );
-}
-
-/**
- * AgentTaskProgress — el plan del turno, fusionado con el compositor.
+ * AgentTaskProgress — la franja del turno pegada ARRIBA del compositor (dentro
+ * de su caja), para seguir el avance aunque la tarjeta del hilo haya quedado
+ * fuera de la vista. Una línea: el orbe de quien trabaja (o el glifo del paso),
+ * lo que hace ahora y «Paso 2 de 3»; al tocarla despliega todos los pasos
+ * (también los que faltan), con las mismas filas que la tarjeta del hilo.
  *
- * ── Por qué así (Nico, 2026-08-27) ────────────────────────────────────────
- * «Dejaste solo como 3 tareas siempre y ya, nada inteligente; quiero que
- * muestre según el contexto las diferentes tareas».
- *
- * La lista ya no se arma acá. Viene del hook, que la construye con los eventos
- * REALES del turno: el `snapshot` (con las cifras de la agencia), cada
- * despacho con la tarea que el orquestador le escribió al especialista, el
- * resumen con que ese especialista contesta, y los pasos internos que el
- * backend reporte. Por eso preguntar por la cartera y pedir una cotización
- * muestran planes distintos: hacen cosas distintas.
+ * La lista ya no se arma acá (Nico, 27-08: «quiero que muestre según el
+ * contexto las diferentes tareas»): viene del hook, con los eventos REALES.
  */
-export function AgentTaskProgress({ steps, className }: AgentTaskProgressProps) {
+export function AgentTaskProgress({ steps, turno, onAbrirEquipo, className }: AgentTaskProgressProps) {
   const { t } = useI18n();
   const [abierto, setAbierto] = useState(false);
+  const { enCurso, fallidos, actual, total } = estadoDelTurno(steps);
+  const { label } = useTextoPaso(enCurso ?? steps[0] ?? { id: '-', kind: 'entender', status: 'pending' });
 
   if (steps.length === 0) return null;
 
-  const enCurso = steps.find((p) => p.status === 'running') ?? null;
-  const hechos = steps.filter((p) => p.status === 'done' || p.status === 'failed').length;
+  const especialista =
+    turno && turno.hablaAhora.id !== turno.orquestador.agente.id && enCurso ? turno.hablaAhora : null;
+  // El mismo título que la tarjeta del hilo: lo que hace ahora o, si el
+  // especialista no avisó nada todavía, «Laura está trabajando».
+  const texto = enCurso
+    ? enCurso.actividad ||
+      (enCurso.kind === 'agente' && especialista
+        ? t('agentes.orbe.trabajando', { nombre: nombreDelAgente(especialista, t) })
+        : label)
+    : fallidos > 0
+      ? t('beta.tasks.unoFallo')
+      : t('beta.tasks.finishing');
 
   return (
-    <div
-      className={cn(
-        'w-full border-b border-surface-muted',
-        'animate-in fade-in slide-in-from-bottom-1 duration-200',
-        className
-      )}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
+      className={cn('w-full overflow-hidden border-b border-border-faint', className)}
+      data-testid="franja-del-turno"
     >
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
-        className={cn(
-          'flex w-full items-center gap-3 px-4 py-2 text-left',
-          'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-xl'
-        )}
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-fast hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5"
       >
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-          <ChatOrb size={14} label={null} />
+        <span className="flex size-5 shrink-0 items-center justify-center">
+          {especialista ? (
+            <OrbeDeAgente agente={especialista} estado="trabajando" tamano={20} decorativo />
+          ) : (
+            <GlifoPaso estado={enCurso ? 'running' : fallidos > 0 ? 'failed' : 'done'} />
+          )}
         </span>
-        {enCurso ? (
-          <Encabezado step={enCurso} />
-        ) : (
-          <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">
-            {t('beta.tasks.finishing')}
-          </span>
-        )}
-        <span className="shrink-0 font-body text-[13px] tabular-nums text-fg-muted">
-          {hechos} / {steps.length}
+        <span
+          key={texto}
+          className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg animate-in fade-in duration-slow motion-reduce:animate-none"
+        >
+          {texto}
+        </span>
+        <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-fg-muted">
+          {t('beta.tasks.pasoDe', { n: actual, total })}
         </span>
         <CaretDown
           size={14}
-          className={cn('shrink-0 text-fg-subtle transition-transform duration-200', abierto && 'rotate-180')}
+          aria-hidden
+          className={cn('shrink-0 text-fg-subtle transition-transform duration-slow ease-enter', abierto && 'rotate-180')}
         />
       </button>
 
-      {abierto && (
-        <div className="border-t border-surface-muted px-4 pb-3 pt-2.5">
-          <p className="mb-2 font-body text-[12.5px] text-fg-subtle">{t('beta.tasks.progress')}</p>
-          <ul className="m-0 list-none space-y-2 p-0">
-            {steps.map((p) => (
-              <Fila key={p.id} step={p} />
-            ))}
-          </ul>
+      <Collapse open={abierto}>
+        <div className="max-h-[40vh] overflow-y-auto overscroll-contain px-4 pb-1 pt-1 sm:px-5" data-lenis-prevent>
+          <p className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+            {t('beta.tasks.progress')}
+          </p>
+          <ListaDePasos steps={steps} turno={turno} onAbrirEquipo={onAbrirEquipo} />
         </div>
-      )}
-    </div>
+      </Collapse>
+    </motion.div>
   );
 }

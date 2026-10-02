@@ -81,7 +81,7 @@ function BotonReintentar({
 
   return (
     <div
-      className={cn('mt-3', !quieto && 'animate-in fade-in duration-300 motion-reduce:animate-none')}
+      className={cn('mr-1.5 inline-flex', !quieto && 'animate-in fade-in duration-slow motion-reduce:animate-none')}
       data-testid="reintentar"
     >
       <Button
@@ -121,9 +121,18 @@ function BotonReintentar({
  */
 export function MessageActions({
   message,
+  siempreVisibles = false,
   className,
 }: {
   message: ChatMessage;
+  /**
+   * A la vista sin pasar el cursor (02-10, Nico: «que aparezcan al pasar el
+   * cursor o con el foco, y siempre en el celular»): la última respuesta. Las
+   * demás aparecen al pasar el cursor por la respuesta o al llegar con el
+   * teclado; en pantallas sin cursor (celular) siempre se ven (`globals.css`,
+   * `.chat-acciones`).
+   */
+  siempreVisibles?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
@@ -230,10 +239,16 @@ export function MessageActions({
 
   return (
     <div className={className}>
-      {message.reintentable && (
-        <BotonReintentar ocupado={ocupado} onReintentar={() => regenerateResponse(message.id)} />
-      )}
-      <div className="flex items-center gap-0.5 mt-2">
+      {/* «Reintentar» va EN la fila, al principio (Nico, 02-10: integrado al
+          mensaje, no suelto abajo), y con él la fila queda siempre a la vista. */}
+      <div
+        className="chat-acciones mt-2 flex flex-wrap items-center gap-0.5"
+        data-siempre={siempreVisibles || !!message.reintentable || abrirComentario ? 'true' : 'false'}
+        data-testid="acciones-de-la-respuesta"
+      >
+        {message.reintentable && (
+          <BotonReintentar ocupado={ocupado} onReintentar={() => regenerateResponse(message.id)} />
+        )}
         <Tooltip content={copiado ? t('beta.actions.copied') : t('beta.actions.copy')}>
           <IconButton
             type="button"

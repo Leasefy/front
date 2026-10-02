@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  ArrowUpRight,
   CurrencyDollar,
   Buildings,
   FileText,
@@ -68,12 +70,20 @@ interface ChatTemplatesMenuProps {
   className?: string;
 }
 
+const CURVA = [0.22, 1, 0.36, 1] as const;
+
 /**
  * Menú accionable de plantillas.
  *
- * Se cierra con Escape, con un clic afuera, y al elegir. No usa portal: se
- * ancla al contenedor `relative` de quien lo monta, que en los dos usos es
- * justo el borde donde está el botón.
+ * Sale DESDE su botón (Nico, 02-10-2026: «más lindo y pegado a su botón; hoy
+ * sale corrido, debajo de la bandeja y lejos de Plantillas»): se ancla al
+ * contenedor `relative` que envuelve al botón —en la llegada y en la barra de
+ * la conversación— y abre hacia abajo o hacia arriba según el hueco que haya.
+ * Entra con un fundido corto que crece desde el borde del botón.
+ *
+ * Se cierra con Escape, con un clic afuera y al elegir. Un clic en el propio
+ * botón NO cuenta como «afuera»: antes el `mousedown` lo cerraba y el `click`
+ * del mismo botón lo volvía a abrir.
  */
 export function ChatTemplatesMenu({
   open,
@@ -86,18 +96,14 @@ export function ChatTemplatesMenu({
   const ref = useRef<HTMLDivElement>(null);
 
   /**
-   * Alto y dirección medidos contra la ventana, no fijos.
-   *
-   * Con `top-full` y un `max-h` de 380px, en una ventana baja el menú se salía
-   * por abajo y las últimas plantillas quedaban fuera de la pantalla, sin
-   * forma de alcanzarlas (Nico, 2026-08-27: «acá se sale de la altura y eso se
-   * ve feo»). Ahora se mide el hueco real: si abajo no cabe pero arriba sí, se
-   * abre hacia arriba; en cualquier caso el alto se recorta a lo que hay y el
-   * resto se desplaza adentro.
+   * Alto y dirección medidos contra la ventana, no fijos (Nico, 2026-08-27:
+   * «acá se sale de la altura y eso se ve feo»). Si abajo no cabe pero arriba
+   * sí, se abre hacia arriba; en cualquier caso el alto se recorta a lo que
+   * hay y el resto se desplaza adentro.
    */
   const [caja, setCaja] = useState<{ dir: 'down' | 'up'; maxH: number }>({
     dir: direction,
-    maxH: 380,
+    maxH: 420,
   });
 
   useLayoutEffect(() => {
@@ -112,16 +118,15 @@ export function ChatTemplatesMenu({
       const arriba = r.top - MARGEN;
 
       // Se conserva la dirección pedida salvo que del otro lado quepa
-      // claramente más: cambiar de lado desorienta, así que sólo vale la pena
-      // cuando la diferencia es real.
+      // claramente más: cambiar de lado desorienta.
       const preferida = direction;
       const espacioPreferido = preferida === 'down' ? abajo : arriba;
       const espacioOpuesto = preferida === 'down' ? arriba : abajo;
-      const cambia = espacioPreferido < 220 && espacioOpuesto > espacioPreferido;
+      const cambia = espacioPreferido < 260 && espacioOpuesto > espacioPreferido;
       const dir = cambia ? (preferida === 'down' ? 'up' : 'down') : preferida;
 
       const disponible = dir === 'down' ? abajo : arriba;
-      setCaja({ dir, maxH: Math.max(160, Math.min(380, disponible)) });
+      setCaja({ dir, maxH: Math.max(180, Math.min(420, disponible)) });
     };
 
     medir();
@@ -136,7 +141,10 @@ export function ChatTemplatesMenu({
       if (e.key === 'Escape') onClose();
     };
     const onPointer = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      // El anclaje (el botón y el menú) no es «afuera».
+      const anclaje = ref.current?.parentElement;
+      if (anclaje && anclaje.contains(e.target as Node)) return;
+      onClose();
     };
 
     document.addEventListener('keydown', onKey);
@@ -149,70 +157,90 @@ export function ChatTemplatesMenu({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  const abajo = caja.dir === 'down';
 
   return (
-    <div
-      ref={ref}
-      role="menu"
-      aria-label={t('beta.templates.title')}
-      className={cn(
-        'absolute left-0 z-50 w-[min(420px,calc(100vw-2rem))]',
-        caja.dir === 'down' ? 'top-full mt-2' : 'bottom-full mb-2',
-        'overflow-hidden rounded-[18px] border border-border bg-surface',
-        'shadow-[0_12px_40px_rgba(20,19,15,0.10)]',
-        className
-      )}
-    >
-      <div className="border-b border-surface-muted px-4 py-2.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
-          {t('beta.templates.title')}
-        </span>
-      </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={ref}
+          role="menu"
+          aria-label={t('beta.templates.title')}
+          data-testid="menu-de-plantillas"
+          initial={{ opacity: 0, y: abajo ? -6 : 6, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: abajo ? -4 : 4, scale: 0.98, transition: { duration: 0.14 } }}
+          transition={{ duration: 0.24, ease: CURVA }}
+          style={{ transformOrigin: abajo ? 'top left' : 'bottom left' }}
+          className={cn(
+            // Ancho: el botón arranca ~2,25rem adentro de la pantalla (margen
+            // de la página + marco + caja): con 100vw-2rem el menú se salía por
+            // la derecha en el celular (390, 02-10).
+            'absolute left-0 z-50 w-[min(400px,calc(100vw-4.5rem))]',
+            abajo ? 'top-full mt-2' : 'bottom-full mb-2',
+            'overflow-hidden rounded-[20px] border border-border bg-surface p-1.5',
+            'shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)] dark:shadow-[0_18px_48px_-12px_rgba(0,0,0,0.85)]',
+            className
+          )}
+        >
+          <div className="flex items-center justify-between px-3 pb-1.5 pt-2">
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+              {t('beta.templates.title')}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{CHAT_TEMPLATES.length}</span>
+          </div>
 
-      <div
-        className="overflow-y-auto overscroll-contain py-1.5"
-        data-lenis-prevent
-        style={{ maxHeight: Math.max(120, caja.maxH - 42) }}
-      >
-        {CHAT_TEMPLATES.map((tpl) => {
-          const title = t(tpl.titleKey);
-          const desc = t(tpl.descKey);
-          const TplIcon = tpl.icon;
-          return (
-            <button
-              key={tpl.id}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                onSelect(desc);
-                onClose();
-              }}
-              className={cn(
-                'group flex w-full items-start gap-3 px-3 py-2.5 text-left',
-                'transition-colors duration-150 hover:bg-bg',
-                'outline-none focus-visible:bg-bg'
-              )}
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]',
-                  'border border-border bg-bg text-fg-muted',
-                  'transition-colors duration-150',
-                  'group-hover:border-primary/30 group-hover:bg-primary/[0.07] group-hover:text-primary'
-                )}
-              >
-                <TplIcon size={15} />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-body text-[13.5px] font-medium text-fg">{title}</span>
-                <span className="block font-body text-[12.5px] leading-snug text-fg-muted">{desc}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+          <div
+            className="overflow-y-auto overscroll-contain"
+            data-lenis-prevent
+            style={{ maxHeight: Math.max(140, caja.maxH - 44) }}
+          >
+            {CHAT_TEMPLATES.map((tpl, i) => {
+              const title = t(tpl.titleKey);
+              const desc = t(tpl.descKey);
+              const TplIcon = tpl.icon;
+              return (
+                <motion.button
+                  key={tpl.id}
+                  type="button"
+                  role="menuitem"
+                  initial={{ opacity: 0, y: abajo ? -4 : 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: CURVA, delay: 0.03 + i * 0.025 }}
+                  onClick={() => {
+                    onSelect(desc);
+                    onClose();
+                  }}
+                  className={cn(
+                    'group flex w-full items-center gap-3 rounded-[14px] px-2.5 py-2 text-left',
+                    'transition-colors duration-150 hover:bg-surface-hover focus-visible:bg-surface-hover'
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'flex size-9 shrink-0 items-center justify-center rounded-full',
+                      'bg-surface-muted text-fg-muted transition-colors duration-150',
+                      'group-hover:bg-primary-soft group-hover:text-primary'
+                    )}
+                  >
+                    <TplIcon size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-body text-[13.5px] font-medium text-fg">{title}</span>
+                    <span className="block truncate font-body text-[12.5px] leading-snug text-fg-muted">{desc}</span>
+                  </span>
+                  <ArrowUpRight
+                    size={14}
+                    aria-hidden
+                    className="shrink-0 text-fg-subtle opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:text-primary"
+                  />
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

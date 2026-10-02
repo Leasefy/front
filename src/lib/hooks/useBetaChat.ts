@@ -70,9 +70,11 @@ import {
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
+import { leerRazonamiento } from '@/lib/agentes/agente-que-habla';
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
 import { clasificarFallo } from '@/lib/errores/clasificar';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -472,8 +474,25 @@ export function mensajeDeFalloDelChat(error: unknown): string {
       return 'Tu sesión se venció. Vuelve a entrar para seguir conversando.';
     case 'sinPermiso':
       return 'Tu rol en la inmobiliaria no incluye el asistente. Pídele a un administrador que te lo habilite.';
-    default:
-      return 'No pude conectarme con el asistente en este momento. Prueba de nuevo en un momento.';
+    default: {
+      // 🔴 La regla de oro del traductor (02-10, `traductor-de-errores.ts`):
+      // «conexión» SÓLO cuando no hubo respuesta. Antes TODO lo demás —un 500
+      // del micro incluido— decía «No pude conectarme» y mandaba a revisar el
+      // internet a quien tenía internet.
+      const leido = leerFallo(error);
+      if (leido.tipo === 'sinRespuesta') {
+        return 'No pude conectarme con el asistente. Revisa tu conexión a internet y prueba de nuevo.';
+      }
+      // Un error sin respuesta HTTP (el stream vino vacío, algo del navegador):
+      // su texto es técnico, no para la persona.
+      if (leido.tipo === 'desconocido') return 'No pude responder esta vez. Prueba de nuevo en un momento.';
+      // Un 5xx: «falló de nuestro lado», con la referencia para soporte; un
+      // 4xx: lo que dijo el micro; una caída: su texto de `src/lib/conexion/`.
+      return mensajeParaLaPersona(error, {
+        accion: 'contestarte',
+        porDefecto: 'No pude responder esta vez. Prueba de nuevo en un momento.',
+      });
+    }
   }
 }
 
@@ -1042,6 +1061,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             status: (d.status === 'failed' ? 'failed' : 'completed') as AgentExecutionStatus,
             completedAt: new Date(),
             ...(d.status === 'failed' ? { error: d.summary } : {}),
+            // Lo que contestó el especialista: lo lee la delegación del turno
+            // («Ori → Laura» + su resumen) cuando el mensaje ya cerró.
+            ...(d.status !== 'failed' && d.summary?.trim() ? { resumen: d.summary.trim() } : {}),
+            ...(d.id ? { despachoId: d.id } : {}),
           };
         });
         const completedBlock: AgentActivityBlock = { ...block, agents: terminal };
@@ -1216,6 +1239,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
         camino?: string;
+        /**
+         * «Lo que pensó» (campo aditivo propuesto al micro el 02-10; hoy no
+         * llega). Crudo: lo lee `leerRazonamiento`, que descarta lo mal formado.
+         */
+        razonamiento?: unknown;
       },
       assistantId: string,
       conversationId: string,
@@ -1252,8 +1280,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const ensayo = resp.ensayo === true;
       // La tarjeta del plan (24-09, paquete H): varias acciones, una confirmación.
       const plan = resp.plan ?? null;
+      // «Lo que pensó» (02-10): sólo si el micro lo mandó con la forma esperada.
+      const razonamiento = leerRazonamiento(resp.razonamiento);
       const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
-      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
+      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua || razonamiento) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1276,6 +1306,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(ejecucion ? { ejecucion } : {}),
                           ...(ensayo ? { ensayo } : {}),
                           ...(plan ? { plan } : {}),
+                          ...(razonamiento ? { razonamiento } : {}),
                         }
                       : m
                   ),
@@ -1302,7 +1333,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const summaries = resp.dispatches
         .map((d) => d.summary)
         .filter((s): s is string => Boolean(s));
-      const fullText = [resp.responseText, ...summaries].filter(Boolean).join('\n\n');
+      // Los resúmenes de los especialistas van en la delegación del turno
+      // («Ori le pasó el trabajo a Laura» → lo que contestó cada uno, 02-10).
+      // Pegarlos también al final del texto los decía dos veces (Nico: «no
+      // repitas»). Sólo hacen de texto si el orquestador no escribió nada.
+      const fullText = resp.responseText?.trim() ? resp.responseText : summaries.join('\n\n');
       const responseMeta: ResponseMeta = {
         type: 'informative',
         title: 'Asistente Leasefy',
@@ -1317,15 +1352,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       if (liveBlock && liveBlock.agents.length > 0) {
         // The stream already showed the dispatches live — settle any straggler
         // still "running", attach the block to the message, then stream the text.
-        const terminal: AgentExecution[] = liveBlock.agents.map((a) =>
-          a.status === 'running'
+        // El resumen de cada especialista, si su `dispatch_result` no llegó y
+        // el `done` sí lo trae (mismo especialista, en orden).
+        const sinUsar = [...resp.dispatches];
+        const resumenDe = (a: AgentExecution): string | undefined => {
+          const i = sinUsar.findIndex((d) =>
+            a.despachoId && d.id ? d.id === a.despachoId : backendAgentToFrontType(d.agent) === a.agentType
+          );
+          if (i < 0) return undefined;
+          const [d] = sinUsar.splice(i, 1);
+          return d.status !== 'failed' && d.summary?.trim() ? d.summary.trim() : undefined;
+        };
+        const terminal: AgentExecution[] = liveBlock.agents.map((a) => {
+          const resumen = a.resumen ?? resumenDe(a);
+          return a.status === 'running'
             ? {
                 ...a,
                 status: 'completed' as AgentExecutionStatus,
                 completedAt: new Date(),
+                ...(resumen ? { resumen } : {}),
               }
-            : a
-        );
+            : { ...a, ...(resumen && a.status === 'completed' ? { resumen } : {}) };
+        });
         const completedBlock: AgentActivityBlock = { ...liveBlock, agents: terminal };
         setActiveAgentBlock(completedBlock);
         setConversations((prev) =>
@@ -1399,6 +1447,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       plan: TarjetaDePlan | null;
       procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
+      razonamiento?: unknown;
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1425,6 +1474,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           ensayo?: boolean;
           plan?: TarjetaDePlan | null;
           camino?: string;
+          razonamiento?: unknown;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
@@ -1507,13 +1557,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               startStreaming(args.assistantId, text, args.conversationId, { parcial: true });
             }
           },
-          onDispatchStart: (agent, taskDescription) => {
+          onDispatchStart: (agent, taskDescription, extra) => {
             const exec: AgentExecution = {
               id: generateId(),
               agentType: backendAgentToFrontType(agent),
               taskDescription,
               status: 'running' as AgentExecutionStatus,
               startedAt: new Date(),
+              // El id del despacho, cuando el micro lo mande (aditivo, 02-10).
+              ...(extra?.id ? { despachoId: extra.id } : {}),
             };
             liveBlock = liveBlock
               ? { ...liveBlock, agents: [...liveBlock.agents, exec] }
@@ -1526,6 +1578,17 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             setIsThinking(false);
             setIsAgentsRunning(true);
             setActiveAgentBlock(liveBlock);
+            // Despachar ES la decisión (02-10): el orquestador ya entendió y le
+            // pasó el trabajo a un especialista. «Entender» (y el contexto, si
+            // seguía) se cierra acá; si no, quedaban dos pasos girando y la
+            // tarjeta decía «Entender la pregunta» mientras Laura trabajaba.
+            const alDespachar = new Date();
+            if (turnStepsRef.current.some((p) => p.id === 'cartera' && p.status === 'running')) {
+              parchearPaso('cartera', { status: 'done', completedAt: alDespachar, actividad: undefined });
+            }
+            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status !== 'done')) {
+              parchearPaso('entender', { status: 'done', completedAt: alDespachar, actividad: undefined, avance: undefined });
+            }
             // Lo que se tecleó antes del despacho era el preámbulo («Voy a
             // revisar…»), no la respuesta: «redactar» vuelve a esperar. Si no,
             // quedaban DOS pasos girando y uno decía «Escribiendo la respuesta…»
@@ -1545,6 +1608,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               labelKey: 'beta.tasks.plan.consultAgent',
               detail: taskDescription,
               agentType: exec.agentType,
+              ...(exec.despachoId ? { despachoId: exec.despachoId } : {}),
               status: 'running',
               startedAt: exec.startedAt,
             });
@@ -1553,12 +1617,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             resultDispatches.push(dispatch);
             if (!liveBlock) return;
             const agentType = backendAgentToFrontType(dispatch.agent);
+            // Con el id del despacho (cuando el micro lo mande) se cierra ESE;
+            // sin él, el primero de ese especialista que sigue corriendo.
+            const esEste = (a: AgentExecution) =>
+              dispatch.id && a.despachoId ? a.despachoId === dispatch.id : a.agentType === agentType;
             let settled = false;
+            let cerradoId: string | null = null;
+            const resumen = dispatch.status !== 'failed' && dispatch.summary?.trim() ? dispatch.summary.trim() : '';
             const agents = liveBlock.agents.map((a) => {
-              if (settled || a.status !== 'running' || a.agentType !== agentType) {
+              if (settled || a.status !== 'running' || !esEste(a)) {
                 return a;
               }
               settled = true;
+              cerradoId = a.id;
               return {
                 ...a,
                 status: (dispatch.status === 'failed'
@@ -1566,13 +1637,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                   : 'completed') as AgentExecutionStatus,
                 completedAt: new Date(),
                 ...(dispatch.status === 'failed' ? { error: dispatch.summary } : {}),
+                // Lo que contestó: la delegación lo muestra al cerrar el turno.
+                ...(resumen ? { resumen } : {}),
               };
             });
             liveBlock = { ...liveBlock, agents };
             setActiveAgentBlock(liveBlock);
             // El paso se cierra con lo que el agente EFECTIVAMENTE respondió:
             // su resumen, y el siguiente paso que propone si lo trae.
-            const cerrado = agents.find((x) => x.status !== 'running' && x.agentType === agentType);
+            const cerrado = agents.find((x) => x.id === cerradoId);
             if (cerrado) {
               const detalle = [dispatch.summary, dispatch.nextStep].filter(Boolean).join(' · ');
               parchearPaso(cerrado.id, {
@@ -1588,14 +1661,16 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // se cierra al llegar el siguiente — el backend avisa cuando una
           // herramienta TERMINÓ, así que el que está en curso es siempre el
           // último que llegó.
-          onToolStep: ({ tool, label }) => {
+          onToolStep: ({ agent, tool, label, dispatchId }) => {
             // Llega cuando la herramienta YA se ejecutó (Mastra avisa al cerrar
             // el paso), así que nace en «hecho». Sin reloj: no sabemos cuánto
             // tardó cada una por separado, y un 0:00 al lado sería inventarlo.
             const actuales = turnStepsRef.current;
             const previos = actuales.filter((p) => p.kind === 'herramienta');
             const ultimo = previos[previos.length - 1];
-            if (ultimo && ultimo.label === label) {
+            const duenio = agent ? backendAgentToFrontType(agent) : undefined;
+            // La misma herramienta repetida por el MISMO especialista se cuenta.
+            if (ultimo && ultimo.label === label && ultimo.agentType === duenio) {
               parchearPaso(ultimo.id, { repeticiones: (ultimo.repeticiones ?? 1) + 1 });
               return;
             }
@@ -1603,6 +1678,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               id: `tool-${tool}-${previos.length}`,
               kind: 'herramienta',
               label,
+              // De quién es (02-10): la delegación del turno cuelga cada
+              // herramienta de su especialista, no del último que llegó.
+              ...(duenio ? { agentType: duenio } : {}),
+              ...(dispatchId ? { despachoId: dispatchId } : {}),
               status: 'done',
             });
           },
@@ -1666,6 +1745,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ensayo: f.ensayo,
               plan: f.plan,
               ...(f.camino ? { camino: f.camino } : {}),
+              ...(f.razonamiento !== undefined ? { razonamiento: f.razonamiento } : {}),
             };
           },
           onError: (message, meta) => {
@@ -1716,6 +1796,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         plan: final?.plan ?? null,
         procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
+        ...(final?.razonamiento !== undefined ? { razonamiento: final.razonamiento } : {}),
       };
     },
     [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]

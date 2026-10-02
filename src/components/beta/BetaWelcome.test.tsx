@@ -19,7 +19,6 @@ import { act } from 'react';
 const { contexto } = vi.hoisted(() => ({
   contexto: {
     filteredSummaries: [] as Array<Record<string, unknown>>,
-    currentBriefing: null as null | { numeros?: Record<string, number> },
     switchConversation: vi.fn(),
     deleteConversation: vi.fn(),
   },
@@ -42,7 +41,6 @@ let root: Root;
 
 beforeEach(() => {
   contexto.filteredSummaries = [];
-  contexto.currentBriefing = null;
   recordatorio.mockReset();
   recordatorio.mockResolvedValue({});
   contexto.switchConversation.mockReset();
@@ -172,28 +170,66 @@ describe('la llegada del chat', () => {
     expect(nombres.some((n) => /adjunt|\+|dictar/i.test(n))).toBe(false);
   });
 
-  it('el historial vacío lleva a las plantillas', () => {
-    pintar(<BetaWelcome />);
-    expect(container.textContent).toContain('Aún no tienes conversaciones');
-    const cta = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Ver plantillas para empezar')!;
-    act(() => cta.click());
-    expect(container.querySelector('[role="menu"]')).not.toBeNull();
+  it('«Plantillas» sale desde su botón: el menú vive junto al botón, no debajo de la bandeja', () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino' });
+    const boton = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Plantillas')!;
+    act(() => boton.click());
+    const menu = container.querySelector('[data-testid="menu-de-plantillas"]')!;
+    expect(menu.parentElement!.contains(boton)).toBe(true);
+    expect(container.querySelector('[data-testid="bandeja-de-llegada"]')!.contains(menu)).toBe(false);
   });
 
-  it('con historial, abrir una conversación sigue funcionando', () => {
-    contexto.filteredSummaries = [
-      { id: 'c1', title: 'Cartera de septiembre', preview: 'Te deben…', messageCount: 4, updatedAt: new Date() },
-      { id: 'c0', title: 'Vacía', preview: '', messageCount: 0, updatedAt: new Date() },
-    ];
-    pintar(<BetaWelcome />);
-    expect(container.textContent).not.toContain('Vacía');
-    const abrir = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Cartera de septiembre'))!;
-    act(() => abrir.click());
-    expect(contexto.switchConversation).toHaveBeenCalledWith('c1');
+  it('sin conversaciones no se muestra NADA de «Conversaciones recientes»', () => {
+    pintar(<BetaWelcome />, { agencia: 'Portofino' });
+    expect(container.textContent).not.toContain('Conversaciones recientes');
+    expect(container.textContent).not.toContain('Aún no tienes conversaciones');
   });
 });
 
-describe('la bandeja: sólo datos reales', () => {
+describe('las conversaciones recientes, en la bandeja', () => {
+  const conversaciones = () => [
+    { id: 'c1', title: 'Cartera de septiembre', preview: 'Te deben…', messageCount: 4, updatedAt: new Date() },
+    { id: 'c2', title: 'Contratos por vencer', preview: 'Vencen 5…', messageCount: 2, updatedAt: new Date() },
+    { id: 'c0', title: 'Vacía', preview: '', messageCount: 0, updatedAt: new Date() },
+  ];
+  const acceso = () => container.querySelector<HTMLButtonElement>('[data-testid="conversaciones-recientes"]');
+  const panel = () => container.querySelector('[data-testid="panel-de-conversaciones"]');
+
+  it('el acceso cuenta sólo las que tienen mensajes y vive en la bandeja', () => {
+    contexto.filteredSummaries = conversaciones();
+    pintar(<BetaWelcome />);
+    expect(acceso()?.textContent).toBe('Conversaciones recientes (2)');
+    expect(container.querySelector('[data-testid="bandeja-de-llegada"]')!.contains(acceso())).toBe(true);
+    expect(panel()).toBeNull();
+  });
+
+  it('abre la lista DENTRO del chat (sin enlaces) y abrir una conversación funciona', () => {
+    contexto.filteredSummaries = conversaciones();
+    pintar(<BetaWelcome />);
+    act(() => acceso()!.click());
+    expect(acceso()!.getAttribute('aria-expanded')).toBe('true');
+    expect(panel()?.textContent).toContain('Cartera de septiembre');
+    expect(panel()?.textContent).not.toContain('Vacía');
+    expect(panel()!.querySelector('a[href]')).toBeNull();
+    const abrir = [...panel()!.querySelectorAll('button')].find((b) => b.textContent?.includes('Contratos por vencer'))!;
+    act(() => abrir.click());
+    expect(contexto.switchConversation).toHaveBeenCalledWith('c2');
+  });
+
+  it('borrar confirma en línea', () => {
+    contexto.filteredSummaries = conversaciones();
+    pintar(<BetaWelcome />);
+    act(() => acceso()!.click());
+    const papelera = panel()!.querySelector<HTMLButtonElement>('button[aria-label="Eliminar conversacion"]')!;
+    act(() => papelera.click());
+    expect(contexto.deleteConversation).not.toHaveBeenCalled();
+    const si = [...panel()!.querySelectorAll('button')].find((b) => b.textContent === 'Eliminar')!;
+    act(() => si.click());
+    expect(contexto.deleteConversation).toHaveBeenCalledWith('c1');
+  });
+});
+
+describe('la bandeja: sólo datos reales (sin cifras desde el 02-10)', () => {
   const bandeja = () => container.querySelector('[data-testid="bandeja-de-llegada"]');
 
   it('sin inmobiliaria ni migración, no hay bandeja', () => {
@@ -209,22 +245,6 @@ describe('la bandeja: sólo datos reales', () => {
   it('el nombre de relleno «Agency» no es el nombre de nadie', () => {
     pintar(<BetaWelcome />, { agencia: 'Agency' });
     expect(bandeja()).toBeNull();
-  });
-
-  it('las cifras del día salen del briefing, con formato COP, y nunca un cero', () => {
-    contexto.currentBriefing = { numeros: { recuperadoMesCop: 12_400_000, pendientes: 3, llamadasHoy: 0 } };
-    pintar(<BetaWelcome />, { agencia: 'Portofino' });
-    const cifras = container.querySelector('[data-testid="cifras-de-la-bandeja"]')!.textContent!.replace(/\s+/g, ' ');
-    expect(cifras).toContain('12,4 M recuperados este mes');
-    expect(cifras).toContain('3 decisiones pendientes');
-    expect(cifras).not.toContain('llamada');
-  });
-
-  it('sin briefing (o sólo con ceros) la bandeja queda como estaba', () => {
-    contexto.currentBriefing = { numeros: { pendientes: 0, llamadasHoy: 0 } };
-    pintar(<BetaWelcome />, { agencia: 'Portofino' });
-    expect(container.querySelector('[data-testid="cifras-de-la-bandeja"]')).toBeNull();
-    expect(bandeja()?.textContent).toBe('Responde con los datos de Portofino');
   });
 
   it('la migración ya no va en la bandeja: va en la franja', () => {
@@ -273,5 +293,65 @@ describe('la franja de la migración', () => {
   it('fuera del panel (sin contexto de migración): no hay franja', () => {
     pintar(<BetaWelcome />, { agencia: 'Portofino' });
     expect(franja()).toBeNull();
+  });
+});
+
+describe('la voz en la caja', () => {
+  class ReconocimientoFalso {
+    static ultima: ReconocimientoFalso | null = null;
+    lang = '';
+    interimResults = false;
+    continuous = false;
+    onresult: ((e: { results: Array<{ 0: { transcript: string } }> }) => void) | null = null;
+    onerror: ((e: { error?: string }) => void) | null = null;
+    onend: (() => void) | null = null;
+    constructor() {
+      ReconocimientoFalso.ultima = this;
+    }
+    start() {}
+    stop() {
+      this.onend?.();
+    }
+  }
+  beforeEach(() => {
+    (window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = ReconocimientoFalso;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn(() => Promise.reject(new Error('sin micrófono'))) },
+    });
+  });
+  afterEach(() => {
+    delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+  });
+
+  // `AnimatePresence mode="wait"`: la vista de la voz entra cuando la del texto terminó de salir.
+  const esperar = (ms: number) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
+
+  it('«Voz» escucha con su texto (sin claves crudas) y no se cierra sola al primer silencio', async () => {
+    pintar(<BetaWelcome />);
+    act(() => container.querySelector<HTMLButtonElement>('[data-testid="voz-llegada"]')!.click());
+    await esperar(500);
+    const voz = () => container.querySelector('[data-testid="voz-escuchando"]');
+    expect(voz()?.textContent).toContain('Te escucho · español');
+    expect(voz()?.textContent).toContain('0:00 · haz una pausa y sigo escuchando');
+    expect(voz()?.textContent).toContain('Cancelar');
+    expect(container.textContent).not.toMatch(/beta\.welcome/);
+    act(() => ReconocimientoFalso.ultima!.onend?.()); // Chrome corta por silencio
+    await esperar(300);
+    expect(voz()).not.toBeNull();
+  });
+
+  it('sin permiso del micrófono lo dice dentro de la caja', async () => {
+    pintar(<BetaWelcome />);
+    act(() => container.querySelector<HTMLButtonElement>('[data-testid="voz-llegada"]')!.click());
+    await esperar(500);
+    await act(async () => {
+      ReconocimientoFalso.ultima!.onerror?.({ error: 'not-allowed' });
+      ReconocimientoFalso.ultima!.onend?.();
+    });
+    await esperar(900);
+    const aviso = container.querySelector('[data-testid="voz-error"]');
+    expect(aviso?.getAttribute('role')).toBe('alert');
+    expect(aviso?.textContent).toContain('no le dio permiso al micrófono');
   });
 });

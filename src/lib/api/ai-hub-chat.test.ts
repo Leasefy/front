@@ -185,6 +185,33 @@ describe('handleSSEEvent', () => {
     expect(calls).toEqual(['tool:cobranza:checkAgencyPolicy:Revisar los límites que autorizó la inmobiliaria']);
   });
 
+  // 02-10 (el equipo en el chat): campos ADITIVOS que el micro todavía no
+  // manda. El front queda listo: si llegan, se leen; si no, nada cambia.
+  it('lee el id del despacho y de quién es cada herramienta, cuando el micro los mande', () => {
+    const vistos: unknown[] = [];
+    const handlers: ChatStreamHandlers = {
+      onDispatchStart: (agent, task, extra) => vistos.push(['start', agent, task, extra]),
+      onToolStep: (paso) => vistos.push(['tool', paso]),
+    };
+    handleSSEEvent('event: dispatch_start\ndata: {"agent":"cobranza","taskDescription":"t","id":"d-1"}', handlers);
+    handleSSEEvent('event: dispatch_start\ndata: {"agent":"pagos","taskDescription":"u"}', handlers);
+    handleSSEEvent('event: tool_step\ndata: {"agent":"cobranza","tool":"x","label":"X","dispatchId":"d-1"}', handlers);
+    expect(vistos).toEqual([
+      ['start', 'cobranza', 't', { id: 'd-1' }],
+      ['start', 'pagos', 'u', {}],
+      ['tool', { agent: 'cobranza', tool: 'x', label: 'X', dispatchId: 'd-1' }],
+    ]);
+  });
+
+  it('pasa «lo que pensó» del `done` tal cual (lo lee `leerRazonamiento`); sin el campo, no aparece', () => {
+    const finales: Array<Record<string, unknown>> = [];
+    const handlers: ChatStreamHandlers = { onDone: (f) => finales.push(f as unknown as Record<string, unknown>) };
+    handleSSEEvent('event: done\ndata: {"responseText":"ok","razonamiento":[{"texto":"Miré la cartera"}]}', handlers);
+    handleSSEEvent('event: done\ndata: {"responseText":"ok"}', handlers);
+    expect(finales[0].razonamiento).toEqual([{ texto: 'Miré la cartera' }]);
+    expect('razonamiento' in finales[1]).toBe(false);
+  });
+
   it('cae al nombre crudo de la herramienta cuando no viene etiqueta', () => {
     const { calls, handlers } = collect();
     handleSSEEvent(

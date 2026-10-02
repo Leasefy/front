@@ -87,6 +87,18 @@ export interface AgentExecution {
   durationMs?: number;
   /** Error message if status === 'failed' */
   error?: string;
+  /**
+   * Lo que el especialista contestó, en una línea (`dispatch_result.dispatch.summary`).
+   * Lo pinta la delegación del turno («Ori → Laura» + su resumen) en los
+   * mensajes ya cerrados, donde los pasos en vivo ya no están (02-10-2026).
+   */
+  resumen?: string;
+  /**
+   * El id del despacho que manda el micro (`dispatch_start.id`, `dispatch.id`),
+   * cuando lo mande: con él dos despachos al mismo especialista en un turno no
+   * se confunden. Un micro de hoy no lo manda y se empareja por orden.
+   */
+  despachoId?: string;
 }
 
 /** An agent activity block in the conversation */
@@ -130,6 +142,11 @@ export interface TurnStep {
   detailKey?: string;
   detailVars?: Record<string, string | number>;
   agentType?: AgentType;
+  /**
+   * El despacho al que pertenece (pasos `agente` y `herramienta`), cuando el
+   * micro mande el id (`dispatch_start.id`, `tool_step.dispatchId`).
+   */
+  despachoId?: string;
   /**
    * Cuántas veces seguidas ocurrió el MISMO paso. El especialista vuelve a
    * llamar a una herramienta con otros parámetros (visto en vivo: calculó el
@@ -371,6 +388,14 @@ export interface ChatMessage {
    * nada: el front no adivina fallos leyendo el texto.
    */
   reintentable?: Reintentable;
+  /**
+   * «Lo que pensó» el orquestador (y sus especialistas) para este turno,
+   * cuando el micro lo mande en el `done` (campo aditivo propuesto el
+   * 02-10-2026; hoy no llega). Sin él no se pinta nada: nunca se rellena con
+   * los pasos ni con texto inventado. Lo lee `leerElTurno` (que también
+   * acepta un paso como texto suelto).
+   */
+  razonamiento?: Array<{ agente?: string; texto: string } | string>;
   /**
    * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
    *

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ArrowDown } from '@phosphor-icons/react';
 import { ChatDataCard } from '@leasefy/cadence';
 import type { ChatMessage } from '@/lib/types/beta-chat';
@@ -17,7 +17,6 @@ import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
-import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
@@ -28,17 +27,13 @@ import { WorkspaceView } from './WorkspaceView';
 import { AccionPropuestaCard } from './AccionPropuestaCard';
 import { DecisionCard } from './DecisionCard';
 import { ChatConversationBar } from './ChatConversationBar';
+import { CabeceraDeLaRespuesta, ResumenDelTurno } from './TurnoDelAsistente';
+import { leerElTurno } from '@/lib/agentes/agente-que-habla';
+import { EquipoDeAgentesProvider, useEquipoDeAgentes } from '@/components/agentes/equipo-de-agentes-context';
+import { RazonamientoDelTurno } from '@/components/agentes/TurnoDelEquipo';
 
 interface ChatContainerProps {
   className?: string;
-}
-
-/**
- * Helper: format duration in ms to human string.
- */
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 /**
@@ -68,14 +63,35 @@ function textoSinTablaRepetida(message: ChatMessage): string {
 }
 
 /**
- * ChatContainer - Main chat area with premium visual experience.
+ * ChatContainer — el chat: la llegada (estado 0) o la conversación.
  *
- * Empty state: BetaWelcome with animated prompt cards.
- * Active state: message list with ResponseCards + WorkspaceView.
- * Features: subtle dot grid background, floating input, glass morphism throughout.
+ * Desde el 02-10-2026 monta «El equipo» (`EquipoDeAgentesProvider`, commit
+ * `27a3b2b8`) alrededor de todo: el modal se abre desde la llegada, desde la
+ * cabecera de la conversación y desde el orbe de cada respuesta. Las
+ * ejecuciones de la conversación abierta alimentan su «En esta conversación».
  */
-export function ChatContainer({ className }: ChatContainerProps) {
+export function ChatContainer(props: ChatContainerProps) {
+  const { messages } = useBetaChatContext();
+  const ejecuciones = useMemo(() => messages.flatMap((m) => m.agentActivity?.agents ?? []), [messages]);
+  return (
+    <EquipoDeAgentesProvider ejecuciones={ejecuciones}>
+      <ConversacionDelChat {...props} />
+    </EquipoDeAgentesProvider>
+  );
+}
+
+/**
+ * La conversación (o la llegada). Cada respuesta del asistente lleva arriba la
+ * cabecera del turno —el orbe del orquestador, que ES quien responde— y, según
+ * el momento:
+ *   pensando   → «Ori está pensando» + las frases de la espera;
+ *   trabajando → la tarjeta de los pasos, con cada especialista como delegación;
+ *   respondió  → la delegación resumida en una línea, el texto, «Cómo lo
+ *                pensó» (si el micro lo manda) y las acciones.
+ */
+function ConversacionDelChat({ className }: ChatContainerProps) {
   const { t } = useI18n();
+  const { abrir: abrirEquipo } = useEquipoDeAgentes();
   const {
     isLoading,
     messages,
@@ -86,7 +102,6 @@ export function ChatContainer({ className }: ChatContainerProps) {
     activeAgentBlock,
     isAgentsRunning,
     turnSteps,
-    retryAgent,
     selectDecisionOption,
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
@@ -150,6 +165,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
   const hasMessages = messages.length > 0;
   const isBusy = isThinking || isStreaming || isAgentsRunning;
 
+  // La lectura del turno que corre, para la franja del compositor (el orbe
+  // de quien trabaja y las delegaciones al desplegarla).
+  const ultimoDelAsistente = [...messages].reverse().find((m) => m.role === 'assistant') ?? null;
+  const turnoEnCurso = useMemo(
+    () =>
+      turnSteps.length > 0
+        ? leerElTurno({ mensaje: ultimoDelAsistente, pasos: turnSteps, enCurso: isBusy })
+        : null,
+    [turnSteps, ultimoDelAsistente, isBusy]
+  );
+
   if (isLoading) {
     return (
       <div className={cn('flex flex-col h-full', className)}>
@@ -171,16 +197,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
   }
 
   return (
-    <div
-      className={cn('flex flex-col h-full', className)}
-    >
+    // `chat-grises`: en oscuro, los grises neutros del chat (Nico, 02-10:
+    // «unos grises como amarillos súper feos»); en claro no cambia nada.
+    <div className={cn('chat-grises flex flex-col h-full', className)}>
       {hasMessages ? (
         <>
-          {/* Barra de conversación — plantillas siempre alcanzables + terminar.
-              Sin esto, escribir el primer mensaje tapaba el estado-0 para
-              siempre: no había forma de volver a las plantillas ni de cerrar
-              la conversación y empezar otra (Nico, 2026-08-27). */}
-          <ChatConversationBar onSelectTemplate={sendMessage} />
+          {/* Barra de conversación — el equipo + terminar. Sin esto,
+              escribir el primer mensaje tapaba el estado-0 para siempre: no
+              había forma de cerrar la conversación y empezar otra (Nico,
+              2026-08-27). Las plantillas viven en el compositor (02-10). */}
+          <ChatConversationBar />
 
           {/* Messages area */}
           {/* data-lenis-prevent: Lenis hijacks wheel events globally; without it
@@ -202,16 +228,45 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   index === messages.length - 1;
 
                 if (message.role === 'user') {
-                  // `data-pregunta`: el ancla del scroll del turno.
+                  // `data-pregunta`: el ancla del scroll del turno. La última
+                  // pregunta sube a su sitio al enviarla (`chat-sube`, la
+                  // `sa-rise` de la referencia; quieta con reducir movimiento).
                   return (
-                    <div key={message.id} data-pregunta={message.id}>
+                    <div
+                      key={message.id}
+                      data-pregunta={message.id}
+                      className={message.id === ultimaPregunta ? 'chat-sube' : undefined}
+                    >
                       <UserBubble message={message} />
                     </div>
                   );
                 }
 
-                // Completed agent activity stored on the message (from previous turns)
-                const storedActivity = message.agentActivity;
+                // ── La lectura del turno (02-10, el equipo) ─────────────────
+                // Quién habla (el orquestador), a quién le pasó el trabajo y lo
+                // que pensó. Pura: con los pasos en vivo si es el turno que
+                // corre; si no, con lo que guardó el mensaje (las viejas, «listo»).
+                const enCurso = isLastAssistant && isBusy;
+                const turno = leerElTurno({
+                  mensaje: message,
+                  pasos: isLastAssistant ? turnSteps : [],
+                  enCurso,
+                });
+                // El orbe del orquestador: primer hijo de TODAS las ramas, así
+                // React lo conserva al pasar de pensando → trabajando → respuesta.
+                const cabecera = (
+                  <CabeceraDeLaRespuesta
+                    turno={turno}
+                    tipo={message.status === 'complete' && !enCurso ? message.responseMeta?.type : null}
+                    onAbrirEquipo={abrirEquipo}
+                  />
+                );
+                // Ya respondió: la delegación en UNA línea (se abre en el detalle).
+                const resumenDelTurno = !enCurso ? (
+                  <ResumenDelTurno turno={turno} onAbrirEquipo={abrirEquipo} />
+                ) : null;
+                // «Cómo lo pensó»: sólo si el micro lo mandó (hoy no lo manda).
+                const razonamiento = <RazonamientoDelTurno turno={turno} className="mt-3" />;
 
                 // "Estado de hoy" KPI glance — rendered under the reply when the
                 // backend (or mock) attached a snapshot to this turn.
@@ -239,33 +294,64 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   <ChatDataCard tiles={mosaicosDelEstado(message.snapshot, t)} />
                 ) : null;
 
-                // For the last assistant message, use live activeAgentBlock if agents are running
-                const liveActivity = isLastAssistant ? activeAgentBlock : null;
+                const decision = message.decision ? (
+                  <DecisionCard
+                    decision={message.decision}
+                    onSelect={
+                      !message.decision.selectedOptionId
+                        ? (optionId) => selectDecisionOption(message.id, optionId)
+                        : undefined
+                    }
+                  />
+                ) : null;
+                const accion = message.accion ? (
+                  <AccionPropuestaCard
+                    propuesta={message.accion.propuesta}
+                    estado={message.accion.estado}
+                    resultado={message.accion.resultado}
+                    error={message.accion.error}
+                    onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                    onCancelar={() => cancelarAccionDelMensaje(message.id)}
+                  />
+                ) : null;
 
-                // During thinking phase, hide the placeholder assistant bubble
+                // `chat-respuesta`: el grupo que muestra las acciones (copiar,
+                // pulgares) al pasar el cursor; `data-turno`, para las pruebas.
+                const envoltura = 'chat-respuesta space-y-3';
+
+                // Pensando (antes del primer despacho): la cabecera dice «Ori
+                // está pensando» y debajo, las frases de la espera.
                 if (isLastAssistant && isThinking) {
-                  return null;
+                  return (
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      <TypingIndicator
+                        // El par pendiente (pregunta + placeholder) no es contexto leído.
+                        historyCount={Math.max(0, messages.length - 2)}
+                        snapshot={message.snapshot ?? null}
+                        actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
+                      />
+                    </div>
+                  );
                 }
 
-                // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
-                // (filas planas; el paso activo gira y dice qué hace), en vez de
-                // la tarjeta con borde.
+                // Agentes corriendo: la tarjeta de los pasos EN el hilo, con
+                // cada especialista como delegación («Ori → Laura»).
                 if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
-                    <div key={message.id} className="space-y-3 animate-fade-in">
-                      <AgentTaskThread steps={turnSteps} />
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      <AgentTaskThread steps={turnSteps} turno={turno} onAbrirEquipo={abrirEquipo} />
                     </div>
                   );
                 }
 
-                // Completed message with responseMeta → render ResponseCard
-                if (
-                  message.status === 'complete' &&
-                  message.responseMeta &&
-                  !isLastAssistant
-                ) {
+                // Completa con `responseMeta` (o la última que acaba de terminar).
+                if (message.status === 'complete' && message.responseMeta) {
                   return (
-                    <div key={message.id} className="space-y-3">
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      {resumenDelTurno}
                       {responseNeedsCard(message) ? (
                         <>
                           <ResponseCard
@@ -278,104 +364,30 @@ export function ChatContainer({ className }: ChatContainerProps) {
                             entidades={message.entidades}
                             turnoId={message.turnoId}
                             conAcciones={(message.acciones?.length ?? 0) > 0}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                            className="animate-in fade-in duration-slow motion-reduce:animate-none"
                           />
                           {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
                           <AccionesEnElHilo
                             message={message}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                            className="animate-in fade-in duration-slow motion-reduce:animate-none"
                           />
+                          {razonamiento}
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
                               corregir (Nico, 13/09: «un pulgar en CADA
                               respuesta»). Mismas acciones que la burbuja. */}
-                          <MessageActions message={message} />
+                          <MessageActions message={message} siempreVisibles={isLastAssistant} />
                         </>
                       ) : (
-                        <AssistantBubble message={message} />
+                        <AssistantBubble
+                          message={message}
+                          antesDeLasAcciones={razonamiento}
+                          accionesSiempreVisibles={isLastAssistant}
+                        />
                       )}
                       {snapshotCard}
-                      {message.decision && (
-                        <DecisionCard
-                          decision={message.decision}
-                          onSelect={
-                            !message.decision.selectedOptionId
-                              ? (optionId) => selectDecisionOption(message.id, optionId)
-                              : undefined
-                          }
-                        />
-                      )}
-                      {message.accion && (
-                        <AccionPropuestaCard
-                          propuesta={message.accion.propuesta}
-                          estado={message.accion.estado}
-                          resultado={message.accion.resultado}
-                          error={message.accion.error}
-                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                        />
-                      )}
-                    </div>
-                  );
-                }
-
-                // Last assistant message that just completed with responseMeta
-                if (
-                  isLastAssistant &&
-                  message.status === 'complete' &&
-                  message.responseMeta
-                ) {
-                  return (
-                    <div key={message.id} className="space-y-3">
-                      {responseNeedsCard(message) ? (
-                        <>
-                          <ResponseCard
-                            meta={message.responseMeta}
-                            content={textoSinTablaRepetida(message)}
-                            turnoId={message.turnoId}
-                          />
-                          <RespuestaConForma
-                            bloques={message.bloques}
-                            entidades={message.entidades}
-                            turnoId={message.turnoId}
-                            conAcciones={(message.acciones?.length ?? 0) > 0}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
-                          />
-                          {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
-                          <AccionesEnElHilo
-                            message={message}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
-                          />
-                          {/* La tarjeta se quedaba SIN pulgares: justo las
-                              respuestas con cifras son las que hay que poder
-                              corregir (Nico, 13/09: «un pulgar en CADA
-                              respuesta»). Mismas acciones que la burbuja. */}
-                          <MessageActions message={message} />
-                        </>
-                      ) : (
-                        <AssistantBubble message={message} />
-                      )}
-                      {snapshotCard}
-                      {message.decision && (
-                        <DecisionCard
-                          decision={message.decision}
-                          onSelect={
-                            !message.decision.selectedOptionId
-                              ? (optionId) => selectDecisionOption(message.id, optionId)
-                              : undefined
-                          }
-                        />
-                      )}
-                      {message.accion && (
-                        <AccionPropuestaCard
-                          propuesta={message.accion.propuesta}
-                          estado={message.accion.estado}
-                          resultado={message.accion.resultado}
-                          error={message.accion.error}
-                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                        />
-                      )}
+                      {decision}
+                      {accion}
                     </div>
                   );
                 }
@@ -383,7 +395,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 // Streaming state — card only if the response needs it; else plain text
                 if (isLastAssistant && isStreaming && message.responseMeta) {
                   return (
-                    <div key={message.id} className="space-y-3">
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
                       {responseNeedsCard(message) ? (
                         <ResponseCard
                           meta={message.responseMeta}
@@ -396,75 +409,31 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           }
                         />
                       ) : (
-                        <AssistantBubble
-                          message={message}
-                          streamingContent={streamingContent}
-                        />
+                        <AssistantBubble message={message} streamingContent={streamingContent} />
                       )}
                       {snapshotCard}
                     </div>
                   );
                 }
 
-                // Fallback: legacy AssistantBubble for messages without responseMeta
+                // Respaldo: un mensaje sin `responseMeta` (los viejos, el error,
+                // el que se está escribiendo sin metadatos). La delegación va en
+                // su línea, en lugar del viejo «N resultados · duración».
                 return (
-                  <div key={message.id} className="space-y-3">
-                    {/* Agent activity summary (collapsed) for older messages */}
-                    {(liveActivity || storedActivity) && (
-                      <div className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                        {(liveActivity || storedActivity)!.agents.length} {t('beta.agents.results').toLowerCase()}
-                        {' · '}
-                        {formatDuration(
-                          (liveActivity || storedActivity)!.agents.reduce(
-                            (sum, a) => sum + (a.durationMs ?? 0),
-                            0
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Decision card */}
-                    {message.decision && (
-                      <DecisionCard
-                        decision={message.decision}
-                        onSelect={
-                          !message.decision.selectedOptionId
-                            ? (optionId) => selectDecisionOption(message.id, optionId)
-                            : undefined
-                        }
-                      />
-                    )}
-
-                    {message.accion && (
-                      <AccionPropuestaCard
-                        propuesta={message.accion.propuesta}
-                        estado={message.accion.estado}
-                        resultado={message.accion.resultado}
-                        error={message.accion.error}
-                        onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                        onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                      />
-                    )}
-
-                    {/* Legacy assistant bubble */}
+                  <div key={message.id} className={envoltura} data-turno={message.id}>
+                    {cabecera}
+                    {message.status !== 'error' && resumenDelTurno}
+                    {decision}
+                    {accion}
                     <AssistantBubble
                       message={message}
                       streamingContent={isLastAssistant && isStreaming ? streamingContent : undefined}
+                      antesDeLasAcciones={razonamiento}
+                      accionesSiempreVisibles={isLastAssistant}
                     />
                   </div>
                 );
               })}
-
-              {/* Typing indicator shown during the thinking delay */}
-              {isThinking && (
-                <TypingIndicator
-                  // El par pendiente (pregunta + placeholder) no es contexto leído.
-                  historyCount={Math.max(0, messages.length - 2)}
-                  snapshot={messages[messages.length - 1]?.snapshot ?? null}
-                  actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
-                />
-              )}
 
               {/* Fin del contenido: hasta acá se mide (el espacio va después). */}
               <div ref={scrollRef} data-fin-del-hilo />
@@ -502,16 +471,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <ChatInput
             onSend={sendMessage}
             disabled={isBusy}
-            topSlot={turnSteps.length > 0 ? <AgentTaskProgress steps={turnSteps} /> : null}
+            topSlot={
+              turnSteps.length > 0 ? (
+                <AgentTaskProgress steps={turnSteps} turno={turnoEnCurso} onAbrirEquipo={abrirEquipo} />
+              ) : null
+            }
           />
         </>
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */
         <div data-lenis-prevent className="relative flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <BetaWelcome
-            onPromptClick={sendMessage}
-            inputSlot={<ChatInput variant="hero" onSend={sendMessage} disabled={isBusy} />}
-          />
+          <BetaWelcome onPromptClick={sendMessage} />
         </div>
       )}
     </div>

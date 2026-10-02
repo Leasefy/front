@@ -256,8 +256,11 @@ describe('un turno que falla (B1·B2·B3)', () => {
   it.each([
     [new ApiError(402, 'Your credit balance is too low'), 'sin créditos de IA'],
     [new ApiError(429, 'Too many requests'), 'demasiadas solicitudes seguidas. Espera un momento'],
-    [new ApiError(503, 'Service unavailable'), 'No pude conectarme con el asistente'],
+    // Un 503 respondió: no es la conexión (regla de oro del traductor, 02-10).
+    [new ApiError(503, 'Service unavailable'), 'algo falló de nuestro lado'],
+    [new ApiError(500, 'Internal Server Error', 'ERROR_INTERNO', { referencia: 'ab12cd34' }), 'referencia ab12cd34'],
     [new TypeError('Failed to fetch'), 'No pude conectarme con el asistente'],
+    [new Error('empty stream'), 'No pude responder esta vez'],
     [Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' }), 'tardó demasiado'],
   ])('mensajeDeFalloDelChat(%s) dice «%s» y nunca el texto crudo', (error, esperado) => {
     const texto = mensajeDeFalloDelChat(error);

@@ -11238,7 +11238,8 @@
         "prompt_decisiones": "Are there pending decisions?",
         "prompt_reporte": "Generate a payments report"
       },
-      "typing": "Typing..."
+      "typing": "Typing...",
+      "generando": "Generating the answer"
     },
     "conversations": {
       "today": "Today",
@@ -11395,8 +11396,6 @@
         "reportes_desc": "Generate a monthly financial report"
       },
       "historyLabel": "Recent conversations",
-      "historyEmpty": "The ones you start stay here so you can pick them up where you left off.",
-      "historyEmptyCta": "See templates to get started",
       "heroSubtitle": "Ask your agency about receivables, leases, properties and payments.",
       "inputLabel": "Type your question for the chat",
       "inputHint": "Enter sends. Shift + Enter adds a new line.",
@@ -11412,14 +11411,7 @@
       },
       "atajosLabel": "Shortcuts",
       "bandeja": {
-        "datosDe": "Answers with the data of",
-        "recuperadoMes": "{{valor}} recovered this month",
-        "decisionUna": "1 pending decision",
-        "decisiones": "{{n}} pending decisions",
-        "llamadaUna": "1 call today",
-        "llamadas": "{{n}} calls today",
-        "promesaUna": "1 payment promise today",
-        "promesas": "{{n}} payment promises today"
+        "datosDe": "Answers with the data of"
       },
       "aviso": {
         "region": "Migration notice",
@@ -11431,11 +11423,25 @@
       },
       "especialistas": "Depending on what you ask, the chat calls its specialist: reports, collections, payments, reconciliation and more.",
       "historyLocal": "Saved in this browser",
-      "historyEmptyTitle": "No conversations yet"    },
+      "historyTrigger": "Recent conversations ({{n}})",
+      "vozHabla": "Speak naturally: what you say shows up here.",
+      "vozTitulo": "Listening · Spanish",
+      "vozPista": "pause anytime, I keep listening",
+      "vozCancelar": "Cancel",
+      "vozListo": "Done: stop listening",
+      "vozError": {
+        "permiso": "Your browser didn't allow the microphone. Turn it on from the lock in the address bar and tap “Voice” again.",
+        "microfono": "We couldn't find a microphone. Plug one in or type your question.",
+        "servicio": "Voice dictation isn't available in this browser. Try Chrome or Edge, or type your question.",
+        "otro": "I couldn't hear you. Tap “Voice” again or type your question.",
+        "cerrar": "Close notice"
+      }
+    },
     "response": {
       "actionable": "Actionable",
       "informative": "Informative",
-      "openSection": "Open the section"
+      "openSection": "Open the section",
+      "seRespondeAqui": "Asked here: the answer arrives in this conversation"
     },
     "workspace": {
       "stepsTitle": "Analysis steps",
@@ -11550,7 +11556,11 @@
         "entender": "Deciding how to solve it…",
         "redactar": "Writing the answer…"
       },
-      "avance": "{{hechos}} of {{total}}"
+      "avance": "{{hechos}} of {{total}}",
+      "especialista": "Specialist: {{agent}}",
+      "pasoDe": "Step {{n}} of {{total}}",
+      "unoFallo": "One of the steps could not be done",
+      "trabajando": "working"
     },
     "forma": {
       "resultados": "Results",
@@ -11799,6 +11809,11 @@
           "noSeguir": "Don’t continue the plan"
         }
       }
+    },
+    "turno": {
+      "lePasoElTrabajo": "{{orquestador}} handed the work to {{nombres}}",
+      "lePasoElTrabajoSinNombre": "{{orquestador}} handed the work to a specialist",
+      "noPudieron": "{{nombres}} could not finish"
     }
   },
   "landlordProfile": {

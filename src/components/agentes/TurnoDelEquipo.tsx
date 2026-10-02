@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, CaretDown, Check, WarningCircle } from '@phosphor-icons/react'
+import { Collapse } from '@leasefy/cadence'
 
 import { nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo'
 import type { Delegacion, LecturaDelTurno } from '@/lib/agentes/agente-que-habla'
@@ -211,13 +212,15 @@ export function RazonamientoDelTurno({ turno, className }: { turno: LecturaDelTu
         {t('agentes.turno.comoLoPenso')}
         <CaretDown size={11} aria-hidden="true" className={cn('transition-transform', abierto && 'rotate-180')} />
       </button>
-      {abierto && (
+      {/* Se abre con su animación (`Collapse`, el sistema de movimiento), como
+          el resto de lo que se pliega en el chat (02-10). */}
+      <Collapse open={abierto}>
         <ol className="mt-2 space-y-1.5 border-l border-border pl-3 text-fg-muted">
           {turno.razonamiento.map((p, i) => (
             <li key={i}>{p.texto}</li>
           ))}
         </ol>
-      )}
+      </Collapse>
     </div>
   )
 }

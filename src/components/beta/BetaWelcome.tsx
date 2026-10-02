@@ -2,34 +2,19 @@
 
 import { useContext, useMemo, useState } from 'react';
 import { motion, MotionConfig } from 'framer-motion';
-import {
-  ArrowRight,
-  ChartLineUp,
-  ArrowsLeftRight,
-  Bank,
-  Buildings,
-  ChartBar,
-  ChatsCircle,
-  Check,
-  CurrencyDollar,
-  Trash,
-  X,
-} from '@phosphor-icons/react';
-import { Eyebrow } from '@leasefy/cadence';
-import { toast } from '@/components/ui';
-import { EmptyState } from '@/components/ui/empty-state';
+import { Buildings } from '@phosphor-icons/react';
 import { useMigracion } from '@/components/migracion/migracion-context';
 import { migracionSinTerminar, progresoDeMigracion } from '@/components/migracion/muro-reglas';
 import { AuthContext } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
-import { LeasefyMark } from './LeasefyMark';
 import { CHAT_TEMPLATES, ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { ConversacionesRecientes } from './llegada/ConversacionesRecientes';
 import { FranjaDeMigracion } from './llegada/FranjaDeMigracion';
-import { cifrasDeLaBandeja } from './llegada/cifras-de-la-bandeja';
 import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
+import { BotonDelEquipo } from '@/components/agentes/BotonDelEquipo';
 
 // ============================================================================
 // Types
@@ -42,19 +27,6 @@ interface BetaWelcomeProps {
   className?: string;
 }
 
-/** «hace 3 h», «ayer», «12 ago» — sin traer una librería de fechas. */
-function haceCuanto(fecha: Date, ahora: Date): string {
-  const min = Math.floor((ahora.getTime() - fecha.getTime()) / 60000);
-  if (min < 1) return 'ahora';
-  if (min < 60) return `hace ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d === 1) return 'ayer';
-  if (d < 7) return `hace ${d} días`;
-  return fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-}
-
 /**
  * Los atajos de la llegada: tres de las plantillas que ya existen (no hay datos
  * de uso para elegir las «más usadas»). Al tocarlos se manda el MISMO texto que
@@ -64,18 +36,6 @@ export const ATAJOS_DE_LLEGADA = ['cobros', 'contratos', 'propiedades'] as const
 
 /** Los ejemplos que se escriben solos en la caja: cosas que el chat SÍ contesta o hace. */
 const CLAVES_DE_EJEMPLOS = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] as const;
-
-/**
- * Especialistas del chat que se nombran en la línea de abajo. Salen de los que
- * el micro despacha desde el chat (`BackendDispatchAgent` en
- * `lib/api/ai-hub-chat.ts`; el orquestador tiene más —por eso «y más»—).
- */
-const ESPECIALISTAS = [
-  { id: 'reportes', Icono: ChartBar },
-  { id: 'cobranza', Icono: CurrencyDollar },
-  { id: 'pagos', Icono: Bank },
-  { id: 'conciliacion', Icono: ArrowsLeftRight },
-] as const;
 
 /** La curva de la referencia (`sa-hero`): sale rápido y se posa despacio. */
 const CURVA = [0.22, 1, 0.36, 1] as const;
@@ -102,22 +62,23 @@ function entrada(paso: number) {
  * aro de luz al enfocarla (`CajaDeLlegada`), un ejemplo real que se escribe
  * solo, la bandeja de estado, tres atajos y una línea sobre los especialistas.
  *
- * Lo que se conserva tal cual: enviar (`onPromptClick` → `sendMessage`), el
- * menú «Plantillas», y el HISTORIAL de conversaciones (Nico, 2026-08-27) con
- * abrir y borrar con confirmación en línea; el vacío sigue llevando a las
- * plantillas.
+ * Lo que se conserva tal cual: enviar (`onPromptClick` → `sendMessage`) y el
+ * menú «Plantillas», que ahora sale desde su botón.
  *
- * Regla de la casa: nada de números inventados. La bandeja dice el nombre de
- * la inmobiliaria (los datos con los que responde el chat) y las cifras del
- * día que trae el briefing del micro (sólo las mayores que cero). La franja de
- * arriba aparece sólo con la migración a medias (ajustes de Nico, 02-10-2026).
+ * Segunda vuelta de Nico (02-10-2026): «Conversaciones recientes» ya no va
+ * abajo. Sin conversaciones no se muestra nada; con conversaciones queda un
+ * acceso en la bandeja que abre la lista dentro del chat (abrir y borrar como
+ * antes). La bandeja ya no lleva las cifras del briefing.
+ *
+ * Regla de la casa: nada de números inventados. La bandeja sólo dice con los
+ * datos de qué inmobiliaria responde el chat y cuántas conversaciones hay
+ * guardadas; la franja de arriba aparece sólo con la migración a medias.
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
-  const { filteredSummaries, switchConversation, deleteConversation, currentBriefing } = useBetaChatContext();
-  const [borrando, setBorrando] = useState<string | null>(null);
+  const { filteredSummaries, switchConversation, deleteConversation } = useBetaChatContext();
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const ahora = new Date();
+  const [recientesAbiertas, setRecientesAbiertas] = useState(false);
 
   const ejemplos = useMemo(() => CLAVES_DE_EJEMPLOS.map((k) => t(`beta.welcome.ejemplos.${k}`)), [t]);
 
@@ -167,15 +128,25 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
       />
     ) : null;
 
-  // Cifras del día, SÓLO del briefing del micro y sólo las mayores que cero.
-  const cifras = cifrasDeLaBandeja(currentBriefing?.numeros, t);
+  // Sólo las que tienen algo adentro: la conversación vacía recién creada es
+  // justamente esta pantalla, listarla sería ofrecerle volver a donde está.
+  const historial = filteredSummaries.filter((c) => c.messageCount > 0).slice(0, 8);
 
+  // La bandeja (Nico, 02-10, segunda vuelta): el acceso a las conversaciones
+  // (si hay) y con los datos de qué inmobiliaria responde. Las cifras del
+  // briefing se quitaron: «337 decisiones pendientes» ahí no ayudaba.
   const bandeja =
-    agencia || cifras.length > 0 ? (
+    agencia || historial.length > 0 ? (
       <div
         data-testid="bandeja-de-llegada"
         className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-fg-muted"
       >
+        <ConversacionesRecientes
+          historial={historial}
+          onAbrir={switchConversation}
+          onBorrar={deleteConversation}
+          onAbierto={setRecientesAbiertas}
+        />
         {agencia && (
           <span className="inline-flex min-w-0 items-center gap-2">
             <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-fg-muted">
@@ -187,33 +158,8 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             </span>
           </span>
         )}
-        {cifras.length > 0 && (
-          <span className="flex min-w-0 max-w-full items-start gap-2" data-testid="cifras-de-la-bandeja">
-            <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-fg-muted">
-              <ChartLineUp size={13} />
-            </span>
-            {/* Cada cifra entera en su renglón si no cabe: en el celular se
-                partían a media palabra. */}
-            <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 pt-[3px]">
-              {cifras.map((cifra, i) => (
-                <span key={cifra} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  {i > 0 && (
-                    <span aria-hidden className="text-fg-subtle">
-                      ·
-                    </span>
-                  )}
-                  <span className="font-medium text-fg">{cifra}</span>
-                </span>
-              ))}
-            </span>
-          </span>
-        )}
       </div>
     ) : null;
-
-  // Sólo las que tienen algo adentro: la conversación vacía recién creada es
-  // justamente esta pantalla, listarla sería ofrecerle volver a donde está.
-  const historial = filteredSummaries.filter((c) => c.messageCount > 0).slice(0, 6);
 
   const atajos = ATAJOS_DE_LLEGADA.map((id) => CHAT_TEMPLATES.find((tpl) => tpl.id === id)).filter(
     (tpl): tpl is (typeof CHAT_TEMPLATES)[number] => Boolean(tpl)
@@ -224,7 +170,14 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
     // desplazamientos y deja sólo el fundido (y el marcado del servidor es el
     // mismo en los dos casos).
     <MotionConfig reducedMotion="user">
-      <div className={cn('flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16', className)}>
+      {/* `llegada-grises`: en oscuro, grises neutros en vez de los cálidos de
+          Cadence (Nico, 02-10: «unos grises como amarillos súper feos»). */}
+      <div
+        className={cn(
+          'llegada-grises flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16',
+          className
+        )}
+      >
         <div className="flex w-full max-w-[800px] flex-col items-center">
           {/* Título + apoyo */}
           <motion.h1
@@ -240,20 +193,23 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             {t('beta.welcome.heroSubtitle')}
           </motion.p>
 
-          {/* La caja — el menú de plantillas se ancla a este contenedor */}
-          <motion.div {...entrada(2)} className="relative mt-9 w-full sm:mt-10">
+          {/* La caja — `z-10`: el menú y el panel de conversaciones pasan por encima de los atajos */}
+          <motion.div {...entrada(2)} className="relative z-10 mt-9 w-full sm:mt-10">
             <CajaDeLlegada
               onEnviar={(texto) => onPromptClick?.(texto)}
               onPlantillas={() => setTemplatesOpen((v) => !v)}
               plantillasAbiertas={templatesOpen}
+              menuDePlantillas={
+                <ChatTemplatesMenu
+                  open={templatesOpen}
+                  onClose={() => setTemplatesOpen(false)}
+                  onSelect={(prompt) => onPromptClick?.(prompt)}
+                />
+              }
               ejemplos={ejemplos}
               bandeja={bandeja}
+              bandejaElevada={recientesAbiertas}
               aviso={aviso}
-            />
-            <ChatTemplatesMenu
-              open={templatesOpen}
-              onClose={() => setTemplatesOpen(false)}
-              onSelect={(prompt) => onPromptClick?.(prompt)}
             />
           </motion.div>
 
@@ -302,158 +258,16 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             })}
           </motion.ul>
 
-          {/* Quiénes trabajan detrás */}
-          <motion.p
+          {/* Quiénes trabajan detrás: los orbes del equipo abren «El equipo»
+              (02-10, commit `27a3b2b8`). La frase es verdad: el chat llama a
+              sus especialistas según lo que se pida. */}
+          <motion.div
             {...entrada(5)}
-            className="mt-6 flex max-w-[760px] flex-col items-center justify-center gap-2 text-center text-[13px] leading-snug text-fg-subtle sm:flex-row sm:gap-3"
+            className="mt-6 flex max-w-[760px] flex-col items-center justify-center gap-2.5 text-center text-[13px] leading-snug text-fg-subtle sm:flex-row sm:gap-3"
+            data-testid="fila-del-equipo"
           >
-            <span aria-hidden className="flex shrink-0 -space-x-2">
-              {ESPECIALISTAS.map(({ id, Icono }) => (
-                <span
-                  key={id}
-                  className="flex size-7 items-center justify-center rounded-full bg-surface-muted text-fg-muted ring-2 ring-bg"
-                >
-                  <Icono size={14} />
-                </span>
-              ))}
-            </span>
+            <BotonDelEquipo className="shrink-0" />
             <span>{t('beta.welcome.especialistas')}</span>
-          </motion.p>
-
-          {/* Historial de conversaciones */}
-          <motion.div {...entrada(6)} className="mt-12 w-full">
-            <div className="mb-3.5 flex items-baseline justify-between gap-3 px-1">
-              <Eyebrow>{t('beta.welcome.historyLabel')}</Eyebrow>
-              <span className="text-[12px] text-fg-subtle">{t('beta.welcome.historyLocal')}</span>
-            </div>
-
-            {historial.length === 0 ? (
-              <EmptyState
-                icon={ChatsCircle}
-                title={t('beta.welcome.historyEmptyTitle')}
-                description={t('beta.welcome.historyEmpty')}
-                action={{ label: t('beta.welcome.historyEmptyCta'), onClick: () => setTemplatesOpen(true) }}
-                className="rounded-lg border border-border bg-surface py-9"
-              />
-            ) : (
-              /* Una sola columna, de lado a lado (Nico, 2026-08-27: «que vaya
-                 de lado a lado para que no quede tan pequeña»). En dos columnas
-                 cada tarjeta quedaba angosta y el preview —que es lo que te dice
-                 si es LA conversación que buscabas— se cortaba a media frase. */
-              <div className="flex flex-col gap-2.5">
-                {historial.map((conv) => {
-                  const confirmando = borrando === conv.id;
-                  return (
-                    /* La tarjeta es un <div> con DOS botones hermanos — abrir y
-                       borrar — porque un botón dentro de otro es HTML inválido
-                       y el clic en la papelera abriría la conversación. */
-                    <div
-                      key={conv.id}
-                      className={cn(
-                        'group relative flex items-center gap-3.5 rounded-[18px] border border-border bg-surface px-4 py-3.5',
-                        'transition-all duration-200 hover:border-border-strong hover:shadow-[0_6px_20px_-12px_rgba(20,19,15,0.18)] hover:-translate-y-px',
-                        confirmando && 'border-border-strong'
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => switchConversation(conv.id)}
-                        disabled={confirmando}
-                        className={cn(
-                          'flex min-w-0 flex-1 items-start gap-3 text-left',
-                          'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[12px]'
-                        )}
-                      >
-                        {/* La marca en vez de un icono genérico de chat: al
-                            pasar el mouse el tile se enciende al azul de marca —
-                            el mismo avatar que firma cada respuesta. */}
-                        <span
-                          aria-hidden
-                          className={cn(
-                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                            'bg-primary/10 text-primary transition-colors duration-200',
-                            'group-hover:bg-[#1A40FF] group-hover:text-white'
-                          )}
-                        >
-                          <LeasefyMark className="w-[18px] h-auto" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline gap-2">
-                            <span className="truncate font-body text-[14.5px] font-semibold text-fg">
-                              {conv.title}
-                            </span>
-                            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-subtle">
-                              {haceCuanto(conv.updatedAt, ahora)}
-                              {' · '}
-                              {conv.messageCount} {t(conv.messageCount === 1 ? 'beta.conversations.message' : 'beta.conversations.messages')}
-                            </span>
-                          </span>
-                          <span className="mt-1 line-clamp-1 block font-body text-[13px] leading-snug text-fg-muted">
-                            {conv.preview}
-                          </span>
-                        </span>
-                      </button>
-
-                      {/* Borrar (Nico, 2026-08-27). Papelera que aparece al
-                          pasar el mouse o con el teclado; confirma EN LÍNEA
-                          porque borrar un hilo no se deshace. */}
-                      {confirmando ? (
-                        <span className="flex shrink-0 items-center gap-1 self-center">
-                          <span className="hidden font-body text-[12px] text-fg-muted sm:inline">
-                            {t('beta.conversations.confirmDelete')}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              deleteConversation(conv.id);
-                              setBorrando(null);
-                              toast.success(t('beta.conversations.deleted'));
-                            }}
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full bg-danger px-2.5 py-[4px]',
-                              'font-body text-[12px] font-medium text-white',
-                              'transition-opacity hover:opacity-90 outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                            )}
-                          >
-                            <Check size={12} weight="bold" />
-                            {t('beta.conversations.deleteConfirm')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setBorrando(null)}
-                            aria-label={t('beta.conversation.endCancel')}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-muted hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      ) : (
-                        <span className="flex shrink-0 items-center gap-1 self-center">
-                          <button
-                            type="button"
-                            onClick={() => setBorrando(conv.id)}
-                            aria-label={t('beta.conversations.deleteConversation')}
-                            title={t('beta.conversations.deleteConversation')}
-                            className={cn(
-                              'inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-subtle',
-                              'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
-                              'hover:bg-surface-muted hover:text-danger outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                            )}
-                          >
-                            <Trash size={14} />
-                          </button>
-                          <ArrowRight
-                            size={16}
-                            aria-hidden
-                            className="text-fg-subtle transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary"
-                          />
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </motion.div>
         </div>
       </div>

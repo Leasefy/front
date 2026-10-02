@@ -11272,7 +11272,8 @@
         "prompt_decisiones": "¿Hay decisiones pendientes?",
         "prompt_reporte": "Genera un reporte de pagos"
       },
-      "typing": "Escribiendo..."
+      "typing": "Escribiendo...",
+      "generando": "Generando la respuesta"
     },
     "conversations": {
       "today": "Hoy",
@@ -11429,8 +11430,6 @@
         "reportes_desc": "Genera un reporte financiero del mes"
       },
       "historyLabel": "Conversaciones recientes",
-      "historyEmpty": "Las que empieces quedan acá para retomarlas donde las dejaste.",
-      "historyEmptyCta": "Ver plantillas para empezar",
       "heroSubtitle": "Pregúntale a tu inmobiliaria por cartera, contratos, inmuebles y pagos.",
       "inputLabel": "Escribe tu pregunta para el chat",
       "inputHint": "Enter envía. Shift + Enter, salto de línea.",
@@ -11446,14 +11445,7 @@
       },
       "atajosLabel": "Atajos",
       "bandeja": {
-        "datosDe": "Responde con los datos de",
-        "recuperadoMes": "{{valor}} recuperados este mes",
-        "decisionUna": "1 decisión pendiente",
-        "decisiones": "{{n}} decisiones pendientes",
-        "llamadaUna": "1 llamada hoy",
-        "llamadas": "{{n}} llamadas hoy",
-        "promesaUna": "1 promesa de pago hoy",
-        "promesas": "{{n}} promesas de pago hoy"
+        "datosDe": "Responde con los datos de"
       },
       "aviso": {
         "region": "Aviso de la migración",
@@ -11465,11 +11457,25 @@
       },
       "especialistas": "Según lo que pidas, el chat llama a su especialista: reportes, cobranza, pagos, conciliación y más.",
       "historyLocal": "Se guardan en este navegador",
-      "historyEmptyTitle": "Aún no tienes conversaciones"    },
+      "historyTrigger": "Conversaciones recientes ({{n}})",
+      "vozHabla": "Habla con naturalidad: lo que digas aparece acá.",
+      "vozTitulo": "Te escucho · español",
+      "vozPista": "haz una pausa y sigo escuchando",
+      "vozCancelar": "Cancelar",
+      "vozListo": "Listo: deja de escuchar",
+      "vozError": {
+        "permiso": "Tu navegador no le dio permiso al micrófono. Actívalo en el candado de la barra de direcciones y vuelve a tocar «Voz».",
+        "microfono": "No encontramos un micrófono. Conecta uno o escribe tu pregunta.",
+        "servicio": "Este navegador no tiene el dictado por voz disponible. Prueba en Chrome o Edge, o escribe tu pregunta.",
+        "otro": "No pude escucharte. Vuelve a tocar «Voz» o escribe tu pregunta.",
+        "cerrar": "Cerrar el aviso"
+      }
+    },
     "response": {
       "actionable": "Accionable",
       "informative": "Informativo",
-      "openSection": "Abrir la sección"
+      "openSection": "Abrir la sección",
+      "seRespondeAqui": "Se pregunta aquí: la respuesta llega en esta conversación"
     },
     "workspace": {
       "stepsTitle": "Pasos del analisis",
@@ -11584,7 +11590,11 @@
         "entender": "Decidiendo cómo resolverla…",
         "redactar": "Escribiendo la respuesta…"
       },
-      "avance": "{{hechos}} de {{total}}"
+      "avance": "{{hechos}} de {{total}}",
+      "especialista": "Especialista: {{agent}}",
+      "pasoDe": "Paso {{n}} de {{total}}",
+      "unoFallo": "Uno de los pasos no se pudo hacer",
+      "trabajando": "trabajando"
     },
     "forma": {
       "resultados": "Resultados",
@@ -11833,6 +11843,11 @@
           "noSeguir": "No sigas con el plan"
         }
       }
+    },
+    "turno": {
+      "lePasoElTrabajo": "{{orquestador}} le pasó el trabajo a {{nombres}}",
+      "lePasoElTrabajoSinNombre": "{{orquestador}} le pasó el trabajo a un especialista",
+      "noPudieron": "{{nombres}} no pudieron terminar"
     }
   },
   "landlordProfile": {

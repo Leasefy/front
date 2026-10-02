@@ -270,3 +270,24 @@ describe('MessageActions — Reintentar', () => {
     expect(botonReintentar()?.textContent).toBe('beta.actions.reintentando');
   });
 });
+
+// ── 02-10: al pasar el cursor, salvo la última; «Reintentar» en la fila ─────
+describe('MessageActions — cuándo se ven (Nico, 02-10)', () => {
+  const fila = () => container.querySelector('[data-testid="acciones-de-la-respuesta"]')!;
+
+  it('una respuesta vieja las deja para el cursor o el foco; la última, siempre a la vista', () => {
+    mount(mkMessage());
+    expect(fila().getAttribute('data-siempre')).toBe('false');
+    act(() => {
+      root.render(React.createElement(AssistantBubble, { message: mkMessage(), accionesSiempreVisibles: true }));
+    });
+    expect(fila().getAttribute('data-siempre')).toBe('true');
+  });
+
+  it('con «Reintentar», la fila queda a la vista y el botón va EN ella, al principio', () => {
+    mount(mkMessage({ reintentable: { motivo: 'tiempo', que: 'busqueda' } }));
+    expect(fila().getAttribute('data-siempre')).toBe('true');
+    expect(fila().firstElementChild?.getAttribute('data-testid')).toBe('reintentar');
+  });
+});
+

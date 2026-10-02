@@ -131,6 +131,12 @@ export interface BackendDispatch {
   status: 'completed' | 'failed';
   summary: string;
   nextStep?: string;
+  /**
+   * El id del despacho (campo aditivo PROPUESTO al micro el 02-10-2026, hoy no
+   * llega): el mismo de `dispatch_start.id` y `tool_step.dispatchId`. Con él
+   * dos despachos al mismo especialista en un turno no se confunden.
+   */
+  id?: string;
 }
 
 export interface BackendSnapshot {
@@ -272,6 +278,8 @@ export interface ChatStreamHandlers {
   onDispatchStart?: (
     agent: BackendDispatchAgent,
     taskDescription: string,
+    /** `id` del despacho, cuando el micro lo mande (aditivo, 02-10-2026). */
+    extra?: { id?: string },
   ) => void;
   onDispatchResult?: (dispatch: BackendDispatch) => void;
   /** Called for each `action_proposal` SSE event (F5). */
@@ -281,7 +289,13 @@ export interface ChatStreamHandlers {
    * ejecutar, ya traducida a lenguaje de operador por el backend. Es lo que
    * llena el silencio entre `dispatch_start` y `dispatch_result`.
    */
-  onToolStep?: (step: { agent: BackendDispatchAgent; tool: string; label: string }) => void;
+  onToolStep?: (step: {
+    agent: BackendDispatchAgent;
+    tool: string;
+    label: string;
+    /** El despacho al que pertenece, cuando el micro lo mande (aditivo, 02-10-2026). */
+    dispatchId?: string;
+  }) => void;
   /**
    * Un especialista propuso una acción vinculante que necesita el visto bueno
    * de una persona. Sin este manejador el evento se perdía en silencio: el
@@ -344,6 +358,12 @@ export interface ChatStreamHandlers {
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
      */
     camino?: string;
+    /**
+     * «Lo que pensó» el orquestador (campo aditivo PROPUESTO al micro el
+     * 02-10-2026; hoy no llega). Va crudo: lo lee `leerRazonamiento`
+     * (`src/lib/agentes/agente-que-habla.ts`), que descarta lo mal formado.
+     */
+    razonamiento?: unknown;
   }) => void;
   /**
    * Un fallo ANUNCIADO dentro del stream (evento `error`).
@@ -409,6 +429,7 @@ export function handleSSEEvent(
       handlers.onDispatchStart?.(
         obj.agent as BackendDispatchAgent,
         String(obj.taskDescription ?? ''),
+        typeof obj.id === 'string' && obj.id ? { id: obj.id } : {},
       );
       break;
     case 'dispatch_result':
@@ -436,6 +457,7 @@ export function handleSSEEvent(
           agent: obj.agent as BackendDispatchAgent,
           tool,
           label: typeof label === 'string' && label ? label : tool,
+          ...(typeof obj.dispatchId === 'string' && obj.dispatchId ? { dispatchId: obj.dispatchId } : {}),
         });
       }
       break;
@@ -505,6 +527,7 @@ export function handleSSEEvent(
         // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
         plan: leerTarjetaDePlan(obj.plan),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
+        ...(obj.razonamiento !== undefined && obj.razonamiento !== null ? { razonamiento: obj.razonamiento } : {}),
       });
       break;
     }

@@ -21,7 +21,9 @@ vi.mock('./ChatOrb', () => ({ ChatOrb: () => null }));
 
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
+import { filasDeLosPasos } from './turn-steps';
 import type { TurnStep } from '@/lib/types/beta-chat';
+import { leerElTurno } from '@/lib/agentes/agente-que-habla';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -136,6 +138,83 @@ describe('los pasos del turno (Nico, 23-09)', () => {
     pintar(<AgentTaskProgress steps={PASOS} />);
     const encabezado = container.querySelector('button[aria-expanded]')!;
     expect(encabezado.textContent).toContain('Leyendo los 29 contratos de octubre…');
-    expect(encabezado.textContent).toContain('1 / 3');
+    // El avance en palabras (02-10): «Paso 2 de 3», el que corre.
+    expect(encabezado.textContent).toContain('Paso 2 de 3');
   });
 });
+
+// ── El equipo en los pasos (02-10, commit `27a3b2b8`) ───────────────────────
+const PASOS_EQUIPO: TurnStep[] = [
+  { id: 'entender', kind: 'entender', labelKey: 'beta.tasks.plan.understand', status: 'done' },
+  {
+    id: 'ag-1',
+    kind: 'agente',
+    labelKey: 'beta.tasks.plan.consultAgent',
+    agentType: 'cobranza',
+    detail: 'Listar quién debe más de 30 días',
+    actividad: 'Calculando la mora de 31 contratos…',
+    status: 'running',
+  },
+  { id: 'tool-listar-0', kind: 'herramienta', label: 'Listó los contratos con saldo vencido', agentType: 'cobranza', status: 'done' },
+  { id: 'redactar', kind: 'redactar', labelKey: 'beta.tasks.plan.write', status: 'pending' },
+];
+
+describe('el especialista es una delegación del orquestador (02-10)', () => {
+  const turno = leerElTurno({ mensaje: null, pasos: PASOS_EQUIPO, enCurso: true });
+
+  it('el paso del especialista dice «Ori → Laura», con su orbe y lo que hace ahora', () => {
+    pintar(<AgentTaskThread steps={PASOS_EQUIPO} turno={turno} />);
+    const fila = container.querySelector('[data-testid="paso-delegacion"]')!;
+    expect(fila.getAttribute('data-agente')).toBe('cobranza');
+    expect(fila.textContent).toContain('Ori');
+    expect(fila.textContent).toContain('Laura');
+    expect(fila.querySelector('[data-agente="cobranza"][data-estado="trabajando"]')).not.toBeNull();
+    expect(fila.querySelector('[aria-live="polite"]')!.textContent).toBe('Calculando la mora de 31 contratos…');
+  });
+
+  it('las herramientas van DENTRO de su especialista («Lo que hizo»), no sueltas en la lista', () => {
+    pintar(<AgentTaskThread steps={PASOS_EQUIPO} turno={turno} />);
+    const filas = [...container.querySelectorAll('ul > li[data-estado]')].filter((li) => li.parentElement?.closest('li') === null);
+    expect(filas.map((li) => li.getAttribute('data-estado'))).toEqual(['done', 'running']);
+    const fila = container.querySelector('[data-testid="paso-delegacion"]')!;
+    expect(fila.textContent).toContain('Lo que hizo · 1');
+    expect(fila.textContent).toContain('Listó los contratos con saldo vencido');
+  });
+
+  it('el avance no cuenta las herramientas: «Paso 2 de 3»', () => {
+    pintar(<AgentTaskThread steps={PASOS_EQUIPO} turno={turno} />);
+    expect(container.textContent).toContain('Paso 2 de 3');
+    // El encabezado dice lo que hace AHORA y a quién se lo pidió.
+    expect(container.querySelector('button[aria-expanded]')!.textContent).toContain('Calculando la mora de 31 contratos…');
+    expect(container.textContent).toContain('Ori le pidió a Laura');
+  });
+
+  it('al terminar, la delegación muestra lo que CONTESTÓ el especialista', () => {
+    const cerrados: TurnStep[] = PASOS_EQUIPO.map((p) =>
+      p.id === 'ag-1' ? { ...p, status: 'done', actividad: undefined, detail: '7 inquilinos deben más de 30 días.' } : p
+    );
+    const t = leerElTurno({ mensaje: null, pasos: cerrados, enCurso: true });
+    pintar(<AgentTaskThread steps={cerrados} turno={t} />);
+    expect(container.querySelector('[data-testid="paso-delegacion"]')!.textContent).toContain('7 inquilinos deben más de 30 días.');
+  });
+
+  it('sin lectura del turno, la lista es la de siempre', () => {
+    expect(filasDeLosPasos(PASOS_EQUIPO).map((f) => [f.step.id, !!f.delegacion])).toEqual([
+      ['entender', false],
+      ['ag-1', false],
+      ['tool-listar-0', false],
+      ['redactar', false],
+    ]);
+    expect(filasDeLosPasos(PASOS_EQUIPO, turno).map((f) => [f.step.id, !!f.delegacion])).toEqual([
+      ['entender', false],
+      ['ag-1', true],
+      ['redactar', false],
+    ]);
+  });
+
+  it('la franja del compositor lleva el orbe de quien trabaja', () => {
+    pintar(<AgentTaskProgress steps={PASOS_EQUIPO} turno={turno} />);
+    expect(container.querySelector('[data-testid="franja-del-turno"] [data-agente="cobranza"]')).not.toBeNull();
+  });
+});
+

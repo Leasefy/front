@@ -277,14 +277,21 @@ export function ResolucionMasiva({
         ? nombre.trim() !== '' && documento.trim() !== ''
         : false)
 
+  // Lo que no es uso ni propietario no se resuelve en bloque: se dice dónde.
+  const pistaDeLoQueFalta =
+    ids.length === 1
+      ? ' Lo que le falte se resuelve en la propia fila (reparto, inmueble, inquilino).'
+      : ' Lo que les falta se resuelve en cada fila (reparto, inmueble, inquilino).'
+
   const mensajeNada =
-    modo === 'uso'
+    (modo === 'uso'
       ? ids.length === 1
         ? 'La fila seleccionada ya tiene uso: no hay nada que resolver.'
         : `Ninguna de las ${ids.length} filas necesita uso: todas ya lo tienen.`
       : ids.length === 1
         ? 'La fila seleccionada ya tiene propietario: no hay nada que resolver.'
-        : `Ninguna de las ${ids.length} filas necesita propietario: todas ya lo tienen.`
+        : `Ninguna de las ${ids.length} filas necesita propietario: todas ya lo tienen.`) +
+    pistaDeLoQueFalta
 
   return (
     <Card className="space-y-4 border-primary/30 p-5" data-testid="resolucion-masiva">

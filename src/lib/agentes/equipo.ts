@@ -17,10 +17,9 @@ import { NOMBRE_DEL_ORQUESTADOR, ORBE_DEL_ORQUESTADOR } from './nombre-del-orque
  * (`agentes.<id>.*`, es y en). Lo dudoso NO entró.
  *
  *   · Nombres propios: los `name` de los `Agent` de Mastra y el catálogo del
- *     piloto automático (`piloto/catalogo.ts` → `NOMBRES`). Dos vienen de la
- *     rama `cambios-nico-10`, todavía sin unir: **Cobri** (en bugs-nico-1 el
- *     micro aún dice «Payu», commit 32b2feab lo renombra) y **Niti** (en
- *     bugs-nico-1 el agente se llama «Gaby»).
+ *     piloto automático (`piloto/catalogo.ts` → `NOMBRES`). Desde el commit
+ *     `046af379` del micro (bugs-nico-1) **Cobri** (antes «Payu»), **Niti**
+ *     (antes «Gaby») y **Fixi** (antes «Martín») son los nombres en el código.
  *   · Hace / No hace: herramientas (`createTool`), guardas del prompt y de la
  *     ruta, y la tabla de verdad de la perilla (`piloto/que-hace-cada-modo.ts`
  *     y los procesos de `piloto/perilla.ts`).
@@ -31,7 +30,11 @@ import { NOMBRE_DEL_ORQUESTADOR, ORBE_DEL_ORQUESTADOR } from './nombre-del-orque
  *     `tool_step.agent`, `dispatch_result.dispatch.agent` y
  *     `done.dispatches[].agent` (`DispatchAgentKeySchema`), y que el front
  *     guarda en `AgentExecution.agentType`. Ojo: el despacho dice `avaluo` y la
- *     flota `avaluos`.
+ *     flota `avaluos`. Desde el commit `33d8607b` del micro cada despacho trae
+ *     además su id (`dispatch_start.id`, `tool_step.dispatchId`, `dispatch.id`,
+ *     `done.dispatches[].id`) y el `done` trae el razonamiento del turno
+ *     (`razonamiento: [{ agente?, texto }]`, «Cómo lo pensó»); el `agente` de
+ *     una frase es una de estas mismas claves.
  */
 
 export type IdDeAgente =
@@ -181,7 +184,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     trabajaCon: ['cobranza', 'conciliacion', 'propietarios'],
     reportaA: 'orquestador',
     fuentes: [
-      'src/mastra/agents/pagos/payu.ts (conductor: Payu en bugs-nico-1, Cobri en cambios-nico-10)',
+      'src/mastra/agents/pagos/payu.ts (el conductor: `name: \'Cobri\'`; el archivo conserva el nombre viejo)',
       'src/mastra/agents/pagos/{laura,nicolas,valentina,samuel,sofia}.ts',
       'src/mastra/agents/pagos/payments-orientation.ts (lo que contesta en el chat)',
       'src/piloto/que-hace-cada-modo.ts (pagos, valla de links)',
@@ -326,7 +329,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     trabajaCon: ['prospectos', 'propietarios'],
     reportaA: 'equipo',
     fuentes: [
-      'src/mastra/agents/calidad-publicacion/agent.ts (Gaby en bugs-nico-1, «Niti · calidad» en cambios-nico-10)',
+      'src/mastra/agents/calidad-publicacion/agent.ts (`name: \'Niti · calidad\'`)',
       'src/piloto/que-hace-cada-modo.ts (calidad)',
     ],
   },
@@ -417,7 +420,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     reportaA: 'equipo',
     fuentes: [
       'src/mastra/agents/mantenimiento/agent.ts (classifyTicket, analyzeDamagePhoto, estimateResponsible, computePriority, estimateCost, evaluateApproval)',
-      'src/piloto/que-hace-cada-modo.ts (mantenimiento: ahí se llama «Martín»)',
+      'src/piloto/que-hace-cada-modo.ts (mantenimiento: «Fixi clasifica una solicitud cuando se lo pides»)',
     ],
   },
   {

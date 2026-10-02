@@ -1,6 +1,6 @@
 'use client'
 
-import { AgentOrb, type AgentOrbSize } from '@leasefy/cadence'
+import { AgentOrb, type AgentOrbLook, type AgentOrbSize } from '@leasefy/cadence'
 
 import { agentePorId, nombreDelAgente, type AgenteDelEquipo, type IdDeAgente } from '@/lib/agentes/equipo'
 import { ESTADO_DEL_ORBE, type EstadoDelOrbe } from '@/lib/agentes/agente-que-habla'
@@ -16,6 +16,11 @@ export interface OrbeDeAgenteProps {
   quieto?: boolean
   /** Decorativo: no se anuncia (cuando el nombre ya está escrito al lado). */
   decorativo?: boolean
+  /**
+   * Seda, bruma o nebulosa. Sin esto manda el `<AgentOrbLookProvider>` más
+   * cercano o el de por defecto de Cadence (`AGENT_ORB_DEFAULT_LOOK`).
+   */
+  look?: AgentOrbLook
   className?: string
 }
 
@@ -23,6 +28,10 @@ export interface OrbeDeAgenteProps {
  * El orbe de un agente del equipo: paleta, semilla y variante salen del
  * registro (`src/lib/agentes/equipo.ts`), así que un agente se ve igual en el
  * chat, en el modal del equipo y en cualquier chip.
+ *
+ * Desde Cadence v1.2.0 lo pinta un shader (fluido de luz) con UN solo contexto
+ * WebGL para todos los orbes de la página; sin WebGL cae al orbe SVG. Ningún
+ * llamador tiene que hacer nada distinto.
  */
 export function OrbeDeAgente({
   agente,
@@ -30,6 +39,7 @@ export function OrbeDeAgente({
   tamano = 'md',
   quieto = false,
   decorativo = false,
+  look,
   className,
 }: OrbeDeAgenteProps) {
   const { t } = useI18n()
@@ -43,6 +53,7 @@ export function OrbeDeAgente({
       state={ESTADO_DEL_ORBE[estado]}
       size={tamano}
       still={quieto}
+      look={look}
       label={decorativo ? null : t(`agentes.orbe.${estado}`, { nombre })}
       data-agente={a.id}
       data-estado={estado}

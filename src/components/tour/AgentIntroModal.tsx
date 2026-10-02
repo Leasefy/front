@@ -2,9 +2,10 @@
 
 /**
  * AgentIntroModal — per-agent presentation card, rendered with the cadence
- * §Novedades `<FeatureAnnouncement>` (grainy aurora hero + glass Leasefy pill +
- * intro copy + "Empezar" CTA). Brand-photo hero was retired in favour of the
- * cadence aurora (Nico's call).
+ * §Novedades `<FeatureAnnouncement>` (grainy aurora hero + intro copy +
+ * "Empezar" CTA). Brand-photo hero was retired in favour of the cadence aurora
+ * (Nico's call). Sin la píldora «L Leasefy» sobre el halo (Nico, 02-10, igual
+ * que en `PilotoNovedad`): `brand={false}`.
  *
  * The FIRST time the user enters an agent's workspace
  * (el workspace del agente dentro de su módulo) a centered announcement presents that
@@ -194,9 +195,13 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
         >
           <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
+          {/*
+            Sin la píldora «L Leasefy» sobre el halo (Nico, 02-10): `brand`
+            reemplaza la píldora entera y cadence la pinta con `brand ?? …`, así
+            que `false` —no `null`, que caería a la píldora— no pinta nada.
+          */}
           <FeatureAnnouncement
-            appName="Leasefy"
-            appInitial="L"
+            brand={false}
             title={titulo}
             description={descripcion}
             ctaLabel={t('inmobiliaria.ai.tour.finish')}

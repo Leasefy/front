@@ -334,11 +334,16 @@ function FilaDelAgente({
         data-testid={`equipo-fila-${agente.id}`}
       >
         <span className="flex size-9 shrink-0 items-center justify-center">
+          {/*
+            Todas las filas respiran (Nico, 02-10: «no les veo mucho
+            movimiento»). Con Cadence v1.2.0 cuesta poco: un solo contexto
+            WebGL para todos, 30 cuadros por segundo en los chicos y sólo los
+            visibles. Con `prefers-reduced-motion` quedan en un cuadro fijo.
+          */}
           <OrbeDeAgente
             agente={agente}
             tamano={agente.orbe.variante === 'orchestrator' ? 34 : 28}
             estado={estadoDelOrbeParaElEquipo(estado)}
-            quieto={!seleccionado}
             decorativo
           />
         </span>

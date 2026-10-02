@@ -38,10 +38,25 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }))
 
-// La tarjeta de la marca no es lo que se prueba acá: un doble con su CTA.
+// La tarjeta de la marca no es lo que se prueba acá: un doble con su CTA que
+// además deja ver la píldora de la marca (`brand`) tal como la pinta cadence:
+// `brand ?? <píldora con appName>`.
 vi.mock('@leasefy/cadence', () => ({
-  FeatureAnnouncement: ({ title, ctaLabel, onCta }: { title: string; ctaLabel: string; onCta: () => void }) => (
+  FeatureAnnouncement: ({
+    title,
+    ctaLabel,
+    onCta,
+    brand,
+    appName = 'Cadence',
+  }: {
+    title: string
+    ctaLabel: string
+    onCta: () => void
+    brand?: React.ReactNode
+    appName?: string
+  }) => (
     <div>
+      <div data-testid="presentacion-heroe">{brand ?? <span data-testid="presentacion-pildora">{appName}</span>}</div>
       <p>{title}</p>
       <button type="button" data-testid="presentacion-cta" onClick={onCta}>
         {ctaLabel}
@@ -163,6 +178,15 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
     const titulo = document.getElementById(modal.getAttribute('aria-labelledby') ?? '')
     expect(titulo?.textContent).toBe('inmobiliaria.ai.intro.cobranza.title')
     expect(modal.querySelector('[data-testid="presentacion-cta"]')).not.toBeNull()
+  })
+
+  it('🔴 sin la píldora «L Leasefy» sobre el halo (Nico, 02-10)', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    const heroe = document.querySelector('[data-testid="presentacion-heroe"]') as HTMLElement
+    expect(heroe).not.toBeNull()
+    expect(heroe.querySelector('[data-testid="presentacion-pildora"]')).toBeNull()
+    expect(heroe.textContent).toBe('')
   })
 
   it('al cerrarse devuelve el foco a donde estaba', () => {

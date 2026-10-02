@@ -1328,6 +1328,29 @@ falla:
 Más `data-sample="true"` en el `<article>` y `robots: { index: false, follow: false }`.
 El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agua diagonal.
 
+## 21b. El orbe de los agentes (Cadence v1.2.0, 02-10-2026)
+
+Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" tamano={28} />`**
+(`src/components/agentes/OrbeDeAgente.tsx`): paleta, semilla y variante salen del registro
+(`src/lib/agentes/equipo.ts`). Nunca un `AgentOrb` suelto con una paleta a mano.
+
+- **Qué es**: un fluido de color que EMITE luz (núcleo, filo de luz, halo que respira), pintado
+  por un shader. **Un solo contexto WebGL para toda la página**, sin importar cuántos orbes
+  (el motor de Cadence pinta cada orbe en un atlas y lo copia a su `<canvas>`). Sin WebGL, cae
+  solo al orbe SVG.
+- **Estados** (`EstadoDelOrbe`): `quieto` respira · `pensando` gira y brilla · `trabajando` /
+  `hablando` late con una onda · `listo` se asienta · `fallo` sin color y tenue · `apagado` sin
+  color, menos tenue. Cambiar de estado se funde; no hay que animar nada por fuera.
+- **Look**: `silk` (Seda, el de por defecto), `mist` (Bruma), `nebula` (Nebulosa). El de por
+  defecto es `AGENT_ORB_DEFAULT_LOOK` en Cadence; una zona se cambia con
+  `<AgentOrbLookProvider look="…">`. Vista previa: `/agentes-preview` (sólo en desarrollo).
+- **Tamaño**: la caja mide `tamano`; el halo sale de ella sin mover el layout (deja ~½ lado de
+  aire si el padre recorta con `overflow`).
+- **`quieto`** (still) = un cuadro fijo: para chips de 16–18 px y listas de decenas. Una lista
+  como «El equipo» (≈20) puede ir viva. `prefers-reduced-motion` ya deja todo en cuadro fijo.
+- En pruebas (happy-dom no tiene WebGL) se pinta el SVG con `data-renderer="svg"`; no hay que
+  mockear nada.
+
 ---
 
 ## 22. When in Doubt

@@ -8,6 +8,13 @@ import type {
   ResultadoEnElHilo,
 } from '@/lib/chat/acciones-del-hilo';
 import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import {
+  aplicarPaso,
+  cerrarPensamiento,
+  ponerActividad as ponerActividadDelPensamiento,
+  type PensamientoEnVivo,
+  type PensamientoGuardado,
+} from '@/lib/chat/pensamiento';
 import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
 import {
   conElProcesoDelStream,
@@ -358,6 +365,14 @@ export interface UseBetaChatReturn {
    * Vacío cuando no hay un turno corriendo.
    */
   turnSteps: TurnStep[];
+  /**
+   * El PENSAMIENTO EN VIVO del turno (02-10-2026, evento `pensamiento` del
+   * micro): cada paso, mientras pasa, con lo concreto de la pregunta y de los
+   * datos. `pasos` vacío = todavía no llegó ninguno (o el micro es viejo y no
+   * lo cuenta: entonces mandan los `turnSteps` de siempre). `fin` = cuándo
+   * cerró. `null` sin turno. Ver `src/lib/chat/pensamiento.ts`.
+   */
+  pensamiento?: PensamientoEnVivo | null;
   retryAgent: (executionId: string) => void;
 
   // Decision handling
@@ -597,6 +612,34 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       );
     },
     [aplicarPasos]
+  );
+
+  // ── El pensamiento en vivo (02-10) ───────────────────────────────────────
+  // Va aparte de los `turnSteps` (que quedan de respaldo para un micro viejo).
+  // El ref existe por lo mismo que el de los pasos: las callbacks del stream
+  // leen el estado anterior.
+  const [pensamiento, setPensamiento] = useState<PensamientoEnVivo | null>(null);
+  const pensamientoRef = useRef<PensamientoEnVivo | null>(null);
+  const aplicarPensamiento = useCallback((next: PensamientoEnVivo | null) => {
+    pensamientoRef.current = next;
+    setPensamiento(next);
+  }, []);
+
+  /**
+   * Cierra el pensamiento del turno: lo que seguía corriendo queda listo (o
+   * fallido, si el turno se cortó) y se devuelve para guardarlo en el mensaje
+   * («Cómo lo pensó · 8,4 s»). `null` si no llegó ningún paso.
+   */
+  const cerrarElPensamiento = useCallback(
+    (comoFallo = false): PensamientoGuardado | null => {
+      const actual = pensamientoRef.current;
+      if (!actual) return null;
+      const fin = actual.fin ?? Date.now();
+      const pasos = cerrarPensamiento(actual.pasos, comoFallo);
+      aplicarPensamiento({ ...actual, pasos, fin });
+      return pasos.length > 0 ? { pasos, duracionMs: Math.max(0, fin - actual.inicio) } : null;
+    },
+    [aplicarPensamiento]
   );
 
   /** Cierra el turno: lo que quedó corriendo se da por hecho, y se limpia. */
@@ -839,7 +882,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     setActiveAgentBlock(null);
     setIsAgentsRunning(false);
     aplicarPasos([]);
-  }, [clearTimeouts, aplicarPasos]);
+    aplicarPensamiento(null);
+  }, [clearTimeouts, aplicarPasos, aplicarPensamiento]);
 
   // ========================================================================
   // Start streaming response (reusable — called after agents complete or directly)
@@ -996,6 +1040,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       // El turno se cortó: lo que estaba corriendo NO se puede dar por hecho.
       aplicarPasos([]);
+      // Lo que alcanzó a pensar queda en el mensaje, con lo que corría como fallido.
+      const pensado = cerrarElPensamiento(true);
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== conversationId
@@ -1007,7 +1053,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 // como historial al modelo.
                 messages: c.messages.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: message, status: 'error' as MessageStatus }
+                    ? { ...m, content: message, status: 'error' as MessageStatus, ...(pensado ? { pensamiento: pensado } : {}) }
                     : m
                 ),
                 updatedAt: new Date(),
@@ -1015,7 +1061,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         )
       );
     },
-    [clearTimeouts, aplicarPasos]
+    [clearTimeouts, aplicarPasos, cerrarElPensamiento]
   );
 
   /**
@@ -1240,10 +1286,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
         camino?: string;
         /**
-         * «Lo que pensó» (campo aditivo propuesto al micro el 02-10; hoy no
-         * llega). Crudo: lo lee `leerRazonamiento`, que descarta lo mal formado.
+         * «Cómo lo pensó» del `done` (micro `33d8607b`). Crudo: lo lee
+         * `leerRazonamiento`, que descarta lo mal formado.
          */
         razonamiento?: unknown;
+        /** El pensamiento en vivo ya cerrado, para guardarlo en el mensaje. */
+        pensamiento?: PensamientoGuardado | null;
       },
       assistantId: string,
       conversationId: string,
@@ -1282,8 +1330,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const plan = resp.plan ?? null;
       // «Lo que pensó» (02-10): sólo si el micro lo mandó con la forma esperada.
       const razonamiento = leerRazonamiento(resp.razonamiento);
+      // El pensamiento en vivo, plegado en «Cómo lo pensó» (02-10).
+      const pensamientoDelTurno = resp.pensamiento ?? null;
       const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
-      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua || razonamiento) {
+      if (
+        snapshot ||
+        bloques.length > 0 ||
+        entidades.length > 0 ||
+        turnoId ||
+        reintentable ||
+        actua ||
+        razonamiento ||
+        pensamientoDelTurno
+      ) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1307,6 +1366,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(ensayo ? { ensayo } : {}),
                           ...(plan ? { plan } : {}),
                           ...(razonamiento ? { razonamiento } : {}),
+                          ...(pensamientoDelTurno ? { pensamiento: pensamientoDelTurno } : {}),
                         }
                       : m
                   ),
@@ -1527,7 +1587,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 })
             );
           },
-          onProgreso: (p) => ponerActividad(p.texto, p),
+          onProgreso: (p) => {
+            ponerActividad(p.texto, p);
+            // En el pensamiento en vivo, el aviso es el «ahora» del paso que corre.
+            const actual = pensamientoRef.current;
+            if (actual && actual.pasos.length > 0 && !args.signal.aborted) {
+              aplicarPensamiento({ ...actual, pasos: ponerActividadDelPensamiento(actual.pasos, p.texto) });
+            }
+          },
+          onPensamiento: (paso) => {
+            const actual = pensamientoRef.current;
+            if (!actual || args.signal.aborted) return;
+            aplicarPensamiento({ ...actual, pasos: aplicarPaso(actual.pasos, paso) });
+          },
           onProcesoIniciado: (evento) => {
             collected.procesoIniciado = evento;
             // El Centro de procesos del panel (el anillo del header) mira ya,
@@ -1799,7 +1871,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         ...(final?.razonamiento !== undefined ? { razonamiento: final.razonamiento } : {}),
       };
     },
-    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
+    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad, aplicarPensamiento]
   );
 
   // ========================================================================
@@ -1873,6 +1945,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingDecisionRef.current = null;
       propuestaDeAccionRef.current = null;
       pendingResponseMetaRef.current = null;
+      // El pensamiento en vivo del turno arranca vacío: lo llena el micro.
+      aplicarPensamiento({ pasos: [], inicio: Date.now(), fin: null });
 
       // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
       // backend hable: leer la pregunta y responder. Todo lo del medio lo
@@ -1932,7 +2006,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             intencion,
           });
           if (signal.aborted) return;
-          finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
+          // Llegó la respuesta: el pensamiento se cierra y se pliega en «Cómo lo pensó».
+          finishTurn({ ...streamed, pensamiento: cerrarElPensamiento() }, assistantId, conversationId, streamed.liveBlock);
         } catch (errorDelStream) {
           // Abortar es intencional: ni respaldo POST ni cartel de error.
           if (signal.aborted) return;
@@ -1949,6 +2024,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // clear any partial live UI and fall back to the one-shot POST.
           setActiveAgentBlock(null);
           setIsAgentsRunning(false);
+          // Lo que alcanzó a contar el stream no es de la respuesta del POST.
+          aplicarPensamiento(null);
           try {
             const resp = await postChatTurn({ agencyId, message: trimmed, history, intencion, signal });
             if (signal.aborted) return;
@@ -1977,6 +2054,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       finishTurn,
       finalizeError,
       aplicarPasos,
+      aplicarPensamiento,
+      cerrarElPensamiento,
     ]
   );
 
@@ -2605,6 +2684,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     activeAgentBlock,
     isAgentsRunning,
     turnSteps,
+    pensamiento,
     retryAgent,
 
     // Decision handling

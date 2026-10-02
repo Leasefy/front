@@ -66,7 +66,9 @@ vi.mock('@/components/agentes/equipo-de-agentes-context', () => ({
   useEquipoDeAgentes: () => ({ abrir: () => {}, cerrar: () => {}, abierto: false, disponible: false }),
 }));
 vi.mock('./TurnoDelAsistente', () => ({ CabeceraDeLaRespuesta: nada, ResumenDelTurno: nada }));
-vi.mock('@/components/agentes/TurnoDelEquipo', () => ({ RazonamientoDelTurno: nada }));
+vi.mock('@/components/agentes/TurnoDelEquipo', () => ({ RazonamientoDelTurno: nada, PasosDelRazonamiento: nada }));
+// El pensamiento en vivo (02-10): acá sólo importa dónde queda cada cosa.
+vi.mock('./PensamientoDelTurno', () => ({ PensamientoDelTurno: nada, RelojDelTurno: nada, DespuesDeUnMomento: nada }));
 
 import { ChatContainer } from './ChatContainer';
 

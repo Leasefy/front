@@ -11528,6 +11528,10 @@
       "feedbackSkip": "Not now",
       "feedbackSending": "Sending…"
     },
+    "pensamiento": {
+      "pasos": "{{n}} steps",
+      "unPaso": "1 step"
+    },
     "tasks": {
       "thinking": "Thinking about your question…",
       "finishing": "Writing the answer…",
@@ -11535,12 +11539,12 @@
       "workingAs": "Checking with the {{agent}} agent…",
       "phase": {
         "reading": "Reading your question",
-        "deciding": "Deciding how to solve it",
+        "deciding": "Working out how to answer",
         "longer": "Still on it"
       },
       "hint": {
         "reading": "Understanding what you need and what data I have.",
-        "deciding": "Choosing which agents to consult and in what order.",
+        "deciding": "Seeing whether I can answer with what I have or ask someone on the team.",
         "longer": "Taking longer than usual — nothing's lost, still working."
       },
       "fact": {
@@ -11549,7 +11553,7 @@
         "agents": "Available agents: {{agentes}}."
       },
       "plan": {
-        "understand": "Understand the question",
+        "understand": "Read your question",
         "consult": "Consult the agents",
         "write": "Write the answer",
         "snapshot": "Check your portfolio status",
@@ -11561,7 +11565,7 @@
       },
       "activo": {
         "cartera": "Reading your receivables and what I already know about your agency…",
-        "entender": "Deciding how to solve it…",
+        "entender": "Working out how to answer…",
         "redactar": "Writing the answer…"
       },
       "avance": "{{hechos}} of {{total}}",

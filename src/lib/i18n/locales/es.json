@@ -11562,6 +11562,10 @@
       "feedbackSkip": "Ahora no",
       "feedbackSending": "Enviando…"
     },
+    "pensamiento": {
+      "pasos": "{{n}} pasos",
+      "unPaso": "1 paso"
+    },
     "tasks": {
       "thinking": "Pensando en tu pregunta…",
       "finishing": "Redactando la respuesta…",
@@ -11569,24 +11573,24 @@
       "workingAs": "Consultando con el agente de {{agent}}…",
       "phase": {
         "reading": "Leyendo tu pregunta",
-        "deciding": "Decidiendo cómo resolverla",
+        "deciding": "Pensando cómo contestarte",
         "longer": "Sigo en ello"
       },
       "hint": {
-        "reading": "Entendiendo qué necesitas y con qué datos cuento.",
-        "deciding": "Eligiendo qué agentes consultar y en qué orden.",
+        "reading": "Mirando qué me pides y con qué datos cuento.",
+        "deciding": "Viendo si lo contesto con lo que tengo o le pregunto a alguien del equipo.",
         "longer": "Está tomando más de lo normal — no se perdió nada, sigo trabajando."
       },
       "fact": {
         "history": "Leyendo el contexto de la conversación ({{n}} mensajes).",
         "snapshot": "Estado de hoy recibido: {{deudores}} deudores activos, {{escalaciones}} escalaciones pendientes.",
-        "agents": "Agentes disponibles: {{agentes}}."
+        "agents": "Si hace falta, le pregunto a {{agentes}}."
       },
       "plan": {
-        "understand": "Entender la pregunta",
+        "understand": "Leer tu pregunta",
         "consult": "Consultar a los agentes",
-        "write": "Redactar la respuesta",
-        "snapshot": "Revisar el estado de tu cartera",
+        "write": "Escribir la respuesta",
+        "snapshot": "Revisar tu cartera",
         "consultAgent": "Consultar al especialista de {{agent}}"
       },
       "detail": {
@@ -11595,7 +11599,7 @@
       },
       "activo": {
         "cartera": "Leyendo tu cartera y lo que ya sé de tu inmobiliaria…",
-        "entender": "Decidiendo cómo resolverla…",
+        "entender": "Pensando cómo contestarte…",
         "redactar": "Escribiendo la respuesta…"
       },
       "avance": "{{hechos}} de {{total}}",

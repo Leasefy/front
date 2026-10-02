@@ -5,8 +5,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, CaretDown, Check, WarningCircle } from '@phosphor-icons/react'
 import { Collapse } from '@leasefy/cadence'
 
-import { nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo'
-import type { Delegacion, LecturaDelTurno } from '@/lib/agentes/agente-que-habla'
+import { agenteDelDespacho, nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo'
+import type { Delegacion, LecturaDelTurno, PasoDeRazonamiento } from '@/lib/agentes/agente-que-habla'
+import { conNombreDelEquipo } from '@/lib/chat/pensamiento'
 import { NOMBRE_DEL_ORQUESTADOR } from '@/lib/agentes/nombre-del-orquestador'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,7 @@ import { OrbeDeAgente } from './OrbeDeAgente'
  *
  *   <CabeceraDelTurno turno={turno} />        ← el orbe del orquestador + su nombre y estado
  *   <DelegacionesDelTurno turno={turno} />    ← «Ori le pidió a Laura» + la tarea + lo que hizo
- *   <RazonamientoDelTurno turno={turno} />    ← «Cómo lo pensó», SÓLO si el micro lo mandó
+ *   <RazonamientoDelTurno turno={turno} />    ← «Cómo lo pensó» (`done.razonamiento`), SÓLO si llegó
  *
  * Sin gradientes de fondo ni tarjetas pesadas: el color lo pone el orbe.
  */
@@ -193,9 +194,43 @@ export function DelegacionesDelTurno({
 }
 
 /**
- * «Cómo lo pensó»: SÓLO con el razonamiento que mandó el micro. Hoy el micro
- * no lo manda (ver el informe del 02-10): este componente no pinta nada y no
- * se rellena con los pasos.
+ * Las frases de «Cómo lo pensó», en orden. Las que hablan de un especialista
+ * (`agente`) llevan su orbe y su nombre del equipo (`equipo.ts`): el micro
+ * escribe «el especialista de pagos» y acá se lee «Cobri».
+ */
+export function PasosDelRazonamiento({ pasos, className }: { pasos: readonly PasoDeRazonamiento[]; className?: string }) {
+  const { t } = useI18n()
+  return (
+    <ol className={cn('m-0 list-none space-y-2 p-0', className)} data-testid="pasos-del-razonamiento">
+      {pasos.map((p, i) => {
+        const agente = agenteDelDespacho(p.agente)
+        return (
+          <li
+            key={`${i}-${p.texto.slice(0, 24)}`}
+            className="flex items-start gap-2.5 font-body text-[13.5px] leading-[1.55] text-fg-muted"
+            data-agente={agente?.id}
+          >
+            <span aria-hidden="true" className="mt-[3px] flex size-4 shrink-0 items-center justify-center">
+              {agente ? (
+                <OrbeDeAgente agente={agente} tamano={16} quieto decorativo />
+              ) : (
+                <span className="size-1 rounded-full bg-fg-subtle/70" />
+              )}
+            </span>
+            <span className="min-w-0">{conNombreDelEquipo(p.texto, p.agente, t)}</span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/**
+ * «Cómo lo pensó»: SÓLO con el razonamiento que mandó el micro en el `done`
+ * (frases que arma con lo que decidió, sin modelo). Un micro viejo no lo manda:
+ * entonces no pinta nada y no se rellena con los pasos. En el chat, desde el
+ * 02-10, vive plegado ARRIBA de la respuesta (`PensamientoDelTurno`, que lo
+ * usa con `PasosDelRazonamiento`); esto queda para quien lo pinte suelto.
  */
 export function RazonamientoDelTurno({ turno, className }: { turno: LecturaDelTurno; className?: string }) {
   const { t } = useI18n()
@@ -215,11 +250,7 @@ export function RazonamientoDelTurno({ turno, className }: { turno: LecturaDelTu
       {/* Se abre con su animación (`Collapse`, el sistema de movimiento), como
           el resto de lo que se pliega en el chat (02-10). */}
       <Collapse open={abierto}>
-        <ol className="mt-2 space-y-1.5 border-l border-border pl-3 text-fg-muted">
-          {turno.razonamiento.map((p, i) => (
-            <li key={i}>{p.texto}</li>
-          ))}
-        </ol>
+        <PasosDelRazonamiento pasos={turno.razonamiento} className="mt-2" />
       </Collapse>
     </div>
   )

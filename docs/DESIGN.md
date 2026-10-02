@@ -646,6 +646,26 @@ y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
 su valor final, así que ya no hace falta mockear `framer-motion` para que un `AnimatePresence`
 monte el contenido nuevo.
 
+### El pensamiento en vivo del chat (02-10-2026)
+
+`src/components/beta/PensamientoDelTurno.tsx`, con los pasos que manda el micro (evento SSE
+`pensamiento`, `src/lib/chat/pensamiento.ts`). Es la receta para «algo que trabaja y se ve
+trabajar» sin cajas:
+
+- **Cada paso entra con su altura** (`<Collapse open initial>`) y un fundido que sube
+  `motionDistance.xs`: la lista crece suave y nada salta.
+- **El paso que corre lleva un brillo** (`.chat-brillo` en `globals.css`): dos capas del mismo
+  texto; la clara se ve por una ventana que viaja a la derecha mientras su texto viaja a la
+  izquierda con la misma curva — sólo `transform`, las letras quietas, se mueve la luz. Con
+  movimiento reducido la capa no existe.
+- **Al terminar, se asienta**: un visto chico en `fg-subtle`, el texto pasa a `fg-muted` y el
+  resultado entra a la derecha en `fg`, con su cifra contando (`AnimatedNumber`, `from={0}`).
+- **El especialista con su orbe** (`OrbeDeAgente` con `estado`) y su nombre de `equipo.ts`.
+- **El tiempo, discreto**: `font-mono` 11,5 px en `fg-subtle`, a la derecha de la cabecera.
+- **Al llegar la respuesta se pliega** (`Collapse`) en «Cómo lo pensó · 7 pasos · 9,0 s».
+- **Lector de pantalla**: la lista va `aria-hidden`; una sola línea `aria-live="polite"` dice
+  el paso que corre o el resultado del último. Nunca cada brillo ni cada cifra que cuenta.
+
 ---
 
 ## 9. Anti-Patterns Cheat Sheet

@@ -2525,6 +2525,79 @@ button[role='radio'][data-state='checked'].group {
   }
 }
 
+/* ── El pensamiento en vivo (02-10, `PensamientoDelTurno.tsx`) ───────────────
+ * El paso que corre lleva un BRILLO que lo recorre: dos capas del mismo texto;
+ * la clara se ve por una ventana que viaja a la derecha mientras su texto viaja
+ * a la izquierda con la misma curva, así las letras quedan quietas y lo único
+ * que se mueve es la luz. Todo con `transform`. El punto del paso vivo late con
+ * un halo. Con movimiento reducido no hay brillo (la capa clara no existe) ni
+ * latido. */
+.chat-brillo {
+  position: relative;
+}
+.chat-brillo__capa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.chat-brillo__ventana {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 32%, #000 50%, transparent 68%);
+  mask-image: linear-gradient(90deg, transparent 32%, #000 50%, transparent 68%);
+  animation: chat-brillo-va 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.chat-brillo__texto {
+  position: absolute;
+  inset: 0;
+  animation: chat-brillo-vuelve 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes chat-brillo-va {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes chat-brillo-vuelve {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.chat-pensando-punto::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: var(--fg-subtle);
+  opacity: 0;
+  animation: chat-pensando-late 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes chat-pensando-late {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-brillo__capa {
+    display: none;
+  }
+  .chat-pensando-punto::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* La respuesta se lee como un texto (02-10, «tipografía y espaciado de
    lectura»): aire entre párrafos y listas, que el `prose-p:my-0` del markdown
    del chat dejaba pegados. */

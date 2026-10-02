@@ -22,17 +22,19 @@ import { agenteDelDespacho, orquestador, type AgenteDelEquipo } from './equipo'
  * Esto es PURO: no pinta nada ni pide nada. Lo leen el orbe del chat y quien
  * arme la tarjeta de delegación.
  *
- * ── Lo que el micro NO manda (bugs-nico-1) ──────────────────────────────────
+ * ── Lo que manda el micro (bugs-nico-1, 02-10-2026) ────────────────────────
  *
  *   · Ningún evento dice «responde el orquestador»: se deduce (el texto del
  *     turno siempre es suyo; los especialistas sólo devuelven un resumen).
- *   · El razonamiento («cómo lo pensó») no sale del micro: la ruta analítica
- *     pide pensamiento extendido y lo descarta. Por eso `razonamiento` es
- *     `null` salvo que el mensaje traiga el campo aditivo `razonamiento`
- *     (propuesta de cambio mínimo en el micro, ver el informe del 02-10).
- *     Nunca se rellena con los pasos ni con texto inventado.
- *   · No hay id por despacho: dos despachos al mismo especialista en un turno
- *     se distinguen por orden.
+ *   · «Cómo lo pensó» llega en `done.razonamiento` (micro `33d8607b`): frases
+ *     que arma el micro con lo que decidió, sin modelo, cada una con su
+ *     `agente` cuando habla de un especialista. Un micro viejo no lo manda y
+ *     entonces `razonamiento` es `null`: nunca se rellena con los pasos ni con
+ *     texto inventado.
+ *   · Cada despacho trae su id (`dispatch_start.id`, `tool_step.dispatchId`,
+ *     `dispatch.id`); con un micro viejo se empareja por orden.
+ *   · El pensamiento EN VIVO (evento `pensamiento`) no pasa por acá: lo lleva
+ *     `useBetaChat` aparte (`src/lib/chat/pensamiento.ts`).
  */
 
 /** Los estados del orbe, como se dicen en el producto. */
@@ -56,7 +58,7 @@ export const ESTADO_DEL_ORBE: Record<EstadoDelOrbe, AgentOrbState> = {
   apagado: 'off',
 }
 
-/** Un paso de razonamiento, si el micro lo manda (campo aditivo propuesto). */
+/** Un paso de «Cómo lo pensó» (`done.razonamiento`). */
 export interface PasoDeRazonamiento {
   /** Quién lo pensó: clave de despacho o `orquestador`. Ausente = el orquestador. */
   agente?: string
@@ -70,10 +72,9 @@ export interface PasoDeRazonamiento {
 export type MensajeDelChat = ChatMessage & { razonamiento?: unknown }
 
 /**
- * La ejecución como la puede guardar el chat con el resumen del especialista.
- * El micro YA lo manda (`dispatch_result.dispatch.summary` y
- * `done.dispatches[].summary`), pero `useBetaChat` hoy no lo guarda en la
- * `AgentExecution`: si lo guarda como `resumen`, aquí se lee.
+ * La ejecución con el resumen del especialista: el micro lo manda
+ * (`dispatch_result.dispatch.summary` y `done.dispatches[].summary`) y
+ * `useBetaChat` lo guarda en la `AgentExecution` como `resumen`.
  */
 export type EjecucionDelChat = AgentExecution & { resumen?: unknown }
 

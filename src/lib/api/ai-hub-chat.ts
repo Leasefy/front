@@ -35,6 +35,7 @@ import {
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
+import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
@@ -132,9 +133,9 @@ export interface BackendDispatch {
   summary: string;
   nextStep?: string;
   /**
-   * El id del despacho (campo aditivo PROPUESTO al micro el 02-10-2026, hoy no
-   * llega): el mismo de `dispatch_start.id` y `tool_step.dispatchId`. Con él
-   * dos despachos al mismo especialista en un turno no se confunden.
+   * El id del despacho (aditivo, micro `33d8607b`, 02-10-2026): el mismo de
+   * `dispatch_start.id` y `tool_step.dispatchId`. Con él dos despachos al mismo
+   * especialista en un turno no se confunden. Opcional: un micro viejo no lo manda.
    */
   id?: string;
 }
@@ -278,7 +279,7 @@ export interface ChatStreamHandlers {
   onDispatchStart?: (
     agent: BackendDispatchAgent,
     taskDescription: string,
-    /** `id` del despacho, cuando el micro lo mande (aditivo, 02-10-2026). */
+    /** `id` del despacho (aditivo, 02-10-2026; un micro viejo no lo manda). */
     extra?: { id?: string },
   ) => void;
   onDispatchResult?: (dispatch: BackendDispatch) => void;
@@ -293,7 +294,7 @@ export interface ChatStreamHandlers {
     agent: BackendDispatchAgent;
     tool: string;
     label: string;
-    /** El despacho al que pertenece, cuando el micro lo mande (aditivo, 02-10-2026). */
+    /** El despacho al que pertenece (aditivo, 02-10-2026; un micro viejo no lo manda). */
     dispatchId?: string;
   }) => void;
   /**
@@ -321,6 +322,14 @@ export interface ChatStreamHandlers {
    * (con su propio JWT) y, cuando termina, pide la tarjeta al día al micro.
    */
   onProcesoIniciado?: (evento: EventoProcesoIniciado) => void;
+  /**
+   * Un paso del PENSAMIENTO EN VIVO (evento aditivo `pensamiento`, 02-10-2026):
+   * lo que el micro hace ahora, con lo concreto de la pregunta y de los datos
+   * («Buscando “Juan Camilo López”…» → «2 coincidencias: …»). Un paso se
+   * actualiza con otro evento del mismo `id`. Un micro viejo no lo manda y el
+   * chat se queda con sus pasos de siempre (ver `src/lib/chat/pensamiento.ts`).
+   */
+  onPensamiento?: (paso: PasoDelPensamiento) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -359,9 +368,10 @@ export interface ChatStreamHandlers {
      */
     camino?: string;
     /**
-     * «Lo que pensó» el orquestador (campo aditivo PROPUESTO al micro el
-     * 02-10-2026; hoy no llega). Va crudo: lo lee `leerRazonamiento`
-     * (`src/lib/agentes/agente-que-habla.ts`), que descarta lo mal formado.
+     * «Cómo lo pensó» (aditivo, micro `33d8607b`, 02-10-2026): las frases que
+     * arma el micro con lo que decidió, sin modelo. Va crudo: lo lee
+     * `leerRazonamiento` (`src/lib/agentes/agente-que-habla.ts`), que descarta
+     * lo mal formado. Un micro viejo no lo manda.
      */
     razonamiento?: unknown;
   }) => void;
@@ -498,6 +508,12 @@ export function handleSSEEvent(
           ...(typeof obj.total === 'number' ? { total: obj.total } : {}),
         });
       }
+      break;
+    }
+    case 'pensamiento': {
+      // Mal formado = no llegó: nunca un paso a medias.
+      const paso = leerPasoDelPensamiento(obj);
+      if (paso) handlers.onPensamiento?.(paso);
       break;
     }
     case 'proceso_iniciado': {

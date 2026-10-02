@@ -28,7 +28,9 @@ import { AccionPropuestaCard } from './AccionPropuestaCard';
 import { DecisionCard } from './DecisionCard';
 import { ChatConversationBar } from './ChatConversationBar';
 import { CabeceraDeLaRespuesta, ResumenDelTurno } from './TurnoDelAsistente';
-import { leerElTurno } from '@/lib/agentes/agente-que-habla';
+import { DespuesDeUnMomento, PensamientoDelTurno, RelojDelTurno } from './PensamientoDelTurno';
+import { leerElTurno, type MensajeDelChat } from '@/lib/agentes/agente-que-habla';
+import { leerPensamientoGuardado } from '@/lib/chat/pensamiento';
 import { EquipoDeAgentesProvider, useEquipoDeAgentes } from '@/components/agentes/equipo-de-agentes-context';
 import { RazonamientoDelTurno } from '@/components/agentes/TurnoDelEquipo';
 
@@ -84,10 +86,12 @@ export function ChatContainer(props: ChatContainerProps) {
  * La conversación (o la llegada). Cada respuesta del asistente lleva arriba la
  * cabecera del turno —el orbe del orquestador, que ES quien responde— y, según
  * el momento:
- *   pensando   → «Ori está pensando» + las frases de la espera;
- *   trabajando → la tarjeta de los pasos, con cada especialista como delegación;
- *   respondió  → la delegación resumida en una línea, el texto, «Cómo lo
- *                pensó» (si el micro lo manda) y las acciones.
+ *   pensando / trabajando → el PENSAMIENTO EN VIVO (02-10-2026): cada paso del
+ *                micro mientras pasa, con el tiempo corriendo en la cabecera;
+ *   respondió  → el pensamiento plegado en «Cómo lo pensó» (que se abre en las
+ *                frases del micro y la delegación), el texto y las acciones.
+ * Con un micro viejo, que no cuenta su pensamiento, quedan de respaldo las
+ * frases de la espera, la tarjeta de los pasos y «Cómo lo pensó» debajo.
  */
 function ConversacionDelChat({ className }: ChatContainerProps) {
   const { t } = useI18n();
@@ -102,6 +106,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
     activeAgentBlock,
     isAgentsRunning,
     turnSteps,
+    pensamiento,
     selectDecisionOption,
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
@@ -252,6 +257,19 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                   pasos: isLastAssistant ? turnSteps : [],
                   enCurso,
                 });
+                // ── El pensamiento (02-10) ───────────────────────────────────
+                // En vivo: el del turno que corre. Guardado: el del mensaje.
+                const enVivo = isLastAssistant && pensamiento && pensamiento.pasos.length > 0 ? pensamiento : null;
+                const guardado = enVivo ? null : leerPensamientoGuardado((message as MensajeDelChat & { pensamiento?: unknown }).pensamiento);
+                const pasosDelPensamiento = enVivo?.pasos ?? guardado?.pasos ?? [];
+                const vivo = Boolean(enVivo && enVivo.fin === null && enCurso);
+                // Con pensamiento (o con «Cómo lo pensó» del micro), todo va
+                // plegado ARRIBA de la respuesta; sin él, lo de siempre.
+                const conPensamiento = pasosDelPensamiento.length > 0 || Boolean(turno.razonamiento);
+                // Esperando el primer paso del turno (el micro nuevo lo manda en < 400 ms).
+                const esperandoElPrimerPaso =
+                  isLastAssistant && enCurso && Boolean(pensamiento) && pensamiento!.pasos.length === 0;
+
                 // El orbe del orquestador: primer hijo de TODAS las ramas, así
                 // React lo conserva al pasar de pensando → trabajando → respuesta.
                 const cabecera = (
@@ -259,14 +277,33 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                     turno={turno}
                     tipo={message.status === 'complete' && !enCurso ? message.responseMeta?.type : null}
                     onAbrirEquipo={abrirEquipo}
+                    derecha={
+                      vivo && enVivo ? <RelojDelTurno inicio={enVivo.inicio} fin={enVivo.fin} /> : null
+                    }
                   />
                 );
                 // Ya respondió: la delegación en UNA línea (se abre en el detalle).
                 const resumenDelTurno = !enCurso ? (
                   <ResumenDelTurno turno={turno} onAbrirEquipo={abrirEquipo} />
                 ) : null;
-                // «Cómo lo pensó»: sólo si el micro lo mandó (hoy no lo manda).
-                const razonamiento = <RazonamientoDelTurno turno={turno} className="mt-3" />;
+                // El pensamiento: segundo hijo de todas las ramas (con su `key`),
+                // así la lista en vivo se pliega en «Cómo lo pensó» sin remontarse.
+                const pensamientoDelTurno = conPensamiento ? (
+                  <PensamientoDelTurno
+                    key="pensamiento"
+                    pasos={pasosDelPensamiento}
+                    vivo={vivo}
+                    duracionMs={
+                      enVivo ? (enVivo.fin !== null ? enVivo.fin - enVivo.inicio : null) : guardado?.duracionMs ?? null
+                    }
+                    razonamiento={turno.razonamiento}
+                    resumen={resumenDelTurno}
+                  />
+                ) : null;
+                // «Cómo lo pensó» de siempre, debajo: sólo sin el pensamiento plegado arriba.
+                const razonamiento = conPensamiento ? null : <RazonamientoDelTurno turno={turno} className="mt-3" />;
+                // La delegación en su línea: sin pensamiento (con él, va dentro de «Cómo lo pensó»).
+                const resumenSuelto = conPensamiento ? null : resumenDelTurno;
 
                 // "Estado de hoy" KPI glance — rendered under the reply when the
                 // backend (or mock) attached a snapshot to this turn.
@@ -321,27 +358,39 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
 
                 // Pensando (antes del primer despacho): la cabecera dice «Ori
                 // está pensando» y debajo, las frases de la espera.
+                const indicadorDeEspera = (
+                  <TypingIndicator
+                    // El par pendiente (pregunta + placeholder) no es contexto leído.
+                    historyCount={Math.max(0, messages.length - 2)}
+                    snapshot={message.snapshot ?? null}
+                    actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
+                  />
+                );
                 if (isLastAssistant && isThinking) {
                   return (
                     <div key={message.id} className={envoltura} data-turno={message.id}>
                       {cabecera}
-                      <TypingIndicator
-                        // El par pendiente (pregunta + placeholder) no es contexto leído.
-                        historyCount={Math.max(0, messages.length - 2)}
-                        snapshot={message.snapshot ?? null}
-                        actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
-                      />
+                      {pensamientoDelTurno ??
+                        (esperandoElPrimerPaso ? (
+                          // Un momento sin nada debajo de «Ori está pensando»; si el
+                          // micro no cuenta su pensamiento (uno viejo), las frases de siempre.
+                          <DespuesDeUnMomento key="espera">{indicadorDeEspera}</DespuesDeUnMomento>
+                        ) : (
+                          indicadorDeEspera
+                        ))}
                     </div>
                   );
                 }
 
                 // Agentes corriendo: la tarjeta de los pasos EN el hilo, con
                 // cada especialista como delegación («Ori → Laura»).
-                if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
+                if (isLastAssistant && isAgentsRunning && (turnSteps.length > 0 || pensamientoDelTurno)) {
                   return (
                     <div key={message.id} className={envoltura} data-turno={message.id}>
                       {cabecera}
-                      <AgentTaskThread steps={turnSteps} turno={turno} onAbrirEquipo={abrirEquipo} />
+                      {pensamientoDelTurno ?? (
+                        <AgentTaskThread steps={turnSteps} turno={turno} onAbrirEquipo={abrirEquipo} />
+                      )}
                     </div>
                   );
                 }
@@ -351,7 +400,8 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                   return (
                     <div key={message.id} className={envoltura} data-turno={message.id}>
                       {cabecera}
-                      {resumenDelTurno}
+                      {pensamientoDelTurno}
+                      {resumenSuelto}
                       {responseNeedsCard(message) ? (
                         <>
                           <ResponseCard
@@ -397,6 +447,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                   return (
                     <div key={message.id} className={envoltura} data-turno={message.id}>
                       {cabecera}
+                      {pensamientoDelTurno}
                       {responseNeedsCard(message) ? (
                         <ResponseCard
                           meta={message.responseMeta}
@@ -422,7 +473,8 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                 return (
                   <div key={message.id} className={envoltura} data-turno={message.id}>
                     {cabecera}
-                    {message.status !== 'error' && resumenDelTurno}
+                    {pensamientoDelTurno}
+                    {message.status !== 'error' && resumenSuelto}
                     {decision}
                     {accion}
                     <AssistantBubble
@@ -473,7 +525,12 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
             disabled={isBusy}
             topSlot={
               turnSteps.length > 0 ? (
-                <AgentTaskProgress steps={turnSteps} turno={turnoEnCurso} onAbrirEquipo={abrirEquipo} />
+                <AgentTaskProgress
+                  steps={turnSteps}
+                  turno={turnoEnCurso}
+                  pensamiento={pensamiento && pensamiento.pasos.length > 0 ? pensamiento : null}
+                  onAbrirEquipo={abrirEquipo}
+                />
               ) : null
             }
           />

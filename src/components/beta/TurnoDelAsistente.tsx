@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { CaretDown } from '@phosphor-icons/react';
 import { Collapse } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,8 @@ import { CabeceraDelTurno, DelegacionesDelTurno } from '@/components/agentes/Tur
  *                           en una etiqueta discreta cuando la respuesta pide
  *                           actuar. «Informativo» no se dice: es casi toda
  *                           respuesta y repetido en cada una no informa nada
- *                           (Nico, 02-10).
+ *                           (Nico, 02-10). Mientras piensa, a la derecha va el
+ *                           tiempo corriendo (`derecha`, el pensamiento en vivo).
  *   ResumenDelTurno       — en una respuesta ya cerrada, la delegación en UNA
  *                           línea («Ori le pasó el trabajo a Laura») que se
  *                           abre en el detalle de cada especialista.
@@ -40,19 +41,23 @@ export function CabeceraDeLaRespuesta({
   turno,
   tipo,
   onAbrirEquipo,
+  derecha,
   className,
 }: {
   turno: LecturaDelTurno;
   /** El tipo de la respuesta (`responseMeta.type`). Sólo `actionable` se muestra, como etiqueta discreta. */
   tipo?: ResponseType | null;
   onAbrirEquipo?: (id: IdDeAgente) => void;
+  /** Lo que va a la derecha mientras trabaja (el tiempo del pensamiento en vivo). */
+  derecha?: ReactNode;
   className?: string;
 }) {
   const { t } = useI18n();
   return (
     <div className={cn('flex min-h-[34px] items-center justify-between gap-3', className)} data-testid="cabecera-de-la-respuesta">
       <CabeceraDelTurno turno={turno} onAbrirEquipo={onAbrirEquipo} />
-      {tipo === 'actionable' && turno.orquestador.estado === 'listo' && (
+      {derecha ? <span className="shrink-0">{derecha}</span> : null}
+      {!derecha && tipo === 'actionable' && turno.orquestador.estado === 'listo' && (
         <span
           className="shrink-0 animate-in fade-in duration-slow font-mono text-[10.5px] uppercase tracking-[0.08em] text-fg-subtle motion-reduce:animate-none"
           data-testid="tipo-de-respuesta"

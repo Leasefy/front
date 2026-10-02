@@ -94,9 +94,10 @@ export interface AgentExecution {
    */
   resumen?: string;
   /**
-   * El id del despacho que manda el micro (`dispatch_start.id`, `dispatch.id`),
-   * cuando lo mande: con él dos despachos al mismo especialista en un turno no
-   * se confunden. Un micro de hoy no lo manda y se empareja por orden.
+   * El id del despacho que manda el micro (`dispatch_start.id`, `dispatch.id`;
+   * desde el commit `33d8607b` del micro): con él dos despachos al mismo
+   * especialista en un turno no se confunden. Un micro anterior no lo manda y
+   * se empareja por orden.
    */
   despachoId?: string;
 }
@@ -390,8 +391,8 @@ export interface ChatMessage {
   reintentable?: Reintentable;
   /**
    * «Lo que pensó» el orquestador (y sus especialistas) para este turno,
-   * cuando el micro lo mande en el `done` (campo aditivo propuesto el
-   * 02-10-2026; hoy no llega). Sin él no se pinta nada: nunca se rellena con
+   * que el micro manda en el `done` (desde el commit `33d8607b`, 02-10-2026;
+   * un micro anterior no lo manda). Sin él no se pinta nada: nunca se rellena con
    * los pasos ni con texto inventado. Lo lee `leerElTurno` (que también
    * acepta un paso como texto suelto).
    */

@@ -97,13 +97,13 @@ describe('los pasos del turno (Nico, 23-09)', () => {
         steps={[{ id: 'entender', kind: 'entender', labelKey: 'beta.tasks.plan.understand', status: 'running' }]}
       />
     );
-    expect(container.querySelector('[aria-live="polite"]')!.textContent).toBe('Decidiendo cómo resolverla…');
+    expect(container.querySelector('[aria-live="polite"]')!.textContent).toBe('Pensando cómo contestarte…');
   });
 
   it('un paso terminado colapsa a una línea: su detalle queda en el title, no a la vista', () => {
     pintar(<AgentTaskThread steps={PASOS} />);
     const hecho = container.querySelector('li[data-estado="done"]')!;
-    expect(hecho.textContent).toBe('Revisar el estado de tu cartera');
+    expect(hecho.textContent).toBe('Revisar tu cartera');
     expect(hecho.querySelector('[title]')!.getAttribute('title')).toContain('Cartera por cobrar: $ 12.500.000 en 7 contratos');
     expect(container.textContent).not.toContain('Sin datos de cartera');
   });

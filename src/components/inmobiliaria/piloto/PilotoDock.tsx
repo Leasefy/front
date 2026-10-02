@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils'
 import type { TipoDeProceso } from '@/lib/api/piloto'
 import { PilotoCajon, type PilotoApertura } from './PilotoCajon'
 import { ProcesoFila } from './ProcesoCard'
-import { RUTA_PROCESOS } from './PilotoModoHeader'
+import { RUTA_PROCESOS } from './rutas-del-piloto'
 
 const TIPOS: Array<TipoDeProceso | 'todos'> = ['todos', 'deposito', 'llamada', 'whatsapp']
 /** Cuántas filas caben sin que el tray se vuelva la página. */

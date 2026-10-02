@@ -1082,7 +1082,15 @@
         "corriendoConDistintos": "{{n}} agentes actúan: {{enEste}} con este modo y {{otros}} con otro (abajo, cuáles).",
         "distintosCorto": "({{n}} con otro modo)",
         "cadaAgente": "Cada agente",
-        "todaviaNo": "Todavía no actúan solos (su modo queda guardado): {{agentes}}.",
+        "todosIgual": "Todos van en {{modo}}.",
+        "otroModo": "Distinto del general",
+        "todaviaNoTitulo": "Todavía no actúan solos",
+        "todaviaNoNota": "Su modo queda guardado.",
+        "corto": {
+          "sombra": "Te deja todo en la Bandeja, sin avisos.",
+          "copiloto": "Te pide el visto bueno y te avisa.",
+          "autonomo": "Los que ya saben actúan sin preguntarte."
+        },
         "aria": "Piloto automático: modo {{modo}}. Abrir para cambiarlo",
         "elegir": "Modo del Piloto",
         "modo": {

@@ -1082,7 +1082,15 @@
         "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",
         "distintosCorto": "({{n}} in another mode)",
         "cadaAgente": "Each agent",
-        "todaviaNo": "Don't act on their own yet (their mode is saved): {{agentes}}.",
+        "todosIgual": "All in {{modo}}.",
+        "otroModo": "Not the general mode",
+        "todaviaNoTitulo": "Not acting on their own yet",
+        "todaviaNoNota": "Their mode is saved.",
+        "corto": {
+          "sombra": "Leaves everything in the Inbox, no alerts.",
+          "copiloto": "Asks for your OK and lets you know.",
+          "autonomo": "Those that know how act without asking."
+        },
         "aria": "Autopilot: {{modo}} mode. Open to change it",
         "elegir": "Pilot mode",
         "modo": {

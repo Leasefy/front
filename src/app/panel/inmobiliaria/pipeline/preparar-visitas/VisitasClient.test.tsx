@@ -13,7 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { api, permisos } = vi.hoisted(() => ({
+const { api, permisos, toastError } = vi.hoisted(() => ({
+  toastError: vi.fn(),
   api: {
     porAtender: (() => Promise.resolve(null)) as () => Promise<unknown>,
     recordatorios: (() => Promise.resolve(null)) as () => Promise<unknown>,
@@ -44,6 +45,9 @@ vi.mock('@/lib/api/crm.service', async () => {
     leadsApi: { asesores: () => api.asesores() },
   }
 })
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn() },
+}))
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
     isLoading: false,
@@ -52,6 +56,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 }))
 
 import { VisitasClient } from './VisitasClient'
+import { ApiError } from '@/lib/api/client'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -229,5 +234,51 @@ describe('VisitasClient', () => {
     permisos.edit = false
     await pintar()
     expect($('[data-testid="no-show-temprana"]')).toBeNull()
+  })
+})
+
+/**
+ * 02-10-2026 · Las acciones de la fila eran try/finally sin `catch`: si el
+ * back decía que no, el botón dejaba de girar y nada avisaba. Ahora pasan por
+ * el traductor.
+ */
+describe('VisitasClient — cuando una acción falla', () => {
+  async function marcarNoLlegoCon(error: unknown): Promise<string> {
+    api.marcarNoShow.mockImplementationOnce(() => Promise.reject(error))
+    toastError.mockReset()
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="no-show-temprana"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(toastError).toHaveBeenCalledTimes(1)
+    const [titulo, opciones] = toastError.mock.calls[0] as [string, { description: string }]
+    expect(titulo).toBe('No se marcó que no llegó')
+    return opciones.description
+  }
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia, sin culpar a la conexión', async () => {
+    const texto = await marcarNoLlegoCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '5e6f7a8b',
+      }),
+    )
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('5e6f7a8b')
+    expect(texto.toLowerCase()).not.toContain('conexión')
+  })
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    const texto = await marcarNoLlegoCon(new ApiError(0, 'Failed to fetch'))
+    expect(texto.toLowerCase()).toContain('conexión')
+  })
+
+  it('un 409 dice lo que mandó el back', async () => {
+    const texto = await marcarNoLlegoCon(new ApiError(409, 'La visita todavía no ha pasado.'))
+    expect(texto).toBe('La visita todavía no ha pasado.')
   })
 })

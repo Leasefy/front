@@ -20,7 +20,7 @@ import { toast } from '@/components/ui/toast';
 
 import { Button } from '@/components/ui/button';
 import { messagesApi } from '@/lib/api/messages.service';
-import { ApiError } from '@/lib/api/client';
+import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
 /** A dónde vuelve cada perfil a leer sus mensajes. */
 export type BandejaDestino = 'inmobiliaria' | 'inquilino' | 'propietario';
@@ -63,7 +63,8 @@ export function BotonEnviarMensaje({
       );
       router.push(`${RUTA[bandeja]}?conversationId=${conversationId}`);
     } catch (err) {
-      toast.error(mensajeDeFallo(err));
+      // Cada motivo se cuenta como lo que es; ninguno como «algo salió mal».
+      toast.error(mensajeDelHiloDirecto(err));
       setAbriendo(false);
     }
   };
@@ -84,18 +85,4 @@ export function BotonEnviarMensaje({
       {etiqueta}
     </Button>
   );
-}
-
-/** Cada motivo se cuenta como lo que es; ninguno como «algo salió mal». */
-function mensajeDeFallo(err: unknown): string {
-  if (!(err instanceof ApiError)) {
-    return 'No pudimos abrir la conversación. Intenta de nuevo.';
-  }
-  if (err.status === 404) {
-    return 'Esa persona todavía no tiene cuenta en Leasefy, así que no hay dónde escribirle.';
-  }
-  if (err.status === 403) {
-    return 'Solo puedes escribirle a alguien con quien tengas un inmueble o un contrato en común.';
-  }
-  return 'No pudimos abrir la conversación. Intenta de nuevo.';
 }

@@ -38,6 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useDecisiones, useReviewDecision } from '@/lib/hooks/retencion/use-decisiones'
@@ -239,8 +240,15 @@ export default function RevisionesClient() {
         toast.success('Revisión registrada')
       }
       await refetch()
-    } catch {
-      toast.error('No pude registrar la revisión. Intenta de nuevo.')
+    } catch (err) {
+      // 02-10-2026: el micro responde `Error(status)`; el traductor lo lee
+      // (un 5xx es nuestro; sólo sin respuesta se habla de conexión).
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo registrar la revisión.',
+          accion: 'registrar la revisión',
+        }),
+      )
     }
   }
 

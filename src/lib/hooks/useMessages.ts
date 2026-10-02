@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { messagesApi } from '@/lib/api/messages.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useAuth } from '@/lib/auth';
 import type {
   CanalDeWhatsapp,
@@ -33,7 +34,11 @@ export function useConversations() {
       setConversations(mapped);
       setTotalUnread(mapped.reduce((sum, c) => sum + c.unreadCount, 0));
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando conversaciones';
+      // Por el traductor (02-10-2026): un 5xx no se pinta crudo ni culpa a la red.
+      const message = mensajeParaLaPersona(err, {
+        porDefecto: 'No pudimos cargar las conversaciones.',
+        accion: 'cargar las conversaciones',
+      });
       setErrorCrudo(err);
       setError(message);
       setConversations([]);
@@ -197,7 +202,15 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
         await fetchMessages();
         return true;
       } catch (err) {
-        setErrorDeEnvio(err instanceof Error ? err.message : 'Error enviando mensaje');
+        // El porqué, por el traductor (02-10-2026): el motivo del back (un
+        // 403, un hilo cerrado) se lee; un 5xx dice que falló de nuestro lado
+        // con su referencia; «conexión» sólo cuando no hubo respuesta.
+        setErrorDeEnvio(
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No se pudo enviar el mensaje. Prueba de nuevo en un momento.',
+            accion: 'enviar el mensaje',
+          }),
+        );
         // Remove optimistic message on error
         setMessages((prev) => prev.filter((m) => !m.id.startsWith('temp-')));
         return false;
@@ -247,9 +260,10 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     error:
       errorDeEnvio ??
       (errorDeCarga
-        ? errorDeCarga instanceof Error
-          ? errorDeCarga.message
-          : 'Error cargando mensajes'
+        ? mensajeParaLaPersona(errorDeCarga, {
+            porDefecto: 'No pudimos cargar los mensajes.',
+            accion: 'cargar los mensajes',
+          })
         : null),
     limpiarError,
     reintentarCarga,

@@ -13,12 +13,23 @@
  *     la plata);
  *   · si no, quien hace caja (`cobros:create`) registra el pago: sale el recibo
  *     con el consecutivo de la agencia y la factura queda generada.
+ *
+ * Sistema de errores (02-10-2026): el valor se revisa antes de mandar con el
+ * tope y la frase del back; lo que el back rechace va debajo de su campo, y lo
+ * demás a un toast por el traductor (un 5xx con la referencia; «conexión»
+ * sólo sin respuesta). Antes el toast pintaba `error.message` crudo.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { Receipt } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  MAX_LARGO_REFERENCIA_DEL_PAGO,
+  revisarValorDelEstudio,
+} from '@/lib/estudios/limites-del-pago-del-estudio';
 import { toast } from '@/components/ui/toast';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { formatCurrency } from '@/lib/format';
@@ -37,6 +48,9 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
   const [valor, setValor] = useState('');
   const [medio, setMedio] = useState('transferencia');
   const [referencia, setReferencia] = useState('');
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<'valorCop' | 'referencia', string>>
+  >({});
 
   const cargar = useCallback(async () => {
     try {
@@ -54,9 +68,13 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
   if (!permisos) return null;
   const puedeCobrar = permisos.canAccess('cobros', 'create');
 
+  const digitos = valor.replace(/\D/g, '');
+  const valorCop = digitos ? Number(digitos) : null;
+  const errorDelValor = revisarValorDelEstudio(valorCop) ?? erroresDelServidor.valorCop;
+
   const registrar = async () => {
-    const valorCop = Number(valor.replace(/\D/g, ''));
-    if (!valorCop || registrando) return;
+    if (!valorCop || revisarValorDelEstudio(valorCop) || registrando) return;
+    setErroresDelServidor({});
     setRegistrando(true);
     try {
       const pago = await estudiosApi.registrarPago({
@@ -71,9 +89,19 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
       setAbierto(false);
       await cargar();
     } catch (error) {
-      toast.error('No se pudo registrar el pago del estudio', {
-        description: error instanceof Error ? error.message : undefined,
+      const reparto = repartirErroresDelServidor(error, {
+        campos: ['valorCop', 'referencia'],
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'registrar el pago del estudio',
       });
+      setErroresDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(primero === 'valorCop' ? 'estudio-valor' : 'estudio-referencia')?.focus();
+      if (reparto.sueltos.length) {
+        toast.error('No se pudo registrar el pago del estudio', {
+          description: reparto.sueltos.join(' · '),
+        });
+      }
     } finally {
       setRegistrando(false);
     }
@@ -103,14 +131,23 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
       )}
       {abierto && (
         <div className="space-y-2" data-testid="estudio-formulario">
-          <input
-            className="w-full rounded-md border border-border bg-surface p-2 text-sm"
-            inputMode="numeric"
-            placeholder="Valor pagado"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            data-testid="estudio-valor"
-          />
+          <div>
+            <input
+              id="estudio-valor"
+              className="w-full rounded-md border border-border bg-surface p-2 text-sm"
+              inputMode="numeric"
+              placeholder="Valor pagado"
+              value={valor}
+              onChange={(e) => {
+                setValor(e.target.value);
+                setErroresDelServidor((prev) => ({ ...prev, valorCop: undefined }));
+              }}
+              aria-invalid={errorDelValor ? true : undefined}
+              aria-describedby={errorDelValor ? 'estudio-valor-error' : undefined}
+              data-testid="estudio-valor"
+            />
+            <ErrorDelCampo id="estudio-valor-error" mensaje={errorDelValor} />
+          </div>
           <select
             className="w-full rounded-md border border-border bg-surface p-2 text-sm"
             value={medio}
@@ -124,14 +161,30 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
             <option value="cheque">Cheque</option>
             <option value="otro">Otro</option>
           </select>
-          <input
-            className="w-full rounded-md border border-border bg-surface p-2 text-sm"
-            placeholder="Referencia (opcional)"
-            value={referencia}
-            onChange={(e) => setReferencia(e.target.value)}
-          />
+          <div>
+            <input
+              id="estudio-referencia"
+              className="w-full rounded-md border border-border bg-surface p-2 text-sm"
+              placeholder="Referencia (opcional)"
+              value={referencia}
+              maxLength={MAX_LARGO_REFERENCIA_DEL_PAGO}
+              onChange={(e) => {
+                setReferencia(e.target.value);
+                setErroresDelServidor((prev) => ({ ...prev, referencia: undefined }));
+              }}
+              aria-invalid={erroresDelServidor.referencia ? true : undefined}
+              aria-describedby={erroresDelServidor.referencia ? 'estudio-referencia-error' : undefined}
+            />
+            <ErrorDelCampo id="estudio-referencia-error" mensaje={erroresDelServidor.referencia} />
+          </div>
           <div className="flex gap-2">
-            <Button size="sm" hideArrow onClick={() => void registrar()} disabled={registrando} data-testid="estudio-confirmar">
+            <Button
+              size="sm"
+              hideArrow
+              onClick={() => void registrar()}
+              disabled={registrando || Boolean(revisarValorDelEstudio(valorCop))}
+              data-testid="estudio-confirmar"
+            >
               {registrando ? 'Registrando…' : 'Emitir recibo y factura'}
             </Button>
             <Button size="sm" variant="ghost" hideArrow onClick={() => setAbierto(false)} disabled={registrando}>

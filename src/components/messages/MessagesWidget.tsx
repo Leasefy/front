@@ -1136,9 +1136,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           >
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span className="flex-1">
-                              {locale === 'es'
-                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: prueba de nuevo.'
-                                : "Couldn't send. Your message is back in the box — try again."}
+                              {/* 02-10-2026 · El porqué viene del traductor (`useChat`):
+                                  un 403 dice la regla, un 5xx «de nuestro lado» con su
+                                  referencia, y la conexión SÓLO sin respuesta. Antes era
+                                  siempre «prueba de nuevo», también cuando reintentar no
+                                  lo arreglaba. */}
+                              {locale === 'es' ? (
+                                <>
+                                  <span className="block" data-testid="mensaje-no-enviado-motivo">
+                                    No se pudo enviar. {errorDeEnvio}
+                                  </span>
+                                  <span className="block">Tu mensaje quedó en el campo.</span>
+                                </>
+                              ) : (
+                                "Couldn't send. Your message is back in the box — try again."
+                              )}
                             </span>
                             <button
                               type="button"

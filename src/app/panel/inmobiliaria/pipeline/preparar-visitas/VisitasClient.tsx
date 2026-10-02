@@ -48,6 +48,24 @@ import { leadsApi, visitasApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+
+/**
+ * Cuando una acción de la fila falla (02-10-2026). Antes eran try/finally sin
+ * `catch`: el botón dejaba de girar y nada decía que no se guardó (y la
+ * promesa quedaba sin atrapar). Ahora pasa por el traductor: «conexión» sólo
+ * sin respuesta; un 5xx es nuestro, con la referencia; un 4xx, lo que dijo el
+ * back («la visita ya pasó», «ese asesor no es de la inmobiliaria»).
+ */
+function avisarQueNoSeGuardo(error: unknown, titulo: string, accion: string) {
+  toast.error(titulo, {
+    description: mensajeParaLaPersona(error, {
+      porDefecto: 'No se guardó. Prueba de nuevo en un momento.',
+      accion,
+    }),
+  })
+}
 
 export function VisitasClient() {
   const { canAccess } = usePermissions()
@@ -85,6 +103,8 @@ export function VisitasClient() {
     try {
       await visitasApi.asignarAsesor(visitId, asesorUserId)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se asignó el asesor', 'asignar el asesor')
     } finally {
       setTocando(null)
     }
@@ -95,6 +115,8 @@ export function VisitasClient() {
     try {
       await visitasApi.avisoAlInquilino(visitId, 'WHATSAPP')
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se guardó el aviso al inquilino', 'guardar el aviso al inquilino')
     } finally {
       setTocando(null)
     }
@@ -106,6 +128,12 @@ export function VisitasClient() {
       if (ya) await visitasApi.quitarNoShow(visitId)
       else await visitasApi.marcarNoShow(visitId)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(
+        e,
+        ya ? 'No se quitó la marca de «no llegó»' : 'No se marcó que no llegó',
+        ya ? 'quitar la marca de «no llegó»' : 'marcar que no llegó',
+      )
     } finally {
       setTocando(null)
     }
@@ -116,6 +144,8 @@ export function VisitasClient() {
     try {
       await visitasApi.recordatorios(true)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se marcaron los recordatorios', 'marcar los recordatorios')
     } finally {
       setMarcando(false)
     }

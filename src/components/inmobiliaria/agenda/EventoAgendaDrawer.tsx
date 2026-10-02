@@ -24,6 +24,8 @@ import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agend
 import { fechaLocal } from '@/lib/fechas-locales';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
@@ -64,8 +66,11 @@ interface Props {
   onOpenChange: (abierto: boolean) => void;
   /** Después de cualquier acción: la agenda se relee. */
   onCambio: () => void;
-  /** Las acciones de visita viven en la página (confirmar/rechazar/cancelar). */
-  onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<void>;
+  /**
+   * Las acciones de visita viven en la página (confirmar/rechazar/cancelar).
+   * Devuelve si salió: con `false` el cajón y el motivo tipeado se quedan.
+   */
+  onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<boolean | void>;
   /**
    * Sin `operaciones:edit` el back responde 403 a toda acción sobre visitas y
    * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
@@ -105,8 +110,17 @@ export function EventoAgendaDrawer({
       );
       onCambio();
       onOpenChange(false);
-    } catch {
-      toast.error('No se pudo actualizar la tarea');
+    } catch (err) {
+      // Sesión vencida: el cliente ya está cerrando sesión.
+      if (err instanceof ApiError && err.status === 401) return;
+      // El motivo del back por el traductor (02-10-2026): antes era siempre
+      // «No se pudo actualizar la tarea», también ante un 409 que explicaba.
+      toast.error('No se pudo actualizar la tarea', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'actualizar la tarea',
+        }),
+      });
     } finally {
       setActuando(false);
     }
@@ -116,8 +130,10 @@ export function EventoAgendaDrawer({
     if (!evento) return;
     setActuando(true);
     try {
-      await onAccionVisita(evento.id.replace(/^visit-/, ''), accion);
+      const salio = await onAccionVisita(evento.id.replace(/^visit-/, ''), accion);
+      if (salio === false) return false;
       onOpenChange(false);
+      return true;
     } finally {
       setActuando(false);
     }
@@ -128,12 +144,13 @@ export function EventoAgendaDrawer({
     if (!evento || !pidiendoMotivo) return;
     const visitId = evento.id.replace(/^visit-/, '');
     const cual = pidiendoMotivo;
-    await visita(() =>
+    const salio = await visita(() =>
       cual === 'cancelar'
         ? agendaApi.cancelarCita(visitId, motivo)
         : agendaApi.rechazarCita(visitId, motivo),
     );
-    setPidiendoMotivo(null);
+    // Si el back no la aceptó, el diálogo sigue abierto con el motivo escrito.
+    if (salio !== false) setPidiendoMotivo(null);
   };
 
   const dia = evento ? fechaLocal(evento.fecha) : null;

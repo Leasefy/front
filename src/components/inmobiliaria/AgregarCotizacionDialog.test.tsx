@@ -31,7 +31,11 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
 import { AgregarCotizacionDialog } from './AgregarCotizacionDialog';
+import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
 
 function hacerSolicitud(
   overrides: Partial<SolicitudMantenimiento> = {},
@@ -237,6 +241,45 @@ describe('<AgregarCotizacionDialog>', () => {
     expect(campo('cotizacion-proveedor').value).toBe('Plomería El Rayo');
     // Y se puede reintentar: el botón volvió a estar disponible.
     expect(guardar().disabled).toBe(false);
+  });
+
+  it('🔴 un valor de once cifras se ataja antes de enviar, con la frase del back', async () => {
+    const { onGuardar } = montar();
+    llenarTodo();
+    escribir(campo('cotizacion-monto'), '30000000000');
+
+    await act(async () => {
+      guardar().click();
+    });
+
+    expect(onGuardar).not.toHaveBeenCalled();
+    expect(document.body.querySelector('#cotizacion-monto-error')?.textContent).toBe(
+      MENSAJES_DEL_MANTENIMIENTO.valorMaximo,
+    );
+  });
+
+  it('🔴 un 400 con campos: el error sale bajo SU campo y el campo recibe el foco', async () => {
+    const onGuardar = vi.fn().mockRejectedValue(
+      new ApiError(400, [MENSAJES_DEL_MANTENIMIENTO.diasMaximos], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJES_DEL_MANTENIMIENTO.diasMaximos],
+        campos: [{ campo: 'estimatedDays', regla: 'maximo', mensaje: MENSAJES_DEL_MANTENIMIENTO.diasMaximos }],
+      }),
+    );
+    const { onOpenChange } = montar({ onGuardar });
+    llenarTodo();
+
+    await act(async () => {
+      guardar().click();
+    });
+
+    expect(document.body.querySelector('#cotizacion-dias-error')?.textContent).toBe(
+      MENSAJES_DEL_MANTENIMIENTO.diasMaximos,
+    );
+    expect(campo('cotizacion-dias').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(campo('cotizacion-dias'));
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
   it('el tope del teléfono es el de la columna (20), no infinito', () => {

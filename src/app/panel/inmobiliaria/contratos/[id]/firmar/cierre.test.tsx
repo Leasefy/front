@@ -157,4 +157,27 @@ describe('Firmar contrato — cuando el back rechaza, se dice el motivo', () => 
     });
     expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
   });
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia, y no culpa a la conexión', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'f1e2d3c4',
+      }),
+    );
+    await firmar();
+    const [titulo, opciones] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se pudo firmar el contrato.');
+    expect(opciones.description).toContain('No pudimos firmar el contrato: algo falló de nuestro lado.');
+    expect(opciones.description).toContain('f1e2d3c4');
+    expect(opciones.description).not.toContain('conexión');
+  });
+
+  it('🔴 02-10 · sin respuesta (status 0) habla de la conexión', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await firmar();
+    const [, opciones] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toContain('conexión');
+  });
 });

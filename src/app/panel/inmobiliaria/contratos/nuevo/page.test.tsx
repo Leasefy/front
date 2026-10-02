@@ -429,3 +429,128 @@ describe('crear un contrato que el back rechaza: el motivo, al lado del campo', 
     expect(contenedor.textContent).toContain('No tienes permiso para crear contratos.')
   })
 })
+
+/**
+ * 🔴 02-10-2026 · Sistema de errores. El back topa los términos contra su
+ * columna (`limites-del-contrato`) y responde 400 `DATOS_INVALIDOS` con
+ * `campos`. Antes todo se juntaba en un renglón rojo al pie: la persona tenía
+ * que adivinar cuál de los seis campos era. Ahora el mensaje va bajo SU campo,
+ * ese campo recibe el foco, y un 5xx o la red dicen lo que de verdad pasó.
+ */
+describe('crear un contrato: el error en su campo y la regla de oro', () => {
+  const TOPE = 'El canon no puede pasar de $2.000.000.000. Revisa que no sobren ceros.'
+
+  async function elegirPdf() {
+    acciones.uploadPdf.mockResolvedValue({ uploadedPdfPath: 'contracts/uploads/u-1/mano.pdf' })
+    await montar()
+    clic(porTestId('elegir-partes'))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const input = contenedor.querySelector<HTMLInputElement>('#pdf-upload')!
+    const archivo = new File(['%PDF-1.4'], 'contrato.pdf', { type: 'application/pdf' })
+    Object.defineProperty(input, 'files', { value: [archivo], configurable: true })
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+  }
+
+  async function crear() {
+    clic(porTexto('button[type="submit"]', 'Crear contrato'))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+  }
+
+  function escribir(el: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(el, valor)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  const canon = () => contenedor.querySelector<HTMLInputElement>('#contrato-monthlyRent')!
+  const errorDelCanon = () => contenedor.querySelector('#contrato-monthlyRent-error')
+
+  it('🔴 un 400 con campos pinta el tope bajo el canon, lo marca y le da el foco', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(400, [TOPE], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE],
+        campos: [{ campo: 'monthlyRent', regla: 'maximo', mensaje: TOPE, valor: 30_000_000_000 }],
+      }),
+    )
+    await elegirPdf()
+    await crear()
+
+    expect(errorDelCanon()?.textContent).toBe(TOPE)
+    expect(canon().getAttribute('aria-invalid')).toBe('true')
+    expect(canon().getAttribute('aria-describedby')).toBe('contrato-monthlyRent-error')
+    expect(document.activeElement).toBe(canon())
+    // No se repite al pie: el renglón rojo es sólo para lo que no tiene campo.
+    expect(contenedor.textContent?.split(TOPE).length).toBe(2)
+  })
+
+  it('al corregir el canon, el error del servidor se va', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(400, [TOPE], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'monthlyRent', regla: 'maximo', mensaje: TOPE }],
+      }),
+    )
+    await elegirPdf()
+    await crear()
+    expect(errorDelCanon()?.textContent).toBe(TOPE)
+
+    escribir(canon(), '2500000')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    expect(canon().getAttribute('aria-invalid')).toBeNull()
+  })
+
+  it('🔴 el tope se ataja ANTES de mandar, con la misma frase del back', async () => {
+    await elegirPdf()
+    escribir(canon(), '30000000000')
+    // La ayuda («Mínimo $ 100.000») sale y entra el error: es un cruce.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+
+    expect(errorDelCanon()?.textContent).toBe(TOPE)
+    const boton = porTexto('button[type="submit"]', 'Crear contrato') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    expect(acciones.createManual).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, y no culpa a la conexión', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'a1b2c3d4',
+      }),
+    )
+    await elegirPdf()
+    await crear()
+
+    const texto = contenedor.textContent ?? ''
+    expect(texto).toContain('No pudimos crear el contrato: algo falló de nuestro lado.')
+    expect(texto).toContain('a1b2c3d4')
+    expect(texto).not.toContain('conexión')
+    expect(texto).not.toContain('Verifica los datos')
+  })
+
+  it('🔴 sin respuesta (status 0) sí habla de la conexión', async () => {
+    acciones.createManual.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await elegirPdf()
+    await crear()
+
+    expect(contenedor.textContent).toContain('conexión')
+    expect(contenedor.textContent).not.toContain('de nuestro lado')
+  })
+})

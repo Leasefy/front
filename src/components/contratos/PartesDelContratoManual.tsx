@@ -24,6 +24,8 @@ import { House, User, UserPlus } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { useInquilinos } from '@/lib/hooks/use-inquilinos'
@@ -100,7 +102,12 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
       })
       .catch((e: unknown) => {
         if (!vigente) return
-        setErrorInmuebles(e instanceof Error ? e.message : 'No pudimos traer los inmuebles.')
+        setErrorInmuebles(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos traer los inmuebles.',
+            accion: 'traer los inmuebles',
+          }),
+        )
         setConsignaciones([])
       })
     return () => {
@@ -177,8 +184,12 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             data-testid="inmueble-combobox"
           />
         )}
-        {errorInmuebles && <p className="text-caption text-danger">{errorInmuebles}</p>}
-        {errores.propertyId && <p className="text-caption text-danger">{errores.propertyId}</p>}
+        {errorInmuebles && (
+          <p role="alert" className="text-caption text-danger" data-testid="error-de-los-inmuebles">
+            {errorInmuebles}
+          </p>
+        )}
+        <ErrorDelCampo id="inmueble-del-contrato-error" mensaje={errores.propertyId} className="mt-0" />
       </div>
 
       <div className="space-y-3">
@@ -216,21 +227,27 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                 Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
               </p>
             )}
-            {errores.tenantId && <p className="text-caption text-danger">{errores.tenantId}</p>}
+            <ErrorDelCampo id="inquilino-del-contrato-error" mensaje={errores.tenantId} className="mt-0" />
           </div>
         ) : (
           <div className="space-y-3" data-testid="inquilino-nuevo">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Campo label="Nombre completo" error={errores.nombre}>
+              <Campo id="nuevo-nombre" label="Nombre completo" error={errores.nombre}>
                 <Input
+                  id="nuevo-nombre"
+                  aria-invalid={errores.nombre ? true : undefined}
+                  aria-describedby="nuevo-nombre-error"
                   value={nuevo?.nombre ?? ''}
                   onChange={(e) => cambiarNuevo('nombre', e.target.value)}
                   autoComplete="off"
                   data-testid="nuevo-nombre"
                 />
               </Campo>
-              <Campo label="Documento" error={errores.documento}>
+              <Campo id="nuevo-documento" label="Documento" error={errores.documento}>
                 <Input
+                  id="nuevo-documento"
+                  aria-invalid={errores.documento ? true : undefined}
+                  aria-describedby="nuevo-documento-error"
                   value={nuevo?.documento ?? ''}
                   onChange={(e) => cambiarNuevo('documento', e.target.value)}
                   inputMode="numeric"
@@ -238,8 +255,11 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                   data-testid="nuevo-documento"
                 />
               </Campo>
-              <Campo label="Correo" error={errores.correo}>
+              <Campo id="nuevo-correo" label="Correo" error={errores.correo}>
                 <Input
+                  id="nuevo-correo"
+                  aria-invalid={errores.correo ? true : undefined}
+                  aria-describedby="nuevo-correo-error"
                   type="email"
                   value={nuevo?.correo ?? ''}
                   onChange={(e) => cambiarNuevo('correo', e.target.value)}
@@ -247,8 +267,11 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                   data-testid="nuevo-correo"
                 />
               </Campo>
-              <Campo label="Teléfono" hint="Opcional">
+              <Campo id="nuevo-telefono" label="Teléfono" hint="Opcional" error={errores.telefono}>
                 <Input
+                  id="nuevo-telefono"
+                  aria-invalid={errores.telefono ? true : undefined}
+                  aria-describedby="nuevo-telefono-error"
                   value={nuevo?.telefono ?? ''}
                   onChange={(e) => cambiarNuevo('telefono', e.target.value)}
                   inputMode="tel"
@@ -270,11 +293,14 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
 }
 
 function Campo({
+  id,
   label,
   error,
   hint,
   children,
 }: {
+  /** El id del control: el error va en `${id}-error`, el que nombra su `aria-describedby`. */
+  id: string
   label: string
   error?: string
   hint?: string
@@ -282,13 +308,12 @@ function Campo({
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-caption font-medium text-fg">{label}</label>
+      <label className="block text-caption font-medium text-fg" htmlFor={id}>
+        {label}
+      </label>
       {children}
-      {error ? (
-        <p className="text-caption text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-caption text-fg-muted">{hint}</p>
-      ) : null}
+      {/* El error entra suave y, si hay ayuda, se cruza con ella. */}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
     </div>
   )
 }

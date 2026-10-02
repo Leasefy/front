@@ -30,6 +30,7 @@ import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { contractsApi } from '@/lib/api/contracts.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 import type { Contract } from '@/lib/types/contract'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 interface Props {
   contract: Contract
@@ -66,7 +67,12 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
       })
       .catch((e: unknown) => {
         if (!vigente) return
-        setError(e instanceof Error ? e.message : 'No pudimos traer los inmuebles.')
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos traer los inmuebles.',
+            accion: 'traer los inmuebles',
+          }),
+        )
         setConsignaciones([])
       })
     return () => {
@@ -105,7 +111,14 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
       onActualizado(actualizado)
       setAbierto(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo vincular el inmueble.')
+      // Un 409 (el inmueble ya tiene otro contrato vivo) trae su frase; un 5xx
+      // dice que es nuestro, con la referencia; sólo la red habla de conexión.
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo vincular el inmueble.',
+          accion: 'vincular el inmueble',
+        }),
+      )
     } finally {
       setGuardando(false)
     }
@@ -165,7 +178,11 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
                 />
               </div>
             )}
-            {error ? <p className="text-sm text-danger">{error}</p> : null}
+            {error ? (
+              <p role="alert" className="text-sm text-danger" data-testid="vincular-inmueble-error">
+                {error}
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter>

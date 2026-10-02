@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { WarningCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+
+/** El tope del motivo: `ReviewDocumentDto.rejectionReason`, `@MaxLength(1000)`. */
+export const MAX_LARGO_DEL_MOTIVO_DE_RECHAZO = 1000;
 import {
   Sheet,
   SheetBody,
@@ -19,6 +23,10 @@ interface RejectReasonDrawerProps {
   isSubmitting: boolean;
   onClose: () => void;
   onConfirm: (reason: string) => void;
+  /** Lo que el back dijo del motivo (02-10-2026): va debajo del campo. */
+  error?: string | null;
+  /** Al escribir de nuevo, el error del back ya no aplica. */
+  onCambio?: () => void;
 }
 
 /**
@@ -32,6 +40,8 @@ export function RejectReasonDrawer({
   isSubmitting,
   onClose,
   onConfirm,
+  error,
+  onCambio,
 }: RejectReasonDrawerProps) {
   const [reason, setReason] = useState('');
 
@@ -66,11 +76,18 @@ export function RejectReasonDrawer({
           <Textarea
             id="reject-reason"
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={(e) => {
+              setReason(e.target.value);
+              onCambio?.();
+            }}
             placeholder="Ej: El documento está ilegible o vencido."
             rows={5}
             autoFocus
+            maxLength={MAX_LARGO_DEL_MOTIVO_DE_RECHAZO}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'reject-reason-error' : undefined}
           />
+          <ErrorDelCampo id="reject-reason-error" mensaje={error} className="mt-0" />
         </SheetBody>
 
         <SheetFooter>

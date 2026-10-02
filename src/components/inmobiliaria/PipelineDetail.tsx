@@ -38,6 +38,7 @@ import {
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -257,6 +258,13 @@ export function PipelineDetail({
    */
   const handleMarkAsLost = useCallback(async (motivo: string) => {
     if (!item) return;
+    // El mismo tope que el back (`MoveStageDto.lostReason`, VarChar(500)):
+    // se dice antes de mandar, y el diálogo queda abierto para recortarlo.
+    const largo = revisarMotivoDePerdida(motivo);
+    if (largo) {
+      toast.error(largo);
+      return;
+    }
 
     setIsMarking(true);
     try {

@@ -37,7 +37,7 @@
  * «+ Agregar» mientras el inquilino sí.
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { PencilSimple, Plus, Trash, UserMinus, Warning } from '@phosphor-icons/react'
 
@@ -62,6 +62,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { conRegreso } from '@/lib/nav/ruta-de-regreso'
 import { contractsApi } from '@/lib/api/contracts.service'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
@@ -202,7 +205,12 @@ function FilaDeInquilino({
       onListaNueva(lista)
       toast.success('Lo quitamos del contrato.')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No pudimos quitarlo.')
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos quitarlo del contrato.',
+          accion: 'quitarlo del contrato',
+        }),
+      )
     } finally {
       setQuitando(false)
     }
@@ -282,6 +290,9 @@ function AgregarInquilino({
   const [abierto, setAbierto] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Lo que el back rechazó de un campo va debajo de ESE campo.
+  const [errores, setErrores] = useState<Partial<Record<CampoDelInquilino, string>>>({})
+  const formulario = useRef<HTMLDivElement | null>(null)
   const [nombre, setNombre] = useState('')
   const [documento, setDocumento] = useState('')
   const [email, setEmail] = useState('')
@@ -290,6 +301,7 @@ function AgregarInquilino({
   async function guardar() {
     setGuardando(true)
     setError(null)
+    setErrores({})
     try {
       onListaNueva(
         await contractsApi.agregarInquilino(contractId, {
@@ -306,10 +318,25 @@ function AgregarInquilino({
       setEmail('')
       setTelefono('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos agregarlo.')
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
+        campos: CAMPOS_DEL_INQUILINO,
+        porDefecto: 'No pudimos agregarlo al contrato.',
+        accion: 'agregarlo al contrato',
+      })
+      setErrores(porCampo)
+      setError(sueltos.length ? sueltos.join(' · ') : null)
+      const primero = orden[0]
+      if (primero) {
+        formulario.current?.querySelector<HTMLInputElement>(`#inquilino-${primero}`)?.focus()
+      }
     } finally {
       setGuardando(false)
     }
+  }
+
+  const cambiar = (campo: CampoDelInquilino, fijar: (v: string) => void) => (v: string) => {
+    fijar(v)
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
   }
 
   // Nombre y documento son lo mínimo: el documento es quien identifica.
@@ -338,18 +365,45 @@ function AgregarInquilino({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <Campo etiqueta="Nombre completo" valor={nombre} onChange={setNombre} testId="inquilino-nombre" />
+          <div className="space-y-3" ref={formulario}>
+            <Campo
+              etiqueta="Nombre completo"
+              valor={nombre}
+              onChange={cambiar('nombre', setNombre)}
+              testId="inquilino-nombre"
+              maxLength={200}
+              error={errores.nombre}
+            />
             <Campo
               etiqueta="Documento"
               valor={documento}
-              onChange={setDocumento}
+              onChange={cambiar('documento', setDocumento)}
               testId="inquilino-documento"
+              maxLength={40}
+              error={errores.documento}
               ayuda="Es lo que identifica a la persona. El correo sólo sirve para crearle cuenta."
             />
-            <Campo etiqueta="Correo (opcional)" valor={email} onChange={setEmail} testId="inquilino-email" />
-            <Campo etiqueta="Teléfono (opcional)" valor={telefono} onChange={setTelefono} testId="inquilino-telefono" />
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <Campo
+              etiqueta="Correo (opcional)"
+              valor={email}
+              onChange={cambiar('email', setEmail)}
+              testId="inquilino-email"
+              maxLength={255}
+              error={errores.email}
+            />
+            <Campo
+              etiqueta="Teléfono (opcional)"
+              valor={telefono}
+              onChange={cambiar('telefono', setTelefono)}
+              testId="inquilino-telefono"
+              maxLength={40}
+              error={errores.telefono}
+            />
+            {error ? (
+              <p role="alert" className="text-sm text-destructive" data-testid="agregar-inquilino-error">
+                {error}
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter>
@@ -372,26 +426,49 @@ function AgregarInquilino({
   )
 }
 
+/** Los campos de `AgregarInquilinoDto`, con el mismo nombre que en el back. */
+type CampoDelInquilino = 'nombre' | 'documento' | 'email' | 'telefono'
+const CAMPOS_DEL_INQUILINO: readonly CampoDelInquilino[] = ['nombre', 'documento', 'email', 'telefono']
+
 function Campo({
   etiqueta,
   valor,
   onChange,
   testId,
   ayuda,
+  maxLength,
+  error,
 }: {
   etiqueta: string
   valor: string
   onChange: (v: string) => void
   testId: string
   ayuda?: string
+  /** El tope de la columna del back: no se puede escribir más. */
+  maxLength?: number
+  error?: string
 }) {
   return (
     <div className="space-y-1">
       <label className="text-caption text-muted-foreground" htmlFor={testId}>
         {etiqueta}
       </label>
-      <Input id={testId} data-testid={testId} value={valor} onChange={(e) => onChange(e.target.value)} />
-      {ayuda ? <p className="text-[11px] text-muted-foreground">{ayuda}</p> : null}
+      <Input
+        id={testId}
+        data-testid={testId}
+        value={valor}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={`${testId}-error`}
+      />
+      {/* La ayuda gris y el error se cruzan: nunca los dos a la vez. */}
+      <ErrorDelCampo
+        id={`${testId}-error`}
+        mensaje={error}
+        pista={ayuda}
+        className="mt-0"
+      />
     </div>
   )
 }
@@ -559,7 +636,12 @@ function EditarPropietarios({
       setConsignacion(mandato)
       setAbierto(true)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No pudimos abrir el mandato del inmueble.')
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos abrir el mandato del inmueble.',
+          accion: 'abrir el mandato del inmueble',
+        }),
+      )
     } finally {
       setBuscando(false)
     }

@@ -116,6 +116,31 @@ describe('Bandeja de propuestas del agente', () => {
     expect(h.api.confirmar).toHaveBeenCalledWith('pr-1')
   })
 
+  it('🔴 02-10 · radicar con un 5xx: falló de nuestro lado, con la referencia; sin respuesta, la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    h.api.confirmar.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await montar()
+    await act(async () => {
+      boton('Radicar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const de5xx = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(de5xx).toContain('de nuestro lado')
+    expect(de5xx).toContain('ab12cd34')
+
+    h.api.confirmar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
+    await act(async () => {
+      boton('Radicar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(h.toast.error.mock.calls[1]?.[1]?.description).toMatch(/conexi[oó]n/i)
+  })
+
   it('B2 — dice que el plazo corre desde el mensaje original, no desde hoy', async () => {
     await montar()
     expect(contenedor.textContent).toContain('el plazo corre desde ahí, no desde hoy')

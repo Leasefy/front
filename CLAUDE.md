@@ -276,7 +276,8 @@ Nico: «no hay ningún sistema de errores completo». El back y el micro mandan 
   con `pista`, la ayuda y el error se cruzan). `id` = el de `aria-describedby` (`${id}-error` en un `FormField`).
 - **402** (códigos en `src/lib/errores/codigos-del-plan.ts`, espejo del back): `PLAN_REQUERIDO` en un GET
   del panel lleva a `/panel/inmobiliaria/upgrade` (`el402LlevaAlPlan`, `client.ts`); `LIMITE_DEL_PLAN`
-  (trae `limite`) NUNCA navega, se dice donde pasó; `NOMINA_NO_HABILITADA` lo pinta su cartel; un 402 sin
+  (trae `limite`: `LimiteDelPlan` = `agentes|inmuebles|evaluaciones`; el tope de evaluaciones del mes era un 429)
+  NUNCA navega, se dice donde pasó con «Ver planes» a la mano (`limiteDelPlanDelError`, `use-agent.ts`); `NOMINA_NO_HABILITADA` lo pinta su cartel; un 402 sin
   `code` (back viejo) sigue la regla de antes. El registro nunca saca al fundador. `clasificarFallo`
   titula cada código (sin código = «sin créditos de IA»).
 - **Frase por código** (`FRASES_DE_LOS_CODIGOS` / `fraseDelCodigo`): el `message` del back gana si se

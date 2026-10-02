@@ -16,8 +16,10 @@
  * `./pqrs-reglas` y se reexportan acá para quien las busque junto al cajón.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { RadioCard, RadioCardGroup, SegmentedControl } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
@@ -98,11 +100,34 @@ export function loQueFalta(errores: Record<string, string>, solicitante: PqrsSol
   return `Te falta ${partes.join(' y ')}.`
 }
 
+/** Los campos del formulario, en el orden en que se ven: el foco va al primero con error. */
+const CAMPOS_DE_LA_PQRS: readonly (keyof PqrsFormulario)[] = [
+  'tipo',
+  'solicitanteTipo',
+  'solicitanteNombre',
+  'solicitanteContacto',
+  'consignacionId',
+  'asignadoAUserId',
+  'asunto',
+  'descripcion',
+]
+
+/** El control de cada campo, para el foco. */
+const ID_DEL_CAMPO: Partial<Record<keyof PqrsFormulario, string>> = {
+  solicitanteNombre: 'pqrs-nombre',
+  solicitanteContacto: 'pqrs-contacto',
+  asunto: 'pqrs-asunto',
+  descripcion: 'pqrs-descripcion',
+}
+
 export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
   const [form, setForm] = useState<PqrsFormulario>(PQRS_FORMULARIO_VACIO)
   const [tocado, setTocado] = useState<Record<string, boolean>>({})
   const [enviando, setEnviando] = useState(false)
   const [personaId, setPersonaId] = useState<string>('')
+  /** Lo que rechazó el back, por campo (02-10-2026); cada campo borra el suyo al tocarse. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<keyof PqrsFormulario, string>>>({})
+  const cuerpo = useRef<HTMLDivElement>(null)
 
   /* El error se lee: con la lectura caída, «Sin inmuebles consignados» era un
      fallo disfrazado de vacío (21-09). */
@@ -153,11 +178,13 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
       setForm(PQRS_FORMULARIO_VACIO)
       setTocado({})
       setPersonaId('')
+      setDelServidor({})
     }
   }, [open])
 
   const set = useCallback(<K extends keyof PqrsFormulario>(campo: K, valor: PqrsFormulario[K]) => {
     setForm((f) => ({ ...f, [campo]: valor }))
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d))
   }, [])
   const tocar = (campo: string) => setTocado((t) => ({ ...t, [campo]: true }))
 
@@ -228,15 +255,34 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
       onOpenChange(false)
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return
-      toast.error('No se pudo radicar la solicitud', {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      // 02-10-2026: lo del back va a SU campo, con el foco en el primero; al
+      // aviso, por el traductor, sólo lo que no tiene dónde ir. Antes un motivo
+      // de más de 160 caracteres se perdía entero.
+      const reparto = repartirErroresDelServidor<keyof PqrsFormulario>(err, {
+        campos: CAMPOS_DE_LA_PQRS,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'radicar la solicitud',
       })
+      setDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        const id = ID_DEL_CAMPO[primero]
+        const control = id
+          ? document.getElementById(id)
+          : cuerpo.current?.querySelector<HTMLElement>(`[data-campo="${primero}"] :is(input, button)`)
+        control?.focus()
+      }
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo radicar la solicitud', { description: reparto.sueltos.join(' · ') })
+      }
     } finally {
       setEnviando(false)
     }
   }
 
-  const mostrarError = (campo: keyof PqrsFormulario) => (tocado[campo] ? errores[campo] : undefined)
+  /** El del servidor primero; el del cliente, cuando el campo ya se tocó. */
+  const mostrarError = (campo: keyof PqrsFormulario) =>
+    delServidor[campo] ?? (tocado[campo] ? errores[campo] : undefined)
   const etiquetaDelSolicitante = SOLICITANTE_LABEL[form.solicitanteTipo].toLowerCase()
 
   return (
@@ -247,7 +293,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
       />
       <form onSubmit={radicar} noValidate className="contents" data-testid="nueva-pqrs-form">
         <CajonCuerpo>
-          <div className="space-y-6">
+          <div className="space-y-6" ref={cuerpo}>
             {/* Tipo */}
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-fg">Tipo</legend>
@@ -315,11 +361,10 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   maxLength={200}
                   autoComplete="off"
                   aria-invalid={Boolean(mostrarError('solicitanteNombre'))}
+                  aria-describedby={mostrarError('solicitanteNombre') ? 'pqrs-nombre-error' : undefined}
                   required
                 />
-                {mostrarError('solicitanteNombre') && (
-                  <p className="text-xs text-danger">{mostrarError('solicitanteNombre')}</p>
-                )}
+                <ErrorDelCampo id="pqrs-nombre-error" mensaje={mostrarError('solicitanteNombre')} className="mt-0" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pqrs-contacto">
@@ -333,13 +378,16 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   placeholder="Correo o teléfono"
                   maxLength={200}
                   autoComplete="off"
+                  aria-invalid={delServidor.solicitanteContacto ? true : undefined}
+                  aria-describedby={delServidor.solicitanteContacto ? 'pqrs-contacto-error' : undefined}
                 />
+                <ErrorDelCampo id="pqrs-contacto-error" mensaje={delServidor.solicitanteContacto} className="mt-0" />
               </div>
             </fieldset>
 
             {/* Inmueble + responsable */}
             <div className="space-y-3">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" data-campo="consignacionId">
                 <Label htmlFor="pqrs-inmueble">
                   Inmueble <span className="text-fg-muted font-normal">(opcional)</span>
                 </Label>
@@ -360,8 +408,9 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   disabled={opcionesInmueble.length === 0}
                   contentClassName="z-[400]"
                 />
+                <ErrorDelCampo id="pqrs-inmueble-error" mensaje={delServidor.consignacionId} className="mt-0" />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" data-campo="asignadoAUserId">
                 <Label htmlFor="pqrs-asignado">Responsable</Label>
                 <Combobox
                   data-testid="pqrs-asignado"
@@ -375,11 +424,16 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                 />
                 {/* Quién responde no es un detalle administrativo: es contra
                     quién corre el reloj de los 15 días hábiles de la Ley 1755. */}
-                <p className="text-caption text-fg-muted">
-                  {opcionesAgente.length
-                    ? 'Quien responde hasta que se reasigne. El plazo de ley corre para esta persona.'
-                    : 'Todavía no hay agentes en la lista: responderá quien la radique.'}
-                </p>
+                <ErrorDelCampo
+                  id="pqrs-asignado-error"
+                  mensaje={delServidor.asignadoAUserId}
+                  className="mt-0"
+                  pista={
+                    opcionesAgente.length
+                      ? 'Quien responde hasta que se reasigne. El plazo de ley corre para esta persona.'
+                      : 'Todavía no hay agentes en la lista: responderá quien la radique.'
+                  }
+                />
               </div>
             </div>
 
@@ -401,13 +455,16 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   placeholder="En una línea, de qué se trata"
                   maxLength={ASUNTO_MAX}
                   aria-invalid={Boolean(mostrarError('asunto'))}
+                  aria-describedby={mostrarError('asunto') ? 'pqrs-asunto-error' : undefined}
                   required
                 />
-                {mostrarError('asunto') ? (
-                  <p className="text-xs text-danger">{mostrarError('asunto')}</p>
-                ) : (
-                  <p className="text-xs text-fg-muted">{AYUDA_DEL_ASUNTO}</p>
-                )}
+                {/* La ayuda y el error se cruzan: nunca se ven los dos ni salta el alto. */}
+                <ErrorDelCampo
+                  id="pqrs-asunto-error"
+                  mensaje={mostrarError('asunto')}
+                  pista={AYUDA_DEL_ASUNTO}
+                  className="mt-0"
+                />
                 {/* Los asuntos que se repiten, según el tipo: un clic y se ajusta. */}
                 <div className="flex flex-wrap gap-1.5 pt-1" data-testid="pqrs-asuntos-sugeridos">
                   {ASUNTOS_SUGERIDOS[form.tipo].map((asunto) => {
@@ -450,7 +507,10 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   placeholder="Qué pasó, desde cuándo, qué se pide"
                   maxLength={DESCRIPCION_MAX}
                   rows={5}
+                  aria-invalid={mostrarError('descripcion') ? true : undefined}
+                  aria-describedby={mostrarError('descripcion') ? 'pqrs-descripcion-error' : undefined}
                 />
+                <ErrorDelCampo id="pqrs-descripcion-error" mensaje={mostrarError('descripcion')} className="mt-0" />
               </div>
             </div>
           </div>

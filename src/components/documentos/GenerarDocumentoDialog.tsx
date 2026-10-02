@@ -30,6 +30,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
 import {
@@ -164,7 +165,13 @@ export function GenerarDocumentoDialog({
         if (vigente) setPlantillas(p);
       })
       .catch((e: unknown) => {
-        if (vigente) setError(e instanceof Error ? e.message : 'No pudimos cargar los tipos de documento.');
+        if (vigente)
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No pudimos cargar los tipos de documento.',
+              accion: 'cargar los tipos de documento',
+            }),
+          );
       });
     return () => {
       vigente = false;
@@ -238,7 +245,12 @@ export function GenerarDocumentoDialog({
       .catch((e: unknown) => {
         if (!vigente) return;
         setPreparacion(null);
-        setError(e instanceof Error ? e.message : 'No pudimos preparar el documento.');
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos preparar el documento.',
+            accion: 'preparar el documento',
+          }),
+        );
       })
       .finally(() => {
         if (vigente) setPreparando(false);
@@ -334,7 +346,12 @@ export function GenerarDocumentoDialog({
         onGenerado(documento);
         onOpenChange(false);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'No pudimos generar el documento.');
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos generar el documento.',
+            accion: 'generar el documento',
+          }),
+        );
       } finally {
         setGenerando(false);
       }
@@ -358,8 +375,14 @@ export function GenerarDocumentoDialog({
     } catch (e: unknown) {
       // El mensaje del backend tal cual: cuando faltan variables dice
       // exactamente cuáles, y cuando el incremento se pasa del tope dice el
-      // artículo y el IPC.
-      setError(e instanceof Error ? e.message : 'No pudimos generar el documento.');
+      // artículo y el IPC. Por el traductor (02-10-2026): un 5xx dice que falló
+      // de nuestro lado con su referencia, y «conexión» sólo sin respuesta.
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos generar el documento.',
+          accion: 'generar el documento',
+        }),
+      );
     } finally {
       setGenerando(false);
     }

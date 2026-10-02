@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Download } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { contractsApi } from '@/lib/api/contracts.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ContractStatus } from '@/lib/types/contract';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,9 @@ export function DownloadContractPdfButton({
       // con un blob:// URL local. Así el usuario NO ve la URL de Supabase en la barra.
       const { url } = await contractsApi.getSignedPdfUrl(contractId);
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      // El status pelado: el traductor lo lee como tal (404 = no está, 5xx =
+      // nuestro), en vez de pintar «HTTP 500» en la cara de la persona.
+      if (!response.ok) throw new Error(String(response.status));
       const blob = await response.blob();
       blobUrl = URL.createObjectURL(blob);
 
@@ -53,8 +56,14 @@ export function DownloadContractPdfButton({
       a.click();
       document.body.removeChild(a);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo descargar el PDF';
-      toast.error(msg);
+      // 02-10-2026: regla de oro — «conexión» sólo si no hubo respuesta; un
+      // 5xx es nuestro, con la referencia; nunca el texto crudo del error.
+      toast.error('No se pudo descargar el PDF.', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'descargar el PDF del contrato',
+        }),
+      });
     } finally {
       // Liberamos el blob URL después de un tick — el click ya disparó la descarga.
       if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);

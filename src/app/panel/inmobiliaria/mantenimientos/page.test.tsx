@@ -141,6 +141,99 @@ describe('M2 — crear una solicitud que el back rechaza', () => {
   })
 })
 
+/** Un 5xx como lo manda el back desde el 02-10-2026: con `code` y `referencia`. */
+const falloNuestro = () =>
+  new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+    statusCode: 500,
+    code: 'ERROR_INTERNO',
+    message: 'Error interno del servidor',
+    referencia: 'ab12cd34',
+  })
+
+const SOLICITUD = {
+  consignacionId: 'cons-1',
+  type: 'plumbing',
+  priority: 'medium',
+  title: 'Gotera',
+  description: 'Gotea',
+  photoUrls: [],
+  paidBy: 'owner',
+}
+
+async function crear() {
+  await render()
+  await abrirNuevaSolicitud()
+  await act(async () => {
+    await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)(SOLICITUD)
+  })
+}
+
+describe('M2 · 02-10 — el error de crear, por el sistema de errores', () => {
+  it('🔴 un 400 con campos va al formulario, campo por campo, y no a un toast', async () => {
+    h.api.create.mockRejectedValue(
+      new ApiError(400, ['El título puede tener hasta 200 caracteres.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El título puede tener hasta 200 caracteres.'],
+        campos: [
+          { campo: 'title', regla: 'longitud_maxima', mensaje: 'El título puede tener hasta 200 caracteres.' },
+        ],
+      }),
+    )
+    await crear()
+    expect(h.ultimoForm!.erroresDelServidor).toEqual({
+      title: 'El título puede tener hasta 200 caracteres.',
+    })
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    h.api.create.mockRejectedValue(falloNuestro())
+    await crear()
+    const descripcion = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toContain('de nuestro lado')
+    expect(descripcion).toContain('ab12cd34')
+    expect(descripcion).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    h.api.create.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await crear()
+    const descripcion = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toMatch(/conexi[oó]n/i)
+  })
+})
+
+describe('Mover una solicitud de estado · 02-10', () => {
+  async function mover(fallo: unknown) {
+    h.api.updateStatus.mockRejectedValue(fallo)
+    await render()
+    await act(async () => {
+      ;(h.ultimoViewer!.onStatusChange as (id: string, s: string) => void)('sol-1', 'completed')
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    return h.toast.error.mock.calls[0]?.[1]?.description as string
+  }
+
+  it('un 400 que explica la transición dice el motivo del back', async () => {
+    const d = await mover(new ApiError(400, 'Desde Reportada sólo puede pasar a Cotizada o Cancelada.'))
+    expect(d).toBe('Desde Reportada sólo puede pasar a Cotizada o Cancelada.')
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const d = await mover(falloNuestro())
+    expect(d).toContain('de nuestro lado')
+    expect(d).toContain('ab12cd34')
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    const d = await mover(new ApiError(0, 'Failed to fetch'))
+    expect(d).toMatch(/conexi[oó]n/i)
+  })
+})
+
 describe('M3 — aprobar una cotización', () => {
   it('sin permiso de edición (CONTADOR, VIEWER) el detalle no recibe con qué aprobar', async () => {
     h.canAccess.mockImplementation((_m: string, accion: string) => accion === 'view')

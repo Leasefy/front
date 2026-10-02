@@ -45,7 +45,9 @@ import { toast } from "@/components/ui/toast";
 import { SelectorDePropietario } from "@/components/contratos/SelectorDePropietario";
 import { cicloDeVidaApi } from "@/lib/api/ciclo-de-vida.service";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
-import { isPermissionError, mensajeDelFallo } from "@/lib/contratos/fallo-de-accion";
+import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 
 /** 100 % en puntos básicos, el mismo lenguaje del mandato. */
@@ -64,6 +66,10 @@ export interface CesionDelInmuebleProps {
   onRegistrada: () => void;
 }
 
+/** Los campos de `RegistrarCesionDto`. */
+type CampoDeLaCesion = "desde" | "nuevosPropietarios" | "nota";
+const CAMPOS_DE_LA_CESION: readonly CampoDeLaCesion[] = ["desde", "nuevosPropietarios", "nota"];
+
 export function CesionDelInmueble({
   contractId,
   propietarioActual,
@@ -76,6 +82,8 @@ export function CesionDelInmueble({
   const [desde, setDesde] = useState(hoyComoInput);
   const [nota, setNota] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Lo que el back rechazó de un campo va debajo de ESE campo.
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaCesion, string>>>({});
 
   useEffect(() => {
     if (!abierto) return;
@@ -88,6 +96,7 @@ export function CesionDelInmueble({
   async function confirmar() {
     if (!nuevo) return;
     setGuardando(true);
+    setErrores({});
     try {
       const r = await cicloDeVidaApi.registrarCesion(contractId, {
         desde,
@@ -102,16 +111,23 @@ export function CesionDelInmueble({
       onCerrar();
       onRegistrada();
     } catch (err) {
-      toast.error(
-        isPermissionError(err)
-          ? "No tienes permisos para registrar una cesión."
-          : "No se pudo registrar la cesión.",
-        {
-          description: isPermissionError(err)
-            ? undefined
-            : mensajeDelFallo(err, "Intenta de nuevo."),
-        },
-      );
+      if (isPermissionError(err)) {
+        toast.error("No tienes permisos para registrar una cesión.");
+        return;
+      }
+      // Un 400 con `campos` va bajo su campo (la fecha, los dueños, la nota);
+      // un 409, un 5xx con su referencia o la red al toast, por el traductor.
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(err, {
+        campos: CAMPOS_DE_LA_CESION,
+        // `nuevosPropietarios.0.propietarioId` también es del selector de dueño.
+        mapa: { propietarioId: "nuevosPropietarios", participacionBps: "nuevosPropietarios" },
+        porDefecto: "No pudimos registrar la cesión.",
+        accion: "registrar la cesión",
+      });
+      setErrores(porCampo);
+      if (orden[0] === "desde") document.getElementById("desde")?.focus();
+      else if (orden[0] === "nota") document.getElementById("nota-cesion")?.focus();
+      if (sueltos.length) toast.error("No se pudo registrar la cesión.", { description: sueltos.join(" · ") });
     } finally {
       setGuardando(false);
     }
@@ -146,12 +162,20 @@ export function CesionDelInmueble({
               id="desde"
               type="date"
               value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setErrores((prev) => ({ ...prev, desde: undefined }));
+              }}
               data-testid="cesion-desde"
+              aria-invalid={errores.desde ? true : undefined}
+              aria-describedby="desde-error"
             />
-            <p className="text-caption text-muted-foreground">
-              Tiene que ser posterior al último período ya cobrado.
-            </p>
+            <ErrorDelCampo
+              id="desde-error"
+              mensaje={errores.desde}
+              pista="Tiene que ser posterior al último período ya cobrado."
+              className="mt-0"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -164,10 +188,14 @@ export function CesionDelInmueble({
             <SelectorDePropietario
               propietarios={propietarios}
               actualId={nuevo?.id ?? null}
-              onElegir={setNuevo}
+              onElegir={(p) => {
+                setNuevo(p);
+                setErrores((prev) => ({ ...prev, nuevosPropietarios: undefined }));
+              }}
               disabled={guardando}
               testId="cesion-propietario"
             />
+            <ErrorDelCampo id="cesion-propietario-error" mensaje={errores.nuevosPropietarios} className="mt-0" />
             <p className="text-caption text-muted-foreground">
               Si el comprador todavía no tiene ficha, créala en Propietarios
               antes de registrar la cesión.
@@ -179,10 +207,17 @@ export function CesionDelInmueble({
             <Textarea
               id="nota-cesion"
               value={nota}
-              onChange={(e) => setNota(e.target.value)}
+              maxLength={1000}
+              onChange={(e) => {
+                setNota(e.target.value);
+                setErrores((prev) => ({ ...prev, nota: undefined }));
+              }}
               rows={2}
               data-testid="nota-de-cesion"
+              aria-invalid={errores.nota ? true : undefined}
+              aria-describedby="nota-cesion-error"
             />
+            <ErrorDelCampo id="nota-cesion-error" mensaje={errores.nota} className="mt-0" />
           </div>
         </div>
 

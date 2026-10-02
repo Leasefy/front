@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
+import { errorDelDeposito } from '@/lib/actas/limites-del-acta';
 import type {
   ActaEntrega,
   Consignacion,
@@ -44,6 +45,11 @@ import {
 interface ActaEntregaFormProps {
   initialData?: Partial<ActaEntrega>;
   consignaciones: Consignacion[];
+  /**
+   * Guardar el acta. Quien guarda DICE cómo le fue —el aviso de éxito y el
+   * del fallo, por el traductor— y relanza si falla: el formulario no repite
+   * ningún aviso (02-10-2026: eran dos toasts, uno culpando a la conexión).
+   */
   onSave?: (acta: ActaEntrega) => void | Promise<void>;
   onSaveDraft?: (acta: Partial<ActaEntrega>) => void;
   onCancel?: () => void;
@@ -125,7 +131,9 @@ export function ActaEntregaForm({
       case 4:
         return true; // Meters and keys are optional
       case 5:
-        return Boolean(formData.generalCondition);
+        // El depósito (paso de observaciones) con el tope del back: uno de
+        // once cifras no pasa de acá, y el error se ve bajo el campo.
+        return Boolean(formData.generalCondition) && !errorDelDeposito(formData.depositAmount);
       case 6:
         return true; // Review step always valid
       default:
@@ -212,16 +220,18 @@ export function ActaEntregaForm({
 
       // Persist for real. The parent handler performs the API call and throws
       // on failure, so we await it to keep isSubmitting active and to catch errors.
-      await onSave?.(acta);
-
-      toast.success(t('inmobiliaria.acta.actaCreated'), {
-        description: t('inmobiliaria.acta.actaCreatedDesc'),
-      });
-    } catch (error) {
-      console.error('Error creating acta:', error);
-      toast.error(t('inmobiliaria.acta.actaError'), {
-        description: t('inmobiliaria.acta.actaErrorDesc'),
-      });
+      if (onSave) {
+        await onSave(acta);
+      } else {
+        toast.success(t('inmobiliaria.acta.actaCreated'), {
+          description: t('inmobiliaria.acta.actaCreatedDesc'),
+        });
+      }
+    } catch {
+      // 🔴 02-10-2026 · Un solo aviso: el de quien guardó, con el motivo del
+      // back por el traductor. Antes salían dos —el de la página con el
+      // mensaje crudo y éste, que decía «Intenta de nuevo» aunque el problema
+      // no se arreglaba reintentando—. Acá sólo se devuelve el control.
     } finally {
       setIsSubmitting(false);
     }

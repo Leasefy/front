@@ -27,6 +27,7 @@ import { useMemo, useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { TrendUp } from '@phosphor-icons/react'
 
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { KpiValor } from '@/components/estado/KpiValor'
@@ -44,6 +45,12 @@ import {
 import { leadsApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  PLAZO_PARA_RESPONDER_MAXIMO_HORAS,
+  PLAZO_PARA_RESPONDER_MINIMO_HORAS,
+  revisarPlazoParaResponder,
+} from '@/lib/pipeline/limites-del-lead'
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -68,6 +75,13 @@ export function OrigenesClient() {
 
   const [guardando, setGuardando] = useState(false)
   const [horas, setHoras] = useState<string>('')
+  // Lo que el servidor rechazó al guardar (02-10-2026). Antes no había
+  // `catch`: un 400 o un 500 dejaban la promesa sin atrapar y la pantalla
+  // callada, como si se hubiera guardado.
+  const [falloAlGuardar, setFalloAlGuardar] = useState<string | null>(null)
+  // El mismo rango que el back (`GuardarConfiguracionComercialDto`), antes de mandar.
+  const errorDelCliente = revisarPlazoParaResponder(horas)
+  const errorDelPlazo = errorDelCliente ?? falloAlGuardar ?? undefined
 
   const renglones = informe.datos?.renglones ?? []
   const totales = informe.datos?.totales
@@ -86,13 +100,23 @@ export function OrigenesClient() {
   )
 
   async function guardarPlazo() {
-    const n = Number.parseInt(horas, 10)
-    if (!Number.isInteger(n) || n < 1) return
+    if (revisarPlazoParaResponder(horas)) return
+    const n = Number(horas.trim())
     setGuardando(true)
+    setFalloAlGuardar(null)
     try {
       await leadsApi.guardarConfiguracion({ horasParaResponderLead: n })
       invalidar('pipeline')
       setHoras('')
+    } catch (e) {
+      // Un solo campo: lo del servidor (por campo o suelto) va debajo de él.
+      const reparto = repartirErroresDelServidor(e, {
+        campos: ['horasParaResponderLead'],
+        porDefecto: 'No se pudo guardar el plazo. Prueba de nuevo en un momento.',
+        accion: 'guardar el plazo',
+      })
+      setFalloAlGuardar(reparto.porCampo.horasParaResponderLead ?? reparto.sueltos.join(' · '))
+      document.getElementById('horas-lead')?.focus()
     } finally {
       setGuardando(false)
     }
@@ -145,10 +169,15 @@ export function OrigenesClient() {
                   <Input
                     id="horas-lead"
                     type="number"
-                    min={1}
-                    max={720}
+                    min={PLAZO_PARA_RESPONDER_MINIMO_HORAS}
+                    max={PLAZO_PARA_RESPONDER_MAXIMO_HORAS}
                     value={horas}
-                    onChange={(e) => setHoras(e.target.value)}
+                    onChange={(e) => {
+                      setHoras(e.target.value)
+                      setFalloAlGuardar(null)
+                    }}
+                    aria-invalid={errorDelPlazo ? true : undefined}
+                    aria-describedby={errorDelPlazo ? 'horas-lead-error' : undefined}
                     placeholder={String(
                       configuracion.datos?.horasParaResponderLead ?? 24,
                     )}
@@ -158,12 +187,13 @@ export function OrigenesClient() {
                 </div>
                 <Button
                   onClick={guardarPlazo}
-                  disabled={guardando || horas.trim() === ''}
+                  disabled={guardando || horas.trim() === '' || Boolean(errorDelCliente)}
                   data-testid="guardar-horas-lead"
                 >
                   {guardando ? 'Guardando…' : 'Guardar'}
                 </Button>
               </div>
+              <ErrorDelCampo id="horas-lead-error" mensaje={errorDelPlazo} className="mt-0" />
               {configuracion.datos?.origenesDeLead?.length ? (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {configuracion.datos.origenesDeLead.map((o) => (

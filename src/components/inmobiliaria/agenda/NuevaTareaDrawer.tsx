@@ -10,8 +10,18 @@
  * el cajón de la casa: cabecera fija, cuerpo con scroll, pie fijo.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  FECHA_DE_LA_TAREA_DESDE,
+  FECHA_DE_LA_TAREA_HASTA,
+  MAX_LARGO_NOTA_DE_LA_TAREA,
+  MAX_LARGO_TITULO_DE_LA_TAREA,
+  MENSAJES_DE_LA_AGENDA,
+  errorDeLaFecha,
+} from '@/lib/agenda/limites-de-la-agenda';
 import { DatePicker, TimePicker } from '@leasefy/cadence';
 import { Button, Textarea } from '@/components/ui';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -48,14 +58,46 @@ export const TAREA_VACIA: TareaForm = {
 };
 
 /** Tope del back (`CreateTareaDto.titulo`): lo largo va en la nota. */
-export const TITULO_MAX = 200;
+export const TITULO_MAX = MAX_LARGO_TITULO_DE_LA_TAREA;
 
-/** Qué falta. Vacío = se puede guardar. */
+type CampoDeLaTarea = keyof TareaForm;
+
+/** Los campos que el formulario muestra, en el orden en que se ven (el foco va al primero). */
+const CAMPOS_DE_LA_TAREA: readonly CampoDeLaTarea[] = [
+  'titulo',
+  'fecha',
+  'hora',
+  'consignacionId',
+  'responsableUserId',
+  'nota',
+];
+
+/** Lo que el back llama distinto: el vínculo es el inmueble elegido. */
+const MAPA_DEL_SERVIDOR: Partial<Record<string, CampoDeLaTarea>> = {
+  vinculoId: 'consignacionId',
+  vinculoLabel: 'consignacionId',
+  vinculoTipo: 'consignacionId',
+};
+
+/**
+ * Qué falta o está mal. Vacío = se puede guardar. Los topes y las frases son
+ * los del back (`lib/agenda/limites-de-la-agenda.ts`).
+ */
 export function validarTarea(f: TareaForm): Record<string, string> {
   const e: Record<string, string> = {};
   if (f.titulo.trim().length < 2) e.titulo = 'Escribe qué hay que hacer.';
-  else if (f.titulo.trim().length > TITULO_MAX) e.titulo = `Máximo ${TITULO_MAX} caracteres; el detalle va en la nota.`;
+  else if (f.titulo.trim().length > TITULO_MAX) e.titulo = MENSAJES_DE_LA_AGENDA.tituloLargo;
   if (!f.fecha) e.fecha = 'Elige el día.';
+  else {
+    const fecha = errorDeLaFecha(f.fecha, {
+      desde: FECHA_DE_LA_TAREA_DESDE,
+      hasta: FECHA_DE_LA_TAREA_HASTA,
+      noEsUnDia: MENSAJES_DE_LA_AGENDA.fechaNoEsUnDia,
+      fueraDeRango: MENSAJES_DE_LA_AGENDA.fechaFueraDeRango,
+    });
+    if (fecha) e.fecha = fecha;
+  }
+  if (f.nota.trim().length > MAX_LARGO_NOTA_DE_LA_TAREA) e.nota = MENSAJES_DE_LA_AGENDA.notaLarga;
   return e;
 }
 
@@ -64,6 +106,7 @@ export function loQueFalta(errores: Record<string, string>): string | null {
   const partes: string[] = [];
   if (errores.titulo) partes.push('qué hay que hacer');
   if (errores.fecha) partes.push('el día');
+  if (errores.nota) partes.push('acortar la nota');
   if (partes.length === 0) return null;
   return `Te falta ${partes.join(' y ')}.`;
 }
@@ -74,6 +117,12 @@ const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
   const [guardando, setGuardando] = useState(false);
+  /**
+   * Lo que rechazó el servidor, por campo (02-10-2026). Se pinta bajo SU campo
+   * y se borra apenas la persona lo toca: el dato ya no es el que se rechazó.
+   */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaTarea, string>>>({});
+  const cuerpo = useRef<HTMLDivElement>(null);
   /* El error se lee (21-09): sin esto, con la lectura caída el selector se
      abría sobre una lista vacía sin decir por qué. */
   const {
@@ -84,7 +133,10 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   const { agentes } = useAgentes({ skip: !abierto });
 
   useEffect(() => {
-    if (abierto) setForm(TAREA_VACIA);
+    if (abierto) {
+      setForm(TAREA_VACIA);
+      setDelServidor({});
+    }
   }, [abierto]);
 
   const inmuebles = useMemo<ComboboxOption[]>(
@@ -105,7 +157,13 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   const errores = validarTarea(form);
   const falta = loQueFalta(errores);
   const valido = !falta && !guardando;
-  const set = <K extends keyof TareaForm>(k: K, v: TareaForm[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof TareaForm>(k: K, v: TareaForm[K]) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setDelServidor((d) => (d[k] ? { ...d, [k]: undefined } : d));
+  };
+  /** El error que se ve bajo un campo: el del servidor primero, el del cliente si ya hay algo escrito. */
+  const errorDe = (k: CampoDeLaTarea): string | undefined =>
+    delServidor[k] ?? (form[k] ? errores[k] : undefined);
 
   const guardar = async () => {
     if (!valido) return;
@@ -127,9 +185,26 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
       onOpenChange(false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
-      toast.error('No se pudo crear la tarea', {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      // 02-10-2026 · Lo del back va a SU campo (con el foco en el primero) y al
+      // toast sólo lo que no tiene dónde ir, por el traductor: «conexión» sólo
+      // si no hubo respuesta; un 5xx con su referencia. Antes un mensaje de
+      // más de 160 caracteres se perdía entero.
+      const reparto = repartirErroresDelServidor<CampoDeLaTarea>(err, {
+        mapa: MAPA_DEL_SERVIDOR,
+        campos: CAMPOS_DE_LA_TAREA,
+        porDefecto: 'No se pudo crear la tarea. Prueba de nuevo en un momento.',
+        accion: 'crear la tarea',
       });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) {
+        cuerpo.current
+          ?.querySelector<HTMLElement>(`[data-campo="${primero}"] :is(textarea, input, button)`)
+          ?.focus();
+      }
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo crear la tarea', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -150,25 +225,30 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
         noValidate
       >
         <CajonCuerpo>
-          <div className="space-y-5" data-testid="nueva-tarea">
+          <div className="space-y-5" data-testid="nueva-tarea" ref={cuerpo}>
             <Campo
+              nombre="titulo"
               label="Qué hay que hacer"
-              error={form.titulo && errores.titulo}
+              error={errorDe('titulo')}
               contador={`${form.titulo.length}/${TITULO_MAX}`}
             >
               <Textarea
+                id="tarea-titulo"
                 value={form.titulo}
                 onChange={(e) => set('titulo', e.target.value)}
                 placeholder="Recoger las llaves del 402 y dejarlas en portería"
                 rows={2}
                 maxLength={TITULO_MAX}
+                aria-invalid={errorDe('titulo') ? true : undefined}
+                aria-describedby={errorDe('titulo') ? 'tarea-titulo-error' : undefined}
                 data-testid="tarea-titulo"
               />
             </Campo>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]">
-              <Campo label="Día">
+              <Campo nombre="fecha" label="Día" error={errorDe('fecha')}>
                 <DatePicker
+                  id="tarea-fecha"
                   value={fechaLocal(form.fecha)}
                   onChange={(d) => set('fecha', aFechaIso(d))}
                   minDate={hoyLocal()}
@@ -176,8 +256,9 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
                   className={CAMPO_CLICABLE}
                 />
               </Campo>
-              <Campo label="Hora" hint="Opcional">
+              <Campo nombre="hora" label="Hora" hint="Opcional" error={errorDe('hora')}>
                 <TimePicker
+                  id="tarea-hora"
                   value={form.hora || undefined}
                   onChange={(h) => set('hora', h)}
                   step={30}
@@ -186,7 +267,7 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
               </Campo>
             </div>
 
-            <Campo label="Inmueble" hint="Opcional">
+            <Campo nombre="consignacionId" label="Inmueble" hint="Opcional" error={errorDe('consignacionId')}>
               <Combobox
                 value={form.consignacionId || undefined}
                 onChange={(v) => set('consignacionId', v ?? '')}
@@ -204,7 +285,7 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
               />
             </Campo>
 
-            <Campo label="Responsable" hint="Opcional">
+            <Campo nombre="responsableUserId" label="Responsable" hint="Opcional" error={errorDe('responsableUserId')}>
               <Combobox
                 value={form.responsableUserId || undefined}
                 onChange={(v) => set('responsableUserId', v ?? '')}
@@ -216,12 +297,15 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
               />
             </Campo>
 
-            <Campo label="Nota" hint="Opcional">
+            <Campo nombre="nota" label="Nota" hint="Opcional" error={errorDe('nota')}>
               <Textarea
+                id="tarea-nota"
                 value={form.nota}
                 onChange={(e) => set('nota', e.target.value)}
                 rows={3}
-                maxLength={1000}
+                maxLength={MAX_LARGO_NOTA_DE_LA_TAREA}
+                aria-invalid={errorDe('nota') ? true : undefined}
+                aria-describedby={errorDe('nota') ? 'tarea-nota-error' : undefined}
                 placeholder="Detalles, a quién llamar, qué llevar…"
               />
             </Campo>
@@ -241,30 +325,36 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   );
 }
 
+/**
+ * Un campo del cajón. El error entra suave bajo el campo (`ErrorDelCampo`,
+ * el `FormError` de Cadence) y, si hay ayuda («Opcional»), se cruza con ella.
+ */
 function Campo({
+  nombre,
   label,
   hint,
   error,
   contador,
   children,
 }: {
+  nombre: CampoDeLaTarea;
   label: string;
   hint?: string;
-  error?: string | false;
+  error?: string;
   contador?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-campo={nombre}>
       <div className="flex items-baseline justify-between">
-        <label className="block text-sm font-medium text-fg">{label}</label>
+        <label className="block text-sm font-medium text-fg" htmlFor={`tarea-${nombre}`}>
+          {label}
+        </label>
         {contador ? <span className="text-xs tabular-nums text-fg-muted">{contador}</span> : null}
       </div>
       {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-fg-muted">{hint}</p>
+      {error || hint ? (
+        <ErrorDelCampo id={`tarea-${nombre}-error`} mensaje={error} pista={hint} className="mt-0" />
       ) : null}
     </div>
   );

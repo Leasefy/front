@@ -73,6 +73,9 @@ interface PropsDelCajon {
   open: boolean;
   onUploadDocument: (file: File) => Promise<void>;
   onTerminate: (motivo: string) => Promise<void>;
+  onSendNotification: (mensaje: string, canon?: number, admin?: number, ipc?: number) => Promise<void>;
+  onSaveDraft: (b: { proposedRent: number; negotiatedAdminFee?: number; ipcRate?: number }) => Promise<void>;
+  onNoteAdd: (nota: string) => Promise<void>;
 }
 
 let container: HTMLDivElement;
@@ -183,5 +186,91 @@ describe('Renovaciones — N3', () => {
     expect(container.querySelector('[data-testid="aviso-ipc-que-falta-montado"]')).not.toBeNull();
     // D6 (17-09): la bandeja de cartas del incremento vive en la misma pantalla.
     expect(container.querySelector('[data-testid="bandeja-de-cartas-montada"]')).not.toBeNull();
+  });
+});
+
+/**
+ * 02-10-2026 · Sistema de errores. Enviar la propuesta, guardar el borrador y
+ * agregar una nota decían «Reintenta» ante CUALQUIER fallo, también ante un
+ * dato que el back rechazaba. Ahora el valor se revisa antes con el tope del
+ * back, y lo que falla pasa por el traductor.
+ */
+const TOPE_DEL_CANON = 'El canon negociado no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+
+describe('Renovaciones — enviar la propuesta', () => {
+  it('🔴 un canon con ceros de más se dice antes de mandar, con la frase del back, y el cajón no avanza', async () => {
+    const cajon = await montarConElCajonAbierto();
+    const rechazo = await rechazoDe(cajon.onSendNotification('Hola', 2_000_000_001));
+    expect(rechazo).toBeInstanceOf(Error);
+    expect(h.updateStage).not.toHaveBeenCalled();
+    expect(h.toastError).toHaveBeenCalledWith('No se pudo enviar la propuesta', { description: TOPE_DEL_CANON });
+  });
+
+  it('🔴 un 400 con campos dice la frase del back, no «Reintenta»', async () => {
+    h.updateStage.mockRejectedValue(
+      new ApiError(400, [TOPE_DEL_CANON], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE_DEL_CANON],
+        campos: [{ campo: 'negotiatedRent', regla: 'maximo', mensaje: TOPE_DEL_CANON }],
+      }),
+    );
+    const cajon = await montarConElCajonAbierto();
+    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
+    expect(h.toastError).toHaveBeenCalledWith('No se pudo enviar la propuesta', { description: TOPE_DEL_CANON });
+  });
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    h.updateStage.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'c0ffee12',
+      }),
+    );
+    const cajon = await montarConElCajonAbierto();
+    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
+    const { description } = h.toastError.mock.calls[0][1] as { description: string };
+    expect(description).toContain('de nuestro lado');
+    expect(description).toContain('c0ffee12');
+    expect(description.toLowerCase()).not.toContain('conexión');
+  });
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    h.updateStage.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    const cajon = await montarConElCajonAbierto();
+    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
+    const { description } = h.toastError.mock.calls[0][1] as { description: string };
+    expect(description.toLowerCase()).toContain('conexión');
+  });
+});
+
+describe('Renovaciones — guardar el borrador y agregar una nota', () => {
+  it('el borrador con un canon propuesto que no cabe no se manda', async () => {
+    const cajon = await montarConElCajonAbierto();
+    await rechazoDe(cajon.onSaveDraft({ proposedRent: 30_000_000_000 }));
+    expect(h.updateStage).not.toHaveBeenCalled();
+    expect(h.toastError).toHaveBeenCalledWith('No se pudo guardar el borrador', {
+      description: 'El canon propuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    });
+  });
+
+  it('una nota que el back rechaza dice por qué (antes: «Error al agregar nota»)', async () => {
+    h.addNote.mockRejectedValue(
+      new ApiError(400, ['Escribe la nota antes de agregarla.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['Escribe la nota antes de agregarla.'],
+        campos: [{ campo: 'note', regla: 'requerido', mensaje: 'Escribe la nota antes de agregarla.' }],
+      }),
+    );
+    const cajon = await montarConElCajonAbierto();
+    await act(async () => {
+      await cajon.onNoteAdd('   ');
+    });
+    expect(h.toastError).toHaveBeenCalledWith('No se pudo agregar la nota', {
+      description: 'Escribe la nota antes de agregarla.',
+    });
   });
 });

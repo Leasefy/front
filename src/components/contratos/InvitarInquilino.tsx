@@ -21,6 +21,7 @@ import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { contractsApi, mapBackendContract } from '@/lib/api/contracts.service'
 import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import type { Contract } from '@/lib/types/contract'
 
 interface Props {
@@ -56,7 +57,14 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
           : 'Ese correo ya tenía una cuenta en Leasefy: vinculamos el contrato, sin mandar nada.',
       )
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos invitar al inquilino.')
+      // El 409 y el 502 traen su frase del back; un 5xx sin frase dice que es
+      // nuestro (con la referencia) y sólo la red habla de conexión.
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos invitar al inquilino.',
+          accion: 'invitar al inquilino',
+        }),
+      )
       if (e instanceof ApiError && e.status === 409) onConflicto()
     } finally {
       setEnviando(false)
@@ -83,7 +91,11 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
           Invitar al inquilino
         </Button>
       ) : null}
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive" data-testid="invitar-inquilino-error">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

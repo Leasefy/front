@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
 import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
+import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
 import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
@@ -141,12 +142,8 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
     } catch (err) {
       // El back distingue «no hay relación» de un fallo cualquiera, y esa
       // diferencia le importa a quien está mirando: una es una regla, la otra
-      // es un problema.
-      const mensaje =
-        err instanceof ApiError && err.status === 403
-          ? 'Solo puedes escribirle a alguien con quien tengas un inmueble o un contrato en común.'
-          : 'No pudimos abrir la conversación. Intenta de nuevo.';
-      toast.error(mensaje);
+      // es un problema. Lo demás, por el traductor (02-10-2026).
+      toast.error(mensajeDelHiloDirecto(err));
       setAbriendo(null);
     }
   };

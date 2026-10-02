@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import { mandatoApi } from '@/lib/api/mandato.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { porQueNoEsComisionable, type ConceptoParaComisionar } from '@/lib/mandato/comisionable';
 
 export function ComisionableDelConcepto({
@@ -52,7 +52,14 @@ export function ComisionableDelConcepto({
       );
     } catch (e) {
       setMarcado(!valor);
-      toast.error('No se pudo cambiar.', { description: mensajeDelFallo(e, '') });
+      // Un 503 sin la migración o un 400 traen su frase; un 5xx dice que es
+      // nuestro (con la referencia) y sólo la red habla de conexión.
+      toast.error('No se pudo cambiar.', {
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos cambiar si el concepto se comisiona.',
+          accion: 'cambiar si el concepto se comisiona',
+        }),
+      });
     } finally {
       setOcupado(false);
     }

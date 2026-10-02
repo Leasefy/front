@@ -3,6 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { AgentExecutionTrace, ExecutionStep, ScoringAwaitingReason } from '@/lib/types/ai-agents';
 import { apiClient, ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { leerElError } from '@/lib/conexion/leer-el-error';
+import { CODIGO_LIMITE_DEL_PLAN, type LimiteDelPlan } from '@/lib/errores/codigos-del-plan';
 // CreditCheck types live in applications.types (canonical location) to avoid
 // circular deps (CandidateDrawer → applications.service → applications.types).
 // Re-exported here so AIAgentCard.tsx can keep importing from use-agent.
@@ -139,6 +142,35 @@ function toScoringResult(body: EvaluationResponse): ScoringResult {
 }
 
 // =============================================================================
+// El tope del plan (02-10-2026)
+// =============================================================================
+
+const LIMITES_DEL_PLAN: readonly LimiteDelPlan[] = ['agentes', 'inmuebles', 'evaluaciones'];
+
+/**
+ * ¿El error es el 402 `LIMITE_DEL_PLAN`? Devuelve qué tope (`evaluaciones`
+ * para el tope mensual de evaluaciones), `'otro'` si el back no dijo cuál, o
+ * `null` si no es un tope del plan.
+ *
+ * Hasta el 02-10-2026 el tope del mes llegaba como un 429 sin `code`, y la
+ * tarjeta decía lo que el cliente leía de un 429 («demasiadas solicitudes»).
+ * Ahora es el mismo 402 de los otros topes: se dice DONDE pasó, con «Ver
+ * planes» a la mano, y nunca se navega solo.
+ */
+export function limiteDelPlanDelError(error: unknown): LimiteDelPlan | 'otro' | null {
+  const { status, code } = leerElError(error);
+  if (status !== 402 || code !== CODIGO_LIMITE_DEL_PLAN) return null;
+  const sitios = [error, (error as { detalle?: unknown })?.detalle, (error as { body?: unknown })?.body];
+  for (const sitio of sitios) {
+    const limite = sitio && typeof sitio === 'object' ? (sitio as { limite?: unknown }).limite : undefined;
+    if (typeof limite === 'string' && (LIMITES_DEL_PLAN as readonly string[]).includes(limite)) {
+      return limite as LimiteDelPlan;
+    }
+  }
+  return 'otro';
+}
+
+// =============================================================================
 // Hook: useAgentExecution
 // =============================================================================
 
@@ -148,6 +180,8 @@ export function useAgentExecution() {
   const [result, setResult] = useState<ScoringResult | null>(null);
   const [trace, setTrace] = useState<AgentExecutionTrace | null>(null);
   const [awaiting, setAwaiting] = useState<ScoringAwaitingState | null>(null);
+  // El 402 `LIMITE_DEL_PLAN` del último intento: la tarjeta ofrece «Ver planes».
+  const [limiteDelPlan, setLimiteDelPlan] = useState<LimiteDelPlan | 'otro' | null>(null);
 
   // Holds the applicationId so recheckScoring / background poll can re-query the result.
   const awaitingAppIdRef = useRef<string | null>(null);
@@ -246,8 +280,13 @@ export function useAgentExecution() {
         if (reason !== 'study_in_progress') clearBgPoll();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al verificar el estado.';
-      setError(msg);
+      // Regla de oro: «conexión» sólo sin respuesta; un 5xx es nuestro, con su referencia.
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos revisar el estado de la evaluación. Prueba de nuevo en un momento.',
+          accion: 'revisar el estado de la evaluación',
+        }),
+      );
     }
   }, [clearBgPoll]);
 
@@ -255,6 +294,7 @@ export function useAgentExecution() {
     async (applicationId: string) => {
       setIsRunning(true);
       setError(null);
+      setLimiteDelPlan(null);
       setResult(null);
       setAwaiting(null);
       clearBgPoll();
@@ -329,8 +369,16 @@ export function useAgentExecution() {
           createdAt: new Date(),
         });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        setError(msg);
+        // 02-10-2026: el tope mensual es un 402 `LIMITE_DEL_PLAN` con su frase
+        // en español; un 5xx dice «de nuestro lado» con la referencia; «conexión»
+        // sólo si no hubo respuesta. Nunca el texto crudo ni «Unknown error».
+        setError(
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No pudimos iniciar la evaluación. Prueba de nuevo en un momento.',
+            accion: 'iniciar la evaluación',
+          }),
+        );
+        setLimiteDelPlan(limiteDelPlanDelError(err));
 
         const runningIdx = steps.findIndex((s) => s.status === 'running');
         if (runningIdx >= 0) updateStepStatus(steps, runningIdx, 'failed');
@@ -346,6 +394,8 @@ export function useAgentExecution() {
   return {
     isRunning,
     error,
+    /** El tope del plan que cortó el último intento (402 `LIMITE_DEL_PLAN`), o `null`. */
+    limiteDelPlan,
     result,
     trace,
     awaiting,
@@ -357,6 +407,7 @@ export function useAgentExecution() {
       setResult(null);
       setTrace(null);
       setError(null);
+      setLimiteDelPlan(null);
       setAwaiting(null);
     },
   };

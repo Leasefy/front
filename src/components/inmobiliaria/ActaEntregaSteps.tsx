@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDelDeposito } from '@/lib/actas/limites-del-acta';
 import { IconButton, Chip, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -765,6 +767,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-muted">$</span>
               <Input
+                id="acta-deposito"
                 type="text"
                 value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') || ''}
                 onChange={(e) => {
@@ -773,8 +776,12 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                 }}
                 placeholder="0"
                 className="w-full pl-8"
+                aria-invalid={errorDelDeposito(formData.depositAmount) ? true : undefined}
+                aria-describedby={errorDelDeposito(formData.depositAmount) ? 'acta-deposito-error' : undefined}
               />
             </div>
+            {/* El tope del back (`limites-del-acta.ts`), con su frase, antes de enviar. */}
+            <ErrorDelCampo id="acta-deposito-error" mensaje={errorDelDeposito(formData.depositAmount)} />
           </div>
 
           {/* Deductions */}

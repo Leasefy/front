@@ -15,7 +15,7 @@
  * back borra la fila, y la pantalla deja de decir «propio».
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Gavel, ArrowCounterClockwise, ArrowSquareOut } from '@phosphor-icons/react'
@@ -38,6 +38,12 @@ import {
   formatearPorcentaje,
 } from '@/components/cobros/reglas-de-mora/legible'
 import { formatCurrency } from '@/lib/format'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  MENSAJES_DEL_CONTRATO_VIGENTE,
+  VALOR_MAXIMO_DE_LA_REGLA_DE_MORA,
+} from '@/lib/contratos/limites-del-contrato-vigente'
 
 interface Props {
   contract: Pick<Contract, 'id'>
@@ -53,6 +59,8 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   // que es un texto del back y se pinta bajo la lista.
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null)
   const [error, setError] = useState<string | null>(null)
+  // Lo que el back rechazó de un campo va debajo de ESE campo, en SU regla.
+  const [erroresPorRegla, setErroresPorRegla] = useState<Record<string, ErroresDeLaRegla>>({})
   const [ocupada, setOcupada] = useState<string | null>(null)
 
   // La pantalla de reglas de la inmobiliaria devuelve a quien llegó desde acá
@@ -83,6 +91,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   async function ajustar(reglaId: string, ajuste: AjusteDeReglaDelContrato) {
     setOcupada(reglaId)
     setError(null)
+    setErroresPorRegla((prev) => ({ ...prev, [reglaId]: {} }))
     try {
       const actualizada = await reglasDeMoraApi.ajustarEnContrato(contract.id, reglaId, ajuste)
       setReglas((prev) =>
@@ -92,7 +101,15 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         ),
       )
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el ajuste.')
+      // Un 400 con `campos` va bajo su campo; lo demás (un 403, un 5xx con su
+      // referencia, la red) bajo la lista, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: CAMPOS_DEL_AJUSTE,
+        porDefecto: 'No se pudo guardar el ajuste.',
+        accion: 'guardar el ajuste',
+      })
+      setErroresPorRegla((prev) => ({ ...prev, [reglaId]: porCampo }))
+      setError(sueltos.length ? sueltos.join(' · ') : null)
     } finally {
       setOcupada(null)
     }
@@ -148,25 +165,42 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
               fila={r}
               puedeEditar={puedeEditar}
               ocupada={ocupada === r.regla.id}
+              errores={erroresPorRegla[r.regla.id] ?? {}}
               onAjustar={(ajuste) => void ajustar(r.regla.id, ajuste)}
             />
           ))}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="text-sm text-destructive" data-testid="reglas-de-mora-error">
+              {error}
+            </p>
+          ) : null}
         </div>
       )}
     </section>
   )
 }
 
+/** Los campos de `AjustarReglaDeMoraDto` que traen un número. */
+type CampoDelAjuste = 'valor' | 'disparadorDia'
+type ErroresDeLaRegla = Partial<Record<CampoDelAjuste, string>>
+const CAMPOS_DEL_AJUSTE: readonly CampoDelAjuste[] = ['valor', 'disparadorDia']
+
+/** El tope de `ContratoReglaDeMora.valor` (`Decimal(12,4)`), con la frase del back. */
+function revisarValorDeLaRegla(n: number): string | null {
+  return n > VALOR_MAXIMO_DE_LA_REGLA_DE_MORA ? MENSAJES_DEL_CONTRATO_VIGENTE.valorDeLaReglaMaximo : null
+}
+
 function FilaDeRegla({
   fila,
   puedeEditar,
   ocupada,
+  errores,
   onAjustar,
 }: {
   fila: ReglaDeMoraDelContrato
   puedeEditar: boolean
   ocupada: boolean
+  errores: ErroresDeLaRegla
   onAjustar: (ajuste: AjusteDeReglaDelContrato) => void
 }) {
   const { regla } = fila
@@ -241,6 +275,8 @@ function FilaDeRegla({
             onGuardar={(n) => onAjustar({ valor: n })}
             onVolver={() => onAjustar({ valor: null })}
             testId={`valor-${regla.id}`}
+            validar={revisarValorDeLaRegla}
+            errorDelServidor={errores.valor}
           />
           <CampoPropio
             etiqueta="Días de mora"
@@ -253,6 +289,7 @@ function FilaDeRegla({
             onGuardar={(n) => onAjustar({ disparadorDia: n })}
             onVolver={() => onAjustar({ disparadorDia: null })}
             testId={`dia-${regla.id}`}
+            errorDelServidor={errores.disparadorDia}
           />
         </div>
       ) : null}
@@ -287,6 +324,8 @@ function CampoPropio({
   onGuardar,
   onVolver,
   testId,
+  validar,
+  errorDelServidor,
 }: {
   etiqueta: string
   valor: number
@@ -298,8 +337,21 @@ function CampoPropio({
   onGuardar: (n: number) => void
   onVolver: () => void
   testId: string
+  /** Lo que el back rechazaría, con su frase, antes de mandar nada. */
+  validar?: (n: number) => string | null
+  /** Lo que el back rechazó de ESTE campo. */
+  errorDelServidor?: string
 }) {
   const [borrador, setBorrador] = useState(String(valor))
+  const [errorDelCliente, setErrorDelCliente] = useState<string | null>(null)
+  // Al corregir, el error del back deja de verse hasta que llegue otro.
+  const [corregido, setCorregido] = useState(false)
+  const campo = useRef<HTMLInputElement | null>(null)
+  const error = errorDelCliente ?? (corregido ? undefined : errorDelServidor)
+  useEffect(() => {
+    setCorregido(false)
+    if (errorDelServidor) campo.current?.focus()
+  }, [errorDelServidor])
   // El valor puede cambiar por afuera (se guardó, se volvió a la general):
   // el borrador lo sigue mientras nadie lo esté editando.
   useEffect(() => {
@@ -311,30 +363,49 @@ function CampoPropio({
 
   return (
     <div className="space-y-1">
-      <label className="text-caption text-muted-foreground">{etiqueta}</label>
+      <label className="text-caption text-muted-foreground" htmlFor={testId}>
+        {etiqueta}
+      </label>
       <div className="flex items-center gap-2">
         <Input
+          ref={campo}
+          id={testId}
           type="number"
           step={step}
           min={0}
           value={borrador}
           disabled={deshabilitado}
-          onChange={(e) => setBorrador(e.target.value)}
+          onChange={(e) => {
+            setBorrador(e.target.value)
+            setErrorDelCliente(null)
+            setCorregido(true)
+          }}
           className="h-9"
           data-testid={testId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={`${testId}-error`}
         />
         {cambiado ? (
           <Button
             size="sm"
             hideArrow
             disabled={deshabilitado}
-            onClick={() => onGuardar(n)}
+            onClick={() => {
+              const delCliente = validar?.(n) ?? null
+              if (delCliente) {
+                setErrorDelCliente(delCliente)
+                campo.current?.focus()
+                return
+              }
+              onGuardar(n)
+            }}
             data-testid={`${testId}-guardar`}
           >
             Guardar
           </Button>
         ) : null}
       </div>
+      <ErrorDelCampo id={`${testId}-error`} mensaje={error} className="mt-0" />
       {esPropio ? (
         <p className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
           <span>La inmobiliaria cobra {formatear(deLaAgencia)}.</span>

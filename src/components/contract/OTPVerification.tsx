@@ -150,8 +150,8 @@ export function OTPVerification({
       setChannels(canales ?? []);
       setStatus('idle');
     } catch (err) {
-      const d = describirErrorDeOtp(err);
-      setSendError(d.mensaje || 'No se pudo enviar el código. Intenta de nuevo.');
+      const d = describirErrorDeOtp(err, 'enviar el código');
+      setSendError(d.mensaje);
       // CODIGO_EN_ESPERA (reenvío dentro del cooldown, contract.md §3.3):
       // el back YA está contando ese cooldown — se refleja acá para que
       // "Reenviar" no vuelva a pegarle antes de tiempo y repita el mismo 429.

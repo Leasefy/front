@@ -343,6 +343,61 @@ describe('A2 — el motivo del back no se pierde en un catch sin argumento', () 
     )
   })
 
+  it('🔴 un motivo largo llega entero (antes se cortaba en 160 caracteres)', async () => {
+    const largo =
+      'Esa visita ya la confirmó otra persona del equipo hace unos minutos y el inquilino recibió el aviso; si quieres cambiar algo, cancélala y agenda otra con la hora correcta desde Pedir cita.'
+    expect(largo.length).toBeGreaterThan(160)
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockRejectedValue(new ApiError(409, largo))
+    await montar()
+    await act(async () => {
+      botonConTexto('citaConfirmar')!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(toastMock.error).toHaveBeenCalledWith('inmobiliaria.agenda.citaAccionError', {
+      description: largo,
+    })
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await montar()
+    await act(async () => {
+      botonConTexto('citaConfirmar')!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const descripcion = toastMock.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toContain('de nuestro lado')
+    expect(descripcion).toContain('ab12cd34')
+    expect(descripcion).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('🔴 sin respuesta (status 0) dice que es la conexión', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await montar()
+    await act(async () => {
+      botonConTexto('citaConfirmar')!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const descripcion = toastMock.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toMatch(/conexi[oó]n/i)
+  })
+
   it('sesión vencida: no hay aviso de «no se pudo» encima del cierre de sesión', async () => {
     getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
     aceptarCitaMock.mockRejectedValue(new ApiError(401, 'Tu sesión expiró.'))

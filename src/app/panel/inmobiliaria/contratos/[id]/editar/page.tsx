@@ -39,7 +39,18 @@ import {
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
-import { mensajeDelFallo, isPermissionError } from '@/lib/contratos/fallo-de-accion';
+import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
+import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
+import {
+  ariaDelCampoDelContrato,
+  enfocarCampoDelContrato,
+  idDelCampoDelContrato,
+  motivoDelFalloDelContrato,
+  repartirErroresDelContrato,
+  type CampoDelContrato,
+} from '@/lib/contratos/errores-del-contrato';
+import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { isoToInputDate } from './iso-to-input-date';
 import {
   MAX_DIAS_DE_PLAZO,
@@ -85,6 +96,10 @@ function EditarContratoContent() {
     insuranceTier: 'NONE',
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /** 02-10-2026 · Lo que el back rechazó, en SU campo; se borra al tocarlo. */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDelContrato, string>>
+  >({});
   const [isDragging, setIsDragging] = useState(false);
   const [replacePdf, setReplacePdf] = useState(false);
 
@@ -112,6 +127,12 @@ function EditarContratoContent() {
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
+    setErroresDelServidor((e) => {
+      if (!(key in e)) return e;
+      const resto = { ...e };
+      delete resto[key as CampoDelContrato];
+      return resto;
+    });
   }, []);
 
   const onPickFile = useCallback((file: File | null) => {
@@ -135,20 +156,22 @@ function EditarContratoContent() {
   }, [onPickFile]);
 
   const validation = useMemo(() => {
-    const errors: Record<string, string> = {};
+    // 02-10-2026: los MISMOS topes y frases del DTO del back
+    // (`lib/contratos/limites-del-contrato`): el canon de once cifras se
+    // ataja acá en vez de volver como un 500.
+    const errors: Record<string, string> = {
+      ...revisarTerminosDelContrato({
+        startDate: form.startDate,
+        endDate: form.endDate,
+        monthlyRent: form.monthlyRent,
+        deposit: form.deposit,
+        paymentDay: form.paymentDay,
+      }),
+    };
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
-    if (form.startDate && form.endDate && form.endDate <= form.startDate) {
-      errors.endDate = 'La fecha fin debe ser posterior a la de inicio';
-    }
-    const rent = Number(form.monthlyRent);
-    if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
-    if (form.deposit) {
-      const dep = Number(form.deposit);
-      if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
-    }
-    const day = Number(form.paymentDay);
-    if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    if (!form.monthlyRent.trim()) errors.monthlyRent = MENSAJES_DEL_CONTRATO.canonMinimo;
+    if (!form.paymentDay.trim()) errors.paymentDay = MENSAJES_DEL_CONTRATO.diaDePago;
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (replacePdf && !form.pdfFile) {
@@ -169,7 +192,7 @@ function EditarContratoContent() {
       if (replacePdf && form.pdfFile) {
         const uploaded = await actions.uploadPdf(form.pdfFile);
         if (!uploaded) {
-          setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
+          setSubmitError('No pudimos guardar el PDF nuevo. Vuelve a guardar en un momento.');
           return;
         }
         uploadedPdfPath = uploaded.uploadedPdfPath;
@@ -212,13 +235,34 @@ function EditarContratoContent() {
       });
       router.push(`/panel/inmobiliaria/contratos/${contractId}`);
     } catch (err) {
+      if (isPermissionError(err)) {
+        setSubmitError('No tienes permiso para editar contratos.');
+        return;
+      }
+      // 02-10-2026: un 400 con `campos` va a SU campo (y le da el foco); al
+      // pie sólo lo que no tiene dónde ir, con la regla de oro.
+      const reparto = repartirErroresDelContrato(err, {
+        porDefecto: 'No se pudo actualizar el contrato.',
+        accion: 'guardar los cambios del contrato',
+      });
+      if (reparto.orden.length > 0) {
+        setErroresDelServidor(reparto.porCampo);
+        setSubmitError(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+        enfocarCampoDelContrato(reparto.orden[0]);
+        return;
+      }
       setSubmitError(
-        isPermissionError(err)
-          ? 'No tienes permiso para editar contratos.'
-          : mensajeDelFallo(err, 'No se pudo actualizar el contrato. Verifica los datos e intenta de nuevo.')
+        motivoDelFalloDelContrato(err, {
+          porDefecto: 'No se pudo actualizar el contrato.',
+          accion: 'guardar los cambios del contrato',
+        }),
       );
     }
   };
+
+  /** El error de un campo: el del servidor gana sobre el del formulario. */
+  const errorDe = (campo: CampoDelContrato): string | undefined =>
+    erroresDelServidor[campo] ?? validation[campo];
 
   // ─── UI ────────────────────────────────────────────────────────────────────
 
@@ -404,9 +448,11 @@ function EditarContratoContent() {
               )
             )}
 
-            {validation.pdfFile && (
-              <p className="text-xs text-danger">{validation.pdfFile}</p>
-            )}
+            <ErrorDelCampo
+              id={`${idDelCampoDelContrato('pdfFile')}-error`}
+              mensaje={errorDe('pdfFile')}
+              className="mt-0"
+            />
           </section>
         )}
 
@@ -414,35 +460,49 @@ function EditarContratoContent() {
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Fecha de inicio" error={validation.startDate}>
+            <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('startDate', errorDe('startDate'))}
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
               />
             </Field>
-            <Field label="Fecha de fin" error={validation.endDate}>
+            <Field id={idDelCampoDelContrato('endDate')} label="Fecha de fin" error={errorDe('endDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
               />
             </Field>
-            <Field label="Canon mensual (COP)" error={validation.monthlyRent} hint="Mínimo $ 100.000">
+            <Field
+              id={idDelCampoDelContrato('monthlyRent')}
+              label="Canon mensual (COP)"
+              error={errorDe('monthlyRent')}
+              hint="Mínimo $ 100.000"
+            >
               <MoneyInput
+                {...ariaDelCampoDelContrato('monthlyRent', errorDe('monthlyRent'))}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
             <Field
+              id={idDelCampoDelContrato('deposit')}
               label="Depósito (COP)"
-              error={validation.deposit}
+              error={errorDe('deposit')}
               hint="Opcional — dejar vacío si no aplica"
             >
-              <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
+              <MoneyInput
+                {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                value={form.deposit}
+                onChange={(crudo) => updateForm('deposit', crudo)}
+              />
             </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
+            <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
+                {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -453,11 +513,13 @@ function EditarContratoContent() {
               />
             </Field>
             <Field
+              id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
-              error={validation.diasDePlazo}
+              error={errorDe('diasDePlazo')}
               hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
             >
               <Input
+                {...ariaDelCampoDelContrato('diasDePlazo', errorDe('diasDePlazo'))}
                 type="number"
                 inputMode="numeric"
                 min={0}
@@ -470,12 +532,12 @@ function EditarContratoContent() {
                 data-testid="dias-de-plazo"
               />
             </Field>
-            <Field label="Seguro" hint="Opcional">
+            <Field id="contrato-seguro" label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
                 onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="contrato-seguro">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -533,32 +595,6 @@ function EditarContratoContent() {
           </Button>
         </div>
       </form>
-    </div>
-  );
-}
-
-// ─── Subcomponents ───────────────────────────────────────────────────────────
-
-function Field({
-  label,
-  error,
-  hint,
-  children,
-}: {
-  label: string;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-foreground">{label}</label>
-      {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
     </div>
   );
 }

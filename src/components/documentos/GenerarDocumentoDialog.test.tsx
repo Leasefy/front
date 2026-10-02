@@ -7,6 +7,7 @@
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { ApiError } from '@/lib/api/client'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -406,6 +407,29 @@ describe('GenerarDocumentoDialog', () => {
     await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
 
     expect(q('[data-testid="doc-error"]')!.textContent).toContain('Garantía del contrato')
+  })
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado con la referencia; sin respuesta, la conexión', async () => {
+    api.generar.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+    const de5xx = q('[data-testid="doc-error"]')!.textContent ?? ''
+    expect(de5xx).toContain('de nuestro lado')
+    expect(de5xx).toContain('ab12cd34')
+    expect(de5xx).not.toMatch(/conexi[oó]n/i)
+
+    api.generar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+    expect(q('[data-testid="doc-error"]')!.textContent).toMatch(/conexi[oó]n/i)
   })
 
   // ── Ciudad ────────────────────────────────────────────────────────────────

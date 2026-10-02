@@ -36,7 +36,9 @@ import {
   type PartitionedScoreBreakdown,
 } from '@/lib/utils/score-breakdown';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
-import { getAccessToken, ApiError } from '@/lib/api/client';
+import { getAccessToken } from '@/lib/api/client';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { toast } from '@/components/ui/toast';
 import type { DocumentItem } from '@/lib/api/documents.service';
 import type {
   LandlordCandidate,
@@ -181,6 +183,33 @@ const DOC_TYPE_LABELS: Record<string, string> = {
  * cerrar: así el polling de la evaluación no queda vivo con el cajón cerrado,
  * y abrir a otro candidato lo vuelve a montar limpio.
  */
+/**
+ * Los fallos del cajón, por el traductor (02-10-2026). Antes se pintaba
+ * `err.message` crudo («Internal server error», «Failed to fetch») y el 404
+ * se adivinaba por el texto.
+ */
+
+/** ¿El análisis todavía no existe? (404 por el status, no por el texto). */
+export function noHayAnalisisTodavia(error: unknown): boolean {
+  return leerFallo(error).tipo === 'noExiste';
+}
+
+/** Lo que se dice cuando no se pudo cargar el análisis del candidato. */
+export function mensajeDelAnalisis(error: unknown): string {
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudo cargar el análisis del candidato. Prueba de nuevo en un momento.',
+    accion: 'cargar el análisis',
+  });
+}
+
+/** Lo que se dice cuando falla la búsqueda de inmuebles compatibles. */
+export function mensajeDelMatching(error: unknown): string {
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudieron buscar inmuebles compatibles. Prueba de nuevo en un momento.',
+    accion: 'buscar inmuebles compatibles',
+  });
+}
+
 export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = true }: CandidateDrawerProps) {
   const ultimo = useUltimoPresente(candidate);
 
@@ -295,11 +324,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 stopPolling();
               }
             } catch (err) {
-              if (err instanceof ApiError && err.status === 503) {
+              if (leerFallo(err).status === 503) {
                 // Agent micro unreachable — backend 503. Evaluation state intact.
                 // Stop polling and surface the error; there is no re-trigger from
-                // this drawer (T-0024 removed the front-side trigger).
-                setAiError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
+                // this drawer (T-0024 removed the front-side trigger). El texto
+                // de la caída lo pone el traductor (`src/lib/conexion/`).
+                setAiError(mensajeDelAnalisis(err));
                 setIsLoadingAI(false);
                 stopPolling();
                 return;
@@ -313,11 +343,10 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
         setEvaluation(result);
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : 'Error cargando análisis';
-        if (/404|not found|no.*encontr/i.test(msg)) {
+        if (noHayAnalisisTodavia(err)) {
           setNoEvaluationYet(true);
         } else {
-          setAiError(msg);
+          setAiError(mensajeDelAnalisis(err));
         }
       } finally {
         if (!cancelled && !pollingRef.current) setIsLoadingAI(false);
@@ -343,9 +372,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
       const res = await landlordApplicationsApi.triggerSmartMatching(candidate.id, 10);
       setMatchingResults(res);
     } catch (err) {
-      setMatchingError(
-        err instanceof Error ? err.message : 'Error al buscar propiedades compatibles'
-      );
+      setMatchingError(mensajeDelMatching(err));
     } finally {
       setIsMatching(false);
     }
@@ -1436,7 +1463,17 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
       const res = await fetch(proxyUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error('No se pudo abrir el documento');
+      if (!res.ok) {
+        // Con su status, para que el traductor distinga lo nuestro (5xx) de lo
+        // que no está o no se puede ver.
+        const porQue =
+          res.status === 404
+            ? 'El documento ya no está disponible.'
+            : res.status === 403
+              ? 'No tienes permiso para abrir este documento.'
+              : '';
+        throw Object.assign(new Error(porQue), { status: res.status });
+      }
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1445,8 +1482,14 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
       a.rel = 'noopener noreferrer';
       a.click();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
-    } catch {
-      // silently ignore — button just stays enabled again
+    } catch (err) {
+      // Antes se callaba: el botón volvía a prenderse y nada decía por qué.
+      toast.error('No se pudo abrir el documento', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'abrir el documento',
+        }),
+      });
     } finally {
       setIsOpening(false);
     }

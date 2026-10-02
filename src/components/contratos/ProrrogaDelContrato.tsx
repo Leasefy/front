@@ -14,7 +14,7 @@
  * que corre el proceso diario: esta pantalla no recalcula nada.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowsClockwise, CalendarX, Info, WarningCircle } from '@phosphor-icons/react';
 
@@ -40,7 +40,8 @@ import {
   type ParteQueAvisa,
   type PlanDeLaProrroga,
 } from '@/lib/api/ciclo-de-vida.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import type { Contract } from '@/lib/types/contract';
 
 const PARTES: { valor: ParteQueAvisa; nombre: string }[] = [
@@ -77,6 +78,22 @@ export function ProrrogaDelContrato({
   const [ocupado, setOcupado] = useState(false);
   const [dialogo, setDialogo] = useState(false);
   const [meses, setMeses] = useState('');
+  const [errorDeLosMeses, setErrorDeLosMeses] = useState<string | undefined>(undefined);
+  const [erroresDelAviso, setErroresDelAviso] = useState<Partial<Record<string, string>>>({});
+  /*
+   * El foco al campo con error, cuando ya se puede: al volver del back la
+   * sección sigue apagada (`ocupado`) hasta el render siguiente, y `focus()`
+   * sobre un campo apagado no hace nada.
+   */
+  const focoPendiente = useRef<string | null>(null);
+  useEffect(() => {
+    const id = focoPendiente.current;
+    if (!id) return;
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (!el || el.disabled) return;
+    el.focus();
+    focoPendiente.current = null;
+  });
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -93,7 +110,17 @@ export function ProrrogaDelContrato({
     void cargar();
   }, [cargar]);
 
-  const hacer = async (op: () => Promise<unknown>, exito: string) => {
+  /**
+   * Guarda. Lo que el back rechazó POR CAMPO vuelve en `porCampo` para pintarlo
+   * debajo de su campo; al toast va SÓLO lo que no tiene campo (un 409, un 5xx
+   * con su referencia, la red), por el traductor.
+   */
+  const hacer = async (
+    op: () => Promise<unknown>,
+    exito: string,
+    queSeHacia: string,
+    campos: readonly string[] = [],
+  ): Promise<{ ok: boolean; porCampo: Partial<Record<string, string>> }> => {
     setOcupado(true);
     try {
       const r = await op();
@@ -104,8 +131,15 @@ export function ProrrogaDelContrato({
       }
       toast.success(exito);
       onCambio?.();
+      return { ok: true, porCampo: {} };
     } catch (e) {
-      toast.error('No se pudo guardar.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos,
+        porDefecto: `No pudimos ${queSeHacia}.`,
+        accion: queSeHacia,
+      });
+      if (sueltos.length) toast.error('No se pudo guardar.', { description: sueltos.join(' · ') });
+      return { ok: false, porCampo };
     } finally {
       setOcupado(false);
     }
@@ -171,6 +205,7 @@ export function ProrrogaDelContrato({
                 void hacer(
                   () => cicloDeVidaApi.prorrogar(contract.id),
                   `Contrato prorrogado hasta el ${plan.finNuevo}. Las cuotas se extienden.`,
+                  'prorrogar el contrato',
                 )
               }
               data-testid="prorrogar"
@@ -208,6 +243,7 @@ export function ProrrogaDelContrato({
                 void hacer(
                   () => cicloDeVidaApi.retirarAvisoDeNoRenovacion(contract.id),
                   'Aviso retirado: el contrato vuelve a prorrogarse.',
+                  'retirar el aviso',
                 )
               }
             >
@@ -250,6 +286,7 @@ export function ProrrogaDelContrato({
               marcada
                 ? 'Este contrato ya no se prorroga: al vencer queda en alerta y no se generan cuotas nuevas.'
                 : 'Este contrato vuelve a prorrogarse como diga la regla.',
+              'guardar si el contrato se prorroga',
             )
           } data-testid="no-se-prorroga-casilla" />
         <span>
@@ -269,10 +306,15 @@ export function ProrrogaDelContrato({
               id="meses-de-prorroga"
               inputMode="numeric"
               value={meses}
-              onChange={(e) => setMeses(e.target.value)}
+              onChange={(e) => {
+                setMeses(e.target.value);
+                setErrorDeLosMeses(undefined);
+              }}
               disabled={!editable}
               className="mt-1 w-28"
               data-testid="meses-de-prorroga"
+              aria-invalid={errorDeLosMeses ? true : undefined}
+              aria-describedby="meses-de-prorroga-error"
             />
           </label>
           <Button
@@ -281,15 +323,27 @@ export function ProrrogaDelContrato({
             disabled={!editable}
             onClick={() => {
               const n = meses.trim() === '' ? null : Number(meses);
+              // El rango de `MesesDeProrrogaDto`, dicho debajo del campo.
               if (n !== null && (!Number.isInteger(n) || n < 1 || n > 120)) {
-                toast.error('El término va de 1 a 120 meses.');
+                setErrorDeLosMeses('El término va de 1 a 120 meses.');
+                focoPendiente.current = 'meses-de-prorroga';
                 return;
               }
-              void hacer(() => cicloDeVidaApi.fijarMesesDeProrroga(contract.id, n), 'Término de la prórroga guardado.');
+              void (async () => {
+                const r = await hacer(
+                  () => cicloDeVidaApi.fijarMesesDeProrroga(contract.id, n),
+                  'Término de la prórroga guardado.',
+                  'guardar el término de la prórroga',
+                  ['meses'],
+                );
+                setErrorDeLosMeses(r.porCampo.meses);
+                if (r.porCampo.meses) focoPendiente.current = 'meses-de-prorroga';
+              })();
             }}
           >
             Guardar término
           </Button>
+          <ErrorDelCampo id="meses-de-prorroga-error" mensaje={errorDeLosMeses} className="w-full" />
         </div>
       )}
 
@@ -315,13 +369,25 @@ export function ProrrogaDelContrato({
       <DialogoDeAviso
         abierto={dialogo}
         guardando={ocupado}
-        onCerrar={() => setDialogo(false)}
-        onConfirmar={(parte, motivo) => {
+        errores={erroresDelAviso}
+        onCerrar={() => {
           setDialogo(false);
-          void hacer(
-            () => cicloDeVidaApi.registrarAvisoDeNoRenovacion(contract.id, { parte, motivo }),
-            'Aviso registrado: este contrato no se prorroga.',
-          );
+          setErroresDelAviso({});
+        }}
+        onConfirmar={(parte, motivo) => {
+          // El diálogo queda abierto hasta que el back responda: si rechaza el
+          // motivo, se dice debajo del motivo y lo escrito no se pierde.
+          void (async () => {
+            const r = await hacer(
+              () => cicloDeVidaApi.registrarAvisoDeNoRenovacion(contract.id, { parte, motivo }),
+              'Aviso registrado: este contrato no se prorroga.',
+              'registrar el aviso',
+              ['parte', 'motivo'],
+            );
+            setErroresDelAviso(r.porCampo);
+            if (r.ok) setDialogo(false);
+            else if (r.porCampo.motivo) focoPendiente.current = 'motivo-del-aviso';
+          })();
         }}
       />
     </section>
@@ -331,11 +397,14 @@ export function ProrrogaDelContrato({
 function DialogoDeAviso({
   abierto,
   guardando,
+  errores,
   onCerrar,
   onConfirmar,
 }: {
   abierto: boolean;
   guardando: boolean;
+  /** Lo que el back rechazó, por campo de `AvisoDeNoRenovacionDelContratoDto`. */
+  errores: Partial<Record<string, string>>;
   onCerrar: () => void;
   onConfirmar: (parte: ParteQueAvisa, motivo: string) => void;
 }) {
@@ -374,6 +443,7 @@ function DialogoDeAviso({
                 </Button>
               ))}
             </div>
+            <ErrorDelCampo id="parte-del-aviso-error" mensaje={errores.parte} className="mt-0" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="motivo-del-aviso">Motivo</Label>
@@ -381,9 +451,13 @@ function DialogoDeAviso({
               id="motivo-del-aviso"
               rows={3}
               value={motivo}
+              maxLength={2000}
               onChange={(e) => setMotivo(e.target.value)}
               data-testid="aviso-motivo"
+              aria-invalid={errores.motivo ? true : undefined}
+              aria-describedby="motivo-del-aviso-error"
             />
+            <ErrorDelCampo id="motivo-del-aviso-error" mensaje={errores.motivo} className="mt-0" />
           </div>
         </div>
         <DialogFooter>

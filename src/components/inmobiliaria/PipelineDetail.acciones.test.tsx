@@ -208,6 +208,30 @@ describe('PipelineDetail — marcar como perdido', () => {
   });
 });
 
+describe('PipelineDetail — el motivo cabe en su columna', () => {
+  it('🔴 más de 500 caracteres se dice antes de mandar (la frase del back) y no se mueve nada', async () => {
+    const onStageChange = vi.fn(() => Promise.resolve());
+    montar(onStageChange as never);
+    toastError.mockReset();
+
+    await act(async () => {
+      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
+    });
+    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(texto, 'm'.repeat(501));
+      texto.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
+    });
+
+    expect(onStageChange).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith('El motivo puede tener hasta 500 caracteres.');
+  });
+});
+
 describe('PipelineDetail — sin permiso para mover', () => {
   it('sin `pipeline:edit` no ofrece «Marcar perdido» ni «Mover a…»: el back respondería 403', () => {
     act(() => {

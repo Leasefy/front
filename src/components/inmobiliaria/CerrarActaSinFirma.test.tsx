@@ -36,6 +36,7 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
 }))
 
+import { ApiError } from '@/lib/api/client'
 import {
   CerrarActaSinFirma,
   condicionesDelCierre,
@@ -198,5 +199,56 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     expect(dialogo().querySelector('[role="alert"]')?.textContent).toContain(
       'se cierra por el camino normal',
     )
+  })
+
+  async function cerrarConFallo(fallo: unknown) {
+    h.actasApi.cerrarSinFirma.mockRejectedValue(fallo)
+    await montar(acta())
+    await escribir(campos()[0], 'Pedro Ruiz')
+    await escribir(campos()[1], '71234567')
+    await act(async () => {
+      botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('🔴 02-10 · un 400 con campos: el error bajo la cédula, con el foco en ella', async () => {
+    await cerrarConFallo(
+      new ApiError(400, ['La cédula del testigo debe tener al menos 5 caracteres.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La cédula del testigo debe tener al menos 5 caracteres.'],
+        campos: [
+          {
+            campo: 'testigoDocumento',
+            regla: 'longitud_minima',
+            mensaje: 'La cédula del testigo debe tener al menos 5 caracteres.',
+          },
+        ],
+      }),
+    )
+    expect(dialogo().querySelector('#acta-testigoDocumento-error')?.textContent).toBe(
+      'La cédula del testigo debe tener al menos 5 caracteres.',
+    )
+    expect(document.activeElement).toBe(dialogo().querySelector('#acta-testigoDocumento'))
+  })
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    await cerrarConFallo(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const aviso = dialogo().querySelector('[role="alert"]')?.textContent ?? ''
+    expect(aviso).toContain('de nuestro lado')
+    expect(aviso).toContain('ab12cd34')
+    expect(aviso).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('🔴 02-10 · sin respuesta (status 0) habla de la conexión', async () => {
+    await cerrarConFallo(new ApiError(0, 'Failed to fetch'))
+    expect(dialogo().querySelector('[role="alert"]')?.textContent).toMatch(/conexi[oó]n/i)
   })
 })

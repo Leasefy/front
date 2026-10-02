@@ -67,6 +67,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import {
   Badge,
   Button,
@@ -106,13 +108,12 @@ function claseDe(clase: string) {
   return CLASE[clase as Clase] ?? { texto: clase, icono: ListChecks }
 }
 
-/** El 400/409 del back trae su motivo redactado: vale más que un genérico. */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message
-    if (typeof m === 'string' && m.trim()) return m
-  }
-  return porDefecto
+type CampoDelRequisito = 'perfil' | 'etiqueta' | 'detalle'
+const CAMPOS_DEL_REQUISITO: readonly CampoDelRequisito[] = ['perfil', 'etiqueta', 'detalle']
+const ID_DEL_CAMPO: Record<CampoDelRequisito, string> = {
+  perfil: 'req-perfil',
+  etiqueta: 'req-etiqueta',
+  detalle: 'req-detalle',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -138,10 +139,17 @@ function DialogoDeRequisito({
   const [clase, setClase] = useState<Clase>('DOCUMENTO')
   const [obligatorio, setObligatorio] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  // Lo que el back rechazó, debajo de su campo (02-10-2026).
+  const [errores, setErrores] = useState<Partial<Record<CampoDelRequisito, string>>>({})
+  const aria = (campo: CampoDelRequisito) =>
+    errores[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {}
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!etiqueta.trim() || !perfil) return
+    setErrores({})
     setGuardando(true)
     try {
       await postulacionesApi.crearRequisito({
@@ -155,12 +163,15 @@ function DialogoDeRequisito({
       invalidar('postulaciones')
       onCreado()
     } catch (err) {
-      toast.error(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No se pudo agregar el requisito',
-          accion: 'agregar el requisito',
-        }),
-      )
+      const reparto = repartirErroresDelServidor(err, {
+        campos: CAMPOS_DEL_REQUISITO,
+        porDefecto: 'No se pudo agregar el requisito',
+        accion: 'agregar el requisito',
+      })
+      setErrores(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+      if (reparto.sueltos.length) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -198,6 +209,7 @@ function DialogoDeRequisito({
               onChange={(e) => setPerfil(e.target.value)}
               className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
               data-testid="req-perfil"
+              {...aria('perfil')}
             >
               {perfiles.map((p) => (
                 <option key={p.perfil} value={p.perfil}>
@@ -205,6 +217,7 @@ function DialogoDeRequisito({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="req-perfil-error" mensaje={errores.perfil} className="mt-0" />
           </div>
 
           <div className="space-y-1.5">
@@ -217,7 +230,9 @@ function DialogoDeRequisito({
               required
               placeholder="Certificado de ingresos de contador público"
               data-testid="req-etiqueta"
+              {...aria('etiqueta')}
             />
+            <ErrorDelCampo id="req-etiqueta-error" mensaje={errores.etiqueta} className="mt-0" />
           </div>
 
           <div className="space-y-1.5">
@@ -229,11 +244,14 @@ function DialogoDeRequisito({
               maxLength={300}
               rows={2}
               placeholder="Firmado, con tarjeta profesional y no mayor a 30 días."
+              {...aria('detalle')}
             />
-            <p className="text-xs text-fg-subtle">
-              Lo que escribas acá es lo que el candidato lee. Mientras más
-              preciso, menos papeles mal mandados.
-            </p>
+            <ErrorDelCampo
+              id="req-detalle-error"
+              mensaje={errores.detalle}
+              className="mt-0"
+              pista="Lo que escribas acá es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
+            />
           </div>
 
           <fieldset className="space-y-1.5">
@@ -486,7 +504,12 @@ export function RequisitosClient() {
       toast.success('Ya es tu lista: ahora puedes editarla, agregar y quitar.')
       invalidar('postulaciones')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar la lista'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar la lista',
+          accion: 'guardar la lista',
+        }),
+      )
     } finally {
       setSembrando(false)
     }
@@ -498,7 +521,12 @@ export function RequisitosClient() {
       await postulacionesApi.editarRequisito(id, { obligatorio })
       invalidar('postulaciones')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo cambiar el requisito'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo cambiar el requisito',
+          accion: 'cambiar el requisito',
+        }),
+      )
     } finally {
       setTocando(null)
     }

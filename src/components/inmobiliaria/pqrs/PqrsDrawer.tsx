@@ -22,6 +22,7 @@ import { SheetHeader } from '@/components/ui/sheet'
 import { useAgentes } from '@/lib/hooks/useInmobiliaria'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
 import type { ActualizarPqrsInput, Pqrs, PqrsEstado } from '@/lib/api/pqrs-agencia.types'
 import {
@@ -101,8 +102,14 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
       onActualizado(actualizado)
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return
+      // Por el traductor (02-10-2026): el motivo del back entero —antes uno de
+      // más de 160 caracteres se perdía—, un 5xx con su referencia y «conexión»
+      // sólo cuando no hubo respuesta.
       toast.error('No se pudo actualizar la solicitud', {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'actualizar la solicitud',
+        }),
       })
     } finally {
       setGuardando(false)

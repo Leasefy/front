@@ -30,7 +30,7 @@
  * `@/components/mantenimientos/TablaDeProveedores`, con el porqué escrito ahí.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, Star } from '@phosphor-icons/react';
 import { Eyebrow } from '@leasefy/cadence';
 
@@ -48,6 +48,9 @@ import {
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDeLaVigencia } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { cn } from '@/lib/utils';
 import {
   proveedoresDeMantenimientoApi,
@@ -88,7 +91,9 @@ function ContenidoDeProveedores() {
       toast.success(`${p.nombre} queda inactivo. Su historial se conserva.`);
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo desactivar el proveedor'));
+      toast.error('No se pudo desactivar el proveedor', {
+        description: mensajeParaLaPersona(e, { accion: 'desactivar el proveedor' }),
+      });
     }
   };
 
@@ -98,7 +103,9 @@ function ContenidoDeProveedores() {
       toast.success(`${p.nombre} vuelve a estar activo.`);
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo reactivar el proveedor'));
+      toast.error('No se pudo reactivar el proveedor', {
+        description: mensajeParaLaPersona(e, { accion: 'reactivar el proveedor' }),
+      });
     }
   };
 
@@ -188,15 +195,30 @@ function FormularioDeProveedor({
   });
   const [guardando, setGuardando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
+  /** Lo que rechazó el back, por campo; cada campo borra el suyo al tocarse. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelProveedor, string>>>({});
+  const formulario = useRef<HTMLFormElement>(null);
+
+  /** Cambiar un campo borra el error que el servidor le había puesto. */
+  const poner = <K extends CampoDelProveedor>(campo: K, valor: GuardarProveedor[K]) => {
+    setForm((f) => ({ ...f, [campo]: valor }));
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
+  };
+
+  // El espejo del back: una vigencia que no es un día (o en el año 99999) se
+  // dice acá, con la misma frase, antes de enviar.
+  const errorDe = (campo: CampoDelProveedor): string | undefined =>
+    delServidor[campo] ??
+    (campo === 'rutVigenteHasta' || campo === 'seguridadSocialVigenteHasta'
+      ? (errorDeLaVigencia(form[campo]) ?? undefined)
+      : undefined);
 
   const alternar = (valor: string) => {
     const actuales = form.especialidades ?? [];
-    setForm({
-      ...form,
-      especialidades: actuales.includes(valor)
-        ? actuales.filter((v) => v !== valor)
-        : [...actuales, valor],
-    });
+    poner(
+      'especialidades',
+      actuales.includes(valor) ? actuales.filter((v) => v !== valor) : [...actuales, valor],
+    );
   };
 
   const enviar = async (e: React.FormEvent) => {
@@ -204,6 +226,7 @@ function FormularioDeProveedor({
     if (guardando) return;
     setGuardando(true);
     setFalla(null);
+    setDelServidor({});
     // Los vacíos no viajan: el back distingue «no lo mandó» de «lo borró».
     const limpio = Object.fromEntries(
       Object.entries(form).filter(([, v]) =>
@@ -219,19 +242,32 @@ function FormularioDeProveedor({
       toast.success(proveedor ? 'Proveedor actualizado' : 'Proveedor registrado');
       onGuardado();
     } catch (err) {
-      setFalla(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No se pudo guardar el proveedor',
-          accion: 'guardar el proveedor',
-        }),
-      );
+      // 02-10-2026: lo del back va a SU campo, con el foco en el primero; el
+      // aviso de abajo queda para lo que no tiene dónde ir (un 409, un 5xx con
+      // su referencia, la red).
+      const reparto = repartirErroresDelServidor<CampoDelProveedor>(err, {
+        campos: CAMPOS_DEL_PROVEEDOR,
+        porDefecto: 'No se pudo guardar el proveedor',
+        accion: 'guardar el proveedor',
+      });
+      setDelServidor(reparto.porCampo);
+      setFalla(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+      const primero = reparto.orden[0];
+      if (primero) {
+        formulario.current?.querySelector<HTMLElement>(`#proveedor-${primero}`)?.focus();
+      }
     } finally {
       setGuardando(false);
     }
   };
 
+  const hayVigenciaMala =
+    !!errorDeLaVigencia(form.rutVigenteHasta) || !!errorDeLaVigencia(form.seguridadSocialVigenteHasta);
   const puedeEnviar =
-    form.nombre.trim().length > 0 && form.documento.trim().length > 0 && !guardando;
+    form.nombre.trim().length > 0 &&
+    form.documento.trim().length > 0 &&
+    !hayVigenciaMala &&
+    !guardando;
 
   return (
     <Dialog
@@ -250,16 +286,18 @@ function FormularioDeProveedor({
 
         {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
             el botón de guardar lo apunta con `form=`. */}
-        <form id={ID_DEL_FORM_DE_PROVEEDOR} onSubmit={enviar} className="space-y-4">
-          <Campo label="Nombre" requerido>
+        <form id={ID_DEL_FORM_DE_PROVEEDOR} onSubmit={enviar} className="space-y-4" ref={formulario}>
+          <Campo nombre="nombre" error={errorDe('nombre')} label="Nombre" requerido>
             {/* 🔴 21-09 · Con `placeholder`. Nico: «¿por qué estos inputs no
                 tienen placeholder?». Un campo en blanco al lado de un rótulo de
                 una palabra deja a la persona adivinando el FORMATO: si el
                 nombre es el de la empresa o el del plomero que contesta. El
                 ejemplo lo resuelve sin gastar una línea de ayuda. */}
             <Input
+              id="proveedor-nombre"
+              {...ariaDe('nombre', errorDe('nombre'))}
               value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+              onChange={(e) => poner('nombre', e.target.value)}
               maxLength={200}
               placeholder="Plomería Andina S.A.S. o Jorge Martínez"
               required
@@ -267,13 +305,17 @@ function FormularioDeProveedor({
           </Campo>
 
           <Campo
+            nombre="documento"
+            error={errorDe('documento')}
             label="NIT o cédula"
             requerido
             ayuda="Con eso se le paga y se le retiene."
           >
             <Input
+              id="proveedor-documento"
+              {...ariaDe('documento', errorDe('documento'))}
               value={form.documento}
-              onChange={(e) => setForm({ ...form, documento: e.target.value })}
+              onChange={(e) => poner('documento', e.target.value)}
               maxLength={20}
               placeholder="900123456-7 o 71234567"
               required
@@ -281,20 +323,24 @@ function FormularioDeProveedor({
           </Campo>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Campo label="Teléfono">
+            <Campo nombre="telefono" error={errorDe('telefono')} label="Teléfono">
               <Input
+                id="proveedor-telefono"
+                {...ariaDe('telefono', errorDe('telefono'))}
                 type="tel"
                 value={form.telefono ?? ''}
-                onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                onChange={(e) => poner('telefono', e.target.value)}
                 maxLength={20}
                 placeholder="3001234567"
               />
             </Campo>
-            <Campo label="Correo">
+            <Campo nombre="correo" error={errorDe('correo')} label="Correo">
               <Input
+                id="proveedor-correo"
+                {...ariaDe('correo', errorDe('correo'))}
                 type="email"
                 value={form.correo ?? ''}
-                onChange={(e) => setForm({ ...form, correo: e.target.value })}
+                onChange={(e) => poner('correo', e.target.value)}
                 maxLength={200}
                 placeholder="contacto@proveedor.com"
               />
@@ -326,63 +372,73 @@ function FormularioDeProveedor({
                 );
               })}
             </div>
+            <ErrorDelCampo id="proveedor-especialidades-error" mensaje={errorDe('especialidades')} />
           </fieldset>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
+              nombre="rutNombre"
+              error={errorDe('rutNombre')}
               label="RUT"
               ayuda="Sin él no se le puede facturar ni retener."
             >
               <Input
+                id="proveedor-rutNombre"
+                {...ariaDe('rutNombre', errorDe('rutNombre'))}
                 value={form.rutNombre ?? ''}
-                onChange={(e) => setForm({ ...form, rutNombre: e.target.value })}
+                onChange={(e) => poner('rutNombre', e.target.value)}
                 placeholder="Nombre del archivo"
                 maxLength={255}
               />
             </Campo>
-            <Campo label="RUT vigente hasta">
+            <Campo nombre="rutVigenteHasta" error={errorDe('rutVigenteHasta')} label="RUT vigente hasta">
               <Input
+                id="proveedor-rutVigenteHasta"
+                {...ariaDe('rutVigenteHasta', errorDe('rutVigenteHasta'))}
                 type="date"
                 value={form.rutVigenteHasta ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, rutVigenteHasta: e.target.value })
-                }
+                onChange={(e) => poner('rutVigenteHasta', e.target.value)}
               />
             </Campo>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
+              nombre="seguridadSocialNombre"
+              error={errorDe('seguridadSocialNombre')}
               label="Seguridad social"
               ayuda="Si se accidenta dentro del inmueble, el riesgo es de la inmobiliaria."
             >
               <Input
+                id="proveedor-seguridadSocialNombre"
+                {...ariaDe('seguridadSocialNombre', errorDe('seguridadSocialNombre'))}
                 value={form.seguridadSocialNombre ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, seguridadSocialNombre: e.target.value })
-                }
+                onChange={(e) => poner('seguridadSocialNombre', e.target.value)}
                 placeholder="Nombre del archivo"
                 maxLength={255}
               />
             </Campo>
-            <Campo label="Vigente hasta">
+            <Campo
+              nombre="seguridadSocialVigenteHasta"
+              error={errorDe('seguridadSocialVigenteHasta')}
+              label="Vigente hasta"
+            >
               <Input
+                id="proveedor-seguridadSocialVigenteHasta"
+                {...ariaDe('seguridadSocialVigenteHasta', errorDe('seguridadSocialVigenteHasta'))}
                 type="date"
                 value={form.seguridadSocialVigenteHasta ?? ''}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    seguridadSocialVigenteHasta: e.target.value,
-                  })
-                }
+                onChange={(e) => poner('seguridadSocialVigenteHasta', e.target.value)}
               />
             </Campo>
           </div>
 
-          <Campo label="Notas">
+          <Campo nombre="notas" error={errorDe('notas')} label="Notas">
             <textarea
+              id="proveedor-notas"
+              {...ariaDe('notas', errorDe('notas'))}
               value={form.notas ?? ''}
-              onChange={(e) => setForm({ ...form, notas: e.target.value })}
+              onChange={(e) => poner('notas', e.target.value)}
               maxLength={2000}
               rows={3}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -392,7 +448,7 @@ function FormularioDeProveedor({
           {falla && (
             <div
               role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
             >
               {falla}
             </div>
@@ -436,26 +492,57 @@ function FormularioDeProveedor({
 
 const ID_DEL_FORM_DE_PROVEEDOR = 'form-proveedor-de-mantenimiento';
 
+type CampoDelProveedor = Exclude<keyof GuardarProveedor, 'rutRuta' | 'seguridadSocialRuta' | 'activo'>;
+
+/** En el orden en que se ven: el foco va al primero con error. */
+const CAMPOS_DEL_PROVEEDOR: readonly CampoDelProveedor[] = [
+  'nombre',
+  'documento',
+  'telefono',
+  'correo',
+  'especialidades',
+  'rutNombre',
+  'rutVigenteHasta',
+  'seguridadSocialNombre',
+  'seguridadSocialVigenteHasta',
+  'notas',
+];
+
+const ariaDe = (campo: CampoDelProveedor, error: string | undefined) =>
+  error
+    ? { 'aria-invalid': true as const, 'aria-describedby': `proveedor-${campo}-error` }
+    : {};
+
+/**
+ * Un campo del formulario. El error entra suave bajo el campo
+ * (`ErrorDelCampo`, el `FormError` de Cadence) y se cruza con la ayuda si la hay.
+ */
 function Campo({
+  nombre,
   label,
   ayuda,
   requerido,
+  error,
   children,
 }: {
+  nombre: CampoDelProveedor;
   label: string;
   ayuda?: string;
   requerido?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-foreground">
+    <div className="block">
+      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-xs font-medium text-foreground">
         {label}
         {requerido && <span className="ml-0.5 text-danger">*</span>}
-      </span>
+      </label>
       {children}
-      {ayuda && <span className="mt-1 block text-[11px] text-fg-muted">{ayuda}</span>}
-    </label>
+      {error || ayuda ? (
+        <ErrorDelCampo id={`proveedor-${nombre}-error`} mensaje={error} pista={ayuda} className="mt-1" />
+      ) : null}
+    </div>
   );
 }
 
@@ -526,18 +613,6 @@ function HistorialDeCalificaciones({
       </DialogContent>
     </Dialog>
   );
-}
-
-/**
- * El 503 del back trae su motivo redactado (`PROVEEDORES_NO_DISPONIBLES`:
- * falta la migración). Mostrarlo tal cual vale más que un «algo salió mal».
- */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
 }
 
 export default function ProveedoresPage() {

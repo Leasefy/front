@@ -25,12 +25,23 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   ANIOS_HACIA_ADELANTE,
   ANIOS_HACIA_ATRAS,
-  CANON_MAXIMO_COP,
   dentroDe,
   hace,
   oneYearAheadISO,
   todayISO,
 } from './fechas-y-topes';
+import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
+import {
+  ariaDelCampoDelContrato,
+  enfocarCampoDelContrato,
+  idDelCampoDelContrato,
+  motivoDelFalloDelContrato,
+  repartirErroresDelContrato,
+  type CampoDelContrato,
+} from '@/lib/contratos/errores-del-contrato';
+import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Spinner } from '@/components/ui/spinner';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import {
@@ -53,7 +64,6 @@ import {
 import Link from 'next/link';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import {
-  mensajeDelFallo,
   inmuebleOcupado,
   contratoDuplicado,
   isPermissionError,
@@ -177,6 +187,14 @@ function NuevoContratoContent() {
   });
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /*
+   * 02-10-2026 · Lo que el back rechazó, en SU campo (400 `DATOS_INVALIDOS`
+   * con `campos`): el canon de once cifras bajo el canon, la fecha imposible
+   * bajo la fecha. El de un campo se borra apenas se lo toca.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDelContrato, string>>
+  >({});
   // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
   // selector y se borra apenas se elige otro inmueble.
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
@@ -262,7 +280,7 @@ function NuevoContratoContent() {
       } catch (err) {
         if (cancelled) return;
         setLoadErrorCrudo(err);
-        setLoadError(err instanceof Error ? err.message : 'No se pudo cargar la aplicación');
+        setLoadError(mensajeParaLaPersona(err, { porDefecto: 'No se pudo cargar la postulación.', accion: 'cargar la postulación' }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -275,6 +293,12 @@ function NuevoContratoContent() {
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
+    setErroresDelServidor((e) => {
+      if (!(key in e)) return e;
+      const resto = { ...e };
+      delete resto[key as CampoDelContrato];
+      return resto;
+    });
   }, []);
 
   // PDF handlers
@@ -358,24 +382,26 @@ function NuevoContratoContent() {
     if (armadoPorElSistema && plantilla.generadoQuedoViejo) {
       errors.contratoArmado = 'Vuelve a armar el contrato: cambiaste datos después de generarlo.';
     }
+    /*
+     * 🔴 C22 (auditoría 2026-09-13) y 02-10-2026: había piso y no había techo,
+     * y un canon de once cifras llegaba a `monthly_rent` (`int4`) y volvía
+     * como un 500 ilegible. Los topes y las frases son ahora los MISMOS del
+     * DTO del back (`lib/contratos/limites-del-contrato`): se ataja acá con la
+     * frase que diría el back.
+     */
+    Object.assign(
+      errors,
+      revisarTerminosDelContrato({
+        startDate: form.startDate,
+        endDate: form.endDate,
+        monthlyRent: form.monthlyRent,
+        deposit: form.deposit,
+        paymentDay: form.paymentDay,
+      }),
+    );
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
-    if (form.startDate && form.endDate && form.endDate <= form.startDate) {
-      errors.endDate = 'La fecha fin debe ser posterior a la de inicio';
-    }
-    /*
-     * 🔴 C22 (auditoría 2026-09-13): había piso y no había techo. Un canon de
-     * 1e15 pasaba la validación y llegaba al back, donde `monthly_rent` es un
-     * `int4` que topa en 2.147.483.647: reventaba como un 500 ilegible, o —
-     * peor— entraba truncado y facturaba ese número todos los meses. El tope
-     * está por debajo del límite de la columna a propósito: mil millones de
-     * canon mensual no existe en Colombia, y un número así siempre es un dedo.
-     */
-    const rent = Number(form.monthlyRent);
-    if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
-    else if (rent > CANON_MAXIMO_COP) {
-      errors.monthlyRent = 'Ese canon es demasiado alto: revisa los ceros.';
-    }
+    if (!form.monthlyRent.trim()) errors.monthlyRent = MENSAJES_DEL_CONTRATO.canonMinimo;
 
     /*
      * Y no había ningún tope de AÑO. Un «2016» o un «2036» tecleados por error
@@ -384,17 +410,14 @@ function NuevoContratoContent() {
      * sigue siendo legítimo —un contrato que empezó el mes pasado se carga
      * hoy—: lo que se bloquea es el año equivocado, no el pasado.
      */
-    if (form.startDate) {
+    if (form.startDate && !errors.startDate) {
       if (form.startDate < hace(ANIOS_HACIA_ATRAS)) {
-        errors.startDate = `No puede empezar hace más de ${ANIOS_HACIA_ATRAS} año(s). Revisa el año.`;
+        errors.startDate = `No puede empezar hace más de ${anios(ANIOS_HACIA_ATRAS)}. Revisa el año.`;
       } else if (form.startDate > dentroDe(ANIOS_HACIA_ADELANTE)) {
-        errors.startDate = `No puede empezar dentro de más de ${ANIOS_HACIA_ADELANTE} año(s). Revisa el año.`;
+        errors.startDate = `No puede empezar dentro de más de ${anios(ANIOS_HACIA_ADELANTE)}. Revisa el año.`;
       }
     }
-    const dep = Number(form.deposit);
-    if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
-    const day = Number(form.paymentDay);
-    if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    if (!form.paymentDay.trim()) errors.paymentDay = MENSAJES_DEL_CONTRATO.diaDePago;
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (esManual) Object.assign(errors, validarPartes(partes));
@@ -469,7 +492,7 @@ function NuevoContratoContent() {
         } else {
           const uploaded = await actions.uploadPdf(form.pdfFile);
           if (!uploaded) {
-            setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
+            setSubmitError('No pudimos guardar el PDF del contrato. Vuelve a crearlo en un momento.');
             return;
           }
           uploadedPdfPath = uploaded.uploadedPdfPath;
@@ -575,13 +598,38 @@ function NuevoContratoContent() {
           return;
         }
       }
+      if (isPermissionError(err)) {
+        setSubmitError('No tienes permiso para crear contratos.');
+        return;
+      }
+      /*
+       * 02-10-2026 · Un 400 con `campos` (el DTO topado, la fecha de fin antes
+       * del inicio) va a SU campo y ese campo recibe el foco; al pie queda
+       * sólo lo que no tiene dónde ir. Sin campos (un 409, un 5xx, la red),
+       * el motivo con la regla de oro: «conexión» sólo si no hubo respuesta.
+       */
+      const reparto = repartirErroresDelContrato(err, {
+        porDefecto: 'No se pudo crear el contrato.',
+        accion: 'crear el contrato',
+      });
+      if (reparto.orden.length > 0) {
+        setErroresDelServidor(reparto.porCampo);
+        setSubmitError(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+        enfocarCampoDelContrato(reparto.orden[0]);
+        return;
+      }
       setSubmitError(
-        isPermissionError(err)
-          ? 'No tienes permiso para crear contratos.'
-          : mensajeDelFallo(err, 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.')
+        motivoDelFalloDelContrato(err, {
+          porDefecto: 'No se pudo crear el contrato.',
+          accion: 'crear el contrato',
+        }),
       );
     }
   };
+
+  /** El error de un campo: el del servidor gana sobre el del formulario. */
+  const errorDe = (campo: CampoDelContrato): string | undefined =>
+    erroresDelServidor[campo] ?? validation[campo];
 
   // ─── UI ────────────────────────────────────────────────────────────────────
 
@@ -660,6 +708,7 @@ function NuevoContratoContent() {
             }}
             errores={{
               ...(partesTocadas ? validation : {}),
+              ...erroresDelServidor,
               ...(errorDeInmueble ? { propertyId: errorDeInmueble.mensaje } : {}),
             }}
             onInmuebleElegido={(c) => {
@@ -800,9 +849,11 @@ function NuevoContratoContent() {
                 />
               </label>
             )}
-            {validation.pdfFile && (
-              <p className="text-xs text-danger">{validation.pdfFile}</p>
-            )}
+            <ErrorDelCampo
+              id={`${idDelCampoDelContrato('pdfFile')}-error`}
+              mensaje={errorDe('pdfFile')}
+              className="mt-0"
+            />
 
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -818,16 +869,18 @@ function NuevoContratoContent() {
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Fecha de inicio" error={validation.startDate}>
+            <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('startDate', errorDe('startDate'))}
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
               />
             </Field>
-            <Field label="Fecha de fin" error={validation.endDate}>
+            <Field id={idDelCampoDelContrato('endDate')} label="Fecha de fin" error={errorDe('endDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
               />
@@ -836,20 +889,27 @@ function NuevoContratoContent() {
                 la misma cifra formateada, que es donde nadie mira mientras
                 escribe; ahora sólo queda el mínimo, que sí dice algo. */}
             <Field
+              id={idDelCampoDelContrato('monthlyRent')}
               label="Canon mensual (COP)"
-              error={validation.monthlyRent}
+              error={errorDe('monthlyRent')}
               hint="Mínimo $ 100.000"
             >
               <MoneyInput
+                {...ariaDelCampoDelContrato('monthlyRent', errorDe('monthlyRent'))}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            <Field label="Depósito (COP)" error={validation.deposit}>
-              <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
+            <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')}>
+              <MoneyInput
+                {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                value={form.deposit}
+                onChange={(crudo) => updateForm('deposit', crudo)}
+              />
             </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
+            <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
+                {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -860,11 +920,13 @@ function NuevoContratoContent() {
               />
             </Field>
             <Field
+              id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
-              error={validation.diasDePlazo}
+              error={errorDe('diasDePlazo')}
               hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
             >
               <Input
+                {...ariaDelCampoDelContrato('diasDePlazo', errorDe('diasDePlazo'))}
                 type="number"
                 inputMode="numeric"
                 min={0}
@@ -877,12 +939,12 @@ function NuevoContratoContent() {
                 data-testid="dias-de-plazo"
               />
             </Field>
-            <Field label="Seguro" hint="Opcional">
+            <Field id="contrato-seguro" label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
                 onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="contrato-seguro">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1040,28 +1102,9 @@ function ModeOption({
   );
 }
 
-function Field({
-  label,
-  error,
-  hint,
-  children,
-}: {
-  label: string;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-foreground">{label}</label>
-      {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
-    </div>
-  );
+/** «5 años», «1 año»: sin el «año(s)» de antes. */
+function anios(n: number): string {
+  return `${n} ${n === 1 ? 'año' : 'años'}`;
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────

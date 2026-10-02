@@ -281,3 +281,53 @@ describe('el vacío de cláusulas propias', () => {
     expect(vacio.querySelector('button')).toBeNull()
   })
 })
+
+/**
+ * 🔴 02-10-2026 · Guardar una cláusula que el back rechaza: el error en su
+ * campo, los motivos del 400 en su lista (vivían en `detalle` y nunca se
+ * veían) y un 5xx que dice que fue nuestro, con la referencia.
+ */
+describe('Cláusulas propias — el rechazo al guardar', () => {
+  async function guardarCon(error: unknown) {
+    h.api.crear.mockRejectedValue(error)
+    await montar()
+    await abrirYLlenar('El arrendatario se sujeta al reglamento de propiedad horizontal.')
+    await act(async () => {
+      vi.advanceTimersByTime(600)
+    })
+    await act(async () => {
+      botonDelEditor('Agregar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('🔴 un 400 con campos pinta el error bajo el título y le da el foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const msg = 'El título puede tener hasta 200 caracteres.'
+    await guardarCon(
+      new ApiError(400, [msg], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'titulo', regla: 'longitud_maxima', mensaje: msg }],
+      }),
+    )
+    expect(dialogo().querySelector('#clausula-titulo-error')?.textContent).toBe(msg)
+    expect(document.activeElement).toBe(dialogo().querySelector('#clausula-titulo'))
+  })
+
+  it('🔴 los motivos del 400 CONTRATO_NO_VALIDO (en `detalle`) se listan con su norma', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await guardarCon(
+      new ApiError(400, 'La cláusula no es válida.', 'CONTRATO_NO_VALIDO', { motivos: [MOTIVO_ILEGAL] }),
+    )
+    const motivos = dialogo().querySelector('[data-testid="motivos"]')
+    expect(motivos?.textContent).toContain('no se puede exigir depósito en dinero')
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await guardarCon(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: '1f2e3d4c' }))
+    const texto = dialogo().textContent ?? ''
+    expect(texto).toContain('No pudimos guardar la cláusula: algo falló de nuestro lado.')
+    expect(texto).toContain('1f2e3d4c')
+    expect(texto).not.toContain('conexión')
+  })
+})

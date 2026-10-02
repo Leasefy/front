@@ -22,10 +22,11 @@
  * igual no da un error, da una factura equivocada.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Receipt, Trash, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
@@ -53,6 +54,12 @@ import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/Comis
 import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  MENSAJES_DEL_CONTRATO_VIGENTE,
+  topeDePesos,
+} from '@/lib/contratos/limites-del-contrato-vigente'
 import type {
   Contract,
   PerfilTributario,
@@ -67,6 +74,9 @@ interface Props {
 export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   const [conceptos, setConceptos] = useState<ConceptoDelContrato[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // El error del valor va debajo del valor, no al pie de la tarjeta.
+  const [errorDelValor, setErrorDelValor] = useState<string | null>(null)
+  const campoDelValor = useRef<HTMLInputElement | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [agregando, setAgregando] = useState(false)
   // El concepto que se está por quitar. Quitar un recurrente cambia lo que se
@@ -88,7 +98,12 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       .catch((e: unknown) => {
         // Un fallo NO se pinta como «no cobra nada más»: son cosas distintas.
         if (vigente) {
-          setError(e instanceof Error ? e.message : 'No pudimos cargarlos.')
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No pudimos cargar los conceptos del contrato.',
+              accion: 'cargar los conceptos del contrato',
+            }),
+          )
           setConceptos([])
         }
       })
@@ -138,12 +153,19 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
     const catalogo = CONCEPTOS.find((c) => c.id === elegido)
     if (!catalogo) return
     const n = Number(valor)
-    if (!Number.isFinite(n) || n <= 0) {
-      setError('El valor tiene que ser mayor que cero.')
+    // Lo que el back rechazaría se ataja acá, con su misma frase.
+    const delCliente =
+      !Number.isFinite(n) || n <= 0
+        ? 'El valor tiene que ser mayor que cero.'
+        : topeDePesos(Math.round(n), MENSAJES_DEL_CONTRATO_VIGENTE.valorDelConceptoMaximo)
+    if (delCliente) {
+      setErrorDelValor(delCliente)
+      campoDelValor.current?.focus()
       return
     }
     setOcupado(true)
     setError(null)
+    setErrorDelValor(null)
     try {
       const creado = await contractsApi.agregarConcepto(contract.id, {
         conceptoId: catalogo.id,
@@ -159,7 +181,19 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       setValor('')
       setAgregando(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo agregar.')
+      // Un 400 con `campos` va a su campo; lo demás (un 409, un 5xx con su
+      // referencia, la red) al pie, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        mapa: { valorCop: 'valor' },
+        campos: ['valor'] as const,
+        porDefecto: 'No pudimos agregar el concepto.',
+        accion: 'agregar el concepto',
+      })
+      if (porCampo.valor) {
+        setErrorDelValor(porCampo.valor)
+        campoDelValor.current?.focus()
+      }
+      setError(sueltos.length ? sueltos.join(' · ') : null)
     } finally {
       setOcupado(false)
     }
@@ -172,7 +206,12 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       await contractsApi.quitarConcepto(contract.id, id)
       setConceptos((prev) => (prev ?? []).filter((c) => c.id !== id))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo quitar.')
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos quitar el concepto.',
+          accion: 'quitar el concepto',
+        }),
+      )
     } finally {
       setOcupado(false)
       // Se cierra también si falló: el motivo se pinta al pie de la tarjeta,
@@ -270,17 +309,25 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-caption text-muted-foreground">
+            <label htmlFor="valor-del-concepto" className="text-caption text-muted-foreground">
               Valor mensual (antes de impuestos)
             </label>
             {/* Agrupa de a miles mientras se escribe: «5.678.888» se lee;
                 «5678888» se cuenta con el dedo. */}
             <MoneyInput
+              ref={campoDelValor}
+              id="valor-del-concepto"
               value={valor}
-              onChange={setValor}
+              onChange={(v) => {
+                setValor(v)
+                setErrorDelValor(null)
+              }}
               placeholder="180.000"
               data-testid="valor-del-concepto"
+              aria-invalid={errorDelValor ? true : undefined}
+              aria-describedby="valor-del-concepto-error"
             />
+            <ErrorDelCampo id="valor-del-concepto-error" mensaje={errorDelValor} />
           </div>
 
           <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
@@ -314,6 +361,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
               onClick={() => {
                 setAgregando(false)
                 setError(null)
+                setErrorDelValor(null)
               }}
             >
               Cancelar
@@ -322,7 +370,11 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive" data-testid="error-de-los-conceptos">
+          {error}
+        </p>
+      ) : null}
 
       <AlertDialog
         open={aQuitar !== null}

@@ -34,6 +34,9 @@ import { Textarea } from '@/components/ui/textarea';
 /** El mismo mínimo que exige el back en el flujo del inquilino. */
 export const MINIMO_DEL_MOTIVO = 10;
 
+/** El tope del back para el motivo (cita: `reason`; pipeline: `lostReason`, `VarChar(500)`). */
+export const MAX_LARGO_DEL_MOTIVO = 500;
+
 interface Props {
   abierto: boolean;
   titulo: string;
@@ -88,6 +91,9 @@ export function MotivoDialog({
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
             rows={3}
+            // El tope del back: `reason` de la cita y `lostReason` del pipeline
+            // son 500 (02-10-2026). Más largo era un 400 sobre lo ya escrito.
+            maxLength={MAX_LARGO_DEL_MOTIVO}
             disabled={enviando}
             placeholder="Cuenta qué pasó. Lo va a leer quien esperaba la visita."
             data-testid="motivo-texto"

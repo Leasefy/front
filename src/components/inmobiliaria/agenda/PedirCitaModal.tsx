@@ -28,6 +28,20 @@ import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  repartirErroresDelServidor,
+  traeErroresPorCampo,
+} from '@/lib/errores/errores-en-el-formulario';
+import {
+  CORREO_VALIDO,
+  MAX_LARGO_CONTACTO_DE_LA_CITA,
+  MAX_LARGO_CORREO_DE_LA_CITA,
+  MAX_LARGO_NOTAS_DE_LA_CITA,
+  MAX_LARGO_TELEFONO_DE_LA_CITA,
+  MENSAJES_DE_LA_AGENDA,
+} from '@/lib/agenda/limites-de-la-agenda';
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 
 /** Cada media hora, de 6:00 a 21:00: lo que se agenda de verdad. */
@@ -46,7 +60,41 @@ export function estaArrendado(c: { arrendado?: boolean | null; availability?: st
 }
 
 /** Dónde se pinta el motivo de un rechazo: al lado del campo que lo causó. */
-export type CampoDelRechazo = 'inmueble' | 'hora' | 'modalidad' | 'general';
+export type CampoDelRechazo =
+  | 'inmueble'
+  | 'contacto'
+  | 'correo'
+  | 'telefono'
+  | 'fecha'
+  | 'hora'
+  | 'modalidad'
+  | 'notas'
+  | 'general';
+
+/** En el orden en que se ven: el foco va al primero con error. */
+const CAMPOS_DE_LA_CITA: readonly Exclude<CampoDelRechazo, 'general'>[] = [
+  'inmueble',
+  'contacto',
+  'correo',
+  'telefono',
+  'fecha',
+  'hora',
+  'modalidad',
+  'notas',
+];
+
+/** El nombre del campo en `CreateCitaDto` → dónde se pinta. */
+const CAMPO_DEL_SERVIDOR: Partial<Record<string, Exclude<CampoDelRechazo, 'general'>>> = {
+  propertyId: 'inmueble',
+  contactName: 'contacto',
+  contactEmail: 'correo',
+  contactPhone: 'telefono',
+  date: 'fecha',
+  startTime: 'hora',
+  endTime: 'hora',
+  visitType: 'modalidad',
+  notes: 'notas',
+};
 
 /**
  * Traduce el error del back a un lugar en el formulario.
@@ -54,20 +102,20 @@ export type CampoDelRechazo = 'inmueble' | 'hora' | 'modalidad' | 'general';
  * El back responde 409 con `code` (`agenda.service.ts#createCita`):
  * `HORARIO_OCUPADO` va al lado de la hora, `INMUEBLE_ARRENDADO` al lado del
  * inmueble, `MODALIDAD_NO_ACEPTADA` al lado del selector de modalidad.
- * Cualquier otro 400/409 trae su propio motivo en castellano y va
- * arriba del pie. Un 500 o un corte de red no explican nada: ahí va el texto
- * genérico, pero DENTRO del modal, para no perder lo que ya se llenó.
+ * Cualquier otro 4xx trae su propio motivo en castellano y va arriba del pie.
+ * El texto sale del traductor (02-10-2026): «conexión» SÓLO si no hubo
+ * respuesta, un 5xx dice que falló de nuestro lado con su referencia, y nunca
+ * un volcado. Siempre DENTRO del modal, para no perder lo que ya se llenó.
  * `null` = no mostrar nada (401: el cliente ya está cerrando la sesión).
  */
 export function rechazoDeCita(
   err: unknown,
   generico: string,
 ): { campo: CampoDelRechazo; mensaje: string } | null {
-  if (!(err instanceof ApiError)) return { campo: 'general', mensaje: generico };
+  const mensaje = mensajeParaLaPersona(err, { porDefecto: generico, accion: 'agendar la cita' });
+  if (!(err instanceof ApiError)) return { campo: 'general', mensaje };
   if (err.status === 401) return null;
   const code = err.code ?? (typeof err.detalle?.code === 'string' ? err.detalle.code : undefined);
-  const explica = (err.status === 400 || err.status === 409) && !!err.message;
-  const mensaje = explica ? err.message : generico;
   if (err.status === 409 && code === 'HORARIO_OCUPADO') return { campo: 'hora', mensaje };
   if (err.status === 409 && code === 'INMUEBLE_ARRENDADO') return { campo: 'inmueble', mensaje };
   // A5: el inmueble no acepta esa modalidad. Va al lado del selector, que es
@@ -75,6 +123,33 @@ export function rechazoDeCita(
   if (err.status === 409 && code === 'MODALIDAD_NO_ACEPTADA')
     return { campo: 'modalidad', mensaje };
   return { campo: 'general', mensaje };
+}
+
+/**
+ * Todos los rechazos de una vez, por campo (02-10-2026). Un 400
+ * `DATOS_INVALIDOS` trae `campos[]`: cada uno va bajo SU campo (las dos horas
+ * van a la fila de las horas) y lo que no tiene dónde ir, arriba del pie. Sin
+ * `campos`, lo de siempre: `rechazoDeCita`.
+ */
+export function rechazosDeCita(
+  err: unknown,
+  generico: string,
+): Partial<Record<CampoDelRechazo, string>> | null {
+  if (err instanceof ApiError && err.status === 401) return null;
+  if (traeErroresPorCampo(err)) {
+    const reparto = repartirErroresDelServidor(err, {
+      mapa: CAMPO_DEL_SERVIDOR,
+      campos: CAMPOS_DE_LA_CITA,
+      porDefecto: generico,
+      accion: 'agendar la cita',
+    });
+    return {
+      ...reparto.porCampo,
+      ...(reparto.sueltos.length ? { general: reparto.sueltos.join(' · ') } : {}),
+    };
+  }
+  const uno = rechazoDeCita(err, generico);
+  return uno ? { [uno.campo]: uno.mensaje } : null;
 }
 
 interface PedirCitaModalProps {
@@ -144,7 +219,11 @@ export function PedirCitaModal({
   const [modalidades, setModalidades] = useState<TipoDeVisita[] | null>(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [rechazo, setRechazo] = useState<{ campo: CampoDelRechazo; mensaje: string } | null>(null);
+  /** Lo que rechazó el back, por campo. Cada campo borra el suyo al tocarse. */
+  const [rechazos, setRechazos] = useState<Partial<Record<CampoDelRechazo, string>>>({});
+  const formulario = useRef<HTMLDivElement>(null);
+  const quitarRechazo = (campo: CampoDelRechazo) =>
+    setRechazos((r) => (r[campo] ? { ...r, [campo]: undefined } : r));
   // Guarda síncrona del doble clic: `submitting` pinta en el render siguiente,
   // y dos clics seguidos alcanzaban a mandar dos citas iguales.
   const enviando = useRef(false);
@@ -168,7 +247,7 @@ export function PedirCitaModal({
       setEndTime('10:30');
       setVisitType('IN_PERSON');
       setNotes('');
-      setRechazo(null);
+      setRechazos({});
     }
   }, [isOpen, presetPropertyId]);
 
@@ -211,10 +290,27 @@ export function PedirCitaModal({
     }
   }, [modalidadesOfrecidas, visitType]);
 
+  /*
+   * El espejo del back (`lib/agenda/limites-de-la-agenda.ts`): lo que el DTO
+   * rechazaría se dice acá, con su misma frase, antes de enviar. Los largos ya
+   * los ataja el `maxLength` de cada campo; el correo hay que mirarlo.
+   */
+  const correoMalo =
+    contactEmail.trim() !== '' &&
+    (!CORREO_VALIDO.test(contactEmail.trim()) || contactEmail.trim().length > MAX_LARGO_CORREO_DE_LA_CITA);
+  const errorDelCorreo =
+    rechazos.correo ??
+    (correoMalo
+      ? contactEmail.trim().length > MAX_LARGO_CORREO_DE_LA_CITA
+        ? MENSAJES_DE_LA_AGENDA.correoLargo
+        : MENSAJES_DE_LA_AGENDA.correoInvalido
+      : undefined);
+
   const canSubmit =
     !submitting &&
     propertyId !== '' &&
     contactName.trim() !== '' &&
+    !correoMalo &&
     date !== '' &&
     startTime !== '' &&
     endTime !== '' &&
@@ -224,7 +320,7 @@ export function PedirCitaModal({
     if (!canSubmit || enviando.current) return;
     enviando.current = true;
     setSubmitting(true);
-    setRechazo(null);
+    setRechazos({});
     try {
       await agendaApi.createCita({
         propertyId,
@@ -245,19 +341,26 @@ export function PedirCitaModal({
       // pudo agendar» encima sería mentira (la cita no falló, la sesión sí).
       // Todo lo demás se dice DENTRO del modal, al lado del campo que lo causó:
       // un toast se va solo y deja al usuario adivinando qué cambiar.
-      setRechazo(rechazoDeCita(err, t(k('citaError'))));
+      const porCampo = rechazosDeCita(err, t(k('citaError'))) ?? {};
+      setRechazos(porCampo);
+      const primero = CAMPOS_DE_LA_CITA.find((c) => porCampo[c]);
+      if (primero) {
+        formulario.current
+          ?.querySelector<HTMLElement>(`[data-campo="${primero}"] :is(input, textarea, button, select)`)
+          ?.focus();
+      }
     } finally {
       enviando.current = false;
       setSubmitting(false);
     }
   };
 
-  const avisoDe = (campo: CampoDelRechazo) =>
-    rechazo?.campo === campo ? (
-      <p role="alert" data-testid={`cita-rechazo-${campo}`} className="mt-1.5 text-caption text-danger">
-        {rechazo.mensaje}
-      </p>
-    ) : null;
+  /** El error bajo el campo, con su entrada suave (el `FormError` de Cadence). */
+  const avisoDe = (campo: Exclude<CampoDelRechazo, 'general'>, mensaje = rechazos[campo]) => (
+    <ErrorDelCampo id={`cita-${campo}-error`} mensaje={mensaje} />
+  );
+  const ariaDe = (campo: Exclude<CampoDelRechazo, 'general'>, mensaje = rechazos[campo]) =>
+    mensaje ? { 'aria-invalid': true as const, 'aria-describedby': `cita-${campo}-error` } : {};
 
   return (
     <ResponsiveDialog
@@ -275,9 +378,9 @@ export function PedirCitaModal({
           <ResponsiveDialogTitle>{t(k('citaTitle'))}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4" ref={formulario}>
           {/* Property */}
-          <div>
+          <div data-campo="inmueble">
             <label className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaProperty'))} <span className="text-danger">*</span>
             </label>
@@ -290,7 +393,7 @@ export function PedirCitaModal({
                 value={propertyId || undefined}
                 onChange={(v) => {
                   setPropertyId(v ?? '');
-                  if (rechazo?.campo === 'inmueble') setRechazo(null);
+                  quitarRechazo('inmueble');
                 }}
                 options={opcionesInmueble}
                 placeholder={loQueDiceUnSelector({
@@ -318,59 +421,83 @@ export function PedirCitaModal({
           </div>
 
           {/* Contact */}
-          <div>
-            <label className="mb-1.5 block text-caption text-muted-foreground">
+          <div data-campo="contacto">
+            <label htmlFor="cita-contacto" className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaContact'))} <span className="text-danger">*</span>
             </label>
             <Input
+              id="cita-contacto"
               value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
+              onChange={(e) => {
+                setContactName(e.target.value);
+                quitarRechazo('contacto');
+              }}
               placeholder={t(k('citaContact'))}
-              maxLength={200}
+              maxLength={MAX_LARGO_CONTACTO_DE_LA_CITA}
+              {...ariaDe('contacto')}
             />
+            {avisoDe('contacto')}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
+            <div data-campo="correo">
+              <label htmlFor="cita-correo" className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaEmail'))}
               </label>
               <Input
+                id="cita-correo"
                 type="email"
                 value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
+                onChange={(e) => {
+                  setContactEmail(e.target.value);
+                  quitarRechazo('correo');
+                }}
                 placeholder="correo@ejemplo.com"
+                maxLength={MAX_LARGO_CORREO_DE_LA_CITA}
+                {...ariaDe('correo', errorDelCorreo)}
               />
+              {avisoDe('correo', errorDelCorreo)}
             </div>
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
+            <div data-campo="telefono">
+              <label htmlFor="cita-telefono" className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaPhone'))}
               </label>
               <Input
+                id="cita-telefono"
                 value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
+                onChange={(e) => {
+                  setContactPhone(e.target.value);
+                  quitarRechazo('telefono');
+                }}
                 placeholder="3001234567"
-                maxLength={20}
+                maxLength={MAX_LARGO_TELEFONO_DE_LA_CITA}
+                {...ariaDe('telefono')}
               />
+              {avisoDe('telefono')}
             </div>
           </div>
 
           {/* Fecha en su fila; inicio y fin en la de abajo, como selects
               (Nico, 2026-09-03: «están súper pegados y se ven como inputs»). */}
           <div className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
+            <div data-campo="fecha">
+              <label htmlFor="cita-fecha" className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaDate'))} <span className="text-danger">*</span>
               </label>
               <DatePicker
+                id="cita-fecha"
                 value={fechaLocal(date)}
-                onChange={(d) => setDate(aFechaIso(d))}
+                onChange={(d) => {
+                  setDate(aFechaIso(d));
+                  quitarRechazo('fecha');
+                }}
                 minDate={hoyLocal()}
                 placeholder="Elige el día"
                 className="w-full"
               />
+              {avisoDe('fecha')}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-campo="hora">
               <div>
                 <label className="mb-1.5 block text-caption text-muted-foreground">
                   {t(k('citaStart'))} <span className="text-danger">*</span>
@@ -379,10 +506,10 @@ export function PedirCitaModal({
                   value={startTime}
                   onValueChange={(v) => {
                     setStartTime(v);
-                    if (rechazo?.campo === 'hora') setRechazo(null);
+                    quitarRechazo('hora');
                   }}
                 >
-                  <SelectTrigger className="w-full" aria-invalid={rechazo?.campo === 'hora' || undefined}>
+                  <SelectTrigger className="w-full" {...ariaDe('hora')}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -394,7 +521,13 @@ export function PedirCitaModal({
                 <label className="mb-1.5 block text-caption text-muted-foreground">
                   {t(k('citaEnd'))} <span className="text-danger">*</span>
                 </label>
-                <Select value={endTime} onValueChange={setEndTime}>
+                <Select
+                  value={endTime}
+                  onValueChange={(v) => {
+                    setEndTime(v);
+                    quitarRechazo('hora');
+                  }}
+                >
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {HORAS.filter((h) => h > startTime).map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
@@ -406,12 +539,18 @@ export function PedirCitaModal({
           </div>
 
           {/* Type */}
-          <div>
+          <div data-campo="modalidad">
             <label className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaType'))}
             </label>
-            <Select value={visitType} onValueChange={(v) => setVisitType(v as TipoDeVisita)}>
-              <SelectTrigger className="w-full" data-testid="cita-modalidad">
+            <Select
+              value={visitType}
+              onValueChange={(v) => {
+                setVisitType(v as TipoDeVisita);
+                quitarRechazo('modalidad');
+              }}
+            >
+              <SelectTrigger className="w-full" data-testid="cita-modalidad" {...ariaDe('modalidad')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -433,27 +572,33 @@ export function PedirCitaModal({
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="mb-1.5 block text-caption text-muted-foreground">
+          <div data-campo="notas">
+            <label htmlFor="cita-notas" className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaNotes'))}
             </label>
             <Textarea
+              id="cita-notas"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                quitarRechazo('notas');
+              }}
               rows={3}
-              maxLength={500}
+              maxLength={MAX_LARGO_NOTAS_DE_LA_CITA}
               placeholder={t(k('citaNotes'))}
+              {...ariaDe('notas')}
             />
+            {avisoDe('notas')}
           </div>
         </div>
 
-        {rechazo?.campo === 'general' ? (
+        {rechazos.general ? (
           <p
             role="alert"
             data-testid="cita-rechazo-general"
             className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
           >
-            {rechazo.mensaje}
+            {rechazos.general}
           </p>
         ) : null}
 

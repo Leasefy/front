@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   contratosPlantillaApi,
   esIaCaida,
@@ -207,14 +208,19 @@ export function useContratoDesdePlantilla(
             // No es un fallo: es una pregunta que falta contestar, y el
             // backend ya la redactó mejor de lo que la redactaría acá.
             setUsoIndeterminado(
-              e instanceof Error ? e.message : 'Falta elegir el uso del inmueble.',
+              mensajeParaLaPersona(e, { porDefecto: 'Falta elegir el uso del inmueble.' }),
             );
             setErrorDePreparacion(null);
             return;
           }
           setUsoIndeterminado(null);
+          // 02-10-2026: por el traductor — un 5xx dice que fue nuestro (con la
+          // referencia) y sólo un pedido sin respuesta habla de la conexión.
           setErrorDePreparacion(
-            e instanceof Error ? e.message : 'No pudimos preparar el contrato.',
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No pudimos preparar el contrato.',
+              accion: 'preparar el contrato',
+            }),
           );
         })
         .finally(() => {
@@ -306,9 +312,10 @@ export function useContratoDesdePlantilla(
       setPropuesta(null);
       setDeducidasPorLaIa([]);
       setErrorDeLaIa(
-        e instanceof Error
-          ? e.message
-          : 'No pudimos consultar el asistente de redacción.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos consultar el asistente de redacción.',
+          accion: 'consultar el asistente de redacción',
+        }),
       );
       // Un 503 también significa que la clave dejó de estar: que la tarjeta se
       // apague sola es más honesto que ofrecer un botón que ya no responde.
@@ -359,9 +366,10 @@ export function useContratoDesdePlantilla(
       setErrorAlGenerar(
         motivos.length || etiquetas.length
           ? null
-          : e instanceof Error
-            ? e.message
-            : 'No pudimos generar el contrato.',
+          : mensajeParaLaPersona(e, {
+              porDefecto: 'No pudimos generar el contrato.',
+              accion: 'generar el contrato',
+            }),
       );
       return null;
     } finally {

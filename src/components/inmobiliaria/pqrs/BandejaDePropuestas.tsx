@@ -38,6 +38,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   propuestasDePqrsApi,
@@ -105,7 +106,9 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
       await cargar();
       onRadicada?.();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo radicar'));
+      toast.error('No se pudo radicar la propuesta', {
+        description: mensajeParaLaPersona(e, { accion: 'radicar la propuesta' }),
+      });
     } finally {
       setOcupada(null);
     }
@@ -242,7 +245,9 @@ function DialogoDeDescarte({
       toast.success('Descartada. El motivo queda con la propuesta.');
       await onDescartada();
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo descartar'));
+      toast.error('No se pudo descartar la propuesta', {
+        description: mensajeParaLaPersona(err, { accion: 'descartar la propuesta' }),
+      });
     } finally {
       setGuardando(false);
     }
@@ -312,10 +317,3 @@ function fechaCorta(iso: string): string {
   });
 }
 
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
-}

@@ -26,6 +26,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -255,7 +256,7 @@ function DocumentosContent() {
       } catch (e: unknown) {
         ventana?.close();
         toast.error(t(k('errorPdf')), {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'abrir el PDF' }),
         });
       }
     },
@@ -276,7 +277,7 @@ function DocumentosContent() {
         window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
       } catch (e: unknown) {
         toast.error(t(k('errorPdf')), {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'descargar el PDF' }),
         });
       }
     },
@@ -297,7 +298,7 @@ function DocumentosContent() {
         setEditorAbierto(true);
       } catch (e: unknown) {
         toast.error('No se pudo duplicar la plantilla', {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'duplicar la plantilla' }),
         });
       }
     },
@@ -312,7 +313,7 @@ function DocumentosContent() {
       toast.success(`«${borrando.name}» se archivó`);
     } catch (e: unknown) {
       toast.error('No se pudo archivar la plantilla', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'archivar la plantilla' }),
       });
     } finally {
       setBorrando(null);
@@ -327,9 +328,14 @@ function DocumentosContent() {
       toast.success(t('inmobiliaria.documentos.toasts.actaCreated'));
     } catch (e) {
       // Lo que dijo el backend, no una clave fija: «El inmueble ya tiene un
-      // acta de entrega abierta» sirve; «No se pudo guardar» no.
+      // acta de entrega abierta» sirve; «No se pudo guardar» no. Por el
+      // traductor (02-10-2026): «conexión» sólo sin respuesta, un 5xx con su
+      // referencia. Es el ÚNICO aviso: el formulario ya no pone otro.
       toast.error(t('inmobiliaria.documentos.toasts.actaError'), {
-        description: e instanceof Error ? e.message : t('inmobiliaria.documentos.toasts.actaErrorDesc'),
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'crear el acta',
+        }),
       });
       throw e;
     }

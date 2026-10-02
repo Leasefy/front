@@ -6121,7 +6121,7 @@
             "reset": "Reset to global",
             "saving": "Saving…",
             "saveSuccess": "Configuration saved",
-            "saveError": "Could not save the change. Check your connection and try again.",
+            "saveError": "Could not save the change. Try again in a moment.",
             "resetConfirmTitle": "Reset to global?",
             "resetConfirmBody": "Your override for {{carrier}} will be removed and it will inherit Leasefy's global settings. This cannot be undone.",
             "resetConfirm": "Reset",

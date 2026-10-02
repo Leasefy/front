@@ -25,6 +25,11 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Input, Textarea } from '@/components/ui';
 import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  MAX_LARGO_TITULO_DEL_MANTENIMIENTO,
+  MENSAJES_DEL_MANTENIMIENTO,
+} from '@/lib/mantenimiento/limites-del-mantenimiento';
 import type {
   Consignacion,
   MantenimientoType,
@@ -47,12 +52,31 @@ export interface MantenimientoFormData {
   paidBy: MantenimientoPaidBy;
 }
 
+/** Los campos del formulario, con el nombre que les da `CreateMantenimientoDto`. */
+export type CampoDelMantenimiento = keyof MantenimientoFormData;
+
+/** En el orden en que se ven: el foco va al primero con error. */
+export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
+  'consignacionId',
+  'type',
+  'priority',
+  'title',
+  'description',
+  'photoUrls',
+  'paidBy',
+];
+
 interface MantenimientoFormProps {
   consignaciones: Consignacion[];
   preselectedConsignacionId?: string;
   onSubmit: (data: MantenimientoFormData) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  /**
+   * Lo que rechazó el back, por campo (02-10-2026). Se pinta bajo su campo,
+   * el primero recibe el foco, y cada uno se borra al corregirlo.
+   */
+  erroresDelServidor?: Partial<Record<CampoDelMantenimiento, string>>;
 }
 
 // ============================================================================
@@ -519,8 +543,10 @@ export function MantenimientoForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  erroresDelServidor,
 }: MantenimientoFormProps) {
   const { t } = useI18n();
+  const raiz = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<{
     consignacionId: string;
     type: MantenimientoType | '';
@@ -541,6 +567,19 @@ export function MantenimientoForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Lo que mandó el servidor entra a los errores de cada campo y lleva el foco
+  // al primero. Un objeto nuevo por cada rechazo: el efecto corre una vez.
+  useEffect(() => {
+    if (!erroresDelServidor) return;
+    const conError = CAMPOS_DEL_MANTENIMIENTO.filter((c) => erroresDelServidor[c]);
+    if (conError.length === 0) return;
+    setErrors((prev) => ({ ...prev, ...erroresDelServidor }) as Record<string, string>);
+    setTouched((prev) => ({ ...prev, ...Object.fromEntries(conError.map((c) => [c, true])) }));
+    raiz.current
+      ?.querySelector<HTMLElement>(`[data-campo="${conError[0]}"] :is(input, textarea, button)`)
+      ?.focus();
+  }, [erroresDelServidor]);
 
   const updateField = <K extends keyof typeof formData>(key: K, value: typeof formData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -570,6 +609,9 @@ export function MantenimientoForm({
       newErrors.title = t('inmobiliaria.mantenimiento.errTitleRequired');
     } else if (formData.title.length < 5) {
       newErrors.title = t('inmobiliaria.mantenimiento.errTitleMinLength');
+    } else if (formData.title.length > MAX_LARGO_TITULO_DEL_MANTENIMIENTO) {
+      // La misma frase del back (`limites-del-mantenimiento.ts`).
+      newErrors.title = MENSAJES_DEL_MANTENIMIENTO.tituloLargo;
     }
     if (!formData.description.trim()) {
       newErrors.description = t('inmobiliaria.mantenimiento.errDescRequired');
@@ -623,9 +665,9 @@ export function MantenimientoForm({
   return (
     <form onSubmit={handleSubmit} className="contents">
       <CajonCuerpo>
-      <div className="space-y-8">
+      <div className="space-y-8" ref={raiz}>
       {/* Section 1: Property Selection */}
-      <div className="space-y-4">
+      <div className="space-y-4" data-campo="consignacionId">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <HouseLine className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.property')}
@@ -636,12 +678,10 @@ export function MantenimientoForm({
           onSelect={(id) => updateField('consignacionId', id)}
           t={t}
         />
-        {touched.consignacionId && errors.consignacionId && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.consignacionId}
-          </p>
-        )}
+        <ErrorDelCampo
+          id="mantenimiento-consignacionId-error"
+          mensaje={touched.consignacionId ? errors.consignacionId : undefined}
+        />
       </div>
 
       {/* Section 2: Request Details */}
@@ -652,30 +692,27 @@ export function MantenimientoForm({
         </h3>
 
         {/* Type */}
-        <TypeSelector
-          selected={formData.type}
-          onSelect={(type) => updateField('type', type)}
-          t={t}
-        />
-        {touched.type && errors.type && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.type}
-          </p>
-        )}
+        <div data-campo="type">
+          <TypeSelector
+            selected={formData.type}
+            onSelect={(type) => updateField('type', type)}
+            t={t}
+          />
+          <ErrorDelCampo id="mantenimiento-type-error" mensaje={touched.type ? errors.type : undefined} />
+        </div>
 
         {/* Priority */}
-        <PrioritySelector
-          selected={formData.priority}
-          onSelect={(priority) => updateField('priority', priority)}
-          t={t}
-        />
-        {touched.priority && errors.priority && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.priority}
-          </p>
-        )}
+        <div data-campo="priority">
+          <PrioritySelector
+            selected={formData.priority}
+            onSelect={(priority) => updateField('priority', priority)}
+            t={t}
+          />
+          <ErrorDelCampo
+            id="mantenimiento-priority-error"
+            mensaje={touched.priority ? errors.priority : undefined}
+          />
+        </div>
 
         {/* Emergency explanation */}
         {(formData.priority === 'high' || formData.priority === 'emergency') && (
@@ -697,32 +734,40 @@ export function MantenimientoForm({
         )}
 
         {/* Title */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <div className="space-y-2" data-campo="title">
+          <label htmlFor="mantenimiento-title" className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-danger">*</span>
           </label>
           <Input
+            id="mantenimiento-title"
             type="text"
             value={formData.title}
             onChange={(e) => updateField('title', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, title: true }))}
             placeholder={t('inmobiliaria.mantenimiento.titlePlaceholder')}
+            maxLength={MAX_LARGO_TITULO_DEL_MANTENIMIENTO}
+            aria-invalid={touched.title && errors.title ? true : undefined}
+            aria-describedby={touched.title && errors.title ? 'mantenimiento-title-error' : undefined}
             className={cn('w-full', touched.title && errors.title && 'border-danger/30')}
           />
-          {touched.title && errors.title && (
-            <p className="text-sm text-danger flex items-center gap-1">
-              <Warning className="w-4 h-4" />
-              {errors.title}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="mantenimiento-title-error"
+            mensaje={touched.title ? errors.title : undefined}
+            className="mt-0"
+          />
         </div>
 
         {/* Description */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <div className="space-y-2" data-campo="description">
+          <label htmlFor="mantenimiento-description" className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-danger">*</span>
           </label>
           <Textarea
+            id="mantenimiento-description"
+            aria-invalid={touched.description && errors.description ? true : undefined}
+            aria-describedby={
+              touched.description && errors.description ? 'mantenimiento-description-error' : undefined
+            }
             value={formData.description}
             onChange={(e) => updateField('description', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, description: true }))}
@@ -730,15 +775,15 @@ export function MantenimientoForm({
             placeholder={t('inmobiliaria.mantenimiento.descriptionPlaceholder')}
             className={cn('w-full resize-none', touched.description && errors.description && 'border-danger/30')}
           />
-          {touched.description && errors.description && (
-            <p className="text-sm text-danger flex items-center gap-1">
-              <Warning className="w-4 h-4" />
-              {errors.description}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="mantenimiento-description-error"
+            mensaje={touched.description ? errors.description : undefined}
+            className="mt-0"
+          />
         </div>
 
         {/* Photo Upload */}
+        <div data-campo="photoUrls">
         <PhotoUpload
           photos={formData.photoUrls}
           onAdd={(url) => updateField('photoUrls', [...formData.photoUrls, url])}
@@ -750,6 +795,8 @@ export function MantenimientoForm({
           }
           t={t}
         />
+        <ErrorDelCampo id="mantenimiento-photoUrls-error" mensaje={errors.photoUrls} />
+        </div>
       </div>
 
       {/* Section 3: Responsibility */}
@@ -759,11 +806,14 @@ export function MantenimientoForm({
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
-        <PaidBySelector
-          selected={formData.paidBy}
-          onSelect={(paidBy) => updateField('paidBy', paidBy)}
-          t={t}
-        />
+        <div data-campo="paidBy">
+          <PaidBySelector
+            selected={formData.paidBy}
+            onSelect={(paidBy) => updateField('paidBy', paidBy)}
+            t={t}
+          />
+          <ErrorDelCampo id="mantenimiento-paidBy-error" mensaje={errors.paidBy} />
+        </div>
       </div>
 
       </div>

@@ -310,3 +310,64 @@ describe('los cambios del 18-09 de noche', () => {
     expect(porTestId('estudio-candado-r-2')).not.toBeNull()
   })
 })
+
+/**
+ * 02-10-2026 · Sistema de errores: lo que el back rechaza al agregar va
+ * debajo de su campo (con el foco); lo demás por el traductor.
+ */
+describe('Requisitos — cuando el back dice que no', () => {
+  async function agregarCon(error: unknown) {
+    h.api.crearRequisito.mockRejectedValue(error)
+    await montar()
+    await clic(porTestId('abrir-agregar'))
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(etiqueta, 'Certificado de contador')
+      etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      enElModal('form-requisito')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    return etiqueta
+  }
+
+  it('🔴 un 400 con campos va bajo su campo y le da el foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const frase = 'La etiqueta puede tener hasta 200 caracteres.'
+    const etiqueta = await agregarCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'etiqueta', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    )
+    expect(document.getElementById('req-etiqueta-error')?.textContent).toBe(frase)
+    expect(etiqueta.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(etiqueta)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await agregarCon(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Internal server error',
+        referencia: '77aa88bb',
+      }),
+    )
+    const texto = String(h.toast.error.mock.calls[0]?.[0] ?? '')
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('77aa88bb')
+    expect(texto).not.toContain('Internal server error')
+  })
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await agregarCon(new ApiError(0, 'Failed to fetch'))
+    expect(String(h.toast.error.mock.calls[0]?.[0] ?? '').toLowerCase()).toContain('conexión')
+  })
+})

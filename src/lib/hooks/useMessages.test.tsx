@@ -102,8 +102,41 @@ describe('useChat — carga y envío son dos errores', () => {
     });
 
     expect(ok).toBe(false);
-    expect(ref.current!.errorDeEnvio).toBe('Failed to fetch');
+    // 02-10-2026 · Ya no el texto crudo del navegador («Failed to fetch»): sin
+    // respuesta, y SÓLO sin respuesta, se habla de la conexión.
+    expect(ref.current!.errorDeEnvio).toMatch(/conexi[oó]n/i);
     expect(ref.current!.errorDeCarga).toBeNull();
+  });
+
+  it('🔴 02-10 · un POST con 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    api.getConversationMessages.mockResolvedValue({ messages: [] });
+    api.sendConversationMessage.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      await ref.current!.sendMessage('Hola');
+    });
+    expect(ref.current!.errorDeEnvio).toContain('de nuestro lado');
+    expect(ref.current!.errorDeEnvio).toContain('ab12cd34');
+    expect(ref.current!.errorDeEnvio).not.toMatch(/conexi[oó]n/i);
+  });
+
+  it('un 403 que explica se lee tal cual', async () => {
+    api.getConversationMessages.mockResolvedValue({ messages: [] });
+    api.sendConversationMessage.mockRejectedValue(
+      new ApiError(403, 'Esta conversación ya no está abierta para ti.'),
+    );
+    await montar();
+    await act(async () => {
+      await ref.current!.sendMessage('Hola');
+    });
+    expect(ref.current!.errorDeEnvio).toBe('Esta conversación ya no está abierta para ti.');
   });
 
   it('reintentar la carga limpia el fallo cuando el GET vuelve', async () => {

@@ -975,8 +975,11 @@ describe('<MessagesWidget> — un envío que falla (MSJ-4)', () => {
     });
 
     expect(enviar).toHaveBeenCalledWith('Hola, ¿seguimos?');
-    // El cartel existe...
+    // El cartel existe, y dice el porqué que le dio el traductor...
     expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="mensaje-no-enviado-motivo"]')?.textContent).toContain(
+      'Network request failed',
+    );
     // ...y lo escrito no se perdió.
     const campoDespues = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
     expect(campoDespues.value).toBe('Hola, ¿seguimos?');

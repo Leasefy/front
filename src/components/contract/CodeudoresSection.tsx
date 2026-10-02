@@ -26,8 +26,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { codeudoresApi } from '@/lib/api/pagare.service';
 import type { CodeudorDto, CodeudorResponse, TipoDeDocumentoDelCodeudor } from '@/lib/api/pagare.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { esPagareNoDisponible } from '@/lib/contratos/pagare';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  idDelCampoDelCodeudor,
+  repartirErroresDelCodeudor,
+  type CampoDelCodeudor,
+} from '@/lib/contratos/errores-del-codeudor';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 export interface CodeudoresSectionProps {
   contractId: string;
@@ -83,7 +89,14 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
       setPorBorrar(null);
       void cargar();
     } catch (err) {
-      toast.error('No se pudo eliminar.', { description: mensajeDelFallo(err, '') });
+      // 02-10-2026: el motivo con la regla de oro (un 409 dice por qué no; un
+      // 5xx, que fue nuestro, con la referencia).
+      toast.error('No se pudo eliminar.', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'eliminar el codeudor',
+        }),
+      });
     } finally {
       setBorrando(false);
     }
@@ -222,9 +235,28 @@ function FormularioDeCodeudor({
       : DOCUMENTO_VACIO,
   );
   const [guardando, setGuardando] = useState(false);
+  /** 02-10-2026 · Lo que el back rechazó, bajo SU campo; se borra al tocarlo. */
+  const [errores, setErrores] = useState<Partial<Record<CampoDelCodeudor, string>>>({});
 
-  const campo = (k: keyof CodeudorDto) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const limpiar = (k: CampoDelCodeudor) =>
+    setErrores((e) => {
+      if (!(k in e)) return e;
+      const resto = { ...e };
+      delete resto[k];
+      return resto;
+    });
+
+  const campo = (k: keyof CodeudorDto) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setDatos((d) => ({ ...d, [k]: e.target.value }));
+    limpiar(k);
+  };
+
+  /** id, `aria-invalid` y `aria-describedby` de un campo. */
+  const aria = (k: CampoDelCodeudor) => ({
+    id: idDelCampoDelCodeudor(k),
+    'aria-invalid': errores[k] ? (true as const) : undefined,
+    'aria-describedby': errores[k] ? `${idDelCampoDelCodeudor(k)}-error` : undefined,
+  });
 
   const guardar = async () => {
     if (guardando) return;
@@ -239,7 +271,18 @@ function FormularioDeCodeudor({
       }
       onGuardado();
     } catch (err) {
-      toast.error('No se pudo guardar.', { description: mensajeDelFallo(err, '') });
+      /*
+       * 02-10-2026 · Un 400 con `campos` (el DTO) o un `CELULAR_INVALIDO` /
+       * `CODEUDOR_DUPLICADO` (por su `code`) va bajo su campo, con el foco;
+       * al toast sólo lo que no tiene campo, con la regla de oro.
+       */
+      const reparto = repartirErroresDelCodeudor(err);
+      setErrores(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(idDelCampoDelCodeudor(primero))?.focus();
+      if (reparto.sueltos.length) {
+        toast.error('No se pudo guardar el codeudor.', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -250,20 +293,69 @@ function FormularioDeCodeudor({
   return (
     <div className="space-y-3 rounded-lg border border-border bg-surface p-4" data-testid="formulario-codeudor">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input placeholder="Nombre completo" value={datos.nombre} onChange={campo('nombre')} data-testid="codeudor-nombre" />
-        <select
-          value={datos.tipoDeDocumento}
-          onChange={(e) => setDatos((d) => ({ ...d, tipoDeDocumento: e.target.value as TipoDeDocumentoDelCodeudor }))}
-          className="h-11 rounded-md border border-border bg-surface px-3 text-sm"
-          data-testid="codeudor-tipo-documento"
-        >
-          {DOCUMENTOS.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <Input placeholder="Número de documento" value={datos.documento} onChange={campo('documento')} data-testid="codeudor-documento" />
-        <Input placeholder="Correo" type="email" value={datos.email} onChange={campo('email')} data-testid="codeudor-email" />
-        <Input placeholder="Celular" value={datos.celular} onChange={campo('celular')} data-testid="codeudor-celular" />
+        <div>
+          <Input
+            {...aria('nombre')}
+            aria-label="Nombre completo"
+            placeholder="Nombre completo"
+            value={datos.nombre}
+            onChange={campo('nombre')}
+            data-testid="codeudor-nombre"
+          />
+          <ErrorDelCampo id={`${idDelCampoDelCodeudor('nombre')}-error`} mensaje={errores.nombre} />
+        </div>
+        <div>
+          <select
+            {...aria('tipoDeDocumento')}
+            aria-label="Tipo de documento"
+            value={datos.tipoDeDocumento}
+            onChange={(e) => {
+              setDatos((d) => ({ ...d, tipoDeDocumento: e.target.value as TipoDeDocumentoDelCodeudor }));
+              limpiar('tipoDeDocumento');
+            }}
+            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+            data-testid="codeudor-tipo-documento"
+          >
+            {DOCUMENTOS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <ErrorDelCampo id={`${idDelCampoDelCodeudor('tipoDeDocumento')}-error`} mensaje={errores.tipoDeDocumento} />
+        </div>
+        <div>
+          <Input
+            {...aria('documento')}
+            aria-label="Número de documento"
+            placeholder="Número de documento"
+            value={datos.documento}
+            onChange={campo('documento')}
+            data-testid="codeudor-documento"
+          />
+          <ErrorDelCampo id={`${idDelCampoDelCodeudor('documento')}-error`} mensaje={errores.documento} />
+        </div>
+        <div>
+          <Input
+            {...aria('email')}
+            aria-label="Correo"
+            placeholder="Correo"
+            type="email"
+            value={datos.email}
+            onChange={campo('email')}
+            data-testid="codeudor-email"
+          />
+          <ErrorDelCampo id={`${idDelCampoDelCodeudor('email')}-error`} mensaje={errores.email} />
+        </div>
+        <div>
+          <Input
+            {...aria('celular')}
+            aria-label="Celular"
+            placeholder="Celular"
+            value={datos.celular}
+            onChange={campo('celular')}
+            data-testid="codeudor-celular"
+          />
+          <ErrorDelCampo id={`${idDelCampoDelCodeudor('celular')}-error`} mensaje={errores.celular} />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button onClick={() => void guardar()} disabled={!valido || guardando} isLoading={guardando} hideArrow className="gap-1.5" data-testid="guardar-codeudor">

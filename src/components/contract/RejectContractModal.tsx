@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { RejectionType } from '@/lib/types/contract';
 
 const REASON_MIN = 5;
@@ -148,19 +149,23 @@ export function RejectContractModal({
             rows={4}
             maxLength={REASON_MAX}
             disabled={isSubmitting}
+            aria-invalid={reasonError ? true : undefined}
+            aria-describedby={reasonError ? 'motivo-del-rechazo-error' : undefined}
             className={cn(
               'resize-none',
               reasonError && 'border-danger focus-visible:ring-danger/30'
             )}
           />
-          <div className="flex items-center justify-between">
-            {reasonError ? (
-              <p className="text-xs text-danger">{reasonError}</p>
-            ) : (
-              <p className="text-xs text-fg-muted">
-                Mínimo {REASON_MIN} caracteres. El propietario va a verlo.
-              </p>
-            )}
+          <div className="flex items-start justify-between gap-3">
+            {/* 02-10-2026: el error entra suave y se cruza con la ayuda
+                (`ErrorDelCampo` = `FormError` de Cadence), en vez de un
+                párrafo rojo hecho a mano que aparecía de golpe. */}
+            <ErrorDelCampo
+              id="motivo-del-rechazo-error"
+              mensaje={reasonError}
+              pista={`Mínimo ${REASON_MIN} caracteres. El propietario va a verlo.`}
+              className="mt-0"
+            />
             <p className={cn(
               'text-xs font-mono tabular-nums',
               reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-fg-muted'

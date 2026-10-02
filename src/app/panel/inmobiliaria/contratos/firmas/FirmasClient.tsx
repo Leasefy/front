@@ -25,6 +25,7 @@
 
 import { useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -75,8 +76,15 @@ export function FirmasClient() {
       setMotivo('')
       setLiberar(false)
       invalidar('contratos')
-    } catch {
-      setResultado('No se pudo cancelar. Vuelve a intentar.')
+    } catch (err) {
+      // 02-10-2026: regla de oro — el motivo del back (un 409 dice por qué no),
+      // un 5xx es nuestro con la referencia, y sólo la red habla de conexión.
+      setResultado(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo cancelar la invitación.',
+          accion: 'cancelar la invitación',
+        }),
+      )
     }
   }
 

@@ -4,6 +4,15 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  repartirErroresDelServidor,
+  traeErroresPorCampo,
+} from '@/lib/errores/errores-en-el-formulario';
+import {
+  CAMPOS_DEL_MANTENIMIENTO,
+  type CampoDelMantenimiento,
+} from '@/components/inmobiliaria/MantenimientoForm';
 import { Wrench, Plus, CurrencyDollar, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -207,6 +216,10 @@ function MantenimientosContent() {
   const [isMantenimientoViewerOpen, setIsMantenimientoViewerOpen] = useState(false);
   const [isMantenimientoFormOpen, setIsMantenimientoFormOpen] = useState(false);
   const [isSubmittingMantenimiento, setIsSubmittingMantenimiento] = useState(false);
+  /** Lo que el back rechazó al crear, por campo: el formulario lo pinta bajo cada uno. */
+  const [erroresDelFormulario, setErroresDelFormulario] = useState<
+    Partial<Record<CampoDelMantenimiento, string>> | undefined
+  >(undefined);
   // El diálogo de cotización lleva su propia solicitud: se abre desde el
   // tablero, desde la lista y desde el cajón del detalle, y no siempre hay un
   // cajón abierto detrás.
@@ -244,6 +257,7 @@ function MantenimientosContent() {
   }, []);
 
   const handleNewMantenimiento = useCallback(() => {
+    setErroresDelFormulario(undefined);
     setIsMantenimientoFormOpen(true);
   }, []);
 
@@ -270,10 +284,19 @@ function MantenimientosContent() {
       });
     } catch (error) {
       // El back dice por qué no la creó («El inmueble no tiene contrato
-      // activo», un 403…): eso es lo que se muestra, como al mover o cotizar.
-      toast.error('No se pudo crear la solicitud', {
-        description: error instanceof Error ? error.message : undefined,
+      // activo», un 403…). 02-10-2026: un 400 con `campos` va bajo cada campo
+      // del formulario (con el foco en el primero); al toast sólo lo que no
+      // tiene dónde ir, por el traductor: «conexión» sólo sin respuesta, un 5xx
+      // con su referencia.
+      const reparto = repartirErroresDelServidor<CampoDelMantenimiento>(error, {
+        campos: CAMPOS_DEL_MANTENIMIENTO,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'crear la solicitud',
       });
+      setErroresDelFormulario(reparto.orden.length > 0 ? reparto.porCampo : undefined);
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo crear la solicitud', { description: reparto.sueltos.join(' · ') });
+      }
       setIsSubmittingMantenimiento(false);
     }
   }, [t, recargarMantenimientos]);
@@ -316,7 +339,10 @@ function MantenimientosContent() {
         await mantenimientoApi.updateStatus(solicitudId, newStatus);
       } catch (error) {
         toast.error('No se pudo mover la solicitud', {
-          description: error instanceof Error ? error.message : undefined,
+          description: mensajeParaLaPersona(error, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'mover la solicitud',
+          }),
         });
         // Relanzar: quien arrastró la tarjeta tiene que enterarse de que no
         // quedó, y el tablero ya no vuelve a festejar por su cuenta.
@@ -406,7 +432,10 @@ function MantenimientosContent() {
         );
       } catch (error) {
         toast.error('No se pudo aprobar la cotización', {
-          description: error instanceof Error ? error.message : undefined,
+          description: mensajeParaLaPersona(error, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'aprobar la cotización',
+          }),
         });
         throw error;
       }
@@ -485,9 +514,16 @@ function MantenimientosContent() {
       try {
         await mantenimientoApi.addQuote(solicitudId, cotizacion);
       } catch (error) {
-        toast.error('No se pudo guardar la cotización', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        // Un 400 con `campos` lo pinta el diálogo bajo cada campo; el resto
+        // (un 409, un 5xx, la red) se dice acá, por el traductor.
+        if (!traeErroresPorCampo(error)) {
+          toast.error('No se pudo guardar la cotización', {
+            description: mensajeParaLaPersona(error, {
+              porDefecto: 'Prueba de nuevo en un momento.',
+              accion: 'guardar la cotización',
+            }),
+          });
+        }
         throw error;
       }
 
@@ -790,6 +826,7 @@ function MantenimientosContent() {
             onSubmit={handleMantenimientoFormSubmit}
             onCancel={handleMantenimientoFormCancel}
             isSubmitting={isSubmittingMantenimiento}
+            erroresDelServidor={erroresDelFormulario}
           />
         )}
       </Cajon>

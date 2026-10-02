@@ -41,7 +41,8 @@ import {
   type BandejaDeCartas,
   type CartaEnLaBandeja,
 } from '@/lib/api/ciclo-de-vida.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 
 /** La cola completa. El tablero lleva acá, con el estado en la URL. */
 export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
@@ -231,9 +232,13 @@ export function Fila({
   const [abierta, setAbierta] = useState(false);
   const [texto, setTexto] = useState(carta.contenido);
   const [ocupado, setOcupado] = useState(false);
+  // Si el back rechaza el texto corregido, se dice debajo del texto.
+  const [errorDelTexto, setErrorDelTexto] = useState<string | undefined>(undefined);
+  const idDelTexto = `carta-${carta.contractId}-${carta.desde}-texto`;
 
   const enviar = async () => {
     setOcupado(true);
+    setErrorDelTexto(undefined);
     try {
       const r = await cicloDeVidaApi.enviarCarta(
         carta.contractId,
@@ -247,7 +252,18 @@ export function Fila({
       }
       await onEnviada();
     } catch (e) {
-      toast.error('No se pudo enviar la carta.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      // Un 400 del texto va bajo el texto; un 409, un 5xx con su referencia o
+      // la red al toast, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['contenido'],
+        porDefecto: 'No pudimos enviar la carta.',
+        accion: 'enviar la carta',
+      });
+      if (porCampo.contenido) {
+        setAbierta(true);
+        setErrorDelTexto(porCampo.contenido);
+      }
+      if (sueltos.length) toast.error('No se pudo enviar la carta.', { description: sueltos.join(' · ') });
     } finally {
       setOcupado(false);
     }
@@ -295,7 +311,22 @@ export function Fila({
       {editable && carta.estado !== 'ENVIADA' && (
         <div className="space-y-2">
           {abierta && (
-            <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={7} aria-label="Texto de la carta" />
+            <>
+              <Textarea
+                id={idDelTexto}
+                value={texto}
+                maxLength={10_000}
+                onChange={(e) => {
+                  setTexto(e.target.value);
+                  setErrorDelTexto(undefined);
+                }}
+                rows={7}
+                aria-label="Texto de la carta"
+                aria-invalid={errorDelTexto ? true : undefined}
+                aria-describedby={`${idDelTexto}-error`}
+              />
+              <ErrorDelCampo id={`${idDelTexto}-error`} mensaje={errorDelTexto} className="mt-0" />
+            </>
           )}
           <div className="flex flex-wrap gap-2">
             <Button

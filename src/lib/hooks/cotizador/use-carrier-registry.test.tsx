@@ -7,9 +7,9 @@
  * Tests cover the 8 behaviors from 35-07 plan:
  *  1. initializes with isLoading=true, data=null, error=null
  *  2. after successful fetch, data contains { global: [...], overrides: [...] }; isLoading=false
- *  3. on fetch error (status 500), error is set to '500'; data remains null
+ *  3. on fetch error (status 500), error is the ApiError (status 500 + body); data remains null
  *  4. saveOverride calls PUT with correct URL, body, and credentials:'include'; returns true (void)
- *  5. saveOverride on non-200 response throws an error with the HTTP status
+ *  5. saveOverride on non-200 response throws an ApiError with the HTTP status and the body
  *  6. resetOverride calls DELETE with correct URL (route in query param); on 200 returns true (void)
  *  7. refetch() re-triggers fetchOnce() without restarting the polling interval
  *  8. when agencyId is null, fetchOnce sets isLoading=false without calling fetch
@@ -26,6 +26,8 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 import { useCarrierRegistry } from './use-carrier-registry'
+import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 void React // jsx-preserve
 
@@ -78,7 +80,7 @@ afterEach(() => {
 interface HookResult {
   data: ReturnType<typeof useCarrierRegistry>['data']
   isLoading: boolean
-  error: string | null
+  error: unknown
   refetch: () => Promise<void>
   saveOverride: ReturnType<typeof useCarrierRegistry>['saveOverride']
   resetOverride: ReturnType<typeof useCarrierRegistry>['resetOverride']
@@ -141,7 +143,7 @@ describe('useCarrierRegistry', () => {
     expect(result.current?.error).toBeNull()
   })
 
-  it('Test 3 — on fetch error (status 500), error is set to "500"; data remains null', async () => {
+  it('Test 3 — on fetch error (status 500), error is the ApiError with the status; data remains null', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('Internal Server Error', { status: 500 }),
     )
@@ -152,7 +154,9 @@ describe('useCarrierRegistry', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
-    expect(result.current?.error).toBe('500')
+    // 02-10-2026: antes era el texto «500» y la tabla lo pintaba tal cual.
+    expect(result.current?.error).toBeInstanceOf(ApiError)
+    expect((result.current?.error as ApiError).status).toBe(500)
     expect(result.current?.data).toBeNull()
     expect(result.current?.isLoading).toBe(false)
   })
@@ -194,7 +198,7 @@ describe('useCarrierRegistry', () => {
     expect(body.priority).toBe(2)
   })
 
-  it('Test 5 — saveOverride on non-200 response throws an error with the HTTP status', async () => {
+  it('Test 5 — saveOverride on non-200 response throws an ApiError with the HTTP status', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(MOCK_REGISTRY), { status: 200 }))
       .mockResolvedValueOnce(new Response('Forbidden', { status: 403 }))
@@ -214,8 +218,10 @@ describe('useCarrierRegistry', () => {
       }
     })
 
-    expect(caughtError).toBeTruthy()
-    expect((caughtError as Error).message).toContain('403')
+    expect(caughtError).toBeInstanceOf(ApiError)
+    expect((caughtError as ApiError).status).toBe(403)
+    // El «403» crudo ya no es el texto que llega a la pantalla.
+    expect((caughtError as Error).message).not.toBe('403')
   })
 
   it('Test 6 — resetOverride calls DELETE with correct URL (route in query param); on 200 returns void', async () => {
@@ -331,3 +337,75 @@ describe('useCarrierRegistry', () => {
     expect(true).toBe(true) // placeholder to count this test
   })
 })
+
+/**
+ * 02-10-2026 · El sistema de errores: el hook deja pasar el fallo ENTERO para
+ * que la pantalla lo diga con el traductor (patrón 3 del inventario: «403»,
+ * «500» crudos en pantalla).
+ */
+describe('useCarrierRegistry — el fallo llega entero a la pantalla', () => {
+  /** `res` es una función: un `Promise.reject` creado antes de tiempo queda sin atrapar. */
+  async function guardarConLaRespuesta(res: () => Response | Promise<Response>): Promise<unknown> {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(MOCK_REGISTRY), { status: 200 }))
+      .mockImplementationOnce(async () => res())
+    const result = renderHook()
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    let atrapado: unknown = null
+    await act(async () => {
+      try {
+        await result.current!.saveOverride('sura', 'sura_seguros', { priority: 99 })
+      } catch (e) {
+        atrapado = e
+      }
+    })
+    return atrapado
+  }
+
+  it('🔴 un 400 del micro trae sus `campos` en español', async () => {
+    const e = await guardarConLaRespuesta(() =>
+      new Response(
+        JSON.stringify({
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['La prioridad no puede ser mayor que 10.'],
+          campos: [{ campo: 'priority', regla: 'maximo', mensaje: 'La prioridad no puede ser mayor que 10.', valor: 99 }],
+          success: false,
+          error: { name: 'ZodError', issues: [] },
+        }),
+        { status: 400 },
+      ),
+    )
+    expect(e).toBeInstanceOf(ApiError)
+    expect((e as ApiError).code).toBe('DATOS_INVALIDOS')
+    expect(mensajeParaLaPersona(e)).toBe('La prioridad no puede ser mayor que 10.')
+  })
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia del micro', async () => {
+    const e = await guardarConLaRespuesta(() =>
+      new Response(
+        JSON.stringify({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Internal Server Error', requestId: 'feedbeef-0000-4000-8000-000000000000' }),
+        { status: 500 },
+      ),
+    )
+    const texto = mensajeParaLaPersona(e, { accion: 'guardar el ajuste de la aseguradora' })
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('feedbeef')
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('el `error` en inglés del cuerpo viejo nunca es el texto', async () => {
+    const e = await guardarConLaRespuesta(() => new Response(JSON.stringify({ error: 'Forbidden — no membership row' }), { status: 403 }))
+    expect((e as ApiError).status).toBe(403)
+    expect(mensajeParaLaPersona(e, { porDefecto: 'sin permiso' })).toBe('sin permiso')
+  })
+
+  it('🔴 un `fetch` que no salió llega como tal y el traductor habla de la conexión', async () => {
+    const e = await guardarConLaRespuesta(() => Promise.reject(new TypeError('Failed to fetch')))
+    expect(e).toBeInstanceOf(TypeError)
+    expect(mensajeParaLaPersona(e)).toMatch(/conexi[oó]n/i)
+  })
+})
+

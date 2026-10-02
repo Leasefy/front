@@ -41,7 +41,10 @@ import {
   type MotivoDeTerminacion,
   type VistaPreviaDeTerminacion,
 } from "@/lib/api/ciclo-de-vida.service";
-import { isPermissionError, mensajeDelFallo } from "@/lib/contratos/fallo-de-accion";
+import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limites-del-contrato-vigente";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
@@ -62,6 +65,28 @@ export interface TerminarContratoProps {
   onTerminado: () => void;
 }
 
+/** Los campos de `TerminarContratoDto`, con el id del control que los pinta. */
+type CampoDeLaTerminacion =
+  | "terminadoEn"
+  | "motivo"
+  | "nota"
+  | "penalidadCop"
+  | "penalidadParaLaInmobiliariaCop";
+const CAMPOS_DE_LA_TERMINACION: readonly CampoDeLaTerminacion[] = [
+  "terminadoEn",
+  "motivo",
+  "nota",
+  "penalidadCop",
+  "penalidadParaLaInmobiliariaCop",
+];
+const ID_DEL_CAMPO: Record<CampoDeLaTerminacion, string> = {
+  terminadoEn: "terminadoEn",
+  motivo: "motivo",
+  nota: "nota",
+  penalidadCop: "penalidad",
+  penalidadParaLaInmobiliariaCop: "penalidad-inmobiliaria",
+};
+
 export function TerminarContrato({
   contractId,
   abierto,
@@ -79,6 +104,10 @@ export function TerminarContrato({
   const [penalidadTocada, setPenalidadTocada] = useState(false);
   const [vista, setVista] = useState<VistaPreviaDeTerminacion | null>(null);
   const [guardando, setGuardando] = useState(false);
+  // Lo que el back rechazó de un campo va debajo de ESE campo.
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaTerminacion, string>>>({});
+  const limpiar = (campo: CampoDeLaTerminacion) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
 
   useEffect(() => {
     if (!abierto) return;
@@ -126,11 +155,32 @@ export function TerminarContrato({
     paraLaInmobiliaria.trim() === "" ? 0 : Number(paraLaInmobiliaria.replace(/\D/g, ""));
   const repartoInvalido = penalidadCop !== null && paraLaInmobiliariaCop > penalidadCop;
   const penalidadInvalida = penalidadCop !== null && !(penalidadCop > 0);
+  // El tope de la columna (`ConceptoDeUnaVez.valorCop`), con la frase del back.
+  const topeDeLaPenalidad = topeDePesos(penalidadCop, MENSAJES_DEL_CONTRATO_VIGENTE.penalidadMaxima);
+  const topeDeLaParte = topeDePesos(
+    paraLaInmobiliariaCop,
+    MENSAJES_DEL_CONTRATO_VIGENTE.penalidadParaLaInmobiliariaMaxima,
+  );
+  const errorDeLaPenalidad = penalidadInvalida
+    ? "La penalidad tiene que ser mayor que cero."
+    : (topeDeLaPenalidad ?? errores.penalidadCop);
+  const errorDeLaParte = repartoInvalido
+    ? "La parte de la inmobiliaria no puede ser mayor que la penalidad."
+    : (topeDeLaParte ?? errores.penalidadParaLaInmobiliariaCop);
   const puedeConfirmar =
-    !guardando && !!terminadoEn && !!motivo && !faltaNota && !penalidadInvalida && !repartoInvalido && vista?.puedeTerminarse !== false;
+    !guardando &&
+    !!terminadoEn &&
+    !!motivo &&
+    !faltaNota &&
+    !penalidadInvalida &&
+    !repartoInvalido &&
+    !topeDeLaPenalidad &&
+    !topeDeLaParte &&
+    vista?.puedeTerminarse !== false;
 
   async function confirmar() {
     setGuardando(true);
+    setErrores({});
     try {
       const r = await cicloDeVidaApi.terminar(contractId, {
         terminadoEn,
@@ -150,16 +200,21 @@ export function TerminarContrato({
       onCerrar();
       onTerminado();
     } catch (err) {
-      toast.error(
-        isPermissionError(err)
-          ? "No tienes permisos para terminar contratos."
-          : "No se pudo terminar el contrato.",
-        {
-          description: isPermissionError(err)
-            ? undefined
-            : mensajeDelFallo(err, "Intenta de nuevo."),
-        },
-      );
+      if (isPermissionError(err)) {
+        toast.error("No tienes permisos para terminar contratos.");
+        return;
+      }
+      // Un 400 con `campos` va bajo su campo; lo demás (un 409, un 5xx con su
+      // referencia, la red) al toast, por el traductor.
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(err, {
+        campos: CAMPOS_DE_LA_TERMINACION,
+        porDefecto: "No pudimos terminar el contrato.",
+        accion: "terminar el contrato",
+      });
+      setErrores(porCampo);
+      const primero = orden[0];
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+      if (sueltos.length) toast.error("No se pudo terminar el contrato.", { description: sueltos.join(" · ") });
     } finally {
       setGuardando(false);
     }
@@ -189,9 +244,15 @@ export function TerminarContrato({
               id="terminadoEn"
               type="date"
               value={terminadoEn}
-              onChange={(e) => setTerminadoEn(e.target.value)}
+              onChange={(e) => {
+                setTerminadoEn(e.target.value);
+                limpiar("terminadoEn");
+              }}
               data-testid="terminado-en"
+              aria-invalid={errores.terminadoEn ? true : undefined}
+              aria-describedby="terminadoEn-error"
             />
+            <ErrorDelCampo id="terminadoEn-error" mensaje={errores.terminadoEn} className="mt-0" />
             {vista?.finPactado && (
               <p className="text-caption text-muted-foreground">
                 Se había pactado hasta el {vista.finPactado}. Ese plazo queda
@@ -206,8 +267,13 @@ export function TerminarContrato({
               id="motivo"
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                limpiar("motivo");
+              }}
               data-testid="motivo-de-terminacion"
+              aria-invalid={errores.motivo ? true : undefined}
+              aria-describedby="motivo-error"
             >
               <option value="">Elige un motivo…</option>
               {motivos.map((m) => (
@@ -216,6 +282,7 @@ export function TerminarContrato({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="motivo-error" mensaje={errores.motivo} className="mt-0" />
           </div>
 
           <div className="space-y-1.5">
@@ -225,10 +292,17 @@ export function TerminarContrato({
             <Textarea
               id="nota"
               value={nota}
-              onChange={(e) => setNota(e.target.value)}
+              maxLength={1000}
+              onChange={(e) => {
+                setNota(e.target.value);
+                limpiar("nota");
+              }}
               rows={2}
               data-testid="nota-de-terminacion"
+              aria-invalid={errores.nota ? true : undefined}
+              aria-describedby="nota-error"
             />
+            <ErrorDelCampo id="nota-error" mensaje={errores.nota} className="mt-0" />
           </div>
 
           {/* Regla 9 (16-09): la penalidad pactada entra como un cobro más, en la cuota del último mes. */}
@@ -242,19 +316,28 @@ export function TerminarContrato({
               onChange={(e) => {
                 setPenalidadTocada(true);
                 setPenalidad(e.target.value.replace(/[^\d]/g, ""));
+                limpiar("penalidadCop");
               }}
               data-testid="penalidad-de-terminacion"
+              aria-invalid={errorDeLaPenalidad ? true : undefined}
+              aria-describedby="penalidad-error"
             />
-            <p className="text-caption text-muted-foreground">
-              {penalidadInvalida
-                ? "La penalidad tiene que ser mayor que cero."
-                : penalidadCop
-                  ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
-                  : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
-              {vista?.penalidadSugerida &&
-                ` Por defecto: ${vista.penalidadSugerida.canones} cánones.`}
-              {penalidadCop ? " Le llega al propietario menos la comisión." : ""}
-            </p>
+            {/* La ayuda y el error se cruzan: nunca los dos a la vez. */}
+            <ErrorDelCampo
+              id="penalidad-error"
+              mensaje={errorDeLaPenalidad}
+              className="mt-0"
+              pista={
+                <>
+                  {penalidadCop
+                    ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
+                    : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
+                  {vista?.penalidadSugerida &&
+                    ` Por defecto: ${vista.penalidadSugerida.canones} cánones.`}
+                  {penalidadCop ? " Le llega al propietario menos la comisión." : ""}
+                </>
+              }
+            />
           </div>
           {penalidadCop ? (
             <div className="space-y-1.5">
@@ -264,14 +347,20 @@ export function TerminarContrato({
                 inputMode="numeric"
                 placeholder="$ 0"
                 value={paraLaInmobiliaria}
-                onChange={(e) => setParaLaInmobiliaria(e.target.value.replace(/[^\d]/g, ""))}
+                onChange={(e) => {
+                  setParaLaInmobiliaria(e.target.value.replace(/[^\d]/g, ""));
+                  limpiar("penalidadParaLaInmobiliariaCop");
+                }}
                 data-testid="penalidad-para-la-inmobiliaria"
+                aria-invalid={errorDeLaParte ? true : undefined}
+                aria-describedby="penalidad-inmobiliaria-error"
               />
-              <p className="text-caption text-muted-foreground">
-                {repartoInvalido
-                  ? "La parte de la inmobiliaria no puede ser mayor que la penalidad."
-                  : `Al propietario le llegan ${PESOS.format(Math.max(0, penalidadCop - paraLaInmobiliariaCop))} menos la comisión.`}
-              </p>
+              <ErrorDelCampo
+                id="penalidad-inmobiliaria-error"
+                mensaje={errorDeLaParte}
+                className="mt-0"
+                pista={`Al propietario le llegan ${PESOS.format(Math.max(0, penalidadCop - paraLaInmobiliariaCop))} menos la comisión.`}
+              />
             </div>
           ) : null}
 

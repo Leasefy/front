@@ -17,13 +17,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const cancelarCita = vi.fn().mockResolvedValue(undefined);
 const rechazarCita = vi.fn().mockResolvedValue(undefined);
 const aceptarCita = vi.fn().mockResolvedValue(undefined);
+const actualizarTarea = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/api/agenda.service', () => ({
   agendaApi: {
     cancelarCita: (...a: unknown[]) => cancelarCita(...a),
     rechazarCita: (...a: unknown[]) => rechazarCita(...a),
     aceptarCita: (...a: unknown[]) => aceptarCita(...a),
-    actualizarTarea: vi.fn().mockResolvedValue(undefined),
+    actualizarTarea: (...a: unknown[]) => actualizarTarea(...a),
   },
 }));
 
@@ -87,6 +88,8 @@ vi.mock('@phosphor-icons/react', () => ({
 
 import { EventoAgendaDrawer } from './EventoAgendaDrawer';
 import type { EventoAgenda } from '@/lib/api/agenda.types';
+import { toast } from 'sonner';
+import { ApiError } from '@/lib/api/client';
 
 function visita(extra: Partial<EventoAgenda> = {}): EventoAgenda {
   return {
@@ -305,5 +308,51 @@ describe('<EventoAgendaDrawer> — sin operaciones:edit (A3)', () => {
 
     expect(container.querySelector('[data-testid="cita-confirmar"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="evento-sin-permiso"]')).toBeNull();
+  });
+});
+
+/**
+ * 02-10-2026 · Completar una tarea que el back rechaza: antes decía siempre
+ * «No se pudo actualizar la tarea», sin el porqué. Ahora el porqué va por el
+ * traductor: un 5xx «de nuestro lado» con su referencia, la conexión SÓLO sin
+ * respuesta.
+ */
+describe('<EventoAgendaDrawer> — el error de una tarea, por el traductor', () => {
+  const tarea = () =>
+    visita({ id: 'tarea-t1', tipo: 'tarea', estado: 'pendiente', estadoRaw: 'PENDIENTE', vinculoTipo: undefined, vinculoId: undefined });
+
+  async function completarCon(fallo: unknown) {
+    vi.mocked(toast.error).mockClear();
+    actualizarTarea.mockRejectedValueOnce(fallo);
+    pintar(tarea());
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="tarea-completar"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    return vi.mocked(toast.error).mock.calls[0]?.[1]?.description as string;
+  }
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const d = await completarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    expect(d).toContain('de nuestro lado');
+    expect(d).toContain('ab12cd34');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    expect(await completarCon(new ApiError(0, 'Failed to fetch'))).toMatch(/conexi[oó]n/i);
+  });
+
+  it('un 409 que explica se dice tal cual', async () => {
+    expect(await completarCon(new ApiError(409, 'Esa tarea ya estaba cancelada.'))).toBe(
+      'Esa tarea ya estaba cancelada.',
+    );
   });
 });

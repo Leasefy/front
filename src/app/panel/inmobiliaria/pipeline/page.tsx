@@ -35,6 +35,10 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { NuevoLeadDialog } from '@/components/inmobiliaria/NuevoLeadDialog';
+import {
+  TITULO_AL_NO_MOVER_EL_LEAD,
+  mensajeAlNoMoverElLead,
+} from '@/lib/pipeline/errores-del-pipeline';
 import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 
 /**
@@ -235,11 +239,10 @@ function PipelineContent() {
         setItems((prev) => prev.map((item) => (item.id === itemId ? previa : item)));
         setSelectedItem((prev) => (prev?.id === itemId ? previa : prev));
       }
-      toast.error('No se pudo mover el lead', {
-        description:
-          error instanceof Error
-            ? error.message
-            : 'La tarjeta volvió a su etapa anterior. Prueba de nuevo.',
+      // Por el traductor (02-10-2026): «conexión» sólo sin respuesta; un 5xx
+      // es nuestro, con la referencia; un 400 dice qué campo está mal.
+      toast.error(TITULO_AL_NO_MOVER_EL_LEAD, {
+        description: mensajeAlNoMoverElLead(error),
       });
       // Relanzar: el tablero y el cajón NO deben cantar éxito.
       throw error;

@@ -6155,7 +6155,7 @@
             "reset": "Restablecer al global",
             "saving": "Guardando…",
             "saveSuccess": "Configuración guardada",
-            "saveError": "No se pudo guardar el cambio. Verifica tu conexión e intenta de nuevo.",
+            "saveError": "No se pudo guardar el cambio. Prueba de nuevo en un momento.",
             "resetConfirmTitle": "¿Restablecer al global?",
             "resetConfirmBody": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
             "resetConfirm": "Restablecer",

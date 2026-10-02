@@ -12,6 +12,7 @@
  */
 import { ApiError } from '@/lib/api/client';
 import type { OtpChannelResult } from '@/lib/api/contracts.types';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface DescripcionDeErrorOtp {
   /** El mensaje del back, tal cual — ya es español autosuficiente. */
@@ -36,14 +37,24 @@ function channelsDe(v: unknown): OtpChannelResult[] | undefined {
  * El motivo del fallo, con lo estructurado que cada código trae en
  * `details` (contract.md §3.3). Total: cualquier error (incluso uno que no
  * es `ApiError`) devuelve al menos un `mensaje` — nunca revienta.
+ *
+ * 02-10-2026: el `mensaje` sale del traductor (regla de oro). Los 4xx del
+ * código ya son español autosuficiente y pasan tal cual; un 5xx dice que
+ * falló de nuestro lado, con la referencia (antes salía «Error interno del
+ * servidor.»), y sólo un pedido sin respuesta habla de la conexión.
+ * `accion` es lo que se estaba haciendo: «enviar el código», «verificar el código».
  */
-export function describirErrorDeOtp(err: unknown): DescripcionDeErrorOtp {
+export function describirErrorDeOtp(err: unknown, accion = 'verificar el código'): DescripcionDeErrorOtp {
+  const mensaje = mensajeParaLaPersona(err, {
+    porDefecto: 'No se pudo completar la verificación.',
+    accion,
+  });
   if (!(err instanceof ApiError)) {
-    return { mensaje: err instanceof Error ? err.message : 'No se pudo completar la verificación.' };
+    return { mensaje };
   }
   const detalle = err.detalle ?? {};
   return {
-    mensaje: err.message,
+    mensaje,
     intentosRestantes: numero(detalle.intentosRestantes),
     segundosDeEspera: numero(detalle.segundos),
     channels: channelsDe(detalle.channels),

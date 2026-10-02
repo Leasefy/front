@@ -18,6 +18,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
@@ -125,29 +126,36 @@ function AgendaContent() {
    * tick que el clic, antes de que React vuelva a pintar.
    */
   const enCurso = useRef<string | null>(null);
+  /**
+   * Devuelve si la acción salió: el cajón sólo se cierra (y el motivo tipeado
+   * sólo se descarta) cuando el back la aceptó.
+   */
   const runCitaAction = useCallback(
-    async (visitId: string, action: () => Promise<void>) => {
-      if (enCurso.current) return;
+    async (visitId: string, action: () => Promise<void>): Promise<boolean> => {
+      if (enCurso.current) return false;
       enCurso.current = visitId;
       setActingId(visitId);
       try {
         await action();
         toast.success(t(k('citaAccionOk')));
         load();
+        return true;
       } catch (err) {
         // Con la sesión vencida el cliente HTTP ya está cerrando sesión: un
         // «no se pudo actualizar» encima sería mentira.
-        if (err instanceof ApiError && err.status === 401) return;
+        if (err instanceof ApiError && err.status === 401) return false;
         // El back explica POR QUÉ no se pudo (una cita ya cancelada, una que
-        // no es de esta agencia…). Ese motivo vale más que «Intenta de nuevo»,
-        // así que viaja en la descripción del toast en vez de perderse en un
-        // `catch` sin argumento.
+        // no es de esta agencia…). Ese motivo viaja en la descripción, por el
+        // traductor (02-10-2026): entero —antes un motivo de más de 160
+        // caracteres se perdía—, «conexión» sólo si no hubo respuesta y un 5xx
+        // con su referencia.
         toast.error(t(k('citaAccionError')), {
-          description:
-            err instanceof ApiError && err.message && err.message.length < 160
-              ? err.message
-              : undefined,
+          description: mensajeParaLaPersona(err, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'actualizar la cita',
+          }),
         });
+        return false;
       } finally {
         enCurso.current = null;
         setActingId(null);

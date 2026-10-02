@@ -12,7 +12,8 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
-import { isPermissionError, mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
+import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -61,13 +62,20 @@ function FirmarContratoContent() {
     } catch (err) {
       // El back rechaza con 400 «Tenant must sign first» si el arrendador
       // intenta firmar antes que el inquilino. Se lee EL error que vino.
-      const msg = mensajeDelFallo(err, '');
+      // ⚠ Ese 400 no trae `code` (está en inglés y sin código en
+      // `signAsLandlord`): hasta que lo tenga, es el único que se reconoce
+      // por el texto. Lo demás pasa por el traductor (02-10-2026): un 5xx dice
+      // que fue nuestro, con la referencia; sólo la red habla de conexión.
+      const msg = motivoDelFalloDelContrato(err, {
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'firmar el contrato',
+      });
       if (/tenant.*sign first/i.test(msg)) {
         toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
       } else if (isPermissionError(err)) {
         toast.error('No tienes permisos para esta acción.');
       } else {
-        toast.error('No se pudo firmar el contrato.', { description: msg || 'Intenta de nuevo.' });
+        toast.error('No se pudo firmar el contrato.', { description: msg });
       }
       // T-0109 contract.md §3.3 — TOKEN_DE_FIRMA_INVALIDO/CODIGO_DE_FIRMA_REQUERIDO
       // dejan el token guardado inservible: se relanza para que SignatureForm

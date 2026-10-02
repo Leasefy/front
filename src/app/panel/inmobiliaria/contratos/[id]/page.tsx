@@ -57,7 +57,8 @@ import { SealStatusBadge } from '@/components/contract/SealStatusBadge';
 import { CodeudoresSection } from '@/components/contract/CodeudoresSection';
 import { PagareSection } from '@/components/contract/PagareSection';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
-import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
+import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
 import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
@@ -212,7 +213,7 @@ function ContratoDetalleContent() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const runAction = useCallback(
-    async (key: string, op: () => Promise<unknown>, successMessage?: string) => {
+    async (key: 'send' | 'activate', op: () => Promise<unknown>, successMessage?: string) => {
       setActionError(null);
       setErrorSinCanon(null);
       setBloqueoDeInventario(null);
@@ -230,11 +231,16 @@ function ContratoDetalleContent() {
           setBloqueoDeInventario(bloqueo);
           return;
         }
-        // El motivo del back (400/409) en palabras; un 403 dice que es de permisos.
+        // El motivo del back (400/409) en palabras; un 403 dice que es de
+        // permisos; un 5xx, que fue nuestro, con la referencia (02-10-2026).
         setActionError(
           isPermissionError(err)
             ? 'No tienes permiso para esta acción.'
-            : mensajeDelFallo(err, 'La operación falló. Intenta de nuevo.')
+            : motivoDelFalloDelContrato(err, {
+                porDefecto:
+                  key === 'send' ? 'No se pudo enviar el contrato a firma.' : 'No se pudo activar el contrato.',
+                accion: key === 'send' ? 'enviar el contrato a firma' : 'activar el contrato',
+              })
         );
       } finally {
         setPendingAction(null);
@@ -256,7 +262,14 @@ function ContratoDetalleContent() {
       // Se lee EL error que vino, no `actions.lastError` (que era el render viejo).
       toast.error(
         isPermissionError(err) ? 'No tienes permisos para esta acción.' : 'No se pudo cancelar el contrato.',
-        { description: isPermissionError(err) ? undefined : mensajeDelFallo(err, 'Intenta de nuevo.') }
+        {
+          description: isPermissionError(err)
+            ? undefined
+            : motivoDelFalloDelContrato(err, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'cancelar el contrato',
+              }),
+        }
       );
       return;
     }
@@ -274,15 +287,21 @@ function ContratoDetalleContent() {
       setActionError(null);
       toast.success('Recordatorio enviado.');
     } catch (err) {
-      // 429 = ya hubo uno en las últimas 24 h; cualquier otro fallo dice su motivo.
-      const msg = mensajeDelFallo(err, 'No se pudo enviar el recordatorio.');
-      if (estadoDelFallo(err) === 429 || /too\s*many|24h/i.test(msg)) {
-        setActionError('Ya enviaste un recordatorio en las últimas 24 horas.');
-      } else if (isPermissionError(err)) {
-        setActionError('No tienes permiso para esta acción.');
-      } else {
-        setActionError(msg);
-      }
+      /*
+       * 02-10-2026 · Decide el `code`, nunca el texto ni el status a secas: el
+       * 429 `RECORDATORIO_RECIENTE` trae en su `message` desde cuándo se puede
+       * mandar otro (hora de Colombia) y se muestra tal cual; otro 429 es el
+       * limitador general (`DEMASIADAS_SOLICITUDES`), que no es «ya enviaste
+       * uno». Un 5xx dice que fue nuestro, con la referencia.
+       */
+      setActionError(
+        isPermissionError(err)
+          ? 'No tienes permiso para esta acción.'
+          : motivoDelFalloDelContrato(err, {
+              porDefecto: 'No se pudo enviar el recordatorio.',
+              accion: 'enviar el recordatorio',
+            }),
+      );
     } finally {
       setPendingAction(null);
     }

@@ -238,4 +238,49 @@ describe('<ModalAvisarNoElegidos>', () => {
       expect(onCerrar).not.toHaveBeenCalled()
     })
   })
+
+  /*
+   * 02-10-2026 · Sistema de errores: el fallo de aprobar al elegido y el de
+   * cada aviso pasan por el traductor; cada fila que no salió dice por qué.
+   */
+  describe('cuando el back dice que no', () => {
+    const quinientos = () =>
+      Object.assign(new Error('Internal server error'), {
+        status: 500,
+        detalle: { statusCode: 500, code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' },
+      })
+
+    it('🔴 si aprobar al elegido da 5xx, dice que es nuestro con la referencia, no el texto crudo', async () => {
+      approve.mockRejectedValue(quinientos())
+      montar()
+      await confirmar()
+      const texto = document.body.querySelector('[data-testid="error-del-elegido"]')?.textContent ?? ''
+      expect(texto).toContain('de nuestro lado')
+      expect(texto).toContain('ab12cd34')
+      expect(texto).not.toContain('Internal server error')
+      expect(reject).not.toHaveBeenCalled()
+    })
+
+    it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+      approve.mockRejectedValue(new TypeError('Failed to fetch'))
+      montar()
+      await confirmar()
+      const texto = document.body.querySelector('[data-testid="error-del-elegido"]')?.textContent ?? ''
+      expect(texto.toLowerCase()).toContain('conexión')
+    })
+
+    it('la fila que no salió dice por qué (lo que mandó el back)', async () => {
+      reject.mockImplementation((id: string) =>
+        id === 'b'
+          ? Promise.reject(Object.assign(new Error('Esta postulación ya fue retirada.'), { status: 409 }))
+          : Promise.resolve(undefined),
+      )
+      montar()
+      await confirmar()
+      expect(document.body.querySelector('[data-testid="motivo-b"]')?.textContent).toBe(
+        'Esta postulación ya fue retirada.',
+      )
+      expect(document.body.querySelector('[data-testid="motivo-c"]')).toBeNull()
+    })
+  })
 })

@@ -43,7 +43,12 @@ import {
   EmptyState,
   Textarea,
 } from '@/components/ui'
-import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+
+/** El tope de la respuesta: `ResponderReclamoDto.respuesta`, `@MaxLength(4000)`. */
+const MAX_LARGO_DE_LA_RESPUESTA = 4000
 import { postulacionesApi, type ReclamoDelEstudio } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
@@ -115,8 +120,13 @@ export function ReclamosClient() {
       toast.success('Queda a tu nombre: el resto del equipo ve que lo tienes tú.')
       invalidar('postulaciones')
     } catch (e) {
+      // Por el traductor (02-10-2026): un 5xx es nuestro, con la referencia;
+      // «conexión» sólo sin respuesta.
       toast.error(
-        e instanceof ApiError && e.message ? e.message : 'No se pudo tomar el reclamo',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo tomar el reclamo',
+          accion: 'tomar el reclamo',
+        }),
       )
     } finally {
       setTomando(null)
@@ -133,12 +143,16 @@ export function ReclamosClient() {
       setTexto('')
       invalidar('postulaciones')
     } catch (e) {
-      // 🔴 El 400 del colador: se muestra tal cual, con lo que encontró.
-      if (e instanceof ApiError && e.status === 400) {
-        setFuga(e.messages?.[0] ?? e.message)
-      } else {
-        setFuga('No se pudo responder. Vuelve a intentar.')
-      }
+      // 🔴 El 400 del colador se muestra tal cual, con lo que encontró, debajo
+      // del campo. Lo demás pasa por el traductor (02-10-2026): antes todo lo
+      // que no era 400 decía «Vuelve a intentar», también un 5xx.
+      const reparto = repartirErroresDelServidor(e, {
+        campos: ['respuesta'],
+        porDefecto: 'No se pudo responder. Prueba de nuevo en un momento.',
+        accion: 'responder el reclamo',
+      })
+      setFuga(reparto.porCampo.respuesta ?? reparto.sueltos.join(' · '))
+      document.getElementById(`respuesta-${id}`)?.focus()
     } finally {
       setEnviando(false)
     }
@@ -302,21 +316,17 @@ export function ReclamosClient() {
                         abierto === r.id ? (
                           <div className="space-y-2">
                             <Textarea
+                              id={`respuesta-${r.id}`}
                               value={texto}
                               onChange={(e) => setTexto(e.target.value)}
                               rows={3}
+                              maxLength={MAX_LARGO_DE_LA_RESPUESTA}
                               placeholder="La aseguradora no aprobó con las condiciones actuales. Puedes presentarte con un codeudor…"
                               data-testid={`respuesta-${r.id}`}
+                              aria-invalid={fuga ? true : undefined}
+                              aria-describedby={fuga ? 'fuga-detectada' : undefined}
                             />
-                            {fuga ? (
-                              <p
-                                className="text-sm text-destructive"
-                                role="alert"
-                                data-testid="fuga-detectada"
-                              >
-                                {fuga}
-                              </p>
-                            ) : null}
+                            <ErrorDelCampo id="fuga-detectada" mensaje={fuga} className="mt-0 text-sm" />
                             <div className="flex gap-2">
                               <Button
                                 size="sm"

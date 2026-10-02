@@ -17,13 +17,14 @@ import * as React from 'react';
 
 type Soltar = (e: { active: { id: string }; over: { id: string } | null }) => Promise<void> | void;
 
-const { dnd, toastInfo, toastSuccess } = vi.hoisted(() => ({
+const { dnd, toastInfo, toastSuccess, toastError } = vi.hoisted(() => ({
   dnd: {
     onDragEnd: undefined as Soltar | undefined,
     bloqueadas: new Map<string, boolean>(),
   },
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock('@dnd-kit/core', () => ({
@@ -48,7 +49,7 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: () => {}, start: () => {}, lenis: null }),
 }));
 vi.mock('@/components/ui/toast', () => ({
-  toast: { success: toastSuccess, info: toastInfo, error: vi.fn() },
+  toast: { success: toastSuccess, info: toastInfo, error: toastError },
 }));
 vi.mock('@/components/ui/alert-dialog', () => {
   const Pasa = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
@@ -173,6 +174,22 @@ describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
     });
 
     expect(toastInfo).not.toHaveBeenCalled();
+    expect(dialogo()).not.toBeNull();
+  });
+
+  it('🔴 un motivo de más de 500 caracteres (la columna) se dice antes de mandar, y el diálogo sigue abierto', async () => {
+    const onStageChange = vi.fn(() => Promise.resolve());
+    montar(onStageChange);
+    toastError.mockReset();
+
+    await soltar('abierto', 'lost');
+    await escribirMotivo('m'.repeat(501));
+    await act(async () => {
+      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
+    });
+
+    expect(onStageChange).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith('El motivo puede tener hasta 500 caracteres.');
     expect(dialogo()).not.toBeNull();
   });
 

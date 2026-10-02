@@ -16,6 +16,11 @@
  *    exactamente eso y deja reintentar SÓLO con los que fallaron.
  * 3. No inventa el texto. El mensaje se puede editar antes de mandarlo,
  *    porque quien responde después el teléfono es la inmobiliaria.
+ *
+ * Sistema de errores (02-10-2026): el fallo de aprobar al elegido y el de
+ * cada aviso pasan por el traductor —«conexión» sólo sin respuesta, un 5xx es
+ * nuestro con la referencia— y cada fila que no salió dice POR QUÉ, no sólo
+ * «No salió».
  */
 
 import { useState } from 'react'
@@ -33,8 +38,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
-import { clasificarFallo } from '@/lib/errores/clasificar'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
+import { MAX_LARGO_DEL_TEXTO_AL_CANDIDATO } from '@/lib/postulaciones/limites-de-la-decision'
 
 const MENSAJE_POR_DEFECTO =
   'Gracias por postularte. En esta oportunidad el inmueble se asignó a otra ' +
@@ -65,6 +71,8 @@ export function ModalAvisarNoElegidos({
   const [mensaje, setMensaje] = useState(MENSAJE_POR_DEFECTO)
   const [enCurso, setEnCurso] = useState(false)
   const [resultados, setResultados] = useState<Record<string, Resultado>>({})
+  // Por qué no le llegó el aviso a cada uno (por el traductor).
+  const [motivos, setMotivos] = useState<Record<string, string>>({})
   const [errorDelElegido, setErrorDelElegido] = useState<unknown>(null)
   // Aprobar dos veces al mismo puede dar 409 o duplicar el evento. Un
   // reintento tiene que reintentar SÓLO lo que falló.
@@ -104,16 +112,23 @@ export function ModalAvisarNoElegidos({
     // Se parte de lo ya conseguido: un reintento no puede "olvidar" a quien
     // sí recibió el aviso en la vuelta anterior.
     const nuevos: Record<string, Resultado> = { ...resultados }
+    const porQue: Record<string, string> = { ...motivos }
     for (const c of destinatarios) {
       nuevos[c.id] = 'enviando'
       setResultados({ ...nuevos })
       try {
         await landlordApplicationsApi.reject(c.id, mensaje.trim())
         nuevos[c.id] = 'listo'
-      } catch {
+        delete porQue[c.id]
+      } catch (err) {
         nuevos[c.id] = 'falló'
+        porQue[c.id] = mensajeParaLaPersona(err, {
+          porDefecto: 'No salió. Prueba de nuevo en un momento.',
+          accion: 'mandar el aviso',
+        })
       }
       setResultados({ ...nuevos })
+      setMotivos({ ...porQue })
     }
 
     setEnCurso(false)
@@ -172,8 +187,12 @@ export function ModalAvisarNoElegidos({
               <p className="text-sm font-medium text-danger">
                 No pudimos aprobar a {elegido.tenantName}
               </p>
-              <p className="mt-1 text-sm text-fg-muted">
-                {clasificarFallo(errorDelElegido).descripcion} No le avisamos a nadie más.
+              <p className="mt-1 text-sm text-fg-muted" data-testid="error-del-elegido">
+                {mensajeParaLaPersona(errorDelElegido, {
+                  porDefecto: 'Prueba de nuevo en un momento.',
+                  accion: `aprobar a ${elegido.tenantName}`,
+                })}{' '}
+                No le avisamos a nadie más.
               </p>
             </div>
           )}
@@ -217,6 +236,11 @@ export function ModalAvisarNoElegidos({
                         <span className="block truncate text-xs text-fg-muted">
                           {c.tenantEmail}
                         </span>
+                        {estado === 'falló' && motivos[c.id] && (
+                          <span className="block text-caption text-danger" data-testid={`motivo-${c.id}`}>
+                            {motivos[c.id]}
+                          </span>
+                        )}
                       </label>
                       {estado === 'listo' && (
                         <span className="flex items-center gap-1 text-xs text-success">
@@ -249,6 +273,7 @@ export function ModalAvisarNoElegidos({
                     onChange={(e) => setMensaje(e.target.value)}
                     rows={4}
                     disabled={enCurso}
+                    maxLength={MAX_LARGO_DEL_TEXTO_AL_CANDIDATO}
                     className="resize-none"
                   />
                   <p className="text-xs text-fg-muted">

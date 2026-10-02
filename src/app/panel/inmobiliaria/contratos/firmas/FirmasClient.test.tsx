@@ -186,3 +186,46 @@ describe('FirmasClient', () => {
     expect($('[data-testid="cancelar-ct-2"]')).toBeNull()
   })
 })
+
+/**
+ * 🔴 02-10-2026 · Cancelar una invitación que el back rechaza. Antes TODO
+ * fallo decía «No se pudo cancelar. Vuelve a intentar.»: un 409 que explica
+ * por qué no se puede, o un 500 nuestro, se leían como un problema pasajero.
+ */
+describe('FirmasClient — el fallo al cancelar, con la regla de oro', () => {
+  async function cancelarCon(error: unknown) {
+    api.cancelar.mockRejectedValueOnce(error as never)
+    await pintar()
+    await clic('[data-testid="cancelar-ct-2"]')
+    const input = contenedor.querySelector<HTMLInputElement>('[data-testid="motivo-ct-2"]')!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(input, 'Ya no va el arriendo')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await clic('[data-testid="confirmar-cancelar-ct-2"]')
+    return $('[data-testid="resultado-cancelacion"]')?.textContent ?? ''
+  }
+
+  it('🔴 un 409 dice el motivo del back, no «vuelve a intentar»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const texto = await cancelarCon(new ApiError(409, 'El contrato ya fue firmado: no hay invitación que cancelar.'))
+    expect(texto).toBe('El contrato ya fue firmado: no hay invitación que cancelar.')
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const texto = await cancelarCon(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: '2b3c4d5e' }),
+    )
+    expect(texto).toContain('No pudimos cancelar la invitación: algo falló de nuestro lado.')
+    expect(texto).toContain('2b3c4d5e')
+    expect(texto).not.toContain('Vuelve a intentar')
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const texto = await cancelarCon(new ApiError(0, 'Failed to fetch'))
+    expect(texto).toContain('conexión')
+  })
+})

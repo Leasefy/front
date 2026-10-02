@@ -15,10 +15,19 @@
  * que seguía corriendo la página debajo del modal. Ahora usa el patrón de la
  * casa (`ResponsiveDialog`, §17 de DESIGN.md), que además lo vuelve una hoja
  * desde abajo en móvil, como el resto de los diálogos del panel.
+ *
+ * Sistema de errores (02-10-2026): lo que el back rechaza del texto (`message`
+ * o `reason`, `MaxLength(1000)` en los DTO de `landlord/`) sale DEBAJO del
+ * campo con `ErrorDelCampo` y el campo recibe el foco; lo demás va al pie por
+ * el traductor —un 5xx dice que es nuestro, con la referencia; «conexión»
+ * sólo sin respuesta—. Antes se pintaba `err.message` crudo.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { MAX_LARGO_DEL_TEXTO_AL_CANDIDATO } from '@/lib/postulaciones/limites-de-la-decision';
 import { Textarea } from '@/components/ui/textarea';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
@@ -31,6 +40,15 @@ import {
 } from '@/components/ui/responsive-dialog';
 
 export type ActionType = 'approve' | 'reject' | 'request-info';
+
+export { MAX_LARGO_DEL_TEXTO_AL_CANDIDATO };
+
+/** Lo que se estaba haciendo, para el texto de un 5xx. */
+const ACCION_EN_INFINITIVO: Record<ActionType, string> = {
+  approve: 'aprobar al candidato',
+  reject: 'rechazar la postulación',
+  'request-info': 'pedir la información',
+};
 
 type ConfirmVariant = 'default' | 'destructive';
 
@@ -85,9 +103,11 @@ export function AccionDePostulacion({
   const cfg = ACTION_CONFIG[type];
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Error de una ACCIÓN, no de carga: acá el mensaje sí se muestra tal cual,
-  // porque describe lo que la persona acaba de intentar hacer.
+  // El error del texto (lo que el back dijo de `message`/`reason`) y el de la
+  // acción (todo lo demás: un 409, un 5xx, la red), por el traductor.
+  const [errorDelTexto, setErrorDelTexto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const campoRef = useRef<HTMLTextAreaElement>(null);
   const lenis = useLenis();
 
   // El scroll suave seguía corriendo la página debajo del modal.
@@ -103,11 +123,22 @@ export function AccionDePostulacion({
     if (cfg.required && !text.trim()) return;
     setIsSubmitting(true);
     setError(null);
+    setErrorDelTexto(null);
     try {
       await onConfirm(text.trim());
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al procesar la acción');
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { message: 'texto', reason: 'texto' },
+        campos: ['texto'],
+        porDefecto: 'No se pudo completar la acción. Prueba de nuevo en un momento.',
+        accion: ACCION_EN_INFINITIVO[type],
+      });
+      if (reparto.porCampo.texto) {
+        setErrorDelTexto(reparto.porCampo.texto);
+        campoRef.current?.focus();
+      }
+      setError(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
     } finally {
       setIsSubmitting(false);
     }
@@ -139,21 +170,26 @@ export function AccionDePostulacion({
               {cfg.label}
             </label>
             <Textarea
+              ref={campoRef}
               id="accion-postulacion-texto"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                setErrorDelTexto(null);
+              }}
               placeholder={cfg.placeholder}
               rows={3}
               autoFocus
+              maxLength={MAX_LARGO_DEL_TEXTO_AL_CANDIDATO}
               className="resize-none"
+              aria-invalid={errorDelTexto ? true : undefined}
+              aria-describedby={errorDelTexto ? 'accion-postulacion-texto-error' : undefined}
             />
+            <ErrorDelCampo id="accion-postulacion-texto-error" mensaje={errorDelTexto} className="mt-0" />
           </div>
 
-          {error && (
-            <p role="alert" className="text-sm text-danger">
-              {error}
-            </p>
-          )}
+          {/* Lo que no es del texto: un 409, un 5xx con su referencia, la red. */}
+          <ErrorDelCampo id="accion-postulacion-error" mensaje={error} className="mt-0 text-sm" />
 
           <ResponsiveDialogFooter className="gap-2">
             <Button

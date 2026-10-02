@@ -14,7 +14,7 @@
  */
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -36,7 +36,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { contractsApi } from '@/lib/api/contracts.service'
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import type { Contract } from '@/lib/types/contract'
 
 const USOS = { VIVIENDA: 'Vivienda', COMERCIAL: 'Comercial' } as const
@@ -52,6 +53,28 @@ const PERIODICIDADES = {
 type Uso = keyof typeof USOS
 type Periodicidad = keyof typeof PERIODICIDADES
 
+/** Los campos que pueden traer un error propio (del cliente o del back). */
+type CampoDeAdministracion = 'comision' | 'diasDePlazo' | 'penalidad' | 'referencia'
+const CAMPOS_DE_ADMINISTRACION: readonly CampoDeAdministracion[] = [
+  'comision',
+  'diasDePlazo',
+  'penalidad',
+  'referencia',
+]
+const ID_DEL_CAMPO: Record<CampoDeAdministracion, string> = {
+  comision: 'comision-de-administracion',
+  diasDePlazo: 'dias-de-plazo',
+  penalidad: 'penalidad-canones',
+  referencia: 'referencia-de-recaudo',
+}
+/** Nombre en `ActualizarAdministracionDto` → campo de este formulario. */
+const MAPA_DEL_SERVIDOR: Record<string, CampoDeAdministracion> = {
+  comisionPorcentaje: 'comision',
+  diasDePlazo: 'diasDePlazo',
+  penalidadTerminacionCanones: 'penalidad',
+  referenciaDeRecaudo: 'referencia',
+}
+
 interface Props {
   contract: Contract
   puedeEditar: boolean
@@ -66,6 +89,9 @@ export function AdministracionDelContrato({
   const [editando, setEditando] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // El error de un campo va debajo de ESE campo, en lugar de su ayuda gris.
+  const [errores, setErrores] = useState<Partial<Record<CampoDeAdministracion, string>>>({})
+  const formulario = useRef<HTMLDivElement | null>(null)
 
   const [uso, setUso] = useState<Uso | ''>((contract.usoInmueble as Uso) ?? '')
   const [periodicidad, setPeriodicidad] = useState<Periodicidad | ''>(
@@ -146,23 +172,41 @@ export function AdministracionDelContrato({
   const discrepan =
     delContrato != null && deConsignacion != null && delContrato !== deConsignacion
 
+  const limpiar = (campo: CampoDeAdministracion) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
+
+  /** Pinta los errores en sus campos y le da el foco al primero. */
+  function marcar(porCampo: Partial<Record<CampoDeAdministracion, string>>, orden: CampoDeAdministracion[]) {
+    setErrores(porCampo)
+    const primero = orden[0]
+    if (primero) {
+      formulario.current?.querySelector<HTMLElement>(`#${ID_DEL_CAMPO[primero]}`)?.focus()
+    }
+  }
+
   async function guardar() {
     setGuardando(true)
     setError(null)
+    setErrores({})
     try {
+      // Los mismos rangos que `ActualizarAdministracionDto`, atajados acá y
+      // dichos debajo de su campo.
       const n = comision.trim() === '' ? undefined : Number(comision)
-      if (n !== undefined && (!Number.isFinite(n) || n < 0 || n > 100)) {
-        setError('La comisión va entre 0 y 100.')
-        return
-      }
       const plazo = diasDePlazo.trim() === '' ? null : Number(diasDePlazo)
-      if (plazo !== null && (!Number.isInteger(plazo) || plazo < 0 || plazo > 60)) {
-        setError('Los días de plazo van entre 0 y 60, sin decimales.')
-        return
-      }
       const canones = penalidad.trim() === '' ? null : Number(penalidad.replace(',', '.'))
+      const delCliente: Partial<Record<CampoDeAdministracion, string>> = {}
+      if (n !== undefined && (!Number.isFinite(n) || n < 0 || n > 100)) {
+        delCliente.comision = 'La comisión va entre 0 y 100.'
+      }
+      if (plazo !== null && (!Number.isInteger(plazo) || plazo < 0 || plazo > 60)) {
+        delCliente.diasDePlazo = 'Los días de plazo van entre 0 y 60, sin decimales.'
+      }
       if (canones !== null && (!Number.isFinite(canones) || canones < 0 || canones > 99)) {
-        setError('La penalidad va en cánones, entre 0 y 99.')
+        delCliente.penalidad = 'La penalidad va en cánones, entre 0 y 99.'
+      }
+      const conError = CAMPOS_DE_ADMINISTRACION.filter((c) => delCliente[c])
+      if (conError.length > 0) {
+        marcar(delCliente, conError)
         return
       }
       const actualizado = await contractsApi.actualizarAdministracion(contract.id, {
@@ -192,7 +236,16 @@ export function AdministracionDelContrato({
       onActualizado(actualizado)
       setEditando(false)
     } catch (e) {
-      setError(mensajeParaLaPersona(e, { porDefecto: 'No se pudo guardar.', accion: 'guardar cómo se cobra el contrato' }))
+      // Un 400 con `campos` va a su campo; lo demás (un 503 sin la migración,
+      // un 5xx con su referencia, la red) al pie, por el traductor.
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
+        mapa: MAPA_DEL_SERVIDOR,
+        campos: CAMPOS_DE_ADMINISTRACION,
+        porDefecto: 'No se pudo guardar.',
+        accion: 'guardar cómo se cobra el contrato',
+      })
+      marcar(porCampo, orden)
+      setError(sueltos.length ? sueltos.join(' · ') : null)
     } finally {
       setGuardando(false)
     }
@@ -393,7 +446,7 @@ export function AdministracionDelContrato({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2" ref={formulario}>
             <fieldset className="space-y-3">
               <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Cobro
@@ -437,40 +490,57 @@ export function AdministracionDelContrato({
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">Comisión de administración (%)</label>
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.comision}>
+                  Comisión de administración (%)
+                </label>
                 <Input
+                  id={ID_DEL_CAMPO.comision}
                   type="number"
                   step="0.01"
                   min="0"
                   max="100"
                   value={comision}
-                  onChange={(e) => setComision(e.target.value)}
+                  onChange={(e) => {
+                    setComision(e.target.value)
+                    limpiar('comision')
+                  }}
+                  aria-invalid={errores.comision ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.comision}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  Se guarda también en la consignación: es de donde sale lo que
-                  se le descuenta al propietario.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.comision}-error`}
+                  mensaje={errores.comision}
+                  pista="Se guarda también en la consignación: es de donde sale lo que se le descuenta al propietario."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.diasDePlazo}>
                   Días de plazo antes de la mora
                 </label>
                 <Input
+                  id={ID_DEL_CAMPO.diasDePlazo}
                   type="number"
                   step="1"
                   min="0"
                   max="60"
                   value={diasDePlazo}
-                  onChange={(e) => setDiasDePlazo(e.target.value)}
+                  onChange={(e) => {
+                    setDiasDePlazo(e.target.value)
+                    limpiar('diasDePlazo')
+                  }}
                   placeholder="Los de la inmobiliaria"
                   data-testid="dias-de-plazo"
+                  aria-invalid={errores.diasDePlazo ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.diasDePlazo}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  El día del vencimiento cuenta como el primero: con 3, del 1 al 3
-                  está en plazo y desde el 4 corre la mora. Vacío = los días de la
-                  inmobiliaria.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.diasDePlazo}-error`}
+                  mensaje={errores.diasDePlazo}
+                  pista="El día del vencimiento cuenta como el primero: con 3, del 1 al 3 está en plazo y desde el 4 corre la mora. Vacío = los días de la inmobiliaria."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
@@ -478,26 +548,39 @@ export function AdministracionDelContrato({
                   Penalidad por terminación anticipada (cánones)
                 </label>
                 <Input
-                  id="penalidad-canones"
+                  id={ID_DEL_CAMPO.penalidad}
                   inputMode="decimal"
                   value={penalidad}
-                  onChange={(e) => setPenalidad(e.target.value)}
+                  onChange={(e) => {
+                    setPenalidad(e.target.value)
+                    limpiar('penalidad')
+                  }}
                   placeholder="La de la inmobiliaria"
                   data-testid="penalidad-canones"
+                  aria-invalid={errores.penalidad ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.penalidad}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  Se le cobra al inquilino si termina antes; al propietario le llega
-                  menos la comisión. Vacío = la de la inmobiliaria.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.penalidad}-error`}
+                  mensaje={errores.penalidad}
+                  pista="Se le cobra al inquilino si termina antes; al propietario le llega menos la comisión. Vacío = la de la inmobiliaria."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.referencia}>
                   Referencia de recaudo
                 </label>
                 <Input
+                  id={ID_DEL_CAMPO.referencia}
                   value={referencia}
-                  onChange={(e) => setReferencia(e.target.value)}
+                  onChange={(e) => {
+                    setReferencia(e.target.value)
+                    limpiar('referencia')
+                  }}
+                  aria-invalid={errores.referencia ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.referencia}-error`}
                   maxLength={60}
                   placeholder={
                     contract.code != null
@@ -506,11 +589,12 @@ export function AdministracionDelContrato({
                   }
                   data-testid="referencia-de-recaudo"
                 />
-                <p className="text-caption text-muted-foreground">
-                  El número con el que el inquilino paga y que viene escrito en
-                  el extracto: es lo que deja que la conciliación reconozca el
-                  pago sola. Vacío = se usa el consecutivo del contrato.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.referencia}-error`}
+                  mensaje={errores.referencia}
+                  pista="El número con el que el inquilino paga y que viene escrito en el extracto: es lo que deja que la conciliación reconozca el pago sola. Vacío = se usa el consecutivo del contrato."
+                  className="mt-0"
+                />
               </div>
 
               <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
@@ -598,7 +682,11 @@ export function AdministracionDelContrato({
             </fieldset>
           </div>
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p role="alert" className="text-sm text-destructive" data-testid="administracion-error">
+              {error}
+            </p>
+          ) : null}
 
           <DialogFooter>
             <Button
@@ -608,6 +696,7 @@ export function AdministracionDelContrato({
               onClick={() => {
                 setEditando(false)
                 setError(null)
+                setErrores({})
               }}
             >
               Cancelar

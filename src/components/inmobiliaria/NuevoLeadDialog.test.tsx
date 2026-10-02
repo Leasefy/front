@@ -163,7 +163,7 @@ describe('NuevoLeadDialog', () => {
       guardar().click();
     });
 
-    expect($('[data-testid="error-candidateEmail"]')?.textContent).toBe('Ese correo no es válido.');
+    expect($('#nuevo-lead-correo-error')?.textContent).toBe('Ese correo no es válido.');
     expect(onCreado).not.toHaveBeenCalled();
   });
 
@@ -176,7 +176,7 @@ describe('NuevoLeadDialog', () => {
       guardar().click();
     });
 
-    expect($('[data-testid="error-consignacionId"]')?.textContent).toContain('ya no está consignado');
+    expect($('#nuevo-lead-inmueble-error')?.textContent).toContain('ya no está consignado');
   });
 
   it('una caída de red pide reintentar (ahí sí sirve)', async () => {
@@ -215,7 +215,98 @@ describe('NuevoLeadDialog', () => {
   });
 });
 
+/**
+ * 02-10-2026 · Sistema de errores: la frase del servidor va debajo de SU
+ * campo (y el campo recibe el foco); un 5xx dice que es nuestro con la
+ * referencia; sin respuesta, la conexión.
+ */
+function cuatrocientos(campos: Array<{ campo: string; regla: string; mensaje: string }>) {
+  return new ApiError(
+    400,
+    campos.map((c) => c.mensaje),
+    'DATOS_INVALIDOS',
+    { statusCode: 400, code: 'DATOS_INVALIDOS', message: campos.map((c) => c.mensaje), campos },
+  );
+}
+
+describe('NuevoLeadDialog — el sistema de errores', () => {
+  it('🔴 un 400 con campos pinta la frase del servidor bajo su campo y le da el foco', async () => {
+    const frase = 'El nombre puede tener hasta 200 caracteres.';
+    crear.mockRejectedValue(cuatrocientos([{ campo: 'candidateName', regla: 'longitud_maxima', mensaje: frase }]));
+    montar();
+    await llenarLoMinimo();
+
+    await act(async () => {
+      guardar().click();
+    });
+
+    expect($('#nuevo-lead-nombre-error')?.textContent).toBe(frase);
+    const nombre = $<HTMLInputElement>('#nuevo-lead-nombre');
+    expect(nombre.getAttribute('aria-invalid')).toBe('true');
+    expect(nombre.getAttribute('aria-describedby')).toBe('nuevo-lead-nombre-error');
+    expect(document.activeElement).toBe(nombre);
+    // No se repite al pie: ya está donde se corrige.
+    expect($('[data-testid="nuevo-lead-error"]')).toBeNull();
+  });
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    crear.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'a1b2c3d4',
+      }),
+    );
+    montar();
+    await llenarLoMinimo();
+
+    await act(async () => {
+      guardar().click();
+    });
+
+    const texto = $('[data-testid="nuevo-lead-error"]')?.textContent ?? '';
+    expect(texto).toContain('de nuestro lado');
+    expect(texto).toContain('a1b2c3d4');
+    expect(texto.toLowerCase()).not.toContain('conexión');
+  });
+
+  it('🔴 status 0 (no hubo respuesta) habla de la conexión', async () => {
+    crear.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    montar();
+    await llenarLoMinimo();
+
+    await act(async () => {
+      guardar().click();
+    });
+
+    expect($('[data-testid="nuevo-lead-error"]')?.textContent).toContain('conexión');
+  });
+});
+
 describe('erroresDelLead', () => {
+  it('🔴 la frase del servidor pasa tal cual, también con los nombres de POST /inmobiliaria/leads', () => {
+    const r = erroresDelLead(
+      cuatrocientos([
+        { campo: 'nombre', regla: 'longitud_maxima', mensaje: 'El nombre puede tener hasta 200 caracteres.' },
+        { campo: 'telefono', regla: 'longitud_maxima', mensaje: 'El teléfono puede tener hasta 40 caracteres.' },
+      ]),
+    );
+    expect(r.porCampo.candidateName).toBe('El nombre puede tener hasta 200 caracteres.');
+    expect(r.porCampo.candidatePhone).toBe('El teléfono puede tener hasta 40 caracteres.');
+    expect(r.general).toBeUndefined();
+  });
+
+  it('🔴 el presupuesto, que el diálogo no pinta, no se pierde: va al pie con la frase de Nico', () => {
+    const frase = 'El presupuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+    const error = cuatrocientos([{ campo: 'presupuestoCop', regla: 'maximo', mensaje: frase }]);
+    // Sin campo en pantalla → al pie.
+    expect(erroresDelLead(error, { visibles: ['candidateName'] }).general).toBe(frase);
+    // El día que el formulario lo pida, ya sabe dónde ponerlo.
+    expect(erroresDelLead(error).porCampo.presupuestoCop).toBe(frase);
+  });
+
+
   it('reparte los mensajes del ValidationPipe por campo y deja sueltos los demás', () => {
     const r = erroresDelLead(
       new ApiError(400, ['candidateName must be a string', 'algo más que no es de un campo']),

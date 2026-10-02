@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import { cicloDeVidaApi, type ContratoVencido } from "@/lib/api/ciclo-de-vida.service";
-import { mensajeDelFallo } from "@/lib/contratos/fallo-de-accion";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 
 export function RenovarContratoVencido({
   contractId,
@@ -29,6 +30,8 @@ export function RenovarContratoVencido({
   const [vencido, setVencido] = useState<ContratoVencido | null>(null);
   const [hasta, setHasta] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  // Lo que el back rechace del día de entrega va debajo de ese campo.
+  const [errorDelDia, setErrorDelDia] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let vigente = true;
@@ -49,13 +52,25 @@ export function RenovarContratoVencido({
 
   const renovar = async (body: { modo: "DIAS_OCUPADOS" | "TERMINO_INICIAL"; hasta?: string }) => {
     setOcupado(true);
+    setErrorDelDia(undefined);
     try {
       const r = await cicloDeVidaApi.extender(contractId, body);
       toast.success(`Contrato renovado hasta el ${r.finNuevo}.`);
       setVencido(null);
       onRenovado();
     } catch (err) {
-      toast.error("No se pudo renovar.", { description: mensajeDelFallo(err, "Intenta de nuevo.") });
+      // Un 400 del día va bajo el día; un 409 (ya no está vencido), un 5xx con
+      // su referencia o la red van al toast, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(err, {
+        campos: ["hasta"],
+        porDefecto: "No pudimos renovar el contrato.",
+        accion: "renovar el contrato",
+      });
+      if (porCampo.hasta) {
+        setErrorDelDia(porCampo.hasta);
+        document.getElementById("fecha-de-entrega")?.focus();
+      }
+      if (sueltos.length) toast.error("No se pudo renovar.", { description: sueltos.join(" · ") });
     } finally {
       setOcupado(false);
     }
@@ -77,9 +92,15 @@ export function RenovarContratoVencido({
             id="fecha-de-entrega"
             type="date"
             value={hasta}
-            onChange={(e) => setHasta(e.target.value)}
+            onChange={(e) => {
+              setHasta(e.target.value);
+              setErrorDelDia(undefined);
+            }}
             className="mt-1"
+            aria-invalid={errorDelDia ? true : undefined}
+            aria-describedby="fecha-de-entrega-error"
           />
+          <ErrorDelCampo id="fecha-de-entrega-error" mensaje={errorDelDia} />
         </label>
         <Button
           size="sm"

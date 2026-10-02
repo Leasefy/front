@@ -32,6 +32,7 @@ import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
 import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 // ============================================================================
 // Types
@@ -498,6 +499,13 @@ export function PipelineBoard({
   const confirmarPerdido = useCallback(
     async (motivo: string) => {
       if (!perdiendo) return;
+      // El mismo tope que el back (`MoveStageDto.lostReason`, VarChar(500)):
+      // se dice antes de mandar, y el diálogo queda abierto para recortarlo.
+      const largo = revisarMotivoDePerdida(motivo);
+      if (largo) {
+        toast.error(largo);
+        return;
+      }
       setEnviandoMotivo(true);
       try {
         await onStageChange(perdiendo.id, 'lost', motivo);

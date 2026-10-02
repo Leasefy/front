@@ -37,9 +37,10 @@ export function oneYearAheadISO(from: string): string {
 
 /**
  * Tope del canon mensual. Por debajo del límite de `int4` (2.147.483.647), que
- * es el tipo de `contracts.monthly_rent` en el back.
+ * es el tipo de `contracts.monthly_rent` en el back. Desde el 02-10-2026 sale
+ * del espejo del DTO (antes era 1.000 millones sólo acá y el back no topaba).
  */
-export const CANON_MAXIMO_COP = 1_000_000_000;
+export { CANON_MAXIMO_COP } from '@/lib/contratos/limites-del-contrato';
 /** Cuánto se acepta retrofechar un contrato, y cuánto adelantarlo. */
 export const ANIOS_HACIA_ATRAS = 5;
 export const ANIOS_HACIA_ADELANTE = 2;

@@ -1,7 +1,8 @@
 'use client'
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -15,6 +16,23 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  celularParaElBack,
+  partirElNombre,
+  revisarDatosDelPropietario,
+  type CampoDelPropietario,
+  type ErroresDelPropietario,
+} from './datos-del-propietario'
+
+/** La ruta de cada dato en el cuerpo de `POST /users/me/onboarding` → su campo en el paso 1. */
+const CAMPO_DEL_SERVIDOR: Record<string, CampoDelPropietario> = {
+  firstName: 'displayName',
+  lastName: 'displayName',
+  phone: 'phone',
+}
+const CAMPOS_DEL_PASO_1: readonly CampoDelPropietario[] = ['displayName', 'phone']
 
 // ============================================================================
 // TextTs & Constants
@@ -110,19 +128,43 @@ function OnboardingPropietarioContent() {
     }
   }, [])
 
+  // Lo que el back rechazó por campo (un 400 con `campos`): se va al tocar el campo.
+  const [erroresDelServidor, setErroresDelServidor] = useState<ErroresDelPropietario>({})
+  // El celular se marca en rojo al salir de él (o al intentar seguir), no mientras se escribe.
+  const [celularRevisado, setCelularRevisado] = useState(false)
+
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
+    setErroresDelServidor((prev) => {
+      const tocados = (Object.keys(updates) as (keyof OnboardingData)[]).filter(
+        (k): k is CampoDelPropietario => k === 'displayName' || k === 'phone',
+      )
+      if (!tocados.some((c) => prev[c] !== undefined)) return prev
+      const next = { ...prev }
+      for (const c of tocados) delete next[c]
+      return next
+    })
   }
+
+  // Las mismas reglas que el back (`datos-del-propietario.ts`).
+  const erroresDelCliente = useMemo(
+    () => revisarDatosDelPropietario({ displayName: data.displayName, phone: data.phone }),
+    [data.displayName, data.phone],
+  )
+  const errorDelNombre =
+    (data.displayName.trim() ? erroresDelCliente.displayName : undefined) ?? erroresDelServidor.displayName
+  const errorDelCelular = (celularRevisado ? erroresDelCliente.phone : undefined) ?? erroresDelServidor.phone
 
   // When coming from publish wizard (returnUrl present), skip property step
   const fromPublish = !!returnUrl
   const totalSteps = fromPublish ? 1 : 2
 
-  const isStep1Valid = data.displayName.trim().length > 0
+  const isStep1Valid = Object.keys(erroresDelCliente).length === 0
   const isStep2Valid = data.propertyTextT !== null && data.propertyCity.trim().length > 0
 
   // First missing-field message per step (for the disabled-CTA tap affordance)
-  const step1HintMessage = 'Ingresa tu nombre completo para continuar'
+  const step1HintMessage =
+    erroresDelCliente.displayName ?? erroresDelCliente.phone ?? 'Ingresa tu nombre completo para continuar'
   const step2HintMessage = data.propertyTextT === null
     ? 'Selecciona el tipo de propiedad para continuar'
     : 'Selecciona la ciudad para continuar'
@@ -147,20 +189,23 @@ function OnboardingPropietarioContent() {
   const handleSubmit = async () => {
     if (!fromPublish && !isStep2Valid) return
 
+    if (Object.keys(erroresDelCliente).length > 0) {
+      setCelularRevisado(true)
+      setStep(1)
+      return
+    }
+
     setIsSubmitting(true)
+    setErroresDelServidor({})
     try {
       // Split displayName into first/last for backend
-      const nameParts = data.displayName.trim().split(/\s+/)
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || firstName
+      const { firstName, lastName } = partirElNombre(data.displayName)
 
-      // Call backend onboarding endpoint
-      // Strip spaces from phone — backend expects 3XXXXXXXXX or +573XXXXXXXXX
-      const rawPhone = data.phone?.replace(/\s/g, '') || ''
+      // Call backend onboarding endpoint (el celular en E.164, o nada).
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
-        phone: rawPhone.length >= 10 ? rawPhone : undefined,
+        phone: celularParaElBack(data.phone),
         userType: 'LANDLORD',
       })
 
@@ -192,7 +237,25 @@ function OnboardingPropietarioContent() {
 
       setIsComplete(true)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error saving landlord onboarding:', error)
+      // 🔴 02-10-2026 · Antes sólo hacía `console.error`: el botón se volvía a
+      // prender y nadie decía nada. Ahora, con la regla de oro del traductor:
+      //  · lo que el back rechazó por campo va a SU campo (paso 1), con foco;
+      //  · lo demás va a un toast: un 5xx dice que fue nuestro, con la
+      //    referencia; «conexión» sólo cuando no hubo respuesta.
+      const reparto = repartirErroresDelServidor<CampoDelPropietario>(error, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_PASO_1,
+        accion: 'guardar tu perfil',
+        porDefecto: 'No pudimos guardar tu perfil. Prueba de nuevo en un momento.',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        setStep(1)
+        setTimeout(() => document.getElementById(primero === 'phone' ? 'ownerPhone' : 'displayName')?.focus(), 0)
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setIsSubmitting(false)
     }
@@ -361,7 +424,11 @@ function OnboardingPropietarioContent() {
                     value={data.displayName}
                     onChange={(e) => updateData({ displayName: e.target.value })}
                     placeholder="Tu nombre completo"
+                    invalid={Boolean(errorDelNombre)}
+                    aria-invalid={Boolean(errorDelNombre) || undefined}
+                    aria-describedby={errorDelNombre ? 'displayName-error' : undefined}
                   />
+                  <ErrorDelCampo id="displayName-error" mensaje={errorDelNombre} />
                 </div>
 
                 {/* Phone */}
@@ -393,20 +460,17 @@ function OnboardingPropietarioContent() {
                     }}
                     placeholder="300 123 4567"
                     maxLength={12}
-                    className={cn(
-                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10
-                        ? "border-warning focus:border-warning"
-                        : ""
-                    )}
+                    onBlur={() => setCelularRevisado(true)}
+                    invalid={Boolean(errorDelCelular)}
+                    aria-invalid={Boolean(errorDelCelular) || undefined}
+                    aria-describedby={errorDelCelular ? 'ownerPhone-error' : undefined}
                   />
-                  <p className="text-xs text-fg-subtle mt-1.5">
-                    Solo para notificaciones importantes de tu propiedad
-                  </p>
-                  {data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && (
-                    <p className="mt-1 text-xs text-warning">
-                      El número debe tener 10 dígitos
-                    </p>
-                  )}
+                  {/* La ayuda y el error se cruzan (Cadence `FormError` con `hint`). */}
+                  <ErrorDelCampo
+                    id="ownerPhone-error"
+                    mensaje={errorDelCelular}
+                    pista="Solo para notificaciones importantes de tu propiedad"
+                  />
                 </div>
 
               </div>
@@ -415,7 +479,10 @@ function OnboardingPropietarioContent() {
               <span
                 className={cn('block', !isStep1Valid && !isSubmitting && 'cursor-not-allowed')}
                 onClick={() => {
-                  if (!isStep1Valid && !isSubmitting) setDisabledHint(step1HintMessage)
+                  if (!isStep1Valid && !isSubmitting) {
+                    setDisabledHint(step1HintMessage)
+                    setCelularRevisado(true)
+                  }
                 }}
               >
               <Button

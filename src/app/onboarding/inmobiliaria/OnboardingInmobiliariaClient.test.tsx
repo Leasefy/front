@@ -145,6 +145,19 @@ function setInputValue(input: HTMLInputElement, value: string) {
   })
 }
 
+/**
+ * 02-10-2026 · En «Antes de comenzar» la ayuda y el error de cada campo se
+ * cruzan (Cadence `FormError` con `hint`): el error entra cuando la ayuda
+ * terminó de salir.
+ */
+async function esperarElCruce() {
+  for (let i = 0; i < 10; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+  }
+}
+
 async function clickSubmit() {
   const submitBtn = container.querySelector(
     '[data-testid="agency-step-form"] button[type="submit"]',
@@ -283,7 +296,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('pide el apellido en vez de guardar «Ana Ana» como nombre y apellido', () => {
+  it('pide el apellido en vez de guardar «Ana Ana» como nombre y apellido', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -295,10 +308,11 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Falta el apellido')
   })
 
-  it('blocks submit and shows a hint per empty required field', () => {
+  it('blocks submit and shows a hint per empty required field', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -308,6 +322,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Escribe tu nombre completo para continuar.')
     expect(container.textContent).toContain('La razón social es obligatoria.')
     expect(container.textContent).toContain('El NIT es obligatorio.')
@@ -340,7 +355,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', () => {
+  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -356,6 +371,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Le faltan dígitos')
   })
 
@@ -371,7 +387,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     expect(byId('agencyNit').value).toBe('9000000000-0')
   })
 
-  it('rechaza un dígito de verificación que no corresponde y dice cuál es', () => {
+  it('rechaza un dígito de verificación que no corresponde y dice cuál es', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -385,6 +401,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('es 8')
   })
 

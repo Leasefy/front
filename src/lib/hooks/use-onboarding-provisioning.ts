@@ -30,6 +30,8 @@ import {
 } from '@/lib/api/onboarding-provisioning.service'
 import { ApiError } from '@/lib/api/client'
 import { esErrorDeConexion } from '@/lib/conexion/estado-de-conexion'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   esServicioNoDisponible,
   servicioDelError,
@@ -90,6 +92,26 @@ export interface ValoresGuardados {
  * En los dos casos lo escrito no se pierde y reintentar sí puede servir: el
  * banner lo dice sin «Código 503».
  */
+/** Los campos de «Antes de comenzar» (`OwnerNameStepForm`) que el back puede rechazar. */
+export type CampoDelRegistro = 'nombre' | 'representante' | 'razonSocial' | 'nit'
+
+/** Un mensaje por campo de «Antes de comenzar». */
+export type ErroresDelRegistro = Partial<Record<CampoDelRegistro, string>>
+
+/**
+ * La ruta de cada dato en el cuerpo de `POST /users/me/onboarding` → su campo
+ * en el formulario. El nombre completo se parte en `firstName`/`lastName`.
+ */
+const CAMPO_DEL_SERVIDOR: Record<string, CampoDelRegistro> = {
+  firstName: 'nombre',
+  lastName: 'nombre',
+  'agency.name': 'razonSocial',
+  'agency.nit': 'nit',
+  'agency.legalRepresentative': 'representante',
+}
+
+const CAMPOS_DEL_REGISTRO: readonly CampoDelRegistro[] = ['nombre', 'representante', 'razonSocial', 'nit']
+
 export type CaidaDelRegistro =
   | { tipo: 'servicio'; servicio: ServicioId | null }
   | { tipo: 'conexion' }
@@ -108,11 +130,20 @@ export interface FalloDeAprovisionamiento {
    * con este mensaje arriba, para corregir y reenviar. Nunca es un callejón.
    */
   paraCorregir?: boolean
+  /**
+   * 02-10-2026 · Lo que el back rechazó por campo (el 400 `DATOS_INVALIDOS`
+   * con `campos`): cada mensaje va a SU campo de `OwnerNameStepForm`, no
+   * arriba. Lo que no tiene campo queda en `mensaje`.
+   */
+  campos?: ErroresDelRegistro
 }
 
 /** Lo que se dice arriba del formulario cuando la última vez el micro rechazó los datos. */
 export const REVISA_LOS_DATOS =
   'La última vez no pudimos crear tu inmobiliaria con estos datos. Revísalos —sobre todo el NIT— y vuelve a intentar.'
+
+/** Arriba del formulario, cuando todo lo que el back rechazó quedó marcado en su campo. */
+export const REVISA_LOS_CAMPOS = 'Corrige lo que está marcado abajo y vuelve a intentar.'
 
 /** Lo que tranquiliza en el registro: lo escrito se queda (ver `valoresGuardados`). */
 export const LO_ESCRITO_NO_SE_PIERDE = 'Lo que escribiste no se pierde.'
@@ -203,32 +234,45 @@ export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
      */
     if (error.code === CORREO_DE_OTRA_INMOBILIARIA) {
       return {
-        mensaje: error.message || MOTIVO_CORREO_DE_OTRA_INMOBILIARIA,
+        mensaje: mensajeParaLaPersona(error, { porDefecto: MOTIVO_CORREO_DE_OTRA_INMOBILIARIA }),
         reintentable: false,
         status: error.status,
       }
     }
     if (error.status === 0) {
-      return { mensaje: error.message, reintentable: true, status: 0 }
+      // Sin respuesta: «conexión» sólo acá (la regla de oro del traductor).
+      return { mensaje: mensajeParaLaPersona(error), reintentable: true, status: 0 }
     }
     // Un 400/422 son los DATOS (el micro los rechazó, falta el NIT, no pasó
     // la validación): se corrigen en el formulario y se reenvían. Antes esto
     // era «terminal» y la persona quedaba trancada para siempre (Nico,
     // 01-10-2026: «le dice que es irreversible, ¿cómo así? es ilógico»).
+    // Desde el 02-10 lo que trae `campos` va a SU campo; arriba, sólo lo suelto.
     if (error.status === 400 || error.status === 422) {
+      const reparto = repartirErroresDelServidor<CampoDelRegistro>(error, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_REGISTRO,
+        porDefecto: REVISA_LOS_DATOS,
+      })
+      const hayCampos = reparto.orden.length > 0
       return {
-        mensaje: error.message || REVISA_LOS_DATOS,
+        mensaje: reparto.sueltos.join(' · ') || (hayCampos ? REVISA_LOS_CAMPOS : REVISA_LOS_DATOS),
         reintentable: true,
         status: error.status,
         paraCorregir: true,
+        ...(hayCampos ? { campos: reparto.porCampo } : {}),
       }
     }
+    // Lo demás, con la regla de oro: un 4xx dice lo que mandó el back; un
+    // 5xx, que falló de nuestro lado, con la referencia.
     return {
-      mensaje: error.message || FALLO_GENERICO,
+      mensaje: mensajeParaLaPersona(error, { accion: 'crear tu inmobiliaria', porDefecto: FALLO_GENERICO }),
       reintentable: error.status !== 403,
       status: error.status,
     }
   }
+  // Algo que no vino de una respuesta del back (un error de JavaScript): no
+  // se le muestra su texto a nadie.
   return { mensaje: FALLO_GENERICO, reintentable: true, status: null }
 }
 

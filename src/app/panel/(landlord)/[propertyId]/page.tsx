@@ -20,7 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
+import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates, mensajeDelFalloAlDecidir } from '@/lib/hooks/useLandlord';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ApiError } from '@/lib/api/client';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -305,8 +306,13 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
       setSelectedCandidate(fullCandidate);
       setIsDetailOpen(true);
       setSecondaryView(null);
-    } catch {
-      toast.error('Error cargando detalles del candidato');
+    } catch (err) {
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'cargar el detalle del candidato',
+          porDefecto: 'No pudimos cargar el detalle del candidato. Prueba de nuevo en un momento.',
+        }),
+      );
     }
   }, []);
 
@@ -330,7 +336,15 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
         'more-info': 'more-info',
       };
 
-      const result = await decide(candidateId, { decision: decisionMap[newStatus] });
+      // 02-10-2026: si la decisión no se guarda, se dice (antes no pasaba
+      // nada: ni el toast de éxito ni uno de error) y el detalle sigue abierto.
+      let result: Awaited<ReturnType<typeof decide>>;
+      try {
+        result = await decide(candidateId, { decision: decisionMap[newStatus] });
+      } catch (err) {
+        toast.error(mensajeDelFalloAlDecidir(err, decisionMap[newStatus]));
+        return;
+      }
 
       if (result) {
         // Optimistic local update

@@ -55,6 +55,28 @@ describe('verificarValidacion («Ya la validé»)', () => {
   it('un 503 del back no se muestra crudo', async () => {
     const err = await errorAnte(verificarValidacion, 503, 'Service Unavailable')
     expect(err.message).toContain('No pudimos revisar tu validación')
+    expect(err.message).not.toContain('Service Unavailable')
+  })
+
+  // 🔴 02-10-2026 · regla de oro: un 5xx es nuestro, con la referencia; nunca «conexión».
+  it('🔴 un 500 dice que fue nuestro, con la referencia, sin culpar a la conexión', async () => {
+    postMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const err = (await verificarValidacion().catch((e: unknown) => e)) as Error
+    expect(err.message).toMatch(/^No pudimos revisar tu validación: algo falló de nuestro lado/)
+    expect(err.message).toContain('ab12cd34')
+    expect(err.message).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('un 409 muestra lo que escribió el back', async () => {
+    const err = await errorAnte(verificarValidacion, 409, 'Fianly todavía no nos confirma tu validación.')
+    expect(err.message).toBe('Fianly todavía no nos confirma tu validación.')
   })
 })
 
@@ -74,8 +96,13 @@ describe('reenviarValidacion («Reenviar la validación»)', () => {
     expect(err.message).toContain('Espera un par de minutos')
   })
 
-  it('sin conexión: lo dice', async () => {
+  it('sin conexión (status 0): lo dice', async () => {
     const err = await errorAnte(reenviarValidacion, 0, 'Failed to fetch')
-    expect(err.message).toContain('No pudimos conectarnos')
+    expect(err.message).toMatch(/conexión/)
+  })
+
+  it('un 400 dice lo que está mal (el mensaje del back), no un genérico', async () => {
+    const err = await errorAnte(reenviarValidacion, 400, 'Tu estudio ya no espera validación.')
+    expect(err.message).toBe('Tu estudio ya no espera validación.')
   })
 })

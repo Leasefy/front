@@ -21,6 +21,7 @@ import { SettingsModal } from './SettingsModal';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
+import { mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 
 const NS = 'inmobiliaria.config.security';
 
@@ -46,6 +47,12 @@ export function CambiarContrasenaModal({ abierto, onCerrar }: CambiarContrasenaM
   const { t } = useI18n();
   const { user, sendPasswordReset } = useAuth();
   const [estado, setEstado] = useState<Estado>('listo');
+  /**
+   * Lo que pasó, en español (02-10-2026). Antes decía «No pudimos enviar el
+   * enlace. Intenta de nuevo.» ante cualquier fallo: también ante el límite
+   * de envíos de Supabase, que no se arregla intentando de nuevo ya.
+   */
+  const [mensajeDeError, setMensajeDeError] = useState<string>('');
 
   const correo = user?.email ?? '';
 
@@ -55,7 +62,15 @@ export function CambiarContrasenaModal({ abierto, onCerrar }: CambiarContrasenaM
     try {
       await sendPasswordReset(correo);
       setEstado('enviado');
-    } catch {
+    } catch (err) {
+      // Por código de Supabase y con la regla de oro: el límite de envíos lo
+      // dice; un 5xx dice que fue nuestro; «conexión», sólo sin respuesta.
+      setMensajeDeError(
+        mensajeDeSupabase(err, {
+          porDefecto: t(`${NS}.passwordModalError`),
+          accion: 'enviar el enlace',
+        }),
+      );
       setEstado('error');
     }
   };
@@ -124,7 +139,9 @@ export function CambiarContrasenaModal({ abierto, onCerrar }: CambiarContrasenaM
           {estado === 'error' && (
             <div className="flex gap-3 rounded-lg border border-border bg-danger-soft p-3">
               <Warning className="h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden />
-              <p className="text-body-sm text-danger">{t(`${NS}.passwordModalError`)}</p>
+              <p role="alert" className="text-body-sm text-danger">
+                {mensajeDeError || t(`${NS}.passwordModalError`)}
+              </p>
             </div>
           )}
         </div>

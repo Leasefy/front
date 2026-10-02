@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Controller, useFieldArray, useForm, type FieldPath } from 'react-hook-form'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { ArrowRight, Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -46,6 +48,12 @@ export interface MembersStepFormProps {
    * and can reject a payload the client-side zod schema accepted).
    */
   submitError?: string | null
+  /**
+   * 02-10-2026 · El 400 del micro, entero (`OnboardingSessionError` con los
+   * `campos` del sobre): `members.0.email` va al correo de la fila 1, con foco.
+   * Al aviso va SÓLO lo que no tiene campo. Si llega, manda sobre `submitError`.
+   */
+  errorDelServidor?: unknown
   /** Con esto puesto se muestra el resultado de las invitaciones en vez del formulario. */
   pendingInvites: PendingMembersInvites | null
   /** Con la sesión, lo escrito y no enviado vuelve al devolverse de paso (`borrador-local.ts`). */
@@ -56,11 +64,6 @@ export interface MembersStepFormProps {
   onContinueAfterInvites: () => void
   /** Vuelve a pedir SÓLO las invitaciones que fallaron. Sin esto no hay botón. */
   onReintentarInvitaciones?: () => Promise<void>
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null
-  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 function roleLabel(role: string | undefined): string {
@@ -265,6 +268,7 @@ export function MembersStepForm({
   isSubmitting,
   onSubmit,
   submitError,
+  errorDelServidor,
   pendingInvites,
   onContinueAfterInvites,
   onReintentarInvitaciones,
@@ -279,6 +283,8 @@ export function MembersStepForm({
     control,
     watch,
     setError,
+    setFocus,
+    getValues,
     formState: { errors, isSubmitting: enviando },
   } = useForm<MembersStepFormValues>({
     // Lo escrito sin enviar manda; si no hay, lo que ya quedó guardado.
@@ -296,6 +302,38 @@ export function MembersStepForm({
     const sub = watch((valores) => guardarBorradorLocal(sessionId, 'members', valores))
     return () => sub.unsubscribe()
   }, [watch, sessionId])
+
+  // El 400 del micro: cada problema a su fila y campo; lo suelto, al aviso.
+  const [sueltosDelServidor, setSueltosDelServidor] = useState<string[]>([])
+  useEffect(() => {
+    if (!errorDelServidor) {
+      setSueltosDelServidor([])
+      return
+    }
+    // Lo que el micro valida de cada fila: el correo y el rol (`toMembersRequest`).
+    const campos = (getValues('members') ?? []).flatMap((_, i) => [
+      `members.${i}.email` as const,
+      `members.${i}.role` as const,
+    ])
+    const reparto = aplicarErroresDelServidor<FieldPath<MembersStepFormValues>>(
+      errorDelServidor,
+      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
+      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
+      { setError: (campo, error) => setError(campo, error), setFocus },
+      {
+        campos,
+        toast: false,
+        accion: 'guardar tu equipo',
+        porDefecto: 'No pudimos guardar tu equipo. Revisa los correos e intenta de nuevo.',
+      },
+    )
+    setSueltosDelServidor(reparto.sueltos)
+    // Sólo cuando llega un error nuevo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorDelServidor])
+
+  const avisoDelFormulario =
+    errorDelServidor !== undefined ? sueltosDelServidor.join(' · ') || null : submitError
 
   const submit = handleSubmit(async (values) => {
     const parsed = membersStepSchema.safeParse(values)
@@ -335,7 +373,7 @@ export function MembersStepForm({
         Configuración → Equipo.
       </p>
 
-      <FieldError message={errors.members?.message} />
+      <ErrorDelCampo id="members-error" mensaje={errors.members?.message} />
 
       {/* Una tarjeta por persona, con cada campo rotulado. Antes eran tres
           controles sueltos sin rótulo y el selector del rol quedaba más alto
@@ -380,9 +418,15 @@ export function MembersStepForm({
                   spellCheck={false}
                   placeholder="correo@inmobiliaria.com"
                   className="h-11"
+                  invalid={Boolean(errors.members?.[index]?.email)}
+                  aria-invalid={Boolean(errors.members?.[index]?.email) || undefined}
+                  aria-describedby={errors.members?.[index]?.email ? `members.${index}.email-error` : undefined}
                   {...register(`members.${index}.email` as const)}
                 />
-                <FieldError message={errors.members?.[index]?.email?.message} />
+                <ErrorDelCampo
+                  id={`members.${index}.email-error`}
+                  mensaje={errors.members?.[index]?.email?.message}
+                />
               </div>
 
               <div>
@@ -397,7 +441,10 @@ export function MembersStepForm({
                       {/* Misma altura que el correo de al lado, y el rótulo arriba
                           en los dos: así los controles quedan al mismo nivel. */}
                       <SelectTrigger
+                        ref={roleField.ref}
                         id={`members.${index}.role`}
+                        aria-invalid={Boolean(errors.members?.[index]?.role) || undefined}
+                        aria-describedby={errors.members?.[index]?.role ? `members.${index}.role-error` : undefined}
                         className="h-11 whitespace-nowrap [&>span]:truncate"
                       >
                         <SelectValue placeholder="Rol" />
@@ -411,6 +458,10 @@ export function MembersStepForm({
                       </SelectContent>
                     </Select>
                   )}
+                />
+                <ErrorDelCampo
+                  id={`members.${index}.role-error`}
+                  mensaje={errors.members?.[index]?.role?.message}
                 />
               </div>
             </div>
@@ -427,9 +478,15 @@ export function MembersStepForm({
                 autoComplete="name"
                 placeholder="Ej: Ana María Pérez"
                 className="h-11"
+                invalid={Boolean(errors.members?.[index]?.nombre)}
+                aria-invalid={Boolean(errors.members?.[index]?.nombre) || undefined}
+                aria-describedby={errors.members?.[index]?.nombre ? `members.${index}.nombre-error` : undefined}
                 {...register(`members.${index}.nombre` as const)}
               />
-              <FieldError message={errors.members?.[index]?.nombre?.message} />
+              <ErrorDelCampo
+                id={`members.${index}.nombre-error`}
+                mensaje={errors.members?.[index]?.nombre?.message}
+              />
             </div>
           </div>
         ))}
@@ -447,12 +504,13 @@ export function MembersStepForm({
         Agregar miembro
       </Button>
 
-      {submitError && (
+      {avisoDelFormulario && (
         <div
           data-testid="members-step-form-error"
+          role="alert"
           className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
-          <p className="text-sm text-danger">{submitError}</p>
+          <p className="text-sm text-danger">{avisoDelFormulario}</p>
         </div>
       )}
 

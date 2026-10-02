@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -222,8 +223,11 @@ export default function LeaseDetailPage() {
       await leasesApi.acceptRenovacion(leaseId);
       toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
       refetchLease();
-    } catch {
-      toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal');
+    } catch (err) {
+      // 02-10-2026 · El motivo del back (o «fue nuestro» con la referencia), no un genérico.
+      toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal', {
+        description: mensajeParaLaPersona(err, { accion: 'aceptar la renovación' }),
+      });
     } finally {
       setAcceptingRenovacion(false);
     }
@@ -239,10 +243,10 @@ export default function LeaseDetailPage() {
           : 'We let your agency know you want to renew',
       );
       refetchLease();
-    } catch {
-      toast.error(
-        locale === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send the request',
-      );
+    } catch (err) {
+      toast.error(locale === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send the request', {
+        description: mensajeParaLaPersona(err, { accion: 'pedir la renovación' }),
+      });
     } finally {
       setRequestingRenovacion(false);
     }

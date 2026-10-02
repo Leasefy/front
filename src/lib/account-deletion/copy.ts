@@ -2,8 +2,8 @@
  * Canonical account-deletion copy — SINGLE SOURCE OF TRUTH.
  *
  * Owner rule: deleted accounts keep a 30-day recovery window (signing in
- * again reactivates the account with all data; afterwards it is locked and
- * only Leasefy support can help). Every delete-account flow must tell the
+ * again reactivates the account with all data; afterwards it is locked —
+ * never erased — and only Leasefy support can recover it). Every delete-account flow must tell the
  * user this with the SAME words.
  *
  * Consumers (all five deletion flows):
@@ -55,10 +55,22 @@ export interface AccountDeletionCopy {
   errorFallback: string
 }
 
+/**
+ * La ventana de recuperación, con lo que el back hace DE VERDAD (Nico,
+ * 02-10-2026, pregunta 14). Decía «Tu cuenta se eliminará definitivamente en
+ * 30 días», pero nada la borra nunca:
+ *
+ *  · `UsersService.deleteAccount` sólo la desactiva (`isActive: false`,
+ *    `deletedAt`) y cierra las sesiones;
+ *  · `SupabaseStrategy` la reactiva si la persona inicia sesión dentro de
+ *    `ACCOUNT_RECOVERY_WINDOW_DAYS` (30) días;
+ *  · pasados los 30 días la BLOQUEA (401 «Esta cuenta fue eliminada. Para
+ *    recuperarla, contacta al soporte de Leasefy.»): sólo el soporte la abre.
+ */
 const RECOVERY_ES =
-  'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.'
+  'Si inicias sesión en los próximos 30 días, la recuperas automáticamente con todos tus datos. Pasados 30 días, sólo el soporte de Leasefy puede recuperarla.'
 const RECOVERY_EN =
-  'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.'
+  'If you sign in within the next 30 days, it is automatically recovered with all your data. After 30 days, only Leasefy support can recover it.'
 
 /**
  * What the deletion actually does, in one sentence. `DELETE /users/me/account`

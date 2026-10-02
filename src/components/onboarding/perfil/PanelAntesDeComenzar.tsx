@@ -174,6 +174,8 @@ export function PanelAntesDeComenzar({
               isSubmitting={status === 'provisioning'}
               valoresIniciales={valoresGuardados ?? undefined}
               corrigiendo={corrigiendo}
+              // Lo que el back rechazó por campo va a ese campo (02-10-2026).
+              erroresDelServidor={status === 'needs-info' ? fallo?.campos : undefined}
             />
           </>
         ) : (

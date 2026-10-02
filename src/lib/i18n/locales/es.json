@@ -480,7 +480,7 @@
       "sessions": "Sesiones activas",
       "logoutAll": "Cerrar todas las sesiones",
       "deleteAccount": "Eliminar cuenta",
-      "deleteWarning": "Tienes 30 días para recuperarla iniciando sesión"
+      "deleteWarning": "Tienes 30 días para recuperarla iniciando sesión; después, sólo el soporte de Leasefy puede recuperarla."
     },
     "notifications": {
       "title": "Notificaciones",
@@ -651,7 +651,7 @@
     "dangerZone": {
       "title": "Zona de Peligro",
       "subtitle": "Acciones con consecuencias",
-      "deleteDescription": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus inmuebles, contratos y pagos no se borran: quedan registrados. Si inicias sesión en los próximos 30 días, la recuperas.",
+      "deleteDescription": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus inmuebles, contratos y pagos no se borran: quedan registrados. Si inicias sesión en los próximos 30 días, la recuperas automáticamente con todos tus datos. Pasados 30 días, sólo el soporte de Leasefy puede recuperarla.",
       "activeLeasesWarning": "Tienes {{count}} arriendo(s) activo(s). Debes finalizarlos antes de eliminar tu cuenta.",
       "deleteAccount": "Eliminar cuenta"
     },
@@ -697,7 +697,7 @@
       "deleteAccount": {
         "title": "Eliminar cuenta",
         "warning": "¿Eliminar tu cuenta?",
-        "warningDesc": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus contratos y pagos no se borran: quedan registrados. Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
+        "warningDesc": "Pierdes el acceso a tu cuenta y se cierran tus sesiones en todos tus dispositivos. Tus contratos y pagos no se borran: quedan registrados. Si inicias sesión en los próximos 30 días, la recuperas automáticamente con todos tus datos. Pasados 30 días, sólo el soporte de Leasefy puede recuperarla.",
         "typeToConfirm": "Escribe",
         "confirmWord": "ELIMINAR",
         "toConfirm": "para confirmar",
@@ -745,7 +745,7 @@
       "allSessionsClosed": "Todas las otras sesiones han sido cerradas",
       "dataRequestSent": "Se te enviará un correo con tus datos en las próximas 24 horas",
       "typeToConfirm": "Escribe ELIMINAR para confirmar",
-      "accountDeleted": "Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
+      "accountDeleted": "Si inicias sesión en los próximos 30 días, la recuperas automáticamente con todos tus datos. Pasados 30 días, sólo el soporte de Leasefy puede recuperarla.",
       "twoFactorEnabled": "Autenticación de dos factores activada",
       "twoFactorDisabled": "Autenticación de dos factores desactivada",
       "onboardingReset": "Onboarding reiniciado",

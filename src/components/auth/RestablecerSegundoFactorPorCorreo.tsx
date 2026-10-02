@@ -8,6 +8,7 @@ import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ApiError } from '@/lib/api/client';
 import { segundoFactorApi } from '@/lib/api/segundo-factor.service';
 import { mensajeDelRestablecimiento } from '@/lib/auth/errores-del-segundo-factor';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   leerRestablecimientoPendiente,
   marcarRestablecimientoPendiente,
@@ -143,11 +144,7 @@ export function RestablecerSegundoFactorPorCorreo({
           activas de nuevo aquí mismo.
         </p>
 
-        {error ? (
-          <p role="alert" className="text-pretty text-body-sm text-danger">
-            {error}
-          </p>
-        ) : null}
+        <ErrorDelCampo id="restablecer-por-correo-error" mensaje={error} className="mt-0 text-pretty" />
 
         <Button
           onClick={() => void pedirCodigo()}
@@ -191,11 +188,7 @@ export function RestablecerSegundoFactorPorCorreo({
         autoFocus
       />
 
-      {error ? (
-        <p role="alert" className="text-pretty text-center text-body-sm text-danger">
-          {error}
-        </p>
-      ) : null}
+      <ErrorDelCampo id="codigo-del-correo-error" mensaje={error} className="mt-0 text-pretty text-center" />
 
       <Button
         onClick={() => void confirmar()}

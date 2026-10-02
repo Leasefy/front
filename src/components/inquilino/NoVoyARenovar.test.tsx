@@ -213,6 +213,64 @@ describe('avisar', () => {
   });
 });
 
+describe('errores con la regla de oro (02-10-2026)', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      detalle: cuerpo,
+    });
+  }
+
+  it('🔴 un 400 en el motivo va bajo el motivo, sin toast', async () => {
+    const LARGO = 'El motivo puede tener hasta 500 caracteres.';
+    h.api.avisarQueNoRenueva.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [LARGO],
+        campos: [{ campo: 'motivo', regla: 'largo', mensaje: LARGO }],
+      }),
+    );
+    await montar(arriendo(150));
+    await abrir();
+    await escribirMotivo('Me mudo de ciudad');
+    await act(async () => {
+      (porTestId('confirmar-no-renovar') as HTMLButtonElement).click();
+    });
+    expect(document.getElementById('motivo-no-renovar-error')?.textContent).toBe(LARGO);
+    expect(porTestId('motivo-no-renovar')!.getAttribute('aria-invalid')).toBe('true');
+    expect(h.toast.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 retirar el aviso con un 5xx dice que fue nuestro, con la referencia', async () => {
+    h.api.retirarElAvisoDeNoRenovacion.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' }),
+    );
+    await montar(
+      arriendo(150, { at: '2026-09-01T00:00:00.000Z', por: 'INQUILINO', motivo: 'Me mudo' }),
+    );
+    await act(async () => {
+      (porTestId('retirar-aviso') as HTMLButtonElement).click();
+    });
+    const { description } = h.toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toMatch(/^No pudimos retirar el aviso: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+  });
+
+  it('sin respuesta: habla de la conexión', async () => {
+    h.api.avisarQueNoRenueva.mockRejectedValue(new TypeError('Failed to fetch'));
+    await montar(arriendo(150));
+    await abrir();
+    await escribirMotivo('Me mudo de ciudad');
+    await act(async () => {
+      (porTestId('confirmar-no-renovar') as HTMLButtonElement).click();
+    });
+    const { description } = h.toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toMatch(/conexión/);
+  });
+});
+
 describe('cuando ya hay un aviso', () => {
   const AVISO_SUYO = { at: '2026-09-01T00:00:00.000Z', por: 'INQUILINO', motivo: 'Me mudo' };
   const AVISO_DE_ELLOS = {

@@ -14,6 +14,10 @@ import {
   verificarFactorNuevo,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelSegundoFactor } from '@/lib/auth/errores-del-segundo-factor';
+import { FRASES_DE_SUPABASE, codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
@@ -91,6 +95,22 @@ export interface MfaSetupSectionProps {
    */
   onCambioDeFactor?: (enCurso: boolean) => void;
 }
+
+
+/**
+ * El fallo del segundo factor, en español y con la regla de oro (02-10-2026).
+ * Lo de `inscripcion-del-segundo-factor` ya viene traducido; un error de
+ * Supabase con código va por su traductor; lo demás (la red, un `TypeError`
+ * de JavaScript) por el de la plataforma. Antes era `err.message` crudo.
+ */
+function mensajeDelSegundoFactor(err: unknown, porDefecto: string, accion: string): string {
+  if (err instanceof ErrorDelSegundoFactor) return err.message;
+  if (codigoDeSupabase(err)) return mensajeDeSupabase(err, { porDefecto, accion });
+  return mensajeParaLaPersona(err, { porDefecto, accion });
+}
+
+/** Sin token en memoria: la sesión se cerró (no «No hay sesión activa»). */
+const sinSesion = () => new ErrorDelSegundoFactor(FRASES_DE_SUPABASE.session_not_found);
 
 export function MfaSetupSection({
   onEnrolled,
@@ -177,14 +197,20 @@ export function MfaSetupSection({
       // Authorization de todas las llamadas del panel.
       const token = tokenExplicito ?? getAccessToken();
       accessTokenRef.current = token;
-      if (!token) throw new Error('No hay sesión activa');
+      if (!token) throw sinSesion();
 
       // Por HTTP, no por el SDK (`crearFactorTotp` explica por qué).
       const nuevo = await crearFactorTotp(token);
       setEnrollData({ factorId: nuevo.factorId, qrCode: nuevo.qrCode, secret: nuevo.secret });
       setState('enrolling');
     } catch (err) {
-      toast.error((err as Error).message || 'Error al iniciar la configuración de 2FA');
+      toast.error(
+        mensajeDelSegundoFactor(
+          err,
+          'No pudimos empezar a activar el segundo factor. Prueba de nuevo en un momento.',
+          'empezar a activar el segundo factor',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -222,8 +248,8 @@ export function MfaSetupSection({
       onEnrolled?.();
       onActivado?.(currentEnroll.factorId);
     } catch (err) {
-      // Ya viene en español (`errores-del-segundo-factor.ts`).
-      toast.error((err as Error).message || 'No se pudo verificar el código.');
+      // Casi siempre ya viene en español (`errores-del-segundo-factor.ts`).
+      toast.error(mensajeDelSegundoFactor(err, 'No se pudo verificar el código.', 'verificar el código'));
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +273,7 @@ export function MfaSetupSection({
     setIsLoading(true);
     try {
       const token = getAccessToken() ?? accessTokenRef.current;
-      if (!token) throw new Error('No hay sesión activa');
+      if (!token) throw sinSesion();
 
       // Por HTTP, por el mismo candado que colgaba a `enroll`.
       await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
@@ -257,7 +283,13 @@ export function MfaSetupSection({
       setShowDisableModal(false);
       toast.success('Autenticación de dos factores desactivada');
     } catch (err) {
-      toast.error((err as Error).message || 'Error al desactivar 2FA');
+      toast.error(
+        mensajeDelSegundoFactor(
+          err,
+          'No pudimos desactivar el segundo factor. Prueba de nuevo en un momento.',
+          'desactivar el segundo factor',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -294,13 +326,15 @@ export function MfaSetupSection({
       try {
         tokenNuevo = await verificarConElSdk(factorId, codigo);
         const token = tokenNuevo ?? getAccessToken();
-        if (!token) throw new Error('No hay sesión activa');
+        if (!token) throw sinSesion();
         await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
       } catch (err) {
         quitandoRef.current = false;
         setIsLoading(false);
         setCodigoDeLaApp('');
-        setErrorDelModal((err as Error).message || 'No se pudo quitar el segundo factor.');
+        setErrorDelModal(
+          mensajeDelSegundoFactor(err, 'No se pudo quitar el segundo factor.', 'quitar el segundo factor'),
+        );
         onCambioDeFactor?.(false);
         return;
       }
@@ -441,11 +475,12 @@ export function MfaSetupSection({
                 disabled={isLoading}
                 autoFocus
               />
-              {errorDelModal ? (
-                <p role="alert" className="text-pretty text-center text-sm text-danger">
-                  {errorDelModal}
-                </p>
-              ) : null}
+              {/* El error bajo el código entra suave (decisión 1, 02-10-2026). */}
+              <ErrorDelCampo
+                id="quitar-segundo-factor-error"
+                mensaje={errorDelModal}
+                className="text-pretty text-center"
+              />
               {onSinLaApp ? (
                 <div className="text-center">
                   <Button

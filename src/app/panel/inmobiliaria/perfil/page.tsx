@@ -20,6 +20,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  enfocarCampoPersonal,
+  idDelCampoPersonal,
+  revisarDatosPersonales,
+  type CampoPersonal,
+  type ErroresPersonales,
+} from '@/lib/perfil/datos-personales';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
@@ -67,6 +76,11 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
   ABOGADO_EXTERNO: 'Sólo sus casos jurídicos.',
 };
 
+/** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */
+const PREFIJO_DEL_PERFIL = 'perfil-inmobiliaria';
+const CAMPOS_PERSONALES_VISIBLES: readonly CampoPersonal[] = ['firstName', 'lastName', 'phone', 'address'];
+const CAMPOS_DE_EMERGENCIA: readonly CampoPersonal[] = ['emergencyContactName', 'emergencyContactPhone'];
+
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
   const { user, agency, updateProfile, logout } = useAuth();
@@ -94,6 +108,8 @@ export default function InmobiliariaPerfilPage() {
 
   // Form state — sourced from auth context, no mock data
   const [formData, setFormData] = useState<DatosDelPerfil>(() => datosDelUsuario(user));
+  /** El error de cada campo: del cliente (las reglas del back) o del back. */
+  const [errores, setErrores] = useState<ErroresPersonales>({});
 
   /*
    * El formulario sigue al usuario del contexto mientras NO se esté editando.
@@ -161,9 +177,25 @@ export default function InmobiliariaPerfilPage() {
   // backend, so no other badge is shown.
   const emailVerified = !!user?.emailConfirmedAt;
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: CampoPersonal, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setErrores(prev => {
+      if (prev[field] === undefined) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
+
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoPersonal) => ({
+    id: idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoPersonal) => (
+    <ErrorDelCampo id={`${idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo)}-error`} mensaje={errores[campo]} />
+  );
 
   /*
    * 🔴 La foto guardada sale del usuario, no de esta sesión.
@@ -177,37 +209,68 @@ export default function InmobiliariaPerfilPage() {
   const savedAvatar = avatarSubido ?? user?.avatar ?? null;
 
   const handleSave = async (section: EditingSection) => {
+    const datos =
+      section === 'personal'
+        ? {
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            phone: oNulo(formData.phone),
+            address: oNulo(formData.address),
+            birthDate: oNulo(formData.birthDate),
+          }
+        : section === 'emergency'
+          ? {
+              emergencyContactName: oNulo(formData.emergencyContactName),
+              emergencyContactPhone: oNulo(formData.emergencyContactPhone),
+            }
+          : null;
+
+    // Los campos que la sección MUESTRA: la fecha de nacimiento viaja (es la
+    // guardada) pero no tiene campo acá, así que su error va al toast.
+    const visibles: readonly CampoPersonal[] =
+      section === 'personal' ? CAMPOS_PERSONALES_VISIBLES : section === 'emergency' ? CAMPOS_DE_EMERGENCIA : [];
+
+    // Lo que el back rechazaría no sale: las mismas reglas y frases del DTO.
+    if (datos) {
+      const delCliente = revisarDatosPersonales(datos);
+      const conError = (Object.keys(datos) as CampoPersonal[]).filter((c) => delCliente[c] !== undefined);
+      if (conError.length > 0) {
+        const enCampo = conError.filter((c) => visibles.includes(c));
+        setErrores(Object.fromEntries(enCampo.map((c) => [c, delCliente[c]])));
+        enfocarCampoPersonal(PREFIJO_DEL_PERFIL, enCampo[0]);
+        const sinCampo = conError.filter((c) => !visibles.includes(c)).map((c) => delCliente[c]);
+        if (sinCampo.length > 0) toast.error(sinCampo.join(' · '));
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       if (section === 'avatar' && avatarFile) {
         const { url } = await settingsApi.uploadAvatar(avatarFile);
         setAvatarSubido(url);
         setAvatarFile(null);
-      } else if (section === 'personal') {
-        await updateProfile({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          phone: oNulo(formData.phone),
-          address: oNulo(formData.address),
-          birthDate: oNulo(formData.birthDate),
-        });
-      } else if (section === 'emergency') {
-        await updateProfile({
-          emergencyContactName: oNulo(formData.emergencyContactName),
-          emergencyContactPhone: oNulo(formData.emergencyContactPhone),
-        });
+      } else if (datos) {
+        await updateProfile(datos);
       }
+      setErrores({});
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
     } catch (err) {
       // El backend dice EXACTAMENTE qué pasó —«Solo se permiten imagenes JPG,
-      // PNG o WebP», «La imagen no puede superar los 10MB»— y ese mensaje es
-      // lo único que le dice a la persona qué corregir. El `catch` pelado lo
-      // tiraba y dejaba un «Error al guardar los cambios» que no ayuda a nadie.
-      const detalle = err instanceof Error && err.message ? err.message : null;
-      toast.error(
-        detalle ?? (locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes'),
-      );
+      // PNG o WebP», el formato del celular— y eso es lo único que le dice a
+      // la persona qué corregir. 02-10-2026: por el traductor, con la regla de
+      // oro. Lo que trae campo va debajo de SU campo; al toast, sólo lo suelto
+      // (un 5xx dice que fue nuestro y da la referencia; «conexión», sólo sin
+      // respuesta). Antes era `err.message` crudo.
+      const reparto = repartirErroresDelServidor<CampoPersonal>(err, {
+        campos: visibles,
+        accion: section === 'avatar' ? 'subir tu foto' : 'guardar tu perfil',
+        porDefecto: locale === 'es' ? 'No pudimos guardar los cambios. Prueba de nuevo en un momento.' : 'Error saving changes',
+      });
+      setErrores(reparto.porCampo);
+      enfocarCampoPersonal(PREFIJO_DEL_PERFIL, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
@@ -221,6 +284,7 @@ export default function InmobiliariaPerfilPage() {
     // línea lo tipeado sobrevivía en `formData` —que es lo que pinta la vista
     // de lectura— y el siguiente «Guardar» lo mandaba al backend.
     setFormData(datosDelUsuario(user));
+    setErrores({});
   };
 
   // Avatar upload handlers
@@ -718,7 +782,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'First name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('firstName')} value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
+                      {errorDelCampo('firstName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -733,7 +800,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Apellido' : 'Last name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('lastName')} value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
+                      {errorDelCampo('lastName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -757,7 +827,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                    <>
+                      <Input type="tel" {...propsDelCampo('phone')} value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                      {errorDelCampo('phone')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
@@ -785,7 +858,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Dirección' : 'Address'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('address')} value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                      {errorDelCampo('address')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <MapPin className="w-4 h-4 text-fg-muted" />
@@ -825,9 +901,12 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'Name'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input type="text" value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                    <>
+                      <Input type="text" {...propsDelCampo('emergencyContactName')} value={formData.emergencyContactName}
+                        onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                      {errorDelCampo('emergencyContactName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <UserPlus className="w-4 h-4 text-fg-muted" />
@@ -840,9 +919,12 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input type="tel" value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      placeholder="3001234567" />
+                    <>
+                      <Input type="tel" {...propsDelCampo('emergencyContactPhone')} value={formData.emergencyContactPhone}
+                        onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                        placeholder="3001234567" />
+                      {errorDelCampo('emergencyContactPhone')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />

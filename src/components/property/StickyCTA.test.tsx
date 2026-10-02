@@ -31,7 +31,8 @@ vi.mock('@/lib/api/messages.service', () => ({
 const toast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }))
 vi.mock('sonner', () => ({ toast }))
 
-import { StickyCTA } from './StickyCTA'
+import { StickyCTA, MobileStickyCTA, getScheduleErrorMessage } from './StickyCTA'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -377,5 +378,129 @@ describe('<StickyCTA> — compartir avisa lo que pasó', () => {
     await clic(q('[data-testid="agency-share-copy"]') as HTMLButtonElement)
     expect(writeText).toHaveBeenCalledTimes(1)
     expect(toast.success).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * 02-10-2026 · Sistema de errores: contactar y agendar desde la ficha con la
+ * regla de oro (conexión SÓLO sin respuesta; un 4xx dice qué está mal; un 5xx
+ * dice que fue nuestro con la referencia).
+ */
+describe('<StickyCTA> — contactar y agendar dicen la verdad del fallo', () => {
+  async function contactar() {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+    const pestana = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Contactar'))
+    await act(async () => {
+      pestana!.click()
+    })
+    const boton = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Contactar' && b !== pestana,
+    )
+    await act(async () => {
+      boton!.click()
+      await Promise.resolve()
+    })
+    return boton!
+  }
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    createPropertyInquiryMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const boton = await contactar()
+    const aviso = q('#contacto-error')
+    expect(aviso?.textContent).toMatch(/^No pudimos iniciar la conversación: algo falló de nuestro lado/)
+    expect(aviso?.textContent).toContain('ab12cd34')
+    expect(aviso?.textContent).not.toMatch(/conexi[oó]n/)
+    expect(boton.getAttribute('aria-describedby')).toBe('contacto-error')
+  })
+
+  it('un 400 dice lo que mandó el back', async () => {
+    createPropertyInquiryMock.mockRejectedValueOnce(
+      new ApiError(400, ['Este inmueble ya no recibe mensajes.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['Este inmueble ya no recibe mensajes.'],
+      }),
+    )
+    await contactar()
+    expect(q('#contacto-error')?.textContent).toBe('Este inmueble ya no recibe mensajes.')
+  })
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    createPropertyInquiryMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await contactar()
+    expect(q('#contacto-error')?.textContent).toMatch(/conexión/)
+  })
+
+  it('🔴 la barra del celular ya no se traga el fallo: lo dice en un toast', async () => {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    createPropertyInquiryMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { statusCode: 500, referencia: 'ff00ee11' }),
+    )
+    act(() => {
+      root.render(<MobileStickyCTA propertyId="p1" price={1500000} listingType="sale" salePrice={500_000_000} />)
+    })
+    const boton = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Contactar'))
+    await act(async () => {
+      boton!.click()
+      await Promise.resolve()
+    })
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledTimes(1)
+    expect(String(toast.error.mock.calls[0][0])).toContain('ff00ee11')
+    expect(String(toast.error.mock.calls[0][0])).not.toMatch(/conexi[oó]n/)
+  })
+
+  describe('getScheduleErrorMessage', () => {
+    it('🔴 el 409 dice cuál de los dos casos es, por el `code` del back', () => {
+      expect(
+        getScheduleErrorMessage(new ApiError(409, 'Ese horario ya no está disponible. Elige otro.', 'HORARIO_OCUPADO')),
+      ).toBe('Ese horario ya no está disponible. Elige otro.')
+      expect(
+        getScheduleErrorMessage(
+          new ApiError(409, 'Ya tienes una visita pendiente para este inmueble.', 'VISITA_YA_SOLICITADA'),
+        ),
+      ).toBe('Ya tienes una visita pendiente para este inmueble. Revísala en tus visitas.')
+    })
+
+    it('un 409 sin `code` (back viejo) dice los dos casos posibles', () => {
+      expect(getScheduleErrorMessage(new ApiError(409, 'This time slot is no longer available'))).toMatch(
+        /ya no está disponible o ya tienes una visita pendiente/,
+      )
+    })
+
+    it('el 403 dice lo que mandó el back (su propio inmueble, o el tipo de cuenta)', () => {
+      expect(getScheduleErrorMessage(new ApiError(403, 'No puedes pedir una visita a tu propio inmueble.'))).toBe(
+        'No puedes pedir una visita a tu propio inmueble.',
+      )
+      expect(
+        getScheduleErrorMessage(
+          new ApiError(403, 'Esto es sólo para cuentas de inquilino, y la tuya es de propietario.'),
+        ),
+      ).toBe('Esto es sólo para cuentas de inquilino, y la tuya es de propietario.')
+    })
+
+    it('🔴 un 400 dice qué está mal (antes culpaba al «formato»)', () => {
+      const e = new ApiError(400, 'Este inmueble ya está arrendado: no se pueden agendar visitas.', 'DATOS_INVALIDOS')
+      expect(getScheduleErrorMessage(e)).toBe('Este inmueble ya está arrendado: no se pueden agendar visitas.')
+    })
+
+    it('🔴 un 5xx dice que fue nuestro con la referencia', () => {
+      const e = new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'cafe1234' })
+      const texto = getScheduleErrorMessage(e)
+      expect(texto).toMatch(/^No pudimos agendar la visita: algo falló de nuestro lado/)
+      expect(texto).toContain('cafe1234')
+    })
+
+    it('sin respuesta habla de la conexión', () => {
+      expect(getScheduleErrorMessage(new TypeError('Failed to fetch'))).toMatch(/conexión/)
+    })
   })
 })

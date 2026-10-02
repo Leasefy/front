@@ -105,6 +105,10 @@ vi.mock('@/lib/firebase/messaging', () => ({
 
 import { AuthForm } from './AuthForm'
 
+/** Un `AuthApiError` de Supabase como lo arma el SDK: `code` + `status` (el texto en inglés no decide). */
+const errorDeSupabase = (mensaje: string, status: number, code?: string) =>
+  Object.assign(new Error(mensaje), { name: 'AuthApiError', status, code })
+
 let container: HTMLDivElement
 let root: Root
 
@@ -321,7 +325,7 @@ describe('AuthForm — login: el correo', () => {
   })
 
   it('con el correo sin confirmar (enlace vencido) ofrece reenviar el enlace desde el login', async () => {
-    signInWithEmailMock.mockRejectedValue(new Error('Email not confirmed'))
+    signInWithEmailMock.mockRejectedValue(errorDeSupabase('Email not confirmed', 400, 'email_not_confirmed'))
     resendMock.mockResolvedValue(undefined)
     await renderLogin()
     await act(async () => {
@@ -341,7 +345,7 @@ describe('AuthForm — login: el correo', () => {
   })
 
   it('con la contraseña mal no ofrece reenviar nada', async () => {
-    signInWithEmailMock.mockRejectedValue(new Error('Invalid login credentials'))
+    signInWithEmailMock.mockRejectedValue(errorDeSupabase('Invalid login credentials', 400, 'invalid_credentials'))
     await renderLogin()
     await act(async () => {
       setInputValue(input('email'), 'nico@gmail.com')

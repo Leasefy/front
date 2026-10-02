@@ -25,7 +25,8 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { postMock, getInvitationMock, acceptInvitationMock, authState } = vi.hoisted(() => ({
+const { postMock, getInvitationMock, acceptInvitationMock, authState, signUpMock } = vi.hoisted(() => ({
+  signUpMock: vi.fn(),
   postMock: vi.fn(),
   getInvitationMock: vi.fn(),
   acceptInvitationMock: vi.fn(),
@@ -43,7 +44,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({
-    signUpWithEmail: vi.fn(),
+    signUpWithEmail: (...a: unknown[]) => signUpMock(...a),
     signInWithEmail: vi.fn(),
     signOut: vi.fn().mockResolvedValue(undefined),
     isAuthenticated: authState.isAuthenticated,
@@ -249,5 +250,157 @@ describe('registro invitation flow — personal-role safety', () => {
 
     expect(postMock).not.toHaveBeenCalled()
     expect(acceptInvitationMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * 02-10-2026 · Los errores del registro por invitación, con la regla de oro:
+ * por campo cuando el back (o Supabase) dice cuál; «conexión» sólo sin
+ * respuesta; un 5xx es nuestro, con la referencia.
+ */
+describe('registro — los errores', () => {
+  /** Un error con la forma de `ApiError` (el cliente está mockeado en esta suite). */
+  const errorDelBack = (status: number, cuerpo: Record<string, unknown>) =>
+    Object.assign(new Error(String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+
+  const errorDeSupabase = (nombre: string, mensaje: string, status: number, code?: string, extra: object = {}) =>
+    Object.assign(new Error(mensaje), { name: nombre, status, code, ...extra })
+
+  const input = (name: string) => container.querySelector(`input[name="${name}"]`) as HTMLInputElement
+  const errorDe = (name: string) => {
+    const id = input(name).getAttribute('aria-describedby')
+    return id ? document.getElementById(id)?.textContent ?? null : null
+  }
+
+  async function asentar() {
+    for (let i = 0; i < 4; i++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+    }
+  }
+
+  async function completarPerfil(nombre = 'Ana', telefono = '') {
+    authState.needsOnboarding = true
+    authState.isAuthenticated = false
+    authState.user = null
+    await renderAndSettle()
+    await act(async () => {
+      setInputValue(input('firstName'), nombre)
+      setInputValue(input('lastName'), 'Nueva')
+      if (telefono) setInputValue(input('phone'), telefono)
+    })
+    await act(async () => {
+      input('firstName').closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await asentar()
+  }
+
+  it('🔴 un 400 del back con el celular: el error va debajo del celular, con el foco, sin cartel', async () => {
+    const MENSAJE = 'Numero de telefono invalido. Formato: +573XXXXXXXXX o 3XXXXXXXXX'
+    postMock.mockReset().mockRejectedValue(
+      errorDelBack(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJE],
+        campos: [{ campo: 'phone', regla: 'formato', mensaje: MENSAJE }],
+      }),
+    )
+    await completarPerfil('Ana', '12345')
+    expect(input('phone').getAttribute('aria-invalid')).toBe('true')
+    expect(errorDe('phone')).toBe(MENSAJE)
+    expect(document.activeElement).toBe(input('phone'))
+    expect(container.querySelector('[role="alert"].rounded-xl')).toBeNull()
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    postMock.mockReset().mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await completarPerfil()
+    expect(container.textContent).toMatch(/No pudimos completar tu registro: algo falló de nuestro lado/)
+    expect(container.textContent).toContain('ab12cd34')
+    expect(container.textContent).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta: ahí sí la conexión', async () => {
+    postMock.mockReset().mockRejectedValue(new TypeError('Failed to fetch'))
+    await completarPerfil()
+    expect(container.textContent).toMatch(/conexión/)
+  })
+
+  it('🔴 un nombre de más de 100 caracteres se ataja ANTES, con la frase del back', async () => {
+    await completarPerfil('A'.repeat(101))
+    expect(postMock).not.toHaveBeenCalled()
+    expect(errorDe('firstName')).toBe('El nombre puede tener hasta 100 caracteres.')
+  })
+
+  it('🔴 la invitación que no carga por un 5xx no culpa a la conexión', async () => {
+    getInvitationMock
+      .mockReset()
+      .mockRejectedValue(errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }))
+    await renderAndSettle()
+    expect(container.textContent).toMatch(/No pudimos validar la invitación: algo falló de nuestro lado/)
+    expect(container.textContent).toContain('ab12cd34')
+    expect(container.textContent).not.toMatch(/conexi[oó]n|Invitación inválida/)
+  })
+
+  it('la invitación que no carga sin respuesta: la conexión', async () => {
+    getInvitationMock.mockReset().mockRejectedValue(new TypeError('Failed to fetch'))
+    await renderAndSettle()
+    expect(container.textContent).toMatch(/conexión/)
+  })
+
+  describe('crear la cuenta (Supabase)', () => {
+    async function crearCuenta(error: unknown) {
+      signUpMock.mockReset().mockRejectedValue(error)
+      authState.needsOnboarding = false
+      authState.isAuthenticated = false
+      authState.user = null
+      await renderAndSettle()
+      await act(async () => {
+        setInputValue(input('firstName'), 'Ana')
+        setInputValue(input('lastName'), 'Nueva')
+        setInputValue(input('password'), 'Secreta#2026-larga')
+      })
+      await act(async () => {
+        input('password').closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      })
+      await asentar()
+    }
+
+    it('🔴 la contraseña débil va a SU campo (por el código de Supabase), con el foco', async () => {
+      await crearCuenta(errorDeSupabase('AuthWeakPasswordError', 'Password is known to be weak', 422, 'weak_password', { reasons: ['pwned'] }))
+      expect(errorDe('password')).toMatch(/filtraciones/)
+      expect(document.activeElement).toBe(input('password'))
+    })
+
+    it('🔴 ya tiene cuenta: por el código, no por el texto en inglés', async () => {
+      await crearCuenta(errorDeSupabase('AuthApiError', 'Other wording', 422, 'user_already_exists'))
+      expect(container.textContent).toContain('Este email ya tiene una cuenta')
+    })
+
+    it('🔴 un 5xx de Supabase: nuestro, sin el inglés', async () => {
+      await crearCuenta(errorDeSupabase('AuthApiError', 'Database error saving new user', 500, 'unexpected_failure'))
+      expect(container.textContent).toMatch(/No pudimos crear tu cuenta: algo falló de nuestro lado/)
+      expect(container.textContent).not.toMatch(/Database/)
+    })
+
+    it('el correo de la invitación muestra su ayuda (se cruza con el error)', async () => {
+      await renderAndSettle()
+      authState.needsOnboarding = false
+      authState.isAuthenticated = false
+      await act(async () => {
+        root.render(<RegistroPage />)
+      })
+      await asentar()
+      expect(container.textContent).toContain('Este es el correo al que se envió la invitación y no se puede modificar.')
+    })
   })
 })

@@ -24,6 +24,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PostulacionDirecta } from '@/components/tenant/PostulacionDirecta';
 import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // Page props
@@ -81,6 +82,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     { id: string; status: string } | null | undefined
   >(undefined);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [errorAlRetirar, setErrorAlRetirar] = useState<string | null>(null);
 
   useEffect(() => {
     if (resolviendoSesion) return; // todavía no se sabe si hay sesión
@@ -115,10 +117,20 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   const handleWithdrawAndReapply = useCallback(async () => {
     if (!existingApp) return;
     setWithdrawing(true);
+    setErrorAlRetirar(null);
     try {
       await applicationsApi.withdraw(existingApp.id);
       setExistingApp(null); // withdrawn → the wizard can render
-    } catch {
+    } catch (err) {
+      // 🔴 02-10-2026: antes sólo se apagaba el spinner y la persona no sabía
+      // que no se retiró. Ahora se dice por qué, con la regla de oro.
+      setErrorAlRetirar(
+        mensajeParaLaPersona(err, {
+          accion: 'retirar tu postulación',
+          porDefecto: 'No pudimos retirar tu postulación. Prueba de nuevo en un momento.',
+        }),
+      );
+    } finally {
       setWithdrawing(false);
     }
   }, [existingApp]);
@@ -241,6 +253,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
         applicationId={existingApp.id}
         onWithdraw={handleWithdrawAndReapply}
         withdrawing={withdrawing}
+        error={errorAlRetirar}
       />
     );
   }
@@ -292,12 +305,15 @@ interface AlreadyAppliedCardProps {
   applicationId: string;
   onWithdraw: () => void;
   withdrawing: boolean;
+  /** Por qué no se pudo retirar (null = no hubo fallo). */
+  error: string | null;
 }
 
 function AlreadyAppliedCard({
   applicationId,
   onWithdraw,
   withdrawing,
+  error,
 }: AlreadyAppliedCardProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted px-4">
@@ -331,6 +347,11 @@ function AlreadyAppliedCard({
             Retirar y volver a postular
           </Button>
         </div>
+        {error ? (
+          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
       </div>
     </div>
   );

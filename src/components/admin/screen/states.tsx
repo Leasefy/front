@@ -1,5 +1,7 @@
 /** Shared loading / error / empty states for admin screens. Never blank-screen. */
 
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+
 export function LoadingBlock({ label = 'cargando' }: { label?: string }) {
   return (
     <div className="card p-8 flex items-center justify-center">
@@ -12,7 +14,9 @@ export function LoadingBlock({ label = 'cargando' }: { label?: string }) {
 }
 
 export function ErrorBlock({ error }: { error: Error | string }) {
-  const msg = typeof error === 'string' ? error : error.message
+  // 02-10-2026 · Por el traductor (regla de oro): antes salía `error.message`
+  // crudo, «Error 500» o «Failed to fetch».
+  const msg = typeof error === 'string' ? error : mensajeDelAdmin(error, { accion: 'cargar esta pantalla' })
   return (
     <div className="card p-6">
       <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-bad flex items-center gap-2 mb-2">

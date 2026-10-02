@@ -74,6 +74,12 @@ export async function apiDeAuth<T>(
     if ((err as Error).name === 'AbortError') {
       throw new Error('Supabase no respondió a tiempo. Intenta de nuevo.');
     }
+    // El pedido no salió (sin red, DNS): «Failed to fetch» no le dice nada a
+    // nadie. Sale como «sin respuesta», que es lo único que habla de la
+    // conexión (regla de oro, 02-10-2026).
+    if (err instanceof TypeError) {
+      throw errorDeSupabaseAuth({ status: 0, mensaje: err.message });
+    }
     throw err;
   } finally {
     clearTimeout(reloj);

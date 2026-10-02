@@ -32,6 +32,7 @@ import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
 import { InvitarAlEquipo } from '@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo';
 import { useMovimiento } from '@/components/inmobiliaria/invitar-al-equipo/movimiento';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   searchData,
   groupSearchResults,
@@ -165,8 +166,14 @@ export function PlanHeader({
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
-      activeNotifs.markAsRead(notification.id).catch(() => {
-        toast.error(t('header.notificationActionError'));
+      activeNotifs.markAsRead(notification.id).catch((err: unknown) => {
+        // Por el traductor (regla de oro), no un texto fijo para todo.
+        toast.error(
+          mensajeParaLaPersona(err, {
+            porDefecto: t('header.notificationActionError'),
+            accion: 'marcar la notificación como leída',
+          }),
+        );
       });
     }
     setNotificationsOpen(false);
@@ -987,8 +994,13 @@ export function PlanHeader({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            activeNotifs.deleteNotification(notification.id).catch(() => {
-                              toast.error(t('header.notificationActionError'));
+                            activeNotifs.deleteNotification(notification.id).catch((err: unknown) => {
+                              toast.error(
+                                mensajeParaLaPersona(err, {
+                                  porDefecto: t('header.notificationActionError'),
+                                  accion: 'borrar la notificación',
+                                }),
+                              );
                             });
                           }}
                           className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-all"

@@ -119,3 +119,67 @@ describe('<NuevaSolicitudModal>', () => {
     expect(boton('Cancelar').disabled).toBe(true)
   })
 })
+
+/**
+ * 🔴 02-10-2026 · Sistema de errores: lo que falta o el back rechaza va bajo
+ * SU campo; los demás fallos pasan por el traductor (antes, un genérico fijo).
+ */
+describe('<NuevaSolicitudModal> — errores (02-10-2026)', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  async function enviarCon(asunto: string, descripcion: string) {
+    montar()
+    act(() => escribir(dialogo().querySelector('#solicitud-asunto') as HTMLInputElement, asunto))
+    act(() => escribir(dialogo().querySelector('#solicitud-descripcion') as HTMLTextAreaElement, descripcion))
+    await act(async () => {
+      boton('Enviar solicitud').click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('sin asunto, el error va bajo el asunto (no un toast)', async () => {
+    await enviarCon('', 'Se mete el agua por la ventana')
+    expect(document.getElementById('solicitud-asunto-error')?.textContent).toBe('Escribe el asunto.')
+    expect(h.create).not.toHaveBeenCalled()
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 400 con campos pinta el error bajo su campo', async () => {
+    const LARGO = 'El asunto puede tener hasta 120 caracteres.'
+    h.create.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [LARGO],
+        campos: [{ campo: 'asunto', regla: 'longitud_maxima', mensaje: LARGO }],
+      }),
+    )
+    await enviarCon('Fuga en el baño', 'Se mete el agua')
+    expect(document.getElementById('solicitud-asunto-error')?.textContent).toBe(LARGO)
+    expect(dialogo().querySelector('#solicitud-asunto')?.getAttribute('aria-invalid')).toBe('true')
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia', async () => {
+    h.create.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' }),
+    )
+    await enviarCon('Fuga en el baño', 'Se mete el agua')
+    const dicho = String(h.toast.error.mock.calls[0][0])
+    expect(dicho).toMatch(/^No pudimos enviar tu solicitud: algo falló de nuestro lado/)
+    expect(dicho).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: habla de la conexión', async () => {
+    h.create.mockRejectedValue(new TypeError('Failed to fetch'))
+    await enviarCon('Fuga en el baño', 'Se mete el agua')
+    expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
+  })
+})

@@ -326,3 +326,84 @@ describe('<AgencyStepForm> — dirección y código postal (QA 01-10)', () => {
     })
   })
 })
+
+/**
+ * 02-10-2026 · El 400 del micro (`DATOS_INVALIDOS` con `campos`) ya no se
+ * junta en un solo aviso: cada problema va a SU campo y el primero recibe el
+ * foco. Al aviso va sólo lo que no tiene dónde ir.
+ */
+describe('<AgencyStepForm> — los errores del servidor en su campo', () => {
+  /** La forma de `OnboardingSessionError` con el sobre del micro. */
+  function errorDelMicro(campos: { campo: string; regla: string; mensaje: string }[], message = '') {
+    return Object.assign(new Error(message || campos.map((c) => c.mensaje).join('; ')), {
+      name: 'OnboardingSessionError',
+      kind: 'validation',
+      status: 400,
+      campos,
+      detalle: { statusCode: 400, code: 'DATOS_INVALIDOS', message: campos.map((c) => c.mensaje), campos },
+    })
+  }
+
+  const CORREO = 'Revisa el correo de la cuenta: debe tener la forma nombre@dominio.com.'
+
+  /** La ayuda sale antes de que entre el error (cruce de `FormError`): un par de cuadros. */
+  async function esperarElCruce() {
+    for (let i = 0; i < 10; i++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20))
+      })
+    }
+  }
+
+  it('🔴 un 400 en el correo: el error va bajo el correo, con foco, y no al aviso', async () => {
+    render({
+      prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' },
+      errorDelServidor: errorDelMicro([{ campo: 'primaryContactEmail', regla: 'correo', mensaje: CORREO }]),
+    })
+    await esperarElCruce()
+    const correo = byId('primaryContactEmail')
+    expect(container.querySelector('[id="primaryContactEmail-error"]')?.textContent).toBe(CORREO)
+    expect(correo.getAttribute('aria-invalid')).toBe('true')
+    expect(correo.getAttribute('aria-describedby')).toBe('primaryContactEmail-error')
+    expect(document.activeElement).toBe(correo)
+    expect(container.querySelector('[data-testid="agency-step-form-error"]')).toBeNull()
+  })
+
+  it('un error en la dirección (ruta `address.calle`) va a la dirección', () => {
+    render({
+      errorDelServidor: errorDelMicro([
+        { campo: 'address.calle', regla: 'longitud_minima', mensaje: 'La calle debe tener al menos 2 caracteres.' },
+      ]),
+    })
+    expect(container.querySelector('[id="address.calle-error"]')?.textContent).toBe(
+      'La calle debe tener al menos 2 caracteres.',
+    )
+  })
+
+  it('un error en la razón social ya confirmada (solo lectura) va al aviso: no hay dónde corregirla', () => {
+    render({
+      prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' },
+      errorDelServidor: errorDelMicro([
+        { campo: 'legalName', regla: 'longitud_maxima', mensaje: 'La razón social no puede tener más de 200 caracteres.' },
+      ]),
+    })
+    expect(container.querySelector('[id="legalName-error"]')).toBeNull()
+    expect(container.querySelector('[data-testid="agency-step-form-error"]')?.textContent).toBe(
+      'La razón social no puede tener más de 200 caracteres.',
+    )
+  })
+
+  it('un 400 sin campos dice lo que mandó el micro en el aviso', () => {
+    render({
+      errorDelServidor: Object.assign(new Error('La sesión no acepta ese paso.'), {
+        name: 'OnboardingSessionError',
+        kind: 'validation',
+        status: 400,
+        campos: [],
+      }),
+    })
+    expect(container.querySelector('[data-testid="agency-step-form-error"]')?.textContent).toBe(
+      'La sesión no acepta ese paso.',
+    )
+  })
+})

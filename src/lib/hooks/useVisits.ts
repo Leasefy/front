@@ -2,9 +2,22 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { visitsApi } from '@/lib/api/visits.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Visit } from '@/lib/types/visit';
 import type { CreateVisitDto, CancelVisitDto, RescheduleVisitDto } from '@/lib/api/visits.types';
 import { useRefrescoAutomatico } from './use-refresco-automatico';
+
+/**
+ * El texto de un fallo al CARGAR (02-10-2026, sistema de errores): antes se
+ * guardaba `err.message` crudo y la pantalla pintaba «Error interno del
+ * servidor.» o «Failed to fetch». Ahora la regla de oro del traductor.
+ */
+function falloAlCargar(error: unknown, queEs: string): string {
+  return mensajeParaLaPersona(error, {
+    accion: `cargar ${queEs}`,
+    porDefecto: `No pudimos cargar ${queEs}. Prueba de nuevo en un momento.`,
+  });
+}
 
 // ============================================================================
 // useVisits - list visits with stats and helpers
@@ -22,7 +35,7 @@ export function useVisits() {
       const result = await visitsApi.getMine();
       setVisits(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando visitas';
+      const message = falloAlCargar(err, 'tus visitas');
       setError(message);
       setVisits([]);
     } finally {
@@ -94,7 +107,7 @@ export function useVisit(id: string | null) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando visita');
+          setError(falloAlCargar(err, 'la visita'));
           setVisit(null);
           setIsLoading(false);
         }
@@ -112,70 +125,38 @@ export function useVisit(id: string | null) {
 // useVisitActions - mutation actions on visits
 // ============================================================================
 
+/**
+ * Confirmar, rechazar, cancelar, reprogramar y crear visitas.
+ *
+ * 🔴 02-10-2026 · Los hooks no se tragan el error. Antes cada acción devolvía
+ * `false` ante cualquier fallo y la pantalla decía «Error al agendar visita»
+ * sin saber por qué (un 400 con el campo, un 409, un 5xx o la red). Ahora la
+ * acción RELANZA el error tal cual (el `ApiError` con su `campos[]`) y quien
+ * llama lo reparte en el formulario o lo traduce con `mensajeParaLaPersona`.
+ */
 export function useVisitActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const confirm = useCallback(async (id: string): Promise<boolean> => {
+  const enVuelo = useCallback(async (accion: () => Promise<unknown>): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await visitsApi.confirm(id);
-      return true;
-    } catch {
-      return false;
+      await accion();
     } finally {
       setIsSubmitting(false);
     }
   }, []);
 
-  const reject = useCallback(async (id: string): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await visitsApi.reject(id);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
-
-  const cancel = useCallback(async (id: string, dto: CancelVisitDto): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await visitsApi.cancel(id, dto);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
-
-  const reschedule = useCallback(async (id: string, dto: RescheduleVisitDto): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await visitsApi.reschedule(id, dto);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
-
-
-
-  const create = useCallback(async (dto: CreateVisitDto): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await visitsApi.create(dto);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
+  const confirm = useCallback((id: string) => enVuelo(() => visitsApi.confirm(id)), [enVuelo]);
+  const reject = useCallback((id: string) => enVuelo(() => visitsApi.reject(id)), [enVuelo]);
+  const cancel = useCallback(
+    (id: string, dto: CancelVisitDto) => enVuelo(() => visitsApi.cancel(id, dto)),
+    [enVuelo],
+  );
+  const reschedule = useCallback(
+    (id: string, dto: RescheduleVisitDto) => enVuelo(() => visitsApi.reschedule(id, dto)),
+    [enVuelo],
+  );
+  const create = useCallback((dto: CreateVisitDto) => enVuelo(() => visitsApi.create(dto)), [enVuelo]);
 
   return { confirm, reject, cancel, reschedule, create, isSubmitting };
 }

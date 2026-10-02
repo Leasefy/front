@@ -51,7 +51,7 @@ export function NitDeLaInmobiliaria({ tenantId }: { tenantId: string }) {
       <section className="card p-5">
         <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">nit</div>
         <p role="alert" className="text-sm text-bad mt-2">
-          No pudimos leer el NIT de esta inmobiliaria: {mensajeDelFallo(consulta.error)}
+          No pudimos leer el NIT de esta inmobiliaria: {mensajeDelFallo(consulta.error, 'leer el NIT')}
         </p>
         <button type="button" className="btn mt-3" onClick={consulta.refetch}>
           Reintentar
@@ -97,7 +97,7 @@ export function NitDeLaInmobiliaria({ tenantId }: { tenantId: string }) {
       setEditando(false)
       setConfirmando(false)
     } catch (err) {
-      setFallo(mensajeDelFallo(err))
+      setFallo(mensajeDelFallo(err, 'corregir el NIT'))
       setConfirmando(false)
     } finally {
       setGuardando(false)

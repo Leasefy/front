@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { adminApi, ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -137,7 +138,7 @@ export default function ApprovalDetailPage() {
         setSubmitError('Esta decisión ya fue revisada por otro admin. Actualizando…')
         refetch()
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
+        setSubmitError(mensajeDelAdmin(err, { accion: 'registrar la decisión' }))
       }
     } finally {
       setSubmitting(false)

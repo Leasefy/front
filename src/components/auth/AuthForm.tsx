@@ -23,6 +23,8 @@ import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
+import { codigoDeSupabase, leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -319,11 +321,7 @@ function ReenvioDeConfirmacion({
           </button>
         </p>
       )}
-      {reenvio.error && (
-        <p className="text-danger" role="alert">
-          {reenvio.error}
-        </p>
-      )}
+      <ErrorDelCampo id="reenvio-de-confirmacion-error" mensaje={reenvio.error} className="mt-0" />
       {onCorregir && (
         <p>
           ¿Te equivocaste de correo?{' '}
@@ -334,6 +332,34 @@ function ReenvioDeConfirmacion({
       )}
     </div>
   );
+}
+
+/** Lo que dice el login cuando el error no se reconoce (nunca el inglés de Supabase). */
+const POR_DEFECTO_AL_ENTRAR = 'Error al iniciar sesión. Intenta de nuevo.';
+
+/**
+ * Los errores de Supabase al crear la cuenta que son de UN campo: van debajo
+ * de él, no al banner. La contraseña se dice con lo que Supabase explicó
+ * (`weak_password` trae por qué: corta, sin variedad o filtrada).
+ */
+function campoDelErrorDeRegistro(codigo: string | undefined): 'email' | 'password' | null {
+  if (codigo === 'weak_password') return 'password';
+  if (codigo === 'email_address_invalid') return 'email';
+  return null;
+}
+
+/** ¿Supabase frenó el envío de correos (por código o por un 429)? */
+function esLimiteDeEnvios(err: unknown): boolean {
+  const { status, codigo } = leerErrorDeSupabase(err);
+  return codigo === 'over_email_send_rate_limit' || codigo === 'over_request_rate_limit' || status === 429;
+}
+
+/** Google: «conexión» sólo sin respuesta; lo demás, la frase de siempre. */
+function errorDeGoogle(err: unknown): string {
+  return mensajeDeSupabase(err, {
+    porDefecto: 'Error con Google. Intenta de nuevo.',
+    accion: 'conectarte con Google',
+  });
 }
 
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
@@ -662,9 +688,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
-    } catch {
+    } catch (err) {
       didAuthenticateInForm.current = false;
-      setError('Error con Google. Intenta de nuevo.');
+      setError(errorDeGoogle(err));
     } finally {
       setIsLoading(false);
     }
@@ -697,7 +723,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
           if (message) sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
         } catch {}
-        setError(message || 'Error al iniciar sesión. Intenta de nuevo.');
+        setError(message || POR_DEFECTO_AL_ENTRAR);
         setIsLoading(false);
         return;
       }
@@ -705,8 +731,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
       didAuthenticateInForm.current = false;
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+      // Por el código de Supabase, nunca por el texto en inglés (02-10-2026).
+      const codigo = codigoDeSupabase(err);
+      if (codigo === 'invalid_credentials') {
         // Supabase dice lo mismo para contraseña mala y para correo sin
         // cuenta. Se pregunta al back SÓLO acá, tras el intento fallido; si no
         // contesta un «no» claro, queda el mensaje de siempre (Nico, 01-10).
@@ -721,16 +748,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         return;
       }
       setIsLoading(false);
-      if (msg.includes('Email not confirmed')) {
+      if (codigo === 'email_not_confirmed') {
         // Acá llega quien abrió un enlace de confirmación vencido: /auth/enlace
         // lo manda a entrar. Sin el reenvío no tenía cómo pedir otro.
         setResetEmail(correo);
         redirectDeConfirmacion.current = enlaceDeConfirmacion();
         setReenvio({ estado: 'listo', espera: 0, error: null });
         setCorreoSinConfirmar(correo);
-        setError('Tu correo todavía no está confirmado. Busca el enlace en tu bandeja (y en spam) o pide uno nuevo.');
+        setError(mensajeDeSupabase(err));
       } else {
-        setError('Error al iniciar sesión. Intenta de nuevo.');
+        // Regla de oro: «conexión» sólo sin respuesta; un 5xx dice que fue
+        // nuestro; lo que no se reconoce, la frase de siempre (nunca el inglés).
+        setError(mensajeDeSupabase(err, { porDefecto: POR_DEFECTO_AL_ENTRAR, accion: 'iniciar tu sesión' }));
       }
     }
   };
@@ -744,9 +773,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
-    } catch {
+    } catch (err) {
       didAuthenticateInForm.current = false;
-      setError('Error con Google. Intenta de nuevo.');
+      setError(errorDeGoogle(err));
     } finally {
       setIsLoading(false);
     }
@@ -788,15 +817,25 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       }
     } catch (err: unknown) {
       setIsLoading(false);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setError('Ya hay una cuenta con este correo.');
+      // Por el código de Supabase, nunca por el texto en inglés (02-10-2026).
+      const codigo = codigoDeSupabase(err);
+      if (codigo === 'user_already_exists' || codigo === 'email_exists') {
+        setError(mensajeDeSupabase(err));
         setCorreoYaRegistrado(normalizarCorreo(data.email));
-      } else if (msg.includes('Password should be')) {
-        setError('La contraseña debe tener al menos 6 caracteres.');
-      } else {
-        setError('Error al crear la cuenta. Intenta de nuevo.');
+        return;
       }
+      // Lo que es de un campo va a SU campo, con el foco ahí (la contraseña
+      // débil o filtrada, el correo que Supabase no acepta).
+      const campo = campoDelErrorDeRegistro(codigo);
+      if (campo) {
+        registerForm.setError(
+          campo,
+          { type: 'server', message: mensajeDeSupabase(err) },
+          { shouldFocus: true },
+        );
+        return;
+      }
+      setError(mensajeDeSupabase(err, { porDefecto: 'No pudimos crear tu cuenta. Intenta de nuevo.', accion: 'crear tu cuenta' }));
     }
   };
 
@@ -820,14 +859,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           : { estado: 'enviado', espera: ESPERAS_DE_REENVIO_S[n - 1], error: null },
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message.toLowerCase() : '';
-      const limite = msg.includes('rate') || msg.includes('over_email') || msg.includes('security purposes');
+      // El límite de Supabase, por su código o su 429 (nunca por el texto).
+      const limite = esLimiteDeEnvios(err);
       setReenvio({
         estado: 'listo',
         espera: limite ? 60 : 0,
         error: limite
           ? 'Ya se envió uno hace poco. Espera un minuto y revisa spam antes de pedir otro.'
-          : 'No se pudo reenviar. Intenta de nuevo en un momento.',
+          : mensajeDeSupabase(err, {
+              porDefecto: 'No se pudo reenviar. Intenta de nuevo en un momento.',
+              accion: 'reenviarte el enlace',
+            }),
       });
     }
   };
@@ -843,11 +885,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setResetEmail(correo);
       setMode('reset-sent');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('over_email')) {
+      if (esLimiteDeEnvios(err)) {
         setError('Límite de envíos alcanzado. Espera unos minutos e intenta de nuevo.');
+      } else if (codigoDeSupabase(err) === 'email_address_invalid') {
+        forgotPasswordForm.setError(
+          'email',
+          { type: 'server', message: mensajeDeSupabase(err) },
+          { shouldFocus: true },
+        );
       } else {
-        setError('Ocurrió un error. Intenta de nuevo.');
+        setError(
+          mensajeDeSupabase(err, {
+            porDefecto: 'No pudimos enviarte el enlace. Intenta de nuevo.',
+            accion: 'enviarte el enlace',
+          }),
+        );
       }
     } finally {
       setIsLoading(false);

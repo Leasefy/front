@@ -40,6 +40,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useLeases } from '@/lib/hooks/useLeases';
 import {
   acuerdosApi,
@@ -118,10 +119,17 @@ export function SolicitarPlanPagoModal({
             : 'We are enabling payment plan requests. Please try again soon.',
         );
       } else {
+        // 02-10-2026 · Regla de oro: un 4xx dice qué pasó (lo que mandó el
+        // back), un 5xx que fue nuestro con la referencia; «conexión» sólo sin
+        // respuesta. Antes era siempre el mismo genérico.
         toast.error(
-          locale === 'es'
-            ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
-            : 'We could not submit your request. Please try again.',
+          mensajeParaLaPersona(err, {
+            accion: 'enviar tu solicitud',
+            porDefecto:
+              locale === 'es'
+                ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
+                : 'We could not submit your request. Please try again.',
+          }),
         );
       }
     } finally {

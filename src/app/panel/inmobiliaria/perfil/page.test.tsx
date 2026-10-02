@@ -398,3 +398,66 @@ describe('Perfil — la baja es un Dialog destructivo de tres pasos', () => {
     expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
   })
 })
+
+/**
+ * 02-10-2026 · Sistema de errores. Antes, el catch pintaba `err.message`
+ * crudo (un 5xx, un texto en inglés, un volcado). Ahora: lo del back por
+ * campo va debajo de SU campo, con el foco; al toast, sólo lo suelto, con la
+ * regla de oro.
+ */
+describe('Perfil — guardar los datos (sistema de errores)', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    const mensaje = Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')
+    return Object.assign(new Error(mensaje), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  async function editarYGuardar(cambio?: () => void) {
+    await renderPage()
+    act(() => { botonPorTexto('Editar').click() })
+    cambio?.()
+    await act(async () => { botonPorTexto('Guardar').click() })
+  }
+
+  it('🔴 un 400 con `campos` pinta el error debajo del teléfono y le da el foco, sin toast', async () => {
+    const FRASE = 'Revisa el teléfono: no es un número de teléfono válido.'
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(400, { code: 'DATOS_INVALIDOS', message: [FRASE], campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }] }),
+    )
+    await editarYGuardar(() => escribirEn('3001234567', '12345'))
+
+    expect(container.querySelector('#perfil-inmobiliaria-phone-error')?.textContent).toBe(FRASE)
+    expect(document.activeElement).toBe(container.querySelector('#perfil-inmobiliaria-phone'))
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('un nombre más largo que la columna no sale: la frase del back, sin PATCH', async () => {
+    await editarYGuardar(() => escribirEn('Ana', 'A'.repeat(51)))
+    expect(updateProfileMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-inmobiliaria-firstName-error')?.textContent).toBe(
+      'El nombre no puede tener más de 50 caracteres.',
+    )
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await editarYGuardar()
+    const texto = String(vi.mocked(toast.error).mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tu perfil: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (status 0): ahí sí se habla de la conexión', async () => {
+    updateProfileMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await editarYGuardar()
+    expect(String(vi.mocked(toast.error).mock.calls[0][0])).toMatch(/conexión/)
+  })
+})

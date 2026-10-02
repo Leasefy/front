@@ -23,6 +23,28 @@ import { useRouter } from 'next/navigation';
 import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { getSupabase } from '@/lib/supabase/client';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { revisarDatosPersonales, type CampoPersonal } from '@/lib/perfil/datos-personales';
+
+/**
+ * Los campos que esta pantalla muestra. El nombre y el contacto de emergencia
+ * son UN campo cada uno («Nombre completo», «Nombre - Teléfono»), así que los
+ * errores del back por `firstName`/`lastName` o por las dos partes del
+ * contacto caen en ese campo.
+ */
+type CampoDeLaPantalla = 'nombre' | 'phone' | 'birthDate' | 'address' | 'emergencia';
+const CAMPO_EN_PANTALLA: Partial<Record<CampoPersonal, CampoDeLaPantalla | null>> = {
+  firstName: 'nombre',
+  lastName: 'nombre',
+  phone: 'phone',
+  birthDate: 'birthDate',
+  address: 'address',
+  emergencyContactName: 'emergencia',
+  emergencyContactPhone: 'emergencia',
+  rut: null,
+};
+const idDelCampo = (campo: CampoDeLaPantalla) => `perfil-propietario-${campo}`;
 
 // Setup steps definition
 interface SetupStep {
@@ -53,18 +75,43 @@ export default function PropietarioPerfilPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state — sourced from auth context, Colombian demo fallbacks
+  /*
+   * Form state — sourced from auth context.
+   *
+   * 🔴 02-10-2026 · Traía datos de muestra («+57 300 123 4567», «Cra. 7
+   * #71-21, Bogotá», 1980-08-15, «Ana López») cuando la persona no los tenía,
+   * y «Guardar» los mandaba a `PATCH /users/me` como si fueran suyos. Lo que
+   * no está guardado queda vacío y se lee «No registrado».
+   */
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
-    email: user?.email || 'propietario@example.com',
-    phone: user?.phone || '+57 300 123 4567',
-    rut: user?.rut || '1.020.345.678',
-    address: user?.address || 'Cra. 7 #71-21, Bogotá',
-    birthDate: user?.birthDate || '1980-08-15',
-    emergencyContactName: user?.emergencyContactName || 'Ana López',
-    emergencyContactPhone: user?.emergencyContactPhone || '+57 301 876 5432',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    rut: user?.rut || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate ? user.birthDate.slice(0, 10) : '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
   });
+  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+  /** El error de cada campo de la pantalla (del cliente o del back). */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaPantalla, string>>>({});
+  const limpiarError = (campo: CampoDeLaPantalla) =>
+    setErrores((prev) => {
+      if (prev[campo] === undefined) return prev;
+      const next = { ...prev };
+      delete next[campo];
+      return next;
+    });
+  const propsDelCampo = (campo: CampoDeLaPantalla) => ({
+    id: idDelCampo(campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampo(campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoDeLaPantalla) => (
+    <ErrorDelCampo id={`${idDelCampo(campo)}-error`} mensaje={errores[campo]} />
+  );
 
   // Display helpers for the single-field UI (name + emergency contact)
   const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Propietario' : 'Landlord');
@@ -115,6 +162,7 @@ export default function PropietarioPerfilPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'phone' || field === 'birthDate' || field === 'address') limpiarError(field);
   };
 
   // Single "Nombre completo" input → split into firstName / lastName
@@ -123,6 +171,7 @@ export default function PropietarioPerfilPage() {
     const firstName = parts.shift() ?? '';
     const lastName = parts.join(' ');
     setFormData(prev => ({ ...prev, firstName, lastName }));
+    limpiarError('nombre');
   };
 
   // Single "Nombre - Teléfono" input → split into name / phone parts
@@ -133,35 +182,80 @@ export default function PropietarioPerfilPage() {
       emergencyContactName: (name ?? '').trim(),
       emergencyContactPhone: rest.join(' - ').trim(),
     }));
+    limpiarError('emergencia');
+  };
+
+  /** Pone los errores en sus campos y le da el foco al primero. */
+  const mostrarErrores = (porCampo: Partial<Record<CampoDeLaPantalla, string>>, primero?: CampoDeLaPantalla) => {
+    setErrores(porCampo);
+    if (primero && typeof document !== 'undefined') document.getElementById(idDelCampo(primero))?.focus();
+  };
+
+  /** Los errores del cliente (las mismas reglas que el back), ya en los campos de la pantalla. */
+  const erroresDelCliente = (datos: Partial<Record<CampoPersonal, string | null | undefined>>) => {
+    const porCampo: Partial<Record<CampoDeLaPantalla, string>> = {};
+    const orden: CampoDeLaPantalla[] = [];
+    for (const [campo, mensaje] of Object.entries(revisarDatosPersonales(datos)) as [CampoPersonal, string][]) {
+      const destino = CAMPO_EN_PANTALLA[campo];
+      if (destino && porCampo[destino] === undefined) {
+        porCampo[destino] = mensaje;
+        orden.push(destino);
+      }
+    }
+    return { porCampo, orden };
   };
 
   const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
 
   const handleSave = async (section: EditingSection) => {
+    const datos =
+      section === 'personal'
+        ? {
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            phone: formData.phone.trim() || undefined,
+            address: formData.address.trim() || undefined,
+            birthDate: formData.birthDate || undefined,
+          }
+        : section === 'emergency'
+          ? {
+              emergencyContactName: formData.emergencyContactName.trim() || undefined,
+              emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
+            }
+          : null;
+
+    // Lo que el back rechazaría no sale: las mismas reglas y frases del DTO.
+    if (datos) {
+      const delCliente = erroresDelCliente(datos);
+      if (delCliente.orden.length > 0) {
+        mostrarErrores(delCliente.porCampo, delCliente.orden[0]);
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       if (section === 'avatar' && avatarFile) {
         const { url } = await settingsApi.uploadAvatar(avatarFile);
         setSavedAvatar(url);
         setAvatarFile(null);
-      } else if (section === 'personal') {
-        await updateProfile({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          phone: formData.phone.trim() || undefined,
-          address: formData.address.trim() || undefined,
-          birthDate: formData.birthDate || undefined,
-        });
-      } else if (section === 'emergency') {
-        await updateProfile({
-          emergencyContactName: formData.emergencyContactName.trim() || undefined,
-          emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
-        });
+      } else if (datos) {
+        await updateProfile(datos);
       }
+      setErrores({});
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } catch (err) {
+      // 02-10-2026 · Antes: «Error al guardar los cambios» ante CUALQUIER
+      // fallo. Ahora, con la regla de oro: lo del back por campo va a su
+      // campo; al toast, sólo lo suelto (un 5xx con su referencia, la red).
+      const reparto = repartirErroresDelServidor<CampoDeLaPantalla>(err, {
+        mapa: CAMPO_EN_PANTALLA,
+        accion: section === 'avatar' ? 'subir tu foto' : 'guardar tu perfil',
+        porDefecto: locale === 'es' ? 'No pudimos guardar los cambios. Prueba de nuevo en un momento.' : 'Error saving changes',
+      });
+      mostrarErrores(reparto.porCampo, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
@@ -171,6 +265,7 @@ export default function PropietarioPerfilPage() {
     setEditingSection(null);
     setAvatarPreview(null);
     setAvatarFile(null);
+    setErrores({});
   };
 
   const handleAvatarClick = () => {
@@ -234,7 +329,7 @@ export default function PropietarioPerfilPage() {
     if (deleteConfirmText !== deletionCopy.confirmWord) return;
     setIsDeleting(true);
     try {
-      // Real, irreversible deletion (soft-delete + sign-out). Never show the
+      // Real deletion (soft-delete + sign-out; recoverable for 30 days). Never show the
       // success step without a persisted backend effect (Ley 1581 / ARCO).
       await settingsApi.deleteAccount();
       const supabase = getSupabase();
@@ -583,7 +678,10 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre completo' : 'Full name'}</label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('nombre')} value={fullName} onChange={(e) => handleNameChange(e.target.value)} />
+                      {errorDelCampo('nombre')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <User className="w-4 h-4 text-fg-subtle" />
@@ -596,7 +694,7 @@ export default function PropietarioPerfilPage() {
                   <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordProfile.fields.cedula')}</label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <Shield className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.rut}</span>
+                    <span className="text-sm text-fg">{formData.rut || notSet}</span>
                   </div>
                 </div>
 
@@ -607,7 +705,7 @@ export default function PropietarioPerfilPage() {
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Envelope className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.email}</span>
+                      <span className="text-sm text-fg">{formData.email || notSet}</span>
                     </div>
                   )}
                 </div>
@@ -615,11 +713,14 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Teléfono' : 'Phone'}</label>
                   {editingSection === 'personal' ? (
-                    <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                    <>
+                      <Input type="tel" {...propsDelCampo('phone')} value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                      {errorDelCampo('phone')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.phone}</span>
+                      <span className="text-sm text-fg">{formData.phone || notSet}</span>
                     </div>
                   )}
                 </div>
@@ -627,12 +728,17 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Fecha de nacimiento' : 'Date of birth'}</label>
                   {editingSection === 'personal' ? (
-                    <Input type="date" value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)} />
+                    <>
+                      <Input type="date" {...propsDelCampo('birthDate')} value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)} />
+                      {errorDelCampo('birthDate')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">
-                        {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {formData.birthDate
+                          ? new Date(formData.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+                          : notSet}
                       </span>
                     </div>
                   )}
@@ -641,11 +747,14 @@ export default function PropietarioPerfilPage() {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Dirección' : 'Address'}</label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('address')} value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                      {errorDelCampo('address')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.address}</span>
+                      <span className="text-sm text-fg">{formData.address || notSet}</span>
                     </div>
                   )}
                 </div>
@@ -676,12 +785,15 @@ export default function PropietarioPerfilPage() {
               <div>
                 <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
                 {editingSection === 'emergency' ? (
-                  <Input type="text" value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
-                    placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
+                  <>
+                    <Input type="text" {...propsDelCampo('emergencia')} value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
+                      placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
+                    {errorDelCampo('emergencia')}
+                  </>
                 ) : (
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <UserPlus className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{emergencyContactDisplay}</span>
+                    <span className="text-sm text-fg">{emergencyContactDisplay || notSet}</span>
                   </div>
                 )}
               </div>
@@ -693,9 +805,10 @@ export default function PropietarioPerfilPage() {
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es' ? 'Estas acciones son irreversibles. Por favor, procede con precaución.' : 'These actions are irreversible. Please proceed with caution.'}
-              </p>
+              {/* La copia canónica, como en el perfil de la inmobiliaria y el del
+                  inquilino (Nico, 02-10-2026): nada se borra; 30 días para
+                  volver y después sólo el soporte de Leasefy. */}
+              <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
               <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </Button>

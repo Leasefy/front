@@ -23,6 +23,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // Helpers
@@ -144,7 +145,13 @@ export default function CompletarPage({ params }: CompletarPageProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando la postulación');
+          // 02-10-2026 · Regla de oro: el motivo por el traductor, no `err.message` crudo.
+          setError(
+            mensajeParaLaPersona(err, {
+              accion: 'cargar tu postulación',
+              porDefecto: 'No se pudo cargar la postulación.',
+            }),
+          );
         }
       } finally {
         if (!cancelled) setIsLoading(false);

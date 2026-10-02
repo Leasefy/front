@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ArrowRight } from '@phosphor-icons/react'
-import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
+import { FormField, FormLabel, FormControl, FormError } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -13,7 +13,7 @@ import {
   revisarRazonSocial,
   partirNombre,
 } from '@/lib/onboarding/campos-de-registro'
-import type { ProvisioningInput } from '@/lib/hooks/use-onboarding-provisioning'
+import type { CampoDelRegistro, ErroresDelRegistro, ProvisioningInput } from '@/lib/hooks/use-onboarding-provisioning'
 
 export interface OwnerNameStepFormProps {
   onSubmit: (input: ProvisioningInput) => void
@@ -34,9 +34,23 @@ export interface OwnerNameStepFormProps {
    * guardó algo que no se guardó.
    */
   corrigiendo?: boolean
+  /**
+   * 02-10-2026 · Lo que el back rechazó por campo la última vez (el 400
+   * `DATOS_INVALIDOS`, ya repartido por `interpretarFallo`). Cada uno se pinta
+   * en su campo hasta que la persona lo toca; el primero recibe el foco.
+   */
+  erroresDelServidor?: ErroresDelRegistro
 }
 
-type Campo = 'nombre' | 'razonSocial' | 'nit' | 'representante'
+type Campo = CampoDelRegistro
+
+/** El `id` del input de cada campo, para darle el foco al primero con error del servidor. */
+const INPUT_DEL_CAMPO: Record<Campo, string> = {
+  nombre: 'ownerFullName',
+  representante: 'legalRepresentative',
+  razonSocial: 'agencyName',
+  nit: 'agencyNit',
+}
 
 /**
  * El campo del glow-up de /auth (`AuthInput`): en reposo un relleno apenas
@@ -83,6 +97,7 @@ export function OwnerNameStepForm({
   isSubmitting,
   valoresIniciales,
   corrigiendo = false,
+  erroresDelServidor,
 }: OwnerNameStepFormProps) {
   const [displayName, setDisplayName] = useState(valoresIniciales?.nombreCompleto ?? '')
   const [agencyName, setAgencyName] = useState(valoresIniciales?.razonSocial ?? '')
@@ -120,7 +135,30 @@ export function OwnerNameStepForm({
     }
   }, [displayName, agencyName, nit, esElRepresentante, representante])
 
-  const errorDe = (campo: Campo) => (revisados[campo] ? revision[campo] : null)
+  // Lo que dijo el back de cada campo. Se va apenas la persona toca ese campo.
+  const [delServidor, setDelServidor] = useState<ErroresDelRegistro>(erroresDelServidor ?? {})
+  useEffect(() => {
+    const llegados = erroresDelServidor ?? {}
+    setDelServidor(llegados)
+    const primero = (['nombre', 'representante', 'razonSocial', 'nit'] as const).find((c) => llegados[c])
+    if (primero) document.getElementById(INPUT_DEL_CAMPO[primero])?.focus()
+  }, [erroresDelServidor])
+  const olvidarDelServidor = (campo: Campo) =>
+    setDelServidor((previo) => {
+      if (!previo[campo]) return previo
+      const siguiente = { ...previo }
+      delete siguiente[campo]
+      return siguiente
+    })
+
+  const errorDe = (campo: Campo): string | null => {
+    const delCliente = revisados[campo] ? revision[campo] : null
+    if (delCliente) return delCliente
+    // Con el tilde puesto, el representante ES el nombre de arriba: lo que el
+    // back diga del representante se pinta ahí.
+    if (campo === 'nombre' && esElRepresentante) return delServidor.nombre ?? delServidor.representante ?? null
+    return delServidor[campo] ?? null
+  }
 
   /*
    * Salir de un campo lo pone en rojo SÓLO si la persona escribió algo en él.
@@ -205,17 +243,17 @@ export function OwnerNameStepForm({
             onBlur={() => marcarRevisado('nombre')}
             onChange={(event) => {
                 marcarTocado('nombre')
+                olvidarDelServidor('nombre')
+                if (esElRepresentante) olvidarDelServidor('representante')
                 setDisplayName(event.target.value)
               }}
           />
         </FormControl>
-        {errorDe('nombre') ? (
-          <FormError>{errorDe('nombre')}</FormError>
-        ) : (
-          <FormHint>
-            Como aparece en tu documento de identidad. Quedarás como administrador de la cuenta.
-          </FormHint>
-        )}
+        {/* La ayuda y el error se cruzan, sin saltar (Nico, 02-10-2026: como
+            en el registro del inquilino). */}
+        <FormError hint="Como aparece en tu documento de identidad. Quedarás como administrador de la cuenta.">
+          {errorDe('nombre')}
+        </FormError>
       </FormField>
 
       {/*
@@ -257,15 +295,14 @@ export function OwnerNameStepForm({
               onBlur={() => marcarRevisado('representante')}
               onChange={(event) => {
                 marcarTocado('representante')
+                olvidarDelServidor('representante')
                 setRepresentante(event.target.value)
               }}
             />
           </FormControl>
-          {errorDe('representante') ? (
-            <FormError>{errorDe('representante')}</FormError>
-          ) : (
-            <FormHint>Nombre de quien figura como representante legal en el RUT.</FormHint>
-          )}
+          <FormError hint="Nombre de quien figura como representante legal en el RUT.">
+            {errorDe('representante')}
+          </FormError>
         </FormField>
       )}
 
@@ -284,15 +321,12 @@ export function OwnerNameStepForm({
             onBlur={() => marcarRevisado('razonSocial')}
             onChange={(event) => {
                 marcarTocado('razonSocial')
+                olvidarDelServidor('razonSocial')
                 setAgencyName(event.target.value)
               }}
           />
         </FormControl>
-        {errorDe('razonSocial') ? (
-          <FormError>{errorDe('razonSocial')}</FormError>
-        ) : (
-          <FormHint>El nombre legal, como está en el RUT.</FormHint>
-        )}
+        <FormError hint="El nombre legal, como está en el RUT.">{errorDe('razonSocial')}</FormError>
       </FormField>
 
       <FormField id="agencyNit" required invalid={!!errorDe('nit')}>
@@ -319,6 +353,7 @@ export function OwnerNameStepForm({
             // no puede pasarse del largo (ver `formatearNitAlEscribir`).
             onChange={(event) => {
               marcarTocado('nit')
+              olvidarDelServidor('nit')
               setNit(formatearNitAlEscribir(event.target.value))
             }}
           />
@@ -327,21 +362,23 @@ export function OwnerNameStepForm({
             número en el input y el helper pone otra cosa»), pero SÍ la ayuda
             que servía: si no escribió el dígito de verificación, se le dice
             cuál es, en neutro y sin ✓. */}
-        {errorDe('nit') ? (
-          <FormError>{errorDe('nit')}</FormError>
-        ) : corrigiendo ? (
-          <FormHint data-testid="nit-registrado">
-            Con este NIT quedó creada tu inmobiliaria en el asistente.
-          </FormHint>
-        ) : revisados.nit && revision.nitBueno && !revision.nitBueno.traiaDv ? (
-          <FormHint data-testid="nit-digito-sugerido">
-            Su dígito de verificación es{' '}
-            <span className="font-mono font-medium tabular-nums text-fg">{revision.nitBueno.dv}</span>: lo
-            agregamos al guardar.
-          </FormHint>
-        ) : (
-          <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
-        )}
+        <FormError
+          hint={
+            corrigiendo ? (
+              <span data-testid="nit-registrado">Con este NIT quedó creada tu inmobiliaria en el asistente.</span>
+            ) : revisados.nit && revision.nitBueno && !revision.nitBueno.traiaDv ? (
+              <span data-testid="nit-digito-sugerido">
+                Su dígito de verificación es{' '}
+                <span className="font-mono font-medium tabular-nums text-fg">{revision.nitBueno.dv}</span>: lo
+                agregamos al guardar.
+              </span>
+            ) : (
+              '9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.'
+            )
+          }
+        >
+          {errorDe('nit')}
+        </FormError>
       </FormField>
 
       <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">

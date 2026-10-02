@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/dialog';
 import { leasesApi } from '@/lib/api/leases.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { Lease } from '@/lib/types/lease';
 
 /**
@@ -80,6 +82,8 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
   const [motivo, setMotivo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [retirando, setRetirando] = useState(false);
+  /** Lo que el back rechazó del motivo (un 400 con `campos`), bajo el campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const aviso = lease.renovacion?.avisoNoRenovar ?? null;
   const dias = diasHastaElFin(lease.endDate);
@@ -101,9 +105,19 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       setMotivo('');
       onCambio();
     } catch (e: unknown) {
-      toast.error('No pudimos registrar tu aviso', {
-        description: mensajeParaLaPersona(e),
+      // 02-10-2026 · Lo que el back rechazó del motivo va bajo el motivo (con
+      // el foco); al toast sólo lo que no tiene campo, con la regla de oro.
+      const reparto = repartirErroresDelServidor<'motivo'>(e, {
+        campos: ['motivo'],
+        accion: 'registrar tu aviso',
       });
+      if (reparto.porCampo.motivo) {
+        setErrorDelMotivo(reparto.porCampo.motivo);
+        document.getElementById('motivo-no-renovar')?.focus();
+      }
+      if (reparto.sueltos.length > 0) {
+        toast.error('No pudimos registrar tu aviso', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -117,7 +131,7 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       onCambio();
     } catch (e: unknown) {
       toast.error('No pudimos retirar el aviso', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'retirar el aviso' }),
       });
     } finally {
       setRetirando(false);
@@ -249,16 +263,24 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
               <Textarea
                 id="motivo-no-renovar"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value);
+                  setErrorDelMotivo(null);
+                }}
                 rows={3}
                 maxLength={500}
                 placeholder="Me mudo de ciudad por trabajo, el canon se salió de mi presupuesto…"
                 data-testid="motivo-no-renovar"
+                aria-invalid={errorDelMotivo ? true : undefined}
+                aria-describedby="motivo-no-renovar-error"
               />
-              <p className="text-caption text-fg-subtle">
-                Lo lee tu inmobiliaria. Si es algo que se pueda arreglar, puede que te
-                propongan otra cosa.
-              </p>
+              {/* La ayuda y el error del back se cruzan (Cadence `FormError`). */}
+              <ErrorDelCampo
+                id="motivo-no-renovar-error"
+                mensaje={errorDelMotivo}
+                pista="Lo lee tu inmobiliaria. Si es algo que se pueda arreglar, puede que te propongan otra cosa."
+                className="mt-0"
+              />
             </div>
           </div>
 

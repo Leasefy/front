@@ -258,7 +258,65 @@ describe('submitAgency — 400 Zod validation detail', () => {
 
     const error = await catchSubmitAgency()
     expect(error.kind).toBe('validation')
-    expect(error.message).toContain('respondió con un error (400)')
+    // 02-10-2026: sin cuerpo legible, una frase para la persona, no «(400)».
+    expect(error.message).toBe('No pudimos continuar con el registro. Revisa los datos e intenta de nuevo.')
+  })
+})
+
+/**
+ * 02-10-2026 · La regla de oro (`lib/errores/traductor-de-errores.ts`): un 4xx
+ * dice lo que mandó el micro; un 5xx, que falló de nuestro lado, con la
+ * referencia; «conexión» sólo cuando no hubo respuesta.
+ */
+describe('submitAgency — los mensajes con la regla de oro', () => {
+  it('🔴 un 500 dice que fue nuestro, con la referencia del micro, y no culpa a la conexión', async () => {
+    mockFetchOnce(
+      jsonResponse(
+        { error: 'Internal Server Error', requestId: 'ab12cd34-0000-4000-8000-000000000000' },
+        500,
+      ),
+    )
+    const error = await catchSubmitAgency()
+    expect(error.kind).toBe('unknown')
+    expect(error.message).toMatch(/^No pudimos continuar con el registro: algo falló de nuestro lado/)
+    expect(error.message).toContain('ab12cd34')
+    expect(error.message).not.toMatch(/conexi[oó]n|\(500\)/)
+    // El cuerpo viaja entero, para quien quiera leerlo con el traductor.
+    expect(error.detalle).toMatchObject({ requestId: 'ab12cd34-0000-4000-8000-000000000000' })
+  })
+
+  it('un 4xx con `{ error }` del micro dice eso mismo', async () => {
+    mockFetchOnce(jsonResponse({ error: 'La sesión ya fue completada.' }, 403))
+    const error = await catchSubmitAgency()
+    expect(error.message).toBe('La sesión ya fue completada.')
+  })
+
+  it('un 400 DATOS_INVALIDOS deja los `campos` y su frase', async () => {
+    mockFetchOnce(
+      jsonResponse(
+        {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['La razón social no puede tener más de 200 caracteres.'],
+          campos: [{ campo: 'legalName', regla: 'longitud_maxima', mensaje: 'La razón social no puede tener más de 200 caracteres.' }],
+        },
+        400,
+      ),
+    )
+    const error = await catchSubmitAgency()
+    expect(error.campos).toEqual([
+      { campo: 'legalName', regla: 'longitud_maxima', mensaje: 'La razón social no puede tener más de 200 caracteres.' },
+    ])
+    expect(error.message).toBe('La razón social no puede tener más de 200 caracteres.')
+  })
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch')) as unknown as typeof globalThis.fetch
+    const error = await catchSubmitAgency()
+    expect(error.kind).toBe('network')
+    expect(error.message).toMatch(/conexión/)
   })
 })
 

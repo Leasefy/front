@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { PhoneInput } from '@leasefy/cadence'
@@ -31,10 +33,18 @@ export interface AgencyStepFormProps {
   /**
    * Session-level `error.kind === 'validation'` message from the hook (the
    * backend re-validates and can reject a payload the client-side zod schema
-   * accepted). The service doesn't return per-field paths, so this renders
-   * as one form-level notice rather than a specific field error.
+   * accepted). Se pinta como un aviso del formulario. Si llega
+   * `errorDelServidor`, manda él.
    */
   submitError?: string | null
+  /**
+   * 02-10-2026 · El 400 del micro, entero (`OnboardingSessionError`, que trae
+   * los `campos` del sobre `DATOS_INVALIDOS`). Cada problema va a SU campo con
+   * `aplicarErroresDelServidor` y el primero recibe el foco; al aviso del
+   * formulario va SÓLO lo que no tiene campo (o un campo confirmado, que no se
+   * puede editar acá).
+   */
+  errorDelServidor?: unknown
   /**
    * Everything already known about the agency — the pre-step
    * (`OwnerNameStepForm`) razón social/NIT and/or the agent resume draft's
@@ -59,11 +69,6 @@ export interface AgencyStepFormProps {
   sessionId?: string
 }
 
-function FieldError({ message, id }: { message?: string; id?: string }) {
-  if (!message) return null
-  return <p id={id} role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
-}
-
 /** A read-only "confirmado" note under a locked field. */
 function ConfirmedHint() {
   return (
@@ -75,7 +80,24 @@ function hasPrefilledValue(value: string | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, sessionId }: AgencyStepFormProps) {
+/** Los campos del paso que el micro puede rechazar, con su ruta en el cuerpo (`toAgencyRequest`). */
+const CAMPOS_EDITABLES_DEL_PASO = [
+  'address.calle',
+  'address.ciudad',
+  'address.departamento',
+  'address.codigoPostal',
+  'primaryContactEmail',
+  'primaryContactPhone',
+] as const satisfies readonly FieldPath<AgencyStepFormValues>[]
+
+export function AgencyStepForm({
+  isSubmitting,
+  onSubmit,
+  submitError,
+  errorDelServidor,
+  prefill,
+  sessionId,
+}: AgencyStepFormProps) {
   // Lo escrito y no enviado la última vez pisa al prefill: es lo más reciente.
   // (Los campos confirmados son readOnly, así que su borrador == su prefill.)
   const borrador = sessionId ? leerBorradorLocal<AgencyStepFormValues>(sessionId, 'agency') : null
@@ -86,6 +108,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
     watch,
     setValue,
     setError,
+    setFocus,
     clearErrors,
     getValues,
     formState: { errors },
@@ -133,6 +156,45 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
   const legalNameConfirmed = hasPrefilledValue(prefill?.legalName)
   const nitConfirmed = hasPrefilledValue(prefill?.nit)
 
+  // Los campos que el formulario deja corregir: un error en la razón social o
+  // el NIT confirmados no tiene dónde ir (son de solo lectura) y va al aviso.
+  const camposConError = useMemo<FieldPath<AgencyStepFormValues>[]>(
+    () => [
+      ...(legalNameConfirmed ? [] : (['legalName'] as const)),
+      ...(nitConfirmed ? [] : (['nit'] as const)),
+      ...CAMPOS_EDITABLES_DEL_PASO,
+    ],
+    [legalNameConfirmed, nitConfirmed],
+  )
+
+  // El 400 del micro: cada problema a su campo; lo suelto, al aviso.
+  const [sueltosDelServidor, setSueltosDelServidor] = useState<string[]>([])
+  useEffect(() => {
+    if (!errorDelServidor) {
+      setSueltosDelServidor([])
+      return
+    }
+    const reparto = aplicarErroresDelServidor<FieldPath<AgencyStepFormValues>>(
+      errorDelServidor,
+      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
+      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
+      { setError: (campo, error) => setError(campo, error), setFocus },
+      {
+        campos: camposConError,
+        toast: false,
+        accion: 'guardar los datos de la agencia',
+        porDefecto: 'No pudimos guardar los datos de la agencia. Revisa los campos e intenta de nuevo.',
+      },
+    )
+    setSueltosDelServidor(reparto.sueltos)
+    // Sólo cuando llega un error nuevo: `camposConError` sale del prefill.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorDelServidor])
+
+  const avisoDelFormulario = errorDelServidor !== undefined
+    ? sueltosDelServidor.join(' · ') || null
+    : submitError
+
   const submit = handleSubmit(async (values) => {
     const parsed = agencyStepSchema.safeParse(values)
     if (!parsed.success) {
@@ -159,9 +221,16 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
           readOnly={legalNameConfirmed}
           aria-readonly={legalNameConfirmed || undefined}
           className={legalNameConfirmed ? 'bg-surface-muted text-fg-subtle cursor-not-allowed' : undefined}
+          invalid={!legalNameConfirmed && Boolean(errors.legalName)}
+          aria-invalid={(!legalNameConfirmed && Boolean(errors.legalName)) || undefined}
+          aria-describedby={!legalNameConfirmed && errors.legalName ? 'legalName-error' : undefined}
           {...register('legalName')}
         />
-        {legalNameConfirmed ? <ConfirmedHint /> : <FieldError message={errors.legalName?.message} />}
+        {legalNameConfirmed ? (
+          <ConfirmedHint />
+        ) : (
+          <ErrorDelCampo id="legalName-error" mensaje={errors.legalName?.message} />
+        )}
       </div>
 
       <div>
@@ -179,6 +248,9 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               ? 'font-mono tabular-nums bg-surface-muted text-fg-subtle cursor-not-allowed'
               : 'font-mono tabular-nums'
           }
+          invalid={!nitConfirmed && Boolean(errors.nit)}
+          aria-invalid={(!nitConfirmed && Boolean(errors.nit)) || undefined}
+          aria-describedby={!nitConfirmed && errors.nit ? 'nit-error' : undefined}
           {...register('nit', {
             // El guion lo pone el campo al noveno dígito; la persona sólo
             // teclea números. `setValue` y no mutar el evento: RHF ya leyó.
@@ -188,7 +260,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               }),
           })}
         />
-        {nitConfirmed ? <ConfirmedHint /> : <FieldError message={errors.nit?.message} />}
+        {nitConfirmed ? <ConfirmedHint /> : <ErrorDelCampo id="nit-error" mensaje={errors.nit?.message} />}
       </div>
 
       {/* Dirección (contract key `calle`) — full width, free text. */}
@@ -210,7 +282,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
              vacío (medido en el navegador el 02-10). */
           {...register('address.calle')}
         />
-        <FieldError id="address.calle-error" message={errors.address?.calle?.message} />
+        <ErrorDelCampo id="address.calle-error" mensaje={errors.address?.calle?.message} />
       </div>
 
       {/* Departamento → Municipio: dependent searchable comboboxes. The
@@ -245,7 +317,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               />
             )}
           />
-          <FieldError message={errors.address?.departamento?.message} />
+          <ErrorDelCampo id="address.departamento-error" mensaje={errors.address?.departamento?.message} />
         </div>
         <div>
           <span id="address-municipio-label" className="mb-1.5 block text-caption font-semibold text-fg">
@@ -267,7 +339,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               />
             )}
           />
-          <FieldError message={errors.address?.ciudad?.message} />
+          <ErrorDelCampo id="address.ciudad-error" mensaje={errors.address?.ciudad?.message} />
         </div>
       </div>
 
@@ -284,7 +356,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
           className="font-mono tabular-nums"
           invalid={Boolean(errors.address?.codigoPostal)}
           aria-invalid={Boolean(errors.address?.codigoPostal) || undefined}
-          aria-describedby={errors.address?.codigoPostal ? 'address.codigoPostal-error' : 'address.codigoPostal-pista'}
+          aria-describedby={errors.address?.codigoPostal ? 'address.codigoPostal-error' : undefined}
           {...register('address.codigoPostal', {
             // Sólo dígitos y hasta seis, limpiando al escribir: sin `maxLength`
             // (ya nos cortó dígitos de un celular pegado). `setValue` y no
@@ -293,13 +365,12 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               setValue('address.codigoPostal', limpiarCodigoPostalAlEscribir(String(e.target.value))),
           })}
         />
-        {errors.address?.codigoPostal?.message ? (
-          <FieldError id="address.codigoPostal-error" message={errors.address.codigoPostal.message} />
-        ) : (
-          <p id="address.codigoPostal-pista" className="mt-1.5 text-caption text-fg-subtle">
-            6 dígitos; los dos primeros son los del departamento.
-          </p>
-        )}
+        {/* La ayuda y el error se cruzan (Cadence `FormError` con `hint`). */}
+        <ErrorDelCampo
+          id="address.codigoPostal-error"
+          mensaje={errors.address?.codigoPostal?.message}
+          pista="6 dígitos; los dos primeros son los del departamento."
+        />
       </div>
 
       <div>
@@ -312,15 +383,19 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
           inputMode="email"
           autoComplete="email"
           spellCheck={false}
+          invalid={Boolean(errors.primaryContactEmail)}
+          aria-invalid={Boolean(errors.primaryContactEmail) || undefined}
+          aria-describedby={errors.primaryContactEmail ? 'primaryContactEmail-error' : undefined}
           {...register('primaryContactEmail')}
         />
         {/* No es «el del representante legal» (eso se preguntó antes): queda
             asociado a la cuenta de la inmobiliaria y es a donde el micro manda
             el reporte diario de cartera y los avisos (Nico, 30-09-2026). */}
-        <p className="mt-1.5 text-caption text-fg-subtle">
-          Queda asociado a la cuenta de la inmobiliaria: ahí te llegan los reportes y avisos de Leasefy.
-        </p>
-        <FieldError message={errors.primaryContactEmail?.message} />
+        <ErrorDelCampo
+          id="primaryContactEmail-error"
+          mensaje={errors.primaryContactEmail?.message}
+          pista="Queda asociado a la cuenta de la inmobiliaria: ahí te llegan los reportes y avisos de Leasefy."
+        />
       </div>
 
       <div>
@@ -336,6 +411,8 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
           name="primaryContactPhone"
           render={({ field }) => (
             <PhoneInput
+              // El ref deja que un error del servidor en el teléfono le dé el foco.
+              ref={field.ref}
               id="primaryContactPhone"
               autoComplete="tel"
               inputMode="numeric"
@@ -349,22 +426,25 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, s
               onChange={(v) => field.onChange(v.replace(/\D/g, ''))}
               onBlur={field.onBlur}
               invalid={Boolean(errors.primaryContactPhone)}
+              aria-invalid={Boolean(errors.primaryContactPhone) || undefined}
+              aria-describedby={errors.primaryContactPhone ? 'primaryContactPhone-error' : undefined}
             />
           )}
         />
-        {errors.primaryContactPhone?.message ? (
-          <FieldError message={errors.primaryContactPhone.message} />
-        ) : (
-          <p className="mt-1.5 text-caption text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
-        )}
+        <ErrorDelCampo
+          id="primaryContactPhone-error"
+          mensaje={errors.primaryContactPhone?.message}
+          pista={pistaDelTelefono(paisDelTelefono)}
+        />
       </div>
 
-      {submitError && (
+      {avisoDelFormulario && (
         <div
           data-testid="agency-step-form-error"
+          role="alert"
           className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
-          <p className="text-sm text-danger">{submitError}</p>
+          <p className="text-sm text-danger">{avisoDelFormulario}</p>
         </div>
       )}
 

@@ -72,9 +72,13 @@ vi.mock('@/lib/auth/use-auth', () => ({
 const { crearOrdenPreScoringMock, MockPreScoringError } = vi.hoisted(() => {
   class MockPreScoringError extends Error {
     kind: string
-    constructor(kind: string, message: string) {
+    porCampo: Record<string, string>
+    sueltos: string[]
+    constructor(kind: string, message: string, porCampo: Record<string, string> = {}, sueltos?: string[]) {
       super(message)
       this.kind = kind
+      this.porCampo = porCampo
+      this.sueltos = sueltos ?? (message ? [message] : [])
     }
   }
   return { crearOrdenPreScoringMock: vi.fn(), MockPreScoringError }
@@ -350,6 +354,61 @@ describe('<AprobacionPage> — Slice 1 pre-scoring (pago en otra pestaña)', () 
       expect(pushMock).not.toHaveBeenCalled()
       expect(container.querySelector('[data-testid="estado-pago"]')).toBeNull()
       expect(container.textContent).toContain('El servicio no está disponible en este momento. Intenta más tarde.')
+    })
+
+    // 🔴 02-10-2026 · Sistema de errores: lo que el back rechaza por campo va a SU campo.
+    it('🔴 un 400 con campos: el error va bajo su campo (con foco y aria), sin banner genérico', async () => {
+      const CANON = 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
+      crearOrdenPreScoringMock.mockRejectedValue(
+        new MockPreScoringError('validation', 'Revisa los campos marcados.', { canon: CANON }, []),
+      )
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      fillValidForm()
+      await submit()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      const error = container.querySelector('#canon-error')
+      expect(error?.textContent).toBe(CANON)
+      const canon = container.querySelector('#canon') as HTMLInputElement
+      expect(canon.getAttribute('aria-invalid')).toBe('true')
+      expect(canon.getAttribute('aria-describedby')).toBe('canon-error')
+      expect(document.activeElement).toBe(canon)
+      expect(container.textContent).not.toContain('Revisa los campos marcados.')
+      expect(container.querySelector('[data-testid="estado-pago"]')).toBeNull()
+
+      // Al corregir el canon, el error del servidor se va (el texto sale con su
+      // animación; lo que cuenta es que el campo deja de estar marcado).
+      setInputValue(canon, '2.500.000')
+      expect(canon.getAttribute('aria-invalid')).toBeNull()
+      expect(canon.getAttribute('aria-describedby')).toBeNull()
+    })
+
+    it('el formulario ataja un canon de once cifras con la frase del back, sin llamar al servicio', async () => {
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      fillValidForm()
+      setInputValue(container.querySelector('#canon') as HTMLInputElement, '30000000000')
+      await submit()
+      expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
+      expect(openMock).not.toHaveBeenCalled()
+      expect(container.querySelector('#canon-error')?.textContent).toBe(
+        'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+      )
+    })
+
+    it('un fallo que no es PreScoringError pasa por el traductor (sin respuesta = conexión)', async () => {
+      crearOrdenPreScoringMock.mockRejectedValue(new TypeError('Failed to fetch'))
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      fillValidForm()
+      await submit()
+      expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/conexión/)
     })
 
     it('formulario inválido (sin nombres): no llama a ningún servicio ni abre ninguna pestaña', async () => {

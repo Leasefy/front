@@ -1,4 +1,5 @@
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import type { AgencyRole, UserInvite } from '@/lib/types/inmobiliaria'
 import { buildMemberInviteLink } from './invite-link'
 import type { MemberRole, MembersStepFormValues } from './members-step-schema'
@@ -52,7 +53,8 @@ export interface InvitacionCreada {
   error: string | null
   /**
    * `false` cuando volver a intentarlo AHORA no sirve: falta el segundo
-   * factor de quien invita (ver `faltaElSegundoFactor`). Ausente = sí sirve.
+   * factor de quien invita (ver `faltaElSegundoFactor`) o el back ya dijo qué
+   * está mal (un 4xx: duplicado, límite del plan…). Ausente = sí sirve.
    */
   reintentable?: boolean
 }
@@ -81,10 +83,28 @@ function faltaElSegundoFactor(e: unknown): boolean {
   )
 }
 
+/**
+ * El motivo, con la regla de oro del traductor (02-10-2026): un 4xx dice lo
+ * que mandó el back («ya es miembro activo», el límite del plan); un 5xx, que
+ * falló de nuestro lado, con la referencia; «conexión» sólo sin respuesta.
+ */
 function mensajeDeError(e: unknown): string {
   if (faltaElSegundoFactor(e)) return MOTIVO_SIN_SEGUNDO_FACTOR
-  if (e instanceof Error && e.message.trim()) return e.message
-  return 'No pudimos crear esta invitación. Puedes invitar a esta persona más tarde desde el panel.'
+  return mensajeParaLaPersona(e, {
+    accion: 'invitar a esta persona',
+    porDefecto: 'No pudimos crear esta invitación. Puedes invitar a esta persona más tarde desde el panel.',
+  })
+}
+
+/**
+ * Un rechazo que reintentar YA no arregla: el back dijo qué está mal (un dato,
+ * un duplicado, el límite del plan, un permiso). La red, un 5xx o una caída sí
+ * pueden arreglarse solos; un error sin status (raro) se deja reintentar.
+ */
+function reintentarNoSirve(e: unknown): boolean {
+  if (faltaElSegundoFactor(e)) return true
+  const { tipo } = leerFallo(e)
+  return tipo === 'datos' || tipo === 'conflicto' || tipo === 'sinPermiso' || tipo === 'noExiste' || tipo === 'rechazo'
 }
 
 export async function crearInvitacionesDelEquipo(
@@ -128,7 +148,7 @@ export async function crearInvitacionesDelEquipo(
         enlace: null,
         correoEnviado: false,
         error: mensajeDeError(e),
-        ...(faltaElSegundoFactor(e) && { reintentable: false }),
+        ...(reintentarNoSirve(e) && { reintentable: false }),
       })
     }
   }

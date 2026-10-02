@@ -46,6 +46,24 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils'
 import { tomarTokensDelFragmento } from '@/lib/auth/credenciales-en-la-url'
+import { leerErrorDeSupabase, mensajeDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase'
+
+const NO_SE_PUDO_ABRIR =
+  'No pudimos abrir sesión desde este enlace. Pide que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.'
+
+/**
+ * Por qué no se abrió la sesión del enlace (02-10-2026). El enlace puede estar
+ * bien y haber fallado la red o Supabase: entonces NO se le pide otro enlace
+ * (regla de oro: «conexión» sólo sin respuesta; un 5xx es nuestro). Lo demás
+ * es del enlace, y se dice como siempre.
+ */
+function motivoDelEnlace(e: unknown): string {
+  const { status } = leerErrorDeSupabase(e)
+  if (sinRespuestaDeSupabase(e) || (typeof status === 'number' && status >= 500)) {
+    return mensajeDeSupabase(e, { porDefecto: NO_SE_PUDO_ABRIR })
+  }
+  return NO_SE_PUDO_ABRIR
+}
 
 type Aviso = { titulo: string; cuerpo: string; boton?: string }
 
@@ -144,19 +162,16 @@ function EnlaceContent() {
       const refreshToken = params.get('refresh_token')
       if (accessToken && refreshToken) {
         let vigente = true
-        const noSePudo = () =>
-          setError(
-            'No pudimos abrir sesión desde este enlace. Pide que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.',
-          )
+        const noSePudo = (e: unknown) => setError(motivoDelEnlace(e))
         sb.auth
           .setSession({ access_token: accessToken, refresh_token: refreshToken })
           .then(({ error: fallo }) => {
             if (!vigente) return
-            if (fallo) noSePudo()
+            if (fallo) noSePudo(fallo)
             else ir()
           })
-          .catch(() => {
-            if (vigente) noSePudo()
+          .catch((e: unknown) => {
+            if (vigente) noSePudo(e)
           })
         return () => {
           vigente = false
@@ -213,7 +228,9 @@ function EnlaceContent() {
               <h1 className="text-xl font-semibold text-fg mb-2">
                 No pudimos abrir el enlace
               </h1>
-              <p className="text-sm text-fg-muted mb-6">{error}</p>
+              <p className="text-sm text-fg-muted mb-6" role="alert">
+                {error}
+              </p>
               {/* Sin flecha propia: el Button del producto ya trae la suya y acá salían dos (Nico, 2026-09-07). */}
               <Button asChild className="h-12 w-full rounded-full text-[14px]">
                 <a href="/auth">Ir a iniciar sesión</a>

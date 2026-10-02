@@ -74,6 +74,10 @@ export function SalirDelRegistro({ onAntesDeSalir, volver }: SalirDelRegistroPro
     }
     try {
       await auth?.signOut()
+    } catch {
+      // Cerrar la sesión en Supabase puede fallar (la red): salir igual. Sin
+      // este `catch` el rechazo quedaba sin atrapar (02-10-2026). Al entrar a
+      // /auth la sesión vieja se vuelve a revisar.
     } finally {
       router.replace('/auth')
     }

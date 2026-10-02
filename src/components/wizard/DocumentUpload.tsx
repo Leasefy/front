@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // TextTs
@@ -181,8 +183,15 @@ export function DocumentUpload({
           return;
         }
       } catch (err) {
-        setUploadError(err instanceof Error ? err.message : 'No pudimos eliminar el documento');
-        setState('error');
+        // El documento sigue en el servidor: se queda a la vista y el motivo
+        // va debajo, con la regla de oro (02-10-2026). Antes era el `message`
+        // crudo y la vista de «error» escondía el documento que seguía ahí.
+        setUploadError(
+          mensajeParaLaPersona(err, {
+            accion: 'eliminar el documento',
+            porDefecto: 'No pudimos eliminar el documento. Prueba de nuevo en un momento.',
+          }),
+        );
         setIsDeleting(false);
         return;
       }
@@ -328,10 +337,6 @@ export function DocumentUpload({
         </div>
       )}
 
-      {/* Hint text */}
-      {hint && !displayError && state !== 'error' && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
 
       {/* Stale slot — the File was lost serialising to localStorage on reload.
           Prompt a re-attach so the user knows which document to add again. */}
@@ -341,10 +346,15 @@ export function DocumentUpload({
         </p>
       )}
 
-      {/* External error (from form validation) */}
-      {displayError && state !== 'error' && (
-        <p className="text-xs text-danger">{displayError}</p>
-      )}
+      {/* El error (de la validación o del servidor) entra suave y se cruza con
+          la ayuda (Cadence `FormError`, 02-10-2026). Con la vista de «error»
+          del recuadro, el motivo ya está adentro: aquí no se repite. */}
+      <ErrorDelCampo
+        id={`${inputId}-error`}
+        mensaje={state !== 'error' ? displayError : null}
+        pista={state !== 'error' ? hint : undefined}
+        className="mt-0"
+      />
     </div>
   );
 }

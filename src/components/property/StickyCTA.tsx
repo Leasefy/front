@@ -18,6 +18,8 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { messagesApi } from '@/lib/api/messages.service';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { VisitSlot } from '@/lib/api/visits.types';
 import { PostularButton } from '@/components/tenant/PostularButton';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
@@ -196,13 +198,40 @@ function useCompartirInmueble(propertyId: string) {
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
-function getScheduleErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 409) return 'Este horario ya fue reservado. Elige otro.';
-    if (err.status === 403) return 'No puedes agendar una visita para tu propia propiedad.';
-    if (err.status === 400) return 'Formato de datos inválido. Recarga la página e intenta de nuevo.';
+/**
+ * Por qué no se agendó la visita (02-10-2026, sistema de errores).
+ *
+ * El 409 del back (`visits.service.ts`) son DOS casos y ya trae `code`:
+ * `HORARIO_OCUPADO` (otro tomó el horario) y `VISITA_YA_SOLICITADA` (ya hay
+ * una visita activa con este inmueble); se decide con el código, nunca con el
+ * texto. Un 409 sin `code` (back viejo) dice los dos casos juntos. Todo lo
+ * demás va por el traductor: el 403 dice lo que mandó el back (su propio
+ * inmueble, o «Esto es sólo para cuentas de inquilino…»), un 400 dice qué está
+ * mal («Este inmueble ya está arrendado…»), un 5xx dice que fue nuestro con la
+ * referencia y sólo la falta de respuesta habla de la conexión.
+ */
+export function getScheduleErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.status === 409) {
+    if (err.code === 'HORARIO_OCUPADO') return 'Ese horario ya no está disponible. Elige otro.';
+    if (err.code === 'VISITA_YA_SOLICITADA') {
+      return 'Ya tienes una visita pendiente para este inmueble. Revísala en tus visitas.';
+    }
+    if (!err.code) {
+      return 'Ese horario ya no está disponible o ya tienes una visita pendiente para este inmueble. Elige otro horario o revisa tus visitas.';
+    }
   }
-  return 'Ocurrió un error al agendar. Intenta de nuevo.';
+  return mensajeParaLaPersona(err, {
+    accion: 'agendar la visita',
+    porDefecto: 'No pudimos agendar la visita. Prueba de nuevo en un momento.',
+  });
+}
+
+/** Por qué no se abrió la conversación, con la regla de oro del traductor. */
+export function mensajeAlContactar(err: unknown): string {
+  return mensajeParaLaPersona(err, {
+    accion: 'iniciar la conversación',
+    porDefecto: 'No pudimos iniciar la conversación. Prueba de nuevo en un momento.',
+  });
 }
 
 // ============================================================================
@@ -292,11 +321,9 @@ export function StickyCTA({
       const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
       router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
     } catch (error) {
-      setContactError(
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : 'No pudimos iniciar la conversación. Intenta de nuevo.',
-      );
+      // Antes sólo un 400 con `messages[]` decía algo propio; un 5xx o la red
+      // caían en el mismo texto genérico. Ahora, la regla de oro.
+      setContactError(mensajeAlContactar(error));
     } finally {
       setIsStartingChat(false);
     }
@@ -591,14 +618,11 @@ export function StickyCTA({
                     isLoading={isStartingChat}
                     disabled={isStartingChat}
                     onClick={handleStartChat}
+                    aria-describedby={contactError ? 'contacto-error' : undefined}
                   >
                     Contactar
                   </Button>
-                  {contactError && (
-                    <p role="alert" className="mt-3 text-[13px] text-danger">
-                      {contactError}
-                    </p>
-                  )}
+                  <ErrorDelCampo id="contacto-error" mensaje={contactError} className="mt-3 text-[13px]" />
                 </>
               ) : (
                 <>
@@ -820,13 +844,12 @@ export function StickyCTA({
               )}
 
               {/* Error message */}
-              {scheduleError && (
-                <p className="text-[12px] text-destructive text-center">{scheduleError}</p>
-              )}
+              <ErrorDelCampo id="visita-error" mensaje={scheduleError} className="text-[12px] text-center" />
 
               {/* CTA button */}
               <Button
                 onClick={handleScheduleVisit}
+                aria-describedby={scheduleError ? 'visita-error' : undefined}
                 disabled={!selectedDay || !selectedTime || isSubmitting || slotsLoading}
                 hideArrow
                 className="w-full h-auto py-4 rounded-xl text-[14px] gap-2"
@@ -916,9 +939,11 @@ export function MobileStickyCTA({
     try {
       const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
       router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
-    } catch {
-      // Mobile CTA has no room for an inline error banner; the desktop
-      // StickyCTA on the same page already surfaces one.
+    } catch (error) {
+      // La barra del celular no tiene espacio para un aviso en línea, y la
+      // tarjeta de escritorio (oculta en el celular) no se entera de este
+      // fallo: antes no se decía nada. Un toast lo dice sin mover la barra.
+      toast.error(mensajeAlContactar(error));
     } finally {
       setIsStartingChat(false);
     }

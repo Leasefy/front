@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { adminApi, ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -102,7 +103,7 @@ export default function EscalationDetailPage() {
         setSubmitError('La escalación ya fue asignada o resuelta por otro admin. Actualizando…')
         refetch()
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
+        setSubmitError(mensajeDelAdmin(err, { accion: 'asignar la escalación' }))
       }
     } finally {
       setSubmitting(false)
@@ -127,7 +128,7 @@ export default function EscalationDetailPage() {
         setSubmitError('La escalación ya fue resuelta por otro admin. Actualizando…')
         refetch()
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
+        setSubmitError(mensajeDelAdmin(err, { accion: 'resolver la escalación' }))
       }
     } finally {
       setSubmitting(false)

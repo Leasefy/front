@@ -9,6 +9,8 @@ import { IconButton } from '@leasefy/cadence';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { PlanId } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface CouponInputProps {
   /** Plan ID to validate coupon against */
@@ -60,7 +62,13 @@ export function CouponInput({
       }
     } catch (err) {
       // Infrastructure failure (network down, 5xx) — distinct from "cupón inválido".
-      setError(err instanceof Error ? err.message : 'No pudimos verificar el cupón. Intenta de nuevo.');
+      // 02-10-2026: con la regla de oro del traductor (antes, `err.message` crudo).
+      setError(
+        mensajeParaLaPersona(err, {
+          accion: 'verificar el cupón',
+          porDefecto: 'No pudimos verificar el cupón. Prueba de nuevo en un momento.',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +142,8 @@ export function CouponInput({
               error && 'border-danger/30 focus-visible:ring-danger'
             )}
             disabled={isLoading}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'coupon-code-error' : undefined}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="characters"
@@ -150,11 +160,7 @@ export function CouponInput({
           Aplicar
         </Button>
       </div>
-      {error && (
-        <p className="text-sm text-danger mt-2" role="alert">
-          {error}
-        </p>
-      )}
+      <ErrorDelCampo id="coupon-code-error" mensaje={error} className="mt-2" />
 
       {/* Example coupon hint for testing */}
       <p className="text-xs text-muted-foreground mt-2">

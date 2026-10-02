@@ -12,6 +12,7 @@ import { toast } from '@/components/ui/toast';
 import { useOwnerFinanzas } from '@/lib/hooks/useOwnerPortal';
 import { ownerSolicitudesApi } from '@/lib/api/owner-solicitudes.service';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
+import { falloDeLaAccionDelPortal } from '@/components/landlord/portal/fallo-de-la-accion';
 import { REQUEST_TYPE_OPTIONS, type SolicitudTipo } from '@/lib/api/owner-solicitudes.types';
 
 const MAX_DESC = 4000;
@@ -47,13 +48,19 @@ export default function NuevaSolicitudPage() {
         router.push(`/panel/solicitudes/${res.data.id}`);
         return;
       }
-      if (res.status === 0) {
+      // 02-10-2026: «Próximamente» SÓLO si el portal no está habilitado; la
+      // red caída habla de la conexión y lo demás pasa por el traductor.
+      const fallo = falloDeLaAccionDelPortal(res, {
+        accion: 'enviar la solicitud',
+        porDefecto: 'Prueba de nuevo en un momento.',
+      });
+      if (fallo.tipo === 'no-habilitado') {
         toast('Próximamente', {
           description: 'Las solicitudes se habilitan cuando tu inmobiliaria active el Portal del Propietario.',
         });
         return;
       }
-      toast('No pudimos enviar la solicitud', { description: res.error ?? 'Intenta de nuevo.' });
+      toast.error('No pudimos enviar la solicitud', { description: fallo.texto });
     } finally {
       setSubmitting(false);
     }

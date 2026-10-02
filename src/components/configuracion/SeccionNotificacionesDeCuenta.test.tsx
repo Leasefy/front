@@ -23,6 +23,7 @@ vi.mock('@/lib/hooks/useSettings', () => ({
 }))
 vi.mock('@/lib/i18n', () => ({ useI18n: () => ({ t: (k: string) => k, locale: 'es' }) }))
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+import { toast } from '@/components/ui/toast'
 vi.mock('@/components/estado/EstadoDeDatos', () => ({
   EstadoDeDatos: ({ error, children }: { error: unknown; children: React.ReactNode }) =>
     error ? <p data-testid="fallo">fallo</p> : <>{children}</>,
@@ -86,5 +87,37 @@ describe('SeccionNotificacionesDeCuenta', () => {
     await act(async () => root.render(<SeccionNotificacionesDeCuenta filas={FILAS} />))
     expect(interruptores()).toHaveLength(0)
     expect(container.querySelector('[data-testid="fallo"]')).not.toBeNull()
+  })
+})
+
+/** 02-10-2026 · Sistema de errores: el fallo al guardar pasa por el traductor. */
+describe('SeccionNotificacionesDeCuenta — fallo al guardar', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(String(cuerpo.message ?? '')), { name: 'ApiError', status, code: cuerpo.code, detalle: cuerpo })
+  }
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    updateSettings.mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await act(async () => root.render(<SeccionNotificacionesDeCuenta filas={FILAS} />))
+    await act(async () => interruptores()[1]!.click())
+    const texto = String(vi.mocked(toast.error).mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tu preferencia: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+  })
+
+  it('un 400 dice lo que mandó el back', async () => {
+    updateSettings.mockRejectedValue(errorDelBack(400, { code: 'DATOS_INVALIDOS', message: 'Esa preferencia no existe.' }))
+    await act(async () => root.render(<SeccionNotificacionesDeCuenta filas={FILAS} />))
+    await act(async () => interruptores()[1]!.click())
+    expect(toast.error).toHaveBeenCalledWith('Esa preferencia no existe.')
+  })
+
+  it('sin respuesta (status 0): ahí sí se habla de la conexión', async () => {
+    updateSettings.mockRejectedValue(new TypeError('Failed to fetch'))
+    await act(async () => root.render(<SeccionNotificacionesDeCuenta filas={FILAS} />))
+    await act(async () => interruptores()[1]!.click())
+    expect(String(vi.mocked(toast.error).mock.calls[0][0])).toMatch(/conexión/)
   })
 })

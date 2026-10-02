@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import {
   getPreScoringConfig,
@@ -44,13 +44,13 @@ function hoursToDays(h: number): string {
   return `${h} h ≈ ${txt} ${d === 1 ? 'día' : 'días'}`
 }
 
-/** El micro devuelve `{ success:false, error }`; el back NestJS, `{ message }`. */
-function configErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ApiError) {
-    const body = err.body as { error?: string } | undefined
-    return body?.error ?? err.message
-  }
-  return err instanceof Error ? err.message : fallback
+/**
+ * El micro devuelve `{ success:false, error }`; el back NestJS, `{ message }`.
+ * 02-10-2026: delega la regla de oro en `mensajeDelAdmin` (antes, un
+ * `TypeError` de JavaScript o «Failed to fetch» salían crudos).
+ */
+function configErrorMessage(err: unknown, fallback: string, accion: string): string {
+  return mensajeDelAdmin(err, { porDefecto: fallback, accion })
 }
 
 const RANGE_HINT = `Entero entre ${MIN_HOURS} y ${MAX_HOURS} horas (hasta 30 días).`
@@ -147,7 +147,7 @@ export function PreScoringConfigCard() {
       setWait(String(updated.authorizationWaitHours))
       setSaved(true)
     } catch (err) {
-      setSaveError(configErrorMessage(err, 'No se pudo guardar la configuración.'))
+      setSaveError(configErrorMessage(err, 'No se pudo guardar la configuración.', 'guardar la configuración'))
     } finally {
       setSaving(false)
     }
@@ -170,7 +170,7 @@ export function PreScoringConfigCard() {
 
       {error && !server && (
         <div className="card p-4 border-l-4 border-l-bad">
-          <p className="text-sm text-bad">{configErrorMessage(error, 'No se pudo cargar la configuración.')}</p>
+          <p className="text-sm text-bad">{configErrorMessage(error, 'No se pudo cargar la configuración.', 'cargar la configuración')}</p>
           <button className="btn btn-ghost h-8 px-2 mt-2" onClick={refetch}>
             Reintentar
           </button>

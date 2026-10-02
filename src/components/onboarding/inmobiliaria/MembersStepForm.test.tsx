@@ -486,3 +486,55 @@ describe('<MembersStepForm> — reintentar y entorno de pruebas', () => {
     expect(container.querySelector('[data-testid="invite-copy-alex.dev+8@leasefy.co"]')).toBeTruthy()
   })
 })
+
+/**
+ * 02-10-2026 · El 400 del micro trae `campos` con la ruta de la fila
+ * (`members.1.email`): el error va al correo de ESA persona, con foco, y no a
+ * un aviso con todo junto.
+ */
+describe('<MembersStepForm> — los errores del servidor en su fila', () => {
+  function errorDelMicro(campos: { campo: string; regla: string; mensaje: string }[]) {
+    return Object.assign(new Error(campos.map((c) => c.mensaje).join('; ')), {
+      name: 'OnboardingSessionError',
+      kind: 'validation',
+      status: 400,
+      campos,
+      detalle: { statusCode: 400, code: 'DATOS_INVALIDOS', campos },
+    })
+  }
+
+  const DOS_FILAS = [
+    { email: 'ana@acme.co', nombre: '', role: 'AGENTE' as const },
+    { email: 'luis@acme', nombre: '', role: 'CONTADOR' as const },
+  ]
+
+  it('🔴 `members.1.email` va al correo de la fila 2, con foco y sin aviso', async () => {
+    const MENSAJE = 'Revisa el correo: debe tener la forma nombre@dominio.com.'
+    render({
+      guardados: DOS_FILAS,
+      errorDelServidor: errorDelMicro([{ campo: 'members.1.email', regla: 'correo', mensaje: MENSAJE }]),
+    })
+    // `setFocus` de react-hook-form enfoca en el siguiente turno.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const correo = byId('members.1.email')
+    expect(container.querySelector('[id="members.1.email-error"]')?.textContent).toBe(MENSAJE)
+    expect(correo.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(correo)
+    expect(container.querySelector('[id="members.0.email-error"]')).toBeNull()
+    expect(container.querySelector('[data-testid="members-step-form-error"]')).toBeNull()
+  })
+
+  it('lo que no es de una fila (la lista entera) va al aviso', () => {
+    render({
+      guardados: DOS_FILAS,
+      errorDelServidor: errorDelMicro([
+        { campo: 'members', regla: 'lista_maxima', mensaje: 'Puedes elegir como máximo 50 en los miembros.' },
+      ]),
+    })
+    expect(container.querySelector('[data-testid="members-step-form-error"]')?.textContent).toBe(
+      'Puedes elegir como máximo 50 en los miembros.',
+    )
+  })
+})

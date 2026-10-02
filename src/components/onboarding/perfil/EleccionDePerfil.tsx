@@ -14,6 +14,7 @@ import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
 import { desistirDelRegistroDeInmobiliaria } from '@/lib/api/onboarding-provisioning.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -173,11 +174,14 @@ export function EleccionDePerfil({
       setYendoA(opcion.valor)
       window.location.assign(rutaDeOnboarding(opcion.bandera))
     } catch (error) {
-      // Nada se borró (el back se niega entero): se dice por qué y se queda aquí.
+      // Nada se borró (el back se niega entero): se dice por qué y se queda aquí,
+      // con la regla de oro del traductor (02-10-2026): un 409 dice lo que mandó
+      // el back; un 5xx, que fue nuestro, con la referencia; la red, sólo sin respuesta.
       setErrorAlDejar(
-        error instanceof Error && error.message
-          ? error.message
-          : 'No pudimos dejar de lado el registro. Vuelve a intentarlo en un momento.',
+        mensajeParaLaPersona(error, {
+          accion: 'dejar de lado el registro',
+          porDefecto: 'No pudimos dejar de lado el registro. Vuelve a intentarlo en un momento.',
+        }),
       )
     } finally {
       setDejandoDeLado(false)

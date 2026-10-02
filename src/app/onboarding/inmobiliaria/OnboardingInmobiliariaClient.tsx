@@ -457,7 +457,8 @@ function OnboardingWizard({
               <AgencyStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(submitAgency)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                // El 400 entero: sus `campos` van a cada campo (02-10-2026).
+                errorDelServidor={error !== null && error.kind === 'validation' ? error : null}
                 prefill={computeAgencyStepPrefill(preStepAgency, draft)}
                 sessionId={sessionId}
               />
@@ -466,7 +467,7 @@ function OnboardingWizard({
               <MembersStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(handleSubmitMembers)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                errorDelServidor={error !== null && error.kind === 'validation' ? error : null}
                 pendingInvites={pendingMembersInvites}
                 onContinueAfterInvites={() => setPendingMembersInvites(null)}
                 onReintentarInvitaciones={reintentarInvitaciones}
@@ -511,7 +512,7 @@ function OnboardingWizard({
               <CompleteStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={crearInmobiliaria}
-                error={error !== null && error.kind === 'conflict' ? error : null}
+                error={error !== null && (error.kind === 'conflict' || error.kind === 'validation') ? error : null}
                 onNavigateToStep={completarPaso}
                 draft={draft}
               />

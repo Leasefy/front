@@ -19,6 +19,7 @@
 
 import { useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Scales } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -98,10 +99,15 @@ export function CostoResponsabilidadCard({
             : 'Quote approval will be enabled soon.',
         );
       } else {
+        // 02-10-2026 · Regla de oro: el motivo del back o «fue nuestro» con la referencia.
         toast.error(
-          locale === 'es'
-            ? 'No pudimos registrar tu aprobación. Intenta de nuevo.'
-            : 'We could not record your approval. Please try again.',
+          mensajeParaLaPersona(e, {
+            accion: 'registrar tu aprobación',
+            porDefecto:
+              locale === 'es'
+                ? 'No pudimos registrar tu aprobación. Intenta de nuevo.'
+                : 'We could not record your approval. Please try again.',
+          }),
         );
       }
     } finally {

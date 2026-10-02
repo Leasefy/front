@@ -118,13 +118,15 @@ vi.mock('framer-motion', async () => {
  * Las dos fuentes del veredicto del registro (`registro-de-la-inmobiliaria.ts`):
  * el punto de retorno del back y el paso del micro.
  */
-const { getOnboardingResumePoint, resumeOnboarding } = vi.hoisted(() => ({
+const { getOnboardingResumePoint, resumeOnboarding, desistirDelRegistroDeInmobiliaria } = vi.hoisted(() => ({
   getOnboardingResumePoint: vi.fn(),
   resumeOnboarding: vi.fn(),
+  desistirDelRegistroDeInmobiliaria: vi.fn(),
 }))
 vi.mock('@/lib/api/onboarding-provisioning.service', async (original) => ({
   ...(await original<typeof import('@/lib/api/onboarding-provisioning.service')>()),
   getOnboardingResumePoint,
+  desistirDelRegistroDeInmobiliaria,
 }))
 vi.mock('@/lib/api/onboarding-session.service', async (original) => ({
   ...(await original<typeof import('@/lib/api/onboarding-session.service')>()),
@@ -616,5 +618,68 @@ describe('«Inmobiliaria» abre «Antes de comenzar» al lado', () => {
     await tocar(tarjeta('inmobiliaria'))
 
     expect(pushMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+  })
+})
+
+/**
+ * 02-10-2026 · «Dejar de lado» la inmobiliaria a medias con la regla de oro:
+ * si el back no puede, se dice por qué (un 409 con sus palabras; un 5xx, que
+ * fue nuestro y con la referencia), y la persona se queda donde estaba.
+ */
+describe('dejar de lado la inmobiliaria a medias, cuando no se puede', () => {
+  const tarjeta = (valor: string) =>
+    container.querySelector(`[data-testid="perfil-${valor}"]`) as HTMLButtonElement
+  const tocar = async (el: HTMLElement) => {
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  async function intentarDejarlaDeLado() {
+    aprovisionamientoState.valoresGuardados = { razonSocial: 'Inmobiliaria Andes SAS', nit: '890903938-8' }
+    await render()
+    await tocar(tarjeta('inmobiliaria'))
+    await tocar(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]') as HTMLElement)
+    await tocar(tarjeta('tenant'))
+    const dialogo = document.querySelector('[data-testid="dejar-de-lado-la-inmobiliaria"]')
+    expect(dialogo).not.toBeNull()
+    const confirmar = Array.from(dialogo!.querySelectorAll('button')).find((b) =>
+      b.textContent?.startsWith('Sí, seguir como'),
+    ) as HTMLButtonElement
+    await tocar(confirmar)
+    return () => document.querySelector('[data-testid="error-al-dejar-de-lado"]')?.textContent ?? ''
+  }
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    desistirDelRegistroDeInmobiliaria.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const error = await intentarDejarlaDeLado()
+    expect(error()).toMatch(/^No pudimos dejar de lado el registro: algo falló de nuestro lado/)
+    expect(error()).toContain('ab12cd34')
+    expect(error()).not.toMatch(/conexi[oó]n/)
+    expect(pushMock).not.toHaveBeenCalledWith('/onboarding/inquilino')
+  })
+
+  it('un 409 dice lo que mandó el back', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    desistirDelRegistroDeInmobiliaria.mockRejectedValue(
+      new ApiError(409, 'Tu inmobiliaria ya tiene cobros: escríbenos para cerrarla.', 'CON_DEUDORES'),
+    )
+    const error = await intentarDejarlaDeLado()
+    expect(error()).toBe('Tu inmobiliaria ya tiene cobros: escríbenos para cerrarla.')
+  })
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    desistirDelRegistroDeInmobiliaria.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    const error = await intentarDejarlaDeLado()
+    expect(error()).toMatch(/conexión/)
   })
 })

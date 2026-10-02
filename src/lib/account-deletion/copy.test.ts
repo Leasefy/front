@@ -21,9 +21,9 @@ import esLocale from '@/lib/i18n/locales/es.json'
 import enLocale from '@/lib/i18n/locales/en.json'
 
 const CANON_RECOVERY_ES =
-  'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.'
+  'Si inicias sesión en los próximos 30 días, la recuperas automáticamente con todos tus datos. Pasados 30 días, sólo el soporte de Leasefy puede recuperarla.'
 const CANON_RECOVERY_EN =
-  'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.'
+  'If you sign in within the next 30 days, it is automatically recovered with all your data. After 30 days, only Leasefy support can recover it.'
 
 describe('ACCOUNT_DELETION_COPY — completeness', () => {
   it.each(['es', 'en'] as const)('%s locale has every field non-empty', (locale) => {
@@ -91,6 +91,29 @@ describe('ACCOUNT_DELETION_COPY — dice lo que el back hace', () => {
       (json as unknown as { landlordSettings: { dangerZone: unknown } }).landlordSettings.dangerZone,
     )
     expect(texto).not.toMatch(/serán eliminad|irreversible|is permanent|will be deleted/i)
+  })
+})
+
+/*
+ * Nico, 02-10-2026 (pregunta 14): decía «Tu cuenta se eliminará
+ * definitivamente en 30 días», pero el back nunca la borra: pasados los 30
+ * días la BLOQUEA (`SupabaseStrategy`, 401 «contacta al soporte de
+ * Leasefy»). Ni el módulo ni ninguna clave de i18n puede volver a prometer
+ * un borrado que no existe.
+ */
+describe('la ventana de 30 días dice lo que pasa de verdad', () => {
+  it.each(['es', 'en'] as const)('%s: la recuperación nombra al soporte y no promete borrar', (locale) => {
+    const { recovery } = ACCOUNT_DELETION_COPY[locale]
+    expect(recovery).toMatch(locale === 'es' ? /sólo el soporte de Leasefy/ : /only Leasefy support/)
+    expect(recovery).not.toMatch(/definitivamente|permanently deleted|se eliminará/i)
+  })
+
+  it.each([
+    ['es', esLocale],
+    ['en', enLocale],
+  ] as const)('%s.json: ninguna clave dice que la cuenta se borra en 30 días', (_locale, json) => {
+    const texto = JSON.stringify(json)
+    expect(texto).not.toMatch(/se eliminará definitivamente en 30 días|will be permanently deleted in 30 days/)
   })
 })
 

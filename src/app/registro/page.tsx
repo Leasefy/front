@@ -18,6 +18,36 @@ import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
+import { codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { MAX_LARGO_NOMBRE, MENSAJES_DEL_REGISTRO } from '@/lib/auth/limites-del-registro';
+
+/** Las reglas del nombre y del apellido: las mismas que el back (`limites-del-perfil.ts`). */
+const REGLA_DEL_NOMBRE = {
+  required: 'Requerido',
+  maxLength: { value: MAX_LARGO_NOMBRE, message: MENSAJES_DEL_REGISTRO.nombreLargo },
+} as const;
+const REGLA_DEL_APELLIDO = {
+  required: 'Requerido',
+  maxLength: { value: MAX_LARGO_NOMBRE, message: MENSAJES_DEL_REGISTRO.apellidoLargo },
+} as const;
+
+/** Lo que muestra el perfil del invitado; el resto del 400 (token, rol) va al cartel. */
+const CAMPOS_DEL_PERFIL = ['firstName', 'lastName', 'phone'] as const;
+
+/** Los errores de Supabase al crear la cuenta que son de UN campo (por código). */
+function campoDelErrorDeSupabase(codigo: string | undefined): 'email' | 'password' | null {
+  if (codigo === 'weak_password') return 'password';
+  if (codigo === 'email_address_invalid') return 'email';
+  return null;
+}
+
+/** El `aria-*` de un campo con error (el error vive en `${id}-error`). */
+function ariaDelCampo(id: string, error: string | undefined) {
+  return error ? { 'aria-invalid': true as const, 'aria-describedby': `${id}-error` } : {};
+}
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
 const PENDING_NAME_KEY = 'pending-invitation-name';
@@ -113,6 +143,8 @@ function RegistroContent() {
   // True when the token is conclusively dead (expired / already-accepted / not-found),
   // as opposed to a transient network failure we shouldn't act on.
   const [invitationDead, setInvitationDead] = useState(false);
+  // La invitación no se pudo leer (la red, un 5xx): no es que sea inválida.
+  const [invitacionNoCargo, setInvitacionNoCargo] = useState(false);
 
   const authForm = useForm<RegisterFormData>();
   const profileForm = useForm<ProfileFormData>();
@@ -143,10 +175,16 @@ function RegistroContent() {
         // as retryable was what left a consumed invite looping instead of clearing.
         const dead = err instanceof ApiError && [400, 404, 409, 410].includes(err.status);
         setInvitationDead(dead);
+        setInvitacionNoCargo(!dead);
+        // Regla de oro (02-10-2026): «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que falló de nuestro lado, con la referencia.
         setInvitationError(
           dead
             ? 'Esta invitación ya no es válida: expiró o ya fue aceptada.'
-            : 'No pudimos validar la invitación. Revisa tu conexión e intenta de nuevo.'
+            : mensajeParaLaPersona(err, {
+                porDefecto: 'No pudimos validar la invitación. Intenta de nuevo en un momento.',
+                accion: 'validar la invitación',
+              })
         );
       })
       .finally(() => setLoadingInvitation(false));
@@ -211,9 +249,10 @@ function RegistroContent() {
       // conflict). Do NOT clear the pending token on failure — the removeItem
       // above only runs on the success path.
       setFormError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'No se pudo completar el registro. Intenta de nuevo.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo completar el registro. Intenta de nuevo.',
+          accion: 'completar tu registro',
+        }),
       );
     });
   }, [isAuthenticated, needsOnboarding, user, token, invitation]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -246,11 +285,20 @@ function RegistroContent() {
       }
       await signInWithEmail(correo, data.password);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
+      // Por el código de Supabase, nunca por el texto en inglés (02-10-2026).
+      const codigo = codigoDeSupabase(err);
+      const campo = campoDelErrorDeSupabase(codigo);
+      if (codigo === 'user_already_exists' || codigo === 'email_exists') {
         setFormError('Este email ya tiene una cuenta. Usa "Ya tengo cuenta" para ingresar.');
+      } else if (campo) {
+        authForm.setError(campo, { type: 'server', message: mensajeDeSupabase(err) }, { shouldFocus: true });
       } else {
-        setFormError('Error al crear la cuenta. Intenta de nuevo.');
+        setFormError(
+          mensajeDeSupabase(err, {
+            porDefecto: 'Error al crear la cuenta. Intenta de nuevo.',
+            accion: 'crear tu cuenta',
+          }),
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -283,14 +331,24 @@ function RegistroContent() {
       // Hard navigation so ProtectedRoute reads the updated role from backend fresh
       window.location.replace('/panel/inmobiliaria');
     } catch (err) {
-      // Surface the backend message (400 invalid/expired token, 409
-      // single-agency conflict/already-member). The token is NOT cleared
-      // (removeItem runs only on success), so the user can retry.
-      setFormError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'No se pudo completar el registro. Intenta de nuevo.',
-      );
+      // 02-10-2026 · Lo que el back rechazó por campo (nombre largo, celular
+      // con otro formato) va a SU campo, con el foco; lo demás (400 del token,
+      // 409 de otra inmobiliaria, un 5xx) al cartel, con la regla de oro. El
+      // token NO se borra (removeItem sólo corre al salir bien): se puede reintentar.
+      // `setError` envuelto: el de react-hook-form pide `{ shouldFocus: boolean }`
+      // y `FormularioConErrores` declara `shouldFocus?` (pedido al principal).
+      const formulario = {
+        setError: (campo: (typeof CAMPOS_DEL_PERFIL)[number], error: { type: string; message: string }) =>
+          profileForm.setError(campo, error),
+        setFocus: profileForm.setFocus,
+      };
+      const reparto = aplicarErroresDelServidor(err, formulario, {
+        campos: CAMPOS_DEL_PERFIL,
+        toast: false,
+        porDefecto: 'No se pudo completar el registro. Intenta de nuevo.',
+        accion: 'completar tu registro',
+      });
+      setFormError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
     } finally {
       setIsSubmitting(false);
     }
@@ -322,7 +380,9 @@ function RegistroContent() {
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <WarningCircle className="w-7 h-7 text-destructive" />
           </div>
-          <h1 className="text-lg font-semibold text-foreground mb-2">Invitación inválida</h1>
+          <h1 className="text-lg font-semibold text-foreground mb-2">
+            {invitacionNoCargo ? 'No pudimos validar la invitación' : 'Invitación inválida'}
+          </h1>
           <p className="text-sm text-muted-foreground">{invitationError}</p>
           {invitationDead && (
             <p className="text-xs text-muted-foreground mt-2">
@@ -423,24 +483,22 @@ function RegistroContent() {
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
                       <Input
-                        {...profileForm.register('firstName', { required: 'Requerido' })}
+                        {...profileForm.register('firstName', REGLA_DEL_NOMBRE)}
                         placeholder="Tu nombre"
                         className="w-full"
+                        {...ariaDelCampo('perfil-nombre', profileForm.formState.errors.firstName?.message)}
                       />
-                      {profileForm.formState.errors.firstName && (
-                        <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.firstName.message}</p>
-                      )}
+                      <ErrorDelCampo id="perfil-nombre-error" mensaje={profileForm.formState.errors.firstName?.message} />
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
                       <Input
-                        {...profileForm.register('lastName', { required: 'Requerido' })}
+                        {...profileForm.register('lastName', REGLA_DEL_APELLIDO)}
                         placeholder="Tu apellido"
                         className="w-full"
+                        {...ariaDelCampo('perfil-apellido', profileForm.formState.errors.lastName?.message)}
                       />
-                      {profileForm.formState.errors.lastName && (
-                        <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.lastName.message}</p>
-                      )}
+                      <ErrorDelCampo id="perfil-apellido-error" mensaje={profileForm.formState.errors.lastName?.message} />
                     </div>
                   </div>
 
@@ -455,12 +513,14 @@ function RegistroContent() {
                         placeholder="3001234567"
                         type="tel"
                         className="w-full pl-9"
+                        {...ariaDelCampo('perfil-telefono', profileForm.formState.errors.phone?.message)}
                       />
                     </div>
+                    <ErrorDelCampo id="perfil-telefono-error" mensaje={profileForm.formState.errors.phone?.message} />
                   </div>
 
                   {formError && (
-                    <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                    <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                       <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                       <p className="text-[13px] text-destructive">{formError}</p>
                     </div>
@@ -510,24 +570,22 @@ function RegistroContent() {
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
                         <Input
-                          {...authForm.register('firstName', { required: 'Requerido' })}
+                          {...authForm.register('firstName', REGLA_DEL_NOMBRE)}
                           placeholder="Tu nombre"
                           className="w-full"
+                          {...ariaDelCampo('cuenta-nombre', authForm.formState.errors.firstName?.message)}
                         />
-                        {authForm.formState.errors.firstName && (
-                          <p className="text-xs text-destructive mt-1">{authForm.formState.errors.firstName.message}</p>
-                        )}
+                        <ErrorDelCampo id="cuenta-nombre-error" mensaje={authForm.formState.errors.firstName?.message} />
                       </div>
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
                         <Input
-                          {...authForm.register('lastName', { required: 'Requerido' })}
+                          {...authForm.register('lastName', REGLA_DEL_APELLIDO)}
                           placeholder="Tu apellido"
                           className="w-full"
+                          {...ariaDelCampo('cuenta-apellido', authForm.formState.errors.lastName?.message)}
                         />
-                        {authForm.formState.errors.lastName && (
-                          <p className="text-xs text-destructive mt-1">{authForm.formState.errors.lastName.message}</p>
-                        )}
+                        <ErrorDelCampo id="cuenta-apellido-error" mensaje={authForm.formState.errors.lastName?.message} />
                       </div>
                     </div>
 
@@ -544,16 +602,19 @@ function RegistroContent() {
                           // role). readOnly (not disabled) so react-hook-form still submits it.
                           readOnly={Boolean(invitation?.invitedEmail ?? invitation?.email)}
                           className={`w-full pl-9${(invitation?.invitedEmail ?? invitation?.email) ? ' bg-muted cursor-not-allowed text-muted-foreground' : ''}`}
+                          {...ariaDelCampo('cuenta-correo', authForm.formState.errors.email?.message)}
                         />
                       </div>
-                      {(invitation?.invitedEmail ?? invitation?.email) && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Este es el correo al que se envió la invitación y no se puede modificar.
-                        </p>
-                      )}
-                      {authForm.formState.errors.email && (
-                        <p className="text-xs text-destructive mt-1">{authForm.formState.errors.email.message}</p>
-                      )}
+                      {/* La ayuda del correo de la invitación y el error se cruzan (Cadence `FormError` con `hint`). */}
+                      <ErrorDelCampo
+                        id="cuenta-correo-error"
+                        mensaje={authForm.formState.errors.email?.message}
+                        pista={
+                          (invitation?.invitedEmail ?? invitation?.email)
+                            ? 'Este es el correo al que se envió la invitación y no se puede modificar.'
+                            : undefined
+                        }
+                      />
                     </div>
 
                     <div>
@@ -571,6 +632,7 @@ function RegistroContent() {
                           type="password"
                           placeholder="Mínimo 8 caracteres"
                           className="w-full pl-9"
+                          {...ariaDelCampo('cuenta-contrasena', authForm.formState.errors.password?.message)}
                         />
                       </div>
                       <MedidorDeContrasena
@@ -578,13 +640,11 @@ function RegistroContent() {
                         correo={authForm.watch('email')}
                         className="mt-2"
                       />
-                      {authForm.formState.errors.password && (
-                        <p className="text-xs text-destructive mt-1">{authForm.formState.errors.password.message}</p>
-                      )}
+                      <ErrorDelCampo id="cuenta-contrasena-error" mensaje={authForm.formState.errors.password?.message} />
                     </div>
 
                     {formError && (
-                      <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                      <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                         <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                         <p className="text-[13px] text-destructive">{formError}</p>
                       </div>

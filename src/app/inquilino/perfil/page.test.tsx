@@ -190,3 +190,116 @@ describe('Perfil del inquilino — el modal de baja', () => {
     expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
   })
 })
+
+/**
+ * 02-10-2026 · Sistema de errores. Antes, un fallo al guardar pintaba
+ * `err.message` crudo en un toast (un 5xx, un texto en inglés). Ahora: lo que
+ * el back rechaza por campo va debajo de SU campo y con el foco; al toast,
+ * sólo lo suelto, con la regla de oro (5xx = nuestro, con la referencia;
+ * «conexión», sólo sin respuesta).
+ */
+describe('Perfil del inquilino — guardar los datos', () => {
+  const updateProfileMock = vi.fn()
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    const mensaje = Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')
+    return Object.assign(new Error(mensaje), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  function escribir(input: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  const campo = (id: string) => container.querySelector<HTMLInputElement>(`#${id}`)!
+
+  beforeEach(() => {
+    updateProfileMock.mockReset()
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u-1',
+        email: 'laura@example.com',
+        firstName: 'Laura',
+        lastName: 'Gómez',
+        phone: '3001234567',
+        emailConfirmedAt: '2026-01-01T00:00:00Z',
+      },
+      updateProfile: updateProfileMock,
+      refreshUser: vi.fn(),
+      signOut: vi.fn(),
+    })
+  })
+
+  async function editarYGuardar(cambio: () => void) {
+    await renderPage()
+    act(() => { boton(container, 'Editar').click() })
+    cambio()
+    await act(async () => { boton(container, 'common.save').click() })
+  }
+
+  it('🔴 un 400 con `campos` pinta el error debajo del celular y le da el foco, sin toast', async () => {
+    const FRASE = 'Revisa el teléfono: no es un número de teléfono válido.'
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [FRASE],
+        campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }],
+      }),
+    )
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-phone'), '12345'))
+
+    expect(container.querySelector('#perfil-inquilino-phone-error')?.textContent).toBe(FRASE)
+    expect(campo('perfil-inquilino-phone').getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(campo('perfil-inquilino-phone'))
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('🔴 una fecha de nacimiento futura no sale: la frase del back, sin PATCH', async () => {
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-birthDate'), '2999-01-01'))
+    expect(updateProfileMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#perfil-inquilino-birthDate-error')?.textContent).toBe(
+      'La fecha de nacimiento debe estar entre 1900 y hoy.',
+    )
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-firstName'), 'Laura María'))
+    const texto = String(toastError.mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tu perfil: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (status 0): ahí sí se habla de la conexión', async () => {
+    updateProfileMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await editarYGuardar(() => escribir(campo('perfil-inquilino-firstName'), 'Laura María'))
+    expect(String(toastError.mock.calls[0][0])).toMatch(/conexión/)
+  })
+})
+
+/*
+ * Nico, 02-10-2026 (pregunta 15): la «Zona de peligro» decía «Estas acciones
+ * son irreversibles», y el modal, dos clics después, que se recupera iniciando
+ * sesión. Ahora dice la ventana de 30 días, como el perfil de la inmobiliaria.
+ */
+describe('Perfil del inquilino — la zona de peligro', () => {
+  it('cuenta la ventana de 30 días y el soporte, no «irreversible»', async () => {
+    await renderPage()
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('irreversibles')
+    expect(texto).toContain('Si inicias sesión en los próximos 30 días')
+    expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
+  })
+})

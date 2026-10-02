@@ -66,7 +66,9 @@ import {
   type FactorPorVerificar,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
+import { FormError } from '@leasefy/cadence';
 
 /**
  * Las apps recomendadas, con sus fichas OFICIALES. Verificadas el 30-09-2026:
@@ -235,8 +237,13 @@ export function ActivarSegundoFactorPasoAPaso({
       setFactor(nuevo);
       setPaso('escanear');
     } catch (err) {
+      // Regla de oro (02-10-2026): «conexión» sólo sin respuesta; un 5xx es
+      // nuestro. Los errores de Supabase ya llegan traducidos (`ErrorDelSegundoFactor`).
       setErrorAlPreparar(
-        (err as Error).message || 'No pudimos preparar tu código. Intenta de nuevo en un momento.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos preparar tu código. Intenta de nuevo en un momento.',
+          accion: 'preparar tu código',
+        }),
       );
     } finally {
       setPreparando(false);
@@ -263,7 +270,10 @@ export function ActivarSegundoFactorPasoAPaso({
         setVerificando(false);
         setCodigo('');
         setErrorDelCodigo(
-          (err as Error).message || 'No pudimos verificar el código. Intenta con el siguiente.',
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No pudimos verificar el código. Intenta con el siguiente.',
+            accion: 'verificar el código',
+          }),
         );
         return;
       }
@@ -495,16 +505,20 @@ export function ActivarSegundoFactorPasoAPaso({
               disabled={verificando}
               autoFocus
             />
-            {errorDelCodigo ? (
-              <p
-                role="alert"
-                className="flex items-start justify-center gap-2 text-pretty text-center text-body-sm text-danger"
-                data-testid="error-del-codigo"
-              >
-                <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                {errorDelCodigo}
-              </p>
-            ) : null}
+            {/* El error del código entra suave (Cadence `FormError`), con su ícono. */}
+            <FormError
+              id="codigo-de-la-app-error"
+              invalid={Boolean(errorDelCodigo)}
+              className="flex items-start justify-center gap-2 text-pretty text-center"
+              data-testid="error-del-codigo"
+            >
+              {errorDelCodigo ? (
+                <>
+                  <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  {errorDelCodigo}
+                </>
+              ) : null}
+            </FormError>
             <p className="text-pretty text-center text-caption text-fg-subtle">
               El código cambia cada 30 segundos. Si te lo rechaza, espera al siguiente.
             </p>

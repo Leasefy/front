@@ -167,6 +167,59 @@ describe('crearInvitacionesDelEquipo — sin el segundo factor de quien invita',
   })
 })
 
+/**
+ * 02-10-2026 · El motivo de cada persona con la regla de oro del traductor, y
+ * «Reintentar» sólo cuando reintentar puede servir.
+ */
+describe('crearInvitacionesDelEquipo — la regla de oro en cada invitación', () => {
+  const UNA = [{ email: 'ana@acme.co', nombre: '', role: 'AGENTE' as const }]
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      detalle: cuerpo,
+    })
+  }
+
+  it('un 409 dice lo que mandó el back y no ofrece reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(409, { statusCode: 409, code: 'YA_EXISTE', message: 'Ya existe una invitación pendiente para este correo.' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toBe('Ya existe una invitación pendiente para este correo.')
+    expect(creada.reintentable).toBe(false)
+  })
+
+  it('el límite del plan (402) no es reintentable', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(402, { statusCode: 402, code: 'LIMITE_DEL_PLAN', message: 'Alcanzaste el límite de agentes de tu plan.' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toBe('Alcanzaste el límite de agentes de tu plan.')
+    expect(creada.reintentable).toBe(false)
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, sin culpar a la conexión; se puede reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toMatch(/^No pudimos invitar a esta persona: algo falló de nuestro lado/)
+    expect(creada.error).toContain('ab12cd34')
+    expect(creada.error).not.toMatch(/conexi[oó]n/)
+    expect(creada.reintentable).toBeUndefined()
+  })
+
+  it('sin respuesta (la red): habla de la conexión y se puede reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toMatch(/conexión/)
+    expect(creada.reintentable).toBeUndefined()
+  })
+})
+
 describe('crearInvitacionesDelEquipo — entorno de pruebas', () => {
   it('un correo retenido por el entorno de pruebas queda sin enviar y con su enlace', async () => {
     const invitar = vi.fn().mockResolvedValue({

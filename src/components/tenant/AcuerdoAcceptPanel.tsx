@@ -38,6 +38,7 @@ import { OTPVerification, type OtpAdapter } from '@/components/contract/OTPVerif
 import { acuerdosApi, AcuerdoUnavailableError } from '@/lib/api/tenant-acuerdos.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface AcuerdoAcceptPanelProps {
   /** The own plan id being accepted (resolved own-only upstream, anti-IDOR). */
@@ -131,13 +132,15 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
             : 'Agreement acceptance will be available soon.',
         );
       } else {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : es
+        // 02-10-2026 · Regla de oro: el motivo por el traductor, no `err.message` crudo.
+        toast.error(
+          mensajeParaLaPersona(err, {
+            accion: 'registrar tu aceptación',
+            porDefecto: es
               ? 'No pudimos registrar tu aceptación. Intenta de nuevo.'
-              : 'We could not register your acceptance. Try again.';
-        toast.error(msg);
+              : 'We could not register your acceptance. Try again.',
+          }),
+        );
       }
     } finally {
       setIsAccepting(false);

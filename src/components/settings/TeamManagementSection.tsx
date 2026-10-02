@@ -14,6 +14,9 @@ import { confirmar } from '@/components/ui/confirmar';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDelCorreoDelEquipo, errorDelNombreDelEquipo } from '@/lib/perfil/limites-del-equipo';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
@@ -41,26 +44,41 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
   const [editingMember, setEditingMember] = useState<{ id: string; name?: string; email: string; role: TeamRole } | null>(null);
   const [inviteForm, setInviteForm] = useState<{ email: string; role: TeamRole }>({ email: '', role: 'viewer' });
   const [editMemberForm, setEditMemberForm] = useState<{ name: string; role: TeamRole }>({ name: '', role: 'viewer' });
+  /** El error bajo el correo de la invitación y bajo el nombre del miembro (cliente o back). */
+  const [errorDelCorreo, setErrorDelCorreo] = useState<string | undefined>();
+  const [errorDelNombre, setErrorDelNombre] = useState<string | undefined>();
 
   // Handlers
   const handleInviteMember = async () => {
-    if (!inviteForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email)) {
-      toast.error(t('landlordSettings.toasts.invalidEmail'));
+    // El correo mal escrito (o más largo que la columna) se dice debajo del
+    // campo, con la frase del back, y no sale (02-10-2026; antes, un toast).
+    const delCliente = errorDelCorreoDelEquipo(inviteForm.email);
+    if (delCliente) {
+      setErrorDelCorreo(delCliente);
+      document.getElementById('equipo-correo')?.focus();
       return;
     }
     setIsLoading(true);
     try {
-      await invite(inviteForm.email, inviteForm.role);
+      await invite(inviteForm.email.trim(), inviteForm.role);
       setShowInviteModal(false);
       setInviteForm({ email: '', role: 'viewer' });
+      setErrorDelCorreo(undefined);
       toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
     } catch (err) {
-      toast.error(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
-          accion: 'enviar la invitación',
-        }),
-      );
+      // Lo del back sobre el correo (ya invitado, formato) va debajo del
+      // campo; el resto, al toast con la regla de oro.
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { email: 'email' },
+        campos: ['email'],
+        porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+        accion: 'enviar la invitación',
+      });
+      if (reparto.porCampo.email) {
+        setErrorDelCorreo(reparto.porCampo.email);
+        document.getElementById('equipo-correo')?.focus();
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsLoading(false);
     }
@@ -87,12 +105,24 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       await remove(memberId);
       toast.success(t('landlordSettings.toasts.memberRemoved'));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al eliminar miembro');
+      // Antes: `err.message` crudo. Por el traductor, con la regla de oro.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos quitar a este miembro. Prueba de nuevo en un momento.',
+          accion: 'quitar a este miembro',
+        }),
+      );
     }
   };
 
   const handleEditMember = async () => {
     if (!editingMember) return;
+    const delCliente = errorDelNombreDelEquipo(editMemberForm.name);
+    if (delCliente) {
+      setErrorDelNombre(delCliente);
+      document.getElementById('equipo-nombre')?.focus();
+      return;
+    }
     setIsLoading(true);
     try {
       await update(editingMember.id, {
@@ -102,14 +132,20 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       setShowEditMemberModal(false);
       setEditingMember(null);
       setEditMemberForm({ name: '', role: 'viewer' });
+      setErrorDelNombre(undefined);
       toast.success(t('landlordSettings.toasts.memberUpdated'));
     } catch (err) {
-      toast.error(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No pudimos guardar los cambios del miembro. Prueba de nuevo en un momento.',
-          accion: 'guardar los cambios',
-        }),
-      );
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { name: 'name' },
+        campos: ['name'],
+        porDefecto: 'No pudimos guardar los cambios del miembro. Prueba de nuevo en un momento.',
+        accion: 'guardar los cambios',
+      });
+      if (reparto.porCampo.name) {
+        setErrorDelNombre(reparto.porCampo.name);
+        document.getElementById('equipo-nombre')?.focus();
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsLoading(false);
     }
@@ -209,7 +245,10 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       {/* Invite Team Member Modal */}
       <SettingsModal
         open={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
+        onClose={() => {
+          setShowInviteModal(false);
+          setErrorDelCorreo(undefined);
+        }}
         title={t('landlordSettings.modals.inviteMember.title')}
         footer={
           <>
@@ -237,12 +276,19 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
             <Input
+              id="equipo-correo"
               type="email"
               value={inviteForm.email}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => {
+                setInviteForm(prev => ({ ...prev, email: e.target.value }));
+                setErrorDelCorreo(undefined);
+              }}
+              aria-invalid={errorDelCorreo ? true : undefined}
+              aria-describedby={errorDelCorreo ? 'equipo-correo-error' : undefined}
               className="h-12 rounded-lg"
               placeholder="email@ejemplo.com"
             />
+            <ErrorDelCampo id="equipo-correo-error" mensaje={errorDelCorreo} />
           </div>
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.inviteMember.role')}</label>
@@ -288,7 +334,10 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       {/* Edit Team Member Modal */}
       <SettingsModal
         open={showEditMemberModal}
-        onClose={() => setShowEditMemberModal(false)}
+        onClose={() => {
+          setShowEditMemberModal(false);
+          setErrorDelNombre(undefined);
+        }}
         title={t('landlordSettings.modals.editMember.title')}
         footer={
           <>
@@ -319,12 +368,19 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.editMember.name')}</label>
             <Input
+              id="equipo-nombre"
               type="text"
               value={editMemberForm.name}
-              onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => {
+                setEditMemberForm(prev => ({ ...prev, name: e.target.value }));
+                setErrorDelNombre(undefined);
+              }}
+              aria-invalid={errorDelNombre ? true : undefined}
+              aria-describedby={errorDelNombre ? 'equipo-nombre-error' : undefined}
               className="h-12 rounded-lg"
               placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
             />
+            <ErrorDelCampo id="equipo-nombre-error" mensaje={errorDelNombre} />
           </div>
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.editMember.role')}</label>

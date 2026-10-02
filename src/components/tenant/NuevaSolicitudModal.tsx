@@ -44,6 +44,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n';
 import { pqrsApi, PqrsUnavailableError, type NuevaSolicitudInput } from '@/lib/api/pqrs.service';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
 
 interface NuevaSolicitudModalProps {
@@ -60,6 +62,14 @@ interface NuevaSolicitudModalProps {
 
 /** 10 MB per-file cap (mirrors the MessagesWidget photo picker). */
 const MAX_BYTES = 10 * 1024 * 1024;
+
+type CampoDeLaSolicitud = 'tipo' | 'asunto' | 'descripcion';
+const CAMPOS_DE_LA_SOLICITUD: readonly CampoDeLaSolicitud[] = ['tipo', 'asunto', 'descripcion'];
+const ID_DEL_CAMPO: Record<CampoDeLaSolicitud, string> = {
+  tipo: 'solicitud-tipo',
+  asunto: 'solicitud-asunto',
+  descripcion: 'solicitud-descripcion',
+};
 const ASUNTO_MAX = 120;
 const DESCRIPCION_MAX = 1000;
 
@@ -82,6 +92,8 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
   const [descripcion, setDescripcion] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** Lo que falta o el back rechazó, bajo su campo (02-10-2026). */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaSolicitud, string>>>({});
 
   // Reset the form when the modal closes so a re-open starts clean.
   useEffect(() => {
@@ -91,6 +103,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
       setDescripcion('');
       setFiles([]);
       setIsSubmitting(false);
+      setErrores({});
     }
   }, [open]);
 
@@ -128,13 +141,18 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
     const asuntoTrim = asunto.trim();
     const descripcionTrim = descripcion.trim();
     if (!asuntoTrim || !descripcionTrim) {
-      toast.error(
-        locale === 'es'
-          ? 'Completa el asunto y la descripción.'
-          : 'Please fill in the subject and description.',
-      );
+      // Lo que falta se dice bajo SU campo (antes, un toast para los dos).
+      const faltan: Partial<Record<CampoDeLaSolicitud, string>> = {};
+      if (!asuntoTrim) faltan.asunto = locale === 'es' ? 'Escribe el asunto.' : 'Write a subject.';
+      if (!descripcionTrim) {
+        faltan.descripcion =
+          locale === 'es' ? 'Describe lo que necesitas.' : 'Describe what you need.';
+      }
+      setErrores(faltan);
+      document.getElementById(ID_DEL_CAMPO[!asuntoTrim ? 'asunto' : 'descripcion'])?.focus();
       return;
     }
+    setErrores({});
 
     setIsSubmitting(true);
     try {
@@ -178,11 +196,20 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
             : 'We are enabling requests. Please try again soon.',
         );
       } else {
-        toast.error(
-          locale === 'es'
-            ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
-            : 'We could not submit your request. Please try again.',
-        );
+        // 02-10-2026 · Lo que el back rechazó va bajo su campo (con el foco);
+        // al toast sólo lo demás, con la regla de oro. Antes: un genérico fijo.
+        const reparto = repartirErroresDelServidor<CampoDeLaSolicitud>(err, {
+          campos: CAMPOS_DE_LA_SOLICITUD,
+          accion: 'enviar tu solicitud',
+          porDefecto:
+            locale === 'es'
+              ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
+              : 'We could not submit your request. Please try again.',
+        });
+        setErrores(reparto.porCampo);
+        const primero = reparto.orden[0];
+        if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+        if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
       }
     } finally {
       setIsSubmitting(false);
@@ -215,8 +242,13 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
           <select
             id="solicitud-tipo"
             value={tipo}
-            onChange={(e) => setTipo(e.target.value as PqrsTipo)}
+            onChange={(e) => {
+              setTipo(e.target.value as PqrsTipo);
+              setErrores((prev) => ({ ...prev, tipo: undefined }));
+            }}
             disabled={isSubmitting}
+            aria-invalid={errores.tipo ? true : undefined}
+            aria-describedby={errores.tipo ? 'solicitud-tipo-error' : undefined}
             className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
           >
             {TIPO_OPTIONS.map((opt) => (
@@ -225,6 +257,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
               </option>
             ))}
           </select>
+          <ErrorDelCampo id="solicitud-tipo-error" mensaje={errores.tipo} />
         </div>
 
         {/* Asunto */}
@@ -235,8 +268,13 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
           <Input
             id="solicitud-asunto"
             value={asunto}
-            onChange={(e) => setAsunto(e.target.value)}
+            onChange={(e) => {
+              setAsunto(e.target.value);
+              setErrores((prev) => ({ ...prev, asunto: undefined }));
+            }}
             maxLength={ASUNTO_MAX}
+            aria-invalid={errores.asunto ? true : undefined}
+            aria-describedby={errores.asunto ? 'solicitud-asunto-error' : undefined}
             disabled={isSubmitting}
             placeholder={
               locale === 'es'
@@ -245,6 +283,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
             }
             aria-label={locale === 'es' ? 'Asunto' : 'Subject'}
           />
+          <ErrorDelCampo id="solicitud-asunto-error" mensaje={errores.asunto} />
         </div>
 
         {/* Descripción */}
@@ -258,8 +297,13 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
           <Textarea
             id="solicitud-descripcion"
             value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
+            onChange={(e) => {
+              setDescripcion(e.target.value);
+              setErrores((prev) => ({ ...prev, descripcion: undefined }));
+            }}
             maxLength={DESCRIPCION_MAX}
+            aria-invalid={errores.descripcion ? true : undefined}
+            aria-describedby={errores.descripcion ? 'solicitud-descripcion-error' : undefined}
             rows={4}
             disabled={isSubmitting}
             placeholder={
@@ -269,6 +313,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
             }
             aria-label={locale === 'es' ? 'Descripción' : 'Description'}
           />
+          <ErrorDelCampo id="solicitud-descripcion-error" mensaje={errores.descripcion} />
         </div>
 
         {/* Fotos / evidencia */}

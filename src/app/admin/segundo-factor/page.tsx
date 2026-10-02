@@ -6,6 +6,9 @@ import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
 import { Wordmark } from '@/components/admin/Wordmark'
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
+import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
+import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /**
  * /admin/segundo-factor — 🔴 el panel de administración exige segundo factor
@@ -135,11 +138,14 @@ function SegundoFactor() {
       // Recarga entera: el guard del panel lee la sesión nueva (aal2) al montar.
       window.location.href = next
     } catch (err) {
-      const msg = (err as Error).message || ''
+      // 02-10-2026 · Por el traductor de Supabase (por código, con la regla de
+      // oro): antes, todo lo que no decía «invalid|expired» salía tal cual,
+      // en inglés, y un fallo de red decía «Failed to fetch».
+      const { status, codigo: codigoDeSupabase } = leerErrorDeSupabase(err)
       setError(
-        /invalid|expired/i.test(msg)
-          ? 'Código incorrecto. El código cambia cada 30 segundos: espera al siguiente.'
-          : msg || 'No se pudo verificar el código.',
+        status !== undefined || codigoDeSupabase
+          ? mensajeDeSupabaseAuth({ status, codigo: codigoDeSupabase, mensaje: (err as Error)?.message })
+          : mensajeParaLaPersona(err, { porDefecto: 'No se pudo verificar el código.', accion: 'verificar el código' }),
       )
       setCodigo('')
     } finally {

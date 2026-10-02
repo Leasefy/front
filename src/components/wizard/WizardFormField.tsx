@@ -4,6 +4,7 @@ import { type ReactNode, type InputHTMLAttributes, forwardRef } from 'react';
 import { LockSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   Select,
   SelectTrigger,
@@ -45,12 +46,10 @@ export function FormField({
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
-      {hint && !error && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
-      {error && (
-        <p className="text-xs text-danger">{error}</p>
-      )}
+      {/* El error entra suave y, si hay ayuda, se cruza con ella (Cadence
+          `FormError`, 02-10-2026). El control lo nombra con `${htmlFor}-error`
+          (ver `LightInput`/`LightSelect`). */}
+      <ErrorDelCampo id={`${htmlFor}-error`} mensaje={error} pista={hint} className="mt-0" />
     </div>
   );
 }
@@ -114,6 +113,8 @@ export const LightInput = forwardRef<HTMLInputElement, FieldInputProps>(
             className
           )}
           {...(kind ? KIND_PRESETS[kind] : {})}
+          aria-invalid={hasError || undefined}
+          aria-describedby={hasError && props.id ? `${props.id}-error` : undefined}
           {...props}
         />
       </div>
@@ -187,6 +188,7 @@ export function LightSelect({
         id={id}
         onBlur={onBlur}
         aria-invalid={hasError || undefined}
+        aria-describedby={hasError && id ? `${id}-error` : undefined}
         className={cn(
           'relative h-12 w-full',
           icon && 'pl-12',

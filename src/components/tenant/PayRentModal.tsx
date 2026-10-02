@@ -73,6 +73,26 @@ type Step =
  * redirige NO se sale: sin ✕ (`hideClose`) y el `onOpenChange` lo ignora (Esc
  * y el velo incluidos). Lenis lo frena `SmoothScroll` al ver el diálogo abierto.
  */
+/**
+ * Por qué no arrancó el pago, según el status de `/api/inquilino/pagos/wompi-session`
+ * (02-10-2026). Esa ruta responde `{ error: 'código_en_inglés' }`: el código
+ * no se muestra; el status decide, con la regla de oro del traductor.
+ */
+export function motivoDelPagoQueNoInicio(status: number): string {
+  if (status === 401) return 'Tu sesión expiró. Vuelve a iniciar sesión para pagar.';
+  if (status === 403 || status === 404) {
+    return 'No encontramos este arriendo a tu nombre. Recarga la página e intenta de nuevo.';
+  }
+  if (status === 400 || status === 422) {
+    return 'No pudimos iniciar el pago con estos datos. Recarga la página e intenta de nuevo.';
+  }
+  // Un 5xx (Wompi sin configurar, un canon inválido, el back caído): es nuestro.
+  return mensajeParaLaPersona(
+    { status },
+    { accion: 'iniciar el pago', porDefecto: 'No pudimos iniciar el pago. Prueba de nuevo en un momento.' },
+  );
+}
+
 export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
   const { formatCurrency, locale } = useI18n();
 
@@ -142,7 +162,11 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
         setStep('confirm');
         return;
       }
-      if (!res.ok) throw new Error(`session_failed:${res.status}`);
+      if (!res.ok) {
+        toast.error(motivoDelPagoQueNoInicio(res.status));
+        setStep('confirm');
+        return;
+      }
 
       const session = (await res.json()) as WompiRentSession;
       const url = buildWompiCheckoutUrl({
@@ -150,8 +174,15 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
         redirectUrl: window.location.origin + '/inquilino/pagos',
       });
       window.location.href = url;
-    } catch {
-      toast.error('No pudimos iniciar el pago. Intenta nuevamente.');
+    } catch (err) {
+      // 🔴 02-10-2026 · Regla de oro: «conexión» sólo si el pedido no salió;
+      // antes todo decía «No pudimos iniciar el pago. Intenta nuevamente.».
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'iniciar el pago',
+          porDefecto: 'No pudimos iniciar el pago. Prueba de nuevo en un momento.',
+        }),
+      );
       setStep('confirm');
     }
   }, [paymentInfo, leaseId]);

@@ -85,6 +85,17 @@ describe('las llamadas', () => {
     )
     expect(mensajeDelFallo(new TypeError('Failed to fetch'))).toMatch(/conexión/)
   })
+
+  // 02-10-2026 · Regla de oro: «conexión» sólo si no hubo respuesta.
+  it('🔴 un 5xx dice que fue nuestro (no «Error 500» ni «conexión»)', () => {
+    const texto = mensajeDelFallo(new ApiErrorFalso(500, 'Error 500'), 'corregir el NIT')
+    expect(texto).toMatch(/^No pudimos corregir el NIT: algo falló de nuestro lado/)
+    expect(texto).not.toMatch(/conexi[oó]n|Error 500/)
+  })
+
+  it('un TypeError de JavaScript no se le achaca a la red', () => {
+    expect(mensajeDelFallo(new TypeError('x is not a function'))).not.toMatch(/conexi[oó]n/)
+  })
 })
 
 describe('resultadoDeLaCorreccion', () => {

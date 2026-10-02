@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   planFormSchema,
@@ -18,6 +18,11 @@ export interface PlanFormProps {
   isSubmitting?: boolean
   /** Backend/inline error (409 slug dup, 400 config) rendered form-level. */
   submitError?: string | null
+  /**
+   * Los errores que el back mandó por campo (`campos[]`), ya en los nombres
+   * del formulario: van debajo de SU campo y el primero recibe el foco.
+   */
+  serverFieldErrors?: FieldErrors
   onSubmit: (values: PlanFormValues) => void
   onCancel: () => void
 }
@@ -52,11 +57,21 @@ export function PlanForm({
   otherDefaultExists = false,
   isSubmitting = false,
   submitError,
+  serverFieldErrors,
   onSubmit,
   onCancel,
 }: PlanFormProps) {
   const [values, setValues] = useState<PlanFormValues>(initialValues ?? PLAN_FORM_DEFAULTS)
   const [errors, setErrors] = useState<FieldErrors>({})
+
+  // Lo que el back rechazó por campo, debajo de su campo, con el foco en el primero.
+  useEffect(() => {
+    if (!serverFieldErrors) return
+    const campos = Object.keys(serverFieldErrors) as (keyof PlanFormValues)[]
+    if (campos.length === 0) return
+    setErrors((prev) => ({ ...prev, ...serverFieldErrors }))
+    document.getElementById(`plan-${campos[0]}`)?.focus()
+  }, [serverFieldErrors])
 
   const isEdit = mode === 'edit'
   const usageCanon = values.billingMode === 'USAGE_CANON'

@@ -147,3 +147,52 @@ describe('/auth/mfa-verify — cuando ningún código sirve (Nico, 01-10)', () =
     expect(aviso?.textContent).toContain('Restablecer con un código al correo');
   });
 });
+
+/**
+ * 02-10-2026 · La regla de oro: si lo que falló fue la red o Supabase, el
+ * código no tuvo la culpa — ni «Código incorrecto» ni las casillas en rojo.
+ */
+describe('/auth/mfa-verify — la red o Supabase, no el código', () => {
+  const casillasEnRojo = () =>
+    [...document.querySelectorAll<HTMLInputElement>('[data-testid^="casilla-"]')].some((c) =>
+      c.className.includes('border-danger'),
+    );
+
+  beforeEach(() => {
+    sesion.getSession.mockReset().mockResolvedValue({
+      data: { session: { expires_at: Math.floor(Date.now() / 1000) + 3600 } },
+    });
+  });
+
+  it('🔴 sin respuesta: habla de la conexión y no pinta el código en rojo', async () => {
+    supa.challenge.mockResolvedValue({
+      data: null,
+      error: Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/conexión/);
+    expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
+    expect(casillasEnRojo()).toBe(false);
+  });
+
+  it('🔴 un 5xx de Supabase: falló de nuestro lado, sin culpar al código', async () => {
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Internal Server Error'), { name: 'AuthApiError', status: 500 }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/de nuestro lado/);
+    expect(casillasEnRojo()).toBe(false);
+  });
+
+  it('un código malo sí pinta las casillas en rojo', async () => {
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Invalid TOTP code entered'), { status: 422, code: 'mfa_verification_failed' }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/Código incorrecto/);
+    expect(casillasEnRojo()).toBe(true);
+  });
+});

@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, Certificate, Download, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { Button } from '@/components/ui/button';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -84,10 +85,12 @@ export function MisCertificados() {
       // El veredicto pudo cambiar (y el documento ya quedó en la inmobiliaria).
       void cargar();
     } catch (e) {
+      // 02-10-2026 · Regla de oro: el motivo por el traductor, no `e.message` crudo.
       toast.error(
-        e instanceof Error && e.message
-          ? e.message
-          : 'No pudimos emitir el certificado.',
+        mensajeParaLaPersona(e, {
+          accion: 'emitir el certificado',
+          porDefecto: 'No pudimos emitir el certificado.',
+        }),
       );
     } finally {
       if (url) setTimeout(() => URL.revokeObjectURL(url!), 1000);

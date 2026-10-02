@@ -246,6 +246,45 @@ describe('<PayRentModal> — Wompi hosted checkout redirect', () => {
 
     expect(toast.error).toHaveBeenCalled()
     expect(dialogo().textContent).toContain('Monto a pagar')
+    // 🔴 02-10-2026 · regla de oro: un 5xx es nuestro; nunca el código crudo ni «conexión».
+    const texto = String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])
+    expect(texto).toMatch(/^No pudimos iniciar el pago: algo falló de nuestro lado/)
+    expect(texto).not.toMatch(/wompi_not_configured|conexi[oó]n/)
+  })
+
+  it('🔴 sin respuesta (el fetch no salió): ahí sí se habla de la conexión', async () => {
+    getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch')) as unknown as typeof globalThis.fetch
+
+    render()
+    await flush()
+    act(() => {
+      findCta('Pagar arriendo').click()
+    })
+    await flush()
+
+    expect(String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])).toMatch(/conexión/)
+    expect(dialogo().textContent).toContain('Monto a pagar')
+  })
+
+  it('un 401 de la sesión de pago pide volver a iniciar sesión', async () => {
+    getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'unauthorized' }),
+    } as unknown as Response) as unknown as typeof globalThis.fetch
+
+    render()
+    await flush()
+    act(() => {
+      findCta('Pagar arriendo').click()
+    })
+    await flush()
+
+    expect(String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])).toBe(
+      'Tu sesión expiró. Vuelve a iniciar sesión para pagar.',
+    )
   })
 })
 

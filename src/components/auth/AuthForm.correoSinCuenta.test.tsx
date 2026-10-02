@@ -158,7 +158,11 @@ async function entrarCon(email: string, password = 'Secreta#2026') {
   })
 }
 
-const credencialesInvalidas = () => new Error('Invalid login credentials')
+/** Un `AuthApiError` de Supabase como lo arma el SDK: `code` + `status` (el texto en inglés no decide). */
+const errorDeSupabase = (mensaje: string, status: number, code?: string) =>
+  Object.assign(new Error(mensaje), { name: 'AuthApiError', status, code })
+
+const credencialesInvalidas = () => errorDeSupabase('Invalid login credentials', 400, 'invalid_credentials')
 
 describe('AuthForm — login con un correo sin cuenta', () => {
   it('sin cuenta: lo dice y ofrece crearla con ESE correo', async () => {
@@ -218,7 +222,7 @@ describe('AuthForm — login con un correo sin cuenta', () => {
   })
 
   it('otro error de Supabase (correo sin confirmar) no consulta nada', async () => {
-    signInWithEmailMock.mockRejectedValue(new Error('Email not confirmed'))
+    signInWithEmailMock.mockRejectedValue(errorDeSupabase('Email not confirmed', 400, 'email_not_confirmed'))
 
     await entrarCon('pendiente@correo.com')
 

@@ -232,3 +232,73 @@ describe('/auth/update-password', () => {
     expect(boton.querySelectorAll('svg')).toHaveLength(1)
   })
 })
+
+/**
+ * 02-10-2026 · Los errores de Supabase por código y con la regla de oro.
+ * Antes: `enEspanol()` leía el texto en inglés, lo que no reconocía salía tal
+ * cual, y un fallo de red decía «Failed to fetch».
+ */
+describe('/auth/update-password — los errores', () => {
+  const respuesta = (status: number, cuerpo: object) =>
+    vi.fn().mockResolvedValue(new Response(JSON.stringify(cuerpo), { status }))
+
+  it('🔴 sin respuesta (el fetch no salió): habla de la conexión, no «Failed to fetch»', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    await pintar()
+    await guardar()
+    expect(container.textContent).toMatch(/conexión/)
+    expect(container.textContent).not.toContain('Failed to fetch')
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, sin el inglés de Supabase', async () => {
+    vi.stubGlobal('fetch', respuesta(500, { code: 500, error_code: 'unexpected_failure', msg: 'Database error updating user' }))
+    await pintar()
+    await guardar()
+    expect(container.textContent).toMatch(/No pudimos guardar tu contraseña: algo falló de nuestro lado/)
+    expect(container.textContent).not.toMatch(/Database|conexi[oó]n/)
+  })
+
+  it('🔴 la contraseña débil va debajo del campo, con el foco', async () => {
+    vi.stubGlobal(
+      'fetch',
+      respuesta(422, { code: 422, error_code: 'weak_password', msg: 'Password is known to be weak', weak_password: { reasons: ['pwned'] } }),
+    )
+    await pintar()
+    await guardar()
+    const clave = container.querySelectorAll('input')[0] as HTMLInputElement
+    expect(clave.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(clave.getAttribute('aria-describedby')!)?.textContent).toMatch(/filtraciones/)
+    expect(document.activeElement).toBe(clave)
+    expect(container.textContent).not.toMatch(/Password is known/)
+  })
+
+  it('la misma contraseña de antes, por su código, debajo del campo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      respuesta(422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' }),
+    )
+    await pintar()
+    await guardar()
+    expect(container.textContent).toContain('Esa contraseña ya la usaste antes. Elige otra.')
+    expect(container.textContent).not.toMatch(/should be different/)
+  })
+
+  it('un 4xx sin código conocido no muestra el inglés', async () => {
+    vi.stubGlobal('fetch', respuesta(400, { code: 400, msg: 'Something new from GoTrue' }))
+    await pintar()
+    await guardar()
+    expect(container.textContent).toContain('No pudimos guardar tu contraseña. Intenta de nuevo.')
+    expect(container.textContent).not.toContain('Something new')
+  })
+
+  it('las contraseñas que no coinciden se dicen debajo de la confirmación, enlazadas al campo', async () => {
+    await pintar()
+    const [clave, confirmar] = [...container.querySelectorAll('input')] as HTMLInputElement[]
+    await act(async () => {
+      escribir(clave, CLAVE)
+      escribir(confirmar, 'otra')
+    })
+    expect(confirmar.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(confirmar.getAttribute('aria-describedby')!)?.textContent).toBe('Las contraseñas no coinciden')
+  })
+})

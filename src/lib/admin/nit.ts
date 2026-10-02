@@ -1,4 +1,5 @@
-import { adminApi, ApiError } from './api'
+import { adminApi } from './api'
+import { mensajeDelAdmin } from './errores-del-admin'
 
 /**
  * El NIT de una inmobiliaria en el backoffice (02-10-2026, Nico): en
@@ -107,8 +108,16 @@ export function resultadoDeLaCorreccion(r: CorreccionDelNit): { tono: 'ok' | 'av
   }
 }
 
-/** El texto de un fallo del back; los 400/409/503 ya traen uno en español. */
-export function mensajeDelFallo(err: unknown): string {
-  if (err instanceof ApiError) return err.message
-  return 'No pudimos hablar con Leasefy. Revisa tu conexión e intenta de nuevo.'
+/**
+ * El texto de un fallo del back; los 400/409/503 ya traen uno en español.
+ *
+ * 02-10-2026 · Delega en el traductor (`mensajeDelAdmin`): decía «Revisa tu
+ * conexión» ante CUALQUIER cosa que no fuera un `ApiError` (también un
+ * `TypeError` de JavaScript) y pintaba «Error 500» pelado ante un 5xx.
+ */
+export function mensajeDelFallo(err: unknown, accion = 'completar el cambio del NIT'): string {
+  return mensajeDelAdmin(err, {
+    accion,
+    porDefecto: 'No pudimos completar el cambio del NIT. Prueba de nuevo en un momento.',
+  })
 }

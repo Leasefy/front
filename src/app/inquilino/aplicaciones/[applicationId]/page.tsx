@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
@@ -150,13 +151,10 @@ export default function ApplicationDetailPage() {
       setConfirmWithdrawOpen(false);
       await refetch();
     } catch (e) {
-      toast.error(
-        e instanceof Error
-          ? e.message
-          : locale === 'es'
-            ? 'No se pudo retirar'
-            : 'Could not withdraw'
-      );
+      // 02-10-2026 · Regla de oro: el motivo por el traductor, no `e.message` crudo.
+      toast.error(locale === 'es' ? 'No se pudo retirar' : 'Could not withdraw', {
+        description: mensajeParaLaPersona(e, { accion: 'retirar tu postulación' }),
+      });
     } finally {
       setIsWithdrawing(false);
     }

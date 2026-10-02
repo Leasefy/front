@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { SalirDelRegistro } from './SalirDelRegistro'
+import { AuthContext } from '@/lib/auth/auth-context'
 
 let container: HTMLDivElement
 let root: Root
@@ -98,6 +99,34 @@ describe('<SalirDelRegistro>', () => {
     })
 
     expect(replaceMock).toHaveBeenCalledWith('/auth')
+  })
+
+  // 02-10-2026 · Era un try/finally sin catch: el rechazo de `signOut` quedaba
+  // sin atrapar. Salir sigue llevando a /auth y no deja nada colgando.
+  it('si cerrar la sesión falla (la red), igual sale y no deja un rechazo sin atrapar', async () => {
+    const signOut = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const sinAtrapar = vi.fn()
+    process.on('unhandledRejection', sinAtrapar)
+    act(() =>
+      root.render(
+        <AuthContext.Provider value={{ signOut } as unknown as React.ContextType<typeof AuthContext>}>
+          <SalirDelRegistro />
+        </AuthContext.Provider>,
+      ),
+    )
+    clickPorTexto('Salir')
+    const confirmar = Array.from(document.querySelectorAll('button')).filter(
+      (b) => b.textContent?.trim() === 'Salir',
+    )
+    await act(async () => {
+      confirmar[confirmar.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    process.off('unhandledRejection', sinAtrapar)
+
+    expect(signOut).toHaveBeenCalledTimes(1)
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
+    expect(sinAtrapar).not.toHaveBeenCalled()
   })
 })
 

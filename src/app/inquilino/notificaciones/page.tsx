@@ -33,6 +33,7 @@ import {
   CalendarCheck,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useTenantNotifications } from '@/lib/hooks/useNotifications';
@@ -152,10 +153,16 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
 
-  const notifyError = () => toast.error(t('header.notificationActionError'));
-  const handleMarkAsRead = (id: string) => markAsRead(id).catch(notifyError);
-  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError);
-  const handleDeleteNotification = (id: string) => deleteNotification(id).catch(notifyError);
+  // 02-10-2026 · Antes, cualquier fallo decía el mismo texto fijo. Ahora por
+  // el traductor: un 4xx dice qué pasó, un 5xx que fue nuestro (con la
+  // referencia) y «conexión» sólo si no hubo respuesta.
+  const notifyError = (accion: string) => (err: unknown) =>
+    toast.error(mensajeParaLaPersona(err, { porDefecto: t('header.notificationActionError'), accion }));
+  const handleMarkAsRead = (id: string) =>
+    markAsRead(id).catch(notifyError('marcar la notificación como leída'));
+  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError('marcar las notificaciones como leídas'));
+  const handleDeleteNotification = (id: string) =>
+    deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
   const filteredNotifications = visibleNotifications.filter((n) => {

@@ -254,3 +254,42 @@ describe('MfaSetupSection', () => {
     expect(onEnrolled).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * 02-10-2026 · Sistema de errores: el fallo al activar pasa por el traductor.
+ * Antes era `err.message` crudo (un «x is not a function» llegaba a la pantalla).
+ */
+describe('MfaSetupSection — el fallo al activar', () => {
+  async function activarCon(fetchImpl: (url: string) => Promise<Response>) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => fetchImpl(String(url))))
+    await act(async () => {
+      root.render(<MfaSetupSection />)
+    })
+    const activar = [...container.querySelectorAll('button')].find((b) => (b.textContent ?? '').includes('Activar'))
+    await act(async () => {
+      activar?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    return avisos.filter((a) => a.tipo === 'error').map((a) => String(a.texto))
+  }
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    const errores = await activarCon(async (url) => {
+      if (url.endsWith('/user')) return respuesta({ factors: [] })
+      throw new TypeError('Failed to fetch')
+    })
+    expect(errores[0]).toMatch(/conexión/)
+  })
+
+  it('🔴 un 5xx de Supabase dice que fue nuestro, sin culpar a la conexión ni mostrar inglés', async () => {
+    const errores = await activarCon(async (url) => {
+      if (url.endsWith('/user')) return respuesta({ factors: [] })
+      return {
+        ok: false,
+        status: 500,
+        json: async () => ({ code: 500, error_code: 'unexpected_failure', msg: 'Internal Server Error' }),
+      } as unknown as Response
+    })
+    expect(errores[0]).toMatch(/de nuestro lado/)
+    expect(errores[0]).not.toMatch(/conexi[oó]n|Internal Server Error/)
+  })
+})

@@ -195,3 +195,109 @@ describe('Perfil del propietario — el modal de baja', () => {
     expect(dialogo()!.querySelector('[aria-label="Cerrar"]')).not.toBeNull()
   })
 })
+
+/**
+ * 02-10-2026 · Sistema de errores. Antes, CUALQUIER fallo al guardar decía
+ * «Error al guardar los cambios», y la pantalla rellenaba lo que faltaba con
+ * datos de muestra que «Guardar» mandaba como propios.
+ */
+describe('Perfil del propietario — guardar los datos', () => {
+  const updateProfileMock = vi.fn()
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    const mensaje = Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')
+    return Object.assign(new Error(mensaje), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  function escribir(input: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  const campo = (id: string) => container.querySelector<HTMLInputElement>(`#${id}`)!
+
+  beforeEach(() => {
+    updateProfileMock.mockReset()
+    useAuthMock.mockReturnValue({
+      user: { id: 'u-1', email: 'pedro@example.com', firstName: 'Pedro', lastName: 'Ruiz' },
+      updateProfile: updateProfileMock,
+    })
+  })
+
+  async function editarYGuardar(cambio?: () => void) {
+    await renderPage()
+    act(() => { boton(container, 'Editar').click() })
+    cambio?.()
+    await act(async () => { boton(container, 'Guardar').click() })
+  }
+
+  it('🔴 lo que la persona no tiene guardado no se manda inventado', async () => {
+    updateProfileMock.mockResolvedValue(undefined)
+    await editarYGuardar()
+    const enviado = updateProfileMock.mock.calls[0][0] as Record<string, unknown>
+    expect(enviado.phone).toBeUndefined()
+    expect(enviado.address).toBeUndefined()
+    expect(enviado.birthDate).toBeUndefined()
+    expect(JSON.stringify(enviado)).not.toMatch(/300 123 4567|Cra\. 7|1980-08-15/)
+  })
+
+  it('🔴 un 400 con `campos` pinta el error debajo del campo y le da el foco, sin toast', async () => {
+    const FRASE = 'Revisa el teléfono: no es un número de teléfono válido.'
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [FRASE],
+        campos: [{ campo: 'phone', regla: 'telefono', mensaje: FRASE }],
+      }),
+    )
+    await editarYGuardar(() => escribir(campo('perfil-propietario-phone'), '12345'))
+
+    expect(container.querySelector('#perfil-propietario-phone-error')?.textContent).toBe(FRASE)
+    expect(document.activeElement).toBe(campo('perfil-propietario-phone'))
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('el error del back en `lastName` cae en el único campo del nombre', async () => {
+    const FRASE = 'El apellido no puede tener más de 50 caracteres.'
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(400, { code: 'DATOS_INVALIDOS', message: [FRASE], campos: [{ campo: 'lastName', regla: 'longitud_maxima', mensaje: FRASE }] }),
+    )
+    await editarYGuardar()
+    expect(container.querySelector('#perfil-propietario-nombre-error')?.textContent).toBe(FRASE)
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    updateProfileMock.mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await editarYGuardar()
+    const texto = String(toastError.mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tu perfil: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (status 0): ahí sí se habla de la conexión', async () => {
+    updateProfileMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await editarYGuardar()
+    expect(String(toastError.mock.calls[0][0])).toMatch(/conexión/)
+  })
+})
+
+describe('Perfil del propietario — la zona de peligro', () => {
+  it('cuenta la ventana de 30 días y el soporte, no «irreversible»', async () => {
+    await renderPage()
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('irreversibles')
+    expect(texto).toContain('sólo el soporte de Leasefy puede recuperarla')
+  })
+})

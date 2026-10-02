@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets, setMfaPendingFlag } from '@/lib/api/client'
 import { getBootstrap } from '@/lib/api/bootstrap.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { mapBootstrapSubscription } from '@/lib/api/subscriptions.service'
 import type { AgencySubscriptionState } from '@/lib/api/agency-subscription.types'
 import type { BackendSubscriptionMeResponse } from '@/lib/api/subscriptions.types'
@@ -399,9 +400,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // the sign-out redirect, and the /auth screen (AuthForm) owns the
       // visible error banner.
       if (err instanceof ApiError && err.status === 409) {
-        const message =
-          err.message ||
-          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        // Por el traductor (02-10-2026): el `message` del back si se puede
+        // leer; si no (vacío, un volcado), la frase de siempre.
+        const message = mensajeParaLaPersona(err, {
+          porDefecto: 'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.',
+        })
         if (typeof window !== 'undefined') {
           try {
             window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)
@@ -515,9 +518,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { user: null, needsOnboarding: true, agencyResult: null }
       }
       if (err instanceof ApiError && err.status === 409) {
-        const message =
-          err.message ||
-          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        // Por el traductor (02-10-2026): el `message` del back si se puede
+        // leer; si no (vacío, un volcado), la frase de siempre.
+        const message = mensajeParaLaPersona(err, {
+          porDefecto: 'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.',
+        })
         if (typeof window !== 'undefined') {
           try {
             window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)

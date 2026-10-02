@@ -18,6 +18,7 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
 import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
+import { leerErrorDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
@@ -332,8 +333,11 @@ export default function MfaVerifyPage() {
       const msg = (err as Error).message || '';
       // 🔴 Las casillas se pintan en rojo además del aviso: el aviso se va solo
       // y el campo se queda vacío, así que sin esto no queda rastro de que lo
-      // que falló fue el código y no otra cosa.
-      setHayError(true);
+      // que falló fue el código y no otra cosa. Si lo que falló fue la red o
+      // Supabase (sin respuesta, un 5xx), el código no tuvo la culpa: no se
+      // pinta en rojo (02-10-2026, regla de oro).
+      const { status } = leerErrorDeSupabase(err);
+      setHayError(!sinRespuestaDeSupabase(err) && !(typeof status === 'number' && status >= 500));
       // Por el CÓDIGO del error, no por palabras sueltas: «invalid JWT… token
       // is expired» (sesión vencida) contiene «invalid» y «expired» y se
       // mostraba como «Código incorrecto» (Nico, 01-10). Nada en inglés ni un

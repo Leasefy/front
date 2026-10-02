@@ -34,6 +34,7 @@ import type {
   BackendTenantPaymentRequest,
   TenantPaymentRequestStatus,
 } from '@/lib/api/tenant-payment-requests.types';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
@@ -206,7 +207,7 @@ function PagosPageContent() {
         return;
       }
       const response = await fetch(receipt.url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw { status: response.status };
       const blob = await response.blob();
       blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -215,11 +216,16 @@ function PagosPageContent() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } catch {
+    } catch (err) {
+      // 02-10-2026 · «conexión» sólo si no hubo respuesta; si no, por qué.
       toast.error(
-        locale === 'es'
-          ? 'No pudimos descargar el comprobante interno.'
-          : 'We could not download the internal receipt.',
+        mensajeParaLaPersona(err, {
+          accion: 'descargar el comprobante',
+          porDefecto:
+            locale === 'es'
+              ? 'No pudimos descargar el comprobante interno.'
+              : 'We could not download the internal receipt.',
+        }),
       );
     } finally {
       if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);

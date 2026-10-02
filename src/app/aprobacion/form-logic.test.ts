@@ -155,6 +155,29 @@ describe('validatePreApprovalForm', () => {
       expect(r.errors.canon).toBeUndefined()
       expect(r.canonCop).toBe(1_800_000)
     })
+
+    // 🔴 02-10-2026: el mismo tope y la misma frase que el back
+    // (`canon_mensual_cop` ≤ $100.000.000): un cero de más no sale de acá.
+    it('🔴 un canon de más de $100.000.000 no pasa, con la frase del back', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '1.000.000.000' })
+      expect(r.valid).toBe(false)
+      expect(r.errors.canon).toBe('El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.')
+      expect(r.canonCop).toBeNull()
+    })
+
+    it('justo $100.000.000 sí pasa', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '100.000.000' })
+      expect(r.valid).toBe(true)
+      expect(r.canonCop).toBe(100_000_000)
+    })
+  })
+
+  describe('ciudad', () => {
+    it('🔴 una ciudad de más de 100 caracteres (la de la ficha entra tal cual) no pasa', () => {
+      const r = validatePreApprovalForm({ ...VALID, ciudad: 'B'.repeat(101) })
+      expect(r.valid).toBe(false)
+      expect(r.errors.ciudad).toBe('La ciudad puede tener hasta 100 caracteres.')
+    })
   })
 
   describe('celular', () => {

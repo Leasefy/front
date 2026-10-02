@@ -2,6 +2,7 @@
 
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
 import { ArrowRight } from '@phosphor-icons/react'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -25,11 +26,6 @@ export interface PaymentProviderStepFormProps {
    * and can reject a payload the client-side zod schema accepted).
    */
   submitError?: string | null
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
 }
 
 export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }: PaymentProviderStepFormProps) {
@@ -71,7 +67,11 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
           name="provider"
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="provider">
+              <SelectTrigger
+                id="provider"
+                aria-invalid={Boolean(errors.provider) || undefined}
+                aria-describedby={errors.provider ? 'provider-error' : undefined}
+              >
                 <SelectValue placeholder="Selecciona una pasarela" />
               </SelectTrigger>
               <SelectContent>
@@ -88,7 +88,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
             </Select>
           )}
         />
-        <FieldError message={errors.provider?.message} />
+        <ErrorDelCampo id="provider-error" mensaje={errors.provider?.message} />
       </div>
 
       <div>
@@ -102,24 +102,45 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
           submitPaymentProvider (HTTPS) to the agent, which seals it with
           KMS server-side.
         */}
-        <Input id="apiKey" type="password" autoComplete="off" {...register('apiKey')} />
-        <FieldError message={errors.apiKey?.message} />
+        <Input
+          id="apiKey"
+          type="password"
+          autoComplete="off"
+          aria-invalid={Boolean(errors.apiKey) || undefined}
+          aria-describedby={errors.apiKey ? 'apiKey-error' : undefined}
+          {...register('apiKey')}
+        />
+        <ErrorDelCampo id="apiKey-error" mensaje={errors.apiKey?.message} />
       </div>
 
       <div>
         <label htmlFor="eventSecret" className="block text-sm font-medium text-fg mb-2">
           Event secret <span className="text-danger">*</span>
         </label>
-        <Input id="eventSecret" type="password" autoComplete="off" {...register('eventSecret')} />
-        <FieldError message={errors.eventSecret?.message} />
+        <Input
+          id="eventSecret"
+          type="password"
+          autoComplete="off"
+          aria-invalid={Boolean(errors.eventSecret) || undefined}
+          aria-describedby={errors.eventSecret ? 'eventSecret-error' : undefined}
+          {...register('eventSecret')}
+        />
+        <ErrorDelCampo id="eventSecret-error" mensaje={errors.eventSecret?.message} />
       </div>
 
       <div>
         <label htmlFor="publicKey" className="block text-sm font-medium text-fg mb-2">
           Public key <span className="text-fg-subtle font-normal">(opcional)</span>
         </label>
-        <Input id="publicKey" type="text" autoComplete="off" {...register('publicKey')} />
-        <FieldError message={errors.publicKey?.message} />
+        <Input
+          id="publicKey"
+          type="text"
+          autoComplete="off"
+          aria-invalid={Boolean(errors.publicKey) || undefined}
+          aria-describedby={errors.publicKey ? 'publicKey-error' : undefined}
+          {...register('publicKey')}
+        />
+        <ErrorDelCampo id="publicKey-error" mensaje={errors.publicKey?.message} />
       </div>
 
       {/*

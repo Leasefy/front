@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useLeases, useMyPayments, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
@@ -313,8 +314,10 @@ export default function ArriendoPage() {
                                         await leasesApi.acceptRenovacion(lease.id);
                                         toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
                                         refetch();
-                                      } catch {
-                                        toast.error(locale === 'es' ? 'No se pudo aceptar' : 'Could not accept');
+                                      } catch (err) {
+                                        toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal', {
+                                          description: mensajeParaLaPersona(err, { accion: 'aceptar la renovación' }),
+                                        });
                                       }
                                     }}
                                     className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"

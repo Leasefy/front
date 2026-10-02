@@ -480,7 +480,7 @@
       "sessions": "Active sessions",
       "logoutAll": "Log out all sessions",
       "deleteAccount": "Delete account",
-      "deleteWarning": "You have 30 days to recover it by signing in"
+      "deleteWarning": "You have 30 days to recover it by signing in; after that, only Leasefy support can recover it."
     },
     "notifications": {
       "title": "Notifications",
@@ -651,7 +651,7 @@
     "dangerZone": {
       "title": "Danger Zone",
       "subtitle": "Actions with consequences",
-      "deleteDescription": "You lose access to your account and your sessions are closed on every device. Your properties, contracts and payments are not erased: they stay on record. If you sign in within 30 days, you get it back.",
+      "deleteDescription": "You lose access to your account and your sessions are closed on every device. Your properties, contracts and payments are not erased: they stay on record. If you sign in within the next 30 days, it is automatically recovered with all your data. After 30 days, only Leasefy support can recover it.",
       "activeLeasesWarning": "You have {{count}} active lease(s). You must end them before deleting your account.",
       "deleteAccount": "Delete account"
     },
@@ -697,7 +697,7 @@
       "deleteAccount": {
         "title": "Delete account",
         "warning": "Delete your account?",
-        "warningDesc": "You lose access to your account and your sessions are closed on every device. Your contracts and payments are not erased: they stay on record. Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.",
+        "warningDesc": "You lose access to your account and your sessions are closed on every device. Your contracts and payments are not erased: they stay on record. If you sign in within the next 30 days, it is automatically recovered with all your data. After 30 days, only Leasefy support can recover it.",
         "typeToConfirm": "Type",
         "confirmWord": "DELETE",
         "toConfirm": "to confirm",
@@ -745,7 +745,7 @@
       "allSessionsClosed": "All other sessions have been closed",
       "dataRequestSent": "You will receive an email with your data within the next 24 hours",
       "typeToConfirm": "Type DELETE to confirm",
-      "accountDeleted": "Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.",
+      "accountDeleted": "If you sign in within the next 30 days, it is automatically recovered with all your data. After 30 days, only Leasefy support can recover it.",
       "twoFactorEnabled": "Two-factor authentication enabled",
       "twoFactorDisabled": "Two-factor authentication disabled",
       "onboardingReset": "Onboarding reset",

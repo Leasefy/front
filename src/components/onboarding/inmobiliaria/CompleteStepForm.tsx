@@ -18,7 +18,9 @@ export interface CompleteStepFormProps {
   isSubmitting: boolean
   onSubmit: () => Promise<OnboardingSessionCompleteResponse | null>
   /** Session-level error from the hook — passed as the full object (not just `.message`,
-   * like the other step forms) because this step branches on `.kind` and `.conflict`. */
+   * like the other step forms) because this step branches on `.kind` and `.conflict`.
+   * Un 400 (`validation`) se dice acá mismo, bajo el botón (02-10-2026): antes
+   * no llegaba y «Crear mi inmobiliaria» se volvía a prender sin decir nada. */
   error: OnboardingSessionError | null
   /** Navigates the wizard to a step other than `complete` — used by the missing-steps CTA. */
   onNavigateToStep: (step: OnboardingWizardStep) => void
@@ -326,6 +328,19 @@ export function CompleteStepForm({
           </>
         )}
       </Button>
+
+      {/* Lo que el micro rechazó al crearla (un 400): con sus palabras, ya
+          pasadas por el traductor en el servicio. */}
+      {error?.kind === 'validation' && error.message ? (
+        <div
+          role="alert"
+          data-testid="complete-step-error"
+          className="flex items-start gap-2.5 rounded-md border border-danger/20 bg-danger-soft p-3"
+        >
+          <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" weight="fill" aria-hidden />
+          <p className="text-body-sm text-danger">{error.message}</p>
+        </div>
+      ) : null}
 
       {creada ? (
         <InmobiliariaCreada nombre={nombre} onIrAlPanel={() => void irAlPanel()} yendo={redirecting} />

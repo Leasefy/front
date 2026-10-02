@@ -5,6 +5,7 @@ import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -240,7 +241,8 @@ export default function DocumentosPage() {
         sourceUrl = doc.url;
       }
       const response = await fetch(sourceUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      // El status, no un «HTTP 403» que llegaba tal cual a la pantalla.
+      if (!response.ok) throw { status: response.status };
       const blob = await response.blob();
       blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -250,9 +252,13 @@ export default function DocumentosPage() {
       a.click();
       document.body.removeChild(a);
     } catch (err) {
-      const msg = err instanceof Error ? err.message
-        : (locale === 'es' ? 'No se pudo descargar el documento' : 'Could not download the document');
-      toast.error(msg);
+      // 02-10-2026 · Regla de oro: el motivo por el traductor, no `err.message` crudo.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'descargar el documento',
+          porDefecto: locale === 'es' ? 'No se pudo descargar el documento' : 'Could not download the document',
+        }),
+      );
     } finally {
       // Free the blob URL after a tick — the click already triggered the download.
       if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
@@ -288,9 +294,12 @@ export default function DocumentosPage() {
       setDeletingDocument(null);
       setDeleteConfirmText('');
     } catch (err) {
-      const msg = err instanceof Error ? err.message
-        : (locale === 'es' ? 'No se pudo eliminar el documento' : 'Could not delete the document');
-      toast.error(msg);
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'eliminar el documento',
+          porDefecto: locale === 'es' ? 'No se pudo eliminar el documento' : 'Could not delete the document',
+        }),
+      );
     } finally {
       setIsDeleting(false);
     }

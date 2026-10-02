@@ -18,6 +18,7 @@ import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from '@/components/ui/toast';
 import type { DocumentAnalysisResult } from '@/lib/api/ai-analysis.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // Types
@@ -188,7 +189,13 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       await triggerAnalysis();
       toast.success('Analisis de documentos iniciado');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al iniciar analisis');
+      // 02-10-2026: con la regla de oro del traductor (antes, `err.message` crudo).
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'iniciar el análisis de los documentos',
+          porDefecto: 'No pudimos iniciar el análisis. Prueba de nuevo en un momento.',
+        }),
+      );
     } finally {
       setTriggering(false);
     }

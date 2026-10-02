@@ -31,6 +31,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  enfocarCampoPersonal,
+  idDelCampoPersonal,
+  revisarDatosPersonales,
+  type CampoPersonal,
+  type ErroresPersonales,
+} from '@/lib/perfil/datos-personales';
+
+/** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */
+const PREFIJO = 'perfil-inquilino';
 
 // Setup steps definition (derived from real profile data — never hardcoded)
 interface SetupStep {
@@ -62,6 +74,12 @@ export default function PerfilPage() {
 
   // Form state — seeded from the real authenticated user
   const [formData, setFormData] = useState<ProfileFormData>(() => formDataFromUser(user));
+  /**
+   * El error de cada campo: el del cliente (las mismas reglas que el back,
+   * `lib/perfil/datos-personales`) o el que el back mandó en `campos[]`. Va
+   * debajo de SU campo; al toast sólo lo que no tiene dónde ir.
+   */
+  const [errores, setErrores] = useState<ErroresPersonales>({});
 
   // Re-seed whenever the user loads/refreshes while not editing (also resets on cancel)
   useEffect(() => {
@@ -125,7 +143,24 @@ export default function PerfilPage() {
 
   const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Lo que estaba mal deja de valer en cuanto la persona toca ese campo.
+    setErrores(prev => {
+      if (prev[field] === undefined) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
+
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoPersonal) => ({
+    id: idDelCampoPersonal(PREFIJO, campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampoPersonal(PREFIJO, campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoPersonal) => (
+    <ErrorDelCampo id={`${idDelCampoPersonal(PREFIJO, campo)}-error`} mensaje={errores[campo]} />
+  );
 
   const handleSaveProfile = async (fields: readonly (keyof ProfileFormData)[]) => {
     const payload = buildChangedFields(fields, formData, user);
@@ -135,17 +170,32 @@ export default function PerfilPage() {
       return;
     }
 
+    // Lo que el back rechazaría no sale: las mismas reglas y frases del DTO.
+    const delCliente = revisarDatosPersonales(payload);
+    if (Object.keys(delCliente).length > 0) {
+      setErrores(delCliente);
+      enfocarCampoPersonal(PREFIJO, fields.find((f) => delCliente[f] !== undefined));
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateProfile(payload);
+      setErrores({});
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
     } catch (err) {
-      // Surface the backend message (e.g. the Colombian phone format error)
-      const message = err instanceof Error && err.message
-        ? err.message
-        : (locale === 'es' ? 'No se pudieron guardar los cambios' : 'Could not save changes');
-      toast.error(message);
+      // 02-10-2026 · Antes: `err.message` crudo al toast (un 5xx, un texto en
+      // inglés). Ahora, con la regla de oro: lo del back por campo va a SU
+      // campo (el formato del celular, un largo); al toast, sólo lo suelto.
+      const reparto = repartirErroresDelServidor<CampoPersonal>(err, {
+        campos: fields,
+        accion: 'guardar tu perfil',
+        porDefecto: locale === 'es' ? 'No pudimos guardar los cambios. Prueba de nuevo en un momento.' : 'Could not save changes',
+      });
+      setErrores(reparto.porCampo);
+      enfocarCampoPersonal(PREFIJO, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
@@ -167,10 +217,14 @@ export default function PerfilPage() {
       setAvatarFile(null);
       toast.success(locale === 'es' ? 'Foto de perfil actualizada' : 'Profile photo updated');
     } catch (err) {
-      const message = err instanceof Error && err.message
-        ? err.message
-        : (locale === 'es' ? 'No se pudo subir la foto' : 'Could not upload the photo');
-      toast.error(message);
+      // El back dice qué pasó con la imagen («Solo se permiten imágenes JPG,
+      // PNG o WebP»); un 5xx dice que fue nuestro; «conexión», sólo sin respuesta.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: locale === 'es' ? 'No se pudo subir la foto' : 'Could not upload the photo',
+          accion: 'subir tu foto',
+        }),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -180,6 +234,7 @@ export default function PerfilPage() {
     setEditingSection(null);
     setAvatarPreview(null);
     setAvatarFile(null);
+    setErrores({});
   };
 
   // Avatar upload handlers
@@ -692,12 +747,16 @@ export default function PerfilPage() {
                     {t('profile.firstName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('firstName')}
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('firstName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
@@ -711,12 +770,16 @@ export default function PerfilPage() {
                     {t('profile.lastName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('lastName')}
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('lastName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
@@ -741,13 +804,17 @@ export default function PerfilPage() {
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+573001234567"
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="tel"
+                        {...propsDelCampo('phone')}
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+573001234567"
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('phone')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Phone className="w-4 h-4 text-fg-subtle" />
@@ -764,11 +831,13 @@ export default function PerfilPage() {
                     <>
                       <Input
                         type="text"
+                        {...propsDelCampo('rut')}
                         value={formData.rut}
                         onChange={(e) => handleInputChange('rut', e.target.value)}
                         disabled={isRutLocked(user)}
                         className="w-full rounded-xl bg-surface-muted"
                       />
+                      {errorDelCampo('rut')}
                       {isRutLocked(user) && (
                         <p className="mt-2 text-xs text-fg-subtle">
                           {locale === 'es'
@@ -790,12 +859,16 @@ export default function PerfilPage() {
                     {t('profile.dateOfBirth')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="date"
-                      value={formData.birthDate}
-                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="date"
+                        {...propsDelCampo('birthDate')}
+                        value={formData.birthDate}
+                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('birthDate')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
@@ -817,12 +890,16 @@ export default function PerfilPage() {
                     {t('profile.address')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('address')}
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('address')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
@@ -880,13 +957,17 @@ export default function PerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'Name'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input
-                      type="text"
-                      value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('emergencyContactName')}
+                        value={formData.emergencyContactName}
+                        onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
+                      />
+                      {errorDelCampo('emergencyContactName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserPlus className="w-4 h-4 text-fg-subtle" />
@@ -899,13 +980,17 @@ export default function PerfilPage() {
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input
-                      type="tel"
-                      value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                      placeholder="3001234567"
-                    />
+                    <>
+                      <Input
+                        type="tel"
+                        {...propsDelCampo('emergencyContactPhone')}
+                        value={formData.emergencyContactPhone}
+                        onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                        placeholder="3001234567"
+                      />
+                      {errorDelCampo('emergencyContactPhone')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Phone className="w-4 h-4 text-fg-subtle" />
@@ -925,11 +1010,12 @@ export default function PerfilPage() {
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es'
-                  ? 'Estas acciones son irreversibles. Por favor, procede con precaución.'
-                  : 'These actions are irreversible. Please proceed with caution.'}
-              </p>
+              {/* La copia canónica, como en el perfil de la inmobiliaria (Nico,
+                  02-10-2026, pregunta 15): decía «Estas acciones son
+                  irreversibles», y dos clics después el modal dice que se
+                  recupera iniciando sesión. Nada se borra: pasados 30 días se
+                  bloquea y sólo el soporte la abre. */}
+              <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
               <Button
                 variant="outline"
                 hideArrow

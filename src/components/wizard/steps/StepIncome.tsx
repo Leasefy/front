@@ -23,7 +23,7 @@ import {
  * Collects income and obligations with Luxterra-style inputs
  */
 export function StepIncome() {
-  const { application, updateIncome, attemptedAdvance } = useApplication();
+  const { application, updateIncome, attemptedAdvance, erroresDelServidor } = useApplication();
   const income = application.income;
 
   // Track which fields have been touched for error display
@@ -45,11 +45,15 @@ export function StepIncome() {
   }, []);
 
   // Get error message for a field (show if touched OR if user attempted to advance)
+  // Lo que el back rechazó al enviar (02-10-2026) va primero: se ve aunque
+  // el campo no se haya tocado, y se borra en cuanto la persona lo corrige.
   const getError = useCallback(
     (fieldName: string): string | undefined => {
+      const delServidor = (erroresDelServidor as Record<string, string | undefined> | undefined)?.[fieldName];
+      if (delServidor) return delServidor;
       return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors, attemptedAdvance]
+    [touched, validation.errors, attemptedAdvance, erroresDelServidor]
   );
 
   // Handle currency input changes

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -91,11 +92,9 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
           )}
         </div>
 
-        {error && (
-          <p id={errorId} className="text-[12px] text-danger">
-            {error}
-          </p>
-        )}
+        {/* El error entra suave (Cadence `FormError`) y se anuncia; el
+            espacio de arriba lo pone el `space-y` del contenedor. */}
+        <ErrorDelCampo id={errorId} mensaje={error} className="mt-0" />
       </div>
     );
   }

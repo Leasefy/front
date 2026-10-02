@@ -22,7 +22,12 @@
  */
 
 import { VERSION_TERMINOS } from '@/lib/legal/versiones'
-import { camposDelError, type CampoConError } from '@/lib/errores/traductor-de-errores'
+import {
+  camposDelError,
+  mensajeParaLaPersona,
+  mensajeSinRespuesta,
+  type CampoConError,
+} from '@/lib/errores/traductor-de-errores'
 import { agentAuthHeaders } from './agent-auth'
 import type {
   OnboardingSessionAgencyRequest,
@@ -66,6 +71,12 @@ export class OnboardingSessionError extends Error {
    * Vacío si la respuesta no los trae.
    */
   readonly campos: CampoConError[]
+  /**
+   * 02-10-2026 · El cuerpo de la respuesta, entero (como `ApiError.detalle`):
+   * así el traductor (`lib/errores/traductor-de-errores.ts`) lee de acá la
+   * `referencia`/`requestId` de un 5xx, el `code` y los `campos`.
+   */
+  readonly detalle?: Record<string, unknown>
 
   constructor(
     kind: OnboardingSessionErrorKind,
@@ -73,6 +84,7 @@ export class OnboardingSessionError extends Error {
     message: string,
     conflict?: OnboardingSessionStepConflict,
     campos: CampoConError[] = [],
+    detalle?: Record<string, unknown>,
   ) {
     super(message)
     this.name = 'OnboardingSessionError'
@@ -80,6 +92,7 @@ export class OnboardingSessionError extends Error {
     this.status = status
     this.conflict = conflict
     this.campos = campos
+    this.detalle = detalle
   }
 }
 
@@ -91,15 +104,6 @@ const STATUS_TO_KIND: Record<number, OnboardingSessionErrorKind> = {
   409: 'conflict',
   410: 'expired',
   503: 'unavailable',
-}
-
-function isErrorLike(value: unknown): value is { error: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'error' in value &&
-    typeof (value as { error: unknown }).error === 'string'
-  )
 }
 
 // ── Zod validation body → Spanish per-field message ─────────────────────────
@@ -115,7 +119,7 @@ function isErrorLike(value: unknown): value is { error: string } {
 // English `message`. We translate the leaf field to a Spanish label and the
 // issue code to a short Spanish detail so the user sees "Calle: mínimo 2
 // caracteres" instead of a bare "(400)". Handler-thrown errors keep the
-// `{ error: string }` shape and are handled by `isErrorLike` below.
+// `{ error: string }` shape and go through the traductor below.
 
 interface ZodIssueLike {
   path: (string | number)[]
@@ -190,15 +194,26 @@ async function throwForErrorResponse(res: Response): Promise<never> {
   // que ya nombran el campo. Se usan primero; el `error.issues` de Zod (en
   // inglés) queda para un micro anterior.
   const campos = camposDelError(parsedBody)
+  const detalle =
+    parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody)
+      ? (parsedBody as Record<string, unknown>)
+      : undefined
   let message: string
   if (campos.length > 0) {
     message = Array.from(new Set(campos.map((c) => c.mensaje))).join('; ')
   } else if (isZodValidationBody(parsedBody)) {
     message = formatZodValidationMessage(parsedBody)
-  } else if (isErrorLike(parsedBody)) {
-    message = parsedBody.error
   } else {
-    message = `La sesión de onboarding respondió con un error (${status}).`
+    // 02-10-2026 · La regla de oro, del traductor: un 4xx dice lo que mandó
+    // el micro (`{ error }` o `message`); un 5xx dice que falló de nuestro
+    // lado, con la referencia (`requestId`), y nunca «(500)» crudo.
+    message = mensajeParaLaPersona(
+      { status, detalle },
+      {
+        accion: 'continuar con el registro',
+        porDefecto: 'No pudimos continuar con el registro. Revisa los datos e intenta de nuevo.',
+      },
+    )
   }
   const kind = STATUS_TO_KIND[status] ?? 'unknown'
 
@@ -209,9 +224,10 @@ async function throwForErrorResponse(res: Response): Promise<never> {
       message,
       parsedBody as OnboardingSessionStepConflict,
       campos,
+      detalle,
     )
   }
-  throw new OnboardingSessionError(kind, status, message, undefined, campos)
+  throw new OnboardingSessionError(kind, status, message, undefined, campos, detalle)
 }
 
 // ── Fetch helpers ─────────────────────────────────────────────────────────
@@ -225,11 +241,8 @@ async function request<TRes>(sessionId: string, step: string, init: RequestInit)
   try {
     res = await globalThis.fetch(stepUrl(sessionId, step), init)
   } catch {
-    throw new OnboardingSessionError(
-      'network',
-      null,
-      'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.',
-    )
+    // Sin respuesta: el único caso en que se habla de la conexión.
+    throw new OnboardingSessionError('network', null, mensajeSinRespuesta())
   }
   if (!res.ok) {
     await throwForErrorResponse(res)

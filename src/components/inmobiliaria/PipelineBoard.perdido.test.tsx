@@ -68,6 +68,10 @@ vi.mock('@/components/ui/alert-dialog', () => {
 
 import { PipelineBoard } from './PipelineBoard';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
+import {
+  AYUDA_DEL_MOTIVO_DE_PERDIDA,
+  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
+} from '@/lib/pipeline/limites-del-pipeline';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -138,6 +142,16 @@ async function escribirMotivo(texto: string) {
 const dialogo = () => container.querySelector('[data-testid="motivo-dialog"]');
 
 describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
+  it('🔴 02-10 · el diálogo dice dónde queda el motivo del lead (`lostReason`), no «el historial de la visita»', async () => {
+    montar(vi.fn(() => Promise.resolve()));
+    await soltar('abierto', 'lost');
+    const area = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
+    expect(area.getAttribute('placeholder')).toBe(EJEMPLO_DEL_MOTIVO_DE_PERDIDA);
+    await escribirMotivo('Dejó de responder hace dos semanas');
+    expect(dialogo()!.textContent).toContain(AYUDA_DEL_MOTIVO_DE_PERDIDA);
+    expect(dialogo()!.textContent).not.toContain('historial de la visita');
+  });
+
   it('no mueve nada: abre el diálogo del motivo', async () => {
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange);

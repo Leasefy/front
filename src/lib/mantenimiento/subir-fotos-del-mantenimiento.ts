@@ -27,10 +27,18 @@ export interface ResultadoDeLasFotos {
   fallidas: FotoQueFallo[]
 }
 
+/**
+ * A dónde va cada foto (`POST :id/fotos`, campo `destino`; Nico, 02-10-2026):
+ * `reporte` (las del problema, el de siempre) o `trabajo` (las del trabajo
+ * terminado, al cerrar). Por defecto `reporte`: lo que ya existía no cambia.
+ */
+export type DestinoDeLaFoto = 'reporte' | 'trabajo'
+
 export async function subirFotosDelMantenimiento(
   solicitudId: string,
   fotos: readonly File[],
-  subir: (solicitudId: string, foto: File) => Promise<unknown>,
+  subir: (solicitudId: string, foto: File, destino: DestinoDeLaFoto) => Promise<unknown>,
+  destino: DestinoDeLaFoto = 'reporte',
 ): Promise<ResultadoDeLasFotos> {
   const resultado: ResultadoDeLasFotos = { subidas: 0, fallidas: [] }
   // Una por una: el orden en que se eligieron es el orden en que se ven.
@@ -41,7 +49,7 @@ export async function subirFotosDelMantenimiento(
       continue
     }
     try {
-      await subir(solicitudId, foto)
+      await subir(solicitudId, foto, destino)
       resultado.subidas += 1
     } catch (error) {
       resultado.fallidas.push({

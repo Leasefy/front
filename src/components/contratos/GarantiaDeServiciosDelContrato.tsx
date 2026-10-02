@@ -34,6 +34,7 @@ import {
 } from '@/lib/api/ciclo-de-vida.service';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { errorDeLaFechaDelMovimiento } from '@/lib/contratos/limites-de-la-garantia';
 
 const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -525,9 +526,13 @@ function NuevoMovimiento({
           : null;
   const v = soloDigitos(valor);
   const pideSoporte = tipo === 'PAGO_DE_SERVICIO';
+  // El back rechaza un día que no existe o fuera de 2000–2100 (Nico,
+  // 02-10-2026): se dice bajo la fecha antes de mandar, con su misma frase.
+  const errorDeLaFecha = errorDeLaFechaDelMovimiento(fecha);
   const listo =
     v > 0 &&
     (tope == null || v <= tope) &&
+    !errorDeLaFecha &&
     descripcion.trim().length >= 3 &&
     (!pideSoporte || soporte != null) &&
     !enviando;
@@ -559,13 +564,22 @@ function NuevoMovimiento({
         </label>
         <label className="text-caption">
           Fecha
-          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1" />
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            className="mt-1"
+            data-testid="movimiento-fecha"
+            aria-invalid={errorDeLaFecha ? true : undefined}
+            aria-describedby="movimiento-fecha-error"
+          />
         </label>
         <label className="text-caption">
           Medio
           <Input value={medio} onChange={(e) => setMedio(e.target.value)} placeholder="transferencia" className="mt-1 w-32" />
         </label>
       </div>
+      <ErrorDelCampo id="movimiento-fecha-error" mensaje={errorDeLaFecha} className="mt-0" />
       {tope != null && (
         <p className="text-caption text-muted-foreground" data-testid="movimiento-tope">
           Máximo {PESOS.format(tope)}.

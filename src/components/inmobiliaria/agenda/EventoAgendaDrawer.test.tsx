@@ -217,6 +217,38 @@ describe('<EventoAgendaDrawer> — acciones de una visita', () => {
   });
 });
 
+/**
+ * 🔴 Nico (02-10-2026): cada llamador de `MotivoDialog` dice dónde queda SU
+ * motivo. El back guarda el de la cancelación en `cancellationReason` y el del
+ * rechazo en `rejectionReason`; el aviso a quien pidió la visita no lo lleva,
+ * así que el ejemplo ya no promete «Lo va a leer quien esperaba la visita».
+ */
+describe('<EventoAgendaDrawer> — la ayuda del motivo dice dónde queda', () => {
+  const placeholder = () =>
+    container.querySelector<HTMLTextAreaElement>('[data-testid="motivo-texto"]')!.getAttribute('placeholder');
+
+  it('cancelar: «se guarda en la visita como el motivo de la cancelación»', () => {
+    pintar(visita());
+    clic('[data-testid="cita-cancelar"]');
+    expect(placeholder()).toBe('Cuenta qué pasó y por qué se cancela la visita.');
+    escribir('El propietario pidió reprogramar');
+    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
+    expect(dialogo.textContent).toContain('Se guarda en la visita como el motivo de la cancelación.');
+    expect(dialogo.textContent).not.toContain('historial de la visita');
+  });
+
+  it('rechazar: «se guarda en la visita como el motivo del rechazo»', () => {
+    pintar(visita({ estadoRaw: 'PENDING' }));
+    clic('[data-testid="cita-rechazar"]');
+    expect(placeholder()).toBe('Cuenta por qué no se puede hacer esta visita.');
+    escribir('No hay nadie para abrir el inmueble');
+    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
+    expect(dialogo.textContent).toContain('Se guarda en la visita como el motivo del rechazo.');
+    expect(dialogo.textContent).not.toContain('motivo de la cancelación');
+    expect(placeholder()).not.toContain('Lo va a leer');
+  });
+});
+
 describe('<EventoAgendaDrawer> — qué muestra', () => {
   it('en una visita el nombre va rotulado como quien visita, no como responsable', () => {
     pintar(visita());

@@ -62,7 +62,20 @@ vi.mock('@/components/inmobiliaria', () => ({
     </button>
   ),
   ConfigExtractoMensual: () => null,
-  ConfigRenovacionAutomatica: () => null,
+  // El doble de la renovación automática: guarda un IPC y se traga el error
+  // relanzado, como la sección de verdad (que lo pinta bajo el campo).
+  ConfigRenovacionAutomatica: ({ onSave }: { onSave: (p: { ipcVigente: number }) => Promise<void> }) => (
+    <button
+      type="button"
+      onClick={() => {
+        onSave({ ipcVigente: 101 }).catch((e: unknown) => {
+          h.resultado.error = e
+        })
+      }}
+    >
+      Guardar IPC
+    </button>
+  ),
   ConfigTasaDeRecaudo: () => null,
 }))
 
@@ -97,10 +110,14 @@ afterEach(() => {
 })
 
 async function guardarCorreo() {
+  await pulsar('Guardar correo')
+}
+
+async function pulsar(texto: string) {
   await act(async () => {
     root.render(<SeccionPerfil />)
   })
-  const boton = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Guardar correo')!
+  const boton = [...host.querySelectorAll('button')].find((b) => b.textContent === texto)!
   await act(async () => {
     boton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
   })
@@ -192,5 +209,48 @@ describe('SeccionPerfil — el guardado dice lo que de verdad pasó', () => {
 
     expect(h.toastError).not.toHaveBeenCalled()
     expect(h.resultado.error).toMatchObject({ status: 400, code: 'DATOS_INVALIDOS' })
+  })
+})
+
+/**
+ * 02-10-2026 · La renovación automática pinta el 400 del IPC bajo su campo
+ * (`ConfigRenovacionAutomatica`): el padre no lo repite en un toast, pero sí
+ * avisa lo que no trae campos.
+ */
+describe('SeccionPerfil — el IPC de la renovación automática', () => {
+  const FRASE = 'El IPC vigente debe ser un número entre 0 y 100 %, con hasta dos decimales.'
+
+  it('🔴 un 400 con el campo del IPC no sale en el toast: lo pinta la sección bajo el IPC', async () => {
+    fetchFalso.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: [FRASE],
+          campos: [{ campo: 'ipcVigente', regla: 'maximo', mensaje: FRASE, valor: 101 }],
+        }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+
+    await pulsar('Guardar IPC')
+
+    expect(JSON.parse(String((fetchFalso.mock.calls[0] as [string, RequestInit])[1].body))).toEqual({ ipcVigente: 101 })
+    expect(h.toastError).not.toHaveBeenCalled()
+    expect(h.resultado.error).toMatchObject({ status: 400, code: 'DATOS_INVALIDOS' })
+  })
+
+  it('un 403 sin campos sí lo avisa el padre, por el traductor', async () => {
+    fetchFalso.mockResolvedValue(
+      new Response(
+        JSON.stringify({ statusCode: 403, code: 'SIN_PERMISO', message: 'Sólo un administrador puede cambiar esto.' }),
+        { status: 403, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+
+    await pulsar('Guardar IPC')
+
+    expect(h.toastError).toHaveBeenCalledTimes(1)
+    expect(h.resultado.error).toMatchObject({ status: 403 })
   })
 })

@@ -348,6 +348,37 @@ describe('GenerarDocumentoDialog', () => {
     )
   })
 
+  it('🔴 02-10 · una fecha de vigencia que no existe no se le pregunta al back: se dice bajo el campo y no se genera', async () => {
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    api.preparar.mockClear()
+    const campo = q<HTMLInputElement>('[data-testid="doc-campo-fechaDeVigencia"]')!
+
+    // `2026-02-31` pasaba el patrón y `new Date` lo corría al 3 de marzo.
+    await act(async () => escribir(campo, '2026-02-31'))
+    expect(api.preparar).not.toHaveBeenCalled()
+    expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(
+      'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).',
+    )
+    expect(campo.getAttribute('aria-invalid')).toBe('true')
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+
+    await act(async () => escribir(campo, '2101-01-01'))
+    expect(api.preparar).not.toHaveBeenCalled()
+    expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(
+      'La fecha de vigencia debe estar entre el año 2000 y el 2100.',
+    )
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+
+    await act(async () => escribir(campo, '2026-12-01'))
+    expect(api.preparar).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'CARTA_INCREMENTO', fechaDeVigencia: '2026-12-01' }),
+    )
+    expect(campo.getAttribute('aria-invalid')).toBe('false')
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
+  })
+
   it('🔴 al repreguntar el tope no se pierde lo que la persona ya escribió', async () => {
     await abrir()
     await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))

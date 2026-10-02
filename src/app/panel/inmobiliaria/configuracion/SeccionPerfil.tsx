@@ -91,6 +91,8 @@ export function SeccionPerfil() {
     };
   const guardar = guardarCon({ pintaLosCampos: false });
   const guardarLosDatosDeLaEmpresa = guardarCon({ pintaLosCampos: true });
+  // La renovación automática pinta el 400 del IPC bajo su campo (02-10-2026).
+  const guardarLaRenovacion = guardarCon({ pintaLosCampos: true });
 
   const faltan = agency ? datosQueFaltan(agency) : [];
 
@@ -128,7 +130,7 @@ export function SeccionPerfil() {
           <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigRenovacionAutomatica agency={agency} onSave={guardarLaRenovacion} canEdit={isAgencyAdmin} />
         </div>
       )}
     </EstadoDeDatos>

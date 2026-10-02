@@ -35,7 +35,12 @@ import {
   MotivoDialog,
   mensajeDelRechazoDelMotivo,
 } from '@/components/inmobiliaria/agenda/MotivoDialog';
-import { MAX_LARGO_MOTIVO_DE_PERDIDA, revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
+import {
+  AYUDA_DEL_MOTIVO_DE_PERDIDA,
+  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
+  MAX_LARGO_MOTIVO_DE_PERDIDA,
+  revisarMotivoDePerdida,
+} from '@/lib/pipeline/limites-del-pipeline';
 
 // ============================================================================
 // Types
@@ -588,6 +593,8 @@ export function PipelineBoard({
         descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
         etiquetaConfirmar="Marcar como perdido"
         enviando={enviandoMotivo}
+        ayuda={AYUDA_DEL_MOTIVO_DE_PERDIDA}
+        ejemplo={EJEMPLO_DEL_MOTIVO_DE_PERDIDA}
         maximo={MAX_LARGO_MOTIVO_DE_PERDIDA}
         error={errorDelMotivo}
         onCerrar={() => {

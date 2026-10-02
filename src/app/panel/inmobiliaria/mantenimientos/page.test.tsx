@@ -466,6 +466,7 @@ describe('Las fotos de una solicitud nueva', () => {
     const cuerpo = h.api.create.mock.calls[0][0] as Record<string, unknown>
     expect(cuerpo).not.toHaveProperty('photoUrls')
     expect(cuerpo).not.toHaveProperty('fotos')
+    // 🔴 02-10 · las fotos del reporte no mandan `destino` (el back toma `reporte`).
     expect(h.api.subirFoto.mock.calls).toEqual([
       ['sol-1', a],
       ['sol-1', b],

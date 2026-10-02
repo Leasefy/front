@@ -48,6 +48,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDeLaFechaDeVigencia } from '@/lib/documentos/limites-de-los-documentos';
 import {
   elSelectorSirve,
   loQueDiceUnSelector,
@@ -204,7 +206,13 @@ export function GenerarDocumentoDialog({
    */
   const escribirCampo = useCallback((nombre: string, valor: string) => {
     setValores((v) => ({ ...v, [nombre]: valor }));
-    if (nombre === 'fechaDeVigencia' && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    // 🔴 02-10-2026 · Un día que no existe (`2026-02-31`) o fuera de 2000–2100
+    // no se le pregunta al back: se dice bajo el campo con su misma frase.
+    if (
+      nombre === 'fechaDeVigencia' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(valor) &&
+      !errorDeLaFechaDeVigencia(valor)
+    ) {
       setVigenciaPedida(valor);
     }
   }, []);
@@ -309,6 +317,12 @@ export function GenerarDocumentoDialog({
 
   const faltantes = preparacion ? camposFaltantes(preparacion.campos, valores) : [];
 
+  // La fecha de vigencia que el back rechazaría (`@EsDiaDelCalendario` +
+  // `@FechaEntre`): con ella no se genera la carta.
+  const errorDeLaVigencia = preparacion?.campos.some((c) => c.nombre === 'fechaDeVigencia')
+    ? errorDeLaFechaDeVigencia(valores.fechaDeVigencia)
+    : null;
+
   /* Una propia se puede generar en cuanto hay sobre qué; si no usa variables,
      desde el momento en que se elige. */
   const sePuedeLaPropia =
@@ -317,6 +331,7 @@ export function GenerarDocumentoDialog({
   const sePuede =
     sePuedeLaPropia ||
     (!!preparacion &&
+    !errorDeLaVigencia &&
     puedeGenerar({
       plantilla,
       contractId: contractId || undefined,
@@ -698,6 +713,8 @@ export function GenerarDocumentoDialog({
                     const id = `doc-campo-${campo.nombre}`;
                     const valor = valores[campo.nombre] ?? '';
                     const vacio = campo.requerida && valor.trim() === '';
+                    const errorDelCampo =
+                      campo.nombre === 'fechaDeVigencia' ? errorDeLaVigencia : null;
                     return (
                       <div key={campo.nombre} className="space-y-1.5">
                         {/* El Combobox del DS no acepta `id`, así que para la
@@ -743,9 +760,15 @@ export function GenerarDocumentoDialog({
                                 ? 'decimal'
                                 : undefined
                             }
-                            aria-invalid={vacio}
+                            aria-invalid={vacio || !!errorDelCampo}
+                            aria-describedby={
+                              campo.nombre === 'fechaDeVigencia' ? `${id}-error` : undefined
+                            }
                             onChange={(e) => escribirCampo(campo.nombre, e.target.value)}
                           />
+                        )}
+                        {campo.nombre === 'fechaDeVigencia' && (
+                          <ErrorDelCampo id={`${id}-error`} mensaje={errorDelCampo} />
                         )}
                         {campo.ayuda && (
                           <p className="text-caption text-fg-muted">{campo.ayuda}</p>

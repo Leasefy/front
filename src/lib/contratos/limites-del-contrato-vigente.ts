@@ -41,7 +41,8 @@ export const MENSAJES_DEL_CONTRATO_VIGENTE = {
   administracionMaxima: `El valor de la administración no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   administracionEntera: 'El valor de la administración debe ser un número entero de pesos, sin decimales.',
   canonNuevoMaximo: `El canon nuevo no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
-  canonNuevoEntero: 'El canon nuevo debe ser un número entero de pesos, sin decimales.',
+  // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
+  canonNuevoEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   penalidadMaxima: `La penalidad no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   penalidadParaLaInmobiliariaMaxima: `La parte de la inmobiliaria no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   valorDeLaReglaMaximo: `El valor de la regla no puede pasar de 99.999.999. ${SIN_CEROS_DE_MAS}`,

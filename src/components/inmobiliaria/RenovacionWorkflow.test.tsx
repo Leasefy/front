@@ -560,6 +560,46 @@ describe('los errores, en su campo (02-10-2026)', () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  it('🔴 un IPC de más de 100 % se dice bajo el IPC ANTES de mandar, y ni enviar ni guardar mandan', async () => {
+    const onSendNotification = vi.fn().mockResolvedValue(undefined);
+    const onSaveDraft = vi.fn().mockResolvedValue(undefined);
+    await montar({ onSendNotification, onSaveDraft });
+    // «5,20» escrito sin la coma.
+    await escribir(porTestId<HTMLInputElement>('renovacion-ipc'), '520');
+    await unTick();
+
+    expect(errorDe('renovacion-ipc')).toBe(M.ipcMaximo);
+    expect(porTestId('renovacion-ipc')?.getAttribute('aria-invalid')).toBe('true');
+    expect(porTestId<HTMLButtonElement>('renovacion-enviar')?.disabled).toBe(true);
+    expect(porTestId<HTMLButtonElement>('renovacion-guardar')?.disabled).toBe(true);
+    await clic(porTestId('renovacion-enviar'));
+    await clic(porTestId('renovacion-guardar'));
+    expect(onSendNotification).not.toHaveBeenCalled();
+    expect(onSaveDraft).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+
+    // El tope justo cabe y el error se va.
+    await escribir(porTestId<HTMLInputElement>('renovacion-ipc'), '100');
+    await unTick();
+    expect(errorDe('renovacion-ipc')).toBe('');
+    expect(porTestId<HTMLButtonElement>('renovacion-enviar')?.disabled).toBe(false);
+  });
+
+  it('🔴 un 400 del back sobre ipcRate cae bajo el IPC, sin aviso ni toast', async () => {
+    const onSendNotification = vi
+      .fn()
+      .mockRejectedValue(cuatrocientos([{ campo: 'ipcRate', mensaje: M.ipcMaximo }]));
+    await montar({ onSendNotification });
+    await escribir(porTestId<HTMLInputElement>('renovacion-ipc'), '5.1');
+    await clic(porTestId('renovacion-enviar'));
+    await unTick();
+
+    expect(onSendNotification).toHaveBeenCalled();
+    expect(errorDe('renovacion-ipc')).toBe(M.ipcMaximo);
+    expect(porTestId('renovacion-aviso')).toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it('la administración con ceros de más también, bajo la administración', async () => {
     await montar();
     await escribir(porTestId<HTMLInputElement>('renovacion-admin'), '30000000000');

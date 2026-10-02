@@ -27,7 +27,8 @@ export const MAX_LARGO_TITULO_DE_CLAUSULA = 100
 export const MAX_LARGO_TEXTO_DE_CLAUSULA = 2000
 
 export const MENSAJES_DEL_CONTRATO = {
-  canonEntero: 'El canon debe ser un número entero de pesos, sin decimales.',
+  // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
+  canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMinimo: 'El canon no puede ser menor que $100.000.',
   canonMaximo: 'El canon no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
   depositoEntero: 'El depósito debe ser un número entero de pesos, sin decimales.',

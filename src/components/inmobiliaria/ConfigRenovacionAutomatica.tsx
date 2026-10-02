@@ -6,13 +6,20 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Switch } from '@/components/ui/switch';
+import { toast } from '@/components/ui/toast';
 import { renovacionAutomaticaApi } from '@/lib/api/renovacion-automatica.service';
+import {
+  IPC_MAXIMO,
+  IPC_MINIMO,
+  MENSAJES_DEL_IPC,
+  loQueElBackDijoDelIpc,
+} from '@/lib/configuracion/limites-del-ipc';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { ConfigIpcPorAnio } from './ConfigIpcPorAnio';
 
-/** El mismo `@Min(0) @Max(30)` del DTO del back. */
-export const MIN_IPC = 0;
-export const MAX_IPC = 30;
+/** El mismo `@Min(0) @Max(100)` del DTO del back (`limites-del-ipc.ts`). */
+export const MIN_IPC = IPC_MINIMO;
+export const MAX_IPC = IPC_MAXIMO;
 
 /**
  * El IPC como lo escribe una persona en Colombia: «5,2» o «5.2». Devuelve
@@ -42,8 +49,9 @@ interface Props {
   agency: AgencyProfile;
   /**
    * Guarda SÓLO los campos cambiados por PUT /inmobiliaria/agency — el mismo
-   * handler del perfil (avisa con toast y refresca la agencia). Debe rechazar
-   * si falla, para que el interruptor vuelva a como estaba.
+   * handler del perfil (refresca la agencia). Debe rechazar si falla, para que
+   * el interruptor vuelva a como estaba. Un 400 con `campos` lo pinta esta
+   * sección (el IPC bajo su campo); lo demás lo avisa el padre.
    */
   onSave?: (payload: UpdateAgencyPayload) => Promise<void> | void;
   /** Sólo el ADMIN de la agencia: el back rechaza el PUT a los demás. */
@@ -88,8 +96,13 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
       try {
         await onSave?.(payload);
         return true;
-      } catch {
-        // El padre ya avisó con el mensaje del back (p. ej. 403).
+      } catch (error) {
+        // Un 400 con campos: el IPC va BAJO su campo, con la frase del back;
+        // lo que esta sección no muestra, a un toast. Sin campos (403, 5xx,
+        // la red) el padre ya avisó.
+        const { delCampo, sueltos } = loQueElBackDijoDelIpc(error, 'ipcVigente');
+        if (delCampo) setErrorDeIpc(delCampo);
+        if (sueltos.length > 0) toast.error(sueltos.join(' · '));
         return false;
       } finally {
         setGuardando(false);
@@ -107,7 +120,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
   const confirmarIpc = async () => {
     const valor = leerIpc(ipcTexto);
     if (valor === undefined) {
-      setErrorDeIpc(`Un porcentaje entre ${MIN_IPC} y ${MAX_IPC}, con hasta dos decimales.`);
+      setErrorDeIpc(MENSAJES_DEL_IPC.ipcVigente);
       setIpcTexto(escribirIpc(ipcGuardado));
       return;
     }

@@ -46,11 +46,6 @@ export const MENSAJES_DEL_MANTENIMIENTO = {
  */
 export const TIPOS_DE_FOTO_DEL_MANTENIMIENTO = ['image/jpeg', 'image/png', 'image/webp'] as const
 export const MAX_BYTES_DE_UNA_FOTO_DEL_MANTENIMIENTO = 5 * 1024 * 1024
-/**
- * Cuántas se eligen en el formulario de crear. Es del formulario, no del back
- * (que acepta hasta `MAX_FOTOS_DEL_MANTENIMIENTO` por solicitud).
- */
-export const MAX_FOTOS_AL_CREAR = 5
 
 /** `null` si la foto se puede subir; si no, la frase del back. */
 export function errorDeLaFoto(foto: { type: string; size: number }): string | null {
@@ -59,6 +54,30 @@ export function errorDeLaFoto(foto: { type: string; size: number }): string | nu
   }
   if (foto.size > MAX_BYTES_DE_UNA_FOTO_DEL_MANTENIMIENTO) return MENSAJES_DEL_MANTENIMIENTO.fotoPesada
   return null
+}
+
+/**
+ * De las fotos que la persona acaba de elegir, las que entran (02-10-2026).
+ *
+ * Nico: el formulario acepta hasta 30 fotos, el tope del back
+ * (`MAX_FOTOS_DEL_MANTENIMIENTO`). Antes el de crear cortaba en 5 por su
+ * cuenta. Las que no sirven (tipo o peso) o pasan el tope no entran, y cada una
+ * dice por qué con la frase del back; las que sí sirven entran igual.
+ */
+export function fotosQueEntran(
+  yaElegidas: number,
+  elegidas: readonly File[],
+): { entran: File[]; problemas: string[] } {
+  const problemas: string[] = []
+  const sirven: File[] = []
+  for (const foto of elegidas) {
+    const error = errorDeLaFoto(foto)
+    if (error) problemas.push(`«${foto.name}»: ${error}`)
+    else sirven.push(foto)
+  }
+  const cupo = Math.max(0, MAX_FOTOS_DEL_MANTENIMIENTO - yaElegidas)
+  if (sirven.length > cupo) problemas.push(MENSAJES_DEL_MANTENIMIENTO.fotosMaximas)
+  return { entran: sirven.slice(0, cupo), problemas }
 }
 
 /** `null` si la vigencia sirve (o está vacía); si no, la frase del back. */

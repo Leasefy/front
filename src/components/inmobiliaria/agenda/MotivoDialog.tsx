@@ -29,6 +29,16 @@
  *
  * Antes el campo tenía `maxLength`: pegar un texto largo lo cortaba en
  * silencio, y quien llamaba repetía el tope en un toast que nadie veía llegar.
+ *
+ * ── Cada llamador dice dónde queda su motivo (Nico, 02-10-2026) ────────────
+ *
+ * La ayuda decía siempre «…queda en el historial de la visita», también al
+ * marcar perdido a un candidato del embudo, donde no hay visita. Y el ejemplo
+ * del campo prometía «Lo va a leer quien esperaba la visita», pero el aviso
+ * que le llega (`VISIT_CANCELLED`/`VISIT_REJECTED`) no lleva el motivo. Ahora
+ * `ayuda` y `ejemplo` son obligatorias: quien llama dice a dónde va el motivo
+ * de verdad (la visita cancelada → `cancellationReason`; la rechazada →
+ * `rejectionReason`; el lead perdido → `lostReason`, «Razón de pérdida»).
  */
 
 import { useEffect, useState } from 'react';
@@ -99,6 +109,13 @@ interface Props {
   /** Qué dice el botón que confirma («Cancelar la visita», «Rechazarla»). */
   etiquetaConfirmar: string;
   enviando?: boolean;
+  /**
+   * La ayuda bajo el campo cuando el motivo ya sirve: DÓNDE queda guardado,
+   * según quien llama (verificado en el back, nunca supuesto).
+   */
+  ayuda: string;
+  /** El ejemplo dentro del campo vacío, propio de quien llama. */
+  ejemplo: string;
   /** El tope del campo en el back. Por defecto, 500. */
   maximo?: number;
   /**
@@ -119,6 +136,8 @@ export function MotivoDialog({
   descripcion,
   etiquetaConfirmar,
   enviando = false,
+  ayuda,
+  ejemplo,
   maximo = MAX_LARGO_DEL_MOTIVO,
   error = null,
   onCerrar,
@@ -172,7 +191,7 @@ export function MotivoDialog({
             }}
             rows={3}
             disabled={enviando}
-            placeholder="Cuenta qué pasó. Lo va a leer quien esperaba la visita."
+            placeholder={ejemplo}
             aria-invalid={mensaje ? true : undefined}
             aria-describedby={mensaje ? ID_DEL_ERROR : undefined}
             data-testid="motivo-texto"
@@ -185,7 +204,7 @@ export function MotivoDialog({
             className="mt-0"
             pista={
               sirve
-                ? 'Se guarda con la cancelación y queda en el historial de la visita.'
+                ? ayuda
                 : `Escribe ${falta} ${falta === 1 ? 'carácter' : 'caracteres'} más.`
             }
           />

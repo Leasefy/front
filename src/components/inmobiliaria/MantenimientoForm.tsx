@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench,
   Lightning,
@@ -11,8 +11,6 @@ import {
   Key,
   DotsThreeCircle,
   Warning,
-  Camera,
-  X,
   Upload,
   Check,
   User,
@@ -23,16 +21,15 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Textarea } from '@/components/ui';
-import { IconButton, RadioCardGroup, RadioCard, motionDuration, motionEase } from '@leasefy/cadence';
+import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
-  MAX_FOTOS_AL_CREAR,
   MAX_LARGO_TITULO_DEL_MANTENIMIENTO,
   MENSAJES_DEL_MANTENIMIENTO,
-  TIPOS_DE_FOTO_DEL_MANTENIMIENTO,
-  errorDeLaFoto,
+  fotosQueEntran,
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
+import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
 import type {
   Consignacion,
   MantenimientoType,
@@ -442,132 +439,6 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
 }
 
 // ============================================================================
-// Photo Upload Component
-// ============================================================================
-
-interface PhotoUploadProps {
-  fotos: readonly File[];
-  onAgregar: (fotos: File[]) => void;
-  onQuitar: (index: number) => void;
-  /** El error de las fotos, para marcar el control (el texto va debajo). */
-  conError?: boolean;
-  t: (key: string, params?: Record<string, string | number>) => string;
-}
-
-/**
- * La vista previa de cada foto elegida. Es SÓLO para verla acá: la URL local
- * (`blob:`) nunca sale del navegador, y se libera al quitar la foto o al
- * cerrar el formulario.
- */
-function useVistasPrevias(fotos: readonly File[]): string[] {
-  const [urls, setUrls] = useState<string[]>([]);
-  useEffect(() => {
-    const creadas = fotos.map((f) => URL.createObjectURL(f));
-    setUrls(creadas);
-    return () => creadas.forEach((u) => URL.revokeObjectURL(u));
-  }, [fotos]);
-  return urls;
-}
-
-/** Una llave estable por archivo, para que la salida anime la foto correcta. */
-const LLAVES_DE_LAS_FOTOS = new WeakMap<File, string>();
-let fotosVistas = 0;
-function llaveDeLaFoto(foto: File): string {
-  let llave = LLAVES_DE_LAS_FOTOS.get(foto);
-  if (!llave) {
-    fotosVistas += 1;
-    llave = `foto-${fotosVistas}`;
-    LLAVES_DE_LAS_FOTOS.set(foto, llave);
-  }
-  return llave;
-}
-
-function PhotoUpload({ fotos, onAgregar, onQuitar, conError, t }: PhotoUploadProps) {
-  const vistas = useVistasPrevias(fotos);
-  const reducido = useReducedMotion();
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const elegidas = Array.from(e.target.files ?? []);
-    if (elegidas.length > 0) onAgregar(elegidas);
-    e.target.value = '';
-  };
-
-  // Entran con un leve crecimiento y salen acelerando; con movimiento
-  // reducido, sólo el fundido.
-  const entrada = reducido ? { opacity: 0 } : { opacity: 0, scale: 0.94 };
-  const salida = reducido
-    ? { opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.standard } }
-    : { opacity: 0, scale: 0.94, transition: { duration: motionDuration.fast, ease: motionEase.exit } };
-
-  return (
-    <div className="space-y-2">
-      <label
-        htmlFor="mantenimiento-fotos"
-        className="block text-sm font-medium text-fg dark:text-fg-subtle"
-      >
-        {t('inmobiliaria.mantenimiento.photosOptional')}
-      </label>
-      <p className="text-xs text-fg-muted dark:text-fg-subtle">
-        {t('inmobiliaria.mantenimiento.photosHint')}
-      </p>
-
-      <div className="flex flex-wrap gap-3 mt-3">
-        <AnimatePresence initial={false}>
-          {fotos.map((foto, index) => (
-            <motion.div
-              key={llaveDeLaFoto(foto)}
-              layout={!reducido}
-              initial={entrada}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={salida}
-              transition={{
-                duration: motionDuration.base,
-                ease: reducido ? motionEase.standard : motionEase.enter,
-              }}
-              className="relative w-24 h-24 rounded-xl overflow-hidden group"
-              data-testid="mantenimiento-foto"
-            >
-              {vistas[index] ? (
-                <img src={vistas[index]} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-              ) : null}
-              <IconButton
-                type="button"
-                variant="ghost"
-                size="sm"
-                icon={<X className="w-4 h-4" />}
-                onClick={() => onQuitar(index)}
-                aria-label={`Quitar la foto ${index + 1}`}
-                className="absolute top-1 right-1 bg-danger text-white hover:bg-danger/90 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Add photo button */}
-        {fotos.length < MAX_FOTOS_AL_CREAR && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-all">
-            <Camera className="w-6 h-6 text-fg-subtle" />
-            <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
-            {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}
-            <input
-              id="mantenimiento-fotos"
-              type="file"
-              multiple
-              accept={TIPOS_DE_FOTO_DEL_MANTENIMIENTO.join(',')}
-              onChange={handleFileChange}
-              className="hidden"
-              aria-invalid={conError || undefined}
-              aria-describedby={conError ? 'mantenimiento-photoUrls-error' : undefined}
-              data-testid="mantenimiento-foto-input"
-            />
-          </label>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Paid By Selector Component
 // ============================================================================
 
@@ -681,22 +552,11 @@ export function MantenimientoForm({
 
   /**
    * Las fotos elegidas se revisan ANTES de mandar nada, con las reglas del
-   * back (tipo y peso) y el tope del formulario: la que no sirve no entra y el
+   * back (tipo, peso y el tope de 30 por solicitud): la que no sirve no entra y el
    * motivo sale bajo las fotos. Las que sí sirven entran igual.
    */
   const agregarFotos = (elegidas: File[]) => {
-    const problemas: string[] = [];
-    const sirven: File[] = [];
-    for (const foto of elegidas) {
-      const error = errorDeLaFoto(foto);
-      if (error) problemas.push(`«${foto.name}»: ${error}`);
-      else sirven.push(foto);
-    }
-    const cupo = Math.max(0, MAX_FOTOS_AL_CREAR - formData.fotos.length);
-    if (sirven.length > cupo) {
-      problemas.push(`Puedes agregar hasta ${MAX_FOTOS_AL_CREAR} fotos al crear la solicitud.`);
-    }
-    const entran = sirven.slice(0, cupo);
+    const { entran, problemas } = fotosQueEntran(formData.fotos.length, elegidas);
     if (entran.length > 0) {
       setFormData((prev) => ({ ...prev, fotos: [...prev.fotos, ...entran] }));
     }
@@ -898,7 +758,12 @@ export function MantenimientoForm({
 
         {/* Photo Upload */}
         <div data-campo="photoUrls">
-        <PhotoUpload
+        <SelectorDeFotosDelMantenimiento
+          id="mantenimiento-fotos"
+          etiqueta={t('inmobiliaria.mantenimiento.photosOptional')}
+          pista={t('inmobiliaria.mantenimiento.photosHint')}
+          textoAgregar={t('inmobiliaria.mantenimiento.addPhoto')}
+          idDelError="mantenimiento-photoUrls-error"
           fotos={formData.fotos}
           onAgregar={agregarFotos}
           onQuitar={(index) => {
@@ -909,7 +774,6 @@ export function MantenimientoForm({
             limpiarErrorDeLasFotos();
           }}
           conError={Boolean(errors.photoUrls)}
-          t={t}
         />
         <ErrorDelCampo id="mantenimiento-photoUrls-error" mensaje={errors.photoUrls} />
         </div>

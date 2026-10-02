@@ -15,6 +15,13 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 /** El tope de la columna `int4`, en una cifra que se lee. */
 export const VALOR_MAXIMO_DE_LA_RENOVACION_COP = 2_000_000_000
 
+/**
+ * El IPC que se escribe en la propuesta (`ipcRate`, 02-10-2026): el back lo
+ * topa en 100 % (decisión de Nico). Antes no tenía techo y la renovación
+ * automática lo usa para subir el canon.
+ */
+export const IPC_MAXIMO_DE_LA_RENOVACION = 100
+
 export const MENSAJES_DE_LA_RENOVACION = {
   canonPropuestoEntero: 'El canon propuesto debe ser un número entero de pesos, sin decimales.',
   canonPropuestoNegativo: 'El canon propuesto no puede ser negativo.',
@@ -26,7 +33,23 @@ export const MENSAJES_DE_LA_RENOVACION = {
   administracionNegativa: 'La administración negociada no puede ser negativa.',
   administracionMaxima: 'La administración negociada no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
   notaVacia: 'Escribe la nota antes de agregarla.',
+  ipcNumero: 'El IPC debe ser un número, por ejemplo 5,2.',
+  ipcNegativo: 'El IPC no puede ser negativo.',
+  ipcMaximo: 'El IPC no puede pasar de 100 %. Revisa que no sobre una cifra.',
 } as const
+
+/**
+ * El IPC de la propuesta revisado como lo revisa el back
+ * (`UpdateRenovacionStageDto.ipcRate`): la frase si no cabe, `undefined` si
+ * cabe o si está vacío (vacío = no se manda).
+ */
+export function errorDelIpcDeLaRenovacion(ipc: number | null | undefined): string | undefined {
+  if (ipc === null || ipc === undefined) return undefined
+  if (!Number.isFinite(ipc)) return MENSAJES_DE_LA_RENOVACION.ipcNumero
+  if (ipc < 0) return MENSAJES_DE_LA_RENOVACION.ipcNegativo
+  if (ipc > IPC_MAXIMO_DE_LA_RENOVACION) return MENSAJES_DE_LA_RENOVACION.ipcMaximo
+  return undefined
+}
 
 export interface ValoresDeLaRenovacion {
   proposedRent?: number | null

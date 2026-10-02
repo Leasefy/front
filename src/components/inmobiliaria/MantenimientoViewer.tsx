@@ -69,6 +69,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
 import { CotizacionComparator } from './CotizacionComparator';
+import { CompletarSolicitudDialog } from './mantenimiento/CompletarSolicitudDialog';
 
 // ============================================================================
 // Types
@@ -89,6 +90,13 @@ export interface MantenimientoViewerProps {
    * handler para las dos puertas, así no se pueden separar.
    */
   onRequestQuote?: (solicitudId: string) => void;
+  /**
+   * La solicitud quedó completada desde el diálogo de cierre, que sube las
+   * fotos del trabajo (Nico, 02-10-2026: «Subir fotos del trabajo»). Con este
+   * callback, «Marcar como completada» abre ese diálogo; sin él, el de siempre
+   * (`onStatusChange(id, 'completed')`, sin fotos).
+   */
+  onCompletada?: (solicitud: SolicitudMantenimiento) => void | Promise<void>;
 }
 
 interface TimelineEvent {
@@ -412,6 +420,7 @@ export function MantenimientoViewer({
   onAddNote,
   onUploadPhoto,
   onRequestQuote,
+  onCompletada,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
@@ -879,6 +888,18 @@ export function MantenimientoViewer({
           el botón principal cobalto (nada de verde a mano). Sin campo de notas
           de cierre: `onStatusChange(id, 'completed')` no las lleva a ningún
           lado y se perdían al confirmar (Nico, 02-10). */}
+      {onCompletada ? (
+        <CompletarSolicitudDialog
+          abierto={showCompleteDialog}
+          solicitudId={solicitud.id}
+          onCerrar={() => setShowCompleteDialog(false)}
+          onCompletada={async (completada) => {
+            setShowCompleteDialog(false);
+            await onCompletada(completada);
+          }}
+          t={t}
+        />
+      ) : (
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
         <DialogContent variant="confirm" icon={<CheckCircle weight="bold" />}>
           <DialogHeader>
@@ -904,6 +925,7 @@ export function MantenimientoViewer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </>
   );
 }

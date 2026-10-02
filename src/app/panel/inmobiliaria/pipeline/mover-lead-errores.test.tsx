@@ -179,6 +179,19 @@ describe('Pipeline — mover un lead que el back rechaza', () => {
 });
 
 describe('Pipeline — «Perdido» con motivo que el back rechaza', () => {
+  it('🔴 02-10 · el motivo del tablero viaja como `lostReason` (lo que promete la ayuda del diálogo)', async () => {
+    mover.mockResolvedValue(undefined);
+    await act(async () => {
+      root.render(<PipelinePage />);
+    });
+    await act(async () => {
+      contenedor.querySelector<HTMLButtonElement>('[data-testid="perder"]')!.click();
+    });
+    // `pipelineApi.moveStage(id, etapa, lostReason)`: el tercer argumento es el
+    // que el back guarda en `lostReason` y el cajón muestra en «Razón de pérdida».
+    expect(mover).toHaveBeenCalledWith('l-1', 'lost', 'm'.repeat(501));
+  });
+
   it('🔴 no sale toast: el porqué lo dice el diálogo bajo el campo; la promesa se rechaza con el error', async () => {
     const frase = 'El motivo puede tener hasta 500 caracteres.';
     const error = new ApiError(400, [frase], 'DATOS_INVALIDOS', {

@@ -17,11 +17,19 @@ describe('subirFotosDelMantenimiento', () => {
     const a = foto('a.jpg')
     const b = foto('b.png', 'image/png')
     const r = await subirFotosDelMantenimiento('sol-1', [a, b], subir)
+    // Sin destino, el de siempre: las fotos del reporte.
     expect(subir.mock.calls).toEqual([
-      ['sol-1', a],
-      ['sol-1', b],
+      ['sol-1', a, 'reporte'],
+      ['sol-1', b, 'reporte'],
     ])
     expect(r).toEqual({ subidas: 2, fallidas: [] })
+  })
+
+  it('🔴 02-10 · con `trabajo`, cada foto sube con ese destino (las fotos del trabajo terminado)', async () => {
+    const subir = vi.fn().mockResolvedValue({ ruta: 'x', completionPhotoUrls: [] })
+    const a = foto('a.jpg')
+    await subirFotosDelMantenimiento('sol-1', [a], subir, 'trabajo')
+    expect(subir.mock.calls).toEqual([['sol-1', a, 'trabajo']])
   })
 
   it('🔴 una foto que falla no tumba las demás ni rechaza la promesa', async () => {

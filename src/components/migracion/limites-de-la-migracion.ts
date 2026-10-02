@@ -33,7 +33,8 @@ export const FECHA_DEL_CONTRATO_DESDE = '1900-01-01';
 export const FECHA_DEL_CONTRATO_HASTA = '2100-12-31';
 
 export const MENSAJES_DE_LA_MIGRACION = {
-  canonEntero: 'El canon debe ser un número entero de pesos, sin decimales.',
+  // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
+  canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMinimo: 'El canon tiene que ser mayor que cero.',
   canonMaximoAlCorregir:
     'El canon no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.',

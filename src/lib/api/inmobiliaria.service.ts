@@ -1617,6 +1617,19 @@ export const dispersionesApi = {
 // Mantenimiento
 // ============================================================================
 
+/** A dónde va una foto de mantenimiento (`POST :id/fotos`, campo `destino`). */
+export type DestinoDeLaFotoDelMantenimiento = 'reporte' | 'trabajo';
+
+/**
+ * `reporte` → `{ ruta, photoUrls }`; `trabajo` → `{ ruta, completionPhotoUrls }`
+ * (todas firmadas).
+ */
+export interface RespuestaDeLaFotoDelMantenimiento {
+  ruta: string;
+  photoUrls?: string[];
+  completionPhotoUrls?: string[];
+}
+
 export const mantenimientoApi = {
   async getAll(params?: { status?: string; consignacionId?: string }): Promise<SolicitudMantenimiento[]> {
     const query = new URLSearchParams();
@@ -1679,6 +1692,24 @@ export const mantenimientoApi = {
   },
 
   /**
+   * PUT /inmobiliaria/mantenimiento/:id/complete — cerrar la solicitud con las
+   * fotos del trabajo (`CompleteMantenimientoDto`: `completionPhotoUrls`, hasta
+   * 30, nunca un `blob:`). Las fotos se suben ANTES, una por una, con
+   * `subirFoto` (`destino: 'trabajo'`); acá viajan sus rutas, y la lista
+   * REEMPLAZA a la de la fila (las mismas rutas no se duplican; `[]` la
+   * vacía). `changeStatus(id, 'completed')` cierra sin tocar las fotos que ya
+   * estaban.
+   */
+  async completar(
+    id: string,
+    cierre: { completionNotes?: string; completionPhotoUrls?: string[] } = {},
+  ): Promise<SolicitudMantenimiento> {
+    return mantenimientoDelBack(
+      await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${encodeURIComponent(id)}/complete`, cierre),
+    );
+  },
+
+  /**
    * POST /inmobiliaria/mantenimiento/:id/fotos — UNA foto de la solicitud
    * (multipart `file`). Devuelve todas sus fotos ya firmadas.
    *
@@ -1689,11 +1720,22 @@ export const mantenimientoApi = {
    *
    * El rechazo sale con el sobre de error entero (`code`, `campos`), para que
    * el traductor diga qué pasó: «conexión» sólo si no hubo respuesta.
+   *
+   * `destino` (Nico, 02-10-2026): `reporte` —el de siempre, la foto va a
+   * `photoUrls`— o `trabajo` —las fotos del trabajo terminado, DIRECTO a
+   * `completionPhotoUrls`, con su propio tope de 30, sin tocar las del
+   * reporte—. Para el reporte no se manda el campo: el back toma `reporte` sin
+   * él, y así un back anterior al cambio sigue recibiendo lo mismo de siempre.
    */
-  async subirFoto(id: string, foto: File): Promise<{ ruta: string; photoUrls: string[] }> {
+  async subirFoto(
+    id: string,
+    foto: File,
+    destino: DestinoDeLaFotoDelMantenimiento = 'reporte',
+  ): Promise<RespuestaDeLaFotoDelMantenimiento> {
     const token = getAccessToken();
     const formData = new FormData();
     formData.append('file', foto, foto.name || 'foto.jpg');
+    if (destino !== 'reporte') formData.append('destino', destino);
     let res: Response;
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos`, {
@@ -1720,7 +1762,7 @@ export const mantenimientoApi = {
         cuerpo,
       );
     }
-    return res.json() as Promise<{ ruta: string; photoUrls: string[] }>;
+    return res.json() as Promise<RespuestaDeLaFotoDelMantenimiento>;
   },
 
   /**

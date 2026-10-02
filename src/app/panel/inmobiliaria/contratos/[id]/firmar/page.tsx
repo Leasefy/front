@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info, FileText } from '@phosphor-icons/react';
+import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info, FileText, HourglassMedium } from '@phosphor-icons/react';
+import { Appear } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
@@ -27,6 +28,38 @@ import { EmptyState } from '@/components/ui/empty-state';
  */
 const CODIGO_INQUILINO_NO_HA_FIRMADO = 'INQUILINO_NO_HA_FIRMADO';
 
+/**
+ * 🔴 Nico (02-10-2026): si el inquilino todavía no firmó, el botón de firmar
+ * como arrendador sale APAGADO y la pantalla lo explica ANTES de intentar, no
+ * después del 400. El botón apagado lleva su motivo a la vista (no en un
+ * `title`): un botón muerto sin explicación es una trampa.
+ */
+function InquilinoSinFirmar() {
+  return (
+    <Appear className="space-y-3" data-testid="firma-bloqueada">
+      <AlertaAccionable
+        id="firma-bloqueada-motivo"
+        severidad="info"
+        titulo="El inquilino todavía no ha firmado"
+        icon={<HourglassMedium className="h-5 w-5" weight="duotone" />}
+      >
+        Primero firma el inquilino y después tú, como arrendador: tu firma es la que cierra el
+        contrato. Cuando él firme, podrás firmar desde acá.
+      </AlertaAccionable>
+      <Button
+        disabled
+        aria-describedby="firma-bloqueada-motivo"
+        hideArrow
+        className="w-full gap-2"
+        data-testid="firmar-como-arrendador-apagado"
+      >
+        <FileText className="h-4 w-4" />
+        Firmar como arrendador
+      </Button>
+    </Appear>
+  );
+}
+
 // ─── Content ─────────────────────────────────────────────────────────────────
 
 function FirmarContratoContent() {
@@ -47,6 +80,13 @@ function FirmarContratoContent() {
 
   const [isSigning, setIsSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  /**
+   * El back respondió 400 `INQUILINO_NO_HA_FIRMADO` aunque el contrato que
+   * teníamos decía otra cosa (lo cargamos antes de un cambio): la pantalla
+   * pasa a decir lo mismo que diría de entrada.
+   */
+  const [elBackDijoQueFalta, setElBackDijoQueFalta] = useState(false);
+  const inquilinoYaFirmo = hasTenantSignature && !elBackDijoQueFalta;
 
   const handleSign = async ({ signatureData, otpVerificationToken }: { otpVerified: boolean; signatureData: string; otpVerificationToken?: string }) => {
     if (!contract) return;
@@ -77,7 +117,9 @@ function FirmarContratoContent() {
         accion: 'firmar el contrato',
       });
       if (leerFallo(err).code === CODIGO_INQUILINO_NO_HA_FIRMADO) {
-        toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
+        // Lo mismo que se ve de entrada: el aviso en la pantalla y el botón
+        // apagado, no un toast que se va.
+        setElBackDijoQueFalta(true);
       } else if (isPermissionError(err)) {
         toast.error('No tienes permisos para esta acción.');
       } else {
@@ -144,7 +186,12 @@ function FirmarContratoContent() {
     );
   }
 
-  if (contract.status !== 'pending_landlord') {
+  // `pending_tenant` también es «el inquilino todavía no ha firmado»: se ve el
+  // documento y el botón apagado con su motivo, no «no está pendiente».
+  const esperaAlInquilino =
+    contract.status === 'pending_tenant' || (contract.status === 'pending_landlord' && !inquilinoYaFirmo);
+
+  if (contract.status !== 'pending_landlord' && !esperaAlInquilino) {
     return (
       <div className="max-w-2xl mx-auto p-8 space-y-4">
         {/* El estado va traducido: antes salía el enum crudo del back
@@ -156,7 +203,6 @@ function FirmarContratoContent() {
           data-testid="firmar-no-pendiente"
         >
           Está en <strong>{CONTRACT_STATUS_LABELS[contract.status] ?? contract.status}</strong>.
-          {contract.status === 'pending_tenant' && ' Cuando el inquilino firme, te avisamos y vuelves acá.'}
           {contract.status === 'signed' && ' Ya firmaron las dos partes.'}
         </AlertaAccionable>
       </div>
@@ -215,7 +261,9 @@ function FirmarContratoContent() {
         {/* La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
             antes), así que firmar acá no «envía» nada: cierra el contrato. */}
         <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
-          El inquilino ya firmó. Revisa el documento y firma para cerrar el contrato.
+          {esperaAlInquilino
+            ? 'Puedes revisar el documento mientras el inquilino firma.'
+            : 'El inquilino ya firmó. Revisa el documento y firma para cerrar el contrato.'}
         </p>
       </div>
 
@@ -225,7 +273,7 @@ function FirmarContratoContent() {
           <h3 className="text-base font-semibold text-foreground">Documento a firmar</h3>
         </div>
         <div className="p-5 space-y-3">
-          {hasTenantSignature && (
+          {inquilinoYaFirmo && (
             <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
               <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
               <p className="text-xs text-warning">
@@ -277,18 +325,22 @@ function FirmarContratoContent() {
       </section>
 
       {/* Signature form */}
-      <SignatureForm
-        onSign={handleSign}
-        contractId={contract.id}
-        isLandlord
-        isLoading={isSigning}
-        signerName={contract.landlordName}
-        // T-0109 contract.md §3.1.A3/§7 — SIGNING_OTP_LANDLORD_REQUIRED
-        // default true en el back; el deploy debe ir front primero (este
-        // cambio) para que el back nunca reciba una firma de arrendador sin
-        // `otpVerificationToken` mientras hace el corte.
-        requireOTP={true}
-      />
+      {esperaAlInquilino ? (
+        <InquilinoSinFirmar />
+      ) : (
+        <SignatureForm
+          onSign={handleSign}
+          contractId={contract.id}
+          isLandlord
+          isLoading={isSigning}
+          signerName={contract.landlordName}
+          // T-0109 contract.md §3.1.A3/§7 — SIGNING_OTP_LANDLORD_REQUIRED
+          // default true en el back; el deploy debe ir front primero (este
+          // cambio) para que el back nunca reciba una firma de arrendador sin
+          // `otpVerificationToken` mientras hace el corte.
+          requireOTP={true}
+        />
+      )}
     </div>
   );
 }

@@ -61,7 +61,7 @@ vi.mock('@leasefy/cadence', async (importOriginal) => {
 })
 
 import { MantenimientoForm, type MantenimientoFormData } from './MantenimientoForm'
-import { MENSAJES_DEL_MANTENIMIENTO, MAX_FOTOS_AL_CREAR } from '@/lib/mantenimiento/limites-del-mantenimiento'
+import { MENSAJES_DEL_MANTENIMIENTO, MAX_FOTOS_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento'
 
 const CONSIGNACION = {
   id: 'cons-1',
@@ -191,15 +191,26 @@ describe('MantenimientoForm — las fotos', () => {
     expect($('#mantenimiento-photoUrls-error')?.textContent ?? '').toBe('')
   })
 
-  it(`no pasa de ${MAX_FOTOS_AL_CREAR} fotos, y lo dice`, async () => {
+  // 🔴 Nico (02-10-2026): el formulario acepta hasta 30 fotos, el tope del back.
+  // Antes cortaba en 5 por su cuenta, con una frase que el back no dice.
+  it('el tope es el del back: 30 fotos, ni una menos', () => {
+    expect(MAX_FOTOS_DEL_MANTENIMIENTO).toBe(30)
+  })
+
+  it(`acepta ${MAX_FOTOS_DEL_MANTENIMIENTO} fotos, no pasa de ahí, y lo dice con la frase del back`, async () => {
     montar()
-    await elegir(...Array.from({ length: MAX_FOTOS_AL_CREAR + 1 }, (_, i) => foto(`f${i}.jpg`)))
-    expect($$('[data-testid="mantenimiento-foto"]')).toHaveLength(MAX_FOTOS_AL_CREAR)
-    expect($('#mantenimiento-photoUrls-error')?.textContent).toContain(
-      `hasta ${MAX_FOTOS_AL_CREAR} fotos`,
-    )
+    await elegir(...Array.from({ length: MAX_FOTOS_DEL_MANTENIMIENTO + 1 }, (_, i) => foto(`f${i}.jpg`)))
+    expect($$('[data-testid="mantenimiento-foto"]')).toHaveLength(MAX_FOTOS_DEL_MANTENIMIENTO)
+    expect($('#mantenimiento-photoUrls-error')?.textContent).toContain(MENSAJES_DEL_MANTENIMIENTO.fotosMaximas)
     // Lleno: ya no se ofrece agregar otra.
     expect($('[data-testid="mantenimiento-foto-input"]')).toBeNull()
+  })
+
+  it('seis fotos entran todas (antes el formulario cortaba en 5)', async () => {
+    montar()
+    await elegir(...Array.from({ length: 6 }, (_, i) => foto(`s${i}.jpg`)))
+    expect($$('[data-testid="mantenimiento-foto"]')).toHaveLength(6)
+    expect($('#mantenimiento-photoUrls-error')?.textContent ?? '').toBe('')
   })
 
   it('quitar una foto la saca y libera su vista previa', async () => {

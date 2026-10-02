@@ -74,6 +74,10 @@ vi.mock('@/components/ui/alert-dialog', () => {
 import { PipelineDetail } from './PipelineDetail';
 import { ApiError } from '@/lib/api/client';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
+import {
+  AYUDA_DEL_MOTIVO_DE_PERDIDA,
+  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
+} from '@/lib/pipeline/limites-del-pipeline';
 
 void React;
 
@@ -206,6 +210,46 @@ describe('PipelineDetail — marcar como perdido', () => {
       'lost',
       'Se fue con otra inmobiliaria por el canon',
     );
+  });
+});
+
+/**
+ * 🔴 Nico (02-10-2026): el diálogo decía «…queda en el historial de la visita»
+ * también acá, donde no hay visita. El motivo va a `lostReason` y el cajón lo
+ * muestra en «Razón de pérdida»: eso es lo que dice la ayuda ahora.
+ */
+describe('PipelineDetail — la ayuda del motivo dice dónde queda', () => {
+  it('pasa su ayuda y su ejemplo, no los de una visita', async () => {
+    montar(vi.fn(() => Promise.resolve()) as never);
+    await act(async () => {
+      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
+    });
+    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
+    expect(texto.getAttribute('placeholder')).toBe(EJEMPLO_DEL_MOTIVO_DE_PERDIDA);
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
+      texto.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
+    expect(dialogo.textContent).toContain(AYUDA_DEL_MOTIVO_DE_PERDIDA);
+    expect(dialogo.textContent).not.toContain('visita');
+  });
+
+  it('lo que dice la ayuda es cierto: un lead perdido muestra su motivo en «Razón de pérdida»', () => {
+    act(() => {
+      root.render(
+        <PipelineDetail
+          isOpen
+          onClose={() => {}}
+          item={{ ...ITEM, stage: 'lost', lostReason: 'Tomó otro apartamento' }}
+          onStageChange={vi.fn() as never}
+        />,
+      );
+    });
+    expect(AYUDA_DEL_MOTIVO_DE_PERDIDA).toContain('«Razón de pérdida»');
+    expect(container.textContent).toContain('Razón de pérdida');
+    expect(container.textContent).toContain('Tomó otro apartamento');
   });
 });
 

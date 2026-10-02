@@ -42,6 +42,27 @@ describe('mantenimientoApi.subirFoto', () => {
     expect(r.photoUrls).toEqual(['https://firmada'])
   })
 
+  it('🔴 02-10 · las fotos del reporte NO mandan `destino` (el back toma `reporte` sin él)', async () => {
+    const fetchMock = respuesta({ ruta: 'x', photoUrls: [] }, { status: 201 })
+    await mantenimientoApi.subirFoto('sol-1', foto())
+    const cuerpo = (fetchMock.mock.calls[0] as [string, RequestInit])[1].body as FormData
+    expect(cuerpo.has('destino')).toBe(false)
+
+    const otro = respuesta({ ruta: 'y', photoUrls: [] }, { status: 201 })
+    await mantenimientoApi.subirFoto('sol-1', foto(), 'reporte')
+    expect(((otro.mock.calls[0] as [string, RequestInit])[1].body as FormData).has('destino')).toBe(false)
+  })
+
+  it('🔴 02-10 · las fotos del trabajo mandan `destino=trabajo` y vuelven con `completionPhotoUrls`', async () => {
+    const fetchMock = respuesta({ ruta: 'mantenimiento/a/s/t.jpg', completionPhotoUrls: ['https://firmada-t'] }, { status: 201 })
+    const r = await mantenimientoApi.subirFoto('sol-1', foto(), 'trabajo')
+    const cuerpo = (fetchMock.mock.calls[0] as [string, RequestInit])[1].body as FormData
+    expect(cuerpo.get('destino')).toBe('trabajo')
+    expect(cuerpo.get('file')).toBeInstanceOf(File)
+    expect(r.ruta).toBe('mantenimiento/a/s/t.jpg')
+    expect(r.completionPhotoUrls).toEqual(['https://firmada-t'])
+  })
+
   it('🔴 el rechazo conserva `code` y el sobre (para el traductor y los campos)', async () => {
     const sobre = {
       statusCode: 400,

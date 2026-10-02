@@ -14,7 +14,7 @@
  * cargado acá manda, para ESE año, sobre el IPC vigente y sobre la tabla.
  *
  * Tiene que coincidir con el back (`esIpcPorAnio`):
- *   - mayor que 0 (un 0 se lee como «sin dato»), hasta 30, dos decimales;
+ *   - mayor que 0 (un 0 se lee como «sin dato»), hasta 100, dos decimales;
  *   - el PUT reemplaza el mapa ENTERO: se manda siempre completo, y vaciar un
  *     año es mandarlo sin él.
  *
@@ -25,13 +25,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { toast } from '@/components/ui/toast';
+import { IPC_MAXIMO, MENSAJES_DEL_IPC, loQueElBackDijoDelIpc } from '@/lib/configuracion/limites-del-ipc';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 
 /** El ancla del bloque: a esto apunta el aviso de /contratos/renovaciones. */
 export const ANCLA_IPC_POR_ANIO = 'ipc-por-anio';
 
-/** El mismo tope del back. */
-export const IPC_MAXIMO_POR_ANIO = 30;
+/** El mismo tope del back (`limites-del-ipc.ts`). */
+export const IPC_MAXIMO_POR_ANIO = IPC_MAXIMO;
 
 /**
  * «5,3» o «5.3» → 5.3. Vacío → `null` (sin cargar). Lo que el back no
@@ -81,7 +83,11 @@ function textosDe(mapa: Record<string, number>): Record<string, string> {
 interface Props {
   /** La fila real de la agencia (GET /inmobiliaria/config → `agency`). */
   agency: AgencyProfile;
-  /** Guarda por PUT /inmobiliaria/agency: avisa con toast y rechaza si falla. */
+  /**
+   * Guarda por PUT /inmobiliaria/agency y rechaza si falla. Un 400 con
+   * `campos` lo pinta este bloque (bajo el año que se estaba guardando); lo
+   * demás lo avisa el padre.
+   */
   onSave?: (payload: UpdateAgencyPayload) => Promise<void> | void;
   /** Sólo el ADMIN: el back rechaza el PUT a los demás. */
   canEdit?: boolean;
@@ -109,10 +115,7 @@ export function ConfigIpcPorAnio({ agency, onSave, canEdit = true, hoy }: Props)
   const confirmar = async (clave: string) => {
     const valor = leerIpcDelAnio(textos[clave] ?? '');
     if (valor === undefined) {
-      setErrores((e) => ({
-        ...e,
-        [clave]: `Un porcentaje mayor que 0 y hasta ${IPC_MAXIMO_POR_ANIO}, con hasta dos decimales.`,
-      }));
+      setErrores((e) => ({ ...e, [clave]: MENSAJES_DEL_IPC.ipcPorAnio }));
       volverALoGuardado(clave);
       return;
     }
@@ -131,8 +134,14 @@ export function ConfigIpcPorAnio({ agency, onSave, canEdit = true, hoy }: Props)
     setGuardando(true);
     try {
       await onSave?.({ ipcPorAnio: mapa });
-    } catch {
-      // El padre ya avisó con el motivo del back; el campo vuelve a lo guardado.
+    } catch (error) {
+      // El back mira el mapa ENTERO (`ipcPorAnio`): su frase va bajo el año
+      // que se estaba guardando. Lo que este bloque no muestra, a un toast;
+      // sin campos (403, 5xx, la red) el padre ya avisó. El campo vuelve a lo
+      // guardado.
+      const { delCampo, sueltos } = loQueElBackDijoDelIpc(error, 'ipcPorAnio');
+      if (delCampo) setErrores((e) => ({ ...e, [clave]: delCampo }));
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
       volverALoGuardado(clave);
     } finally {
       setGuardando(false);

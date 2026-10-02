@@ -2479,7 +2479,7 @@ export interface AgencyProfile {
   vigenciaEstudioDias?: number | null;
   /** 🔴 El seguro opcional como % del canon, POR PLAN: `{"BASIC":1.5}`. */
   seguroOpcionalPctPorPlan?: Record<string, number> | null;
-  /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
+  /** IPC vigente en % (0..100). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
   ipcPorAnio?: Record<string, number>;

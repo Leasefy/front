@@ -490,6 +490,22 @@ function MantenimientosContent() {
       : null;
 
   /**
+   * Cerrada desde el diálogo de «Marcar como completada», que ya subió las
+   * fotos del trabajo y llamó a `PUT :id/complete` (Nico, 02-10-2026). Acá
+   * sólo lo que pasa después de cualquier cierre: recargar, avisar y cerrar
+   * el cajón. Los errores los dice el diálogo, bajo las fotos.
+   */
+  const handleSolicitudCompletada = useCallback(async () => {
+    await recargarMantenimientos();
+    toast.success(
+      t('inmobiliaria.operaciones.toasts.statusUpdated', {
+        status: t('inmobiliaria.operaciones.maintenance.status.completed'),
+      }),
+    );
+    handleMantenimientoViewerClose();
+  }, [t, recargarMantenimientos, handleMantenimientoViewerClose]);
+
+  /**
    * La misma transición, para quien NO espera la promesa (los botones del
    * cajón y los tres puntos de la lista).
    *
@@ -801,6 +817,8 @@ function MantenimientosContent() {
         // les contestaba 403. Sin el callback el comparador no lo ofrece.
         onApproveQuote={puedeEditar ? handleApproveQuote : undefined}
         onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
+        // «Marcar como completada» con las fotos del trabajo (02-10-2026).
+        onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página

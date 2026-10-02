@@ -412,6 +412,19 @@ export function EventoAgendaDrawer({
             : 'La visita se cancela y le avisamos a quien la tenía agendada.'
         }
         etiquetaConfirmar={pidiendoMotivo === 'rechazar' ? 'Rechazar la visita' : 'Cancelar la visita'}
+        // Dónde queda el motivo de verdad: el back lo guarda en la visita
+        // (`rejectionReason` al rechazar, `cancellationReason` al cancelar). El
+        // aviso que le llega a quien la pidió NO lo lleva (`visit.listener.ts`).
+        ayuda={
+          pidiendoMotivo === 'rechazar'
+            ? 'Se guarda en la visita como el motivo del rechazo.'
+            : 'Se guarda en la visita como el motivo de la cancelación.'
+        }
+        ejemplo={
+          pidiendoMotivo === 'rechazar'
+            ? 'Cuenta por qué no se puede hacer esta visita.'
+            : 'Cuenta qué pasó y por qué se cancela la visita.'
+        }
         error={errorDelMotivo}
         onCerrar={() => {
           setPidiendoMotivo(null);

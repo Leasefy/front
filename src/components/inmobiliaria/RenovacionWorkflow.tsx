@@ -51,7 +51,11 @@ import { agencyApi, renovacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
-import { erroresDeLosValores, mensajeDeLaRenovacion } from '@/lib/renovaciones/limites-de-la-renovacion';
+import {
+  errorDelIpcDeLaRenovacion,
+  erroresDeLosValores,
+  mensajeDeLaRenovacion,
+} from '@/lib/renovaciones/limites-de-la-renovacion';
 import {
   PASOS_DE_RENOVACION,
   canalDeEnvio,
@@ -287,7 +291,9 @@ export function CuerpoDeRenovacion({
   );
   const topeDelCanon = topes.proposedRent;
   const topeDeLaAdministracion = topes.negotiatedAdminFee;
-  const valoresQueNoCaben = Boolean(topeDelCanon || topeDeLaAdministracion);
+  // El IPC topa en 100 % en el back (02-10-2026): un «520» se dice bajo el IPC.
+  const topeDelIpc = errorDelIpcDeLaRenovacion(ipcRate);
+  const valoresQueNoCaben = Boolean(topeDelCanon || topeDeLaAdministracion || topeDelIpc);
 
   const canal = canalDeEnvio(renovacion);
   const acepto = renovacionAceptada(renovacion);
@@ -345,7 +351,7 @@ export function CuerpoDeRenovacion({
 
   /** Antes de mandar los números: si no caben, se dice y no se manda. */
   const losNumerosCaben = (titulo: string) => {
-    const problema = topeDelCanon ?? topeDeLaAdministracion;
+    const problema = topeDelCanon ?? topeDeLaAdministracion ?? topeDelIpc;
     if (!problema) return true;
     // En la propuesta ya está bajo su campo; en los otros pasos el campo no
     // se ve, así que va al aviso.
@@ -554,7 +560,7 @@ export function CuerpoDeRenovacion({
                   // El tope del cliente gana: es lo que está escrito AHORA.
                   canon: topeDelCanon ?? errores.canon,
                   admin: topeDeLaAdministracion ?? errores.admin,
-                  ipc: errores.ipc,
+                  ipc: topeDelIpc ?? errores.ipc,
                   mensaje: errores.mensaje,
                 }}
                 onNewRentChange={(v) => {

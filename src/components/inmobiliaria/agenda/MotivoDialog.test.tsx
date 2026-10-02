@@ -73,6 +73,8 @@ function pintar(props: Partial<React.ComponentProps<typeof MotivoDialog>> = {}) 
         titulo="¿Marcar como perdido?"
         descripcion="Sale del embudo."
         etiquetaConfirmar="Marcar como perdido"
+        ayuda="Se guarda en el candidato."
+        ejemplo="Cuenta por qué se cayó."
         onCerrar={() => {}}
         onConfirmar={onConfirmar}
         {...props}
@@ -132,6 +134,32 @@ describe('MotivoDialog — el motivo demasiado largo', () => {
   });
 });
 
+/**
+ * 🔴 Nico (02-10-2026): la ayuda decía SIEMPRE «…queda en el historial de la
+ * visita», también al marcar perdido a un candidato. Ahora la pone quien llama.
+ */
+describe('MotivoDialog — la ayuda y el ejemplo los pone quien llama', () => {
+  it('con el motivo suficiente, la ayuda es la de quien llama; nunca «el historial de la visita»', async () => {
+    pintar({ ayuda: 'Se guarda en el candidato y se ve en su ficha.', ejemplo: 'Cuenta por qué se cayó.' });
+    await escribir('Tomó otro apartamento más cerca');
+    expect(container.textContent).toContain('Se guarda en el candidato y se ve en su ficha.');
+    expect(container.textContent).not.toContain('historial de la visita');
+  });
+
+  it('el ejemplo del campo vacío es el de quien llama', () => {
+    pintar({ ejemplo: 'Cuenta por qué no se puede hacer esta visita.' });
+    expect(campo().getAttribute('placeholder')).toBe('Cuenta por qué no se puede hacer esta visita.');
+    expect(campo().getAttribute('placeholder')).not.toContain('Lo va a leer');
+  });
+
+  it('mientras falta texto, la ayuda dice cuánto falta (no dónde se guarda)', async () => {
+    pintar({ ayuda: 'Se guarda en la visita.' });
+    await escribir('corto');
+    expect(container.textContent).toContain('Escribe 5 caracteres más.');
+    expect(container.textContent).not.toContain('Se guarda en la visita.');
+  });
+});
+
 describe('MotivoDialog — el rechazo del back', () => {
   it('🔴 `error` sale bajo el campo y el diálogo sigue abierto con lo escrito', async () => {
     pintar();
@@ -143,6 +171,8 @@ describe('MotivoDialog — el rechazo del back', () => {
           titulo="¿Cancelar esta visita?"
           descripcion="La visita se cancela."
           etiquetaConfirmar="Cancelar la visita"
+          ayuda="Se guarda en la visita."
+          ejemplo="Cuenta qué pasó."
           error="Esta visita ya estaba cancelada."
           onCerrar={() => {}}
           onConfirmar={() => {}}

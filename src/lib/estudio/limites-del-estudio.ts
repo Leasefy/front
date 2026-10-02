@@ -29,7 +29,8 @@ export const PAGO_MAXIMO_COP = 2_000_000_000
 /** Frases de `back/src/pre-scoring/dto/limites-del-estudio.ts`. */
 export const MENSAJES_DEL_ESTUDIO = {
   ciudadLarga: 'La ciudad puede tener hasta 100 caracteres.',
-  canonEntero: 'El canon debe ser un número entero de pesos, sin decimales.',
+  // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
+  canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonPositivo: 'El canon debe ser mayor que cero.',
   canonMaximo: 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
 } as const

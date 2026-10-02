@@ -11350,7 +11350,7 @@
       "greeting_morning": "Good morning",
       "greeting_afternoon": "Good afternoon",
       "greeting_evening": "Good evening",
-      "heroTitle": "How can I help you today?",
+      "heroTitle": "What are we moving today?",
       "subtitle": "I'm your rental management assistant. Select a topic or ask me anything you need.",
       "suggestionsLabel": "Suggestions · Leasefy Agents",
       "prompts": {
@@ -11368,9 +11368,29 @@
         "reportes_desc": "Generate a monthly financial report"
       },
       "historyLabel": "Recent conversations",
-      "historyEmpty": "You don't have saved conversations yet. The ones you start will show up here so you can pick them back up.",
-      "historyEmptyCta": "See templates to get started"
-    },
+      "historyEmpty": "The ones you start stay here so you can pick them up where you left off.",
+      "historyEmptyCta": "See templates to get started",
+      "heroSubtitle": "Ask your agency about receivables, leases, properties and payments.",
+      "inputLabel": "Type your question for the chat",
+      "inputHint": "Enter sends. Shift + Enter adds a new line.",
+      "enviarCon": "Send with",
+      "voz": "Voice",
+      "ejemplos": {
+        "e1": "How many leases expire next month?",
+        "e2": "Which tenants are more than 30 days overdue?",
+        "e3": "Which properties have been vacant for over 90 days?",
+        "e4": "What is my occupancy today?",
+        "e5": "Send the payment reminder to everyone more than 30 days overdue",
+        "e6": "Which owner payouts are still pending?"
+      },
+      "atajosLabel": "Shortcuts",
+      "bandeja": {
+        "datosDe": "Answers with the data of",
+        "migracion": "Migration: step {{n}} of {{total}}"
+      },
+      "especialistas": "Depending on what you ask, the chat calls its specialist: reports, collections, payments, reconciliation and more.",
+      "historyLocal": "Saved in this browser",
+      "historyEmptyTitle": "No conversations yet"    },
     "response": {
       "actionable": "Actionable",
       "informative": "Informative",

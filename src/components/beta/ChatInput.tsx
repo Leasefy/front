@@ -13,6 +13,7 @@ import { ArrowUp, Sparkle, Microphone } from '@phosphor-icons/react';
 import { IconButton, MentionMenu, type MentionOption } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { BarrasDeVoz, useDictadoPorVoz } from './dictado-por-voz';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -42,99 +43,6 @@ const DEFAULT_MENTIONS: MentionOption[] = [
 
 const MAX_ROWS = 5;
 const LINE_HEIGHT = 24;
-
-/** Minimal shape of the browser SpeechRecognition we use (not in lib.dom). */
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-const BAR_COUNT = 5;
-
-/**
- * VoiceBars — live mic-reactive equalizer. Opens its own getUserMedia stream and
- * drives N bars from a Web Audio AnalyserNode via rAF (refs, no re-render). Bars
- * react to real voice amplitude; idle = a gentle floor. Fully self-cleaning.
- */
-function VoiceBars() {
-  const bars = useRef<Array<HTMLSpanElement | null>>([]);
-
-  useEffect(() => {
-    let raf = 0;
-    let audioCtx: AudioContext | null = null;
-    let stream: MediaStream | null = null;
-    let cancelled = false;
-
-    const w = window as unknown as {
-      AudioContext?: typeof AudioContext;
-      webkitAudioContext?: typeof AudioContext;
-    };
-    const Ctx = w.AudioContext || w.webkitAudioContext;
-    if (!Ctx || !navigator.mediaDevices?.getUserMedia) return;
-
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((s) => {
-        if (cancelled) {
-          s.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        stream = s;
-        audioCtx = new Ctx();
-        const source = audioCtx.createMediaStreamSource(s);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.7;
-        source.connect(analyser);
-        const data = new Uint8Array(analyser.frequencyBinCount);
-
-        const tick = () => {
-          analyser.getByteFrequencyData(data);
-          for (let i = 0; i < BAR_COUNT; i++) {
-            const el = bars.current[i];
-            if (!el) continue;
-            const v = data[i * 2 + 2] / 255; // low-mid bins carry speech energy
-            const scale = Math.max(0.18, Math.min(1, 0.18 + v * 1.9));
-            el.style.transform = `scaleY(${scale})`;
-          }
-          raf = requestAnimationFrame(tick);
-        };
-        tick();
-      })
-      .catch(() => {
-        /* permission denied / no device — bars stay at floor */
-      });
-
-    return () => {
-      cancelled = true;
-      if (raf) cancelAnimationFrame(raf);
-      stream?.getTracks().forEach((t) => t.stop());
-      audioCtx?.close().catch(() => {});
-    };
-  }, []);
-
-  return (
-    <span className="flex h-7 items-center gap-[3px]" aria-hidden="true">
-      {Array.from({ length: BAR_COUNT }).map((_, i) => (
-        <span
-          key={i}
-          ref={(el) => {
-            bars.current[i] = el;
-          }}
-          className="h-7 w-[3px] rounded-full bg-primary will-change-transform"
-          style={{ transform: 'scaleY(0.2)', transformOrigin: 'center' }}
-        />
-      ))}
-    </span>
-  );
-}
 
 /**
  * ChatInput - Clean bordered input with auto-resizing textarea.
@@ -261,89 +169,14 @@ export function ChatInput({
       </div>
     ) : null;
 
-  // ── Voice dictation with a live, reactive listening UI ─────────────────────
-  // Feature-detected (mic only renders where supported). Real browser Web Speech
-  // for transcription; VoiceBars renders the live mic-reactive waveform. The mic
-  // toggles a clear "listening" state; speech streams into the composer on stop.
-  const [listening, setListening] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const liveRef = useRef('');
-  const baseRef = useRef('');
-
-  useEffect(() => {
-    setVoiceSupported(
-      typeof window !== 'undefined' &&
-        ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) &&
-        typeof navigator !== 'undefined' &&
-        !!navigator.mediaDevices?.getUserMedia
-    );
-    return () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* noop */
-      }
-    };
-  }, []);
-
-  const startVoice = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const w = window as unknown as {
-      SpeechRecognition?: SpeechRecognitionCtor;
-      webkitSpeechRecognition?: SpeechRecognitionCtor;
-    };
-    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!SR) return;
-    const rec = new SR();
-    rec.lang = 'es-CO';
-    rec.interimResults = true;
-    rec.continuous = true;
-    rec.onresult = (event) => {
-      let txt = '';
-      const { results } = event;
-      for (let i = 0; i < results.length; i++) txt += results[i][0].transcript;
-      liveRef.current = txt;
-      setLiveTranscript(txt);
-    };
-    rec.onerror = () => {
-      setListening(false);
-      setLiveTranscript('');
-    };
-    rec.onend = () => {
-      const finalText = liveRef.current.trim();
-      if (finalText) {
-        const base = baseRef.current.trim();
-        setValue(base ? `${base} ${finalText}` : finalText);
-      }
-      liveRef.current = '';
-      setLiveTranscript('');
-      setListening(false);
-    };
-    recognitionRef.current = rec;
-    baseRef.current = value;
-    liveRef.current = '';
-    setLiveTranscript('');
-    try {
-      rec.start();
-      setListening(true);
-    } catch {
-      setListening(false);
-    }
-  }, [value]);
-
-  const toggleVoice = useCallback(() => {
-    if (listening) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* noop */
-      }
-    } else {
-      startVoice();
-    }
-  }, [listening, startVoice]);
+  // ── Dictado por voz: la lógica vive en `dictado-por-voz.tsx` (la comparte
+  // la llegada del chat). Sólo se dibuja donde el navegador lo soporta.
+  const {
+    soportado: voiceSupported,
+    escuchando: listening,
+    enVivo: liveTranscript,
+    alternar: toggleVoice,
+  } = useDictadoPorVoz(value, setValue);
 
   if (variant === 'hero') {
     // Manus-style hero card: a tall, soft, rounded composer. Placeholder sits at
@@ -368,7 +201,7 @@ export function ChatInput({
           {listening ? (
             // Listening state — live waveform + streaming transcript
             <div className="flex min-h-[68px] w-full items-center gap-3.5 py-1">
-              <VoiceBars />
+              <BarrasDeVoz />
               <span
                 className={cn(
                   'flex-1 truncate text-[16px] leading-relaxed',

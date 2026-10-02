@@ -11384,7 +11384,7 @@
       "greeting_morning": "Buenos dias",
       "greeting_afternoon": "Buenas tardes",
       "greeting_evening": "Buenas noches",
-      "heroTitle": "¿En qué te ayudo hoy?",
+      "heroTitle": "¿Qué movemos hoy?",
       "subtitle": "Soy tu asistente de administracion de arriendos. Selecciona un tema o preguntame lo que necesites.",
       "suggestionsLabel": "Sugerencias · Agentes Leasefy",
       "prompts": {
@@ -11402,9 +11402,29 @@
         "reportes_desc": "Genera un reporte financiero del mes"
       },
       "historyLabel": "Conversaciones recientes",
-      "historyEmpty": "Todavía no tienes conversaciones guardadas. Las que empieces van a aparecer acá para que puedas retomarlas.",
-      "historyEmptyCta": "Ver plantillas para empezar"
-    },
+      "historyEmpty": "Las que empieces quedan acá para retomarlas donde las dejaste.",
+      "historyEmptyCta": "Ver plantillas para empezar",
+      "heroSubtitle": "Pregúntale a tu inmobiliaria por cartera, contratos, inmuebles y pagos.",
+      "inputLabel": "Escribe tu pregunta para el chat",
+      "inputHint": "Enter envía. Shift + Enter, salto de línea.",
+      "enviarCon": "Enviar con",
+      "voz": "Voz",
+      "ejemplos": {
+        "e1": "¿Cuántos contratos vencen el próximo mes?",
+        "e2": "¿Qué inquilinos deben más de 30 días?",
+        "e3": "¿Qué inmuebles llevan más de 90 días vacíos?",
+        "e4": "¿Cuál es mi ocupación hoy?",
+        "e5": "Mándale el recordatorio de pago a los que deben más de 30 días",
+        "e6": "¿Qué giros a propietarios quedan pendientes?"
+      },
+      "atajosLabel": "Atajos",
+      "bandeja": {
+        "datosDe": "Responde con los datos de",
+        "migracion": "Migración: paso {{n}} de {{total}}"
+      },
+      "especialistas": "Según lo que pidas, el chat llama a su especialista: reportes, cobranza, pagos, conciliación y más.",
+      "historyLocal": "Se guardan en este navegador",
+      "historyEmptyTitle": "Aún no tienes conversaciones"    },
     "response": {
       "actionable": "Accionable",
       "informative": "Informativo",

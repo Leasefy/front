@@ -570,3 +570,65 @@ describe('migracionTercerosApi.lotesAbiertos', () => {
     expect(await migracionTercerosApi.lotesAbiertos()).toEqual([]);
   });
 });
+
+// ── (12) revisar: una petición en vuelo por lote (02-10-2026) ────────────────
+
+describe('migracionTercerosApi.revisar', () => {
+  /** Un back que no contesta hasta que se le dice. */
+  function mockFetchDiferido() {
+    const pendientes: Array<(cuerpo: unknown) => void> = [];
+    const fn = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          pendientes.push((cuerpo) =>
+            resolve({
+              ok: true,
+              status: 200,
+              text: async () => JSON.stringify(cuerpo),
+              json: async () => cuerpo,
+            } as unknown as Response),
+          );
+        }),
+    );
+    globalThis.fetch = fn as unknown as typeof globalThis.fetch;
+    return { fn, contestar: (cuerpo: unknown) => pendientes.shift()?.(cuerpo) };
+  }
+
+  it('🔴 dos llamadas al mismo lote mientras la primera no vuelve son UNA petición', async () => {
+    /*
+     * Nico tocó «Retomar» varias veces sobre 1.729 inquilinos: siete
+     * `POST revisar` colgados, cada uno reescribiendo el lote entero en el back.
+     */
+    const back = mockFetchDiferido();
+
+    const a = migracionTercerosApi.revisar('inquilinos-2026-10-01-1815');
+    const b = migracionTercerosApi.revisar('inquilinos-2026-10-01-1815');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(back.fn).toHaveBeenCalledTimes(1);
+    const [url, opts] = llamada(back.fn);
+    expect(url).toContain(`${BASE}/revisar`);
+    expect(cuerpoDe(opts)).toEqual({ lote: 'inquilinos-2026-10-01-1815' });
+
+    back.contestar({ revisadas: 1729, ahoraListas: 0 });
+    expect(await a).toEqual({ revisadas: 1729, ahoraListas: 0 });
+    expect(await b).toEqual({ revisadas: 1729, ahoraListas: 0 });
+  });
+
+  it('terminada la primera, la siguiente sí vuelve a preguntar; otro lote no espera', async () => {
+    const back = mockFetchDiferido();
+
+    const otro = migracionTercerosApi.revisar('propietarios-1');
+    const primera = migracionTercerosApi.revisar('inquilinos-1');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(back.fn).toHaveBeenCalledTimes(2);
+    back.contestar({ revisadas: 0, ahoraListas: 0 });
+    back.contestar({ revisadas: 0, ahoraListas: 0 });
+    await Promise.all([otro, primera]);
+
+    const segunda = migracionTercerosApi.revisar('inquilinos-1');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(back.fn).toHaveBeenCalledTimes(3);
+    back.contestar({ revisadas: 0, ahoraListas: 0 });
+    await segunda;
+  });
+});

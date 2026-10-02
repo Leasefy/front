@@ -9,7 +9,12 @@
  * network mock harness.
  */
 
-import type { ResumenActivacionInmuebles, FilaOmitida } from '@/lib/api/inmuebles-importacion.service';
+import type {
+  ResumenActivacionInmuebles,
+  FilaOmitida,
+  FilaFallidaAlActivar,
+  EstadoDeLoteInmuebles,
+} from '@/lib/api/inmuebles-importacion.service';
 
 /**
  * Lo que va pasando mientras corre el loop, llamada por llamada.
@@ -30,6 +35,14 @@ export interface ProgresoDeActivacion {
   /** Cuántas siguen LISTO en el lote, según la última llamada. */
   restantes: number;
   llamadas: number;
+  /** T-0130 — filas que no se pudieron crear (con su motivo), sumando las llamadas. */
+  fallidas: number;
+  /**
+   * T-0130 — el lote entero según el servidor tras la última llamada
+   * («X de Y creadas» = `progreso.activadas` de `progreso.total`). `null` si el
+   * servidor no lo pudo calcular: la barra cae a la cuenta de la corrida.
+   */
+  progreso: EstadoDeLoteInmuebles | null;
 }
 
 export interface ResultadoActivacionCompleta {
@@ -49,6 +62,8 @@ export interface ResultadoActivacionCompleta {
   /** Mandatos creados con varios dueños y su reparto, sumando las llamadas. */
   mandatosConVariosDuenos: number;
   omitidas: FilaOmitida[];
+  /** T-0130 — filas que fallaron al crearse, con el motivo; no frenan el resto. */
+  fallidas: FilaFallidaAlActivar[];
   /** How many `activar()` calls this took — surfaced for diagnostics, never
    * used to decide correctness (that's `restantes === 0` alone). */
   llamadas: number;
@@ -72,6 +87,14 @@ export interface ResultadoActivacionCompleta {
 }
 
 /**
+ * T-0130 — filas por llamada. Era «lo que entre en 15 s» (~11 filas contra la
+ * base remota), y una llamada tan larga cruzaba el tiempo de espera del proxy.
+ * Con 50 cada llamada dura segundos, la barra se mueve seguido y un corte pierde
+ * muy poco.
+ */
+export const FILAS_POR_LLAMADA = 50;
+
+/**
  * Techo duro de llamadas a `activar()` por importación.
  *
  * 🔴 Era 100, cuando el back cortaba por FILAS (500 por llamada) y 100
@@ -85,7 +108,7 @@ export interface ResultadoActivacionCompleta {
  * `detenidoSinAvance`, que corta en cuanto una llamada no mueve nada— sino el
  * último seguro contra un back que responda «quedan filas» para siempre.
  */
-const MAX_LLAMADAS = 1_000;
+const MAX_LLAMADAS = 2_000;
 
 /**
  * Un corte a mitad del loop — red caída, sesión vencida, 5xx — con lo que
@@ -101,6 +124,7 @@ export class ActivacionInterrumpida extends Error {
       activados: number;
       omitidas: FilaOmitida[];
       llamadas: number;
+      fallidas?: FilaFallidaAlActivar[];
     },
     public readonly causa: unknown,
   ) {
@@ -111,25 +135,34 @@ export class ActivacionInterrumpida extends Error {
 
 export async function activarLoteCompleto(
   lote: string,
-  activar: (lote: string) => Promise<ResumenActivacionInmuebles>,
+  activar: (lote: string, maximo: number) => Promise<ResumenActivacionInmuebles>,
   onProgreso?: (progreso: ProgresoDeActivacion) => void,
-  opciones: { debeParar?: () => boolean } = {},
+  opciones: {
+    debeParar?: () => boolean;
+    /** Antes de cada llamada: renovar el token si le queda poco. */
+    antesDeCada?: () => Promise<void>;
+    maximo?: number;
+  } = {},
 ): Promise<ResultadoActivacionCompleta> {
   let activados = 0;
   let reusados = 0;
   let mandatosConVariosDuenos = 0;
   const omitidas: FilaOmitida[] = [];
+  const fallidas: FilaFallidaAlActivar[] = [];
+  let progreso: EstadoDeLoteInmuebles | null = null;
   let llamadas = 0;
 
   for (;;) {
     const omitidasAntes = omitidas.length;
+    const fallidasAntes = fallidas.length;
     let r: ResumenActivacionInmuebles;
     try {
-      r = await activar(lote);
+      await opciones.antesDeCada?.();
+      r = await activar(lote, opciones.maximo ?? FILAS_POR_LLAMADA);
     } catch (e) {
       throw new ActivacionInterrumpida(
         e instanceof Error && e.message ? e.message : 'No pudimos activar el lote.',
-        { activados, omitidas, llamadas },
+        { activados, omitidas, llamadas, fallidas },
         e,
       );
     }
@@ -138,12 +171,16 @@ export async function activarLoteCompleto(
     reusados += r.reusados ?? 0;
     mandatosConVariosDuenos += r.mandatosConVariosDuenos ?? 0;
     omitidas.push(...r.omitidas);
+    fallidas.push(...(r.fallidas ?? []));
+    progreso = r.progreso ?? progreso;
     onProgreso?.({
       activados,
       reusados,
       omitidas: omitidas.length,
       restantes: r.restantes,
       llamadas,
+      fallidas: fallidas.length,
+      progreso,
     });
 
     if (r.restantes <= 0) {
@@ -152,6 +189,7 @@ export async function activarLoteCompleto(
         reusados,
         mandatosConVariosDuenos,
         omitidas,
+        fallidas,
         llamadas,
         detenidoPorLimite: false,
         detenidoSinAvance: false,
@@ -167,6 +205,7 @@ export async function activarLoteCompleto(
         reusados,
         mandatosConVariosDuenos,
         omitidas,
+        fallidas,
         llamadas,
         detenidoPorLimite: false,
         detenidoSinAvance: false,
@@ -183,13 +222,17 @@ export async function activarLoteCompleto(
     const avanzo =
       r.activados > 0 ||
       (r.reusados ?? 0) > 0 ||
-      omitidas.length > omitidasAntes;
+      omitidas.length > omitidasAntes ||
+      // Una fila que falla también SALE de «listas» (el back la aparta): la
+      // llamada movió el lote aunque no creara nada.
+      fallidas.length > fallidasAntes;
     if (!avanzo) {
       return {
         activados,
         reusados,
         mandatosConVariosDuenos,
         omitidas,
+        fallidas,
         llamadas,
         detenidoPorLimite: false,
         detenidoSinAvance: true,
@@ -203,6 +246,7 @@ export async function activarLoteCompleto(
         reusados,
         mandatosConVariosDuenos,
         omitidas,
+        fallidas,
         llamadas,
         detenidoPorLimite: true,
         detenidoSinAvance: false,

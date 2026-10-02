@@ -1892,12 +1892,53 @@ function ListaDeTrabajo({
             </p>
           ) : null}
           {aplicacion.fallidas > 0 ? (
-            <ul className="space-y-1 text-sm text-fg-muted">
+            <ul className="space-y-2 text-sm text-fg-muted" data-testid="fallidas-de-aplicacion">
               {aplicacion.resultados
                 .filter((r) => r.estado === 'fallido')
                 .map((r) => (
-                  <li key={r.id}>
-                    Fila <span className="font-mono tabular-nums">{r.fila}</span>: {r.motivo}
+                  <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {r.pasaARevisar ? (
+                      /* Ya está abajo, en «por decidir», con su motivo. */
+                      <span data-testid="paso-a-revisar">
+                        La fila <span className="font-mono tabular-nums">{r.fila}</span> pasó a «por
+                        decidir»: corrige el dato que se señala y vuelve a crear. {r.motivo}
+                      </span>
+                    ) : (
+                      <>
+                        <span>
+                          Fila <span className="font-mono tabular-nums">{r.fila}</span>: {r.motivo}{' '}
+                          Puedes reintentar con el botón de arriba.
+                        </span>
+                        {/*
+                         * Nunca dejar a la persona sin una acción tras un fallo:
+                         * la fila sigue lista para crear, así que se puede
+                         * reintentar o, si no, no traerla.
+                         */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          hideArrow
+                          disabled={cargando}
+                          onClick={onAplicar}
+                          data-testid="reintentar-fallida"
+                        >
+                          Reintentar
+                        </Button>
+                        {puedeDescartar ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            hideArrow
+                            disabled={cargando}
+                            className="text-danger hover:bg-danger-soft hover:text-danger"
+                            onClick={() => void onDescartar(r.id)}
+                            data-testid="descartar-fallida"
+                          >
+                            No traer esta fila
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
                   </li>
                 ))}
             </ul>

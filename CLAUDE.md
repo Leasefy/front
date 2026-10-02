@@ -233,7 +233,7 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano. La base caída (5xx con `servicio: 'base'`)
   también va por acá: sin Postgres no funciona nada. Cualquier otra respuesta del back → `bien`.
   Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
-  arriba que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
+  abajo (sube 5rem bajo `lg` por `MobileNavBar`) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
   primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
   NO pasan por acá (son capa 2, servicio `asistente`).
 - **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): 502 o 503
@@ -249,6 +249,36 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   (`useEstadoDelServicio`, que pregunta sólo con un error de ese servicio en pantalla).
 - Mientras la franja esté, un fallo de red en pantalla no repite el rojo: «Esperando a Leasefy…»
   con su reintento.
+
+## Carga de inmuebles reanudable (T-0130)
+
+La carga de inmuebles (`ImportWizard`, paso 3 del muro) ya no vive y muere con la pestaña. Contrato
+congelado en `.orchestration/tasks/T-0130-migracion-inmuebles-reanudable/contract.md`; el back es WU-1.
+
+- **Etapas** (`fase` del lote): `RECIBIENDO` (sube) -> `UBICANDO` (el NAVEGADOR busca las direcciones) ->
+  `REVISANDO` (job del servidor) -> `LISTA`. `etapaDeLaCarga` (`lib/describirCargaAbierta.ts`) las lee.
+- **Subir** (`lib/subirPorTandas.ts`): tandas de 500 con la MISMA `idempotencyKey`, `totalDelArchivo` (SIEMPRE,
+  también con una sola tanda: sin él el back guarda las filas sin coordenadas como ya «no ubicadas») y
+  `desde`. Se retoma en `siguienteDesde`. La clave se guarda por lote en `localStorage`
+  (`leasefy-carga-inmuebles-clave:<lote>`, `lib/claveDeCarga.ts`) porque el back no la devuelve; sin ella
+  (otro navegador) sólo se puede descartar. El servidor guarda las filas, NO el archivo: seguir subiendo exige
+  volver a elegir el mismo archivo (`ImportWizardState.subidaRetomada`).
+- **Ubicar** (`lib/ubicarPorTandas.ts`): mismo `ubicarDireccion`, misma pausa de siempre, pero las direcciones
+  salen de `GET lotes/:lote/por-ubicar` de a 50 y cada tanda se guarda con `PATCH lotes/:lote/ubicaciones`.
+  Un corte pierde a lo sumo 50; reanuda sola sin el archivo. «Continuar sin ubicar en el mapa» =
+  `reintentar { omitirUbicacion: true }`. La página debe quedar abierta mientras se ubica.
+- **Aviso al cerrar** (`useAvisoAlSalir`): sólo mientras se sube o se ubica (`StepConfirmImport`) y con un archivo
+  leído sin subir (`ImportWizard`). Activar y la revisión son reanudables y ya no lo piden.
+- **Tarjeta «Tienes una carga a medias»** (`CargasAMedias.tsx` + `use-cargas-abiertas-de-inmuebles.ts`): en
+  CUALQUIER paso del asistente, con o sin archivo leído; Continuar / Reintentar / Descartar (con confirmación).
+- **Activar de a 50** (`activarLoteCompleto`, `maximo: 50`): «X de Y creadas» sale de `progreso`; las filas
+  `fallidas` no frenan el resto, se listan con su motivo y «Reintentar las fallidas» las libera (todas juntas:
+  el back no libera una por una). Con fallidas NO se muestra «Importación completada».
+- **Sesión** (`asegurarSesionVigente`, `client.ts`): antes de cada tanda/llamada/sondeo se renueva el token si le
+  queda < 90 s. Con la sesión muerta se corta y se dice que lo subido está guardado; al volver a entrar la
+  tarjeta lo ofrece. No se guarda nada sensible en el navegador (sólo la clave de idempotencia, un UUID).
+- **409** `LOTE_INCOMPLETO` / `LOTE_EN_PROCESO` / `LOTE_FALLIDO` / `LOTE_NO_REINTENTABLE` / `LOTE_YA_CERRADO` /
+  `TOTAL_DEL_ARCHIVO_DISTINTO` se traducen en `lib/mensajeDeCarga.ts`.
 
 ## Agente de proyecto y skills
 

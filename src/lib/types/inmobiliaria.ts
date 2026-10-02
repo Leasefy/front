@@ -305,6 +305,8 @@ export interface Consignacion {
    * Never `0` (C6). `Consignacion.monthlyRent` was NOT NULL before T-0038.
    */
   monthlyRent: number | null;
+  /** T-0129 — canon por confirmar: `monthlyRent` es 0 pero NO es un canon; se muestra «Por confirmar». */
+  canonPorConfirmar?: boolean;
   adminFee?: number;
 
   /**
@@ -500,6 +502,8 @@ export interface BackendInmuebleSinConsignacion {
   propertyThumbnail: string | null;
   /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
   monthlyRent: number | null;
+  /** T-0129 — el canon está por confirmar: `monthlyRent` viene `null` y no es una venta. */
+  canonPorConfirmar?: boolean;
   adminFee: number;
   status: string;
   createdAt: string;
@@ -529,6 +533,8 @@ export interface InmuebleSinConsignacion {
   propertyThumbnail: string | null;
   /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
   monthlyRent: number | null;
+  /** T-0129 — el canon está por confirmar: `monthlyRent` viene `null` y no es una venta. */
+  canonPorConfirmar?: boolean;
   adminFee: number;
   status: PropertyStatusSinConsignacion;
   createdAt: string;

@@ -62,6 +62,8 @@ export interface BackendProperty {
    * key IS present it is always `number | null`, never omitted.
    */
   monthlyRent: number | null;
+  /** T-0129 — canon por confirmar (clave ausente a nivel PÚBLICO). `monthlyRent` viene `null`. */
+  canonPorConfirmar?: boolean;
   adminFee: number;
   deposit: number;
   /**

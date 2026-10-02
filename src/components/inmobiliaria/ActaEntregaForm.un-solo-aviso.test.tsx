@@ -98,4 +98,31 @@ describe('ActaEntregaForm — un solo aviso', () => {
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(toastMock.success).not.toHaveBeenCalled()
   })
+
+  it('🔴 manda EXACTAMENTE el cuerpo de CreateActaDto, sin datos inventados (02-10-2026)', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    await crearCon(onSave)
+    const cuerpo = onSave.mock.calls[0][0] as Record<string, unknown>
+    expect(cuerpo).toEqual(
+      expect.objectContaining({
+        type: 'ENTREGA',
+        propietarioId: 'own-1',
+        consignacionId: 'c-1',
+        propertyTitle: 'Apto 301',
+        propertyAddress: 'Cra 7 #45-23',
+        generalCondition: 'GOOD',
+      }),
+    )
+    for (const clave of ['id', 'status', 'tenantCedula', 'tenantPhone', 'tenantEmail', 'deliveryDate', 'signatures']) {
+      expect(cuerpo).not.toHaveProperty(clave)
+    }
+  })
+
+  it('sin quien guarde el borrador, el botón «Guardar borrador» no aparece (decía guardado sin guardar)', async () => {
+    await act(async () => {
+      root.render(<ActaEntregaForm consignaciones={[CONSIGNACION]} onSave={vi.fn()} />)
+    })
+    expect(boton('inmobiliaria.acta.saveDraft')).toBeUndefined()
+  })
 })
+

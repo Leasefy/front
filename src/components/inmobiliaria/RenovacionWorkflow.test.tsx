@@ -57,6 +57,8 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { CuerpoDeRenovacion } from './RenovacionWorkflow';
+import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DE_LA_RENOVACION as M } from '@/lib/renovaciones/limites-de-la-renovacion';
 
 const HOY = new Date(2026, 8, 8);
 
@@ -400,9 +402,9 @@ describe('la firma', () => {
 });
 
 /**
- * Los fallos se dicen y no avanzan. El aviso de C28 y C29 lo da la página
- * (su test lo cubre); acá se fija lo que le toca al cajón: con el handler
- * rechazado, no se pasa de paso ni se cierra el diálogo. C30 sí es del cajón.
+ * Los fallos se dicen y no avanzan. Con el handler rechazado no se pasa de
+ * paso ni se cierra el diálogo; desde el 02-10-2026 el porqué lo dice el
+ * cajón (bajo su campo o en su aviso), no un toast de la página.
  */
 describe('cuando algo falla (C28 · C29 · C30)', () => {
   beforeEach(() => {
@@ -454,9 +456,11 @@ describe('cuando algo falla (C28 · C29 · C30)', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(toastError).toHaveBeenCalledWith('No se pudo abrir el documento', {
-      description: 'El documento ya no está disponible',
-    });
+    // 02-10-2026: en el aviso del cajón, encima de los botones; no en un toast.
+    const aviso = porTestId('renovacion-aviso');
+    expect(aviso?.textContent).toContain('No se pudo abrir el documento');
+    expect(aviso?.textContent).toContain('El documento ya no está disponible');
+    expect(toastError).not.toHaveBeenCalled();
     expect(abrir).not.toHaveBeenCalled();
     abrir.mockRestore();
   });
@@ -503,5 +507,198 @@ describe('el riel', () => {
     await clic(porTestId('riel-agregar-nota'));
     expect(onNoteAdd).toHaveBeenCalledWith('Quedó de responder el lunes.');
     expect(porTestId<HTMLTextAreaElement>('riel-nota')?.value).toBe('');
+  });
+});
+
+/**
+ * 02-10-2026 (Nico): «los topes y los errores van en su campo, no en un
+ * toast». El tope del back se dice bajo el campo ANTES de mandar; un 400 con
+ * `campos` va bajo SU campo; lo que no tiene campo (un 5xx con su referencia)
+ * va al aviso de encima de los botones. Ningún error sale en un toast.
+ */
+describe('los errores, en su campo (02-10-2026)', () => {
+  beforeEach(() => {
+    toastError.mockReset();
+  });
+
+  const unTick = async () => {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  };
+  const errorDe = (id: string) => document.getElementById(`${id}-error`)?.textContent ?? '';
+
+  function cuatrocientos(campos: Array<{ campo: string; mensaje: string }>) {
+    return new ApiError(
+      400,
+      campos.map((c) => c.mensaje),
+      'DATOS_INVALIDOS',
+      {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: campos.map((c) => c.mensaje),
+        campos: campos.map((c) => ({ ...c, regla: 'maximo' })),
+      },
+    );
+  }
+
+  it('🔴 un canon con ceros de más se dice bajo el canon ANTES de mandar, y ni enviar ni guardar mandan', async () => {
+    const onSendNotification = vi.fn().mockResolvedValue(undefined);
+    const onSaveDraft = vi.fn().mockResolvedValue(undefined);
+    await montar({ onSendNotification, onSaveDraft });
+    await escribir(porTestId<HTMLInputElement>('renovacion-canon'), '30000000000');
+    await unTick();
+
+    expect(errorDe('renovacion-canon')).toBe(M.canonPropuestoMaximo);
+    expect(porTestId('renovacion-canon')?.getAttribute('aria-invalid')).toBe('true');
+    expect(porTestId('renovacion-canon')?.getAttribute('aria-describedby')).toBe('renovacion-canon-error');
+    expect(porTestId<HTMLButtonElement>('renovacion-enviar')?.disabled).toBe(true);
+    expect(porTestId<HTMLButtonElement>('renovacion-guardar')?.disabled).toBe(true);
+    await clic(porTestId('renovacion-enviar'));
+    expect(onSendNotification).not.toHaveBeenCalled();
+    expect(onSaveDraft).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('la administración con ceros de más también, bajo la administración', async () => {
+    await montar();
+    await escribir(porTestId<HTMLInputElement>('renovacion-admin'), '30000000000');
+    await unTick();
+    expect(errorDe('renovacion-admin')).toBe(M.administracionMaxima);
+  });
+
+  it('🔴 un 400 con `campos` pinta la frase del back bajo SU campo (canon y mensaje), sin aviso ni toast', async () => {
+    const frase = 'El mensaje no puede estar vacío.';
+    const onSendNotification = vi
+      .fn()
+      .mockRejectedValue(
+        cuatrocientos([
+          { campo: 'negotiatedRent', mensaje: M.canonNegociadoMaximo },
+          { campo: 'notificationMessage', mensaje: frase },
+        ]),
+      );
+    await montar({ onSendNotification });
+    await clic(porTestId('renovacion-enviar'));
+    await unTick();
+
+    expect(errorDe('renovacion-canon')).toBe(M.canonNegociadoMaximo);
+    expect(errorDe('renovacion-mensaje')).toBe(frase);
+    expect(porTestId('renovacion-mensaje')?.getAttribute('aria-invalid')).toBe('true');
+    expect(porTestId('renovacion-aviso')).toBeNull();
+    expect(porTestId('paso-propuesta')).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('al corregir el campo, el error del back se borra', async () => {
+    const onSendNotification = vi
+      .fn()
+      .mockRejectedValue(cuatrocientos([{ campo: 'negotiatedRent', mensaje: M.canonNegociadoMaximo }]));
+    await montar({ onSendNotification });
+    await clic(porTestId('renovacion-enviar'));
+    await unTick();
+    expect(errorDe('renovacion-canon')).toBe(M.canonNegociadoMaximo);
+
+    await escribir(porTestId<HTMLInputElement>('renovacion-canon'), '1600000');
+    await unTick();
+    expect(porTestId('renovacion-canon')?.getAttribute('aria-invalid')).toBeNull();
+    expect(texto()).not.toContain(M.canonNegociadoMaximo);
+  });
+
+  it('🔴 un 5xx va al aviso de encima de los botones, de nuestro lado y con la referencia', async () => {
+    const onSendNotification = vi.fn().mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'c0ffee12',
+      }),
+    );
+    await montar({ onSendNotification });
+    await clic(porTestId('renovacion-enviar'));
+    await unTick();
+
+    const aviso = porTestId('renovacion-aviso')?.textContent ?? '';
+    expect(aviso).toContain('No se pudo enviar la propuesta');
+    expect(aviso).toContain('de nuestro lado');
+    expect(aviso).toContain('c0ffee12');
+    expect(aviso.toLowerCase()).not.toContain('conexión');
+    expect(porTestId('paso-propuesta')).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('sin respuesta (status 0), el aviso habla de la conexión', async () => {
+    const onSaveDraft = vi.fn().mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar({ onSaveDraft });
+    await clic(porTestId('renovacion-guardar'));
+    await unTick();
+    const aviso = porTestId('renovacion-aviso')?.textContent ?? '';
+    expect(aviso).toContain('No se pudo guardar el borrador');
+    expect(aviso.toLowerCase()).toContain('conexión');
+  });
+
+  it('🔴 la nota que el back rechaza: su frase bajo la nota, y lo escrito se queda', async () => {
+    const onNoteAdd = vi
+      .fn()
+      .mockRejectedValue(cuatrocientos([{ campo: 'note', mensaje: M.notaVacia }]));
+    await montar({ onNoteAdd });
+    await escribir(porTestId<HTMLTextAreaElement>('riel-nota'), 'Quedó de responder el lunes.');
+    await clic(porTestId('riel-agregar-nota'));
+    await unTick();
+
+    expect(errorDe('riel-nota')).toBe(M.notaVacia);
+    expect(porTestId<HTMLTextAreaElement>('riel-nota')?.value).toBe('Quedó de responder el lunes.');
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 no renovar que el back rechaza: el porqué bajo el motivo, el diálogo abierto', async () => {
+    const onTerminate = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'La renovación ya estaba cerrada.'));
+    await montar({ onTerminate });
+    await clic(porTestId('renovacion-no-renovar'));
+    await escribir(porTestId<HTMLTextAreaElement>('no-renovar-motivo'), 'Se muda en diciembre.');
+    await clic(porTestId('no-renovar-confirmar'));
+    await unTick();
+
+    expect(errorDe('motivo-no-renovar')).toBe('La renovación ya estaba cerrada.');
+    expect(porTestId('dialogo-no-renovar')).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 el contrato firmado que no sube: el porqué bajo el archivo', async () => {
+    const onUploadDocument = vi
+      .fn()
+      .mockRejectedValue(new ApiError(400, 'El archivo tiene que ser PDF, JPG o PNG.'));
+    const onStepComplete = vi.fn();
+    await montar({ renovacion: { ...base, status: 'signed' }, onUploadDocument, onStepComplete });
+    await elegirArchivo(
+      porTestId<HTMLInputElement>('firma-archivo'),
+      new File(['x'], 'contrato.docx', { type: 'application/msword' }),
+    );
+    await clic(porTestId('renovacion-registrar-firma'));
+    await unTick();
+
+    expect(errorDe('firma-archivo')).toBe('El archivo tiene que ser PDF, JPG o PNG.');
+    expect(onStepComplete).not.toHaveBeenCalled();
+    expect(porTestId('renovacion-aviso')).toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('subió pero no se pudo completar: el porqué va al aviso, no al archivo', async () => {
+    const onUploadDocument = vi.fn().mockResolvedValue(undefined);
+    const onStepComplete = vi.fn().mockRejectedValue(new ApiError(409, 'La renovación no está firmada.'));
+    await montar({ renovacion: { ...base, status: 'signed' }, onUploadDocument, onStepComplete });
+    await elegirArchivo(
+      porTestId<HTMLInputElement>('firma-archivo'),
+      new File(['pdf'], 'contrato.pdf', { type: 'application/pdf' }),
+    );
+    await clic(porTestId('renovacion-registrar-firma'));
+    await unTick();
+
+    const aviso = porTestId('renovacion-aviso')?.textContent ?? '';
+    expect(aviso).toContain('No se pudo completar la renovación');
+    expect(aviso).toContain('La renovación no está firmada.');
+    expect(errorDe('firma-archivo')).toBe('');
+    expect(porTestId('paso-firma')).not.toBeNull();
   });
 });

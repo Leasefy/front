@@ -36,7 +36,18 @@
  * `aria-describedby`), y el primer campo que el servidor rechazó recibe el
  * foco. Si el back manda `campos`, se muestra SU frase (la del DTO, que dice
  * el tope exacto), no un texto fijo. Lo que no tiene campo en el diálogo
- * —el presupuesto, que hoy no se pide acá— va al pie con su frase.
+ * va al pie con su frase.
+ *
+ * ── «Presupuesto al mes (opcional)» (Nico, 02-10-2026) ────────────────────
+ *
+ * Cuánto puede pagar al mes, DICHO por el interesado. Llega a
+ * `datos_del_lead.presupuesto_cop`, que es lo que lee el matching; sin esto el
+ * matching lo deduce del canon del inmueble por el que preguntó, que es una
+ * suposición y no un dato. Tope: el de la columna ($2.000.000.000) con la
+ * MISMA frase del back (`lib/pipeline/limites-del-lead.ts`), dicho bajo el
+ * campo antes de mandar. Sólo aparece con el CRM habilitado: el camino viejo
+ * (`pipelineApi.create`) no tiene dónde guardarlo, y pedir un dato que no se
+ * va a guardar es mentir.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -64,6 +75,7 @@ import {
   MAX_LARGO_CORREO_DEL_CANDIDATO,
   MAX_LARGO_TELEFONO_DEL_CANDIDATO,
 } from '@/lib/pipeline/limites-del-pipeline';
+import { revisarPresupuestoDelLead } from '@/lib/pipeline/limites-del-lead';
 import { pipelineApi } from '@/lib/api/inmobiliaria.service';
 import { leadsApi } from '@/lib/api/crm.service';
 import { useCrm } from '@/lib/hooks/use-crm';
@@ -103,7 +115,7 @@ const CAMPO_DEL_SERVIDOR: Readonly<Record<string, Campo>> = {
   telefono: 'candidatePhone',
 };
 
-/** Los campos que el diálogo pinta hoy (el presupuesto no se pide acá). */
+/** Los campos que el diálogo pinta con el CRM habilitado. */
 const CAMPOS_VISIBLES: readonly Campo[] = [
   'consignacionId',
   'origen',
@@ -111,7 +123,19 @@ const CAMPOS_VISIBLES: readonly Campo[] = [
   'candidateEmail',
   'candidatePhone',
   'documento',
+  'presupuestoCop',
 ];
+
+/** Sólo los dígitos: el presupuesto es un entero de pesos. */
+function soloDigitos(texto: string): string {
+  return texto.replace(/\D/g, '');
+}
+
+const PESOS = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+});
 
 /** El control de cada campo: a ése va el foco cuando el servidor lo rechaza. */
 const ID_DEL_CONTROL: Readonly<Record<Campo, string>> = {
@@ -172,8 +196,9 @@ function campoDelDialogo(delServidor: string): Campo | undefined {
 
 export interface OpcionesDelReparto {
   /**
-   * Los campos que el formulario pinta. El error de uno que no se pinta (hoy,
-   * el presupuesto) va a `general`, con la frase del servidor: nunca se pierde.
+   * Los campos que el formulario pinta. El error de uno que no se pinta (p. ej.
+   * el presupuesto con el CRM sin habilitar) va a `general`, con la frase del
+   * servidor: nunca se pierde.
    */
   visibles?: readonly Campo[];
 }
@@ -249,6 +274,8 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   const [telefono, setTelefono] = useState('');
   const [documento, setDocumento] = useState('');
   const [origen, setOrigen] = useState('');
+  /** El presupuesto al mes, sólo dígitos. Vacío = no lo dijo. */
+  const [presupuesto, setPresupuesto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErroresDelLead>({ porCampo: {} });
   // `enviando` llega en el render siguiente: un doble clic mandaba dos leads.
@@ -270,10 +297,14 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     setTelefono('');
     setDocumento('');
     setOrigen('');
+    setPresupuesto('');
     setErrores({ porCampo: {} });
   }, [abierto]);
 
   const correoMalo = correo.trim() !== '' && !CORREO_VALIDO.test(correo.trim());
+  // El tope de la columna, con la frase del back, ANTES de mandar.
+  const presupuestoCop = presupuesto === '' ? null : Number(presupuesto);
+  const presupuestoMalo = conCrm ? revisarPresupuestoDelLead(presupuestoCop) : undefined;
   // 🔴 Con el CRM habilitado hacen falta el ORIGEN (B-07) y una llave de
   // contacto (B-04): sin documento ni teléfono no hay contra qué unir el
   // duplicado, y el back lo rechaza con `CONTACTO_SIN_LLAVE`.
@@ -283,11 +314,12 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     consignacionId !== '' &&
     nombre.trim() !== '' &&
     !correoMalo &&
+    !presupuestoMalo &&
     (!conCrm || (origen !== '' && !faltaLlave));
   const elegida = consignaciones.find((c) => c.id === consignacionId);
   const visibles: readonly Campo[] = conCrm
     ? CAMPOS_VISIBLES
-    : CAMPOS_VISIBLES.filter((c) => c !== 'origen' && c !== 'documento');
+    : CAMPOS_VISIBLES.filter((c) => c !== 'origen' && c !== 'documento' && c !== 'presupuestoCop');
 
   // El primer campo que el servidor rechazó recibe el foco (en el orden en
   // que se ven), para que se corrija sin buscarlo.
@@ -312,6 +344,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           ...(correo.trim() ? { correo: correo.trim() } : {}),
           ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
           ...(documento.trim() ? { documento: documento.trim() } : {}),
+          ...(presupuestoCop !== null ? { presupuestoCop } : {}),
         });
         toast.success('Lead cargado', {
           description: r.contactoUnido
@@ -348,6 +381,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   const mensajeDe = (campo: Campo): string | undefined => {
     if (campo === 'candidateEmail' && correoMalo) return MENSAJE_DEL_CAMPO.candidateEmail;
     if (campo === 'documento' && faltaLlave) return FALTA_LA_LLAVE;
+    if (campo === 'presupuestoCop' && presupuestoMalo) return presupuestoMalo;
     return errores.porCampo[campo];
   };
   const errorDe = (campo: Campo) => <ErrorDelCampo id={idDelError(campo)} mensaje={mensajeDe(campo)} />;
@@ -496,6 +530,40 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
                 {...aria('documento')}
               />
               {errorDe('documento')}
+            </div>
+          ) : null}
+
+          {/* Nico, 02-10-2026: lo que dice el interesado que puede pagar. El
+              matching lo usa en vez de suponerlo del canon del inmueble. */}
+          {conCrm ? (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-presupuesto">
+                Presupuesto al mes <span className="font-normal text-fg-subtle">(opcional)</span>
+              </label>
+              <Input
+                id="nuevo-lead-presupuesto"
+                inputMode="numeric"
+                value={presupuesto}
+                onChange={(e) => {
+                  setPresupuesto(soloDigitos(e.target.value));
+                  // Lo que el servidor rechazó ya no es lo que está escrito.
+                  if (errores.porCampo.presupuestoCop) {
+                    setErrores((prev) => ({ ...prev, porCampo: { ...prev.porCampo, presupuestoCop: undefined } }));
+                  }
+                }}
+                placeholder="$ 0"
+                data-testid="nuevo-lead-presupuesto"
+                {...aria('presupuestoCop')}
+              />
+              <ErrorDelCampo
+                id={idDelError('presupuestoCop')}
+                mensaje={mensajeDe('presupuestoCop')}
+                pista={
+                  presupuestoCop
+                    ? `${PESOS.format(presupuestoCop)} al mes. Con esto se le buscan inmuebles que pueda pagar.`
+                    : 'Lo que dice que puede pagar al mes. Sin esto se supone del canon del inmueble por el que preguntó.'
+                }
+              />
             </div>
           ) : null}
 

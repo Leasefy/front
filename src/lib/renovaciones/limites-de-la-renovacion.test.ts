@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MENSAJES_DE_LA_RENOVACION as M,
   VALOR_MAXIMO_DE_LA_RENOVACION_COP,
+  erroresDeLosValores,
   revisarValoresDeLaRenovacion,
 } from './limites-de-la-renovacion'
 
@@ -30,5 +31,22 @@ describe('revisarValoresDeLaRenovacion', () => {
 
   it('el tope cabe en la columna int4', () => {
     expect(VALOR_MAXIMO_DE_LA_RENOVACION_COP).toBeLessThanOrEqual(2_147_483_647)
+  })
+})
+
+describe('erroresDeLosValores', () => {
+  it('🔴 dice la frase de CADA campo que no cabe, con el nombre del DTO (para pintarla bajo su campo)', () => {
+    const tope = VALOR_MAXIMO_DE_LA_RENOVACION_COP
+    expect(
+      erroresDeLosValores({ proposedRent: tope + 1, negotiatedRent: 1_600_000, negotiatedAdminFee: -5 }),
+    ).toEqual({
+      proposedRent: M.canonPropuestoMaximo,
+      negotiatedAdminFee: M.administracionNegativa,
+    })
+  })
+
+  it('sin problemas (o sin valores) no hay errores', () => {
+    expect(erroresDeLosValores({ proposedRent: 1_600_000 })).toEqual({})
+    expect(erroresDeLosValores({})).toEqual({})
   })
 })

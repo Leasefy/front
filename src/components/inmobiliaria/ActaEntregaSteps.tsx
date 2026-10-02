@@ -25,8 +25,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { errorDelDeposito } from '@/lib/actas/limites-del-acta';
-import { IconButton, Chip, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
+import { liquidarElDeposito } from '@/lib/actas/devolucion-del-deposito';
+import { IconButton, Chip, RadioCardGroup, RadioCard, Presence } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   ActaInventoryItem,
@@ -848,19 +849,41 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
               </div>
             ))}
 
-            {/* Net to Return */}
-            {formData.depositAmount && (
-              <div className="p-4 rounded-lg bg-success-soft border border-success">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-success">
-                    {t('inmobiliaria.acta.amountToReturn')}:
-                  </span>
-                  <span className="font-mono font-bold tabular-nums text-success">
-                    ${(formData.depositAmount - (formData.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0)).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
-                  </span>
+            {/* Concepto escrito y valor dentro del tope del back, bajo la lista. */}
+            <ErrorDelCampo id="acta-descuentos-error" mensaje={errorDeLosDescuentos(formData.deductions)} />
+
+            {/* 🔴 Lo que se devuelve NUNCA es negativo (Nico, 02-10-2026): lo que
+                los descuentos pasan del depósito es un cargo aparte. */}
+            {formData.depositAmount ? (() => {
+              const { aDevolverCop, aCargoDelInquilinoCop } = liquidarElDeposito(
+                formData.depositAmount,
+                formData.deductions,
+              );
+              const pesos = (n: number) => `$${n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}`;
+              return (
+                <div className="space-y-2">
+                  <div className="p-4 rounded-lg bg-success-soft border border-success" data-testid="acta-a-devolver">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-success">
+                        {t('inmobiliaria.acta.amountToReturn')}:
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-success">
+                        {pesos(aDevolverCop)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Entra y sale con el movimiento de Cadence (transform y
+                      opacidad; con movimiento reducido, sólo el fundido). */}
+                  <Presence show={aCargoDelInquilinoCop > 0} initial={false} as="p"
+                    className="rounded-lg border border-warning bg-warning-soft p-3 text-sm text-warning"
+                    data-testid="acta-a-cargo-del-inquilino"
+                    role="status"
+                  >
+                    {t('inmobiliaria.acta.aCargoDelInquilino', { monto: pesos(aCargoDelInquilinoCop) })}
+                  </Presence>
                 </div>
-              </div>
-            )}
+              );
+            })() : null}
           </div>
         </div>
       )}

@@ -62,24 +62,42 @@ const REGLAS: ReadonlyArray<{
 
 /**
  * Los valores de la renovación revisados como los revisa el back
+ * (`UpdateRenovacionStageDto`), campo por campo: la frase de cada uno que no
+ * cabe, con el nombre del DTO. Un valor ausente no opina. Es lo que el cajón
+ * pinta BAJO cada campo antes de mandar (02-10-2026).
+ */
+export function erroresDeLosValores(
+  valores: ValoresDeLaRenovacion,
+): Partial<Record<keyof ValoresDeLaRenovacion, string>> {
+  const errores: Partial<Record<keyof ValoresDeLaRenovacion, string>> = {}
+  for (const r of REGLAS) {
+    const v = valores[r.campo]
+    if (v === null || v === undefined) continue
+    if (!Number.isInteger(v)) errores[r.campo] = r.entero
+    else if (v < 0) errores[r.campo] = r.negativo
+    else if (v > VALOR_MAXIMO_DE_LA_RENOVACION_COP) errores[r.campo] = r.maximo
+  }
+  return errores
+}
+
+/**
+ * Los valores de la renovación revisados como los revisa el back
  * (`UpdateRenovacionStageDto`). Devuelve la primera frase que falle, o
  * `undefined` si todo cabe. Un valor ausente no opina.
  */
 export function revisarValoresDeLaRenovacion(valores: ValoresDeLaRenovacion): string | undefined {
+  const errores = erroresDeLosValores(valores)
   for (const r of REGLAS) {
-    const v = valores[r.campo]
-    if (v === null || v === undefined) continue
-    if (!Number.isInteger(v)) return r.entero
-    if (v < 0) return r.negativo
-    if (v > VALOR_MAXIMO_DE_LA_RENOVACION_COP) return r.maximo
+    if (errores[r.campo]) return errores[r.campo]
   }
   return undefined
 }
 
 /**
- * La descripción de un toast cuando una acción de la renovación falla, por el
- * traductor: «conexión» sólo sin respuesta, un 5xx es nuestro (con la
- * referencia), un 4xx dice lo que mandó el back.
+ * Lo que se dice cuando una acción de la renovación falla, por el traductor:
+ * «conexión» sólo sin respuesta, un 5xx es nuestro (con la referencia), un
+ * 4xx dice lo que mandó el back. Desde el 02-10-2026 va en el cajón (bajo su
+ * campo o en el aviso de la acción), no en un toast.
  */
 export function mensajeDeLaRenovacion(error: unknown, accion: string): string {
   return mensajeParaLaPersona(error, {

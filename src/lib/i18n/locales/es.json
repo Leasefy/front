@@ -4839,6 +4839,7 @@
       "addDeduction": "Agregar deducción",
       "concept": "Concepto",
       "amountToReturn": "Monto a devolver",
+      "aCargoDelInquilino": "El inquilino debe {{monto}} más de lo que dejó de depósito: no se descuenta del depósito, va como un cargo aparte.",
       "reviewTitle": "Revisión y Confirmación",
       "reviewDesc": "Verifica la información antes de crear el acta",
       "notSelected": "No seleccionada",

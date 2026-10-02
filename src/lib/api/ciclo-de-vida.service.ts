@@ -61,6 +61,15 @@ export interface ProrrateoDelUltimoMes {
   terminaUnDiaAntes?: boolean;
 }
 
+/** El tope de la penalidad que definió la inmobiliaria (`tope-de-la-penalidad.ts` del back). */
+export interface TopeDeLaPenalidad {
+  canones: number;
+  valorCop: number;
+  origen: 'INMOBILIARIA' | 'CONTRATO';
+  descripcion: string;
+  mensaje: string;
+}
+
 export interface VistaPreviaDeTerminacion {
   puedeTerminarse: boolean;
   /** Por qué no se puede, en castellano. `null` cuando sí se puede. */
@@ -71,6 +80,14 @@ export interface VistaPreviaDeTerminacion {
   disponible: boolean;
   /** La penalidad por defecto (cánones del contrato o de la inmobiliaria), para prellenar. */
   penalidadSugerida?: { canones: number; valorCop: number } | null;
+  /**
+   * 🔴 El tope de la penalidad, que LO DEFINE CADA INMOBILIARIA (Nico, 02-10-2026):
+   * N cánones del contrato o de la configuración, por el canon. `descripcion`
+   * es la ayuda del campo; `mensaje`, el error si se pasa (la misma frase del
+   * 400 `PENALIDAD_SOBRE_EL_TOPE`). `null` = no hay tope de negocio (sólo el de
+   * la columna). Un back viejo no lo manda.
+   */
+  penalidadMaxima?: TopeDeLaPenalidad | null;
   /** D10: lo que falta de la garantía de servicios para recibir el inmueble. */
   garantiaDeServiciosPendiente?: string | null;
 }

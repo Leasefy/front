@@ -173,6 +173,88 @@ describe('<TerminarContrato> — errores en su campo', () => {
   })
 })
 
+/**
+ * 🔴 02-10-2026 · El tope de la penalidad LO DEFINE CADA INMOBILIARIA (Nico).
+ * La vista previa trae N cánones (del contrato o de la configuración) por el
+ * canon, con la frase del back: se dice como ayuda, se ataja antes de mandar,
+ * y el 400 `PENALIDAD_SOBRE_EL_TOPE` del back cae bajo el mismo campo.
+ */
+describe('<TerminarContrato> — el tope que definió la inmobiliaria', () => {
+  const DESCRIPCION = 'Tu inmobiliaria definió un máximo de 3 cánones ($9.000.000) por terminar antes.'
+  const MENSAJE = `${DESCRIPCION} La penalidad no puede pasar de ahí.`
+
+  beforeEach(() => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: true,
+      razon: null,
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+      penalidadSugerida: { canones: 3, valorCop: 9_000_000 },
+      penalidadMaxima: {
+        canones: 3,
+        valorCop: 9_000_000,
+        origen: 'INMOBILIARIA',
+        descripcion: DESCRIPCION,
+        mensaje: MENSAJE,
+      },
+    })
+  })
+
+  it('la ayuda del campo dice el máximo que definió la inmobiliaria', async () => {
+    await montar(terminar())
+    expect(q('[data-testid="terminar-contrato"]')?.textContent).toContain(DESCRIPCION)
+  })
+
+  it('🔴 más que el tope no deja confirmar y se dice debajo de la penalidad', async () => {
+    await montar(terminar())
+    await elegirMotivo()
+    const penalidad = q<HTMLInputElement>('[data-testid="penalidad-de-terminacion"]')!
+    await escribir(penalidad, '9000001')
+    expect(q('#penalidad-error')?.textContent).toBe(MENSAJE)
+    expect(penalidad.getAttribute('aria-invalid')).toBe('true')
+    expect(q<HTMLButtonElement>('[data-testid="confirmar-terminacion"]')!.disabled).toBe(true)
+    expect(api.terminar).not.toHaveBeenCalled()
+  })
+
+  it('el tope exacto y un valor negociado por debajo se mandan', async () => {
+    api.terminar.mockResolvedValue({
+      contractId: 'c1',
+      terminadoEn: '2026-09-30',
+      motivo: 'MUTUO_ACUERDO',
+      motivoLegible: 'Mutuo acuerdo',
+      finPactadoOriginal: '2026-12-31',
+      inmuebleLiberado: true,
+      prorrateoDelUltimoMes: null,
+    })
+    await montar(terminar())
+    await elegirMotivo()
+    await escribir(q<HTMLInputElement>('[data-testid="penalidad-de-terminacion"]')!, '4500000')
+    expect(q<HTMLButtonElement>('[data-testid="confirmar-terminacion"]')!.disabled).toBe(false)
+    await confirmar('confirmar-terminacion')
+    expect(api.terminar).toHaveBeenCalledWith('c1', expect.objectContaining({ penalidadCop: 4_500_000 }))
+  })
+
+  it('🔴 el 400 PENALIDAD_SOBRE_EL_TOPE del back va debajo de la penalidad, no al toast', async () => {
+    // P. ej. la inmobiliaria bajó el tope mientras la pantalla seguía abierta.
+    api.terminar.mockRejectedValue(
+      new ApiError(400, [MENSAJE], 'PENALIDAD_SOBRE_EL_TOPE', {
+        statusCode: 400,
+        code: 'PENALIDAD_SOBRE_EL_TOPE',
+        message: [MENSAJE],
+        campos: [{ campo: 'penalidadCop', regla: 'maximo', mensaje: MENSAJE, valor: 8_000_000 }],
+      }),
+    )
+    await montar(terminar())
+    await elegirMotivo()
+    await escribir(q<HTMLInputElement>('[data-testid="penalidad-de-terminacion"]')!, '8000000')
+    await confirmar('confirmar-terminacion')
+    expect(q('#penalidad-error')?.textContent).toBe(MENSAJE)
+    expect(document.activeElement).toBe(q('#penalidad'))
+    expect(toastError).not.toHaveBeenCalled()
+  })
+})
+
 describe('<CesionDelInmueble> — errores en su campo', () => {
   const cesion = () => (
     <CesionDelInmueble contractId="c1" propietarioActual="Ana" abierto onCerrar={vi.fn()} onRegistrada={vi.fn()} />

@@ -51,6 +51,17 @@ export const MENSAJES_DEL_CONTRATO_VIGENTE = {
   vigenciaDesde: 'El inicio de la vigencia no es un día real del calendario (usa AAAA-MM-DD).',
   vigenciaHasta: 'El fin de la vigencia no es un día real del calendario (usa AAAA-MM-DD).',
   diaDeEntrega: 'El día de entrega no es un día real del calendario (usa AAAA-MM-DD).',
+  // 🔴 02-10-2026 · Las fechas que se corrían (`2026-02-31` → 3 de marzo): el
+  // back las rechaza en su campo con estas frases (seguro, terminación,
+  // cesión y constancia de la carta).
+  aceptacionDelSeguro: 'El día de la aceptación del seguro no es un día real del calendario (usa AAAA-MM-DD).',
+  aceptacionDelSeguroFueraDeRango: 'El día de la aceptación del seguro debe estar entre el año 2000 y el 2100.',
+  fechaDeTerminacion: 'La fecha de terminación no es un día real del calendario (usa AAAA-MM-DD).',
+  fechaDeTerminacionFueraDeRango: 'La fecha de terminación debe estar entre el año 2000 y el 2100.',
+  fechaDeLaCesion: 'La fecha de la cesión no es un día real del calendario (usa AAAA-MM-DD).',
+  fechaDeLaCesionFueraDeRango: 'La fecha de la cesión debe estar entre el año 2000 y el 2100.',
+  fechaDeLaConstancia: 'El día de la entrega de la carta no es un día real del calendario (usa AAAA-MM-DD).',
+  fechaDeLaConstanciaFueraDeRango: 'El día de la entrega de la carta debe estar entre el año 2000 y el 2100.',
 } as const
 
 /**

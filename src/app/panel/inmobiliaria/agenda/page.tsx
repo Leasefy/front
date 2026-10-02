@@ -131,7 +131,13 @@ function AgendaContent() {
    * sólo se descarta) cuando el back la aceptó.
    */
   const runCitaAction = useCallback(
-    async (visitId: string, action: () => Promise<void>): Promise<boolean> => {
+    async (
+      visitId: string,
+      action: () => Promise<void>,
+      // `avisar: false`: el error lo dice quien llamó, bajo su campo (el
+      // diálogo del motivo al cancelar o rechazar), no un toast de acá.
+      { avisar = true }: { avisar?: boolean } = {},
+    ): Promise<boolean> => {
       if (enCurso.current) return false;
       enCurso.current = visitId;
       setActingId(visitId);
@@ -144,6 +150,7 @@ function AgendaContent() {
         // Con la sesión vencida el cliente HTTP ya está cerrando sesión: un
         // «no se pudo actualizar» encima sería mentira.
         if (err instanceof ApiError && err.status === 401) return false;
+        if (!avisar) return false;
         // El back explica POR QUÉ no se pudo (una cita ya cancelada, una que
         // no es de esta agencia…). Ese motivo viaja en la descripción, por el
         // traductor (02-10-2026): entero —antes un motivo de más de 160

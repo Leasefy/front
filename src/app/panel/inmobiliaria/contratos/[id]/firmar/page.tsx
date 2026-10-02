@@ -15,10 +15,17 @@ import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } 
 import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
+import { leerFallo } from '@/lib/errores/traductor-de-errores';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { EmptyState } from '@/components/ui/empty-state';
+
+/**
+ * El 400 de `signAsLandlord` cuando el inquilino todavía no firmó (el espejo de
+ * `CODIGO_INQUILINO_NO_HA_FIRMADO` en `back/src/contracts/contracts.service.ts`).
+ */
+const CODIGO_INQUILINO_NO_HA_FIRMADO = 'INQUILINO_NO_HA_FIRMADO';
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -60,17 +67,16 @@ function FirmarContratoContent() {
       setSigned(true);
       toast.success('Contrato firmado. Proceso completado.');
     } catch (err) {
-      // El back rechaza con 400 «Tenant must sign first» si el arrendador
-      // intenta firmar antes que el inquilino. Se lee EL error que vino.
-      // ⚠ Ese 400 no trae `code` (está en inglés y sin código en
-      // `signAsLandlord`): hasta que lo tenga, es el único que se reconoce
-      // por el texto. Lo demás pasa por el traductor (02-10-2026): un 5xx dice
-      // que fue nuestro, con la referencia; sólo la red habla de conexión.
+      // El back rechaza con 400 `INQUILINO_NO_HA_FIRMADO` si el arrendador
+      // intenta firmar antes que el inquilino. Se decide con el CÓDIGO, nunca
+      // con el texto (antes era «Tenant must sign first» y se reconocía con una
+      // expresión regular). Lo demás pasa por el traductor (02-10-2026): un 5xx
+      // dice que fue nuestro, con la referencia; sólo la red habla de conexión.
       const msg = motivoDelFalloDelContrato(err, {
         porDefecto: 'Prueba de nuevo en un momento.',
         accion: 'firmar el contrato',
       });
-      if (/tenant.*sign first/i.test(msg)) {
+      if (leerFallo(err).code === CODIGO_INQUILINO_NO_HA_FIRMADO) {
         toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
       } else if (isPermissionError(err)) {
         toast.error('No tienes permisos para esta acción.');
@@ -170,7 +176,7 @@ function FirmarContratoContent() {
               🔴 Acá decía «El inquilino ya fue notificado para que firme
               digitalmente». Es imposible: en este flujo la inmobiliaria firma
               ÚLTIMA. `signAsLandlord` (contracts.service.ts) rechaza con
-              «Tenant must sign first» si el inquilino no firmó antes, y al
+              400 `INQUILINO_NO_HA_FIRMADO` si el inquilino no firmó antes, y al
               pasar deja el contrato en SIGNED. O sea que cuando esta pantalla
               aparece, el inquilino YA firmó y no hay nada que notificarle:
               la pantalla anunciaba un paso que ya había ocurrido y dejaba a

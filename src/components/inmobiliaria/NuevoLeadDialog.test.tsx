@@ -297,12 +297,12 @@ describe('erroresDelLead', () => {
     expect(r.general).toBeUndefined();
   });
 
-  it('🔴 el presupuesto, que el diálogo no pinta, no se pierde: va al pie con la frase de Nico', () => {
+  it('🔴 el presupuesto va bajo su campo; si el campo no se pinta (CRM sin habilitar), al pie', () => {
     const frase = 'El presupuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
     const error = cuatrocientos([{ campo: 'presupuestoCop', regla: 'maximo', mensaje: frase }]);
-    // Sin campo en pantalla → al pie.
+    // Sin campo en pantalla → al pie: nunca se pierde.
     expect(erroresDelLead(error, { visibles: ['candidateName'] }).general).toBe(frase);
-    // El día que el formulario lo pida, ya sabe dónde ponerlo.
+    // Con el campo «Presupuesto al mes» (Nico, 02-10-2026) → bajo el campo.
     expect(erroresDelLead(error).porCampo.presupuestoCop).toBe(frase);
   });
 

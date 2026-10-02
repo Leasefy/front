@@ -161,9 +161,17 @@ export function TerminarContrato({
     paraLaInmobiliariaCop,
     MENSAJES_DEL_CONTRATO_VIGENTE.penalidadParaLaInmobiliariaMaxima,
   );
+  // 🔴 El tope de NEGOCIO lo define cada inmobiliaria (Nico, 02-10-2026): N
+  // cánones del contrato o de la configuración. La frase es la del back (la
+  // misma del 400 `PENALIDAD_SOBRE_EL_TOPE`), así que no hay dos redacciones.
+  const topeDeLaInmobiliaria = vista?.penalidadMaxima ?? null;
+  const sobreElTopeDeLaInmobiliaria =
+    penalidadCop !== null && topeDeLaInmobiliaria !== null && penalidadCop > topeDeLaInmobiliaria.valorCop
+      ? topeDeLaInmobiliaria.mensaje
+      : null;
   const errorDeLaPenalidad = penalidadInvalida
     ? "La penalidad tiene que ser mayor que cero."
-    : (topeDeLaPenalidad ?? errores.penalidadCop);
+    : (topeDeLaPenalidad ?? sobreElTopeDeLaInmobiliaria ?? errores.penalidadCop);
   const errorDeLaParte = repartoInvalido
     ? "La parte de la inmobiliaria no puede ser mayor que la penalidad."
     : (topeDeLaParte ?? errores.penalidadParaLaInmobiliariaCop);
@@ -175,6 +183,7 @@ export function TerminarContrato({
     !penalidadInvalida &&
     !repartoInvalido &&
     !topeDeLaPenalidad &&
+    !sobreElTopeDeLaInmobiliaria &&
     !topeDeLaParte &&
     vista?.puedeTerminarse !== false;
 
@@ -332,8 +341,10 @@ export function TerminarContrato({
                   {penalidadCop
                     ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
                     : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
-                  {vista?.penalidadSugerida &&
-                    ` Por defecto: ${vista.penalidadSugerida.canones} cánones.`}
+                  {topeDeLaInmobiliaria
+                    ? ` ${topeDeLaInmobiliaria.descripcion}`
+                    : vista?.penalidadSugerida &&
+                      ` Por defecto: ${vista.penalidadSugerida.canones} cánones.`}
                   {penalidadCop ? " Le llega al propietario menos la comisión." : ""}
                 </>
               }

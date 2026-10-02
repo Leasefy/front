@@ -23,7 +23,10 @@ import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
 import { fechaLocal } from '@/lib/fechas-locales';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
-import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import {
+  MotivoDialog,
+  mensajeDelRechazoDelMotivo,
+} from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
@@ -69,8 +72,14 @@ interface Props {
   /**
    * Las acciones de visita viven en la página (confirmar/rechazar/cancelar).
    * Devuelve si salió: con `false` el cajón y el motivo tipeado se quedan.
+   * `avisar: false` = el error lo dice quien llama (el diálogo del motivo,
+   * bajo su campo), así que la página no lo repite en un toast.
    */
-  onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<boolean | void>;
+  onAccionVisita: (
+    visitId: string,
+    accion: () => Promise<void>,
+    opciones?: { avisar?: boolean },
+  ) => Promise<boolean | void>;
   /**
    * Sin `operaciones:edit` el back responde 403 a toda acción sobre visitas y
    * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
@@ -99,6 +108,12 @@ export function EventoAgendaDrawer({
    * es el texto y a qué endpoint va.
    */
   const [pidiendoMotivo, setPidiendoMotivo] = useState<'cancelar' | 'rechazar' | null>(null);
+  /** El rechazo del back al cancelar o rechazar: va bajo el campo del motivo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  const pedirMotivo = (cual: 'cancelar' | 'rechazar') => {
+    setErrorDelMotivo(null);
+    setPidiendoMotivo(cual);
+  };
 
   const accionTarea = async (estado: 'COMPLETADA' | 'CANCELADA' | 'PENDIENTE') => {
     if (!evento) return;
@@ -126,11 +141,11 @@ export function EventoAgendaDrawer({
     }
   };
 
-  const visita = async (accion: () => Promise<void>) => {
+  const visita = async (accion: () => Promise<void>, opciones?: { avisar?: boolean }) => {
     if (!evento) return;
     setActuando(true);
     try {
-      const salio = await onAccionVisita(evento.id.replace(/^visit-/, ''), accion);
+      const salio = await onAccionVisita(evento.id.replace(/^visit-/, ''), accion, opciones);
       if (salio === false) return false;
       onOpenChange(false);
       return true;
@@ -139,18 +154,47 @@ export function EventoAgendaDrawer({
     }
   };
 
-  /** Cancelar y rechazar: las dos escriben el motivo que se acaba de tipear. */
+  /**
+   * Cancelar y rechazar: las dos escriben el motivo que se acaba de tipear.
+   *
+   * Si el back no la acepta, el diálogo sigue abierto con el motivo escrito y
+   * el porqué va BAJO el campo (02-10-2026), no en un toast de la página.
+   */
   const conMotivo = async (motivo: string) => {
     if (!evento || !pidiendoMotivo) return;
     const visitId = evento.id.replace(/^visit-/, '');
     const cual = pidiendoMotivo;
-    const salio = await visita(() =>
-      cual === 'cancelar'
-        ? agendaApi.cancelarCita(visitId, motivo)
-        : agendaApi.rechazarCita(visitId, motivo),
+    let rechazo: unknown;
+    setErrorDelMotivo(null);
+    const salio = await visita(
+      async () => {
+        try {
+          await (cual === 'cancelar'
+            ? agendaApi.cancelarCita(visitId, motivo)
+            : agendaApi.rechazarCita(visitId, motivo));
+        } catch (err) {
+          rechazo = err;
+          throw err;
+        }
+      },
+      { avisar: false },
     );
-    // Si el back no la aceptó, el diálogo sigue abierto con el motivo escrito.
-    if (salio !== false) setPidiendoMotivo(null);
+    if (salio !== false) {
+      setPidiendoMotivo(null);
+      return;
+    }
+    if (rechazo !== undefined) {
+      setErrorDelMotivo(
+        mensajeDelRechazoDelMotivo(rechazo, {
+          campo: 'reason',
+          porDefecto:
+            cual === 'cancelar'
+              ? 'No se pudo cancelar la visita. Prueba de nuevo en un momento.'
+              : 'No se pudo rechazar la visita. Prueba de nuevo en un momento.',
+          accion: cual === 'cancelar' ? 'cancelar la visita' : 'rechazar la visita',
+        }),
+      );
+    }
   };
 
   const dia = evento ? fechaLocal(evento.fecha) : null;
@@ -318,7 +362,7 @@ export function EventoAgendaDrawer({
                       size="sm"
                       hideArrow
                       disabled={actuando}
-                      onClick={() => setPidiendoMotivo('rechazar')}
+                      onClick={() => pedirMotivo('rechazar')}
                       data-testid="cita-rechazar"
                     >
                       {t(k('citaRechazar'))}
@@ -340,7 +384,7 @@ export function EventoAgendaDrawer({
                     size="sm"
                     hideArrow
                     disabled={actuando}
-                    onClick={() => setPidiendoMotivo('cancelar')}
+                    onClick={() => pedirMotivo('cancelar')}
                     data-testid="cita-cancelar"
                   >
                     {t(k('citaCancelar'))}
@@ -368,7 +412,11 @@ export function EventoAgendaDrawer({
             : 'La visita se cancela y le avisamos a quien la tenía agendada.'
         }
         etiquetaConfirmar={pidiendoMotivo === 'rechazar' ? 'Rechazar la visita' : 'Cancelar la visita'}
-        onCerrar={() => setPidiendoMotivo(null)}
+        error={errorDelMotivo}
+        onCerrar={() => {
+          setPidiendoMotivo(null);
+          setErrorDelMotivo(null);
+        }}
         onConfirmar={(motivo) => void conMotivo(motivo)}
       />
     </>

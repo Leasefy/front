@@ -35,6 +35,7 @@ const h = vi.hoisted(() => ({
     approveQuote: vi.fn(),
     updateStatus: vi.fn(),
     addQuote: vi.fn(),
+    subirFoto: vi.fn(),
   },
   mantenimientos: [] as unknown[],
   ultimoForm: null as Props | null,
@@ -426,5 +427,90 @@ describe('M4 — «Nueva solicitud» cuando los inmuebles no llegaron', () => {
 
     expect(document.body.querySelector('[data-testid="form-stub"]')).not.toBeNull()
     expect(document.body.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+})
+
+/**
+ * 02-10-2026 · Las fotos se suben de verdad, DESPUÉS de crear la solicitud.
+ *
+ * Antes la página mandaba `photoUrls` con la vista previa del navegador
+ * (`blob:`), que nadie más podía abrir. Ahora crea la solicitud sin fotos y
+ * sube cada archivo a `POST …/mantenimiento/:id/fotos`. Una foto que falla no
+ * deshace la solicitud: se dice cuál y por qué.
+ */
+describe('Las fotos de una solicitud nueva', () => {
+  const archivo = (nombre: string) => new File([new Uint8Array(64)], nombre, { type: 'image/jpeg' })
+
+  async function crearCon(fotos: File[]) {
+    await render()
+    await abrirNuevaSolicitud()
+    await act(async () => {
+      await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)({ ...SOLICITUD, fotos })
+    })
+  }
+
+  it('🔴 crea la solicitud SIN fotos y después sube cada archivo a ella, en orden', async () => {
+    const orden: string[] = []
+    h.api.create.mockImplementation(async () => {
+      orden.push('crear')
+      return { id: 'sol-1' }
+    })
+    h.api.subirFoto.mockImplementation(async (_id: string, f: File) => {
+      orden.push(`foto ${f.name}`)
+      return { ruta: 'x', photoUrls: [] }
+    })
+    const a = archivo('a.jpg')
+    const b = archivo('b.jpg')
+    await crearCon([a, b])
+
+    const cuerpo = h.api.create.mock.calls[0][0] as Record<string, unknown>
+    expect(cuerpo).not.toHaveProperty('photoUrls')
+    expect(cuerpo).not.toHaveProperty('fotos')
+    expect(h.api.subirFoto.mock.calls).toEqual([
+      ['sol-1', a],
+      ['sol-1', b],
+    ])
+    expect(orden).toEqual(['crear', 'foto a.jpg', 'foto b.jpg'])
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 una foto que no sube NO deshace la solicitud: se dice cuál y por qué', async () => {
+    h.api.create.mockResolvedValue({ id: 'sol-1' })
+    h.api.subirFoto
+      .mockResolvedValueOnce({ ruta: 'x', photoUrls: [] })
+      .mockRejectedValueOnce(
+        new ApiError(400, 'La foto no puede pesar más de 5 MB.', 'FOTO_MUY_PESADA', {
+          statusCode: 400,
+          code: 'FOTO_MUY_PESADA',
+          message: 'La foto no puede pesar más de 5 MB.',
+        }),
+      )
+    await crearCon([archivo('a.jpg'), archivo('b.jpg')])
+
+    // La solicitud quedó: el aviso de creada sale y el cajón se cierra.
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(document.body.querySelector('[data-testid="form-stub"]')).toBeNull()
+    expect(h.toast.error).toHaveBeenCalledWith(
+      'La solicitud quedó creada, pero una foto no se subió',
+      { description: '«b.jpg»: La foto no puede pesar más de 5 MB.' },
+    )
+  })
+
+  it('un 5xx al subir dice que fue de nuestro lado, con la referencia', async () => {
+    h.api.create.mockResolvedValue({ id: 'sol-1' })
+    h.api.subirFoto.mockRejectedValue(falloNuestro())
+    await crearCon([archivo('a.jpg'), archivo('b.jpg')])
+    const [titulo, { description }] = h.toast.error.mock.calls[0] as [string, { description: string }]
+    expect(titulo).toBe('La solicitud quedó creada, pero 2 fotos no se subieron')
+    expect(description).toContain('de nuestro lado')
+    expect(description).toContain('ab12cd34')
+    expect(description).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('si la solicitud no se creó, ninguna foto se intenta subir', async () => {
+    h.api.create.mockRejectedValue(falloNuestro())
+    await crearCon([archivo('a.jpg')])
+    expect(h.api.subirFoto).not.toHaveBeenCalled()
   })
 })

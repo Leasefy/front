@@ -37,8 +37,11 @@ import {
 } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
-import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
+import {
+  MotivoDialog,
+  mensajeDelRechazoDelMotivo,
+} from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { MAX_LARGO_MOTIVO_DE_PERDIDA, revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -176,6 +179,8 @@ export function PipelineDetail({
   const [isMoving, setIsMoving] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
   const [pidiendoMotivo, setPidiendoMotivo] = useState(false);
+  /** Lo que el back dijo del motivo (o del movimiento): va bajo el campo del diálogo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   const { stop: stopLenis, start: startLenis } = useLenis();
 
   useEffect(() => {
@@ -259,17 +264,28 @@ export function PipelineDetail({
   const handleMarkAsLost = useCallback(async (motivo: string) => {
     if (!item) return;
     // El mismo tope que el back (`MoveStageDto.lostReason`, VarChar(500)):
-    // se dice antes de mandar, y el diálogo queda abierto para recortarlo.
+    // el diálogo ya lo dice bajo el campo y no deja confirmar; esto es la
+    // segunda guarda, y también va bajo el campo (02-10-2026: nunca un toast).
     const largo = revisarMotivoDePerdida(motivo);
     if (largo) {
-      toast.error(largo);
+      setErrorDelMotivo(largo);
       return;
     }
 
+    setErrorDelMotivo(null);
     setIsMarking(true);
     try {
       await onStageChange?.(item.id, 'lost', motivo);
-    } catch {
+    } catch (error) {
+      // Con motivo, la página NO avisa en un toast: el porqué va bajo el
+      // campo y el diálogo sigue abierto con lo escrito.
+      setErrorDelMotivo(
+        mensajeDelRechazoDelMotivo(error, {
+          campo: 'lostReason',
+          porDefecto: 'No se pudo marcar como perdido. Prueba de nuevo en un momento.',
+          accion: 'marcar el lead como perdido',
+        }),
+      );
       setIsMarking(false);
       return;
     }
@@ -579,7 +595,10 @@ export function PipelineDetail({
             <Button
               variant="outline"
               hideArrow
-              onClick={() => setPidiendoMotivo(true)}
+              onClick={() => {
+                setErrorDelMotivo(null);
+                setPidiendoMotivo(true);
+              }}
               data-testid="pipeline-marcar-perdido"
               disabled={isMarking || isMoving}
               isLoading={isMarking}
@@ -624,7 +643,12 @@ export function PipelineDetail({
           descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
           etiquetaConfirmar="Marcar como perdido"
           enviando={isMarking}
-          onCerrar={() => setPidiendoMotivo(false)}
+          maximo={MAX_LARGO_MOTIVO_DE_PERDIDA}
+          error={errorDelMotivo}
+          onCerrar={() => {
+            setPidiendoMotivo(false);
+            setErrorDelMotivo(null);
+          }}
           onConfirmar={(motivo) => void handleMarkAsLost(motivo)}
         />
       </SheetContent>

@@ -19,7 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
-import { errorDelDeposito } from '@/lib/actas/limites-del-acta';
+import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
+import { cuerpoParaCrearElActa, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import type {
   ActaEntrega,
   Consignacion,
@@ -49,8 +50,17 @@ interface ActaEntregaFormProps {
    * Guardar el acta. Quien guarda DICE cómo le fue —el aviso de éxito y el
    * del fallo, por el traductor— y relanza si falla: el formulario no repite
    * ningún aviso (02-10-2026: eran dos toasts, uno culpando a la conexión).
+   *
+   * 🔴 02-10-2026 · Recibe EXACTAMENTE el cuerpo de `POST /inmobiliaria/actas`
+   * (`cuerpoParaCrearElActa`). Antes recibía un `ActaEntrega` entero —con una
+   * cédula, un teléfono y un correo de mentira para el inquilino— y el back
+   * lo rechazaba siempre con un 400 («crear un acta parece roto», Nico).
    */
-  onSave?: (acta: ActaEntrega) => void | Promise<void>;
+  onSave?: (cuerpo: CuerpoParaCrearElActa) => void | Promise<void>;
+  /**
+   * Guardar el borrador. Sin esto el botón NO se muestra: decía «Borrador
+   * guardado» sin guardar nada (02-10-2026).
+   */
   onSaveDraft?: (acta: Partial<ActaEntrega>) => void;
   onCancel?: () => void;
   isLoading?: boolean;
@@ -133,7 +143,12 @@ export function ActaEntregaForm({
       case 5:
         // El depósito (paso de observaciones) con el tope del back: uno de
         // once cifras no pasa de acá, y el error se ve bajo el campo.
-        return Boolean(formData.generalCondition) && !errorDelDeposito(formData.depositAmount);
+        // Y los descuentos: concepto escrito y valor dentro del tope del back.
+        return (
+          Boolean(formData.generalCondition) &&
+          !errorDelDeposito(formData.depositAmount) &&
+          !errorDeLosDescuentos(formData.deductions)
+        );
       case 6:
         return true; // Review step always valid
       default:
@@ -195,33 +210,14 @@ export function ActaEntregaForm({
     setIsSubmitting(true);
 
     try {
-      // Build the acta payload from the form. The backend assigns the canonical
-      // id/timestamps on persist, so we don't fabricate them on the client.
-      const acta: ActaEntrega = {
-        id: '',
-        ...formData,
-        propertyId: selectedConsignacion.propertyId,
-        propertyTitle: selectedConsignacion.propertyTitle,
-        propertyAddress: selectedConsignacion.propertyAddress,
-        tenantId: 'tenant-1',
-        tenantName: selectedConsignacion.currentTenantName || 'Inquilino',
-        tenantCedula: '1.234.567.890',
-        tenantPhone: '+57 300 123 4567',
-        tenantEmail: 'inquilino@email.com',
-        propietarioId: selectedConsignacion.propietarioId,
-        propietarioName: 'Propietario',
-        agenteId: selectedConsignacion.agenteId,
-        agenteName: 'Agente',
-        leaseId: selectedConsignacion.currentLeaseId || '',
-        status: 'pending_signatures',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      // Lo que acepta `CreateActaDto`, ni una clave más; el back pone el id,
+      // el estado y las fechas (y no hay datos del inquilino inventados).
+      const cuerpo = cuerpoParaCrearElActa(formData, selectedConsignacion);
 
       // Persist for real. The parent handler performs the API call and throws
       // on failure, so we await it to keep isSubmitting active and to catch errors.
       if (onSave) {
-        await onSave(acta);
+        await onSave(cuerpo);
       } else {
         toast.success(t('inmobiliaria.acta.actaCreated'), {
           description: t('inmobiliaria.acta.actaCreatedDesc'),
@@ -406,18 +402,20 @@ export function ActaEntregaForm({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Save Draft */}
-              <Button
-                type="button"
-                variant="secondary"
-                hideArrow
-                onClick={handleSaveDraft}
-                disabled={!formData.consignacionId}
-                className="gap-1.5"
-              >
-                <FloppyDisk className="w-4 h-4" />
-                {t('inmobiliaria.acta.saveDraft')}
-              </Button>
+              {/* Save Draft — sólo si alguien lo guarda de verdad. */}
+              {onSaveDraft && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  hideArrow
+                  onClick={handleSaveDraft}
+                  disabled={!formData.consignacionId}
+                  className="gap-1.5"
+                >
+                  <FloppyDisk className="w-4 h-4" />
+                  {t('inmobiliaria.acta.saveDraft')}
+                </Button>
+              )}
 
               {/* Next / Submit */}
               {currentStep < 6 ? (

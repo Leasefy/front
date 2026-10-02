@@ -72,6 +72,7 @@ vi.mock('@/components/ui/alert-dialog', () => {
 });
 
 import { PipelineDetail } from './PipelineDetail';
+import { ApiError } from '@/lib/api/client';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
 
 void React;
@@ -228,7 +229,49 @@ describe('PipelineDetail — el motivo cabe en su columna', () => {
     });
 
     expect(onStageChange).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith('El motivo puede tener hasta 500 caracteres.');
+    // Bajo el campo, con la frase del back (02-10-2026: antes era un toast).
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(
+      'El motivo puede tener hasta 500 caracteres.',
+    );
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 si el back rechaza el motivo, su frase va bajo el campo y el diálogo sigue abierto', async () => {
+    const frase = 'El motivo no puede ser sólo espacios.';
+    const onStageChange = vi.fn(() =>
+      Promise.reject(
+        new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: [frase],
+          campos: [{ campo: 'lostReason', regla: 'otro', mensaje: frase }],
+        }),
+      ),
+    );
+    montar(onStageChange as never);
+    toastError.mockReset();
+
+    await act(async () => {
+      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
+    });
+    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
+      texto.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(frase);
+    expect(texto.getAttribute('aria-invalid')).toBe('true');
+    expect(container.querySelector('[data-testid="motivo-dialog"]')).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+    expect(toastInfo).not.toHaveBeenCalled();
   });
 });
 

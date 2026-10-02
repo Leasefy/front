@@ -74,6 +74,7 @@ import {
 } from '@/components/inmobiliaria/CerrarActaSinFirma';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
+import type { CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import {
   documentosLegalesApi,
   type CategoriaDeDocumento,
@@ -320,9 +321,11 @@ function DocumentosContent() {
     }
   }, [borrando, recargar]);
 
-  const guardarActa = async (data: ActaEntrega) => {
+  // 🔴 02-10-2026: recibe EXACTAMENTE el cuerpo de `CreateActaDto` (antes un
+  // `ActaEntrega` entero, que el back rechazaba siempre con un 400).
+  const guardarActa = async (cuerpo: CuerpoParaCrearElActa) => {
     try {
-      await actasApi.create(data);
+      await actasApi.create(cuerpo);
       await recargarActas();
       setNuevaActaAbierta(false);
       toast.success(t('inmobiliaria.documentos.toasts.actaCreated'));

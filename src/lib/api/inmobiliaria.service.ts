@@ -4,6 +4,7 @@
  */
 
 import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
+import { actaDelBack, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
@@ -1678,6 +1679,51 @@ export const mantenimientoApi = {
   },
 
   /**
+   * POST /inmobiliaria/mantenimiento/:id/fotos — UNA foto de la solicitud
+   * (multipart `file`). Devuelve todas sus fotos ya firmadas.
+   *
+   * 🔴 02-10-2026: antes la foto no se subía: se guardaba la vista previa del
+   * navegador (`blob:`), que nadie más podía abrir. Ahora va al almacenamiento
+   * privado y la fila guarda la ruta. Se sube DESPUÉS de crear la solicitud,
+   * una por una: una foto que falla no tumba la solicitud.
+   *
+   * El rechazo sale con el sobre de error entero (`code`, `campos`), para que
+   * el traductor diga qué pasó: «conexión» sólo si no hubo respuesta.
+   */
+  async subirFoto(id: string, foto: File): Promise<{ ruta: string; photoUrls: string[] }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', foto, foto.name || 'foto.jpg');
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (!res.ok) {
+      const cuerpo = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      const mensaje =
+        Array.isArray(cuerpo.message) || typeof cuerpo.message === 'string'
+          ? (cuerpo.message as string | string[])
+          : 'No se pudo subir la foto';
+      throw new ApiError(
+        res.status,
+        mensaje,
+        typeof cuerpo.code === 'string' ? cuerpo.code : undefined,
+        cuerpo,
+      );
+    }
+    return res.json() as Promise<{ ruta: string; photoUrls: string[] }>;
+  },
+
+  /**
    * Agregarle una cotización a una solicitud que YA existe.
    *
    * El endpoint estaba en el back desde siempre (`POST :id/quote`) y este
@@ -2072,17 +2118,28 @@ export const documentosApi = {
 // ============================================================================
 
 export const actasApi = {
+  /*
+   * 02-10-2026 · El acta viaja en el vocabulario del back (`ENTREGA`,
+   * `ACTA_DRAFT`, `GOOD`) y el panel pinta el suyo: `actaDelBack` traduce lo
+   * que llega (antes toda acta salía como «Devolución» y sin estado).
+   */
   async getAll(): Promise<ActaEntrega[]> {
     const res = await apiClient.get<{ data: ActaEntrega[] } | ActaEntrega[]>(`${BASE}/actas`);
-    return lista(res);
+    return lista(res).map(actaDelBack);
   },
 
   async getById(id: string): Promise<ActaEntrega> {
-    return apiClient.get<ActaEntrega>(`${BASE}/actas/${id}`);
+    return actaDelBack(await apiClient.get<ActaEntrega>(`${BASE}/actas/${id}`));
   },
 
-  async create(data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas`, data);
+  /**
+   * 🔴 02-10-2026 · «Crear un acta desde el panel parece roto» (Nico): se
+   * mandaba el `ActaEntrega` entero y `CreateActaDto` respondía 400 por cada
+   * clave que no conoce. Ahora va EXACTAMENTE su cuerpo, armado en
+   * `cuerpoParaCrearElActa` (`lib/actas/acta-del-back.ts`).
+   */
+  async create(cuerpo: CuerpoParaCrearElActa): Promise<ActaEntrega> {
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas`, cuerpo));
   },
 
   /**
@@ -2093,7 +2150,7 @@ export const actasApi = {
    * vacío.
    */
   async update(id: string, data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data);
+    return actaDelBack(await apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data));
   },
 
   /**
@@ -2121,12 +2178,12 @@ export const actasApi = {
     id: string,
     testigo: { testigoNombre: string; testigoDocumento: string },
   ): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo);
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo));
   },
 
   /** El inquilino objeta dentro de los 5 días. NO reabre el acta: deja escrito. */
   async objetar(id: string, texto: string): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto });
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto }));
   },
 };
 

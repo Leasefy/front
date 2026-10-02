@@ -14,6 +14,21 @@
  * (`CancelVisitDto`/`RejectVisitDto`, `@MinLength(10)`): del lado del inquilino
  * ya se exige, y no tiene sentido que la inmobiliaria —que es quien deja al
  * otro esperando— pueda cancelar sin decir por qué.
+ *
+ * ── El error va bajo el campo (Nico, 02-10-2026) ───────────────────────────
+ *
+ * Dos cosas pueden estar mal y las dos se dicen DEBAJO del motivo, con
+ * `ErrorDelCampo` (entra suave y reemplaza la ayuda gris con un cruce), nunca
+ * en un toast que se va solo mientras el diálogo sigue abierto:
+ *
+ *  · el motivo es más largo que `maximo` (el tope de la columna del back):
+ *    se dice mientras se escribe y el botón no manda;
+ *  · el back lo rechazó (`error`): quien llama pasa la frase y el diálogo
+ *    queda abierto con lo escrito. Apenas se edita el texto, ese error se
+ *    borra: lo nuevo ya no es lo que el back rechazó.
+ *
+ * Antes el campo tenía `maxLength`: pegar un texto largo lo cortaba en
+ * silencio, y quien llamaba repetía el tope en un toast que nadie veía llegar.
  */
 
 import { useEffect, useState } from 'react';
@@ -30,12 +45,52 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ApiError } from '@/lib/api/client';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** El mismo mínimo que exige el back en el flujo del inquilino. */
 export const MINIMO_DEL_MOTIVO = 10;
 
 /** El tope del back para el motivo (cita: `reason`; pipeline: `lostReason`, `VarChar(500)`). */
 export const MAX_LARGO_DEL_MOTIVO = 500;
+
+/** La frase del tope, la MISMA del back (`MENSAJES_DEL_PIPELINE.motivoLargo`). */
+export function fraseDelMotivoLargo(maximo: number): string {
+  return `El motivo puede tener hasta ${maximo.toLocaleString('es-CO')} caracteres.`;
+}
+
+export interface OpcionesDelRechazo {
+  /**
+   * Cómo se llama el motivo en el cuerpo que se mandó (`lostReason`,
+   * `reason`). Si el back trae `campos` con ése, va SU frase.
+   */
+  campo: string;
+  /** Lo que se dice si el error no trae nada legible. */
+  porDefecto: string;
+  /** Lo que se estaba haciendo, para el texto de un 5xx («marcar el lead como perdido»). */
+  accion: string;
+}
+
+/**
+ * La frase que va bajo el motivo cuando el back dice que no, o `null` si no
+ * hay nada que decir (401: el cliente ya está cerrando la sesión).
+ *
+ * El diálogo tiene un solo campo, así que el pie del formulario y «bajo el
+ * campo» son el mismo lugar: también un 409 de estado o un 5xx van ahí, por
+ * el traductor (un 5xx dice que fue nuestro, con la referencia; «conexión»
+ * sólo sin respuesta). Lo que se pierde con un toast es justo esto: el
+ * diálogo sigue abierto con lo escrito y el porqué ya se fue.
+ */
+export function mensajeDelRechazoDelMotivo(
+  error: unknown,
+  { campo, porDefecto, accion }: OpcionesDelRechazo,
+): string | null {
+  if (error instanceof ApiError && error.status === 401) return null;
+  const delMotivo = camposDelError(error).find((c) => (c.campo.split('.').pop() ?? c.campo) === campo);
+  if (delMotivo) return delMotivo.mensaje;
+  return mensajeParaLaPersona(error, { porDefecto, accion });
+}
 
 interface Props {
   abierto: boolean;
@@ -44,9 +99,19 @@ interface Props {
   /** Qué dice el botón que confirma («Cancelar la visita», «Rechazarla»). */
   etiquetaConfirmar: string;
   enviando?: boolean;
+  /** El tope del campo en el back. Por defecto, 500. */
+  maximo?: number;
+  /**
+   * Lo que respondió el back al confirmar (ver `mensajeDelRechazoDelMotivo`),
+   * o `null`. Quien llama lo limpia antes de volver a mandar.
+   */
+  error?: string | null;
   onCerrar: () => void;
   onConfirmar: (motivo: string) => void;
 }
+
+const ID_DEL_CAMPO = 'motivo-de-la-agenda';
+const ID_DEL_ERROR = `${ID_DEL_CAMPO}-error`;
 
 export function MotivoDialog({
   abierto,
@@ -54,10 +119,15 @@ export function MotivoDialog({
   descripcion,
   etiquetaConfirmar,
   enviando = false,
+  maximo = MAX_LARGO_DEL_MOTIVO,
+  error = null,
   onCerrar,
   onConfirmar,
 }: Props) {
   const [motivo, setMotivo] = useState('');
+  // El rechazo del back describe el texto que se mandó: al editarlo deja de
+  // valer. Vuelve a verse con el próximo `error` que llegue.
+  const [errorEditado, setErrorEditado] = useState(false);
 
   // Que no arrastre el texto de la vez anterior: si alguien cancela dos visitas
   // seguidas, el motivo de la primera no es el de la segunda.
@@ -65,8 +135,15 @@ export function MotivoDialog({
     if (abierto) setMotivo('');
   }, [abierto]);
 
-  const falta = MINIMO_DEL_MOTIVO - motivo.trim().length;
+  useEffect(() => {
+    setErrorEditado(false);
+  }, [error]);
+
+  const largo = motivo.trim().length;
+  const falta = MINIMO_DEL_MOTIVO - largo;
   const sirve = falta <= 0;
+  const muyLargo = largo > maximo ? fraseDelMotivoLargo(maximo) : null;
+  const mensaje = muyLargo ?? (errorEditado ? null : error);
 
   return (
     <AlertDialog open={abierto} onOpenChange={(a) => !a && !enviando && onCerrar()}>
@@ -83,39 +160,47 @@ export function MotivoDialog({
         </AlertDialogHeader>
 
         <div className="space-y-1.5">
-          <label htmlFor="motivo-de-la-agenda" className="text-sm font-medium text-fg">
+          <label htmlFor={ID_DEL_CAMPO} className="text-sm font-medium text-fg">
             Motivo
           </label>
           <Textarea
-            id="motivo-de-la-agenda"
+            id={ID_DEL_CAMPO}
             value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              if (error) setErrorEditado(true);
+            }}
             rows={3}
-            // El tope del back: `reason` de la cita y `lostReason` del pipeline
-            // son 500 (02-10-2026). Más largo era un 400 sobre lo ya escrito.
-            maxLength={MAX_LARGO_DEL_MOTIVO}
             disabled={enviando}
             placeholder="Cuenta qué pasó. Lo va a leer quien esperaba la visita."
+            aria-invalid={mensaje ? true : undefined}
+            aria-describedby={mensaje ? ID_DEL_ERROR : undefined}
             data-testid="motivo-texto"
           />
-          {/* Un contador que dice cuánto FALTA, no cuánto va: el botón apagado
-              sin explicación es un callejón. */}
-          <p className="text-xs text-fg-muted">
-            {sirve
-              ? 'Se guarda con la cancelación y queda en el historial de la visita.'
-              : `Escribe ${falta} ${falta === 1 ? 'carácter' : 'caracteres'} más.`}
-          </p>
+          {/* La ayuda dice cuánto FALTA, no cuánto va (el botón apagado sin
+              explicación es un callejón); el error la reemplaza con un cruce. */}
+          <ErrorDelCampo
+            id={ID_DEL_ERROR}
+            mensaje={mensaje}
+            className="mt-0"
+            pista={
+              sirve
+                ? 'Se guarda con la cancelación y queda en el historial de la visita.'
+                : `Escribe ${falta} ${falta === 1 ? 'carácter' : 'caracteres'} más.`
+            }
+          />
         </div>
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={enviando}>Volver</AlertDialogCancel>
           <AlertDialogAction
-            disabled={!sirve}
+            disabled={!sirve || muyLargo !== null}
             loading={enviando}
             onClick={(e) => {
               // El motivo se manda acá; sin `preventDefault` el diálogo se
               // cierra antes de que la llamada termine y el error no se ve.
               e.preventDefault();
+              if (!sirve || muyLargo) return;
               onConfirmar(motivo.trim());
             }}
             data-testid="motivo-confirmar"

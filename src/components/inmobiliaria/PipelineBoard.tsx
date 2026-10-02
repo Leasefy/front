@@ -31,8 +31,11 @@ import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
-import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
-import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
+import {
+  MotivoDialog,
+  mensajeDelRechazoDelMotivo,
+} from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { MAX_LARGO_MOTIVO_DE_PERDIDA, revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 // ============================================================================
 // Types
@@ -375,6 +378,8 @@ export function PipelineBoard({
   // El lead que se soltó en «Perdido» y espera su motivo.
   const [perdiendo, setPerdiendo] = useState<PipelineItem | null>(null);
   const [enviandoMotivo, setEnviandoMotivo] = useState(false);
+  /** Lo que el back dijo del motivo (o del movimiento): va bajo el campo del diálogo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   // Get the item being dragged
   const activeItem = useMemo(() => {
@@ -467,6 +472,7 @@ export function PipelineBoard({
        * tarjeta no se mueve hasta que se confirma.
        */
       if (newStage === 'lost') {
+        setErrorDelMotivo(null);
         setPerdiendo(item);
         return;
       }
@@ -492,24 +498,32 @@ export function PipelineBoard({
   /**
    * Confirmar el motivo del arrastre a «Perdido».
    *
-   * Si el back dice que no, la página ya lo avisó con su mensaje (409/400) y
-   * devolvió la tarjeta: el diálogo queda abierto para corregir o cancelar,
-   * como en el cajón.
+   * Si el back dice que no, la página devuelve la tarjeta (y, con motivo, NO
+   * avisa en un toast): el porqué va bajo el campo del diálogo, que queda
+   * abierto con lo escrito para corregir o cancelar, como en el cajón.
    */
   const confirmarPerdido = useCallback(
     async (motivo: string) => {
       if (!perdiendo) return;
       // El mismo tope que el back (`MoveStageDto.lostReason`, VarChar(500)):
-      // se dice antes de mandar, y el diálogo queda abierto para recortarlo.
+      // el diálogo ya lo dice bajo el campo; ésta es la segunda guarda.
       const largo = revisarMotivoDePerdida(motivo);
       if (largo) {
-        toast.error(largo);
+        setErrorDelMotivo(largo);
         return;
       }
+      setErrorDelMotivo(null);
       setEnviandoMotivo(true);
       try {
         await onStageChange(perdiendo.id, 'lost', motivo);
-      } catch {
+      } catch (error) {
+        setErrorDelMotivo(
+          mensajeDelRechazoDelMotivo(error, {
+            campo: 'lostReason',
+            porDefecto: 'No se pudo marcar como perdido. Prueba de nuevo en un momento.',
+            accion: 'marcar el lead como perdido',
+          }),
+        );
         setEnviandoMotivo(false);
         return;
       }
@@ -574,7 +588,12 @@ export function PipelineBoard({
         descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
         etiquetaConfirmar="Marcar como perdido"
         enviando={enviandoMotivo}
-        onCerrar={() => setPerdiendo(null)}
+        maximo={MAX_LARGO_MOTIVO_DE_PERDIDA}
+        error={errorDelMotivo}
+        onCerrar={() => {
+          setPerdiendo(null);
+          setErrorDelMotivo(null);
+        }}
         onConfirmar={(motivo) => void confirmarPerdido(motivo)}
       />
 

@@ -27,6 +27,10 @@ import type {
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import {
+  lasQueNoSubieron,
+  subirFotosDelMantenimiento,
+} from '@/lib/mantenimiento/subir-fotos-del-mantenimiento';
+import {
   useMantenimientos,
   useConsignaciones,
   mantenimientoApi,
@@ -265,15 +269,27 @@ function MantenimientosContent() {
     setIsSubmittingMantenimiento(true);
 
     try {
-      await mantenimientoApi.create({
+      // 🔴 02-10-2026: la solicitud viaja SIN fotos. Antes viajaba la vista
+      // previa del navegador (`blob:`) en `photoUrls` y nadie más la podía
+      // abrir; ahora las fotos se suben de verdad, después, una por una.
+      const creada = await mantenimientoApi.create({
         consignacionId: data.consignacionId,
         type: data.type,
         priority: data.priority,
         title: data.title,
         description: data.description,
-        photoUrls: data.photoUrls,
         paidBy: data.paidBy,
       });
+
+      // La solicitud ya existe: una foto que no sube NO la deshace. Se dice
+      // cuál y por qué, y la solicitud queda creada.
+      const fotos = data.fotos ?? [];
+      const subida =
+        fotos.length > 0 && creada?.id
+          ? await subirFotosDelMantenimiento(creada.id, fotos, (id, foto) =>
+              mantenimientoApi.subirFoto(id, foto),
+            )
+          : null;
 
       await recargarMantenimientos();
 
@@ -282,6 +298,15 @@ function MantenimientosContent() {
       toast.success(t('inmobiliaria.operaciones.toasts.requestCreated'), {
         description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
       });
+      if (subida && subida.fallidas.length > 0) {
+        const n = subida.fallidas.length;
+        toast.error(
+          n === 1
+            ? 'La solicitud quedó creada, pero una foto no se subió'
+            : `La solicitud quedó creada, pero ${n} fotos no se subieron`,
+          { description: lasQueNoSubieron(subida.fallidas) },
+        );
+      }
     } catch (error) {
       // El back dice por qué no la creó («El inmueble no tiene contrato
       // activo», un 403…). 02-10-2026: un 400 con `campos` va bajo cada campo

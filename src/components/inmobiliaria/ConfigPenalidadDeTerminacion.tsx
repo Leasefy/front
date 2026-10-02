@@ -5,6 +5,13 @@
  * 17-09): «valor por defecto por inmobiliaria (ej. 3 cánones), editable por
  * contrato». Normalmente es del propietario —le llega menos la comisión— y al
  * terminar se puede negociar un reparto con la inmobiliaria.
+ *
+ * 🔴 02-10-2026 · Es también el TOPE: «el tope LO DEFINE CADA INMOBILIARIA»
+ * (Nico). Al terminar un contrato se puede cobrar menos (lo negociado), nunca
+ * más que estos cánones por el canon (o los que el contrato tenga propios). El
+ * back lo hace cumplir (`tope-de-la-penalidad.ts`, 400
+ * `PENALIDAD_SOBRE_EL_TOPE`); acá se dice para que nadie se sorprenda. Sin
+ * cánones no hay tope de negocio, sólo el de la columna.
  */
 
 import { useEffect, useState } from 'react';
@@ -55,8 +62,19 @@ export function ConfigPenalidadDeTerminacion({
       <div>
         <h3 className="text-sm font-medium">Penalidad por terminación anticipada</h3>
         <p className="text-xs text-muted-foreground">
-          Cuántos cánones se le cobran al inquilino que termina antes. Cada contrato la puede cambiar. Le
-          llega al propietario menos la comisión; al terminar se puede negociar un reparto con la inmobiliaria.
+          Cuántos cánones se le cobran al inquilino que termina antes, y el máximo que se le puede cobrar: al
+          terminar se puede cobrar menos, nunca más. Cada contrato la puede cambiar. Le llega al propietario
+          menos la comisión; al terminar se puede negociar un reparto con la inmobiliaria.{' '}
+          {/* Va en el mismo párrafo: la línea base de `text-xs` (doce-pixeles) no sube. */}
+          <span data-testid="penalidad-es-el-maximo">
+            {guardada == null
+              ? 'Sin cánones no hay máximo: al terminar se puede escribir cualquier valor.'
+              : Number(guardada) === 0
+                ? 'Con 0 cánones no se cobra penalidad al terminar un contrato.'
+                : `Al terminar un contrato no se podrá cobrar más de ${String(guardada).replace('.', ',')} ${
+                    Number(guardada) === 1 ? 'canon' : 'cánones'
+                  }.`}
+          </span>
         </p>
       </div>
       <div className="flex flex-wrap items-end gap-2">

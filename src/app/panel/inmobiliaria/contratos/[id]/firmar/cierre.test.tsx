@@ -4,8 +4,8 @@
  * 🔴 Decía: «El inquilino ya fue notificado para que firme digitalmente».
  *
  * Es imposible. En este flujo la inmobiliaria firma ÚLTIMA:
- * `ContractsService.signAsLandlord` rechaza con «Tenant must sign first» si
- * `contract.tenantSignature` está vacío, y al pasar deja el contrato en
+ * `ContractsService.signAsLandlord` rechaza con 400 `INQUILINO_NO_HA_FIRMADO`
+ * si `contract.tenantSignature` está vacío, y al pasar deja el contrato en
  * SIGNED. O sea que cuando esta pantalla aparece, el inquilino YA firmó: no
  * hay nadie a quien notificar y no queda ningún paso. La pantalla anunciaba
  * como pendiente algo que ya había pasado, y dejaba a quien acababa de firmar
@@ -134,11 +134,26 @@ describe('Firmar contrato — cuando el back rechaza, se dice el motivo', () => 
     });
   }
 
-  it('400 «Tenant must sign first» → «El inquilino todavía no firmó», y no se anuncia el cierre', async () => {
-    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(400, 'Tenant must sign first'));
+  it('🔴 400 `INQUILINO_NO_HA_FIRMADO` → «El inquilino todavía no firmó», y no se anuncia el cierre', async () => {
+    const message = 'El inquilino todavía no firmó. Puedes firmar como arrendador cuando él lo haga.';
+    signAsLandlordMock.mockReset().mockRejectedValue(
+      new ApiError(400, message, 'INQUILINO_NO_HA_FIRMADO', {
+        statusCode: 400,
+        code: 'INQUILINO_NO_HA_FIRMADO',
+        message,
+      }),
+    );
     await firmar();
+    expect(toast.error).toHaveBeenCalledTimes(1);
     expect(toast.error).toHaveBeenCalledWith('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
     expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
+  });
+
+  it('🔴 se decide por el CÓDIGO, no por el texto: el 400 viejo en inglés sin código ya no se reconoce', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(400, 'Tenant must sign first'));
+    await firmar();
+    expect(toast.error).not.toHaveBeenCalledWith('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
+    expect(toast.error).toHaveBeenCalledWith('No se pudo firmar el contrato.', expect.anything());
   });
 
   it('403 → dice que es de permisos', async () => {

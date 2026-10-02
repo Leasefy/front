@@ -190,7 +190,8 @@ function PipelineContent() {
    * back, y si falla se restaura esa foto en el acto (no se delega en el
    * refetch, que además puede traer datos viejos de una caché). El error se
    * dice UNA vez, acá, porque el mensaje es el mismo lo hayan disparado el
-   * arrastre o el cajón; y se relanza para que quien llamó no festeje.
+   * arrastre o el cajón; y se relanza para que quien llamó no festeje. La
+   * excepción es «Perdido» con motivo: ahí lo dice el diálogo bajo el campo.
    */
   const handleStageChange = useCallback(async (
     itemId: string,
@@ -241,9 +242,13 @@ function PipelineContent() {
       }
       // Por el traductor (02-10-2026): «conexión» sólo sin respuesta; un 5xx
       // es nuestro, con la referencia; un 400 dice qué campo está mal.
-      toast.error(TITULO_AL_NO_MOVER_EL_LEAD, {
-        description: mensajeAlNoMoverElLead(error),
-      });
+      // Con motivo («Perdido») quien llamó es `MotivoDialog`, abierto con lo
+      // escrito: el porqué va bajo SU campo, no en un toast (Nico, 02-10-2026).
+      if (!lostReason) {
+        toast.error(TITULO_AL_NO_MOVER_EL_LEAD, {
+          description: mensajeAlNoMoverElLead(error),
+        });
+      }
       // Relanzar: el tablero y el cajón NO deben cantar éxito.
       throw error;
     }

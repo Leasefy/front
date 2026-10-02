@@ -8,9 +8,9 @@
  * 🔁 Espejo de `back/src/inmobiliaria/leads/limites-del-lead.ts`. Si cambia
  * uno, cambia el otro.
  *
- * Hoy ninguna pantalla manda `presupuestoCop` (`NuevoLeadDialog` no tiene ese
- * campo): `revisarPresupuestoDelLead` queda lista para el formulario que lo
- * pida, y `erroresDelLead` ya sabe dónde va el error del servidor.
+ * `NuevoLeadDialog` pide «Presupuesto al mes (opcional)» (Nico, 02-10-2026) y
+ * lo revisa con `revisarPresupuestoDelLead` antes de mandar; el error del
+ * servidor va bajo el mismo campo (`erroresDelLead`).
  */
 
 /** El tope de la columna `int4`, en una cifra que se lee (decisión de Nico). */

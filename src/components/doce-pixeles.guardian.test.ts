@@ -98,7 +98,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 02-10: 2731 con los rediseños de modales, cajones y chat del día.
 // 02-10 tarde: 2606 con la tanda 2 de errores (los errores de campo hechos a
 // mano pasaron a `ErrorDelCampo`).
-const CUANTOS_HABIA = 2605;
+const CUANTOS_HABIA = 2604;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

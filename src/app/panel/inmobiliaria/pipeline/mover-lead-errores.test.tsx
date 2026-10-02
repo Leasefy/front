@@ -7,6 +7,10 @@
  *   · un 5xx dice «de nuestro lado» con la referencia, sin culpar a la red;
  *   · sin respuesta (status 0), la conexión;
  *   · y en los tres la tarjeta vuelve a su etapa (la promesa se rechaza).
+ *
+ * «Perdido» con motivo es la excepción (Nico, 02-10-2026): quien llama es
+ * `MotivoDialog`, abierto con lo escrito, y el porqué va bajo SU campo. La
+ * página no repite el aviso en un toast; sólo rechaza la promesa con el error.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
@@ -54,15 +58,26 @@ vi.mock('@/components/inmobiliaria', () => ({
   }: {
     onStageChange: (id: string, stage: PipelineStage, motivo?: string) => Promise<void>;
   }) => (
-    <button
-      type="button"
-      data-testid="perder"
-      onClick={() => {
-        onStageChange('l-1', 'lost', 'm'.repeat(501)).catch((e) => {
-          resultado.rechazo = e;
-        });
-      }}
-    />
+    <>
+      <button
+        type="button"
+        data-testid="perder"
+        onClick={() => {
+          onStageChange('l-1', 'lost', 'm'.repeat(501)).catch((e) => {
+            resultado.rechazo = e;
+          });
+        }}
+      />
+      <button
+        type="button"
+        data-testid="mover"
+        onClick={() => {
+          onStageChange('l-1', 'application').catch((e) => {
+            resultado.rechazo = e;
+          });
+        }}
+      />
+    </>
   ),
   PipelineFilters: () => null,
   PipelineDetail: () => null,
@@ -111,13 +126,13 @@ afterEach(async () => {
   contenedor.remove();
 });
 
-async function perderConError(error: unknown): Promise<string> {
+async function moverConError(error: unknown): Promise<string> {
   mover.mockRejectedValue(error);
   await act(async () => {
     root.render(<PipelinePage />);
   });
   await act(async () => {
-    contenedor.querySelector<HTMLButtonElement>('[data-testid="perder"]')!.click();
+    contenedor.querySelector<HTMLButtonElement>('[data-testid="mover"]')!.click();
   });
   expect(toastError).toHaveBeenCalledTimes(1);
   // Quien arrastró no festeja: la promesa se rechaza.
@@ -128,21 +143,21 @@ async function perderConError(error: unknown): Promise<string> {
 }
 
 describe('Pipeline — mover un lead que el back rechaza', () => {
-  it('🔴 un 400 con campos dice la frase del back (el motivo de pérdida es demasiado largo)', async () => {
-    const frase = 'El motivo puede tener hasta 500 caracteres.';
-    const texto = await perderConError(
+  it('🔴 un 400 con campos dice la frase del back', async () => {
+    const frase = 'La etapa no es válida.';
+    const texto = await moverConError(
       new ApiError(400, [frase], 'DATOS_INVALIDOS', {
         statusCode: 400,
         code: 'DATOS_INVALIDOS',
         message: [frase],
-        campos: [{ campo: 'lostReason', regla: 'longitud_maxima', mensaje: frase }],
+        campos: [{ campo: 'stage', regla: 'opcion', mensaje: frase }],
       }),
     );
     expect(texto).toBe(frase);
   });
 
   it('🔴 un 5xx dice que es nuestro, con la referencia, y no culpa a la conexión', async () => {
-    const texto = await perderConError(
+    const texto = await moverConError(
       new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
         statusCode: 500,
         code: 'ERROR_INTERNO',
@@ -157,8 +172,31 @@ describe('Pipeline — mover un lead que el back rechaza', () => {
   });
 
   it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
-    const texto = await perderConError(new ApiError(0, 'Failed to fetch'));
+    const texto = await moverConError(new ApiError(0, 'Failed to fetch'));
     expect(texto.toLowerCase()).toContain('conexión');
     expect(texto).not.toContain('Failed to fetch');
+  });
+});
+
+describe('Pipeline — «Perdido» con motivo que el back rechaza', () => {
+  it('🔴 no sale toast: el porqué lo dice el diálogo bajo el campo; la promesa se rechaza con el error', async () => {
+    const frase = 'El motivo puede tener hasta 500 caracteres.';
+    const error = new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: [frase],
+      campos: [{ campo: 'lostReason', regla: 'longitud_maxima', mensaje: frase }],
+    });
+    mover.mockRejectedValue(error);
+    await act(async () => {
+      root.render(<PipelinePage />);
+    });
+    await act(async () => {
+      contenedor.querySelector<HTMLButtonElement>('[data-testid="perder"]')!.click();
+    });
+
+    expect(toastError).not.toHaveBeenCalled();
+    // Quien llamó recibe el error entero (con sus `campos`) para pintarlo.
+    expect(resultado.rechazo).toBe(error);
   });
 });

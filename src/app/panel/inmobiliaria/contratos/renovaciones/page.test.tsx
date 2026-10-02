@@ -1,13 +1,18 @@
 /**
  * /contratos/renovaciones — lo que la página le promete al cajón.
  *
- * El cajón suelta el botón y NO avanza cuando el handler rechaza; avisar es
- * trabajo de la página. Dos handlers no cumplían:
+ * El cajón suelta el botón y NO avanza cuando el handler rechaza. Dos
+ * handlers no cumplían:
  *   - C28: subir el documento firmado no tenía try/catch → fallaba en
  *     silencio: el spinner se apagaba y nada;
  *   - C29: «No renovar» avisaba pero NO relanzaba → el cajón cerraba el
  *     diálogo como si hubiera salido.
  * Y N3: el aviso del IPC que falta vive arriba de la tabla.
+ *
+ * 🔴 02-10-2026 (Nico): «los topes y los errores van en su campo, no en un
+ * toast». Desde ahí la página NO avisa los fallos: rechaza con el error tal
+ * cual (con sus `campos`) y el cajón lo pinta bajo el campo o en su aviso
+ * (`RenovacionWorkflow.test.tsx`). Acá se fija que rechace y que no haya toast.
  */
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -122,7 +127,7 @@ async function rechazoDe(promesa: Promise<unknown>): Promise<unknown> {
 }
 
 describe('Renovaciones — C28: subir el documento firmado', () => {
-  it('🔴 si falla, avisa con el motivo del back y RECHAZA para que el cajón no avance', async () => {
+  it('🔴 si falla, RECHAZA con el error tal cual (el cajón lo dice bajo el archivo), sin toast', async () => {
     const fallo = new ApiError(413, 'El archivo supera los 10 MB');
     h.uploadDocument.mockRejectedValue(fallo);
     const cajon = await montarConElCajonAbierto();
@@ -130,9 +135,7 @@ describe('Renovaciones — C28: subir el documento firmado', () => {
     const archivo = new File(['pdf'], 'firmado.pdf', { type: 'application/pdf' });
     expect(await rechazoDe(cajon.onUploadDocument(archivo))).toBe(fallo);
 
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo subir el documento firmado', {
-      description: 'El archivo supera los 10 MB',
-    });
+    expect(h.toastError).not.toHaveBeenCalled();
     expect(h.toastSuccess).not.toHaveBeenCalled();
     expect(h.refetch).not.toHaveBeenCalled();
   });
@@ -149,16 +152,14 @@ describe('Renovaciones — C28: subir el documento firmado', () => {
 });
 
 describe('Renovaciones — C29: no renovar', () => {
-  it('🔴 si falla, RECHAZA (el diálogo no se cierra), avisa con el motivo y el cajón sigue abierto', async () => {
+  it('🔴 si falla, RECHAZA (el diálogo no se cierra) sin toast, y el cajón sigue abierto', async () => {
     const fallo = new ApiError(403, 'No tienes permiso para realizar esta acción');
     h.updateStage.mockRejectedValue(fallo);
     const cajon = await montarConElCajonAbierto();
 
     expect(await rechazoDe(cajon.onTerminate('Se muda en diciembre.'))).toBe(fallo);
 
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo cerrar la renovación', {
-      description: 'No tienes permiso para realizar esta acción',
-    });
+    expect(h.toastError).not.toHaveBeenCalled();
     expect(h.toastSuccess).not.toHaveBeenCalled();
     expect((h.cajon.props as unknown as PropsDelCajon).open).toBe(true);
   });
@@ -191,86 +192,69 @@ describe('Renovaciones — N3', () => {
 
 /**
  * 02-10-2026 · Sistema de errores. Enviar la propuesta, guardar el borrador y
- * agregar una nota decían «Reintenta» ante CUALQUIER fallo, también ante un
- * dato que el back rechazaba. Ahora el valor se revisa antes con el tope del
- * back, y lo que falla pasa por el traductor.
+ * agregar una nota decían «Reintenta» en un toast ante CUALQUIER fallo. Ahora
+ * el valor se revisa antes con el tope del back (segunda guarda: el cajón ya
+ * lo dice bajo el campo), y lo que el back rechaza vuelve al cajón tal cual,
+ * con sus `campos`, para que lo pinte donde va. Ningún toast de error.
  */
 const TOPE_DEL_CANON = 'El canon negociado no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
 
 describe('Renovaciones — enviar la propuesta', () => {
-  it('🔴 un canon con ceros de más se dice antes de mandar, con la frase del back, y el cajón no avanza', async () => {
+  it('🔴 un canon con ceros de más no se manda: rechaza con la frase del back, sin toast', async () => {
     const cajon = await montarConElCajonAbierto();
     const rechazo = await rechazoDe(cajon.onSendNotification('Hola', 2_000_000_001));
     expect(rechazo).toBeInstanceOf(Error);
+    expect((rechazo as Error).message).toBe(TOPE_DEL_CANON);
     expect(h.updateStage).not.toHaveBeenCalled();
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo enviar la propuesta', { description: TOPE_DEL_CANON });
+    expect(h.toastError).not.toHaveBeenCalled();
   });
 
-  it('🔴 un 400 con campos dice la frase del back, no «Reintenta»', async () => {
-    h.updateStage.mockRejectedValue(
-      new ApiError(400, [TOPE_DEL_CANON], 'DATOS_INVALIDOS', {
-        statusCode: 400,
-        code: 'DATOS_INVALIDOS',
-        message: [TOPE_DEL_CANON],
-        campos: [{ campo: 'negotiatedRent', regla: 'maximo', mensaje: TOPE_DEL_CANON }],
-      }),
-    );
+  it('🔴 un 400 con campos vuelve al cajón tal cual (con sus `campos`), sin toast', async () => {
+    const fallo = new ApiError(400, [TOPE_DEL_CANON], 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: [TOPE_DEL_CANON],
+      campos: [{ campo: 'negotiatedRent', regla: 'maximo', mensaje: TOPE_DEL_CANON }],
+    });
+    h.updateStage.mockRejectedValue(fallo);
     const cajon = await montarConElCajonAbierto();
-    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo enviar la propuesta', { description: TOPE_DEL_CANON });
+    expect(await rechazoDe(cajon.onSendNotification('Hola', 2_100_000))).toBe(fallo);
+    expect(h.toastError).not.toHaveBeenCalled();
+    expect(h.toastSuccess).not.toHaveBeenCalled();
   });
 
-  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
-    h.updateStage.mockRejectedValue(
-      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
-        statusCode: 500,
-        code: 'ERROR_INTERNO',
-        message: 'Error interno del servidor',
-        referencia: 'c0ffee12',
-      }),
-    );
+  it('si sale, relee la lista y lo canta', async () => {
+    h.updateStage.mockResolvedValue(undefined);
     const cajon = await montarConElCajonAbierto();
-    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
-    const { description } = h.toastError.mock.calls[0][1] as { description: string };
-    expect(description).toContain('de nuestro lado');
-    expect(description).toContain('c0ffee12');
-    expect(description.toLowerCase()).not.toContain('conexión');
-  });
-
-  it('🔴 sin respuesta (status 0), la conexión', async () => {
-    h.updateStage.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
-    const cajon = await montarConElCajonAbierto();
-    await rechazoDe(cajon.onSendNotification('Hola', 2_100_000));
-    const { description } = h.toastError.mock.calls[0][1] as { description: string };
-    expect(description.toLowerCase()).toContain('conexión');
+    await act(async () => {
+      await cajon.onSendNotification('Hola', 2_100_000);
+    });
+    expect(h.refetch).toHaveBeenCalledTimes(1);
+    expect(h.toastSuccess).toHaveBeenCalledWith('Propuesta enviada');
   });
 });
 
 describe('Renovaciones — guardar el borrador y agregar una nota', () => {
-  it('el borrador con un canon propuesto que no cabe no se manda', async () => {
+  it('el borrador con un canon propuesto que no cabe no se manda (y no hay toast)', async () => {
     const cajon = await montarConElCajonAbierto();
-    await rechazoDe(cajon.onSaveDraft({ proposedRent: 30_000_000_000 }));
+    const rechazo = await rechazoDe(cajon.onSaveDraft({ proposedRent: 30_000_000_000 }));
+    expect((rechazo as Error).message).toBe(
+      'El canon propuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    );
     expect(h.updateStage).not.toHaveBeenCalled();
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo guardar el borrador', {
-      description: 'El canon propuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
-    });
+    expect(h.toastError).not.toHaveBeenCalled();
   });
 
-  it('una nota que el back rechaza dice por qué (antes: «Error al agregar nota»)', async () => {
-    h.addNote.mockRejectedValue(
-      new ApiError(400, ['Escribe la nota antes de agregarla.'], 'DATOS_INVALIDOS', {
-        statusCode: 400,
-        code: 'DATOS_INVALIDOS',
-        message: ['Escribe la nota antes de agregarla.'],
-        campos: [{ campo: 'note', regla: 'requerido', mensaje: 'Escribe la nota antes de agregarla.' }],
-      }),
-    );
+  it('🔴 una nota que el back rechaza RECHAZA (antes se tragaba y la nota se borraba), sin toast', async () => {
+    const fallo = new ApiError(400, ['Escribe la nota antes de agregarla.'], 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: ['Escribe la nota antes de agregarla.'],
+      campos: [{ campo: 'note', regla: 'requerido', mensaje: 'Escribe la nota antes de agregarla.' }],
+    });
+    h.addNote.mockRejectedValue(fallo);
     const cajon = await montarConElCajonAbierto();
-    await act(async () => {
-      await cajon.onNoteAdd('   ');
-    });
-    expect(h.toastError).toHaveBeenCalledWith('No se pudo agregar la nota', {
-      description: 'Escribe la nota antes de agregarla.',
-    });
+    expect(await rechazoDe(cajon.onNoteAdd('   '))).toBe(fallo);
+    expect(h.toastError).not.toHaveBeenCalled();
   });
 });

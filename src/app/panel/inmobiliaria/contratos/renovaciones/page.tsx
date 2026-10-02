@@ -12,24 +12,20 @@ import { RenovacionesTable, RenovacionWorkflow } from '@/components/inmobiliaria
 import { AvisoIpcQueFalta } from '@/components/inmobiliaria/AvisoIpcQueFalta';
 import { BandejaDeCartasDelIncremento } from '@/components/contratos/BandejaDeCartasDelIncremento';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import {
-  mensajeDeLaRenovacion,
   revisarValoresDeLaRenovacion,
   type ValoresDeLaRenovacion,
 } from '@/lib/renovaciones/limites-de-la-renovacion';
 
 /**
  * Los valores de la renovación se revisan ANTES de mandar, con el tope y la
- * frase del back (02-10-2026): un canon con ceros de más daba un 500. Si no
- * caben, se avisa y se rechaza para que el cajón no avance.
+ * frase del back (02-10-2026): un canon con ceros de más daba un 500. El
+ * cajón ya lo dice bajo el campo y no manda; esto es la segunda guarda, y
+ * rechaza (sin toast: el cajón dice el porqué) para que no avance.
  */
-function exigirValoresQueCaben(titulo: string, valores: ValoresDeLaRenovacion) {
+function exigirValoresQueCaben(valores: ValoresDeLaRenovacion) {
   const problema = revisarValoresDeLaRenovacion(valores);
-  if (problema) {
-    toast.error(titulo, { description: problema });
-    throw new Error(problema);
-  }
+  if (problema) throw new Error(problema);
 }
 
 /**
@@ -137,112 +133,70 @@ function RenovacionesContent() {
           renovacion={selectedRenovacion}
           open={isWorkflowOpen}
           onClose={handleClose}
+          // 🔴 02-10-2026 (Nico): los errores van en su campo, no en un toast.
+          // Cada handler RECHAZA con el error tal cual (C28/C29: sin rechazo
+          // el cajón avanzaba o cerraba el diálogo como si hubiera salido) y
+          // el cajón lo pinta: bajo el campo que el back nombra, o en su
+          // aviso. Acá sólo se canta el éxito.
           onSendNotification={async (message, nr, naf, ipc) => {
-            exigirValoresQueCaben('No se pudo enviar la propuesta', {
-              negotiatedRent: nr,
-              negotiatedAdminFee: naf,
+            exigirValoresQueCaben({ negotiatedRent: nr, negotiatedAdminFee: naf });
+            await renovacionesApi.updateStage(selectedRenovacion.id, {
+              status: 'notified',
+              notificationMessage: message,
+              ...(nr ? { negotiatedRent: nr } : {}),
+              ...(naf ? { negotiatedAdminFee: naf } : {}),
+              // El IPC que escribió la inmobiliaria queda en la renovación.
+              ...(ipc != null ? { ipcRate: ipc } : {}),
             });
-            try {
-              await renovacionesApi.updateStage(selectedRenovacion.id, {
-                status: 'notified',
-                notificationMessage: message,
-                ...(nr ? { negotiatedRent: nr } : {}),
-                ...(naf ? { negotiatedAdminFee: naf } : {}),
-                // El IPC que escribió la inmobiliaria queda en la renovación.
-                ...(ipc != null ? { ipcRate: ipc } : {}),
-              });
-            } catch (error) {
-              // Por el traductor (02-10-2026): antes decía «Reintenta» ante
-              // cualquier fallo, también ante un dato que el back rechazaba.
-              toast.error('No se pudo enviar la propuesta', {
-                description: mensajeDeLaRenovacion(error, 'enviar la propuesta'),
-              });
-              throw error; // el cajón no avanza si no salió
-            }
             await recargarRenovaciones();
             toast.success('Propuesta enviada');
           }}
           onSaveDraft={async ({ proposedRent, negotiatedAdminFee, ipcRate }) => {
-            exigirValoresQueCaben('No se pudo guardar el borrador', { proposedRent, negotiatedAdminFee });
-            try {
-              await renovacionesApi.updateStage(selectedRenovacion.id, {
-                status: 'pending',
-                proposedRent,
-                ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
-                ...(ipcRate != null ? { ipcRate } : {}),
-              });
-            } catch (error) {
-              toast.error('No se pudo guardar el borrador', {
-                description: mensajeDeLaRenovacion(error, 'guardar el borrador'),
-              });
-              throw error;
-            }
+            exigirValoresQueCaben({ proposedRent, negotiatedAdminFee });
+            await renovacionesApi.updateStage(selectedRenovacion.id, {
+              status: 'pending',
+              proposedRent,
+              ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
+              ...(ipcRate != null ? { ipcRate } : {}),
+            });
             await recargarRenovaciones();
             toast.success('Borrador guardado');
           }}
           onUploadDocument={async (file) => {
-            // C28: sin este try el cajón soltaba el spinner y no decía nada.
-            // Rechazar es lo que lo deja quieto en el paso de la firma.
-            try {
-              await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
-            } catch (error) {
-              toast.error('No se pudo subir el documento firmado', {
-                description: mensajeDelFallo(error, 'Reintenta en un momento.'),
-              });
-              throw error;
-            }
+            // C28: rechazar es lo que lo deja quieto en el paso de la firma.
+            await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
             await recargarRenovaciones();
             toast.success('Documento de renovación subido');
           }}
           onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage, historyNote) => {
-            exigirValoresQueCaben('No se pudo actualizar la renovación', { negotiatedRent, negotiatedAdminFee });
-            try {
-              await renovacionesApi.updateStage(selectedRenovacion.id, {
-                status: newStatus,
-                ...(negotiatedRent ? { negotiatedRent } : {}),
-                ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
-                ...(notificationMessage ? { notificationMessage } : {}),
-                ...(historyNote ? { historyNote } : {}),
-              });
-              await recargarRenovaciones();
-              toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
-            } catch (error) {
-              toast.error('No se pudo actualizar la renovación', {
-                description: mensajeDeLaRenovacion(error, 'actualizar la renovación'),
-              });
-              throw error;
-            }
+            exigirValoresQueCaben({ negotiatedRent, negotiatedAdminFee });
+            await renovacionesApi.updateStage(selectedRenovacion.id, {
+              status: newStatus,
+              ...(negotiatedRent ? { negotiatedRent } : {}),
+              ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
+              ...(notificationMessage ? { notificationMessage } : {}),
+              ...(historyNote ? { historyNote } : {}),
+            });
+            await recargarRenovaciones();
+            toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
           }}
           onTerminate={async (reason) => {
-            try {
-              await renovacionesApi.updateStage(selectedRenovacion.id, {
-                status: 'terminated',
-                ...(reason ? { historyNote: reason } : {}),
-              });
-            } catch (error) {
-              // C29: avisar Y relanzar. Sin el `throw` el cajón creía que había
-              // salido y cerraba el diálogo con la renovación todavía abierta.
-              toast.error('No se pudo cerrar la renovación', {
-                description: mensajeDelFallo(error, 'Reintenta en un momento.'),
-              });
-              throw error;
-            }
+            // C29: rechazar deja el diálogo abierto con el motivo escrito.
+            await renovacionesApi.updateStage(selectedRenovacion.id, {
+              status: 'terminated',
+              ...(reason ? { historyNote: reason } : {}),
+            });
             await recargarRenovaciones();
             handleClose();
             toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
           }}
           onNoteAdd={async (note) => {
-            try {
-              await renovacionesApi.addNote(selectedRenovacion.id, note);
-              // La nota entra en el historial de la renovación: sin releer, el
-              // drawer seguía mostrando el historial sin ella.
-              await recargarRenovaciones();
-              toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
-            } catch (error) {
-              toast.error('No se pudo agregar la nota', {
-                description: mensajeDeLaRenovacion(error, 'agregar la nota'),
-              });
-            }
+            // Rechazar deja la nota escrita (antes se borraba aunque fallara).
+            await renovacionesApi.addNote(selectedRenovacion.id, note);
+            // La nota entra en el historial de la renovación: sin releer, el
+            // drawer seguía mostrando el historial sin ella.
+            await recargarRenovaciones();
+            toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
           }}
         />
       )}

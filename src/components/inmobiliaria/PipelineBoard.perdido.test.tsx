@@ -175,6 +175,12 @@ describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
 
     expect(toastInfo).not.toHaveBeenCalled();
     expect(dialogo()).not.toBeNull();
+    // 02-10-2026: el porqué va bajo el campo del motivo, no en un toast.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBeTruthy();
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it('🔴 un motivo de más de 500 caracteres (la columna) se dice antes de mandar, y el diálogo sigue abierto', async () => {
@@ -189,7 +195,13 @@ describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
     });
 
     expect(onStageChange).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith('El motivo puede tener hasta 500 caracteres.');
+    // Bajo el campo, con la frase del back, y el botón no manda (02-10-2026:
+    // antes era un toast).
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(
+      'El motivo puede tener hasta 500 caracteres.',
+    );
+    expect((container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(toastError).not.toHaveBeenCalled();
     expect(dialogo()).not.toBeNull();
   });
 

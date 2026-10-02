@@ -249,8 +249,6 @@ function PhotoGallery({
   onUpload?: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-
   if (!photos || photos.length === 0) {
     return (
       <div className="p-4 rounded-lg border border-dashed border-border text-center space-y-2">
@@ -277,21 +275,33 @@ function PhotoGallery({
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <div className="grid grid-cols-3 gap-2">
         {photos.map((url, idx) => (
-          // allowlist: image-tile button (clickable photo thumbnail w/ hover Eye overlay) —
+          // 02-10-2026: la foto SE VE (antes era un ícono y el clic no abría
+          // nada) y se abre entera en otra pestaña. La URL es la firmada que
+          // manda el back, válida una hora: al releer la lista llega otra.
+          // allowlist: image-tile link (clickable photo thumbnail w/ hover Eye overlay) —
           // hosts a fill image; Button/IconButton can't (image-tile precedent).
-          <button
-            key={idx}
-            type="button"
-            onClick={() => setSelectedPhoto(url)}
-            className="aspect-square rounded-md bg-muted overflow-hidden relative group"
+          <a
+            key={`${idx}-${url}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Abrir la foto ${idx + 1}`}
+            className="aspect-square rounded-md bg-muted overflow-hidden relative group block"
+            data-testid="mantenimiento-foto-guardada"
           >
             <div className="absolute inset-0 flex items-center justify-center bg-surface-muted dark:bg-surface-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
+            <img
+              src={url}
+              alt={`Foto ${idx + 1}`}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-          </button>
+          </a>
         ))}
         {onUpload && (
           // allowlist: add-photo dropzone tile (aspect-square dashed grid cell) — custom upload

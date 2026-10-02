@@ -1,5 +1,6 @@
 'use client';
 
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useRef, useState } from 'react';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InvitarAlPortal } from './InvitarAlPortal';
@@ -650,7 +651,9 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
                 {/* A SALE mandate can never have `availability: 'RENTED'`
                     (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`
                     is unreachable-null here — narrow the type, never coalesce. */}
-                {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                {consignacion.canonPorConfirmar
+                  ? TEXTO_CANON_POR_CONFIRMAR
+                  : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </p>
             </div>
           </div>

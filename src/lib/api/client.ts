@@ -219,6 +219,54 @@ async function renovarTokenVencido(usado: string | null): Promise<string | null>
 }
 
 /**
+ * T-0130 — renueva el access token ANTES de una llamada si le queda poco.
+ *
+ * Las cargas largas (subir por tandas, activar de a 50, sondear la ubicación)
+ * hacen cientos de llamadas a lo largo de media hora y cruzan varias
+ * renovaciones del token (dura una hora). `request` ya repite UNA vez un 401
+ * `AUTH_TOKEN_EXPIRED`, pero llegar al 401 cada vez es una ida y vuelta de más
+ * y, si cae junto a una carrera de renovación, un corte. Esto lo evita: si el
+ * token vence en menos de `margenMs` (o ya venció) se le pide uno al
+ * AuthProvider, y las llamadas siguientes salen con el nuevo.
+ *
+ * NUNCA lanza ni cierra la sesión: si no hay refresher, el token no se puede
+ * leer o la renovación falla, la llamada sale igual y `request` decide qué
+ * hacer con el 401 (incluido declarar la sesión muerta). Varias llamadas a la
+ * vez comparten UNA renovación.
+ */
+let _renovacionEnVuelo: Promise<void> | null = null
+
+function vencimientoDelToken(token: string): number | null {
+  try {
+    const carga = token.split('.')[1]
+    if (!carga) return null
+    const json = atob(carga.replace(/-/g, '+').replace(/_/g, '/'))
+    const exp = (JSON.parse(json) as { exp?: unknown }).exp
+    return typeof exp === 'number' ? exp * 1000 : null
+  } catch {
+    return null
+  }
+}
+
+export async function asegurarSesionVigente(margenMs = 90_000): Promise<void> {
+  if (sesionTerminada()) return
+  const token = getAccessToken()
+  if (!token || !_refrescarToken) return
+  const vence = vencimientoDelToken(token)
+  if (vence === null || vence - Date.now() > margenMs) return
+  if (!_renovacionEnVuelo) {
+    const refrescar = _refrescarToken
+    _renovacionEnVuelo = (async () => {
+      const nuevo = await refrescar().catch(() => null)
+      if (nuevo && nuevo !== token) setAccessToken(nuevo)
+    })().finally(() => {
+      _renovacionEnVuelo = null
+    })
+  }
+  await _renovacionEnVuelo
+}
+
+/**
  * `fetch` a una ruta PROPIA del front (`/api/**`) con la sesión puesta.
  *
  * Las rutas que bajan URLs de afuera (`/api/inmuebles/desde-enlace`,
@@ -276,7 +324,15 @@ export class ApiError extends Error {
      */
     public detalle?: Record<string, unknown>,
   ) {
-    super(Array.isArray(message) ? message.join(' · ') : message)
+    // T-0129 · el 409 de un inmueble sin canon dice siempre lo mismo y lleva a la
+    // misma salida, venga de publicar, consignar o crear un contrato.
+    super(
+      code === 'INMUEBLE_SIN_CANON'
+        ? 'Este inmueble tiene el canon por confirmar. Ponle el canon para continuar.'
+        : Array.isArray(message)
+          ? message.join(' · ')
+          : message,
+    )
     this.name = 'ApiError'
     if (Array.isArray(message)) this.messages = message
   }

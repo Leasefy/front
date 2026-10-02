@@ -96,10 +96,13 @@ function CeldaEditable({
   columna,
   valor,
   onCambia,
+  conError = false,
 }: {
   columna: ColumnaDePlantilla;
   valor: string;
   onCambia: (valor: string) => void;
+  /** El back señaló esta celda: se resalta para que se vea dónde corregir. */
+  conError?: boolean;
 }) {
   const base = useId();
   const idEtiqueta = `${base}-etiqueta`;
@@ -118,6 +121,8 @@ function CeldaEditable({
           onValueChange={(v) => onCambia(v === SIN_VALOR ? '' : v)}
         >
           <SelectTrigger
+            aria-invalid={conError || undefined}
+            className={conError ? 'border-danger' : undefined}
             aria-labelledby={idEtiqueta}
             aria-describedby={columna.ayuda ? idAyuda : undefined}
             data-testid={`campo-${columna.campo}`}
@@ -369,7 +374,11 @@ export function FilaDeTercero({
         {avisos.map((e, i) => (
           <li key={`${e.codigo}-${i}`} className="flex items-start gap-2 text-sm text-fg-muted">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-            <span>{e.mensaje}</span>
+            <span>
+              {e.codigo === 'CORREO_INVALIDO'
+                ? 'El correo no es válido (revisa que no tenga espacios ni signos como < >).'
+                : e.mensaje}
+            </span>
           </li>
         ))}
       </ul>
@@ -475,6 +484,7 @@ export function FilaDeTercero({
               key={columna.campo}
               columna={conAyudaPorTipo(columna)}
               valor={valorDe(columna.campo)}
+              conError={camposConError.has(columna.campo)}
               onCambia={(v) => setBorrador((b) => ({ ...b, [columna.campo]: v }))}
             />
           ))}

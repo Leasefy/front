@@ -428,7 +428,9 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     ).toBe('true')
   })
 
-  it('con la inmobiliaria ya creada no ofrece cambiar de perfil', () => {
+  // Nico, 01-10-2026: la ✕ está siempre; con la inmobiliaria a medias, elegir
+  // otro perfil pregunta y la deja de lado (`DELETE /users/me/onboarding/agency`).
+  it('con la inmobiliaria ya creada la ✕ sigue, para volver a las tarjetas', () => {
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({
         status: 'needs-info',
@@ -438,8 +440,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     )
     render()
 
-    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).toBeNull()
-    expect(container.querySelector('[data-testid="cambiar-de-perfil"]')).toBeNull()
+    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).not.toBeNull()
   })
 })
 

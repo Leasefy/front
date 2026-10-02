@@ -120,11 +120,12 @@ function ProvisionedOnboardingWizard() {
       <EleccionDePerfil
         abiertaAlInicio
         volverAlAsistente={corrigiendo && sessionId ? volverAlAsistente : undefined}
-        panelDeInmobiliaria={(cerrar, _alAbrirRegistro, alSaberSiPuedeCambiar) => (
+        panelDeInmobiliaria={(cerrar, _alAbrirRegistro, alSaberSiPuedeCambiar, alSaberDelRegistroAMedias) => (
           <PanelAntesDeComenzar
             aprovisionamiento={{ status, valoresGuardados, fallo, retry, provision, corrigiendo }}
             onCerrar={cerrar}
             onPuedeCambiarDePerfil={alSaberSiPuedeCambiar}
+            onRegistroAMedias={alSaberDelRegistroAMedias}
           />
         )}
       />

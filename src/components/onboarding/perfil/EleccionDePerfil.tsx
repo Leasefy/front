@@ -13,7 +13,19 @@ import { Spinner } from '@/components/ui/spinner'
 import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
+import { desistirDelRegistroDeInmobiliaria } from '@/lib/api/onboarding-provisioning.service'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
+import type { RegistroAMedias } from './PanelAntesDeComenzar'
 
 /** El resorte de las tarjetas al irse a la izquierda y al volver al centro. */
 const RESORTE: Transition = { type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }
@@ -45,6 +57,7 @@ export interface EleccionDePerfilProps {
     cerrar: () => void,
     alAbrirRegistro: (abriendo: boolean) => void,
     alSaberSiPuedeCambiar: (puede: boolean) => void,
+    alSaberDelRegistroAMedias: (registro: RegistroAMedias | null) => void,
   ) => ReactNode
   /**
    * El formulario se abrió desde el asistente para corregir los datos de la
@@ -112,8 +125,14 @@ export function EleccionDePerfil({
     estabaAbierta.current = abierta
   }, [abierta])
 
-  const elegir = (opcion: OpcionDePerfil) => {
-    if (abierta || yendoA) return
+  // La inmobiliaria a medias de esta persona, si la hay (lo dice el panel).
+  const [registroAMedias, setRegistroAMedias] = useState<RegistroAMedias | null>(null)
+  // El perfil que eligió con una inmobiliaria a medias: se pregunta antes.
+  const [porConfirmar, setPorConfirmar] = useState<OpcionDePerfil | null>(null)
+  const [dejandoDeLado, setDejandoDeLado] = useState(false)
+  const [errorAlDejar, setErrorAlDejar] = useState<string | null>(null)
+
+  const irAlPerfil = (opcion: OpcionDePerfil) => {
     void elegirPerfil(opcion.bandera).catch(() => undefined)
     if (opcion.valor === 'inmobiliaria') {
       setAbierta(true)
@@ -121,6 +140,48 @@ export function EleccionDePerfil({
     }
     setYendoA(opcion.valor)
     router.push(rutaDeOnboarding(opcion.bandera))
+  }
+
+  const elegir = (opcion: OpcionDePerfil) => {
+    if (abierta || yendoA) return
+    // Con una inmobiliaria a medias, otro perfil la deja de lado: se pregunta.
+    if (opcion.valor !== 'inmobiliaria' && registroAMedias) {
+      setErrorAlDejar(null)
+      setPorConfirmar(opcion)
+      return
+    }
+    irAlPerfil(opcion)
+  }
+
+  const dejarDeLadoYSeguir = async () => {
+    const opcion = porConfirmar
+    if (!opcion || dejandoDeLado) return
+    setDejandoDeLado(true)
+    setErrorAlDejar(null)
+    try {
+      await desistirDelRegistroDeInmobiliaria()
+      // El back le cambió el rol y le devolvió el onboarding pendiente: una
+      // carga completa arranca la sesión de cero con eso (permisos, agencia,
+      // guardas), en vez de remendar el contexto en caliente.
+      // Se espera poco: guardar el perfil elegido es cortesía (la ruta ya lo
+      // dice) y nunca puede dejar a nadie esperando aquí.
+      await Promise.race([
+        elegirPerfil(opcion.bandera).catch(() => undefined),
+        new Promise((resolver) => setTimeout(resolver, 1500)),
+      ])
+      setRegistroAMedias(null)
+      setYendoA(opcion.valor)
+      window.location.assign(rutaDeOnboarding(opcion.bandera))
+    } catch (error) {
+      // Nada se borró (el back se niega entero): se dice por qué y se queda aquí.
+      setErrorAlDejar(
+        error instanceof Error && error.message
+          ? error.message
+          : 'No pudimos dejar de lado el registro. Vuelve a intentarlo en un momento.',
+      )
+    } finally {
+      setDejandoDeLado(false)
+    }
   }
 
   const cerrar = () => setAbierta(false)
@@ -251,7 +312,12 @@ export function EleccionDePerfil({
                     exit={{ opacity: 0, x: 32, transition: { duration: 0.16 } }}
                     className={cn('min-w-0', abriendoRegistro && 'mx-auto w-full max-w-md')}
                   >
-                    {panelDeInmobiliaria(cerrar, setAbriendoRegistro, setPuedeCambiarDePerfil)}
+                    {panelDeInmobiliaria(
+                      cerrar,
+                      setAbriendoRegistro,
+                      setPuedeCambiarDePerfil,
+                      setRegistroAMedias,
+                    )}
                   </motion.section>
                 ) : null}
               </AnimatePresence>
@@ -259,6 +325,48 @@ export function EleccionDePerfil({
           </LayoutGroup>
         </main>
       </div>
+
+      {/* Otro perfil con una inmobiliaria a medias: se pregunta antes de
+          dejarla de lado (Nico, 01-10-2026). */}
+      <AlertDialog
+        open={porConfirmar !== null}
+        onOpenChange={(abrir) => {
+          if (!abrir && !dejandoDeLado) setPorConfirmar(null)
+        }}
+      >
+        <AlertDialogContent data-testid="dejar-de-lado-la-inmobiliaria">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Dejamos de lado el registro de {registroAMedias?.razonSocial ?? 'tu inmobiliaria'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Empezaste a registrar {registroAMedias?.razonSocial ?? 'tu inmobiliaria'} como inmobiliaria. Si
+              sigues como {porConfirmar?.titulo.toLowerCase() ?? 'otro perfil'}, ese registro se borra con lo que
+              llenaste de la inmobiliaria. Tu cuenta sigue siendo la misma.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {errorAlDejar ? (
+            <p role="alert" className="px-6 pb-2 text-body-sm text-danger" data-testid="error-al-dejar-de-lado">
+              {errorAlDejar}
+            </p>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dejandoDeLado}>Seguir con la inmobiliaria</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                // Que el diálogo no se cierre antes de saber si se pudo.
+                event.preventDefault()
+                void dejarDeLadoYSeguir()
+              }}
+              disabled={dejandoDeLado}
+            >
+              {dejandoDeLado
+                ? 'Dejándolo de lado...'
+                : `Sí, seguir como ${porConfirmar?.titulo.toLowerCase() ?? 'otro perfil'}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MotionConfig>
   )
 }

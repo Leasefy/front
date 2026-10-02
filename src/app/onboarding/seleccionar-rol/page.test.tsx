@@ -598,14 +598,16 @@ describe('«Inmobiliaria» abre «Antes de comenzar» al lado', () => {
     expect(container.querySelector('[data-testid="cambiar-de-perfil"]')).toBeNull()
   })
 
-  it('con la inmobiliaria ya creada no se ofrece volver a elegir (quedaría huérfana)', async () => {
+  // Nico, 01-10-2026: «¿cómo se devuelve entonces para ver de nuevo los dos
+  // activos?». La ✕ está siempre; con la inmobiliaria a medias, elegir otro
+  // perfil pregunta antes de dejarla de lado (ver `EleccionDePerfil`).
+  it('con la inmobiliaria ya creada la ✕ sigue: se puede volver a las tarjetas', async () => {
     aprovisionamientoState.valoresGuardados = { razonSocial: 'Inmobiliaria Andes SAS', nit: '890903938-8' }
     await render()
     await tocar(tarjeta('inmobiliaria'))
 
     expect(porId('agencyName').value).toBe('Inmobiliaria Andes SAS')
-    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).toBeNull()
-    expect(container.querySelector('[data-testid="cambiar-de-perfil"]')).toBeNull()
+    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).not.toBeNull()
   })
 
   it('cuando la sesión del asistente está lista sigue al mismo paso de siempre', async () => {

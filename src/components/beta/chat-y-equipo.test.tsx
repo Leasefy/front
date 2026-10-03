@@ -75,16 +75,23 @@ describe('«El equipo» desde la llegada', () => {
     expect(fila.textContent).toContain('Según lo que pidas, el chat llama a su especialista');
     const boton = fila.querySelector<HTMLButtonElement>('[data-testid="boton-del-equipo"]')!;
     expect(boton.textContent).toContain('Conoce al equipo');
+    // Nico, 03-10: la frase arriba y el botón debajo (lado a lado se veía «feo»).
+    expect([...fila.children].map((c) => c.getAttribute('data-testid') ?? 'frase')).toEqual(['frase', 'boton-del-equipo']);
     act(() => boton.click());
     expect(equipo.abrir).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('el compositor de la conversación (la misma caja de la llegada)', () => {
-  it('es la caja compacta, con Plantillas, y Enter envía', () => {
+  it('es la caja compacta, con Preguntas predeterminadas, y Enter envía', () => {
     const enviar = vi.fn();
     pintar(<ChatInput onSend={enviar} />);
     expect(container.querySelector('[data-compacta="true"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="boton-de-preguntas"]')!.getAttribute('aria-label')).toBe('Preguntas predeterminadas');
+    // Compacta: pb-2.5 abajo, así que la barra se corre 6 / 10 px hacia el borde (10 px de cada lado).
+    const barra = container.querySelector('[data-testid="barra-de-la-caja"]')!;
+    expect(barra.className).toContain('-mx-1.5');
+    expect(barra.className).toContain('sm:-mx-2.5');
     const area = container.querySelector<HTMLTextAreaElement>('[data-testid="caja-de-llegada"]')!;
     escribir(area, '¿Cómo va la cartera?');
     enter(area);
@@ -101,14 +108,14 @@ describe('el compositor de la conversación (la misma caja de la llegada)', () =
     expect(area.value).toBe('otra pregunta');
   });
 
-  it('Plantillas abre su menú pegado al botón y HACIA ARRIBA (está abajo de la pantalla)', () => {
+  it('Preguntas predeterminadas abre su menú pegado al botón y HACIA ARRIBA (está abajo de la pantalla)', () => {
     const enviar = vi.fn();
     // El botón está abajo de la pantalla: arriba hay lugar, abajo no.
     const original = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = () =>
       ({ top: 700, bottom: 740, left: 0, right: 100, width: 100, height: 40, x: 0, y: 700, toJSON: () => ({}) }) as DOMRect;
     pintar(<ChatInput onSend={enviar} />);
-    const boton = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Plantillas')!;
+    const boton = container.querySelector<HTMLButtonElement>('[data-testid="boton-de-preguntas"]')!;
     act(() => boton.click());
     HTMLElement.prototype.getBoundingClientRect = original;
     const menu = container.querySelector('[data-testid="menu-de-plantillas"]')!;
@@ -127,7 +134,7 @@ describe('el compositor de la conversación (la misma caja de la llegada)', () =
 });
 
 describe('la cabecera de la conversación', () => {
-  it('abre «El equipo» con sus orbes, deja «Terminar» y ya no repite Plantillas', () => {
+  it('abre «El equipo» con sus orbes, deja «Terminar» y ya no repite Preguntas predeterminadas', () => {
     pintar(<ChatConversationBar />);
     const boton = container.querySelector<HTMLButtonElement>('[data-testid="boton-del-equipo"]')!;
     expect(boton.getAttribute('aria-label')).toBe('Abrir el equipo de agentes');
@@ -135,5 +142,6 @@ describe('la cabecera de la conversación', () => {
     expect(equipo.abrir).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain('Terminar conversación');
     expect(container.textContent).not.toContain('Plantillas');
+    expect(container.textContent).not.toContain('Preguntas predeterminadas');
   });
 });

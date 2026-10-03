@@ -258,14 +258,17 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
 
           {/* Quiénes trabajan detrás: los orbes del equipo abren «El equipo»
               (02-10, commit `27a3b2b8`). La frase es verdad: el chat llama a
-              sus especialistas según lo que se pida. */}
+              sus especialistas según lo que se pida. Va centrada, ARRIBA del
+              botón y no a su lado (Nico, 03-10: «mira esto como se ve de feo»:
+              al lado, la frase partía en dos renglones corridos a la derecha).
+              Debajo de la frase, el botón no se confunde con un cuarto atajo. */}
           <motion.div
             {...entrada(5)}
-            className="mt-6 flex max-w-[760px] flex-col items-center justify-center gap-2.5 text-center text-[13px] leading-snug text-fg-subtle sm:flex-row sm:gap-3"
+            className="mt-8 flex max-w-[680px] flex-col items-center gap-3 text-center text-[13px] leading-snug text-fg-subtle"
             data-testid="fila-del-equipo"
           >
+            <span className="[text-wrap:balance]">{t('beta.welcome.especialistas')}</span>
             <BotonDelEquipo className="shrink-0" />
-            <span>{t('beta.welcome.especialistas')}</span>
           </motion.div>
         </div>
       </div>

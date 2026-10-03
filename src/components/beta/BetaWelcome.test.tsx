@@ -153,9 +153,13 @@ describe('la llegada del chat', () => {
     expect(onPromptClick).toHaveBeenCalledWith('¿Hay contratos próximos a vencer?');
   });
 
-  it('«Plantillas» abre el menú de siempre', () => {
+  it('«Preguntas predeterminadas» (antes «Plantillas») abre el menú de siempre', () => {
     pintar(<BetaWelcome />);
-    const boton = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Plantillas')!;
+    const boton = container.querySelector<HTMLButtonElement>('[data-testid="boton-de-preguntas"]')!;
+    // Nico, 03-10: no son plantillas, son preguntas predeterminadas.
+    expect(boton.getAttribute('aria-label')).toBe('Preguntas predeterminadas');
+    expect(boton.textContent).toContain('Preguntas predeterminadas');
+    expect(container.textContent).not.toContain('Plantillas');
     expect(boton.getAttribute('aria-expanded')).toBe('false');
     act(() => boton.click());
     expect(container.querySelector('[role="menu"]')).not.toBeNull();
@@ -170,13 +174,30 @@ describe('la llegada del chat', () => {
     expect(nombres.some((n) => /adjunt|\+|dictar/i.test(n))).toBe(false);
   });
 
-  it('«Plantillas» sale desde su botón: el menú vive junto al botón, no debajo de la bandeja', () => {
+  it('«Preguntas predeterminadas» sale desde su botón: el menú vive junto al botón, no debajo de la bandeja', () => {
     pintar(<BetaWelcome />, { agencia: 'Portofino' });
-    const boton = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Plantillas')!;
+    const boton = container.querySelector<HTMLButtonElement>('[data-testid="boton-de-preguntas"]')!;
     act(() => boton.click());
     const menu = container.querySelector('[data-testid="menu-de-plantillas"]')!;
     expect(menu.parentElement!.contains(boton)).toBe(true);
     expect(container.querySelector('[data-testid="bandeja-de-llegada"]')!.contains(menu)).toBe(false);
+  });
+
+  it('la barra de la caja deja sus botones a la misma distancia del borde que del fondo (12 px)', () => {
+    pintar(<BetaWelcome />);
+    // El contenido va con px-4 / sm:px-5 y pb-3: la barra se corre 4 / 8 px hacia el borde.
+    const barra = container.querySelector('[data-testid="barra-de-la-caja"]')!;
+    expect(barra.className).toContain('-mx-1');
+    expect(barra.className).toContain('sm:-mx-2');
+  });
+
+  it('la fila del equipo va en columna: la frase centrada arriba, nunca al lado del botón', () => {
+    pintar(<BetaWelcome />);
+    const fila = container.querySelector('[data-testid="fila-del-equipo"]')!;
+    expect(fila.className).toContain('flex-col');
+    expect(fila.className).not.toContain('sm:flex-row');
+    // Sin el provider del equipo el botón no se pinta (ver chat-y-equipo.test.tsx): la frase va primero.
+    expect(fila.firstElementChild!.textContent).toContain('Según lo que pidas');
   });
 
   it('sin conversaciones no se muestra NADA de «Conversaciones recientes»', () => {

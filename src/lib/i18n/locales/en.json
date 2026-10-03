@@ -11469,8 +11469,9 @@
       "stepsProgress": "{{completed}} of {{total}} completed"
     },
     "templates": {
-      "button": "Templates",
-      "title": "Templates"
+      "button": "Preset questions",
+      "buttonCorto": "Questions",
+      "title": "Preset questions"
     },
     "conversation": {
       "end": "End conversation",

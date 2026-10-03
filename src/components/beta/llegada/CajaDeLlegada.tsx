@@ -361,8 +361,19 @@ export function CajaDeLlegada({
                       </div>
                     )}
 
-                    {/* Barra de abajo */}
-                    <div className={cn('flex items-center justify-between gap-2', compacta ? 'mt-2' : 'mt-3')}>
+                    {/* Barra de abajo. Sus botones quedan a la MISMA distancia del
+                        borde que del fondo (Nico, 03-10: «está más lejos de la
+                        izquierda de abajo ese botón»): el contenido va con
+                        px-4 / sm:px-5 y el fondo con pb-3 (pb-2.5 la compacta);
+                        el margen negativo los deja a 12 px (10 px) de los dos
+                        lados, en la curva de la esquina. */}
+                    <div
+                      data-testid="barra-de-la-caja"
+                      className={cn(
+                        'flex items-center justify-between gap-2',
+                        compacta ? '-mx-1.5 mt-2 sm:-mx-2.5' : '-mx-1 mt-3 sm:-mx-2'
+                      )}
+                    >
                       {/* El menú sale DESDE este botón. */}
                       <span className="relative">
                         <button
@@ -370,6 +381,8 @@ export function CajaDeLlegada({
                           onClick={onPlantillas}
                           aria-haspopup="menu"
                           aria-expanded={plantillasAbiertas}
+                          aria-label={t('beta.templates.button')}
+                          data-testid="boton-de-preguntas"
                           className={cn(
                             'inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4',
                             boton,
@@ -380,7 +393,11 @@ export function CajaDeLlegada({
                           )}
                         >
                           <Cards size={16} aria-hidden />
-                          {t('beta.templates.button')}
+                          {/* «Preguntas predeterminadas», no «Plantillas» (Nico,
+                              03-10). En el celular no cabe junto a Voz y Enviar:
+                              ahí dice «Preguntas». */}
+                          <span className="sm:hidden">{t('beta.templates.buttonCorto')}</span>
+                          <span className="hidden sm:inline">{t('beta.templates.button')}</span>
                         </button>
                         {menuDePlantillas}
                       </span>

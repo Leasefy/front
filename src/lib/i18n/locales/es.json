@@ -11503,8 +11503,9 @@
       "stepsProgress": "{{completed}} de {{total}} completados"
     },
     "templates": {
-      "button": "Plantillas",
-      "title": "Plantillas"
+      "button": "Preguntas predeterminadas",
+      "buttonCorto": "Preguntas",
+      "title": "Preguntas predeterminadas"
     },
     "conversation": {
       "end": "Terminar conversación",

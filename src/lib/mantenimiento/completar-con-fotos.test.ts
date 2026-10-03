@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { ApiError } from '@/lib/api/client'
-import { completarConFotos } from './completar-con-fotos'
+import { borrarLasDelIntento, completarConFotos } from './completar-con-fotos'
 
 const foto = (nombre: string) => new File([new Uint8Array(10)], nombre, { type: 'image/jpeg' })
 
@@ -115,5 +115,88 @@ describe('completarConFotos', () => {
     const fallo = new ApiError(500, 'Error interno', 'ERROR_INTERNO', { statusCode: 500, referencia: 'ab12' })
     d.completar.mockRejectedValue(fallo)
     await expect(completarConFotos('sol-1', [], new Map(), d)).rejects.toBe(fallo)
+  })
+})
+
+/**
+ * 🔴 Cancelar el cierre borra las fotos del trabajo que subió ESE intento
+ * (Nico, 02-10-2026), con `DELETE :id/fotos` y `destino: 'trabajo'`.
+ */
+describe('borrarLasDelIntento', () => {
+  it('borra cada foto que subió el intento, una por una, con destino «trabajo»', async () => {
+    const yaSubidas = new Map([
+      [foto('a.jpg'), 'agencia/sol-1/a.jpg'],
+      [foto('b.jpg'), 'agencia/sol-1/b.jpg'],
+    ])
+    let enVuelo = 0
+    let maximoEnVuelo = 0
+    const borrar = vi.fn(async () => {
+      enVuelo += 1
+      maximoEnVuelo = Math.max(maximoEnVuelo, enVuelo)
+      await Promise.resolve()
+      enVuelo -= 1
+    })
+
+    const r = await borrarLasDelIntento('sol-1', yaSubidas, { borrar })
+
+    expect(borrar.mock.calls).toEqual([
+      ['sol-1', 'agencia/sol-1/a.jpg', 'trabajo'],
+      ['sol-1', 'agencia/sol-1/b.jpg', 'trabajo'],
+    ])
+    // Una por una: el back reescribe la lista de la fila en cada borrado.
+    expect(maximoEnVuelo).toBe(1)
+    expect(r).toEqual({ borradas: ['agencia/sol-1/a.jpg', 'agencia/sol-1/b.jpg'], fallidas: [] })
+    // Vacía de una: un segundo «Cancelar» no repite nada.
+    expect(yaSubidas.size).toBe(0)
+  })
+
+  it('🔴 un borrado que falla no frena los demás, nunca se rechaza y queda escrito en el log', async () => {
+    const yaSubidas = new Map([
+      [foto('a.jpg'), 'agencia/sol-1/a.jpg'],
+      [foto('b.jpg'), 'agencia/sol-1/b.jpg'],
+    ])
+    const fallo = new ApiError(503, 'No pudimos borrar el archivo.', 'FOTO_NO_BORRADA')
+    const borrar = vi.fn(async (_id: string, ruta: string) => {
+      if (ruta.endsWith('a.jpg')) throw fallo
+    })
+    const anotar = vi.fn()
+
+    const r = await borrarLasDelIntento('sol-1', yaSubidas, { borrar, anotar })
+
+    expect(r).toEqual({ borradas: ['agencia/sol-1/b.jpg'], fallidas: ['agencia/sol-1/a.jpg'] })
+    expect(anotar).toHaveBeenCalledTimes(1)
+    expect(anotar.mock.calls[0]![0]).toContain('agencia/sol-1/a.jpg')
+    expect(anotar.mock.calls[0]![0]).toContain('sol-1')
+    expect(anotar.mock.calls[0]![1]).toBe(fallo)
+  })
+
+  it('ni un log que revienta lo hace fallar', async () => {
+    const yaSubidas = new Map([[foto('a.jpg'), 'agencia/sol-1/a.jpg']])
+    const r = await borrarLasDelIntento('sol-1', yaSubidas, {
+      borrar: vi.fn().mockRejectedValue(new Error('caído')),
+      anotar: () => {
+        throw new Error('el log tampoco')
+      },
+    })
+    expect(r.fallidas).toEqual(['agencia/sol-1/a.jpg'])
+  })
+
+  it('sin fotos del intento no llama a nadie', async () => {
+    const borrar = vi.fn()
+    await borrarLasDelIntento('sol-1', new Map(), { borrar })
+    expect(borrar).not.toHaveBeenCalled()
+  })
+
+  it('la misma ruta dos veces se borra una sola vez', async () => {
+    const borrar = vi.fn().mockResolvedValue(undefined)
+    await borrarLasDelIntento(
+      'sol-1',
+      new Map([
+        [foto('a.jpg'), 'agencia/sol-1/a.jpg'],
+        [foto('a-otra-vez.jpg'), 'agencia/sol-1/a.jpg'],
+      ]),
+      { borrar },
+    )
+    expect(borrar).toHaveBeenCalledTimes(1)
   })
 })

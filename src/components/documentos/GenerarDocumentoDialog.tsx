@@ -30,7 +30,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
 import {
@@ -145,6 +145,12 @@ export function GenerarDocumentoDialog({
   const [preparando, setPreparando] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 02-10-2026 · Lo que el back rechazó de la fecha de vigencia AL GENERAR
+   * (`GenerateDocumentDto.overrides`, Nico): va bajo «Fecha de vigencia», no en
+   * el aviso general. Se borra al escribir en ese campo.
+   */
+  const [vigenciaRechazada, setVigenciaRechazada] = useState<string | null>(null);
 
   const plantilla = useMemo(
     () => plantillas.find((p) => p.codigo === codigo) ?? null,
@@ -191,6 +197,7 @@ export function GenerarDocumentoDialog({
     setPreparacion(null);
     setValores({});
     setError(null);
+    setVigenciaRechazada(null);
     // `fechaDeVigencia` es SÓLO de la carta de incremento: es lo que fija el
     // tope del art. 20. Si sobrevive al cierre, el próximo documento —un
     // inventario, un acta— se prepara con un parámetro que no es suyo.
@@ -206,6 +213,7 @@ export function GenerarDocumentoDialog({
    */
   const escribirCampo = useCallback((nombre: string, valor: string) => {
     setValores((v) => ({ ...v, [nombre]: valor }));
+    if (nombre === 'fechaDeVigencia') setVigenciaRechazada(null);
     // 🔴 02-10-2026 · Un día que no existe (`2026-02-31`) o fuera de 2000–2100
     // no se le pregunta al back: se dice bajo el campo con su misma frase.
     if (
@@ -319,8 +327,9 @@ export function GenerarDocumentoDialog({
 
   // La fecha de vigencia que el back rechazaría (`@EsDiaDelCalendario` +
   // `@FechaEntre`): con ella no se genera la carta.
-  const errorDeLaVigencia = preparacion?.campos.some((c) => c.nombre === 'fechaDeVigencia')
-    ? errorDeLaFechaDeVigencia(valores.fechaDeVigencia)
+  const tieneVigencia = preparacion?.campos.some((c) => c.nombre === 'fechaDeVigencia') ?? false;
+  const errorDeLaVigencia = tieneVigencia
+    ? (errorDeLaFechaDeVigencia(valores.fechaDeVigencia) ?? vigenciaRechazada)
     : null;
 
   /* Una propia se puede generar en cuanto hay sobre qué; si no usa variables,
@@ -388,6 +397,20 @@ export function GenerarDocumentoDialog({
       onGenerado(documento);
       onOpenChange(false);
     } catch (e: unknown) {
+      // 02-10-2026 · La fecha de vigencia que el back rechaza al generar
+      // (`overrides`, regla `fecha`) va bajo su campo, con la frase del back.
+      const deLaVigencia = tieneVigencia
+        ? camposDelError(e).find(
+            (c) =>
+              c.campo === 'overrides.fechaDeVigencia' ||
+              c.campo === 'fechaDeVigencia' ||
+              (c.campo === 'overrides' && c.regla === 'fecha'),
+          )
+        : undefined;
+      if (deLaVigencia) {
+        setVigenciaRechazada(deLaVigencia.mensaje);
+        return;
+      }
       // El mensaje del backend tal cual: cuando faltan variables dice
       // exactamente cuáles, y cuando el incremento se pasa del tope dice el
       // artículo y el IPC. Por el traductor (02-10-2026): un 5xx dice que falló
@@ -408,6 +431,7 @@ export function GenerarDocumentoDialog({
     consignacionId,
     valores,
     preparacion,
+    tieneVigencia,
     onGenerado,
     onOpenChange,
   ]);

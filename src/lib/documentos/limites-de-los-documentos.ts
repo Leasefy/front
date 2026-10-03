@@ -23,7 +23,10 @@ export const MENSAJES_DE_LOS_DOCUMENTOS = {
   variablesMaximas: 'Una plantilla puede usar hasta 200 variables.',
   nombreDelDocumentoLargo: 'El nombre del documento puede tener hasta 200 caracteres.',
   // 🔴 02-10-2026 · Las fechas que se corrían (`2026-02-31` → 3 de marzo): el
-  // back rechaza `fechaDeVigencia` en `GET /inmobiliaria/documents/preparar`.
+  // back rechaza `fechaDeVigencia` en `GET /inmobiliaria/documents/preparar`
+  // y, desde el hueco 1 de S2-B2, también AL GENERAR (dentro de `overrides`,
+  // 400 en el campo `overrides`): `GenerarDocumentoDialog` la pinta bajo
+  // «Fecha de vigencia».
   fechaDeVigencia: 'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).',
   fechaDeVigenciaFueraDeRango: 'La fecha de vigencia debe estar entre el año 2000 y el 2100.',
 } as const

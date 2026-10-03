@@ -36,6 +36,8 @@ export const MENSAJES_DE_LA_MIGRACION = {
   // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
   canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMinimo: 'El canon tiene que ser mayor que cero.',
+  // 02-10-2026: la plata de cada dueño de «Valor Canon» (`canonPorPropietario`).
+  canonPorPropietarioNegativo: 'La parte del canon de cada propietario no puede ser negativa.',
   canonMaximoAlCorregir:
     'El canon no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.',
   demasiadosContratos:
@@ -118,5 +120,24 @@ export function errorDeLaFechaDeCorte(dia: string, hoy: Date = new Date()): stri
   if (dia < FECHA_DE_CORTE_DESDE || fecha.getTime() > tope.getTime()) {
     return M.fechaDeCorteFueraDeRango;
   }
+  return null;
+}
+
+/**
+ * La plata de cada dueño de «Valor Canon» (`canonPorPropietario`) como la
+ * revisa el back (02-10-2026, Nico): cada parte en pesos enteros y ninguna
+ * negativa. `null` si la lista sirve (o no viene).
+ *
+ * 🔴 Es la regla del ARCHIVO: el lector (`listaDePlata`) ya redondea cada valor
+ * de la celda y `armarFilaAMigrar` sólo manda la lista si ninguna parte es
+ * negativa, así que con el lector sano esto nunca opina. Está para que la
+ * regla tenga un solo lugar a este lado, con la frase del back, y una prueba
+ * que diga si el lector deja pasar algo que el back tumbaría con el archivo
+ * entero.
+ */
+export function errorDeLaPlataPorPropietario(lista: readonly number[] | null | undefined): string | null {
+  if (!lista) return null;
+  if (lista.some((n) => !Number.isInteger(n))) return M.canonEntero;
+  if (lista.some((n) => n < 0)) return M.canonPorPropietarioNegativo;
   return null;
 }

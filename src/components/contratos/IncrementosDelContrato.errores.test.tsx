@@ -106,7 +106,8 @@ describe('<IncrementosDelContrato> — errores en su campo', () => {
     api.digitarIncremento.mockRejectedValue(fallo400('porcentaje', frase))
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />)
     const porcentaje = document.querySelector<HTMLInputElement>('#incremento-2026-08-21')!
-    await escribir(porcentaje, '150')
+    // Dentro de los topes del front (02-10-2026: un «150» ya lo ataja el espejo).
+    await escribir(porcentaje, '50')
     await clic(boton('Digitar incremento'))
     expect(document.querySelector('#incremento-2026-08-21-error')?.textContent).toBe(frase)
     const despues = document.querySelector<HTMLInputElement>('#incremento-2026-08-21')!
@@ -120,7 +121,7 @@ describe('<IncrementosDelContrato> — errores en su campo', () => {
     api.incrementos.mockResolvedValue(comercial)
     api.fijarTasaAnual.mockRejectedValue(fallo400('porcentaje', frase))
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />)
-    await escribir(document.querySelector<HTMLInputElement>('#tasa-pactada')!, '150')
+    await escribir(document.querySelector<HTMLInputElement>('#tasa-pactada')!, '50')
     await clic(boton('Guardar tasa'))
     expect(document.querySelector('#tasa-pactada-error')?.textContent).toBe(frase)
     expect(document.activeElement).toBe(document.querySelector('#tasa-pactada'))

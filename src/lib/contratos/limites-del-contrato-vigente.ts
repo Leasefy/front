@@ -24,6 +24,17 @@ export const VALOR_MAXIMO_DE_LA_REGLA_DE_MORA = 99_999_999
 export const MAX_NUEVOS_PROPIETARIOS = 20
 
 /**
+ * El porcentaje del incremento de un local comercial (la tasa pactada y el
+ * incremento digitado): hasta 100 % hacia arriba, −99,999 % hacia abajo (una
+ * rebaja), con hasta tres decimales. Los mismos topes del back
+ * (`TasaAnualPactadaDto`, `IncrementoDigitadoDto`), con su frase desde el
+ * 02-10-2026.
+ */
+export const PORCENTAJE_MAXIMO_DEL_INCREMENTO = 100
+export const PORCENTAJE_MINIMO_DEL_INCREMENTO = -99.999
+export const DECIMALES_DEL_PORCENTAJE_DEL_INCREMENTO = 3
+
+/**
  * El rango de las fechas `@db.Date` del back (la del cambio de parte). Ninguna
  * pantalla manda hoy `POST /contracts/:id/cambiar-parte`: van para cuando una
  * lo haga, con la frase de abajo.
@@ -43,6 +54,13 @@ export const MENSAJES_DEL_CONTRATO_VIGENTE = {
   canonNuevoMaximo: `El canon nuevo no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
   canonNuevoEntero: 'Escribe el canon en pesos enteros, sin centavos.',
+  // 02-10-2026: el porcentaje del incremento (local comercial) con su frase.
+  tasaPactadaNumero: 'La tasa pactada debe ser un número con hasta tres decimales, por ejemplo 5,5.',
+  tasaPactadaMinima: 'La tasa pactada no puede ser menor que −99,999 %.',
+  tasaPactadaMaxima: 'La tasa pactada no puede pasar de 100 %. Revisa que no sobre una cifra.',
+  incrementoNumero: 'El incremento debe ser un número con hasta tres decimales, por ejemplo 5,5.',
+  incrementoMinimo: 'El incremento no puede ser menor que −99,999 %.',
+  incrementoMaximo: 'El incremento no puede pasar de 100 %. Revisa que no sobre una cifra.',
   penalidadMaxima: `La penalidad no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   penalidadParaLaInmobiliariaMaxima: `La parte de la inmobiliaria no puede pasar de $2.000.000.000. ${SIN_CEROS_DE_MAS}`,
   valorDeLaReglaMaximo: `El valor de la regla no puede pasar de 99.999.999. ${SIN_CEROS_DE_MAS}`,
@@ -72,4 +90,30 @@ export const MENSAJES_DEL_CONTRATO_VIGENTE = {
 export function topeDePesos(valor: number | null | undefined, mensaje: string): string | null {
   if (valor === null || valor === undefined || !Number.isFinite(valor)) return null
   return valor > VALOR_MAXIMO_COP ? mensaje : null
+}
+
+/**
+ * El porcentaje del incremento ESCRITO (la tasa pactada o el de un
+ * aniversario) revisado como lo revisa el back, o `null` si sirve. Vacío no
+ * opina: vacío es «quitar la tasa». Acepta la coma decimal («5,5»).
+ */
+export function errorDelPorcentajeDelIncremento(
+  texto: string,
+  cual: 'tasaPactada' | 'incremento',
+): string | null {
+  const M = MENSAJES_DEL_CONTRATO_VIGENTE
+  const frases =
+    cual === 'tasaPactada'
+      ? { numero: M.tasaPactadaNumero, minimo: M.tasaPactadaMinima, maximo: M.tasaPactadaMaxima }
+      : { numero: M.incrementoNumero, minimo: M.incrementoMinimo, maximo: M.incrementoMaximo }
+  const limpio = texto.replace(',', '.').trim()
+  if (limpio === '') return null
+  const n = Number(limpio)
+  if (!Number.isFinite(n)) return frases.numero
+  // Como `@IsNumber({ maxDecimalPlaces: 3 })`: los decimales del número.
+  const decimales = String(n).split('.')[1]?.length ?? 0
+  if (decimales > DECIMALES_DEL_PORCENTAJE_DEL_INCREMENTO) return frases.numero
+  if (n < PORCENTAJE_MINIMO_DEL_INCREMENTO) return frases.minimo
+  if (n > PORCENTAJE_MAXIMO_DEL_INCREMENTO) return frases.maximo
+  return null
 }

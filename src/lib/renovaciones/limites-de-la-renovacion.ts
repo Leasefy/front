@@ -22,11 +22,18 @@ export const VALOR_MAXIMO_DE_LA_RENOVACION_COP = 2_000_000_000
  */
 export const IPC_MAXIMO_DE_LA_RENOVACION = 100
 
+/**
+ * 02-10-2026 (Nico): el canon va sólo en pesos enteros, con la MISMA frase del
+ * inmueble, el mandato y el contrato (antes: «…debe ser un número entero de
+ * pesos, sin decimales.»).
+ */
+const CANON_SIN_CENTAVOS = 'Escribe el canon en pesos enteros, sin centavos.'
+
 export const MENSAJES_DE_LA_RENOVACION = {
-  canonPropuestoEntero: 'El canon propuesto debe ser un número entero de pesos, sin decimales.',
+  canonPropuestoEntero: CANON_SIN_CENTAVOS,
   canonPropuestoNegativo: 'El canon propuesto no puede ser negativo.',
   canonPropuestoMaximo: 'El canon propuesto no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
-  canonNegociadoEntero: 'El canon negociado debe ser un número entero de pesos, sin decimales.',
+  canonNegociadoEntero: CANON_SIN_CENTAVOS,
   canonNegociadoNegativo: 'El canon negociado no puede ser negativo.',
   canonNegociadoMaximo: 'El canon negociado no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
   administracionEntera: 'La administración negociada debe ser un número entero de pesos, sin decimales.',

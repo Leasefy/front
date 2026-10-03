@@ -1766,6 +1766,26 @@ export const mantenimientoApi = {
   },
 
   /**
+   * DELETE /inmobiliaria/mantenimiento/:id/fotos?ruta=…&destino=… — borra UNA
+   * foto: sale de su lista y el archivo se borra (Nico, 02-10-2026). Responde
+   * como `subirFoto`, con la lista de su destino ya firmada.
+   *
+   * Lo usa el cierre cancelado (`borrarLasDelIntento`): las fotos del trabajo
+   * que subió ESE intento. El back sólo borra rutas de esta solicitud, con la
+   * solicitud abierta (409 si ya está completada o cancelada) y es idempotente.
+   */
+  async borrarFoto(
+    id: string,
+    ruta: string,
+    destino: DestinoDeLaFotoDelMantenimiento = 'reporte',
+  ): Promise<RespuestaDeLaFotoDelMantenimiento> {
+    const query = new URLSearchParams({ ruta, destino });
+    return apiClient.delete<RespuestaDeLaFotoDelMantenimiento>(
+      `${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos?${query.toString()}`,
+    );
+  },
+
+  /**
    * Agregarle una cotización a una solicitud que YA existe.
    *
    * El endpoint estaba en el back desde siempre (`POST :id/quote`) y este

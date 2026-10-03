@@ -31,6 +31,7 @@ import {
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-contrato-vigente";
 
 const PESOS = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -214,6 +215,13 @@ export function IncrementosDelContrato({
             disabled={!editable}
             onClick={() =>
               void (async () => {
+                // Los topes del back, antes de mandar y con su frase (02-10-2026).
+                const local = errorDelPorcentajeDelIncremento(tasa, "tasaPactada");
+                if (local) {
+                  setErrorDeLaTasa(local);
+                  enfocar(["tasa-pactada"]);
+                  return;
+                }
                 const delServidor = await accion(
                   () => cicloDeVidaApi.fijarTasaAnual(contractId, numeroOVacio(tasa)),
                   "Tasa pactada guardada. La tabla se recalcula.",
@@ -441,7 +449,15 @@ function Aniversario({
             size="sm"
             variant="outline"
             disabled={numeroOVacio(porcentaje) === null}
-            onClick={() => void onDigitar({ porcentaje: numeroOVacio(porcentaje) }).then(pintar)}
+            onClick={() => {
+              // Los topes del back, antes de mandar y con su frase (02-10-2026).
+              const local = errorDelPorcentajeDelIncremento(porcentaje, "incremento");
+              if (local) {
+                pintar({ porcentaje: local });
+                return;
+              }
+              void onDigitar({ porcentaje: numeroOVacio(porcentaje) }).then(pintar);
+            }}
           >
             Digitar incremento
           </Button>

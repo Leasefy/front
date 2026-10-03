@@ -379,6 +379,34 @@ describe('GenerarDocumentoDialog', () => {
     expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
   })
 
+  it('🔴 02-10 · si el back rechaza la fecha de vigencia AL GENERAR (`overrides`), la frase sale bajo el campo, no en el aviso', async () => {
+    const frase = 'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).'
+    api.generar.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'overrides', regla: 'fecha', mensaje: frase }],
+      }),
+    )
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+
+    const campo = q<HTMLInputElement>('[data-testid="doc-campo-fechaDeVigencia"]')!
+    expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(frase)
+    expect(campo.getAttribute('aria-invalid')).toBe('true')
+    expect(q('[data-testid="doc-error"]')).toBeNull()
+    // Con la fecha rechazada no se vuelve a mandar lo mismo.
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+
+    // Escribir otra fecha borra el rechazo.
+    await act(async () => escribir(campo, '2026-12-01'))
+    expect(q('#doc-campo-fechaDeVigencia-error')?.textContent ?? '').toBe('')
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
+  })
+
   it('🔴 al repreguntar el tope no se pierde lo que la persona ya escribió', async () => {
     await abrir()
     await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))

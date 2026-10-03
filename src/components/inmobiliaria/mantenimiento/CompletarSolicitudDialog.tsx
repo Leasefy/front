@@ -21,6 +21,12 @@
  *    fotos (`repartirErroresDelServidor`); lo demás, por el traductor (un 5xx
  *    dice que fue nuestro, con la referencia; «conexión» sólo sin respuesta).
  * El diálogo queda abierto con lo elegido mientras haya algo que decir.
+ *
+ * Cancelar (el botón, Escape o fuera del diálogo) borra las fotos del trabajo
+ * que subió ESTE intento (Nico, 02-10-2026: `borrarLasDelIntento`, con
+ * `DELETE :id/fotos`), para que no queden en «Fotos de después» ni ocupen
+ * cupo. Las que la solicitud ya tenía no se tocan. El diálogo se cierra de una:
+ * un borrado que falla no lo frena y queda escrito en el log.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -37,7 +43,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mantenimientoApi } from '@/lib/api/inmobiliaria.service';
-import { completarConFotos } from '@/lib/mantenimiento/completar-con-fotos';
+import { borrarLasDelIntento, completarConFotos } from '@/lib/mantenimiento/completar-con-fotos';
 import { lasQueNoSubieron } from '@/lib/mantenimiento/subir-fotos-del-mantenimiento';
 import { fotosQueEntran, MAX_FOTOS_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
@@ -105,6 +111,8 @@ export function CompletarSolicitudDialog({
         );
         return;
       }
+      // Ya son las fotos de un cierre hecho: ningún «Cancelar» las borra.
+      yaSubidas.current = new Map();
       await onCompletada(r.solicitud);
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor<'completionPhotoUrls'>(e, {
@@ -118,8 +126,23 @@ export function CompletarSolicitudDialog({
     }
   };
 
+  /**
+   * Cancelar el intento: se cierra YA y, por detrás, se borran las fotos del
+   * trabajo que este intento alcanzó a subir. Nunca espera ni falla por ellas.
+   */
+  const cancelar = () => {
+    const delIntento = yaSubidas.current;
+    yaSubidas.current = new Map();
+    if (delIntento.size > 0) {
+      void borrarLasDelIntento(solicitudId, delIntento, {
+        borrar: (id, ruta, destino) => mantenimientoApi.borrarFoto(id, ruta, destino),
+      });
+    }
+    onCerrar();
+  };
+
   return (
-    <Dialog open={abierto} onOpenChange={(a) => !a && !enviando && onCerrar()}>
+    <Dialog open={abierto} onOpenChange={(a) => !a && !enviando && cancelar()}>
       <DialogContent variant="confirm" icon={<CheckCircle weight="bold" />} data-testid="completar-solicitud">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.mantenimiento.markAsCompleted')}</DialogTitle>
@@ -148,7 +171,7 @@ export function CompletarSolicitudDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" hideArrow disabled={enviando} onClick={onCerrar}>
+          <Button variant="outline" hideArrow disabled={enviando} onClick={cancelar} data-testid="completar-cancelar">
             {t('inmobiliaria.mantenimiento.cancel')}
           </Button>
           <Button hideArrow isLoading={enviando} disabled={enviando} onClick={() => void confirmar()} data-testid="completar-confirmar">

@@ -30,7 +30,7 @@ export type EstadoDeFiltro = ContractStatus | 'all';
  * La vigencia se mide por FECHAS, no por el estado del flujo de firma: un
  * contrato migrado entra «activo» aunque su fecha de fin ya haya pasado.
  */
-export type VigenciaDeFiltro = 'all' | 'vigente' | 'por_vencer' | 'vencido' | 'sin_fechas';
+export type VigenciaDeFiltro = 'all' | 'vigente' | 'por_vencer' | 'vencido' | 'por_empezar' | 'sin_fechas';
 export type ConOSin = 'all' | 'con' | 'sin';
 export type OrigenDeFiltro = 'all' | 'migrado' | 'nativo';
 /** Bandas de canon en pesos. `sin_canon` = migrados sin el dato (nunca «$ 0»). */
@@ -104,6 +104,25 @@ function dia(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
+/**
+ * Una dirección sin lo que cada quien escribe distinto: espacios, «#», guiones,
+ * puntos y «No.» (QA-CONT C-16: «calle 7 #39» no encontraba «Calle 7 # 39-12»).
+ */
+function direccionCompacta(v: unknown): string {
+  return comparable(v).replace(/\bno\.?(?=\s*\d)/g, '').replace(/[\s#\-.,°º]/g, '');
+}
+
+function soloDigitos(v: unknown): string {
+  return typeof v === 'string' ? v.replace(/\D/g, '') : '';
+}
+
+/** Los dueños del inmueble que la fila conoce (la lista los trae cuando el back los manda). */
+function nombresDeLosPropietarios(c: Partial<Contract>): string[] {
+  const nombres = (c.propietariosDelContrato?.propietarios ?? []).map((p) => p.name);
+  if (c.propietarioDeLaConsignacion?.name) nombres.push(c.propietarioDeLaConsignacion.name);
+  return nombres;
+}
+
 function coincideBusqueda(c: Partial<Contract>, q: string): boolean {
   /*
    * «#1981» y «1981» encuentran lo mismo: el numeral es como se LEE el código
@@ -113,20 +132,58 @@ function coincideBusqueda(c: Partial<Contract>, q: string): boolean {
   const sinNumeral = q.replace(/^#+/, '');
   const codigo = c.code != null ? String(c.code) : '';
   const externo = comparable(c.externalId).trim();
+  /*
+   * 🔴 QA-CONT C-16: el documento del inquilino («1037600101», o con puntos)
+   * se busca por sus DÍGITOS, desde 5 (menos que eso es cualquier número). Y
+   * el propietario: la fila ahora lo muestra, así que también se encuentra.
+   */
+  const digitos = soloDigitos(q);
+  const documento = soloDigitos(c.tenantDocument);
+  const direccion = direccionCompacta(q);
   return (
     (codigo !== '' && codigo.includes(sinNumeral)) ||
     (externo !== '' && externo.includes(sinNumeral)) ||
     comparable(c.tenantName).includes(q) ||
     comparable(c.propertyAddress).includes(q) ||
-    comparable(c.propertyCity).includes(q)
+    (direccion.length >= 3 && direccionCompacta(c.propertyAddress).includes(direccion)) ||
+    comparable(c.propertyCity).includes(q) ||
+    (digitos.length >= 5 && digitos === q.replace(/[\s.\-]/g, '') && documento !== '' && documento.includes(digitos)) ||
+    // CR-16: también por correo y por teléfono del inquilino.
+    comparable(c.tenantEmail).includes(q) ||
+    (digitos.length >= 5 && digitos === q.replace(/[\s.\-+()]/g, '') && soloDigitos(c.tenantPhone).includes(digitos)) ||
+    nombresDeLosPropietarios(c).some((n) => comparable(n).includes(q))
   );
+}
+
+/**
+ * 🔴 QA-CONT C-05/C-06 (03-10-2026): la vigencia ya no mira SÓLO la fecha de
+ * fin. Un contrato terminado (`expired`/`cancelled`, o con `terminadoEn`) salía
+ * en «Vigentes» y en «Vencen en 90 días» si su fin pactado era futuro (#9: en
+ * «Expirado» y a la vez «vigente»), y uno que empieza el 1 de noviembre contaba
+ * como vigente (Nico: «Empieza el 1 de nov» y no suma en vigentes).
+ */
+function yaTermino(c: Partial<Contract>, hoy: Date): boolean {
+  if (c.status === 'expired' || c.status === 'cancelled') return true;
+  // C-01: una terminación PROGRAMADA (fecha futura) todavía no terminó nada.
+  const terminado = fechaDeVigencia(c.terminadoEn);
+  return terminado !== null && dia(terminado) <= dia(hoy);
+}
+
+/** ¿Empieza después de hoy? (Nico, I-04 / C-05: «Por empezar».) */
+export function empiezaDespues(c: Partial<Contract>, hoy: Date = new Date()): boolean {
+  if (yaTermino(c, hoy)) return false;
+  const inicio = fechaDeVigencia(c.startDate);
+  return inicio !== null && dia(inicio) > dia(hoy);
 }
 
 function coincideVigencia(c: Partial<Contract>, v: VigenciaDeFiltro, hoy: Date): boolean {
   if (v === 'all') return true;
   const fin = fechaDeVigencia(c.endDate);
   if (v === 'sin_fechas') return fin === null;
+  if (v === 'por_empezar') return empiezaDespues(c, hoy);
+  if (v === 'vencido' && yaTermino(c, hoy)) return true;
   if (fin === null) return false;
+  if (yaTermino(c, hoy) || empiezaDespues(c, hoy)) return false;
   const h = dia(hoy);
   const f = dia(fin);
   if (v === 'vencido') return f < h;

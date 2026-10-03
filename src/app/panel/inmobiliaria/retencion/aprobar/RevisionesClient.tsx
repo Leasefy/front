@@ -39,6 +39,7 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -385,7 +386,7 @@ export default function RevisionesClient() {
                     </TableCell>
                     <TableCell>
                       <Link
-                        href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(d.caseId)}`}
+                        href={casoDeRetencion(d.caseId)}
                         className="font-medium text-primary hover:underline whitespace-nowrap"
                       >
                         {d.ownerId}

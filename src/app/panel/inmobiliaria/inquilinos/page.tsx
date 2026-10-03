@@ -89,6 +89,12 @@ import {
   InquilinosTable,
   RUTA_DEL_CONTRATO_MANUAL,
 } from '@/components/inmobiliaria/InquilinosTable';
+import {
+  esElPortafolio,
+  ordenarInquilinos,
+  totalesDelPortafolio,
+  type OrdenDeInquilinos,
+} from '@/lib/inquilinos/lista';
 import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
 import { InvitacionesPendientes } from '@/components/inmobiliaria/InvitacionesPendientes';
 import { NuevoInquilinoDrawer } from '@/components/inmobiliaria/NuevoInquilinoDrawer';
@@ -101,7 +107,6 @@ import { useI18n } from '@/lib/i18n';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
 import {
-  arriendosVigentes,
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
@@ -171,7 +176,7 @@ export default function InquilinosPage() {
    * ese servicio esté caído.
    */
   return (
-    <PageGuard module="contratos">
+    <PageGuard module="contratos" seccion="Inquilinos">
       <ContenidoDeInquilinos />
     </PageGuard>
   );
@@ -202,8 +207,31 @@ function ContenidoDeInquilinos() {
   );
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
   const [creando, setCreando] = useState(false);
+  /** E-16: la persona cuyos datos se están corrigiendo (sobre su ficha abierta). */
+  const [editando, setEditando] = useState<Inquilino | null>(null);
+  /** Sube al guardar sus datos: la ficha abierta vuelve a pedir su detalle. */
+  const [versionDeLaFicha, setVersionDeLaFicha] = useState(0);
+  /** I-23: sube al crear a alguien, y el aviso de invitaciones se vuelve a leer. */
+  const [versionDeInvitaciones, setVersionDeInvitaciones] = useState(0);
+  /**
+   * I-01 / I-11: el orden vive ACÁ, no en la tabla. La tabla recibía sólo las
+   * 10 filas de la página y ordenaba ésas: «A→Z» iba de Ana a Sebastián en la
+   * página 1 y volvía a empezar en Carlos en la 2. Se ordena la lista ENTERA y
+   * después se pagina (R-36: filtrar, ordenar y DESPUÉS paginar).
+   */
+  const [orden, setOrden] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
 
-  const { inquilinos, cargando, error, refrescar, conteos } = useInquilinos({ buscar, estado });
+  const {
+    inquilinos,
+    consulta,
+    cargando,
+    error,
+    refrescar,
+    conteos,
+    portafolio,
+    cargandoPortafolio,
+    errorPortafolio,
+  } = useInquilinos({ buscar, estado }, { portafolio: true });
 
   /*
    * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que
@@ -236,7 +264,59 @@ function ContenidoDeInquilinos() {
    * y la búsqueda que estén puestos. Insertarla en el cliente la mostraría
    * aunque la búsqueda activa no la incluya.
    */
-  const alCrear = useCallback(() => refrescar(), [refrescar]);
+  const alCrear = useCallback(() => {
+    refrescar();
+    setVersionDeInvitaciones((n) => n + 1);
+  }, [refrescar]);
+
+  /*
+   * E-16: sus datos quedaron corregidos. Se refrescan la lista y la ficha; la
+   * ficha abierta pasa a la persona que devolvió el back (si cambió el
+   * documento de alguien sin cuenta, cambia también su identidad).
+   */
+  const alEditar = useCallback(
+    (actualizada: Inquilino) => {
+      refrescar();
+      setVersionDeInvitaciones((n) => n + 1);
+      setAbierto((actual) => (actual ? { ...actual, ...actualizada } : actual));
+      setVersionDeLaFicha((n) => n + 1);
+    },
+    [refrescar],
+  );
+
+  /*
+   * I-20: «Nuevo inquilino» chocó con alguien que ya está (409, documento o
+   * correo repetido). El enlace bajo el campo trae a esa persona: se busca por
+   * la llave que chocó, en «todos» (puede tener el arriendo terminado), y
+   * apenas aparece se abre su ficha.
+   */
+  const [porAbrir, setPorAbrir] = useState<{ llave: string; tenantId?: string } | null>(null);
+  const verExistente = useCallback((existente: { llave: string; tenantId?: string }) => {
+    setCreando(false);
+    setBuscar(existente.llave);
+    setEstado('todos');
+    setPorAbrir(existente);
+  }, []);
+  useEffect(() => {
+    if (!porAbrir || cargando || error) return;
+    // Sólo con las filas de ESA búsqueda: las de antes todavía están mientras
+    // corre la espera del buscador.
+    if (consulta !== `todos|${porAbrir.llave.trim()}`) return;
+    const llave = porAbrir.llave.trim().toLowerCase();
+    const encontrada =
+      inquilinos.find((i) => porAbrir.tenantId !== undefined && i.tenantId === porAbrir.tenantId) ??
+      inquilinos.find(
+        (i) => i.documento?.toLowerCase() === llave || i.email?.toLowerCase() === llave,
+      ) ??
+      (inquilinos.length === 1 ? inquilinos[0] : undefined);
+    if (encontrada) setAbierto(encontrada);
+    setPorAbrir(null);
+  }, [porAbrir, cargando, error, inquilinos, consulta]);
+
+  const ordenados = useMemo(
+    () => ordenarInquilinos(inquilinos, orden.campo, orden.sentido),
+    [inquilinos, orden],
+  );
 
   /*
    * Paginación en el cliente: la lista viene entera del back (una fila por
@@ -245,19 +325,11 @@ function ContenidoDeInquilinos() {
    * página 3 deja la tabla en blanco.
    */
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(inquilinos, {
+    useTablePagination(ordenados, {
       initialPageSize: 10,
-      resetKey: `${buscar}|${estado}`,
+      // I-11: cambiar el orden también vuelve a la página 1.
+      resetKey: `${buscar}|${estado}|${orden.campo}|${orden.sentido}`,
     });
-
-  const totales = useMemo(() => {
-    const vigentes = inquilinos.flatMap(arriendosVigentes);
-    return {
-      personas: inquilinos.length,
-      vigentes: vigentes.length,
-      canon: vigentes.reduce((suma, a) => suma + a.canonCop, 0),
-    };
-  }, [inquilinos]);
 
   const hayFiltros = buscar.trim().length > 0 || estado !== 'activos';
 
@@ -280,18 +352,25 @@ function ContenidoDeInquilinos() {
   const copy = deuda && vacioPorLaMigracion ? copyDeMigracion(deuda) : null;
 
   /*
-   * 🔴 Los tiles salen de la MISMA carga que la tabla de abajo, así que dicen
-   * lo mismo que ella: mientras carga, un hueco; si falló, «—» con «No se pudo
-   * traer». Antes, con el back caído, la tabla decía «no se pudo cargar» y un
-   * renglón arriba los tiles afirmaban «0 inquilinos · $0» — un cero es un
+   * 🔴 Los tiles son del PORTAFOLIO (I-07, QA-INQ 03-10): «activos» sin
+   * búsqueda. Sin filtros, ésa ES la lista de abajo (misma carga); con un
+   * filtro puesto, salen de su propia lectura, con su carga y su error. Antes
+   * salían de la lista filtrada y una búsqueda los dejaba en «0 · $ 0».
+   * Mientras carga, un hueco; si falló, «—» con «No se pudo traer». Antes, con
+   * el back caído, los tiles afirmaban «0 inquilinos · $0» — un cero es un
    * dato, y nadie lo verificó.
    *
    * `KpiCard` tipa `value` como string pero lo pinta como hijo: el nodo se ve
    * igual que el texto (mismo arreglo que Pipeline).
    */
+  const deLaLista = esElPortafolio({ buscar, estado });
+  const totales = deLaLista ? totalesDelPortafolio(inquilinos) : portafolio;
   const valorDeTile = (valor: string) =>
     (
-      <KpiValor cargando={cargando} fallo={error}>
+      <KpiValor
+        cargando={deLaLista ? cargando : cargandoPortafolio}
+        fallo={deLaLista ? error : errorPortafolio}
+      >
         {valor}
       </KpiValor>
     ) as unknown as string;
@@ -339,24 +418,24 @@ function ContenidoDeInquilinos() {
           que separa «tiene portal» de «tiene cuenta y no puede entrar»: sin él,
           la lista de abajo los muestra igual que a todos. Se pinta solo cuando
           hay pendientes. */}
-      <InvitacionesPendientes />
+      <InvitacionesPendientes version={versionDeInvitaciones} />
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
           contratos terminados no es plata que entra este mes. */}
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard
           label={t('inquilinos.kpi.personas')}
-          value={valorDeTile(String(totales.personas))}
+          value={valorDeTile(String(totales?.personas ?? ''))}
           icon={<Users />}
         />
         <KpiCard
           label={t('inquilinos.kpi.arriendosVigentes')}
-          value={valorDeTile(String(totales.vigentes))}
+          value={valorDeTile(String(totales?.vigentes ?? ''))}
           icon={<Buildings />}
         />
         <KpiCard
           label={t('inquilinos.kpi.canonVigente')}
-          value={valorDeTile(formatCurrency(totales.canon))}
+          value={valorDeTile(totales ? formatCurrency(totales.canon) : '')}
           icon={<CurrencyDollar />}
         />
       </div>
@@ -441,7 +520,12 @@ function ContenidoDeInquilinos() {
             />
           ) : (
             <>
-              <InquilinosTable inquilinos={pageItems} onAbrir={setAbierto} />
+              <InquilinosTable
+                inquilinos={pageItems}
+                onAbrir={setAbierto}
+                orden={orden}
+                onOrdenar={setOrden}
+              />
               {/* El pie se monta SIEMPRE que haya filas, aunque sean menos
                   que una página: con una sola dice «Mostrando 1–3 de 3» y deja
                   elegir cuántas ver, que es lo que hace que una tabla se lea
@@ -463,11 +547,24 @@ function ContenidoDeInquilinos() {
         </div>
       </EstadoDeDatos>
 
-      <InquilinoDrawer persona={abierto} onCerrar={() => setAbierto(null)} />
+      <InquilinoDrawer
+        persona={abierto}
+        onCerrar={() => setAbierto(null)}
+        onEditar={setEditando}
+        version={versionDeLaFicha}
+      />
       <NuevoInquilinoDrawer
         abierto={creando}
         onOpenChange={setCreando}
         onCreado={alCrear}
+        onVerExistente={verExistente}
+      />
+      {/* E-16: el MISMO formulario, con sus datos. */}
+      <NuevoInquilinoDrawer
+        abierto={editando !== null}
+        onOpenChange={(sigue) => !sigue && setEditando(null)}
+        onCreado={alEditar}
+        editando={editando}
       />
     </div>
   );

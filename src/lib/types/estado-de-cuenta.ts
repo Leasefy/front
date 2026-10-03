@@ -388,6 +388,14 @@ export interface ResumenDelEstadoDeCuenta {
   /** Días de mora de la cuota vencida más vieja y cuánto suma lo vencido. */
   enMora: { dias: number; monto: number } | null;
   contratos: number;
+  /**
+   * Los intereses de mora causados y sin pagar (E-09, QA-INQ 03-10). Van
+   * APARTE de `pendiente`: con lo vencido en cero y esto mayor, la persona no
+   * está «al día». Ausente = un back anterior.
+   */
+  interesDeMora?: number;
+  /** `true` cuando la inmobiliaria no tiene reglas de mora: lo vencido no causa interés. */
+  sinReglasDeMora?: boolean;
 }
 
 /*

@@ -569,6 +569,29 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - **Comisión de venta de un inmueble sin contrato**: la revisión dice «…, de otro inmueble del mismo propietario (dirección): este
   inmueble no tiene contrato de arriendo» (`contrato.delMismoPropietario`).
 
+## QA de Inquilinos (QA-INQ, 03-10-2026)
+
+- **Lista** (`inquilinos/page.tsx`): el orden vive en la PÁGINA y se aplica a la lista ENTERA antes de paginar
+  (`lib/inquilinos/lista.ts`; cambiar el orden vuelve a la página 1; `aria-sort`). Los tres KPI son del PORTAFOLIO
+  («activos» sin búsqueda: sin filtros es la misma lista; con filtro, `useInquilinos(…, { portafolio: true })` lo pide
+  aparte, con su carga y su error). A < 768 px la tabla pasa a tarjetas (`TarjetasDeInquilinos`).
+- **Estados** (`estadoParaMostrar`): `EN_FIRMA` («En firma», nunca «Terminado») y `POR_EMPEZAR` («Empieza el …»; se deduce
+  de `desde` > hoy si el back no lo manda). Ninguno es vigente: no suman en «Arriendos vigentes» ni en el canon.
+- **La cuenta** (`cuentaDelPortal`): `tenantId` puede ser `doc:`/`correo:`/`contrato:` o una ficha; lo que habla con un
+  `User` (WhatsApp, «Enviar mensaje») recibe sólo una cuenta (`tieneCuentaDelPortal` del back). Sin cuenta: «Sin cuenta en
+  el portal» (Nico: la invitación sólo desde el contrato). Los ids viajan con `encodeURIComponent`.
+- **«Editar datos»** (E-16): el MISMO `NuevoInquilinoDrawer` con `editando`; manda sólo lo que cambió
+  (`PATCH /inmobiliaria/inquilinos/:tenantId`, `contratos:edit`); el 409 `CONFIRMA_EL_CAMBIO_DE_CORREO` pide confirmar y
+  reenvía con `confirmarCambioDeCorreo`. Los rechazos con `campo` (y `FALTA_CORREO_DEL_TERCERO`) van bajo su campo; el 409
+  `INQUILINO_YA_EXISTE` de «Nuevo» trae «Ver a esa persona». El «correo obligatorio» se lee de `terceros-sin-correo`.
+- **NIT**: se muestra con su DV (`lib/inquilinos/documento-con-dv.ts`, sobre `digitoDeVerificacion`); un DV escrito que no
+  corresponde se dice bajo el campo.
+- **Invitaciones**: nunca un código crudo (`fraseDelMotivo`); `total − vencidas` es «no les ha llegado»; vence / vencida /
+  «Reenviar»; sin `clientes:edit` no se ofrece mandar. La tabla del cajón va A SANGRE (`-mx-6`, primera y última celda
+  `pl-6`/`pr-6`).
+- **Contrato manual**: `?inquilino=<identidad>` llega elegido (sin cuenta, como «Nuevo» con sus datos); un campo vacío no
+  abre en rojo (su error sale al dejarlo) y el botón apagado dice qué falta (`lo-que-falta`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

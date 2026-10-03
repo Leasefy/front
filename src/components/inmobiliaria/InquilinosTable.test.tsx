@@ -342,8 +342,9 @@ describe('InquilinosTable — la persona sin arriendo', () => {
 
     const contrato = fila.querySelector('[data-testid="inquilino-crear-contrato"]')!
     expect(contrato).not.toBeNull()
+    // QA-INQ I-29: el contrato manual abre con ESTA persona ya elegida.
     expect(contrato.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/contratos/nuevo?modo=manual',
+      '/panel/inmobiliaria/contratos/nuevo?modo=manual&inquilino=sin-arriendo',
     )
     expect(contrato.textContent).toContain('inquilinos.crearSuContrato')
   })

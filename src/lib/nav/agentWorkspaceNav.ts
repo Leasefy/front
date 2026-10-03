@@ -30,6 +30,8 @@ import {
   // Receipt,  ← reactivar junto con la pestaña «Cobros a inquilinos»
   WarningCircle,
   Bank,
+  HeartStraight,
+  Warning,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -103,6 +105,7 @@ const CONCILIACION = `${PANEL}/conciliacion`;
 // const ESTUDIO = `${PANEL}/postulaciones/estudio`;  ← reactivar junto con el workspace «estudio» (oculto)
 const MATCHING = `${PANEL}/postulaciones/matching`;
 const PAGOS = `${PANEL}/pagos`;
+const RETENCION = `${PANEL}/retencion`;
 const CONTADOR_ROLES: AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
 
 export const AGENT_WORKSPACES: AgentWorkspace[] = [
@@ -251,6 +254,28 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${MATCHING}/cola`, icon: ClipboardText, module: 'matching' },
       // «Analítica» de Matching: el micro no publica ese endpoint y la tab era un error garantizado (2026-09-08). La ruta rebota al resumen.
       { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${MATCHING}/configuracion`, icon: SlidersHorizontal, module: 'matching' },
+    ],
+  },
+  // ── Retención ─────────────────────────────────────────────────────────────
+  // QA-CONT C-19 (Nico, 03-10-2026: «cuidado que esto no tiene una navegación
+  // clara»; eligió «Moverlas a Agentes IA con navegación»). Vivían colgadas de
+  // `/contratos/(retencion)/` sin migas, sin pestañas y con el menú marcando
+  // «Contratos». Ahora son un agente con su sala: el tablero, la bandeja de
+  // riesgo y la cola de decisiones por aprobar, con el aviso naranja de datos
+  // de ejemplo hasta que el agente exista. El gate es el de su layout
+  // (`retencion:view`); `retencion` no está en ninguna matriz, así que en los
+  // hechos lo abre el ADMIN (`isAdmin`), igual que la fila del menú.
+  {
+    slug: 'retencion',
+    basePath: RETENCION,
+    labelKey: 'inmobiliaria.ai.nav.retencion',
+    icon: HeartStraight,
+    module: null,
+    roles: [AGENCY_ROLES.ADMIN],
+    items: [
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: RETENCION, icon: SquaresFour, exact: true, module: null, roles: [AGENCY_ROLES.ADMIN] },
+      { labelKey: 'inmobiliaria.ai.nav.retencionRiesgo', href: `${RETENCION}/riesgo`, icon: Warning, module: null, roles: [AGENCY_ROLES.ADMIN] },
+      { labelKey: 'inmobiliaria.ai.nav.retencionPorAprobar', href: `${RETENCION}/aprobar`, icon: ListChecks, module: null, roles: [AGENCY_ROLES.ADMIN] },
     ],
   },
   // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────

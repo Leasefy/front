@@ -488,18 +488,21 @@ function EditarContratoContent() {
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            <Field
-              id={idDelCampoDelContrato('deposit')}
-              label="Depósito (COP)"
-              error={errorDe('deposit')}
-              hint="Opcional — dejar vacío si no aplica"
-            >
-              <MoneyInput
-                {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
-                value={form.deposit}
-                onChange={(crudo) => updateForm('deposit', crudo)}
-              />
-            </Field>
+            {/* Nico (03-10-2026): «Depósito: dejarlo sólo para comercial». */}
+            {contract?.usoInmueble === 'COMERCIAL' && (
+              <Field
+                id={idDelCampoDelContrato('deposit')}
+                label="Depósito (COP)"
+                error={errorDe('deposit')}
+                hint="Opcional — dejar vacío si no aplica"
+              >
+                <MoneyInput
+                  {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                  value={form.deposit}
+                  onChange={(crudo) => updateForm('deposit', crudo)}
+                />
+              </Field>
+            )}
             <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
                 {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}

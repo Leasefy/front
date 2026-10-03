@@ -24,6 +24,13 @@ interface PageGuardProps {
    * Combines with `module` (both must pass when both are provided).
    */
   roles?: AgencyRole[];
+  /**
+   * El nombre de la sección en el cartel de «No tienes acceso a …», cuando no
+   * es el del módulo que la protege (QA-INQ I-25: Inquilinos se protege con
+   * `contratos` y el cartel decía «No tienes acceso a Contratos» estando en
+   * Inquilinos). Sin él, el del módulo.
+   */
+  seccion?: string;
   children: ReactNode;
 }
 
@@ -41,7 +48,7 @@ interface PageGuardProps {
  * The inner component only mounts when access is confirmed, so its hooks
  * never fire for unauthorized users.
  */
-export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, children }: PageGuardProps) {
+export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, seccion, children }: PageGuardProps) {
   const { canAccess, isAdmin, isLoading, agencyRole } = usePermissions();
   const sinSenal = useSinSenal();
 
@@ -101,7 +108,7 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
     return (
       <div className="p-4 md:p-6" data-testid="pantalla-negada">
         <FalloDeCarga
-          error={{ status: 403, code: 'SIN_PERMISO_DE_MODULO', module: modulo, action }}
+          error={{ status: 403, code: 'SIN_PERMISO_DE_MODULO', module: seccion ?? modulo, action }}
           volverA={{ label: 'Ir al inicio del panel', href: '/panel/inmobiliaria' }}
         />
       </div>

@@ -37,6 +37,12 @@ export interface RespaldoDelArriendoProps {
   opciones?: ProtectionOption[]
   errores?: ErroresDeRespaldo
   className?: string
+  /**
+   * `false` cuando el contrato no viene de una postulación (el contrato
+   * manual): ahí no hay análisis del inquilino, y decir «el análisis de este
+   * inquilino no trajo…» antes de elegir a nadie no tiene sentido (QA-INQ I-30).
+   */
+  conAnalisis?: boolean
 }
 
 export function RespaldoDelArriendo({
@@ -45,6 +51,7 @@ export function RespaldoDelArriendo({
   opciones,
   errores = {},
   className,
+  conAnalisis = true,
 }: RespaldoDelArriendoProps) {
   const aprobadas = useMemo(
     () => (opciones ?? []).filter((o) => o.status === 'available'),
@@ -134,13 +141,13 @@ export function RespaldoDelArriendo({
             <span className="text-sm text-fg">Otra aseguradora</span>
           </label>
         </fieldset>
-      ) : (
+      ) : conAnalisis ? (
         <p className="flex items-start gap-2 rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           El análisis de este inquilino no trajo la lista de aseguradoras.
           Escribe a mano cuál aprobó.
         </p>
-      )}
+      ) : null}
 
       {(esOtra || aprobadas.length === 0) && (
         <Campo
@@ -211,7 +218,9 @@ function Campo({
     <div className="space-y-1.5">
       <label htmlFor={id} className="block text-xs font-medium text-fg">
         {etiqueta}
-        {opcional && <span className="ml-1 font-normal text-fg-subtle">(opcional)</span>}
+        {/* El espacio va en el TEXTO, no sólo en el margen: el lector de
+            pantalla y el texto copiado decían «Vigencia desde(opcional)». */}
+        {opcional && <span className="font-normal text-fg-subtle">{' '}(opcional)</span>}
       </label>
       <Input
         id={id}

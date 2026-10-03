@@ -459,7 +459,8 @@ describe('<CuerpoDelCajon>', () => {
     expect(texto()).toContain('inquilinos.cajon.sinArriendosTitulo')
     expect(texto()).toContain('inquilinos.cajon.sinContratos')
     expect(texto()).toContain('inquilinos.crearSuContrato')
-    expect(enlaces()).toContain(RUTA_MANUAL)
+    // QA-INQ I-29: con la persona ya elegida en el contrato manual.
+    expect(enlaces()).toContain(`${RUTA_MANUAL}&inquilino=t1`)
 
     // Nada de resumir en cero lo que no existe: sin contrato no hay canon ni
     // deuda. Y una segunda sección de cobros vacía sería decir dos veces lo

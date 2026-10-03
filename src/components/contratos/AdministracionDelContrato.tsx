@@ -295,9 +295,25 @@ export function AdministracionDelContrato({
           }
           ausente="Sin definir"
         />
+        {/*
+          QA-CONT C-07: UNA regla. La ficha decía «Se genera el 1… sin días de
+          plazo» arriba y «Día de pago · Día 5» acá. Manda el modo de cobro
+          (`regla-del-arriendo.ts` del back, 16-09): prorrateado vence el 1;
+          fecha a fecha, el día de la cartera. El día del contrato, si es otro,
+          se dice como lo que es: una referencia que no decide el vencimiento.
+        */}
         <Fila
           etiqueta="Día de pago"
-          valor={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null}
+          valor={(() => {
+            const diaDeCartera = Number((contract.fechaDeCartera ?? contract.startDate ?? '').slice(8, 10)) || null;
+            const queRige = contract.prorratearPrimerMes ? 1 : diaDeCartera;
+            if (!queRige) return contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null;
+            const referencia =
+              contract.paymentDueDay && contract.paymentDueDay !== queRige
+                ? ` (el contrato dice el ${contract.paymentDueDay}: es sólo referencia)`
+                : '';
+            return `Día ${queRige}${referencia}`;
+          })()}
           ausente="El de la inmobiliaria"
         />
         <Fila

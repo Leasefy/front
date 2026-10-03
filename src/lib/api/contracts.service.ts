@@ -115,6 +115,8 @@ export function mapBackendContract(bc: BackendContract): Contract {
     landlordEmail: bc.landlordEmail ?? '',
     landlordDocument: bc.landlordDocument ?? '',
     monthlyRent: bc.monthlyRent,
+    // Passthrough: la ficha de un COMERCIAL lo muestra (Nico, 03-10-2026).
+    deposit: bc.deposit,
     adminFee: bc.propertyAdminFee ?? 0,              // backend: propertyAdminFee → front: adminFee
     startDate: bc.startDate,
     endDate: bc.endDate,

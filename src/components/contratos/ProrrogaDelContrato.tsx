@@ -204,13 +204,14 @@ export function ProrrogaDelContrato({
               onClick={() =>
                 void hacer(
                   () => cicloDeVidaApi.prorrogar(contract.id),
-                  `Contrato prorrogado hasta el ${plan.finNuevo}. Las cuotas se extienden.`,
+                  // QA-CONT C-10: la fecha de la casa, no el ISO crudo.
+                  `Contrato prorrogado hasta el ${fechaLegible(plan.finNuevo)}. Las cuotas se extienden.`,
                   'prorrogar el contrato',
                 )
               }
               data-testid="prorrogar"
             >
-              Prorrogar hasta el {plan.finNuevo}
+              Prorrogar hasta el {fechaLegible(plan.finNuevo)}
             </Button>
           )}
         </div>

@@ -227,17 +227,17 @@ describe('las tres formas de traer el contrato', () => {
     expect(contenedor.textContent).not.toContain('Próximamente')
   })
 
-  it('«Generar con IA» queda DESHABILITADA cuando iaDisponible es false, y dice por qué', async () => {
+  // QA-CONT C-14 (03-10-2026): cambia a propósito. Antes la tarjeta quedaba
+  // apagada con «No disponible»: una promesa muerta entre las dos formas que
+  // sí sirven. Ahora, si el backend dice que no está configurada, NO se ofrece.
+  it('«Generar con IA» NO se ofrece cuando iaDisponible es false (C-14)', async () => {
     await montar(false)
-    const ia = tarjeta('Generar con IA')
-    expect(ia.disabled).toBe(true)
-    // La verdad, no un «próximamente»: la clave no está configurada en esta cuenta.
-    expect(ia.textContent).toContain('No está configurada en tu cuenta')
-    expect(ia.textContent).not.toContain('Próximamente')
-
-    // Y no se puede entrar al modo aunque se le haga clic.
-    clic(ia)
-    expect(porTestId('armar-contrato-desde-plantilla')).toBeNull()
+    expect(porTexto('button[aria-pressed]', 'Generar con IA')).toBeNull()
+    expect(contenedor.textContent).not.toContain('No disponible')
+    expect(contenedor.textContent).not.toContain('Próximamente')
+    // Las dos que sí sirven siguen ahí.
+    expect(tarjeta('Subir PDF propio').disabled).toBe(false)
+    expect(tarjeta('Usar plantilla').disabled).toBe(false)
   })
 
   it('«Generar con IA» se habilita cuando el backend dice que sí', async () => {
@@ -253,16 +253,17 @@ describe('las tres formas de traer el contrato', () => {
     expect(porTestId('plantilla-instrucciones')).not.toBeNull()
   })
 
-  it('mientras no se sabe, la tarjeta de IA está apagada y lo dice', async () => {
+  // QA-CONT C-14: mientras no se sabe tampoco se ofrece (antes: apagada con
+  // «Comprobando…»). Aparece sola cuando el backend dice que sí.
+  it('mientras no se sabe, la tarjeta de IA no se ofrece (C-14)', async () => {
     // La preparación no vuelve nunca: `iaDisponible` se queda en null.
     post.mockImplementation(() => new Promise(() => {}))
     await act(async () => {
       raiz.render(<NuevoContratoPage />)
     })
     await esperar()
-    const ia = tarjeta('Generar con IA')
-    expect(ia.disabled).toBe(true)
-    expect(ia.textContent).toContain('Comprobando')
+    expect(porTexto('button[aria-pressed]', 'Generar con IA')).toBeNull()
+    expect(tarjeta('Usar plantilla').disabled).toBe(false)
   })
 })
 

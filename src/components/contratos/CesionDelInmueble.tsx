@@ -49,6 +49,8 @@ import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import type { Propietario } from "@/lib/types/inmobiliaria";
+// QA-CONT C-10: la fecha larga de la casa, nunca el ISO crudo.
+import { diaLegible } from "@/lib/mandato/textos";
 
 /** 100 % en puntos básicos, el mismo lenguaje del mandato. */
 const BPS_TOTAL = 10000;
@@ -87,10 +89,22 @@ export function CesionDelInmueble({
 
   useEffect(() => {
     if (!abierto) return;
-    propietariosApi
-      .getAll({ limit: 500 })
-      .then(setPropietarios)
-      .catch(() => setPropietarios([]));
+    const traer = () =>
+      propietariosApi
+        .getAll({ limit: 500 })
+        .then(setPropietarios)
+        .catch(() => setPropietarios([]));
+    void traer();
+    /*
+     * QA-CONT: si el comprador no tiene ficha, se crea en otra pestaña sin
+     * cerrar este diálogo («Crear su ficha», abajo). Al volver a esta pestaña
+     * la lista se vuelve a pedir y el nuevo ya aparece para elegirlo.
+     */
+    const alVolver = () => {
+      if (document.visibilityState === "visible") void traer();
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => document.removeEventListener("visibilitychange", alVolver);
   }, [abierto]);
 
   async function confirmar() {
@@ -105,8 +119,8 @@ export function CesionDelInmueble({
         ],
         nota: nota.trim() || undefined,
       });
-      toast.success(`Cesión registrada desde el ${r.desde}.`, {
-        description: `${r.cuotasReapuntadas} período(s) quedaron a nombre de ${r.propietarioNuevo}. Lo anterior sigue siendo de ${r.propietarioAnterior ?? "el dueño anterior"}.`,
+      toast.success(`Cesión registrada desde el ${diaLegible(r.desde)}.`, {
+        description: `${r.cuotasReapuntadas} ${r.cuotasReapuntadas === 1 ? "período quedó" : "períodos quedaron"} a nombre de ${r.propietarioNuevo}. Lo anterior sigue siendo de ${r.propietarioAnterior ?? "el dueño anterior"}.`,
       });
       onCerrar();
       onRegistrada();
@@ -197,8 +211,17 @@ export function CesionDelInmueble({
             />
             <ErrorDelCampo id="cesion-propietario-error" mensaje={errores.nuevosPropietarios} className="mt-0" />
             <p className="text-caption text-muted-foreground">
-              Si el comprador todavía no tiene ficha, créala en Propietarios
-              antes de registrar la cesión.
+              ¿El comprador todavía no tiene ficha?{" "}
+              <a
+                href="/panel/inmobiliaria/propietarios?nuevo=true"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+                data-testid="cesion-crear-propietario"
+              >
+                Crear su ficha
+              </a>{" "}
+              (se abre en otra pestaña; al volver, aparece en la lista).
             </p>
           </div>
 

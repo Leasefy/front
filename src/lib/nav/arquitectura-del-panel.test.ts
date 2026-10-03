@@ -66,8 +66,9 @@ const modulos = modulosDelPanel();
 const pantallas = modulos.flatMap((m) => pestanasDelModulo(m));
 /**
  * ¿Existe `page.tsx` para esta ruta? Baja segmento a segmento y, en cada nivel,
- * también por los route groups `(…)` (que no aparecen en la URL): las tres
- * pantallas de Retención viven en `contratos/(retencion)/…`.
+ * también por los route groups `(…)` (que no aparecen en la URL). Las tres
+ * pantallas de Retención vivían en `contratos/(retencion)/…`; desde QA-CONT
+ * C-19 (03-10-2026) viven en `retencion/…`.
  */
 function tienePagina(href: string): boolean {
   const segmentos = href.replace(PANEL, '').split('/').filter(Boolean);
@@ -205,7 +206,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 25 módulos en 5 grupos con nombre (+ Inicio y Chat = 27 filas)', () => {
+  it('el sidebar tiene 26 módulos en 5 grupos con nombre (+ Inicio y Chat = 28 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -235,7 +236,9 @@ describe('arquitectura del panel — sidebar', () => {
     // a quién se llama para cada oficio. Va como FILA por la misma regla de
     // Portales — Mantenimientos no tiene secciones, y una sola card no dibuja
     // el riel, así que colgarla de ahí la volvería inalcanzable.
-    expect(modulos).toHaveLength(25);
+    // Eran 25 hasta que Retención se mudó a «Agentes IA» (QA-CONT C-19,
+    // 03-10-2026, Nico: «Moverlas a Agentes IA con navegación»).
+    expect(modulos).toHaveLength(26);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -389,13 +392,29 @@ describe('arquitectura del panel — agentes', () => {
     }
   });
 
-  it('Retención NO está en el catálogo: no va a producción todavía (Nico, 2026-09-03)', () => {
-    // Las rutas existen bajo `contratos/(retencion)/`, pero ninguna pestaña,
-    // fila ni píldora las ofrece.
+  // QA-CONT C-19 (03-10-2026): cambia a propósito. Era «Retención NO está en
+  // el catálogo» (Nico, 2026-09-03); el 03-10 Nico vio `/contratos/aprobar`
+  // («cuidado que esto no tiene una navegación clara») y eligió «Moverlas a
+  // Agentes IA con navegación».
+  it('Retención vive en «Agentes IA» con su sala, y ya no cuelga de Contratos (C-19)', () => {
     const hrefs = pantallas.map((p) => p.href);
     for (const seg of ['/contratos/retencion', '/contratos/riesgo', '/contratos/aprobar']) {
       expect(hrefs).not.toContain(`${PANEL}${seg}`);
     }
+    const agentes = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'agentes')!;
+    const fila = agentes.modulos.find((m) => m.key === 'retencion');
+    expect(fila?.href).toBe(`${PANEL}/retencion`);
+    expect(fila?.agente).toBe('retencion');
+    const sala = AGENT_WORKSPACES.find((w) => w.slug === 'retencion')!;
+    expect(sala.items.map((i) => i.href)).toEqual([
+      `${PANEL}/retencion`,
+      `${PANEL}/retencion/riesgo`,
+      `${PANEL}/retencion/aprobar`,
+    ]);
+    for (const ruta of ['retencion/page.tsx', 'retencion/riesgo/page.tsx', 'retencion/riesgo/[caseId]/page.tsx', 'retencion/aprobar/page.tsx']) {
+      expect(existsSync(join(APP, ruta)), ruta).toBe(true);
+    }
+    expect(existsSync(join(APP, 'contratos/(retencion)')), 'la carpeta vieja se mudó entera').toBe(false);
   });
 
   it('Evaluación de candidatos NO está en el catálogo: oculta por ahora (Nico, 2026-09-08)', () => {
@@ -760,6 +779,8 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       'cobranza',
       'conciliacion',
       'agente-de-pagos',
+      // QA-CONT C-19 (03-10-2026): con datos de ejemplo hasta que el agente exista.
+      'retencion',
       'desempeno-ia',
     ]);
   });
@@ -775,6 +796,9 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/cobranza',
       '/conciliacion',
       '/pagos/agente',
+      // La única que SÍ se movió, a propósito (QA-CONT C-19): colgaba de
+      // `/contratos/(retencion)/` sin navegación. Las viejas redirigen.
+      '/retencion',
       '/reportes/ia',
     ]);
   });

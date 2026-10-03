@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { useRetencionDashboard } from '@/lib/hooks/retencion/use-retencion'
 import { formatCop } from '@/lib/data/mock-retencion'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 import type { CardTone, DashboardCard } from '@/lib/types/retencion'
 
 const TONE_TEXT: Record<CardTone, string> = {
@@ -106,7 +107,7 @@ export default function RetencionDashboardPage() {
           {urgentes.map((u) => (
             <Link
               key={u.caseId}
-              href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(u.caseId)}`}
+              href={casoDeRetencion(u.caseId)}
               className="flex items-center gap-4 px-4 py-3 hover:bg-surface-hover transition-colors"
             >
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-sm font-semibold text-danger">

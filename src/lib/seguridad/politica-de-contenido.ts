@@ -81,6 +81,13 @@ export type ModoDeLaPolitica = 'obligatoria' | 'reporte';
 export interface EntornoDeLaPolitica {
   /** `true` con `next dev`: agrega lo que el recargado en caliente necesita. */
   desarrollo: boolean;
+  /**
+   * `true` cuando la política va en `Content-Security-Policy-Report-Only`. Ahí
+   * `upgrade-insecure-requests` no aplica: el navegador la ignora y lo avisa
+   * como ERROR en la consola de cada página (QA-INQ, 03-10). Sólo va en la
+   * política obligatoria.
+   */
+  soloReporte?: boolean;
   NEXT_PUBLIC_SUPABASE_URL?: string;
   NEXT_PUBLIC_BACKEND_URL?: string;
   NEXT_PUBLIC_AGENT_URL?: string;
@@ -220,7 +227,7 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
   ];
 
   const partes = directivas.map(([nombre, valores]) => `${nombre} ${valores.join(' ')}`);
-  if (!env.desarrollo) partes.push('upgrade-insecure-requests');
+  if (!env.desarrollo && !env.soloReporte) partes.push('upgrade-insecure-requests');
   partes.push(`report-uri ${RUTA_DE_REPORTES_CSP}`);
   partes.push(`report-to ${GRUPO_DE_REPORTES_CSP}`);
   return partes.join('; ');

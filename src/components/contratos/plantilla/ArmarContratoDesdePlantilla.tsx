@@ -613,8 +613,39 @@ function TopesLegalesDelContrato({
           </div>
         ))}
       </dl>
-      <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {topes.fuente}</p>
+      <FuenteDelIpc fuente={topes.fuente} />
     </div>
+  );
+}
+
+/**
+ * QA-CONT C-14: la fuente del IPC era una URL cruda en pantalla
+ * («Fuente del IPC: https://www.dane.gov.co/…»). Si es un enlace, se lee como
+ * enlace con su nombre («Fuente: DANE»); si es texto, se dice tal cual.
+ */
+function FuenteDelIpc({ fuente }: { fuente: string }) {
+  let url: URL | null = null;
+  try {
+    url = /^https?:\/\//i.test(fuente) ? new URL(fuente) : null;
+  } catch {
+    url = null;
+  }
+  if (!url) return <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {fuente}</p>;
+  const host = url.hostname.replace(/^www\./, '');
+  const nombre = /(^|\.)dane\.gov\.co$/.test(host) ? 'DANE' : host;
+  return (
+    <p className="text-caption text-fg-muted mt-2" title="Fuente del IPC">
+      Fuente:{' '}
+      <a
+        href={url.toString()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary underline underline-offset-2"
+        data-testid="fuente-del-ipc"
+      >
+        {nombre}
+      </a>
+    </p>
   );
 }
 

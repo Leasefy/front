@@ -43,6 +43,7 @@ import {
   Vault,
   ArrowsLeftRight,
   HourglassMedium,
+  HeartStraight,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -106,9 +107,11 @@ import type { BusinessModule } from './agency-module-scope';
  *   · Dentro de la sección la píldora «IA» sobra: la sección ya lo dice.
  *   · Cada fila conserva el `module`/`roles` y el `scope` que tenía como
  *     pantalla de su módulo anterior (el `scope` que heredaba, ahora escrito).
- *   · Lo que existe pero está sin sacar NO entra: Retención, Mantenimiento
- *     (tickets), Evaluación de candidatos. El equipo de Pagos SÍ entra, con una
- *     pantalla que dice qué está encendido y qué falta (ver su fila).
+ *   · Lo que existe pero está sin sacar NO entra: Mantenimiento (tickets),
+ *     Evaluación de candidatos. El equipo de Pagos SÍ entra, con una pantalla
+ *     que dice qué está encendido y qué falta (ver su fila). Retención entró el
+ *     03-10-2026 (QA-CONT C-19, Nico eligió «Moverlas a Agentes IA con
+ *     navegación»), con su aviso de datos de ejemplo hasta que el agente exista.
  *
  * ── Reglas que NO cambian con esto ─────────────────────────────────────────
  *
@@ -130,6 +133,15 @@ const CONTADOR_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.
  * portada sin decirle nada (MSJ-6).
  */
 const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
+
+/**
+ * Todos menos el abogado externo (QA-INQ E-05, 03-10-2026). Tiene `contratos`
+ * para lo jurídico, pero «sólo sus casos» (O-05): el back le responde 403 en
+ * Inquilinos, y una fila que se ve y rebota es una promesa rota.
+ */
+const SIN_EL_ABOGADO_EXTERNO: readonly AgencyRole[] = (Object.values(AGENCY_ROLES) as AgencyRole[]).filter(
+  (rol) => rol !== AGENCY_ROLES.ABOGADO_EXTERNO,
+);
 
 /**
  * Las TRES caras de la plata dentro del módulo Pagos.
@@ -360,6 +372,16 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       //
       // El gate es el de aquella Sala: ADMIN y CONTADOR, encuadre de finanzas.
       { key: 'agente-de-pagos', labelKey: 'inmobiliaria.nav.agenteDePagos', href: r('/pagos/agente'), icon: HandCoins, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
+      // 🔴 QA-CONT C-19 (Nico, 03-10-2026: «cuidado que esto no tiene una
+      // navegación clara»). El tablero de Retención, la bandeja de riesgo y la
+      // cola por aprobar vivían bajo `contratos/(retencion)/` sin migas ni
+      // pestañas y con «Contratos» marcado. Se MUDARON a su ruta (`/retencion`,
+      // las viejas redirigen) con su sala en `AGENT_WORKSPACES`. Muestran datos
+      // de ejemplo con el aviso naranja hasta que el agente exista. Sólo ADMIN:
+      // el layout pide `retencion:view`, un módulo que ninguna matriz tiene, así
+      // que lo abre `isAdmin` y nadie más (una fila que se ve y rebota es MSJ-6).
+      // Va después de los que trabajan con datos reales y antes de «Desempeño IA».
+      { key: 'retencion', labelKey: 'inmobiliaria.ai.nav.retencion', href: r('/retencion'), icon: HeartStraight, module: null, roles: [AGENCY_ROLES.ADMIN], scope: 'administracion', agente: 'retencion' },
       // Venía de Reportes (`scope: 'general'` heredado): es cómo rinden los
       // agentes de arriba, por eso cierra la sección.
       { key: 'desempeno-ia', labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics', scope: 'general' },
@@ -477,7 +499,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // firma, y la fila va con lo que se opera. Conserva `module`, `roles`
         // y `scope`: cambiar de grupo no abre ni cierra pantallas a nadie.
         // 'contratos' es su propia AGENCY_MODULES key (todos los roles la tienen).
-        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion', dataTourTarget: 'sidebar-contratos',
+        // QA-CONT CR-04 (Nico, 03-10-2026): sin el abogado externo, como
+        // Inquilinos (E-05): tiene `contratos` para lo jurídico pero «sólo sus
+        // casos» (O-05); la lista entera con cánones y deudas no es suya.
+        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
           // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
@@ -488,10 +513,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // SECCIÓN de Contratos y no como fila: Contratos ya tiene riel, y
           // una cláusula sólo tiene sentido dentro de un contrato.
           { labelKey: 'inmobiliaria.nav.clausulasPropias', href: r('/contratos/clausulas'), icon: Scroll, module: 'contratos' },
-          // Retención (el agente Laura: tablero, riesgo de salida y decisiones
-          // por aprobar) NO está en el catálogo a propósito: no va a producción
-          // todavía (Nico, 2026-09-03). Las tres rutas siguen existiendo bajo
-          // `contratos/(retencion)/` y sólo se alcanzan escribiendo la URL.
+          // Retención (tablero, riesgo de salida y decisiones por aprobar) ya
+          // no cuelga de Contratos: se mudó a «Agentes IA» (QA-CONT C-19,
+          // 03-10-2026) y las rutas viejas redirigen a `/retencion`.
         ],
       },
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
@@ -651,8 +675,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // escondería para los demás. `module: 'clientes'`, que es el permiso con
       // el que se crean los terceros.
       { key: 'listas-restrictivas', labelKey: 'inmobiliaria.nav.listasRestrictivas', href: r('/clientes/listas'), icon: ShieldWarning, module: 'clientes', scope: 'administracion' },
-      // El permiso es `contratos` porque de ahí sale el dato.
-      { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', scope: 'administracion' },
+      // El permiso es `contratos` porque de ahí sale el dato. Sin el abogado
+      // externo: el back le niega la sección entera (E-05).
+      { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion' },
       { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', scope: 'general', exact: true },
     ],
   },

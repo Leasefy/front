@@ -407,14 +407,29 @@ export function useInmueblesSinConsignacion() {
  * misma y con una copia aparte se quedó sin ella: cada fila de Postulaciones
  * moría en «No encontramos esa propiedad».
  */
-export function useConsignacion(id: string | undefined) {
-  const { data, ...rest } = useApiData(
+export function useConsignacion(
+  id: string | undefined,
+  /**
+   * QA-CONT C-20 (03-10-2026) · `porInmueble`: el id ES del inmueble (la ficha
+   * del contrato sólo tiene el `propertyId`). Se pide la lista filtrada por
+   * inmueble y después la ficha del mandato, sin el `GET /consignaciones/<id
+   * del inmueble>` que daba 404 en la consola de cada ficha. Sin mandato,
+   * `null` (no es un error: el inmueble no está consignado acá).
+   * `activo: false` no pide nada (el rol no ve el portafolio: 403 seguro).
+   */
+  opciones?: { porInmueble?: boolean; activo?: boolean },
+) {
+  const porInmueble = opciones?.porInmueble === true;
+  const activo = opciones?.activo !== false;
+  const { data, ...rest } = useApiData<Consignacion | null>(
     async () => {
       if (!id) throw new Error('No ID');
-      return consignacionesApi.getByIdOrPropertyId(id);
+      if (!porInmueble) return consignacionesApi.getByIdOrPropertyId(id);
+      const delInmueble = await consignacionesApi.getAll({ propertyId: id });
+      return delInmueble.length > 0 ? consignacionesApi.getById(delInmueble[0].id) : null;
     },
-    [id],
-    false,
+    [id, porInmueble, activo],
+    !activo,
     0,
     ['consignaciones'],
   );

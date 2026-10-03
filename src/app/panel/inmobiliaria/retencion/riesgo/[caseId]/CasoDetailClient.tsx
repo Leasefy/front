@@ -12,6 +12,7 @@ import { formatCop } from '@/lib/data/mock-retencion'
 import type { CaseBundle, NoSource, RetentionState, TaskStatus } from '@/lib/types/retencion'
 import { CasoSidebar } from './CasoSidebar'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
 
 const STATE_LABEL: Record<RetentionState, string> = {
   saludable: 'Saludable',
@@ -61,7 +62,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   return (
     <div className="p-6 lg:p-8 space-y-5">
       <VolverALaLista
-        href="/panel/inmobiliaria/contratos/riesgo"
+        href={RETENCION_RIESGO}
         label="Volver a la bandeja de riesgos"
       />
 

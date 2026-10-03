@@ -19,7 +19,7 @@
  * un `Select`: doscientos inmuebles no se encuentran bajando una lista.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { House, User, UserPlus } from '@phosphor-icons/react'
 import { SegmentedControl, Presence } from '@leasefy/cadence'
 
@@ -29,6 +29,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { useInquilinos } from '@/lib/hooks/use-inquilinos'
+import { cuentaDelPortal } from '@/lib/api/inquilinos.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 import { etiquetaDeInmueble } from './VincularInmueble'
 
@@ -82,13 +83,27 @@ export function validarPartes(partes: PartesManuales): Record<string, string> {
 
 interface Props {
   valor: PartesManuales
-  onCambio: (partes: PartesManuales) => void
+  /** `automatico`: lo cambió la pantalla (la persona pedida), no la persona: no cuenta como «tocado». */
+  onCambio: (partes: PartesManuales, opciones?: { automatico?: boolean }) => void
   /** El inmueble recién elegido, para precargar el canon en los términos. */
   onInmuebleElegido?: (consignacion: Consignacion) => void
   errores?: Record<string, string>
+  /**
+   * La persona con la que se llegó (`?inquilino=` desde Inquilinos, QA-INQ
+   * I-29). Con cuenta del portal queda elegida en «Ya es inquilino»; sin
+   * cuenta (el contrato pide una cuenta para «Ya es inquilino»), pasa a
+   * «Nuevo» con sus datos escritos. Si no está en la lista, no se elige nada.
+   */
+  inquilinoPedido?: string | null
+  /**
+   * El nombre del inquilino elegido de la lista (`null` sin elegir), para el
+   * resumen de «Crear contrato» (QA-CONT C-22). Avisa también cuando la
+   * persona llegó ya elegida (`?inquilino=`), no sólo al tocar el selector.
+   */
+  onNombreDelInquilino?: (nombre: string | null) => void
 }
 
-export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {} }: Props) {
+export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino }: Props) {
   const [consignaciones, setConsignaciones] = useState<Consignacion[] | null>(null)
   const [errorInmuebles, setErrorInmuebles] = useState<string | null>(null)
   const { inquilinos, cargando: cargandoInquilinos } = useInquilinos({ buscar: '', estado: 'todos' })
@@ -120,9 +135,17 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
     () => elegibles.map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
     [elegibles],
   )
+  /*
+   * QA-CONT CR-14: «Ya es inquilino» sólo ofrece a quien tiene cuenta del
+   * portal. El back exige su id (`@IsUUID`) y una cuenta de inquilino: las
+   * personas que en Inquilinos son una identidad (`doc:`/`correo:`) rebotaban
+   * con 404 al crear. A ellas se las carga en «Nuevo» con su documento, y el
+   * back usa su ficha si el documento ya es de la inmobiliaria.
+   */
   const opcionesInquilino = useMemo<ComboboxOption[]>(
     () =>
       [...inquilinos]
+        .filter((q) => cuentaDelPortal(q) !== null)
         .sort((a, b) => a.nombre.localeCompare(b.nombre))
         .map((q) => ({
           value: q.tenantId,
@@ -130,6 +153,44 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         })),
     [inquilinos],
   )
+
+  /* Se resuelve UNA vez, cuando llega la lista: después manda la persona. */
+  const pedidoResuelto = useRef(false)
+  useEffect(() => {
+    if (!inquilinoPedido || pedidoResuelto.current || cargandoInquilinos) return
+    pedidoResuelto.current = true
+    const persona = inquilinos.find((q) => q.tenantId === inquilinoPedido)
+    if (!persona) {
+      if (valor.inquilino.modo === 'existente' && valor.inquilino.tenantId === inquilinoPedido) {
+        onCambio({ ...valor, inquilino: { modo: 'existente', tenantId: '' } }, { automatico: true })
+      }
+      return
+    }
+    if (cuentaDelPortal(persona) === null) {
+      onCambio({
+        ...valor,
+        inquilino: {
+          modo: 'nuevo',
+          nombre: persona.nombre,
+          documento: persona.documento ?? '',
+          correo: persona.email ?? '',
+          telefono: persona.telefono ?? '',
+        },
+      }, { automatico: true })
+    }
+    // `valor`/`onCambio` cambian con cada render del padre; esto corre una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquilinoPedido, cargandoInquilinos, inquilinos])
+
+  const nombreElegido =
+    valor.inquilino.modo === 'existente'
+      ? (inquilinos.find((q) => q.tenantId === (valor.inquilino as { tenantId: string }).tenantId)?.nombre ?? null)
+      : null
+  useEffect(() => {
+    onNombreDelInquilino?.(nombreElegido)
+    // Sólo cuando cambia el nombre: `onNombreDelInquilino` es un setState del padre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nombreElegido])
 
   const elegirInmueble = (propertyId: string | undefined) => {
     onCambio({ ...valor, propertyId: propertyId ?? '' })

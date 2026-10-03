@@ -26,10 +26,18 @@ import {
   ANIOS_HACIA_ADELANTE,
   ANIOS_HACIA_ATRAS,
   dentroDe,
+  finPorDefectoISO,
   hace,
-  oneYearAheadISO,
   todayISO,
 } from './fechas-y-topes';
+import { ResumenDelContratoNuevo } from '@/components/contratos/ResumenDelContratoNuevo';
+import { primerCanon } from '@/lib/contratos/primer-canon';
+import { avanceDelContrato } from '@/lib/contratos/avance-del-contrato';
+import { ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import type { AgenciaConTerminos } from '@/lib/contratos/terminos-por-defecto';
+import { terminosPorDefectoDeLaAgencia } from '@/lib/contratos/terminos-por-defecto';
+import { usoPorElTipo } from '@/lib/contratos/uso-del-inmueble';
 import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
 import {
   ariaDelCampoDelContrato,
@@ -124,6 +132,33 @@ interface FormState {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
+/**
+ * QA-INQ I-30: lo que falta para crear, en palabras, al lado del botón
+ * apagado. Antes la pantalla abría con «El canon no puede ser menor que
+ * $100.000» y «Sube el PDF del contrato» en rojo, antes de escribir nada.
+ */
+const FALTA = {
+  propertyId: 'el inmueble',
+  tenantId: 'el inquilino',
+  nombre: 'el nombre del inquilino',
+  documento: 'el documento del inquilino',
+  correo: 'el correo del inquilino',
+  pdfFile: 'el PDF del contrato',
+  contratoArmado: 'armar el contrato',
+  startDate: 'la fecha de inicio',
+  endDate: 'la fecha de fin',
+  monthlyRent: 'el canon',
+  paymentDay: 'el día de pago',
+} as const;
+/** Los del bloque «partes»: sus errores salen cuando se toca el bloque (como siempre). */
+const DE_LAS_PARTES: ReadonlySet<string> = new Set(['propertyId', 'tenantId', 'nombre', 'documento', 'correo']);
+
+/** «a», «a y b», «a, b y c». */
+function enLista(cosas: readonly string[]): string {
+  if (cosas.length <= 1) return cosas[0] ?? '';
+  return `${cosas.slice(0, -1).join(', ')} y ${cosas[cosas.length - 1]}`;
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 function NuevoContratoContent() {
@@ -136,9 +171,24 @@ function NuevoContratoContent() {
    * activación) son los mismos (Nico, 2026-09-03).
    */
   const esManual = !applicationId && searchParams.get('modo') === 'manual';
+  /*
+   * `?inquilino=<identidad>` (QA-INQ I-29): «Crear su contrato» desde
+   * Inquilinos llega con la persona ya elegida. `PartesDelContratoManual` la
+   * busca en su lista y, si no tiene cuenta del portal, pasa a «Nuevo» con sus
+   * datos ya escritos.
+   */
+  const inquilinoPedido = esManual ? searchParams.get('inquilino') : null;
   const actions = useContractActions();
-  const [partes, setPartes] = useState<PartesManuales>(PARTES_VACIAS);
+  const [partes, setPartes] = useState<PartesManuales>(() =>
+    inquilinoPedido
+      ? { ...PARTES_VACIAS, inquilino: { modo: 'existente', tenantId: inquilinoPedido } }
+      : PARTES_VACIAS,
+  );
   const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
+  /** El nombre del inquilino ya elegido de la lista, para el resumen (C-22). */
+  const [nombreDelInquilino, setNombreDelInquilino] = useState<string | null>(null);
+  /** El tipo del inmueble elegido a mano (de su consignación): decide si hay depósito. */
+  const [tipoDelInmuebleElegido, setTipoDelInmuebleElegido] = useState<string | null>(null);
   /*
    * El mandato del inmueble elegido a mano. De ahí sale el PROPIETARIO, que es
    * quien firma como arrendador: con sólo el `propertyId` el backend lo busca
@@ -154,6 +204,12 @@ function NuevoContratoContent() {
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
+  /*
+   * QA-INQ I-30 (regla de ARREGLOS-4 Q2): un campo VACÍO no se pinta rojo
+   * antes de que la persona haga algo. Su error sale al dejar el campo; lo que
+   * ya tiene algo escrito se revisa en vivo, como siempre.
+   */
+  const [camposDejados, setCamposDejados] = useState<ReadonlySet<string>>(new Set());
 
   const [application, setApplication] = useState<LandlordApplicationDetail | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -176,7 +232,8 @@ function NuevoContratoContent() {
       mode: 'upload',
       pdfFile: null,
       startDate: start,
-      endDate: oneYearAheadISO(start),
+      // C-13: inicio + 12 meses − 1 día (del 3-oct al 2-oct), no 12 meses y un día.
+      endDate: finPorDefectoISO(start),
       monthlyRent: '',
       deposit: '',
       paymentDay: '1',
@@ -291,8 +348,59 @@ function NuevoContratoContent() {
   // esta carga: es el único disparador que tiene esa pantalla.
   }, [applicationId, esManual, intento]);
 
+  /*
+   * C-13 (Nico, 03-10-2026: «los de la inmobiliaria»): el día de pago y el
+   * prorrateo por defecto salen de la configuración de la inmobiliaria. Se
+   * aplican UNA vez, al llegar, y sólo sobre lo que la persona no tocó. Se
+   * leen de `GET /inmobiliaria/agency` (lo ven todos los roles; la
+   * configuración completa es sólo del administrador). Si falla, el formulario
+   * se queda con lo de siempre.
+   */
+  const [agenciaConTerminos, setAgenciaConTerminos] = useState<AgenciaConTerminos | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    Promise.resolve()
+      .then(() => agencyApi.getMyAgency())
+      .then((a) => {
+        if (vivo && a) setAgenciaConTerminos(a as unknown as AgenciaConTerminos);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const porDefecto = useMemo(() => terminosPorDefectoDeLaAgencia(agenciaConTerminos), [agenciaConTerminos]);
+  const tocados = useRef<Set<keyof FormState>>(new Set());
+  const porDefectoAplicado = useRef(false);
+  useEffect(() => {
+    if (!porDefecto || porDefectoAplicado.current) return;
+    porDefectoAplicado.current = true;
+    setForm((f) => ({
+      ...f,
+      paymentDay:
+        porDefecto.diaDePago !== null && !tocados.current.has('paymentDay')
+          ? String(porDefecto.diaDePago)
+          : f.paymentDay,
+      prorratearPrimerMes:
+        porDefecto.prorratear !== null && !tocados.current.has('prorratearPrimerMes')
+          ? porDefecto.prorratear
+          : f.prorratearPrimerMes,
+    }));
+  }, [porDefecto]);
+
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((f) => ({ ...f, [key]: value }));
+    tocados.current.add(key);
+    setForm((f) => {
+      /*
+       * C-13: la fecha de fin sigue al inicio mientras nadie la haya cambiado
+       * a mano (inicio + 12 meses − 1 día). Una vez tocada, manda la persona.
+       */
+      if (key === 'startDate' && !tocados.current.has('endDate') && f.endDate === finPorDefectoISO(f.startDate)) {
+        const inicio = value as string;
+        return { ...f, startDate: inicio, endDate: inicio ? finPorDefectoISO(inicio) : f.endDate };
+      }
+      return { ...f, [key]: value };
+    });
     setErroresDelServidor((e) => {
       if (!(key in e)) return e;
       const resto = { ...e };
@@ -361,6 +469,14 @@ function NuevoContratoContent() {
   ]);
 
   const armadoPorElSistema = form.mode === 'template' || form.mode === 'generate';
+  /*
+   * Nico (03-10-2026): «Depósito: dejarlo sólo para comercial». En vivienda no
+   * hay depósito en dinero (Ley 820, art. 16); el campo sólo aparece cuando el
+   * contrato es comercial: por la respuesta de la persona (`uso`) o por el
+   * tipo del inmueble, con la misma lista del back. Sin saberlo, no se pide.
+   */
+  const usoDelContrato = uso || usoPorElTipo(esManual ? tipoDelInmuebleElegido : property?.type);
+  const pideDeposito = usoDelContrato === 'COMERCIAL';
   // La marca de la forma elegida se desliza de una tarjeta a otra.
   const marcaDelModo = `${useId()}-modo`;
   // Con el PDF propio se prepara UNA vez, para saber si la tarjeta de IA se
@@ -397,7 +513,8 @@ function NuevoContratoContent() {
         startDate: form.startDate,
         endDate: form.endDate,
         monthlyRent: form.monthlyRent,
-        deposit: form.deposit,
+        // Sin depósito en vivienda: un valor que no se ve no puede trabar el botón.
+        deposit: pideDeposito ? form.deposit : '',
         paymentDay: form.paymentDay,
       }),
     );
@@ -428,6 +545,7 @@ function NuevoContratoContent() {
     form,
     esManual,
     partes,
+    pideDeposito,
     armadoPorElSistema,
     plantilla.generado,
     plantilla.generadoQuedoViejo,
@@ -523,7 +641,7 @@ function NuevoContratoContent() {
         startDate: form.startDate,
         endDate: form.endDate,
         monthlyRent: Number(form.monthlyRent),
-        deposit: Number(form.deposit),
+        deposit: pideDeposito ? Number(form.deposit) : 0,
         paymentDay: Number(form.paymentDay),
         ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
@@ -629,9 +747,83 @@ function NuevoContratoContent() {
     }
   };
 
-  /** El error de un campo: el del servidor gana sobre el del formulario. */
+  /** ¿El campo está vacío? (lo que decide si su error espera a que lo dejen). */
+  const vacio = (campo: CampoDelContrato): boolean => {
+    if (campo === 'pdfFile') return !form.pdfFile;
+    const valor = (form as unknown as Record<string, unknown>)[campo];
+    return typeof valor !== 'string' || valor.trim() === '';
+  };
+  /**
+   * El error de un campo: el del servidor gana sobre el del formulario. El del
+   * formulario, sólo si el campo tiene algo escrito o ya lo dejaron (I-30).
+   */
   const errorDe = (campo: CampoDelContrato): string | undefined =>
-    erroresDelServidor[campo] ?? validation[campo];
+    erroresDelServidor[campo] ??
+    (!vacio(campo) || camposDejados.has(idDelCampoDelContrato(campo)) ? validation[campo] : undefined);
+  /** React avisa el `blur` de cualquier campo de adentro: se anota cuál dejaron. */
+  const alDejarUnCampo = (e: React.FocusEvent<HTMLElement>) => {
+    const id = e.target?.id;
+    if (!id) return;
+    setCamposDejados((antes) => (antes.has(id) ? antes : new Set(antes).add(id)));
+  };
+  /*
+   * El botón apagado dice por qué (R-29): lo que FALTA (vacío y todavía sin
+   * error a la vista), en palabras y sin rojo. Lo que está mal escrito ya lo
+   * dice su campo.
+   */
+  const loQueFalta = (Object.keys(FALTA) as Array<keyof typeof FALTA>).filter((clave) => {
+    if (!validation[clave]) return false;
+    if (clave === 'contratoArmado') return true;
+    if (DE_LAS_PARTES.has(clave)) return !partesTocadas;
+    return vacio(clave as CampoDelContrato) && !camposDejados.has(idDelCampoDelContrato(clave as CampoDelContrato));
+  });
+
+  /*
+   * C-22: lo que dice el resumen de la derecha. Nada de negocio nuevo: el
+   * primer canon es el espejo de la regla del back (sólo el canon), la frase
+   * de cómo se cobra es la de la ficha y los bloqueos son los mismos avisos de
+   * la izquierda, en una línea.
+   */
+  const canonDelResumen = Number(form.monthlyRent) > 0 ? Number(form.monthlyRent) : null;
+  const primerCanonDelResumen = canonDelResumen
+    ? primerCanon({ inicio: form.startDate, canon: canonDelResumen, prorratear: form.prorratearPrimerMes })
+    : null;
+  const mesesDelResumen = avanceDelContrato({ inicio: form.startDate, fin: form.endDate, hoy: form.startDate || todayISO() }).meses;
+  const comoSeCobra =
+    form.startDate && !validation.diasDePlazo
+      ? ritmoDePago(
+          {
+            prorratearPrimerMes: form.prorratearPrimerMes,
+            startDate: form.startDate,
+            paymentDueDay: Number(form.paymentDay) || null,
+            diasDePlazo: form.diasDePlazo.trim() === '' ? null : Number(form.diasDePlazo),
+          },
+          porDefecto ? { diasDePlazo: porDefecto.diasDePlazo, diaDePago: porDefecto.diaDePago } : null,
+        )
+      : null;
+  const inquilinoDelResumen = esManual
+    ? partes.inquilino.modo === 'nuevo'
+      ? partes.inquilino.nombre.trim() || null
+      : nombreDelInquilino
+    : application?.tenantName ?? null;
+  const documentoDelResumen =
+    form.mode === 'upload'
+      ? form.pdfFile
+        ? `PDF propio · ${form.pdfFile.name}`
+        : null
+      : plantilla.generado && !plantilla.generadoQuedoViejo
+        ? form.mode === 'generate'
+          ? 'Generado con IA · listo'
+          : 'Plantilla de ley · lista'
+        : null;
+  const bloqueosDelResumen: string[] = [
+    // El motivo completo, con su enlace, está en el aviso debajo del inmueble.
+    ...(bloqueoDeInventario ? ['El inventario del inmueble no está completo y al día.'] : []),
+    ...(errorDeInmueble ? [errorDeInmueble.mensaje] : []),
+    ...(errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar)
+      ? ['El inmueble tiene el canon por confirmar.']
+      : []),
+  ];
 
   // ─── UI ────────────────────────────────────────────────────────────────────
 
@@ -662,8 +854,21 @@ function NuevoContratoContent() {
     );
   }
 
+  /*
+   * 🔴 C-22 (Nico, 03-10-2026, captura de `?modo=manual`): «¿por qué no
+   * utilizas mejor el ancho de la página? mira todo el espacio que tiene a los
+   * lados... y mucha información en scroll». Era una columna de 768 px
+   * centrada, con 2.142 px de alto a 1440. Ahora, desde `xl`, dos columnas:
+   *   · a la IZQUIERDA lo que se elige —el inmueble y el inquilino (con sus
+   *     avisos justo debajo, C-12), el tipo de contrato, el PDF o la plantilla
+   *     y el respaldo—;
+   *   · a la DERECHA los términos y un RESUMEN que se queda fijo al hacer
+   *     scroll, con el canon, las fechas, el primer canon, lo que falta para
+   *     poder crear y el botón.
+   * Por debajo de `xl` (y a 390 px) es una sola columna, en el mismo orden.
+   */
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6 p-6 xl:max-w-[1600px] xl:px-8">
       {/* Header */}
       <div>
         <Button
@@ -696,12 +901,18 @@ function NuevoContratoContent() {
           Un contrato manual no viene de ese recorrido: no se dibuja. */}
       {!esManual && <RecorridoHilo paso="contrato" className="mb-6" />}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Las columnas se estiran a la misma altura (sin `items-start`): así el
+          resumen de la derecha tiene por dónde quedarse fijo mientras la
+          izquierda —que con la plantilla es la larga— se recorre. */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-2" data-testid="nuevo-contrato-columnas">
+        {/* ── Izquierda: lo que se elige ── */}
+        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
         {esManual && (
           <PartesDelContratoManual
+            inquilinoPedido={inquilinoPedido}
             valor={partes}
-            onCambio={(v) => {
-              setPartesTocadas(true);
+            onCambio={(v, opciones) => {
+              if (!opciones?.automatico) setPartesTocadas(true);
               if (v.propertyId !== partes.propertyId) {
                 setErrorDeInmueble(null);
                 setErrorSinCanon(null);
@@ -715,6 +926,7 @@ function NuevoContratoContent() {
             }}
             onInmuebleElegido={(c) => {
               setInmuebleElegido(c.propertyTitle);
+              setTipoDelInmuebleElegido(c.propertyType ?? null);
               // El mandato, para que el arrendador del contrato salga del
               // propietario que lo firmó y no haya que buscarlo otra vez.
               setConsignacionElegida(c.id);
@@ -725,13 +937,61 @@ function NuevoContratoContent() {
                 setForm((f) => ({ ...f, monthlyRent: String(c.monthlyRent) }));
               }
             }}
+            onNombreDelInquilino={setNombreDelInquilino}
           />
         )}
+
+        {/*
+          🔴 C-12: lo que no deja crear por culpa del INMUEBLE sale apenas se
+          elige, justo debajo del selector, y no al final del formulario
+          después de llenarlo todo. El inventario se pregunta al elegir el
+          inmueble (`para-iniciar`); el 409 del back al crear cae acá mismo.
+          Entran y salen (no saltan).
+        */}
+        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
+          {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
+        </Presence>
+        <Presence
+          show={Boolean(errorDeInmueble)}
+          initial={false}
+          role="alert"
+          className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+        >
+          {errorDeInmueble && (
+            <>
+              <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-fg">{errorDeInmueble.mensaje}</p>
+                {errorDeInmueble.contratoId && (
+                  <Link
+                    href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
+                    className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
+                  >
+                    Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
+        </Presence>
+        <Presence
+          show={errorSinCanon !== null || Boolean(inmuebleManualSinCanon) || (!esManual && Boolean(property?.canonPorConfirmar))}
+          initial={false}
+          className="rounded-lg border border-warning/40 bg-warning/5 p-4"
+        >
+          <AvisoInmuebleSinCanon
+            error={errorSinCanon}
+            inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
+          />
+        </Presence>
 
         {/* 1) Contract origin */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
+              está configurada (`iaDisponible`). Apagada con «No disponible» era
+              una promesa muerta en medio de las dos formas que sí sirven. */}
+          <div className={cn('grid grid-cols-1 gap-3', plantilla.iaDisponible === true ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
             <ModeOption
               marca={marcaDelModo}
               active={form.mode === 'upload'}
@@ -748,26 +1008,16 @@ function NuevoContratoContent() {
               desc="El contrato de ley, con las cláusulas opcionales que elijas."
               icon={Scales}
             />
-            {/* 🔴 «Generar con IA» sólo se prende cuando el backend dice que
-                está configurada (`iaDisponible`). Mientras no lo sepamos, o
-                cuando dice que no, la tarjeta explica por qué — no promete un
-                «próximamente» que nadie va a cumplir. */}
-            <ModeOption
-              marca={marcaDelModo}
-              active={form.mode === 'generate'}
-              disabled={plantilla.iaDisponible !== true}
-              onClick={() => updateForm('mode', 'generate')}
-              title="Generar con IA"
-              desc={
-                plantilla.iaDisponible === true
-                  ? 'Cuentas qué quieres pactar y el asistente propone las cláusulas.'
-                  : plantilla.iaDisponible === false
-                    ? 'No está configurada en tu cuenta. Ármalo con la plantilla.'
-                    : 'Comprobando si está disponible en tu cuenta…'
-              }
-              icon={Sparkle}
-              badge={plantilla.iaDisponible === false ? 'No disponible' : undefined}
-            />
+            {plantilla.iaDisponible === true && (
+              <ModeOption
+                marca={marcaDelModo}
+                active={form.mode === 'generate'}
+                onClick={() => updateForm('mode', 'generate')}
+                title="Generar con IA"
+                desc="Cuentas qué quieres pactar y el asistente propone las cláusulas."
+                icon={Sparkle}
+              />
+            )}
           </div>
 
           {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
@@ -849,7 +1099,7 @@ function NuevoContratoContent() {
                 >
                   <UploadSimple className="w-8 h-8 text-muted-foreground" />
                   <p className="text-sm text-foreground">
-                    <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
+                    <span className="font-medium">Haz clic para subir</span> o arrastra un PDF aquí
                   </p>
                   <p className="text-xs text-muted-foreground">Máx 10 MB</p>
                   <input
@@ -878,10 +1128,26 @@ function NuevoContratoContent() {
           )}
         </CrossFade>
 
+        {/* Paso 11 del recorrido: el respaldo (aseguradora y póliza). Vivía al
+            pie de «Términos»; con dos columnas va con lo que se elige, y la
+            derecha queda corta para que el resumen se vea entero. */}
+        <section className="rounded-lg border border-border bg-card p-5" data-testid="nuevo-contrato-respaldo">
+          <RespaldoDelArriendo
+            valor={respaldo}
+            onCambio={setRespaldo}
+            opciones={evaluacion?.protection_options}
+            errores={erroresRespaldo}
+            conAnalisis={!esManual}
+          />
+        </section>
+        </div>
+
+        {/* ── Derecha: los términos y el resumen fijo ── */}
+        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-terminos">
         {/* 3) Dates + amounts */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <Input
                 type="date"
@@ -913,13 +1179,15 @@ function NuevoContratoContent() {
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')}>
-              <MoneyInput
-                {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
-                value={form.deposit}
-                onChange={(crudo) => updateForm('deposit', crudo)}
-              />
-            </Field>
+            {pideDeposito && (
+              <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">
+                <MoneyInput
+                  {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                  value={form.deposit}
+                  onChange={(crudo) => updateForm('deposit', crudo)}
+                />
+              </Field>
+            )}
             <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
                 {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
@@ -936,7 +1204,11 @@ function NuevoContratoContent() {
               id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
               error={errorDe('diasDePlazo')}
-              hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
+              hint={
+                porDefecto?.diasDePlazo != null
+                  ? `Vacío = los de la inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
+                  : 'Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
+              }
             >
               <Input
                 {...ariaDelCampoDelContrato('diasDePlazo', errorDe('diasDePlazo'))}
@@ -986,92 +1258,73 @@ function NuevoContratoContent() {
               onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
             />
           </div>
-
-          {/* Paso 11 del recorrido */}
-          <div className="mt-6 border-t border-border pt-6">
-            <RespaldoDelArriendo
-              valor={respaldo}
-              onCambio={setRespaldo}
-              opciones={evaluacion?.protection_options}
-              errores={erroresRespaldo}
-            />
-          </div>
         </section>
 
-        {/* Errors + submit */}
-        {/* Los avisos del envío entran y salen (no saltan). */}
-        <Presence
-          show={Boolean(errorDeInmueble)}
-          initial={false}
-          role="alert"
-          className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+        {/* El resumen: fijo bajo el encabezado del panel mientras la columna
+            de la izquierda se recorre. Errors + submit van adentro: el botón
+            queda al lado de lo que falta para poder apretarlo. */}
+        <ResumenDelContratoNuevo
+          className="xl:sticky xl:top-20"
+          inmueble={esManual ? inmuebleElegido : property?.title ?? null}
+          inquilino={inquilinoDelResumen}
+          documento={documentoDelResumen}
+          canon={canonDelResumen}
+          deposito={pideDeposito && Number(form.deposit) > 0 ? Number(form.deposit) : null}
+          inicio={form.startDate}
+          fin={form.endDate}
+          meses={mesesDelResumen}
+          primerCanon={primerCanonDelResumen}
+          comoSeCobra={comoSeCobra}
+          bloqueos={bloqueosDelResumen}
         >
-          {errorDeInmueble && (
-            <>
-              <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="text-fg">{errorDeInmueble.mensaje}</p>
-                {errorDeInmueble.contratoId && (
-                  <Link
-                    href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
-                    className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
-                  >
-                    Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
-                  </Link>
-                )}
-              </div>
-            </>
-          )}
-        </Presence>
-        <Presence
-          show={errorSinCanon !== null || Boolean(inmuebleManualSinCanon) || (!esManual && Boolean(property?.canonPorConfirmar))}
-          initial={false}
-          className="rounded-lg border border-warning/40 bg-warning/5 p-4"
-        >
-          <AvisoInmuebleSinCanon
-            error={errorSinCanon}
-            inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
-          />
-        </Presence>
-        <Presence
-          show={Boolean(submitError)}
-          initial={false}
-          className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
-        >
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-danger">{submitError}</p>
-        </Presence>
-
-        {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
-
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            hideArrow
-            onClick={() => router.back()}
+          <Presence
+            show={loQueFalta.length > 0}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="text-sm text-fg-muted"
+            data-testid="lo-que-falta"
           >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            hideArrow
-            disabled={
-              !isValid ||
-              actions.isSubmitting ||
-              bloqueoDeInventario !== null ||
-              (!esManual && property?.canonPorConfirmar === true) ||
-              (esManual && inmuebleManualSinCanon !== null)
-            }
-            className="gap-2"
+            Para crearlo falta {enLista(loQueFalta.map((clave) => FALTA[clave]))}.
+          </Presence>
+          <Presence
+            show={Boolean(submitError)}
+            initial={false}
+            className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
           >
-            {actions.isSubmitting ? (
-              <Spinner size="sm" variant="current" />
-            ) : (
-              <CheckCircle className="w-4 h-4" />
-            )}
-            Crear contrato
-          </Button>
+            <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-danger">{submitError}</p>
+          </Presence>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              hideArrow
+              onClick={() => router.back()}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              hideArrow
+              disabled={
+                !isValid ||
+                actions.isSubmitting ||
+                bloqueoDeInventario !== null ||
+                (!esManual && property?.canonPorConfirmar === true) ||
+                (esManual && inmuebleManualSinCanon !== null)
+              }
+              className="gap-2"
+            >
+              {actions.isSubmitting ? (
+                <Spinner size="sm" variant="current" />
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              Crear contrato
+            </Button>
+          </div>
+        </ResumenDelContratoNuevo>
         </div>
       </form>
     </div>

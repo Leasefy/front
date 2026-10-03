@@ -39,7 +39,8 @@ import { TerminarContrato } from '@/components/contratos/TerminarContrato';
 import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
 import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
 import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
-import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
+import { vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
+import { estadoParaMostrar } from '@/lib/contratos/estado-para-mostrar';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
@@ -47,6 +48,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ArriendoDelContrato, AvisoDelContrato } from '@/components/contratos/ArriendoDelContrato';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { soloElDia } from '@/lib/contratos/avance-del-contrato';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -379,15 +381,26 @@ function ContratoDetalleContent() {
   // 🔴 El chip lee la VIGENCIA, como el listado: un `active` cuya fecha de fin
   // pasó dice «Vencido» en ámbar, no «Activo», y uno terminado dice
   // «Terminado». Antes el chip decía «Activo» justo encima de «Vencido desde…».
-  const statusVariant: ContractBadgeVariant = vigencia.vencidoSinRenovar
+  /*
+   * QA-CONT C-05 / C-01: la MISMA palabra que la lista — «Empieza el 1 de
+   * nov» para uno que no ha empezado (antes: «Activo») y «Activo · Termina el
+   * 31 de oct» con la terminación programada.
+   */
+  const estadoDelChip = estadoParaMostrar({
+    contrato: contract,
+    vigencia,
+    etiquetaDelEstado: CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status,
+    locale: 'es',
+    hoy: new Date(`${hoy}T12:00:00`),
+  });
+  const statusVariant: ContractBadgeVariant = estadoDelChip.clave === 'POR_EMPEZAR'
+    ? 'default'
+    : vigencia.vencidoSinRenovar
     ? 'warning'
     : vigencia.estado === 'TERMINADO_ANTICIPADAMENTE' || vigencia.estado === 'TERMINADO_POR_VENCIMIENTO'
       ? 'secondary'
       : CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'secondary';
-  const statusLabel = etiquetaDeVigencia(
-    vigencia,
-    CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status,
-  );
+  const statusLabel = estadoDelChip.texto;
   const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
@@ -446,7 +459,7 @@ function ContratoDetalleContent() {
           */}
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
-            <Badge variant={statusVariant}>
+            <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
               {statusLabel}
             </Badge>
           </div>
@@ -940,7 +953,7 @@ function decisionesDelContrato({
   onTerminar,
   onCeder,
 }: {
-  contract: { id: string; status: string };
+  contract: { id: string; status: string; startDate?: string | null };
   isSubmitting: boolean;
   pendingAction: string | null;
   latestRejectionReason?: string;
@@ -1024,7 +1037,9 @@ function decisionesDelContrato({
             onClick: onRemind,
             loading: isSubmitting && pendingAction === 'remind',
           }}
-          secundaria={editar}
+          // QA-CONT CR-15: sin «Editar». La pantalla de editar no acepta un
+          // contrato que espera la firma del inquilino y devolvía sin hacer
+          // nada: un botón que rebota no es un botón. Para cambiarlo, se cancela.
         />
       ),
       acciones: cancelar,
@@ -1065,6 +1080,25 @@ function decisionesDelContrato({
     };
   }
 
+  /*
+   * QA-CONT CR-05 (Nico, 03-10-2026: «Empieza el 1 de nov»): un firmado que
+   * todavía no empieza NO ofrece «Activar». Activarlo antes dejaba el inmueble
+   * arrendado y el contrato «Activo» semanas antes de su fecha.
+   */
+  const inicio = soloElDia(contract.startDate ?? null);
+  if (status === 'signed' && inicio && inicio > hoyLocal()) {
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={CheckCircle}
+          titulo={`Contrato firmado · empieza el ${fechaLegible(inicio)}`}
+          detalle="Ambas partes firmaron. Se activa desde su fecha de inicio: antes no se ocupa el inmueble ni se cobra nada."
+        />
+      ),
+    };
+  }
+
   if (status === 'signed') {
     return {
       aviso: (
@@ -1098,7 +1132,9 @@ function decisionesDelContrato({
           tono="atencion"
           icono={CalendarX}
           titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
-          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Mientras no decidas, sigue activo.`}
+          // QA-CONT CR-19: «sigue activo» a secas hacía creer que la prórroga
+          // corría sola. No: espera a que alguien la confirme (o lo renueve).
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: confírmala en «Prórroga» o renuévalo, o termina el arriendo.`}
           principal={{
             label: 'Renovar contrato',
             icon: ArrowsClockwise,

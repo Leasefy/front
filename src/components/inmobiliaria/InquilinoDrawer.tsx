@@ -79,8 +79,10 @@ import {
   Envelope,
   FileText,
   IdentificationCard,
+  PencilSimple,
   Phone,
   Receipt,
+  UserCircleMinus,
   Warning,
 } from '@phosphor-icons/react';
 import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
@@ -95,14 +97,22 @@ import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from '@/compo
 import { Spinner } from '@/components/ui/spinner';
 import {
   RenglonDeArriendo,
-  RUTA_DEL_CONTRATO_MANUAL,
+  rutaDelContratoManualPara,
+  textoDeVigentes,
 } from '@/components/inmobiliaria/InquilinosTable';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
+import { documentoParaMostrar } from '@/lib/inquilinos/documento-con-dv';
 import { useI18n } from '@/lib/i18n';
 import { useInquilinoDetalle } from '@/lib/hooks/use-inquilino-detalle';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { cn } from '@/lib/utils';
-import { arriendosVigentes, type Inquilino } from '@/lib/api/inquilinos.service';
+import {
+  arriendosVigentes,
+  cuentaDelPortal,
+  type Inquilino,
+} from '@/lib/api/inquilinos.service';
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import { estadoDeLaDeuda } from '@/lib/estado-de-cuenta/estado-de-la-deuda';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
@@ -182,9 +192,13 @@ export interface InquilinoDrawerProps {
   /** La persona de la fila; `null` cierra el cajón. */
   persona: Inquilino | null;
   onCerrar: () => void;
+  /** E-16: abre «Editar datos» con esta persona. Sin él, no hay botón. */
+  onEditar?: (persona: Inquilino) => void;
+  /** Sube cuando sus datos cambiaron: el cajón vuelve a pedir su detalle. */
+  version?: number;
 }
 
-export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
+export function InquilinoDrawer({ persona, onCerrar, onEditar, version = 0 }: InquilinoDrawerProps) {
   /*
    * El cajón NO se desmonta al cerrar: `open` manda de verdad. Antes esto era
    * `if (!persona) return null` con `<Sheet open>` fijo, y cerrar era borrarlo
@@ -212,7 +226,7 @@ export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
             `CuerpoDelCajon` se monta en un test sin el contexto del Sheet.
             En pantalla el nombre lo pinta la cabecera del cuerpo. */}
         <SheetTitle className="sr-only">{ultima?.nombre ?? ''}</SheetTitle>
-        {ultima && <CajonDeInquilino persona={ultima} />}
+        {ultima && <CajonDeInquilino persona={ultima} onEditar={onEditar} version={version} />}
       </SheetContent>
     </Sheet>
   );
@@ -225,10 +239,18 @@ export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
  * abrir otra persona. En el envoltorio —que está montado siempre— el hook
  * quedaría vivo con el cajón cerrado.
  */
-function CajonDeInquilino({ persona }: { persona: Inquilino }) {
-  const detalle = useInquilinoDetalle(persona);
+function CajonDeInquilino({
+  persona,
+  onEditar,
+  version,
+}: {
+  persona: Inquilino;
+  onEditar?: (persona: Inquilino) => void;
+  version: number;
+}) {
+  const detalle = useInquilinoDetalle(persona, version);
   if (!detalle) return null;
-  return <CuerpoDelCajon detalle={detalle} />;
+  return <CuerpoDelCajon detalle={detalle} onEditar={onEditar} />;
 }
 
 /**
@@ -237,10 +259,21 @@ function CajonDeInquilino({ persona }: { persona: Inquilino }) {
  */
 export function CuerpoDelCajon({
   detalle,
+  onEditar,
 }: {
   detalle: NonNullable<ReturnType<typeof useInquilinoDetalle>>;
+  /** E-16: «Editar datos». Sin él (o sin `contratos:edit`), no hay botón. */
+  onEditar?: (persona: Inquilino) => void;
 }) {
   const { t, formatCurrency, formatDate } = useI18n();
+  /*
+   * Editar pide `contratos:edit`, el permiso con el que el back protege
+   * `PATCH /inmobiliaria/inquilinos/:tenantId`: un botón que abre un
+   * formulario cuyo guardar da 403 es peor que no tenerlo. Fuera del panel
+   * (pruebas) no hay contexto de permisos y no se recorta.
+   */
+  const permisos = usePermissionsContextSafe();
+  const puedeEditar = Boolean(onEditar) && (permisos ? permisos.canAccess('contratos', 'edit') : true);
   const {
     persona,
     cargandoArriendos,
@@ -262,6 +295,12 @@ export function CuerpoDelCajon({
   const visibles = cobros.slice(0, TOPE_DE_COBROS);
   const contratoPrincipal = persona.arriendos[0]?.contractId;
   const sinArriendos = persona.arriendos.length === 0;
+  /*
+   * I-12 / I-22: la cuenta del portal, si la tiene. Lo que habla con un `User`
+   * (escribirle, el interruptor de WhatsApp) recibe SÓLO esto: la identidad de
+   * la lista puede ser `doc:…` y daba 400. Sin cuenta, el cajón lo DICE.
+   */
+  const idDeLaCuenta = cuentaDelPortal(persona);
   // El conteo de cobros emitidos no es cierto hasta que llegaron: una pill en
   // cero mientras carga es un número inventado.
   const cobrosLlegaron = !cargandoPagos && !errorPagos;
@@ -272,6 +311,14 @@ export function CuerpoDelCajon({
    */
   const cuentaConocida = cuenta !== null && cuenta.contratos > 0 && !cargandoCuenta;
   const deuda = cuentaConocida ? estadoDeLaDeuda(cuenta) : null;
+  /*
+   * E-09 (QA-INQ, 03-10): los intereses de mora van APARTE de lo vencido. Con
+   * lo vencido en cero y intereses sin pagar, la persona NO está «al día».
+   */
+  const interesesSinPagar = cuentaConocida ? (cuenta.interesDeMora ?? 0) : 0;
+  const alDiaConIntereses = deuda?.tipo === 'AL_DIA' && interesesSinPagar > 0;
+  /* Y sin reglas de mora, a lo que está en cartera no se le causa interés: se dice (R-06). */
+  const sinReglasDeMora = cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
   const enlaceAlEstadoDeCuenta = refDeCuenta
     ? `${rutaDelEstadoDeCuenta('inquilino', refDeCuenta)}?volver=${encodeURIComponent(
         '/panel/inmobiliaria/inquilinos',
@@ -283,31 +330,64 @@ export function CuerpoDelCajon({
       {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
           monta en un test sin el contexto del Sheet). */}
       <SheetHeader>
-        <div className="flex items-start gap-3">
+        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
+            nombre: las acciones bajan a su propio renglón en vez de apretarlo
+            letra por letra (I-28). */}
+        <div className="flex flex-wrap items-start gap-3">
           <span
             aria-hidden="true"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
           >
             {inicialesDe(persona.nombre)}
           </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold text-fg">{persona.nombre}</h2>
-            <p className="mt-0.5 truncate text-xs text-fg-subtle">
+          <div className="min-w-0 flex-1 basis-[12rem]">
+            {/* UN solo encabezado con el nombre: el accesible es el
+                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
+                el mismo texto. Y se ajusta en dos renglones: a 390 px se
+                cortaba en «Ana So…». */}
+            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+              {persona.nombre}
+            </p>
+            <p className="mt-0.5 text-xs text-fg-subtle">
               {sinArriendos
                 ? t('inquilinos.sinArriendo')
                 : persona.arriendos.length === 1
-                  ? t('inquilinos.conteoArriendoUno', { vigentes: vigentes.length })
+                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
                   : t('inquilinos.conteoArriendos', {
                       n: persona.arriendos.length,
-                      vigentes: vigentes.length,
+                      vigentes: textoDeVigentes(t, vigentes.length),
                     })}
             </p>
           </div>
-          {/* Escribirle sin salir de la ficha. `tenantId` es su `User.id` cuando
-              tiene cuenta del portal; cuando no —se cargó con documento y sin
-              correo— el back responde `SIN_CUENTA` y el botón lo dice. */}
-          <div className="shrink-0">
-            <BotonEnviarMensaje counterpartId={persona.tenantId} />
+          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
+              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
+              se crea desde el contrato; acá no se invita). */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {puedeEditar ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => onEditar?.(persona)}
+                data-testid="inquilino-editar"
+              >
+                <PencilSimple className="h-4 w-4" aria-hidden="true" />
+                {t(`${NS}.editarDatos`)}
+              </Button>
+            ) : null}
+            {idDeLaCuenta ? (
+              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
+                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
+                data-testid="inquilino-sin-cuenta"
+              >
+                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {t(`${NS}.sinCuentaDelPortal`)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -336,7 +416,8 @@ export function CuerpoDelCajon({
           {persona.documento ? (
             <DatoDeContacto
               icono={IdentificationCard}
-              valor={persona.documento}
+              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
+              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
               accion={t(`${NS}.documento`)}
               mono
             />
@@ -357,7 +438,7 @@ export function CuerpoDelCajon({
       <SheetBody>
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
-        <InterruptorDeWhatsapp personaId={persona.tenantId} className="mb-4" />
+        <InterruptorDeWhatsapp personaId={idDeLaCuenta} className="mb-4" />
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
@@ -378,7 +459,8 @@ export function CuerpoDelCajon({
                   description={t(`${NS}.sinContratos`)}
                   action={{
                     label: t('inquilinos.crearSuContrato'),
-                    href: RUTA_DEL_CONTRATO_MANUAL,
+                    // I-29: con la persona ya elegida en el contrato manual.
+                    href: rutaDelContratoManualPara(persona),
                   }}
                   className="py-14"
                 />
@@ -391,7 +473,9 @@ export function CuerpoDelCajon({
                 Los dos números de plata salen del ESTADO DE CUENTA, no de los
                 cobros: la deuda nace con el contrato. */}
             <div className="space-y-3" data-testid="inquilino-cajon-deuda">
-              <dl className="grid grid-cols-3 divide-x divide-border">
+              {/* I-28: a 390 px las tres cifras se APILAN (una por renglón);
+                  en tres columnas angostas se cortaban en «$ 1.850…». */}
+              <dl className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 {/* Cuántos vigentes de cuántos ya lo dice la cabecera. */}
                 <Numero
                   etiqueta={t(`${NS}.canonVigente`)}
@@ -428,14 +512,16 @@ export function CuerpoDelCajon({
                         : t(`${NS}.enCartera`, { n: deuda.dias })
                       : deuda?.tipo === 'VENCIDO_EN_PLAZO'
                         ? t(`${NS}.vencidoEnPlazo`)
-                        : deuda?.tipo === 'AL_DIA'
-                          ? t(`${NS}.alDia`)
-                          : undefined
+                        : alDiaConIntereses
+                          ? t(`${NS}.interesesSinPagar`, { monto: formatCurrency(interesesSinPagar) })
+                          : deuda?.tipo === 'AL_DIA'
+                            ? t(`${NS}.alDia`)
+                            : undefined
                   }
                   detalleTono={
                     deuda?.tipo === 'EN_CARTERA'
                       ? 'alerta'
-                      : deuda?.tipo === 'VENCIDO_EN_PLAZO'
+                      : deuda?.tipo === 'VENCIDO_EN_PLAZO' || alDiaConIntereses
                         ? 'aviso'
                         : 'bien'
                   }
@@ -455,6 +541,19 @@ export function CuerpoDelCajon({
                 /* Tiene arriendos pero ningún contrato responde por él: no se
                    sabe qué debe, y se dice en vez de pintar un cero. */
                 <Aviso texto={t(`${NS}.sinEstadoDeCuenta`)} />
+              ) : null}
+
+              {sinReglasDeMora ? (
+                <p
+                  className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg"
+                  data-testid="inquilino-sin-reglas-de-mora"
+                >
+                  <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 basis-[14rem]">{t(`${NS}.sinReglasDeMora`)}</span>
+                  <Link href={RUTA_DE_REGLAS_DE_MORA} className="font-medium underline underline-offset-4">
+                    {t(`${NS}.configurarReglasDeMora`)}
+                  </Link>
+                </p>
               ) : null}
 
               {enlaceAlEstadoDeCuenta ? (
@@ -486,7 +585,7 @@ export function CuerpoDelCajon({
 
               <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                 {persona.arriendos.map((a) => (
-                  <StaggerItem as="li" key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
+                  <StaggerItem as="li" key={a.contractId} className="space-y-0.5 bg-surface py-1.5">
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
@@ -515,10 +614,12 @@ export function CuerpoDelCajon({
                     {resumen.recordatorios > 0 && resumen.ultimoRecordatorio ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Bell className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t(`${NS}.recordatorios`, {
-                          n: resumen.recordatorios,
-                          fecha: formatDate(resumen.ultimoRecordatorio),
-                        })}
+                        {resumen.recordatorios === 1
+                          ? t(`${NS}.recordatoriosUno`, { fecha: formatDate(resumen.ultimoRecordatorio) })
+                          : t(`${NS}.recordatorios`, {
+                              n: resumen.recordatorios,
+                              fecha: formatDate(resumen.ultimoRecordatorio),
+                            })}
                       </span>
                     ) : null}
                   </div>
@@ -577,7 +678,9 @@ export function CuerpoDelCajon({
                       </Stagger>
                       {cobros.length > visibles.length ? (
                         <p className="text-xs text-fg-muted">
-                          {t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
+                          {cobros.length - visibles.length === 1
+                            ? t(`${NS}.yMasCobrosUno`)
+                            : t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
                         </p>
                       ) : null}
                       {contratoPrincipal ? (
@@ -646,40 +749,55 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   const tono = TONO_DEL_COBRO[cobro.status];
   const debe = (cobro.pendingAmount ?? 0) > 0;
+  /*
+   * I-10 (QA-INQ, 03-10): una GRILLA, no un renglón que se acomoda. Antes el
+   * «Saldo» saltaba de renglón en unos meses y en otros se salía del borde, y
+   * los montos no quedaban uno debajo del otro. A la izquierda mes, estado y
+   * vencimiento; a la derecha, en columnas de ancho fijo, valor y saldo,
+   * alineados a la derecha. En el celular el valor y el saldo se apilan a la
+   * derecha y nada se sale del borde.
+   */
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-surface px-3 py-2.5">
-      <span className="w-24 shrink-0 text-sm font-medium text-fg">
-        {nombreDelMes(cobro.month, locale === 'en' ? 'en' : 'es', 'short')}
-      </span>
-
-      <Badge variant={tono?.variant ?? 'secondary'}>
-        {/* Un estado que el back agregue mañana se muestra crudo: mejor una
-            etiqueta rara que una fila que miente. */}
-        {tono ? t(tono.clave) : cobro.status}
-      </Badge>
-
-      {cobro.paidDate && !debe ? (
-        <span className="text-xs text-fg-muted">
-          {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 bg-surface px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_17rem]"
+      data-testid="cobro-del-cajon"
+    >
+      <div className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
+        <span className="text-sm font-medium text-fg">
+          {nombreDelMes(cobro.month, locale === 'en' ? 'en' : 'es', 'short')}
         </span>
-      ) : (
-        <span className="text-xs text-fg-muted">
-          {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant={tono?.variant ?? 'secondary'}>
+            {/* Un estado que el back agregue mañana se muestra crudo: mejor una
+                etiqueta rara que una fila que miente. */}
+            {tono ? t(tono.clave) : cobro.status}
+          </Badge>
+          {cobro.paidDate && !debe ? (
+            <span className="text-xs text-fg-muted">
+              {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
+            </span>
+          ) : (
+            <span className="text-xs text-fg-muted">
+              {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
+            </span>
+          )}
         </span>
-      )}
+      </div>
 
-      <span className="ml-auto whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-        {/* `totalWithFees` incluye la mora ya causada; el total pelado
-            cobraría de menos justo en las filas que importan. */}
-        {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
-      </span>
-      {debe ? (
-        <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
-          {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
+      <div className="flex flex-col items-end gap-0.5 sm:grid sm:grid-cols-[8rem_9rem] sm:items-center sm:gap-x-0">
+        <span className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-fg">
+          {/* `totalWithFees` incluye la mora ya causada; el total pelado
+              cobraría de menos justo en las filas que importan. */}
+          {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
         </span>
-      ) : (
-        <span className="w-28 shrink-0" />
-      )}
+        {debe ? (
+          <span className="whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
+            {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
+          </span>
+        ) : (
+          <span className="hidden sm:block" aria-hidden="true" />
+        )}
+      </div>
     </div>
   );
 }
@@ -700,11 +818,12 @@ function Numero({
   detalleTono?: 'neutro' | 'alerta' | 'aviso' | 'bien';
 }) {
   return (
-    <div className="min-w-0 px-4 first:pl-0 last:pr-0">
-      <dt className="truncate text-xs text-fg-muted">{etiqueta}</dt>
+    <div className="min-w-0 py-2.5 first:pt-0 last:pb-0 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
       <dd
         className={cn(
-          'mt-1 truncate font-mono text-lg font-semibold tabular-nums',
+          // I-28: una cifra de plata NUNCA se corta con «…»: no se puede leer cuánto debe.
+          'mt-1 whitespace-nowrap font-mono text-lg font-semibold tabular-nums',
           tono === 'alerta' ? 'text-danger' : tono === 'apagado' ? 'text-fg-subtle' : 'text-fg',
         )}
       >
@@ -713,7 +832,7 @@ function Numero({
       {detalle ? (
         <dd
           className={cn(
-            'mt-0.5 truncate text-xs',
+            'mt-0.5 text-xs',
             detalleTono === 'alerta'
               ? 'text-danger'
               : detalleTono === 'aviso'

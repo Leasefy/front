@@ -1,7 +1,7 @@
 /**
  * Retención — nada de plata inventada sin cartel.
  *
- * Las cuatro pantallas de Retención (`/contratos/retencion`, `/riesgo`,
+ * Las cuatro pantallas de Retención (`/retencion`, `/riesgo`,
  * `/riesgo/[caseId]`, `/aprobar`) caen SIEMPRE al mock: el microservicio no
  * publica `/api/agency/:id/retencion/*` —sólo el webhook de WhatsApp— y
  * `src/lib/api/retencion.ts` atrapa cualquier fallo y devuelve

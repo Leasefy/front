@@ -523,6 +523,12 @@ export interface Contract {
    * "$ 0"/epoch, indistinguible de un dato real).
    */
   monthlyRent: number | null;
+  /**
+   * Depósito en COP. Nico (03-10-2026): «dejarlo sólo para comercial» — en
+   * vivienda no hay depósito en dinero (Ley 820, art. 16). Ausente = el back
+   * no lo mandó.
+   */
+  deposit?: number | null;
   adminFee: number;
   startDate: string | null;      // ISO date
   endDate: string | null;        // ISO date

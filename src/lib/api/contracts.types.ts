@@ -156,6 +156,8 @@ export interface BackendContract {
    * exige completas sólo para `contractOrigin !== 'MIGRATED'`.
    */
   monthlyRent: number | null;
+  /** Depósito en COP (sólo comercial, Nico 03-10-2026). Ausente en respuestas viejas. */
+  deposit?: number | null;
   startDate: string | null;
   endDate: string | null;
   paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)

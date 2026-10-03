@@ -52,6 +52,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui';
 import { SectionLabel } from '@/components/ui/section-label';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar';
+import { cicloDeVidaApi } from '@/lib/api/ciclo-de-vida.service';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import {
@@ -94,6 +97,48 @@ function meses(n: number): string {
 }
 
 /** «hoy», «mañana», «en 5 días». */
+/**
+ * QA-CONT C-08: la cuota de la PRÓRROGA. «No queda ninguna cuota por vencer»
+ * en un contrato que se prorroga solo era falso: la tarjeta de la prórroga ya
+ * dice hasta cuándo y el incremento del aniversario ya está calculado. Mientras
+ * la cuota no se genere, se dice «Se prorroga el 1 nov: $ 2.469.850» con el
+ * canon que rige desde ese día. Sin plan (o con aviso de no renovación), nada.
+ */
+function useCuotaDeLaProrroga(contractId: string, activo: boolean): { fecha: string; canon: number | null } | null {
+  const [cuota, setCuota] = React.useState<{ fecha: string; canon: number | null } | null>(null);
+  React.useEffect(() => {
+    if (!activo) {
+      setCuota(null);
+      return;
+    }
+    let vivo = true;
+    Promise.all([
+      Promise.resolve().then(() => cicloDeVidaApi.prorroga(contractId)),
+      Promise.resolve()
+        .then(() => cicloDeVidaApi.incrementos(contractId))
+        .catch(() => null),
+    ])
+      .then(([plan, incrementos]) => {
+        if (!vivo) return;
+        if (!plan || plan.noSeProrroga || plan.aviso || !plan.ultimoDia) {
+          setCuota(null);
+          return;
+        }
+        const [a, m, d] = plan.ultimoDia.slice(0, 10).split('-').map(Number);
+        const siguiente = new Date(Date.UTC(a!, m! - 1, d! + 1)).toISOString().slice(0, 10);
+        const aniversario = incrementos?.aniversarios.find((x) => x.desde.slice(0, 10) === siguiente);
+        setCuota({ fecha: siguiente, canon: aniversario?.canonNuevoCop ?? null });
+      })
+      .catch(() => {
+        if (vivo) setCuota(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [contractId, activo]);
+  return cuota;
+}
+
 function enCuanto(n: number): string {
   if (n <= 0) return 'hoy';
   if (n === 1) return 'mañana';
@@ -165,6 +210,8 @@ export function ArriendoDelContrato({
   });
   const etapa = etapaDelArriendo(contract.status, vigencia, avance);
   const plazo = diasDePlazoQueRigen(contract, agencia);
+  // Sólo donde hay plata en juego: un contrato que corre o que corrió.
+  const plazoSinFijar = usePlazoSinFijar(contract.status === 'active' || contract.status === 'expired');
 
   return (
     <section
@@ -204,6 +251,15 @@ export function ArriendoDelContrato({
               )}
             </dd>
           </div>
+          {/* Nico (03-10-2026): el depósito sólo existe en comercial, y ahí se ve. */}
+          {contract.usoInmueble === 'COMERCIAL' && (contract.deposit ?? 0) > 0 ? (
+            <div>
+              <dt className="text-label uppercase tracking-wide text-fg-subtle">Depósito</dt>
+              <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
+                {formatCurrency(contract.deposit ?? 0)}
+              </dd>
+            </div>
+          ) : null}
           <div>
             <dt className="text-label uppercase tracking-wide text-fg-subtle">Cuándo paga</dt>
             <dd className="mt-1.5 text-body-sm text-fg" data-testid="ritmo-de-pago">
@@ -212,6 +268,25 @@ export function ArriendoDelContrato({
           </div>
         </dl>
       </div>
+
+      {/*
+        QA-CONT (Nico, 03-10-2026, CR-31 / J-13): con la inmobiliaria sin sus
+        días de plazo fijados, un arriendo del día 1 es «cartera» ese mismo
+        día. Mientras no los fije no se cobra interés, y la ficha lo dice
+        fuerte, con el camino para fijarlos.
+      */}
+      {plazoSinFijar ? (
+        <div className="px-6 pb-4">
+          <AlertaAccionable
+            severidad="warning"
+            titulo="Tu inmobiliaria no ha fijado los días de plazo (sugerido 5): no se cobra interés hasta que los fijes."
+            accion={{ label: 'Fijar los días de plazo', href: '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo' }}
+            data-testid="plazo-sin-fijar"
+          >
+            Son los días después del vencimiento en los que todavía no corre la mora.
+          </AlertaAccionable>
+        </div>
+      ) : null}
 
       <CuentaDelArriendo
         contract={contract}
@@ -534,6 +609,13 @@ function CuentaDelArriendo({
     [cuenta, hoy, diasDePlazo],
   );
 
+  const intereses = cuenta.estado === 'listo' ? cuenta.contrato.intereses ?? null : null;
+  const cuotaDeLaProrroga = useCuotaDeLaProrroga(
+    contract.id,
+    contract.status === 'active' && cuenta.estado === 'listo' && deuda !== null && deuda.proxima === null,
+  );
+  const interesPendiente = intereses?.pendiente ?? 0;
+
   const volverAca = `/panel/inmobiliaria/contratos/${contract.id}`;
   // 🔴 QA 22-09: desde el contrato se abre SÓLO este contrato (regla del CEO,
   // 16-09); el consolidado del inquilino va en su ficha de tercero.
@@ -579,6 +661,17 @@ function CuentaDelArriendo({
             >
               {formatCurrency(deuda.restaPorPagar)}
             </p>
+            {/*
+              QA-CONT CR-12 (= INQ E-09): los intereses de mora van APARTE del
+              capital, pero se ven. El back los manda liquidados con la misma
+              regla de la prefactura y la Cartera.
+            */}
+            {interesPendiente > 0 && intereses ? (
+              <p className="mt-1.5 text-caption text-fg-muted" data-testid="intereses-de-mora">
+                + <Monto>{formatCurrency(interesPendiente)}</Monto> de intereses de mora ·{' '}
+                <Monto>{formatCurrency(intereses.restaPorPagarConIntereses)}</Monto> con intereses
+              </p>
+            ) : null}
             <p className="mt-2 text-caption text-fg-muted" data-testid="cuotas-pagadas">
               {deuda.cuotas.total === 0 ? (
                 'De todo el contrato'
@@ -615,6 +708,18 @@ function CuentaDelArriendo({
                   {enCuanto(deuda.proxima.enDias)}
                 </p>
               </>
+            ) : cuotaDeLaProrroga ? (
+              <>
+                <p className="mt-1 text-body-sm text-fg" data-testid="proxima-de-la-prorroga">
+                  Se prorroga el {fechaLegible(cuotaDeLaProrroga.fecha)}
+                  {cuotaDeLaProrroga.canon ?? contract.monthlyRent ? (
+                    <>
+                      : <Monto>{formatCurrency((cuotaDeLaProrroga.canon ?? contract.monthlyRent)!)}</Monto>
+                    </>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-caption text-fg-muted">La cuota sale cuando corra la prórroga.</p>
+              </>
             ) : (
               <p className="mt-1 text-body-sm text-fg-muted">No queda ninguna cuota por vencer</p>
             )}
@@ -625,9 +730,21 @@ function CuentaDelArriendo({
             {esperandoPlazo && deuda.vencido > 0 ? (
               <Skeleton className="mt-2 h-6 w-32" />
             ) : (
-              <EstadoDeLaDeuda deuda={deuda} />
+              <EstadoDeLaDeuda deuda={deuda} interesPendiente={interesPendiente} />
             )}
           </div>
+          {intereses?.sinInteres?.sinReglas ? (
+            <div className="md:col-span-3 md:pt-4">
+              <AlertaAccionable
+                severidad="warning"
+                titulo="Tu inmobiliaria no tiene reglas de mora: lo vencido de este contrato no causa interés."
+                accion={{ label: 'Poner las reglas de mora', href: '/panel/inmobiliaria/pagos/cartera/reglas-de-mora' }}
+                data-testid="sin-reglas-de-mora"
+              >
+                {intereses.sinInteres.motivo}
+              </AlertaAccionable>
+            </div>
+          ) : null}
         </div>
       ) : (
         <MensajeDeLaCuenta cuenta={cuenta} status={contract.status} reintentar={reintentar} />
@@ -646,13 +763,24 @@ const INDICADOR: Record<
   EN_CARTERA: { icono: WarningCircle, circulo: 'bg-danger-soft text-danger' },
 };
 
-function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
-  const { icono: Icono, circulo } = INDICADOR[deuda.estado];
+function EstadoDeLaDeuda({ deuda, interesPendiente = 0 }: { deuda: DeudaDelContrato; interesPendiente?: number }) {
+  /*
+   * CR-12: con el capital al día y los intereses de mora sin pagar, NO dice
+   * «Al día»: dice cuánto falta de intereses.
+   */
+  const conIntereses = deuda.estado === 'AL_DIA' && interesPendiente > 0;
+  const { icono: Icono, circulo } = conIntereses ? INDICADOR.VENCIDO_EN_PLAZO : INDICADOR[deuda.estado];
 
   let detalle: React.ReactNode;
   switch (deuda.estado) {
     case 'AL_DIA':
-      detalle = 'Nada vencido';
+      detalle = conIntereses ? (
+        <>
+          <Monto>{formatCurrency(interesPendiente)}</Monto> de intereses de mora sin pagar
+        </>
+      ) : (
+        'Nada vencido'
+      );
       break;
     case 'VENCIDO_EN_PLAZO': {
       const q = deuda.diasDePlazoQueQuedan ?? 0;
@@ -692,7 +820,7 @@ function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
   }
 
   return (
-    <div data-testid="estado-de-la-deuda" data-estado={deuda.estado}>
+    <div data-testid="estado-de-la-deuda" data-estado={conIntereses ? 'INTERESES_PENDIENTES' : deuda.estado}>
       <p className="mt-1 flex items-center gap-2">
         <span
           aria-hidden="true"
@@ -701,7 +829,7 @@ function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
           <Icono className="size-3.5" weight="bold" />
         </span>
         <span className="text-body font-medium text-fg" data-testid="estado-nombre">
-          {NOMBRE_DEL_ESTADO[deuda.estado]}
+          {conIntereses ? 'Debe intereses' : NOMBRE_DEL_ESTADO[deuda.estado]}
         </span>
       </p>
       <p className="mt-1.5 text-caption text-fg-muted" data-testid="estado-detalle">

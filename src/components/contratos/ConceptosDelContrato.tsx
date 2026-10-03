@@ -300,7 +300,9 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
                 <SelectValue placeholder="Elige del catálogo" />
               </SelectTrigger>
               <SelectContent className="max-h-72">
-                {CONCEPTOS.map((c) => (
+                {/* QA-CONT C-21: el canon no se agrega como concepto: el contrato
+                    ya lo cobra (agregarlo lo cobraría dos veces). */}
+                {CONCEPTOS.filter((c) => c.id !== 'canon-arrendamiento').map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nombre}
                   </SelectItem>

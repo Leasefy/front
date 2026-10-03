@@ -65,9 +65,18 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
     { value: 'all', label: tx('Toda vigencia', 'Any term') },
     { value: 'vigente', label: tx('Vigentes', 'In force') },
     { value: 'por_vencer', label: tx(`Vencen en ${DIAS_POR_VENCER} días`, `Ending in ${DIAS_POR_VENCER} days`) },
+    // C-05: los que empiezan después de hoy no son «vigentes»; se buscan acá.
+    { value: 'por_empezar', label: tx('Por empezar', 'Not started yet') },
     { value: 'vencido', label: tx('Vencidos', 'Ended') },
     { value: 'sin_fechas', label: tx('Sin fechas', 'No dates') },
   ];
+  /*
+   * QA-CONT C-06: la fila de un `expired` dice «Terminado» (`etiquetaDeVigencia`)
+   * y el filtro decía «Expirado»: la misma cosa con dos nombres. El filtro usa
+   * el de la fila.
+   */
+  const etiquetaDelEstado = (estado: ContractStatus) =>
+    estado === 'expired' ? tx('Terminado', 'Ended') : CONTRACT_STATUS_LABELS[estado];
   const INMUEBLES: { value: ConOSin; label: string }[] = [
     { value: 'all', label: tx('Con o sin inmueble', 'With or without property') },
     { value: 'con', label: tx('Con inmueble', 'With property') },
@@ -144,14 +153,14 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
             <span className="truncate">
               {filtros.estado === 'all'
                 ? tx('Todos los estados', 'All statuses')
-                : CONTRACT_STATUS_LABELS[filtros.estado]}
+                : etiquetaDelEstado(filtros.estado)}
             </span>
           </SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectItem value="all">{tx('Todos los estados', 'All statuses')}</SelectItem>
             {ESTADOS.map((s) => (
               <SelectItem key={s} value={s}>
-                {CONTRACT_STATUS_LABELS[s]}
+                {etiquetaDelEstado(s)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -191,7 +200,8 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
         </Select>
 
         <Select value={filtros.canon} onValueChange={(v) => poner('canon', v as CanonDeFiltro)}>
-          <SelectTrigger className="w-auto max-w-[170px] gap-2" data-testid="filtro-canon">
+          {/* C-18: con 170 px «Cualquier canon» salía «Cualquier can…». */}
+          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-canon">
             <span className="truncate">{etiqueta(CANONES, filtros.canon)}</span>
           </SelectTrigger>
           <SelectContent>

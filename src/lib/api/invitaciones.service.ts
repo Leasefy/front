@@ -25,18 +25,36 @@ export interface PersonaPendiente {
   creada: string;
   /** ISO de la última invitación que sí salió, o `null` si nunca salió una. */
   ultimoEnvio: string | null;
+  /**
+   * ISO — hasta cuándo sirve la última invitación (M-06: 7 días por defecto).
+   * `null` si nunca salió una. Ausente = un back anterior.
+   */
+  vence?: string | null;
+  /** `true` si la última invitación ya venció. Nunca salió = `false`. */
+  vencida?: boolean;
+  /** Los días de vigencia de la inmobiliaria (`null` en la base = 7). */
+  diasDeVigencia?: number;
 }
 
 export interface Pendientes {
-  /** Cuántas hay en total, no cuántas vinieron en `personas`. */
+  /**
+   * Cuántas hay en total, no cuántas vinieron en `personas`. Desde E-12
+   * (03-10) SUMA las vencidas: las que nunca llegaron son `total - vencidas`.
+   */
   total: number;
+  /** Cuántas de `total` ya se mandaron y vencieron (se reenvían una por una). Ausente = un back anterior. */
+  vencidas?: number;
   personas: PersonaPendiente[];
 }
 
 export interface FilaDeTanda {
   userId: string;
   enviada: boolean;
-  /** `RECIEN_ENVIADA` · `CORREO_NO_CONFIGURADO` · `ENVIO_FALLIDO` · `ERROR`. */
+  /**
+   * `RECIEN_ENVIADA` · `DOMINIO_NO_ENTREGABLE` · `CORREO_NO_CONFIGURADO` ·
+   * `ENVIO_FALLIDO` · `ERROR`. Un CÓDIGO: la pantalla lo dice en palabras con
+   * `fraseDelMotivo` (`InvitacionesPendientes`), nunca crudo.
+   */
   motivo?: string;
 }
 

@@ -23,6 +23,7 @@ import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pag
 import { useRetencionBandeja } from '@/lib/hooks/retencion/use-retencion'
 import { formatCop } from '@/lib/data/mock-retencion'
 import type { RetentionCase, RetentionState } from '@/lib/types/retencion'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 
 type Tab =
   | 'todos'
@@ -134,7 +135,7 @@ export default function BandejaClient() {
     useTablePagination(rows, { resetKey: `${tab}|${search}` })
 
   const goToCase = (caseId: string) =>
-    router.push(`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(caseId)}`)
+    router.push(casoDeRetencion(caseId))
 
   return (
     <div className="p-6 lg:p-8 space-y-5">

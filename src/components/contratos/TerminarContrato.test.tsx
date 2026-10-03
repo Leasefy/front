@@ -96,12 +96,16 @@ describe('TerminarContrato', () => {
     await montar();
     const bloque = q('[data-testid="prorrateo-del-ultimo-mes"]');
     expect(bloque?.textContent).toContain('12 días de 30');
-    expect(bloque?.textContent).toContain('2026-09');
+    // QA-CONT C-10: el mes con palabras («septiembre de 2026»), nunca «2026-09».
+    expect(bloque?.textContent).toContain('septiembre de 2026');
+    expect(bloque?.textContent).not.toContain('2026-09');
   });
 
   it('dice hasta cuándo se había pactado: el plazo original no se pierde', async () => {
     await montar();
-    expect(document.body.textContent).toContain('Se había pactado hasta el 2026-12-31');
+    // QA-CONT C-10: la fecha larga de la casa, no el ISO crudo.
+    expect(document.body.textContent).toContain('Se había pactado hasta el 31 de diciembre de 2026');
+    expect(document.body.textContent).not.toContain('2026-12-31');
   });
 
   it('🔴 no deja confirmar sin motivo', async () => {
@@ -245,7 +249,8 @@ describe('TerminarContrato', () => {
     });
     await montar();
     const texto = q('[data-testid="ultimo-dia-cobrado"]')?.textContent ?? '';
-    expect(texto).toContain('2026-12-05');
+    // QA-CONT C-10: «5 de diciembre de 2026», no «2026-12-05».
+    expect(texto).toContain('5 de diciembre de 2026');
     expect(texto).toContain('inclusive');
     expect(texto).not.toContain('día anterior');
     expect(q('[data-testid="prorrateo-del-ultimo-mes"]')?.textContent).toContain('5 días de 30');

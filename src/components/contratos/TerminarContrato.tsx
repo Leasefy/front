@@ -45,6 +45,8 @@ import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limites-del-contrato-vigente";
+// QA-CONT C-10: las fechas con la fecha larga de la casa, nunca el ISO crudo.
+import { diaLegible, mesLegible } from "@/lib/mandato/textos";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
@@ -201,7 +203,7 @@ export function TerminarContrato({
           ? { penalidadParaLaInmobiliariaCop: paraLaInmobiliariaCop }
           : {}),
       });
-      toast.success(`Contrato terminado el ${r.terminadoEn}.`, {
+      toast.success(`Contrato terminado el ${diaLegible(r.terminadoEn)}.`, {
         description: r.inmuebleLiberado
           ? "El inmueble volvió a quedar disponible y no se le generan más cobros."
           : "No se le generan más cobros. El inmueble sigue ocupado por otro contrato.",
@@ -265,7 +267,7 @@ export function TerminarContrato({
             <ErrorDelCampo id="terminadoEn-error" mensaje={errores.terminadoEn} className="mt-0" />
             {vista?.finPactado && (
               <p className="text-caption text-muted-foreground">
-                Se había pactado hasta el {vista.finPactado}. Ese plazo queda
+                Se había pactado hasta el {diaLegible(vista.finPactado)}. Ese plazo queda
                 guardado.
               </p>
             )}
@@ -387,7 +389,7 @@ export function TerminarContrato({
               className="rounded-[14px] border border-border p-3 text-sm"
               data-testid="prorrateo-del-ultimo-mes"
             >
-              <p className="font-medium">Último mes ({vista.prorrateoDelUltimoMes.mes})</p>
+              <p className="font-medium">Último mes ({mesLegible(vista.prorrateoDelUltimoMes.mes)})</p>
               <p className="text-muted-foreground">
                 {/* Mes comercial de 30 (16-09): «20 días de 30». Fecha a fecha, el período completo. */}
                 {vista.prorrateoDelUltimoMes.diasOcupados >= vista.prorrateoDelUltimoMes.diasDelMes
@@ -406,7 +408,7 @@ export function TerminarContrato({
                  * TÉRMINO del contrato, no la de la entrega.
                  */
                 <p className="mt-1 text-caption text-muted-foreground" data-testid="ultimo-dia-cobrado">
-                  Se cobra hasta el {vista.prorrateoDelUltimoMes.ultimoDiaCobrado} inclusive: la fecha del acta se
+                  Se cobra hasta el {diaLegible(vista.prorrateoDelUltimoMes.ultimoDiaCobrado)} inclusive: la fecha del acta se
                   cobra completa, porque ese día ocupó el inmueble.
                 </p>
               )}

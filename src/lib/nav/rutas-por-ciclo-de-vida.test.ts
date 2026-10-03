@@ -123,10 +123,17 @@ describe('rutas por ciclo de vida — las 38 entradas de ayer', () => {
     [`${P}/ai/mantenimiento`, `${P}/mantenimientos/tickets/resumen`],
     [`${P}/ai/mantenimiento/tickets`, `${P}/mantenimientos/tickets`],
     [`${P}/ai/mantenimiento/tickets/t1`, `${P}/mantenimientos/tickets/t1`],
-    [`${P}/ai/retencion`, `${P}/contratos/retencion`],
-    [`${P}/ai/retencion/bandeja`, `${P}/contratos/riesgo`],
-    [`${P}/ai/retencion/bandeja/c1`, `${P}/contratos/riesgo/c1`],
-    [`${P}/ai/retencion/revisiones`, `${P}/contratos/aprobar`],
+    // QA-CONT C-19 (03-10-2026): Retención se mudó a «Agentes IA» (`/retencion`);
+    // las de `/ai/retencion` se repuntaron sin cadena.
+    [`${P}/ai/retencion`, `${P}/retencion`],
+    [`${P}/ai/retencion/bandeja`, `${P}/retencion/riesgo`],
+    [`${P}/ai/retencion/bandeja/c1`, `${P}/retencion/riesgo/c1`],
+    [`${P}/ai/retencion/revisiones`, `${P}/retencion/aprobar`],
+    // Y las tres que colgaban de Contratos.
+    [`${P}/contratos/retencion`, `${P}/retencion`],
+    [`${P}/contratos/riesgo`, `${P}/retencion/riesgo`],
+    [`${P}/contratos/riesgo/c1`, `${P}/retencion/riesgo/c1`],
+    [`${P}/contratos/aprobar`, `${P}/retencion/aprobar`],
   ];
 
   it.each(casos)('%s → %s', (de, a) => {
@@ -137,7 +144,7 @@ describe('rutas por ciclo de vida — las 38 entradas de ayer', () => {
     // `/cobros` y `/cobros/reglas-de-mora` salieron de esta lista el
     // 2026-09-15: ya NO están quietas, redirigen — pero desde la tabla de
     // `un-solo-modulo-de-plata`, no desde ésta, así que acá siguen sin calzar.
-    for (const quieta of ['/piloto', '', '/pipeline', '/inmuebles', '/postulaciones', '/contratos', '/mensajes', '/agenda', '/facturacion', '/contabilidad', '/propietarios', '/inquilinos', '/documentos', '/reportes', '/configuracion', '/contratos/nuevo', '/contratos/riesgo', '/contratos/aprobar', '/contratos/retencion']) {
+    for (const quieta of ['/piloto', '', '/pipeline', '/inmuebles', '/postulaciones', '/contratos', '/mensajes', '/agenda', '/facturacion', '/contabilidad', '/propietarios', '/inquilinos', '/documentos', '/reportes', '/configuracion', '/contratos/nuevo', '/retencion', '/retencion/riesgo', '/retencion/aprobar']) {
       expect(resolver(`${P}${quieta}`), quieta).toBeNull();
     }
   });

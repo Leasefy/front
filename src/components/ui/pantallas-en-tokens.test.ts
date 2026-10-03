@@ -117,12 +117,13 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/ai/ColaHumana.tsx',
   'components/inmobiliaria/ai/AutonomiaPanel.tsx',
   // — contratos ————————————————————————————————————————————————
-  'app/panel/inmobiliaria/contratos/(retencion)/layout.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/retencion/page.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/BandejaClient.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoSidebar.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/aprobar/RevisionesClient.tsx',
+  // Retención se mudó a «Agentes IA» (QA-CONT C-19): mismas pantallas, otra carpeta.
+  'app/panel/inmobiliaria/retencion/layout.tsx',
+  'app/panel/inmobiliaria/retencion/page.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/BandejaClient.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoSidebar.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoDetailClient.tsx',
+  'app/panel/inmobiliaria/retencion/aprobar/RevisionesClient.tsx',
   'app/panel/inmobiliaria/contratos/[id]/page.tsx',
   'app/panel/inmobiliaria/contratos/[id]/editar/page.tsx',
   'app/panel/inmobiliaria/contratos/[id]/firmar/page.tsx',
@@ -416,7 +417,7 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Celda `role="gridcell"` del mapa de calor.',
   'components/inmobiliaria/cobranza/DebtorPicker.tsx':
     'Fila de sugerencia del buscador de deudores.',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx':
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoDetailClient.tsx':
     'Pestaña subrayada, sin superficie ni pill: un `Button` le pondría pill y foco ' +
     'de CTA a algo que es una pestaña.',
 }

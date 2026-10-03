@@ -42,8 +42,13 @@ export interface SolicitudPqrs {
   radicado: string;            // consecutivo legible, p.ej. 'PQRS-2026-0001'
   tipo: PqrsTipo;
   estado: PqrsEstado;
-  prioridad: PqrsPrioridad;
-  canal: PqrsCanal;
+  /**
+   * Opcional desde el 03-10-2026: el back (`GET /pqrs/mine`) no tiene prioridad
+   * y no la inventa.
+   */
+  prioridad?: PqrsPrioridad;
+  /** Opcional: sólo viaja cuando la solicitud dice por dónde entró. */
+  canal?: PqrsCanal;
   asunto: string;
   descripcion: string;
   solicitanteNombre: string;

@@ -1,6 +1,10 @@
 /**
  * PQRS / Solicitudes API service — tolerant, frontend-first CONTRACT (v7-06).
  *
+ * 03-10-2026: `GET /pqrs/mine` ya existe en el back y responde
+ * `{ solicitudes, sePuedeRadicar }` (ver `listMineConDisponibilidad`). `POST /pqrs`
+ * y la aprobación de la cotización siguen sin existir.
+ *
  * Modeled 1:1 on the shipped honest-degrade idiom (`lease-documents.service.ts`,
  * `tenant-payment-requests.service.ts`). The NestJS/agent PQRS routes
  * (`POST /pqrs`, `GET /pqrs/mine`, `POST /pqrs/:id/aprobar-cotizacion`) are a
@@ -91,11 +95,40 @@ async function listMine(): Promise<SolicitudPqrs[]> {
  */
 async function listMineConDisponibilidad(): Promise<{ items: SolicitudPqrs[]; disponible: boolean }> {
   try {
-    return { items: await apiClient.get<SolicitudPqrs[]>('/pqrs/mine'), disponible: true };
+    return leerMisSolicitudes(
+      await apiClient.get<SolicitudPqrs[] | RespuestaDeMisSolicitudes>('/pqrs/mine'),
+    );
   } catch (err) {
     if (isEndpointUnavailable(err)) return { items: [], disponible: false };
     throw err;
   }
+}
+
+/**
+ * Lo que responde el back desde el 03-10-2026 (`GET /pqrs/mine`, laboratorio E5:
+ * la ruta daba 404): las solicitudes PROPIAS del inquilino y si se puede radicar
+ * desde el portal. El back todavía NO tiene `POST /pqrs`, así que manda
+ * `sePuedeRadicar: false` y «Nueva solicitud» sigue apagada ANTES de que la persona
+ * escriba (QA 22-09) aunque la lista ya traiga sus solicitudes de verdad.
+ */
+interface RespuestaDeMisSolicitudes {
+  solicitudes: SolicitudPqrs[];
+  sePuedeRadicar: boolean;
+}
+
+/**
+ * La forma del back o, si algún día responde la lista a secas (el contrato
+ * provisional de v7-06), la lista con «se puede radicar». Cualquier otra cosa no
+ * se toma por una lista: nada inventado.
+ */
+function leerMisSolicitudes(
+  respuesta: SolicitudPqrs[] | RespuestaDeMisSolicitudes | null | undefined,
+): { items: SolicitudPqrs[]; disponible: boolean } {
+  if (Array.isArray(respuesta)) return { items: respuesta, disponible: true };
+  if (respuesta && Array.isArray(respuesta.solicitudes)) {
+    return { items: respuesta.solicitudes, disponible: respuesta.sePuedeRadicar === true };
+  }
+  return { items: [], disponible: false };
 }
 
 /**

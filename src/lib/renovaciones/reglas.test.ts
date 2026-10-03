@@ -157,3 +157,16 @@ describe('el historial se lee como frases', () => {
     expect(textoDeActividad('note', null)).toBe('');
   });
 });
+
+describe('topeConIpc / calculateNewRent — «centavos en todo» (C4, Q2 a)', () => {
+  it('sin la llave, al peso EXACTAMENTE como hoy (Math.round)', () => {
+    expect(topeConIpc(1_234_567, 5.17)).toBe(Math.round(1_234_567 * 1.0517));
+    expect(topeConIpc(1_234_567, 5.17, { conCentavos: false })).toBe(1_298_394);
+  });
+
+  it('con la llave, al centavo: la MISMA cuenta que canonConIncremento del back', () => {
+    expect(topeConIpc(1_234_567, 5.17, { conCentavos: true })).toBe(1_298_394.11);
+    expect(topeConIpc(2_350_000.29, 5.2, { conCentavos: true })).toBe(2_472_200.31);
+    expect(topeConIpc(1_550_000, 5.1, { conCentavos: true })).toBe(1_629_050);
+  });
+});

@@ -146,8 +146,8 @@ describe('la plata de hoy', () => {
 describe('elegir a quién le pago', () => {
   it('el acumulado es el que devolvió el back, en su orden', async () => {
     await montar();
-    expect(fila('d-b').textContent).toContain('$500.000');
-    expect(fila('d-c').textContent).toContain('$2.000.000');
+    expect(fila('d-b').textContent).toContain('$ 500.000');
+    expect(fila('d-c').textContent).toContain('$ 2.000.000');
   });
 
   it('tildar suma y el pie dice cuánto y a cuántos', async () => {
@@ -156,7 +156,7 @@ describe('elegir a quién le pago', () => {
     await tildar('d-c');
 
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]');
-    expect(pie?.textContent).toContain('$2.000.000');
+    expect(pie?.textContent).toContain('$ 2.000.000');
     expect(pie?.textContent).toContain('2');
     expect(pie?.textContent).toContain('propietarios');
   });
@@ -168,19 +168,19 @@ describe('elegir a quién le pago', () => {
     await tildar('d-c');
 
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]');
-    expect(pie?.textContent).toContain('$500.000');
+    expect(pie?.textContent).toContain('$ 500.000');
     expect(pie?.textContent).toContain('1 propietario');
   });
 
-  it('🔴 sin nada tildado el resumen es el MES ENTERO, no «$0 a 0» (QA 22-09)', async () => {
+  it('🔴 sin nada tildado el resumen es el MES ENTERO, no «$ 0 a 0» (QA 22-09)', async () => {
     // Con la lista vacía el back arma el mes entero («Armar lote con el mes
     // entero»): el resumen tiene que decir eso, no que no se gira nada.
     await montar();
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]')!.textContent ?? '';
     expect(pie).toContain('mes entero');
-    expect(pie).toContain('$5.000.000');
+    expect(pie).toContain('$ 5.000.000');
     expect(pie).toContain('3 propietarios');
-    expect(pie).not.toContain('$0 a 0');
+    expect(pie).not.toContain('$ 0 a 0');
   });
 
   it('avisa a quién le falta la cuenta y no lo deja tildar', async () => {
@@ -216,7 +216,7 @@ describe('pasarse del disponible', () => {
     await tildar('d-a');
 
     expect(texto()).toContain('plata de la inmobiliaria');
-    expect(texto()).toContain('$1.000.000');
+    expect(texto()).toContain('$ 1.000.000');
     expect(cambios.at(-1)).toMatchObject({
       dispersionIds: ['d-a'],
       totalCop: 3_000_000,
@@ -253,12 +253,12 @@ describe('tildar hasta un monto', () => {
     });
 
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]');
-    expect(pie?.textContent).toContain('$2.000.000');
+    expect(pie?.textContent).toContain('$ 2.000.000');
     expect(pie?.textContent).toContain('2');
   });
 });
 
-describe('nunca un giro parcial, y las liquidaciones que se cierran en $0', () => {
+describe('nunca un giro parcial, y las liquidaciones que se cierran en $ 0', () => {
   const conCompensada = () =>
     respuesta({
       candidatos: [
@@ -272,7 +272,7 @@ describe('nunca un giro parcial, y las liquidaciones que se cierran en $0', () =
           acumuladoCop: 0,
           entraEnElCupo: false,
           motivoDeExclusion:
-            'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.',
+            'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $ 0 al pagar el lote y lo que falte pasa a su siguiente liquidación.',
           seCompensa: true,
           saldoEnContraCop: 200_000,
         },
@@ -296,7 +296,7 @@ describe('nunca un giro parcial, y las liquidaciones que se cierran en $0', () =
 
     const zoila = contenedor.querySelector<HTMLElement>('[data-testid="compensable-d-z"]')!;
     expect(zoila.textContent).toContain('se cierra en $0');
-    expect(zoila.textContent).toContain('$200.000 pasan al mes siguiente');
+    expect(zoila.textContent).toContain('$ 200.000 pasan al mes siguiente');
     // No sale como excluida.
     expect(texto()).not.toContain('No se gira: sus deducciones');
 
@@ -308,11 +308,11 @@ describe('nunca un giro parcial, y las liquidaciones que se cierran en $0', () =
     expect(cambios.at(-1)).toMatchObject({ totalCop: 500_000, descubiertoCop: 0 });
     expect((cambios.at(-1) as { dispersionIds: string[] }).dispersionIds.sort()).toEqual(['d-b', 'd-z']);
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]')!.textContent;
-    expect(pie).toContain('$500.000');
+    expect(pie).toContain('$ 500.000');
     expect(pie).toContain('cierras en $0 la liquidación de 1');
   });
 
-  it('«Tildar hasta ese monto» incluye las que se cierran en $0 sin gastar tope', async () => {
+  it('«Tildar hasta ese monto» incluye las que se cierran en $ 0 sin gastar tope', async () => {
     candidatos.mockResolvedValue(conCompensada());
     const cambios: unknown[] = [];
     await montar((e) => cambios.push(e));

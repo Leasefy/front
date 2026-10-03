@@ -406,7 +406,7 @@ describe('<DeduccionesDelPropietario> — cuando el back rechaza', () => {
 
   it('🔴 un 400 con `campos`: el error va bajo el valor, con el foco, y no hay toast', async () => {
     const { ApiError } = await import('@/lib/api/client');
-    const tope = 'El valor no puede pasar de $100.000.000.';
+    const tope = 'El valor no puede pasar de $ 100.000.000.';
     await registrarCon(
       new ApiError(400, [tope], 'DATOS_INVALIDOS', {
         campos: [{ campo: 'valorCop', regla: 'maximo', mensaje: tope }],
@@ -499,12 +499,12 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
     const b = porTestId('bloque-de-deducciones');
     expect(b.textContent).toContain('Neto del mes');
     expect(b.textContent).toContain('Descuento: Predial 2026');
-    expect(porTestId('bloque-a-girar').textContent).toBe('$550.000');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$ 550.000');
     expect(document.body.querySelector('[data-testid="bloque-saldo-en-contra"]')).toBeNull();
     expect(document.body.querySelector('[data-testid="soporte-ded-1"]')).not.toBeNull();
   });
 
-  it('🔴 si las deducciones superan el neto: gira $0 y dice cuánto pasa a la siguiente liquidación', async () => {
+  it('🔴 si las deducciones superan el neto: gira $ 0 y dice cuánto pasa a la siguiente liquidación', async () => {
     await montar(
       <BloqueDeDeducciones
         bloque={bloque({
@@ -517,9 +517,9 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
       />,
     );
 
-    expect(porTestId('bloque-a-girar').textContent).toBe('$0');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$ 0');
     expect(porTestId('bloque-saldo-en-contra').textContent).toContain(
-      '$150.000 pasan a su siguiente liquidación',
+      '$ 150.000 pasan a su siguiente liquidación',
     );
   });
 });

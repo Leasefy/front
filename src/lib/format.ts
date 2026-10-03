@@ -7,6 +7,7 @@
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
 import { decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
+import { traeCentavosGuardados } from '@/lib/plata/centavos-guardados';
 
 type SupportedLocale = 'es-CO' | 'en-US';
 
@@ -44,7 +45,8 @@ export function formatCurrencyEnDocumento(
   conCentavos: boolean,
   locale?: 'es' | 'en',
 ): string {
-  if (!conCentavos) return formatCurrency(amount, locale);
+  // C4 (Q3 a): sin la llave, al peso como siempre, salvo centavos GUARDADOS.
+  if (!conCentavos && !traeCentavosGuardados(amount)) return formatCurrency(amount, locale);
   plataQueNoEsNumero('formatCurrencyEnDocumento', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
   return '$ ' + safe.toLocaleString(getLocaleString(locale), decimalesEnDocumento(safe, true));

@@ -128,6 +128,22 @@ describe('pesos, alCentavo y alPeso', () => {
     expect(alPeso(1234.49)).toBe(1234);
     expect(Object.is(alPeso(-0.4), 0)).toBe(true);
   });
+
+  it('alPeso redondea UNA sola vez, sobre el valor tal cual (C4: antes 5,495 daba 6)', () => {
+    expect(alPeso(5.495)).toBe(5);
+    expect(alPeso('5.495')).toBe(5);
+    expect(alPeso({ toFixed: () => '5.495' })).toBe(5);
+    expect(alPeso(-5.495)).toBe(-5);
+    // La retefuente del 3,5 % de $1.000.157 = 35.005,495 → $35.005 (como hoy con Math.round).
+    expect(alPeso((1_000_157 * 3.5) / 100)).toBe(35_005);
+    expect(alPeso('35005.5')).toBe(35_006);
+    expect(alPeso('-2.5')).toBe(-3);
+    expect(alPeso(2.5)).toBe(3);
+    expect(alPeso(BigInt(1234))).toBe(1234);
+    expect(Object.is(alPeso('-0.4'), 0)).toBe(true);
+    expect(() => alPeso(Number.NaN)).toThrow();
+    expect(() => alPeso('1,5')).toThrow();
+  });
 });
 
 describe('sumar, restar y mismaPlata', () => {

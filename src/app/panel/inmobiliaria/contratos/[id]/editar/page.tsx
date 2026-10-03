@@ -158,8 +158,8 @@ function EditarContratoContent() {
   }, [onPickFile]);
 
   // «Centavos en todo» (C3-FRONT): el canon acepta centavos con las dos áreas
-  // de la deuda prendidas; el depósito NO al editar (`UpdateContractDto.deposit`
-  // sigue con `@IsInt` en el back).
+  // de la deuda prendidas; el depósito también desde C4 (`UpdateContractDto.deposit`
+  // valida como al crear).
   const canonConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
 
   const validation = useMemo(() => {
@@ -175,7 +175,7 @@ function EditarContratoContent() {
           deposit: form.deposit,
           paymentDay: form.paymentDay,
         },
-        { canonConCentavos },
+        { canonConCentavos, depositoConCentavos: canonConCentavos },
       ),
     };
     if (!form.startDate) errors.startDate = 'Requerido';
@@ -507,6 +507,7 @@ function EditarContratoContent() {
             >
               <MoneyInput
                 {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                areas={AREAS_DE_LA_DEUDA}
                 value={form.deposit}
                 onChange={(crudo) => updateForm('deposit', crudo)}
               />

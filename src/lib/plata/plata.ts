@@ -167,11 +167,61 @@ export function alCentavo(valorEnPesos: ValorDePlata): number {
  * Pesos → pesos ENTEROS, la mitad lejos del cero. Es el redondeo de hoy
  * («en COP no hay centavos») para lo que todavía va al peso: lo que la sonda
  * de C3 deje al peso y lo que la norma pida entero (la exógena, la PILA).
+ *
+ * Redondea UNA sola vez, sobre el valor tal cual (C4, 03-10-2026): `5.495` →
+ * `5` (antes pasaba primero por el centavo, 5,495 → 5,50, y daba 6). Un
+ * `number` se limpia del ruido del flotante igual que en `aCentavos`
+ * (`2.4999999999999996` cuenta como 2,5); un texto o un `Decimal` se leen
+ * exactos, sin pasar por el flotante.
  */
 export function alPeso(valorEnPesos: ValorDePlata): number {
-  const c = aCentavos(valorEnPesos);
-  const r = Math.sign(c) * Math.floor(Math.abs(c) / 100 + 0.5);
+  let r: number;
+  if (typeof valorEnPesos === 'number') {
+    if (!Number.isFinite(valorEnPesos)) {
+      throw new PlataInvalida(`«${String(valorEnPesos)}» no es un valor de plata.`);
+    }
+    const limpio =
+      Math.abs(valorEnPesos) < MAXIMO_EXACTO_EN_CENTAVOS / 100
+        ? Number(valorEnPesos.toPrecision(15))
+        : valorEnPesos;
+    r = Math.sign(limpio) * Math.floor(Math.abs(limpio) + 0.5);
+  } else if (typeof valorEnPesos === 'bigint') {
+    r = aCentavos(valorEnPesos) / 100;
+  } else if (typeof valorEnPesos === 'string') {
+    r = pesoEnteroDeTexto(valorEnPesos, valorEnPesos);
+  } else if (
+    valorEnPesos !== null &&
+    typeof valorEnPesos === 'object' &&
+    typeof valorEnPesos.toFixed === 'function'
+  ) {
+    r = pesoEnteroDeTexto(valorEnPesos.toFixed(), valorEnPesos);
+  } else {
+    throw new PlataInvalida(`«${typeof valorEnPesos}» no es un valor de plata.`);
+  }
   return r === 0 ? 0 : r;
+}
+
+/** `"-5.495"` → `-5`, `"5.5"` → `6`: al peso, la mitad lejos del cero, exacto. */
+function pesoEnteroDeTexto(texto: string, origen: unknown): number {
+  const t = texto.trim();
+  const m = /^([+-])?(\d*)(?:\.(\d*))?$/.exec(t);
+  if (!m || (m[2] === '' && (m[3] ?? '') === '')) {
+    // Notación científica u otra forma rara de un número: que la lea `Number`.
+    const n = Number(t);
+    if (t === '' || !Number.isFinite(n)) {
+      throw new PlataInvalida(`«${String(origen)}» no es un valor de plata.`);
+    }
+    return alPeso(n);
+  }
+  const entero = Number(m[2] === '' ? '0' : m[2]);
+  if (!Number.isSafeInteger(entero) || entero >= MAXIMO_EXACTO_EN_CENTAVOS / 100) {
+    throw new PlataInvalida(
+      `«${String(origen)}» está fuera del rango exacto de la plata (hasta $10 billones).`,
+    );
+  }
+  const fraccion = m[3] ?? '';
+  const r = fraccion !== '' && fraccion[0] >= '5' ? entero + 1 : entero;
+  return m[1] === '-' ? -r : r;
 }
 
 /** Suma exacta al centavo: `sumar(0.1, 0.2) === 0.3`. */

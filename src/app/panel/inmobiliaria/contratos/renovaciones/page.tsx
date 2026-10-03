@@ -16,6 +16,8 @@ import {
   revisarValoresDeLaRenovacion,
   type ValoresDeLaRenovacion,
 } from '@/lib/renovaciones/limites-de-la-renovacion';
+import { conCentavosEn, configDePlataAhora } from '@/lib/plata/con-centavos';
+import { AREAS_DE_LA_RENOVACION } from '@/lib/renovaciones/reglas';
 
 /**
  * Los valores de la renovación se revisan ANTES de mandar, con el tope y la
@@ -24,7 +26,11 @@ import {
  * rechaza (sin toast: el cajón dice el porqué) para que no avance.
  */
 function exigirValoresQueCaben(valores: ValoresDeLaRenovacion) {
-  const problema = revisarValoresDeLaRenovacion(valores);
+  // «Centavos en todo» (C4): la misma llave que el cajón (la respuesta
+  // compartida de `GET /config/plata`; sin respuesta, sin centavos).
+  const problema = revisarValoresDeLaRenovacion(valores, {
+    canonConCentavos: conCentavosEn(configDePlataAhora(), AREAS_DE_LA_RENOVACION),
+  });
   if (problema) throw new Error(problema);
 }
 

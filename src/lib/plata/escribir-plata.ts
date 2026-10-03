@@ -25,6 +25,7 @@
 
 import { hayPlataConCentavos } from './con-centavos';
 import { aCentavos } from './plata';
+import { traeCentavosGuardados } from './centavos-guardados';
 
 /** ¿El valor tiene centavos (al centavo: `1234.004` no los tiene)? */
 export function tieneCentavos(valor: unknown): boolean {
@@ -66,7 +67,10 @@ export function decimalesEnPantalla(valor: unknown): DecimalesDeLaPlata {
 
 /** Las mismas opciones para un DOCUMENTO: con la llave, siempre dos. */
 export function decimalesEnDocumento(valor: unknown, conCentavos: boolean): DecimalesDeLaPlata {
-  return conCentavos ? CON_DOS_DECIMALES : decimalesEnPantalla(valor);
+  // C4 (Q3 a de C3-CONTABLE): sin la llave, un valor con centavos GUARDADOS
+  // (hasta dos decimales) también lleva sus dos decimales: redondearlo sería
+  // escribir otra cifra. Un entero o una cuenta a medias, como hoy.
+  return conCentavos || traeCentavosGuardados(valor) ? CON_DOS_DECIMALES : decimalesEnPantalla(valor);
 }
 
 /** Un formato de plata: lo único que se le pide es `format`. */

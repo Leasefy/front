@@ -106,7 +106,7 @@ describe('<PropietarioStats> — alertas', () => {
   it('plata pendiente de girar: monto en el título y botón a dispersiones', () => {
     render({ propietario: { ...base, pendingBalance: 1_800_000 }, consignaciones: [] });
     const a = container.querySelector('[data-testid="alerta-pendiente-de-giro"]')!;
-    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($1.800.000)');
+    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($ 1.800.000)');
     expect(a.querySelector('a')!.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones');
   });
 
@@ -133,7 +133,7 @@ describe('<PropietarioStats> — alertas', () => {
 
   it('la comisión es la real del back, no un 10 % inventado', () => {
     render({ propietario: { ...base, totalMonthlyRent: 4_300_000, totalCommission: 517_000 }, consignaciones: [] });
-    expect(container.textContent).toContain('$517.000 inmobiliaria.propietario.stats.commission');
+    expect(container.textContent).toContain('$ 517.000 inmobiliaria.propietario.stats.commission');
     expect(container.textContent).not.toContain('~');
   });
 

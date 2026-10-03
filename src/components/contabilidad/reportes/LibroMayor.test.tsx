@@ -145,7 +145,7 @@ describe('<LibroMayor>', () => {
 
     const cartel = q('mayor-no-cuadra')!.textContent!;
     expect(cartel).toContain('partida doble');
-    expect(cartel).toContain('$1.000');
+    expect(cartel).toContain('$ 1.000');
   });
 
   it('el nivel por defecto es la cuenta de 4 dígitos', async () => {

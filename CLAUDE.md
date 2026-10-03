@@ -521,6 +521,22 @@ literal prende un área; un back viejo (404), caído o raro = sin centavos, EXAC
 - **Wompi**: las rutas `wompi-session` (arriendo y acuerdo) calculan `amountInCents` con `aCentavosWompi`
   ($1.234.567,29 → 123456729), nunca `pesos * 100`.
 
+
+### C4 — limpieza de los centavos (03-10-2026)
+- 🔴 **UNA sola `formatCurrency`**: la de `@/lib/types/inmobiliaria` delega en la de `@/lib/format` → «$ 1.234.567»
+  CON espacio en todas las pantallas (C1-ESQUEMA Q4 a; antes esa copia escribía «$1.234.567» y «$-2.500»). Una
+  prueba que busque la cifra la escribe con espacio (o con `\$ ?` en una regex).
+- **Renovación por IPC** (Q2 a): `calculateNewRent(canon, ipc, { conCentavos })` / `topeConIpc` = `canonConIncremento`
+  del back; `AREAS_DE_LA_RENOVACION` (`lib/renovaciones/reglas.ts`: `inmuebles_y_mandato` + la deuda) prende el tope,
+  el `MoneyInput` del canon y `erroresDeLosValores(…, { canonConCentavos })`. El depósito al EDITAR un contrato
+  acepta centavos con la deuda (como al crear).
+- **Documentos con la llave apagada (Q3 a)**: `decimalesEnDocumento` / `formatCurrencyEnDocumento` escriben los
+  centavos GUARDADOS (`lib/plata/centavos-guardados.ts`); un entero o una cuenta a medias, como hoy.
+- **La llave del MICRO** (Q4 a): `usePlataDelMicroConCentavos()` (`lib/plata/micro-con-centavos.ts`, `GET
+  /config/plata` del micro; micro viejo o falla = sin centavos). Todavía NO la usa ningún formulario (acuerdos de
+  pago y facturas de proveedor siguen en pesos enteros): falta que `MoneyInput` acepte una llave que no sea de áreas
+  del back.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

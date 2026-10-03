@@ -54,8 +54,11 @@ import {
   renovacionAceptada,
   textoDeActividad,
   topeConIpc,
+  AREAS_DE_LA_RENOVACION,
   variacionDelCanon,
 } from '@/lib/renovaciones/reglas';
+import { alCentavo } from '@/lib/plata/plata';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 
 // ============================================================================
 // Piezas chicas
@@ -204,7 +207,13 @@ export function PasoPropuesta({
 }) {
   const { locale, formatCurrency, formatDate } = useI18n();
   const sugerido = ipcSugerido(hoy);
-  const tope = ipcRate != null && ipcRate > 0 ? topeConIpc(renovacion.currentRent, ipcRate) : null;
+  // «Centavos en todo» (C4): con las llaves de la renovación, el tope del IPC y
+  // el canon nuevo van al centavo (como el back); apagadas, al peso como hoy.
+  const renovacionConCentavos = usePlataConCentavos(AREAS_DE_LA_RENOVACION);
+  const tope =
+    ipcRate != null && ipcRate > 0
+      ? topeConIpc(renovacion.currentRent, ipcRate, { conCentavos: renovacionConCentavos })
+      : null;
   const variacion = variacionDelCanon(renovacion.currentRent, newRent);
   const superaElTope = tope != null && newRent > tope;
   const canal = canalDeEnvio(renovacion);
@@ -238,6 +247,7 @@ export function PasoPropuesta({
               id="renovacion-canon"
               data-testid="renovacion-canon"
               {...ariaDelError('renovacion-canon', errores.canon)}
+              areas={AREAS_DE_LA_RENOVACION}
               value={newRent > 0 ? newRent : ''}
               onChange={(crudo) => onNewRentChange(Number(crudo) || 0)}
               placeholder={formatCurrency(renovacion.currentRent)}
@@ -295,7 +305,10 @@ export function PasoPropuesta({
                   Con IPC de {formatearPct(ipcRate, locale)} el canon queda en{' '}
                   {/* Al cambiar el IPC, el tope cuenta hasta el nuevo. */}
                   <strong className="font-semibold text-fg">
-                    <AnimatedNumber value={tope} format={(n) => formatCurrency(Math.round(n))} />
+                    <AnimatedNumber
+                      value={tope}
+                      format={(n) => formatCurrency(renovacionConCentavos ? alCentavo(n) : Math.round(n))}
+                    />
                   </strong>, el tope
                   legal en vivienda.
                 </p>

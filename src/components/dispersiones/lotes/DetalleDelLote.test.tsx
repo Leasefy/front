@@ -959,7 +959,7 @@ describe('<DetalleDelLote> — cierre', () => {
     ).toContain('3 prefacturas quedan');
   });
 
-  it('🔴 a los que quedaron en $0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
+  it('🔴 a los que quedaron en $ 0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
     await render(listoParaPagar());
     vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
       ...pagadoCon(undefined),
@@ -1044,9 +1044,9 @@ describe('<DetalleDelLote> — cierre', () => {
   });
 });
 
-describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
+describe('<DetalleDelLote> — liquidaciones que se cierran en $ 0', () => {
   const MOTIVO =
-    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
+    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $ 0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
 
   function conCompensada(): VistaDelLote {
     const base = lote();
@@ -1079,13 +1079,13 @@ describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
     });
   }
 
-  it('🔴 se ve aparte de los excluidos: $0 girado y cuánto pasa al mes siguiente', async () => {
+  it('🔴 se ve aparte de los excluidos: $ 0 girado y cuánto pasa al mes siguiente', async () => {
     await render(conCompensada());
 
     const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
     expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
     expect(seccion?.textContent).toContain('Elena Mora');
-    expect(seccion?.textContent).toContain('$250.000');
+    expect(seccion?.textContent).toContain('$ 250.000');
     expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
     expect(container.textContent).toContain('Se cierra en $0');
   });

@@ -161,7 +161,8 @@ function pesosDe(fila: HTMLElement): number[] {
   return Array.from(fila.querySelectorAll(':scope > td')).flatMap((td) => {
     const texto = (td.textContent ?? '').trim()
     if (texto === '—') return [0]
-    const m = /^\$(-?[\d.]+)$/.exec(texto)
+    // C4 (03-10-2026): una sola `formatCurrency` dice «$ 1.234.567», con espacio (C1-ESQUEMA Q4 a).
+    const m = /^\$ ?(-?[\d.]+)$/.exec(texto)
     return m ? [Number(m[1]!.replace(/\./g, ''))] : []
   })
 }

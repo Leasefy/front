@@ -57,12 +57,14 @@ import {
   mensajeDeLaRenovacion,
 } from '@/lib/renovaciones/limites-de-la-renovacion';
 import {
+  AREAS_DE_LA_RENOVACION,
   PASOS_DE_RENOVACION,
   canalDeEnvio,
   mensajeSugerido,
   pasoDelEstado,
   renovacionAceptada,
 } from '@/lib/renovaciones/reglas';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import {
   type CampoDelCajon,
   ChipDeVencimiento,
@@ -292,11 +294,18 @@ export function CuerpoDeRenovacion({
     });
   }, []);
 
+  // «Centavos en todo» (C4): las llaves de la renovación (como el back).
+  const renovacionConCentavos = usePlataConCentavos(AREAS_DE_LA_RENOVACION);
+
   // Los topes del back, mientras se escribe: el canon con ceros de más se dice
   // bajo el canon ANTES de mandar, con la frase del back, y no se manda.
   const topes = useMemo(
-    () => erroresDeLosValores({ proposedRent: newRent, negotiatedAdminFee: newAdminFee }),
-    [newRent, newAdminFee],
+    () =>
+      erroresDeLosValores(
+        { proposedRent: newRent, negotiatedAdminFee: newAdminFee },
+        { canonConCentavos: renovacionConCentavos },
+      ),
+    [newRent, newAdminFee, renovacionConCentavos],
   );
   const topeDelCanon = topes.proposedRent;
   const topeDeLaAdministracion = topes.negotiatedAdminFee;

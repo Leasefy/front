@@ -45,7 +45,7 @@ describe('con TODAS las llaves apagadas, exactamente como hoy', () => {
 
   it('una cifra con fracción se redondea al peso como siempre, en todos los formatos', () => {
     expect(formatCurrency(1_234.56)).toBe('$ 1.235');
-    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$1.234.567');
+    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$ 1.234.567');
     expect(pesosDelCierre(1_234_567.29)).toBe('$1.234.567');
     expect(pesosDeLaLiquidacion(2_350_000.29)).toBe('$2.350.000');
     expect(pesosDelNeto(1_234_567.4)).toBe('$1.234.567');
@@ -87,8 +87,9 @@ describe('P8 a en pantalla — formatCurrency (las dos copias)', () => {
     expect(formatCurrency(0)).toBe('$ 0');
     expect(formatCurrency(-45_000)).toBe('$ -45.000');
     expect(formatCurrency(null)).toBe('$ 0');
-    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$2.500.000');
-    expect(formatCurrencyDeInmobiliaria(-2_500)).toBe('$-2.500');
+    // C4: una sola formatCurrency, «$ 1.234.567» con espacio (C1-ESQUEMA Q4 a).
+    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$ 2.500.000');
+    expect(formatCurrencyDeInmobiliaria(-2_500)).toBe('$ -2.500');
   });
 
   it('con centavos, los dos decimales — ya no se redondea al peso', () => {
@@ -96,7 +97,7 @@ describe('P8 a en pantalla — formatCurrency (las dos copias)', () => {
     expect(formatCurrency(1_500_000.5)).toBe('$ 1.500.000,50');
     expect(formatCurrency(0.1 + 0.2)).toBe('$ 0,30');
     expect(formatCurrency(1_234_567.29, 'en')).toBe('$ 1,234,567.29');
-    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$1.234.567,29');
+    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$ 1.234.567,29');
   });
 
   it('los formatos a mano de las pantallas: sin redondear', () => {
@@ -203,10 +204,11 @@ describe('el estado de cuenta en PDF', () => {
     expect(conCentavos).toContain('$ 2.350.000,29');
   });
 
-  it('con todas las llaves apagadas, el PDF es el de hoy', () => {
+  it('con todas las llaves apagadas, el PDF es el de hoy; un valor con centavos GUARDADOS los escribe (C4, Q3 a)', () => {
     fijarConfigDePlataParaPruebas(null);
+    const enteros = textosDe(EstadoDeCuentaPDF({ doc: estadoDeCuenta(), hoy: '2026-09-13' })).join('\n');
+    expect(enteros).not.toMatch(/,\d{2}\b/);
     const texto = textosDe(EstadoDeCuentaPDF({ doc, hoy: '2026-09-13' })).join('\n');
-    expect(texto).toContain('$ 2.350.000');
-    expect(texto).not.toMatch(/,\d{2}\b/);
+    expect(texto).toContain('$ 2.350.000,29');
   });
 });

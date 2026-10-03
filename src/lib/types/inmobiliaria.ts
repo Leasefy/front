@@ -10,8 +10,7 @@ import type {
   AprobacionDeReparacion,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
-import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
-import { decimalesEnPantalla } from '@/lib/plata/escribir-plata';
+import { formatCurrency as formatCurrencyDeLaPlata } from '@/lib/format';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
  * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
@@ -2015,16 +2014,17 @@ export function getDispersionStatusLabel(status: DispersionStatus): string {
   return labels[status];
 }
 
+/**
+ * 🔴 UNA sola `formatCurrency` («centavos en todo», C4, 03-10-2026). Hasta C4
+ * había dos copias: ésta escribía «$2.500.000» (sin espacio) y la de
+ * `@/lib/format` «$ 2.500.000». Decidido (C1-ESQUEMA Q4 a): «$ 1.234.567»,
+ * con espacio, la forma de `@/lib/format` y de `formatoPesos`. Ésta queda como
+ * puerta de entrada para los ~100 archivos que la importan de acá; la regla
+ * (texto que lanza en las pruebas, centavos sólo si el valor los trae y alguna
+ * llave está prendida —P8 a—) vive en UN lugar.
+ */
 export function formatCurrency(amount: number): string {
-  // 🔴 «Centavos en todo» (C1-C): un texto acá LANZA en las pruebas.
-  plataQueNoEsNumero('formatCurrency (lib/types/inmobiliaria)', amount);
-  // Colombian pesos (COP). es-CO grouping (dot thousands) with a literal "$"
-  // prefix — `{ style:'currency', currency:'COP' }` would insert a space after
-  // the "$", so the prefix keeps the exact existing visual ("$2.500.000",
-  // negatives "$-2.500") while fixing the es-CL/CLP (Chile) misnomer.
-  // P8 a (C3-FRONT): los centavos SÓLO si el valor los tiene ("$1.234.567,29");
-  // un entero sale exactamente como siempre.
-  return '$' + new Intl.NumberFormat('es-CO', decimalesEnPantalla(amount)).format(amount);
+  return formatCurrencyDeLaPlata(amount);
 }
 
 export function getDaysLate(dueDate: string): number {

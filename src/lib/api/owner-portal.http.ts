@@ -1,7 +1,7 @@
 /**
  * Portal del Propietario — capa HTTP de bajo nivel compartida por los servicios owner-facing
  * (v8-02). Centraliza el transporte **browser → agent DIRECTO** (`NEXT_PUBLIC_AGENT_URL`) con
- * `agentAuthHeaders()` y el **degrade honesto**: cualquier fallo (agent URL/agencyId ausente,
+ * `agentFetch` y el **degrade honesto**: cualquier fallo (agent URL/agencyId ausente,
  * !res.ok incl. 401/403/404 por flag-OFF, red/CORS/parse) → `null` = no-disponible → "Próximamente".
  *
  * ⚠️ El bearer de hoy es el token de Supabase; el portal exige el owner-JWT HS256 del monolito
@@ -18,7 +18,7 @@
  * que no era JSON (un HTML de un proxy, también en un 2xx) se reportaba como red caída.
  */
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { agentAuthHeaders } from './agent-auth';
+import { agentFetch } from './agent-fetch';
 import { ApiError } from './client';
 import { falloDelMicro } from './fallo-del-micro';
 
@@ -91,9 +91,11 @@ async function pedirAlPortal<T>(
   if (!base) return { estado: 'no-habilitado' };
   let res: Response;
   try {
-    res = await globalThis.fetch(`${base}${path}`, { headers: agentAuthHeaders() });
-  } catch {
-    return falloDelPortal(falloSinRespuesta());
+    res = await agentFetch(`${base}${path}`);
+  } catch (err) {
+    // Con el micro caído y el back sano, `agentFetch` ya lo dice como el 503
+    // del «asistente» (ARREGLOS-4): esa frase, no «la conexión».
+    return falloDelPortal(err instanceof ApiError ? err : falloSinRespuesta());
   }
   if (STATUS_DE_NO_HABILITADO.has(res.status)) return { estado: 'no-habilitado' };
   // El status y el cuerpo entero (`code`, `message`, `campos`, `referencia`).
@@ -170,12 +172,15 @@ export async function ownerPost<T>(
   if (!base) return { ok: false, status: 0, data: null, error: 'unavailable' };
   let res: Response;
   try {
-    res = await globalThis.fetch(`${base}${path}`, {
+    res = await agentFetch(`${base}${path}`, {
       method: 'POST',
-      headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (err) {
+    // Con el micro caído y el back sano, `agentFetch` ya lo dice como el 503
+    // del «asistente» (ARREGLOS-4).
+    if (err instanceof ApiError) return { ok: false, status: err.status, data: null, error: 'unavailable', fallo: err };
     // Sin respuesta: lo único que es «la conexión».
     return { ok: false, status: 0, data: null, error: 'network', fallo: falloSinRespuesta() };
   }

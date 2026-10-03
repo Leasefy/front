@@ -805,7 +805,6 @@ export function GenerarDocumentoDialog({
                             data-testid={id}
                             rows={3}
                             value={valor}
-                            aria-invalid={vacio}
                             onChange={(e) => escribirCampo(campo.nombre, e.target.value)}
                           />
                         ) : (
@@ -818,7 +817,7 @@ export function GenerarDocumentoDialog({
                                 ? 'decimal'
                                 : undefined
                             }
-                            aria-invalid={vacio || !!errorDelCampo}
+                            aria-invalid={!!errorDelCampo}
                             // 🔴 03-10 (pruebas en el navegador): el borde rojo lo pinta
                             // el DS con `invalid`; con sólo `aria-invalid` la fecha
                             // rechazada se veía igual que una buena. Sólo con el error

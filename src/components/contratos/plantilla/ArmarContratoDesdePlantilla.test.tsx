@@ -421,3 +421,30 @@ describe('un PDF armado deja de valer cuando cambia lo impreso', () => {
     expect(porTestId('plantilla-contrato-listo')).toBeNull()
   })
 })
+
+describe('🔴 ARREGLOS-4 · un campo requerido vacío no abre en rojo', () => {
+  it('sin `aria-invalid` ni borde de error', async () => {
+    post.mockImplementation((ruta: string) => {
+      if (ruta.endsWith('/preparar')) {
+        return Promise.resolve({
+          ...PREPARACION,
+          campos: [
+            { nombre: 'lugarDePago', etiqueta: 'Lugar de pago', tipo: 'texto', requerida: true, valor: '' },
+            { nombre: 'linderos', etiqueta: 'Linderos', tipo: 'parrafo', requerida: true, valor: '' },
+          ],
+        })
+      }
+      return Promise.resolve({})
+    })
+    await montar({ modo: 'template' })
+
+    for (const id of ['plantilla-campo-lugarDePago', 'plantilla-campo-linderos']) {
+      const campo = porTestId(id)
+      expect(campo, id).not.toBeNull()
+      // El adaptador pinta el borde rojo con `aria-invalid`: abrir el
+      // formulario no puede ser verlo ya en rojo.
+      expect(campo!.getAttribute('aria-invalid'), id).not.toBe('true')
+      expect(campo!.hasAttribute('data-invalid'), id).toBe(false)
+    }
+  })
+})

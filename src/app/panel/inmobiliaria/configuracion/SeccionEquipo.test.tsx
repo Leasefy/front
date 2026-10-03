@@ -211,4 +211,17 @@ describe('sección Equipo', () => {
     expect(texto).toContain('leaderboard')
     expect(texto).toContain('workload')
   })
+
+  it('🔴 ARREGLOS-4 · a 390 px las pestañas se desplazan dentro de su riel, no la página', async () => {
+    // happy-dom no calcula layout: se fijan las clases que lo evitan (como
+    // «Mis propiedades» y `cobros-a-390.test.tsx`).
+    await render()
+    const riel = container.querySelector<HTMLElement>('[data-testid="equipo-pestanas"]')
+    expect(riel).not.toBeNull()
+    expect(riel!.className).toContain('overflow-x-auto')
+    expect(riel!.className).toContain('min-w-0')
+    expect(riel!.className).toContain('max-w-full')
+    // Las pestañas viven ADENTRO del riel.
+    expect(riel!.textContent).toContain('leaderboard')
+  })
 })

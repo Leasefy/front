@@ -33,7 +33,13 @@ const POLL_MS = 30_000
 export interface UsePilotoPulsoResult {
   data: PulsoResponse | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   notAvailable: boolean
   refetch: () => Promise<void>
 }
@@ -44,7 +50,7 @@ export function usePilotoPulso(): UsePilotoPulsoResult {
 
   const [data, setData] = useState<PulsoResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   const abortRef = useRef<AbortController | null>(null)
@@ -76,7 +82,7 @@ export function usePilotoPulso(): UsePilotoPulsoResult {
         loadedOnceRef.current = true
       } catch (err) {
         if (controller.signal.aborted) return
-        setError(err instanceof Error ? err.message : 'Failed to fetch piloto pulso')
+        setError(err ?? new Error('Failed to fetch piloto pulso'))
       } finally {
         if (abortRef.current === controller) enVueloRef.current = false
         if (!controller.signal.aborted) setIsLoading(false)

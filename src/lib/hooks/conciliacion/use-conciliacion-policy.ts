@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Domains ───────────────────────────────────────────────────────────────
@@ -162,9 +162,8 @@ export function useConciliacionPolicy(): UseConciliacionPolicyResult {
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/conciliacion/policy`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/conciliacion/policy`
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as ConciliacionPolicyResponse
@@ -200,11 +199,11 @@ export function useConciliacionPolicy(): UseConciliacionPolicyResult {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/policy`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               policy_json: input.policyJson,
               ...(input.changeDescription

@@ -402,10 +402,22 @@ describe('useCarrierRegistry — el fallo llega entero a la pantalla', () => {
     expect(mensajeParaLaPersona(e, { porDefecto: 'sin permiso' })).toBe('sin permiso')
   })
 
-  it('🔴 un `fetch` que no salió llega como tal y el traductor habla de la conexión', async () => {
+  it('🔴 sin internet, un `fetch` que no salió llega como tal y el traductor habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const e = await guardarConLaRespuesta(() => Promise.reject(new TypeError('Failed to fetch')))
+      expect(e).toBeInstanceOf(TypeError)
+      expect(mensajeParaLaPersona(e)).toMatch(/conexi[oó]n/i)
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, es el asistente (503), no la conexión', async () => {
     const e = await guardarConLaRespuesta(() => Promise.reject(new TypeError('Failed to fetch')))
-    expect(e).toBeInstanceOf(TypeError)
-    expect(mensajeParaLaPersona(e)).toMatch(/conexi[oó]n/i)
+    expect(e).toBeInstanceOf(ApiError)
+    expect((e as ApiError).status).toBe(503)
+    expect(mensajeParaLaPersona(e)).toMatch(/El asistente de Leasefy no está disponible/)
   })
 })
 

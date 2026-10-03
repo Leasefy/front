@@ -61,6 +61,7 @@ import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pag
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { AlAnchoVisible } from '@/components/ui/al-ancho-visible';
 import {
   Select,
   SelectContent,
@@ -550,6 +551,9 @@ function DocumentosContent() {
                 (visibles.length === 0 ? (
                   <TableRowAnimada key="vacio-documentos">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      {/* 🔴 ARREGLOS-4: a 390 px la tabla es más ancha que la
+                          pantalla; el vacío ocupa lo que SE VE, no la tabla. */}
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="documentos"
                         icono={FileText}
@@ -567,6 +571,7 @@ function DocumentosContent() {
                         }
                         onLimpiarFiltros={() => setFiltros(FILTROS_VACIOS)}
                       />
+                      </AlAnchoVisible>
                     </TableCell>
                   </TableRowAnimada>
                 ) : (
@@ -654,12 +659,14 @@ function DocumentosContent() {
                 (plantillas.length === 0 ? (
                   <TableRowAnimada key="vacio-plantillas">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="plantillas"
                         icono={FileText}
                         titulo={t(k('vacioPlantillas'))}
                         descripcion={t(k('vacioPlantillasDesc'))}
                       />
+                      </AlAnchoVisible>
                     </TableCell>
                   </TableRowAnimada>
                 ) : (
@@ -764,6 +771,7 @@ function DocumentosContent() {
                 (actas.length === 0 ? (
                   <TableRowAnimada key="vacio-actas">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="actas"
                         icono={ClipboardText}
@@ -779,6 +787,7 @@ function DocumentosContent() {
                             : undefined
                         }
                       />
+                      </AlAnchoVisible>
                     </TableCell>
                   </TableRowAnimada>
                 ) : (

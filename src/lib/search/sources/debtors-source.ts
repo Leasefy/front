@@ -18,7 +18,7 @@
  * href: /panel/inmobiliaria/pagos/cobranza/deudores/:id
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 import { STAGE_LABELS_ES, stageColorClasses } from '@/lib/cartera';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import type { DebtorListResponse } from '@/lib/hooks/cobranza/use-debtor-list';
@@ -97,8 +97,7 @@ export const debtorsSource: SearchSource = {
     const qs = new URLSearchParams({ search: query });
     const url = `${agentUrl}/api/agency/${ctx.agencyId}/cobranza/debtors?${qs}`;
 
-    const res = await globalThis.fetch(url, {
-      headers: agentAuthHeaders(),
+    const res = await agentFetch(url, {
       signal,
     });
     if (!res.ok) throw new Error(`${res.status}`);

@@ -24,7 +24,7 @@
 import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { accionQueNoSalioConCuerpo } from '@/lib/hooks/ai/accion-del-micro'
 
 export interface ConciliacionRunWindow {
@@ -70,11 +70,11 @@ export function useConciliacionRun(): UseConciliacionRunResult {
 
       try {
         setIsRunning(true)
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/run`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )

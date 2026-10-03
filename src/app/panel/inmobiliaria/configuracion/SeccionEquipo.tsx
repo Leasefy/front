@@ -279,24 +279,32 @@ export function SeccionEquipo() {
 
   return (
     <div className="space-y-4">
-      <SegmentedControl<Vista>
-        value={vista}
-        onChange={setVista}
-        aria-label={t('inmobiliaria.config.tabs.equipo')}
-        options={VISTAS.map((v) => {
-          const Icono = v.icon;
-          return {
-            value: v.id,
-            ariaLabel: v.label,
-            label: (
-              <span className="flex items-center gap-2">
-                <Icono className="h-4 w-4" weight={vista === v.id ? 'fill' : 'regular'} />
-                <span>{v.label}</span>
-              </span>
-            ),
-          };
-        })}
-      />
+      {/* 🔴 ARREGLOS-4 (03-10-2026): a 390 px las cuatro pestañas no cabían y
+          empujaban la pantalla de lado. Se desplazan dentro de su riel, como el
+          filtro de «Mis propiedades» y los comprobantes del sistema anterior. */}
+      <div
+        className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-testid="equipo-pestanas"
+      >
+        <SegmentedControl<Vista>
+          value={vista}
+          onChange={setVista}
+          aria-label={t('inmobiliaria.config.tabs.equipo')}
+          options={VISTAS.map((v) => {
+            const Icono = v.icon;
+            return {
+              value: v.id,
+              ariaLabel: v.label,
+              label: (
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  <Icono className="h-4 w-4" weight={vista === v.id ? 'fill' : 'regular'} />
+                  <span>{v.label}</span>
+                </span>
+              ),
+            };
+          })}
+        />
+      </div>
 
       {vista === 'captaciones' ? (
         <CaptacionesYArriendos />

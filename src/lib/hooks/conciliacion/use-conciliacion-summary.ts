@@ -38,7 +38,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ── API shape (matched to conciliacion-summary.ts backend route) ─────────────
 
@@ -123,8 +123,7 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url, {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url, {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return NADA

@@ -119,7 +119,8 @@ function mismaFrase(a: string | undefined, b: string | undefined): boolean {
 export interface PilotoPulsoProps {
   data: PulsoResponse | null
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   notAvailable: boolean
   /**
    * La lectura del Gerente (del briefing). Va acá y no en una banda aparte:

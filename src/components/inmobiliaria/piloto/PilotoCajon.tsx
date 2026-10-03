@@ -67,6 +67,7 @@ import {
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
@@ -408,11 +409,16 @@ export function PilotoCajon({
             </div>
           )}
 
-          {!alerta && !isLoading && error && (
+          {!alerta && !isLoading && Boolean(error) && (
             <Aviso
               tono="danger"
               titulo={t('inmobiliaria.piloto.cajon.errorTitulo')}
-              texto={t('inmobiliaria.piloto.cajon.errorTexto', { error })}
+              // El error entero por el traductor (con el micro caído: «El
+              // asistente de Leasefy no está disponible…»), sin su punto final:
+              // la frase de la clave ya pone el suyo.
+              texto={t('inmobiliaria.piloto.cajon.errorTexto', {
+                error: mensajeParaLaPersona(error).replace(/\.\s*$/, ''),
+              })}
               accion={
                 <Button size="sm" variant="secondary" hideArrow onClick={() => void refetch()}>
                   {t('inmobiliaria.piloto.cajon.reintentar')}

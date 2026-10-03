@@ -720,6 +720,31 @@ describe('GenerarDocumentoDialog', () => {
     expect(faltantes.textContent).toContain('Llaves entregadas')
     expect(faltantes.closest('[data-testid="doc-campos"]')).toBeNull()
   })
+
+  it('🔴 ARREGLOS-4 · un requerido vacío no abre en rojo: lo dice el pie', async () => {
+    api.preparar.mockResolvedValue({
+      ...PREPARACION_CARTA,
+      campos: [
+        { nombre: 'llavesEntregadas', etiqueta: 'Llaves entregadas', tipo: 'parrafo', requerida: true, valor: '' },
+        { nombre: 'nombreDelTestigo', etiqueta: 'Nombre del testigo', tipo: 'texto', requerida: true, valor: '' },
+      ],
+      incremento: null,
+    })
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+
+    for (const id of ['doc-campo-llavesEntregadas', 'doc-campo-nombreDelTestigo']) {
+      const campo = q<HTMLElement>(`[data-testid="${id}"]`)!
+      // El adaptador pinta el borde con `aria-invalid`: abrir el diálogo no
+      // puede ser verlo ya en rojo.
+      expect(campo.getAttribute('aria-invalid'), id).not.toBe('true')
+      expect(campo.hasAttribute('data-invalid'), id).toBe(false)
+    }
+    // Lo que falta lo dice el pie, y el botón espera.
+    expect(q<HTMLElement>('[data-testid="doc-faltantes"]')!.textContent).toContain('Llaves entregadas')
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+  })
 })
 
 /**

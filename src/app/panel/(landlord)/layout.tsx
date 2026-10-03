@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
 import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
@@ -13,16 +12,8 @@ import { I18nProvider, useI18n } from '@/lib/i18n';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
-
-// Define the setup steps - same as LandlordDashboardEmpty
-const LANDLORD_SETUP_STEPS: ProfileCompletionStep[] = [
-  { id: 1, labelEs: 'Info personal', labelEn: 'Personal info', completed: false },
-  { id: 2, labelEs: 'Propiedad', labelEn: 'Property', completed: false },
-  { id: 3, labelEs: 'Inquilino ideal', labelEn: 'Ideal tenant', completed: false },
-  { id: 4, labelEs: 'Cobros', labelEn: 'Payments', completed: false },
-];
-
-const ONBOARDING_STORAGE_KEY = 'plan_onboarding_landlord';
+import { useAuth } from '@/lib/auth';
+import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 
 const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
@@ -147,65 +138,26 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { subscription } = useMySubscription();
   const showUpgrade = subscription?.planId === 'starter';
 
-  // Onboarding progress state
-  const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(LANDLORD_SETUP_STEPS);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
-
-  // Load onboarding progress from localStorage
-  useEffect(() => {
-    const loadOnboardingProgress = () => {
-      const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-
-          // If onboarding was fully completed, hide the widget
-          if (parsed.isComplete) {
-            setOnboardingComplete(true);
-            setIsLoaded(true);
-            return;
-          }
-
-          const completedStepIds = parsed.completedSteps || [];
-          setOnboardingSteps(LANDLORD_SETUP_STEPS.map(step => ({
-            ...step,
-            completed: completedStepIds.includes(step.id),
-          })));
-        } catch (e) {
-          console.error('Error loading onboarding progress:', e);
-        }
-      }
-      setIsLoaded(true);
-    };
-
-    loadOnboardingProgress();
-
-    // Listen for storage changes (for cross-tab sync and manual updates)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === ONBOARDING_STORAGE_KEY) {
-        loadOnboardingProgress();
-      }
-    };
-
-    // Custom event for same-tab updates
-    const handleOnboardingUpdate = () => {
-      loadOnboardingProgress();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('onboarding-updated', handleOnboardingUpdate);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('onboarding-updated', handleOnboardingUpdate);
-    };
-  }, []);
-
-  // Calculate profile completion
-  const completedCount = onboardingSteps.filter(s => s.completed).length;
+  /*
+   * 🔴 ARREGLOS-4 (03-10-2026) · «Completa tu perfil» cuenta lo MISMO que la
+   * tarjeta del perfil: lo que la persona ya guardó, del usuario de la sesión
+   * (`lib/perfil/pasos-del-perfil-del-propietario.ts`). Antes contaba los
+   * cuatro pasos del asistente de bienvenida guardados en el `localStorage` de
+   * ESTE navegador: «0/4» en la barra contra «3 de 5» en el perfil, y en otro
+   * navegador (o con la cuenta nacida de la migración) 0/4 para siempre.
+   */
+  const { user } = useAuth();
+  const pasosDelPerfil = pasosDelPerfilDelPropietario(user);
+  const onboardingSteps: ProfileCompletionStep[] = pasosDelPerfil.map((p, i) => ({
+    id: i + 1,
+    labelEs: p.etiquetaEs,
+    labelEn: p.etiquetaEn,
+    completed: p.completo,
+  }));
+  const completedCount = onboardingSteps.filter((s) => s.completed).length;
   const totalSteps = onboardingSteps.length;
   const percentage = Math.round((completedCount / totalSteps) * 100);
+  const perfilCompleto = completedCount === totalSteps;
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -223,10 +175,11 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"
         upgradeLabel="Mejorar Plan"
-        profileCompletion={isLoaded && !onboardingComplete ? {
+        profileCompletion={user && !perfilCompleto ? {
           percentage,
-          href: '/onboarding/propietario',
-          label: locale === 'es' ? 'Completa tu cuenta' : 'Complete your account',
+          // Los pasos son los del perfil: ahí se completan.
+          href: '/panel/perfil',
+          label: locale === 'es' ? 'Completa tu perfil' : 'Complete your profile',
           completedCount,
           totalSteps,
           steps: onboardingSteps,

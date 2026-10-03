@@ -10,7 +10,7 @@ void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useWizardDraft } from '@/lib/hooks/cotizador/use-wizard-draft'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
@@ -366,13 +366,13 @@ export default function NuevaCotizacionPage() {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       const agencyId = agency?.id
       if (!agentUrl || !agencyId) throw new Error(MENSAJES_DE_LA_COTIZACION.sinConfigurar)
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/quote`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({
+          headers: {
             'Content-Type': 'application/json',
-          }),
+          },
           body: JSON.stringify(submitBody),
         }
       )

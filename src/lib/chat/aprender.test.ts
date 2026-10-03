@@ -93,9 +93,21 @@ describe('decidirAprendizaje', () => {
     expect(e.detalle.referencia).toBe('ab12cd34');
   });
 
-  it('la red caída lanza su `TypeError` (es «la conexión», no «no se guardó»)', async () => {
+  it('sin internet en el navegador, la red caída lanza su `TypeError` (es «la conexión», no «no se guardó»)', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
+      await expect(decidir()).rejects.toBeInstanceOf(TypeError);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · el micro caído con el back sano es «el asistente no está disponible» (503), no la conexión', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
-    await expect(decidir()).rejects.toBeInstanceOf(TypeError);
+    const e = await decidir().catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.status).toBe(503);
   });
 
   it('lo que salió bien se devuelve tal cual; sin a dónde mandarlo, `null` sin preguntar', async () => {

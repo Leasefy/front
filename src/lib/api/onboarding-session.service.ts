@@ -8,7 +8,7 @@
  *
  *   ${NEXT_PUBLIC_AGENT_URL}/onboarding/session/{sessionId}/<step>
  *
- * Auth: `Authorization: Bearer <Supabase JWT>` via `agentAuthHeaders()`
+ * Auth: `Authorization: Bearer <Supabase JWT>` via `agentFetch`
  * (`src/lib/api/agent-auth.ts`). Pattern mirrors the direct-fetch hooks
  * (`use-agent-work-items.ts`, `use-agreement-propose.ts`) rather than
  * `apiClient` — this is agent traffic, not back traffic.
@@ -30,7 +30,7 @@ import {
   mensajeSinRespuesta,
   type CampoConError,
 } from '@/lib/errores/traductor-de-errores'
-import { agentAuthHeaders } from './agent-auth'
+import { agentFetch } from './agent-fetch'
 import type {
   OnboardingSessionAgencyRequest,
   OnboardingSessionAgencyResponse,
@@ -308,10 +308,12 @@ function stepUrl(sessionId: string, step: string): string {
 async function request<TRes>(sessionId: string, step: string, init: RequestInit): Promise<TRes> {
   let res: Response
   try {
-    res = await globalThis.fetch(stepUrl(sessionId, step), init)
-  } catch {
-    // Sin respuesta: el único caso en que se habla de la conexión.
-    throw new OnboardingSessionError('network', null, mensajeSinRespuesta())
+    res = await agentFetch(stepUrl(sessionId, step), init)
+  } catch (err) {
+    // Sin respuesta: el único caso en que se habla de la conexión. Con el
+    // micro caído y Leasefy respondiendo, `agentFetch` ya lo dice como «el
+    // asistente no está disponible» (503), y `errorDelOnboarding` lo respeta.
+    throw errorDelOnboarding(err)
   }
   if (!res.ok) {
     await throwForErrorResponse(res)
@@ -329,7 +331,7 @@ async function request<TRes>(sessionId: string, step: string, init: RequestInit)
 function postStep<TReq, TRes>(sessionId: string, step: string, body: TReq): Promise<TRes> {
   return request<TRes>(sessionId, step, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
 }
@@ -408,16 +410,10 @@ export function acceptTerms(
 
 /** No request body — the back derives the tenant from the persisted draft. */
 export function completeOnboarding(sessionId: string): Promise<OnboardingSessionCompleteResponse> {
-  return request(sessionId, '/complete', {
-    method: 'POST',
-    headers: agentAuthHeaders(),
-  })
+  return request(sessionId, '/complete', { method: 'POST' })
 }
 
 /** Read-only — rehydrates `{ sessionId, currentStep, nextStep, draft }` on refresh. */
 export function resumeOnboarding(sessionId: string): Promise<OnboardingSessionResumeResponse> {
-  return request(sessionId, '/resume', {
-    method: 'GET',
-    headers: agentAuthHeaders(),
-  })
+  return request(sessionId, '/resume', { method: 'GET' })
 }

@@ -10,14 +10,14 @@
  * y de un pulgar abajo con comentario sale una LECCIÓN que el chat usa en la
  * siguiente pregunta.
  *
- * Auth = bearer de Supabase (`agentAuthHeaders`); base = `NEXT_PUBLIC_AGENT_URL`.
+ * Auth = bearer de Supabase (`agentFetch`); base = `NEXT_PUBLIC_AGENT_URL`.
  * Mismas convenciones de red/errores que `ai-hub-lessons.ts`.
  *
  * 🔴 El `agencyId` de la URL lo valida el micro contra el TOKEN; lo que viaja en
  * el cuerpo es sólo lo que el usuario tuvo en pantalla.
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from './agent-fetch';
 import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 
 export type VeredictoFeedback = 'up' | 'down';
@@ -65,9 +65,9 @@ export async function enviarFeedbackDeChat(args: {
   signal?: AbortSignal;
 }): Promise<RespuestaDeFeedback> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/feedback`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args.feedback),
     ...(args.signal ? { signal: args.signal } : {}),
   });

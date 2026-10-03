@@ -243,14 +243,29 @@ describe('useAgentWorkItems — runAction no se traga el error', () => {
     expect(r.error).toBe('Internal Server Error')
   })
 
-  it('un `fetch` que ni salió llega TAL CUAL (status 0 = conexión), no como un texto fijo', async () => {
-    const red = new TypeError('Failed to fetch')
+  it('sin internet, un `fetch` que ni salió llega TAL CUAL (status 0 = conexión), no como un texto fijo', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const red = new TypeError('Failed to fetch')
+      const r = await montarConAccion(async () => {
+        throw red
+      })
+      expect(r.fallo).toBe(red)
+      expect(mensajeParaLaPersona(r.fallo)).toMatch(/conexión/)
+      expect(r.error).toBe('Failed to fetch')
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, la acción dice que el asistente no está disponible', async () => {
     const r = await montarConAccion(async () => {
-      throw red
+      throw new TypeError('Failed to fetch')
     })
-    expect(r.fallo).toBe(red)
-    expect(mensajeParaLaPersona(r.fallo)).toMatch(/conexión/)
-    expect(r.error).toBe('Failed to fetch')
+    expect(r.fallo).toBeInstanceOf(ApiError)
+    const texto = mensajeParaLaPersona(r.fallo)
+    expect(texto).toMatch(/asistente de Leasefy no está disponible/)
+    expect(texto).not.toMatch(/conexi[oó]n/i)
   })
 })
 

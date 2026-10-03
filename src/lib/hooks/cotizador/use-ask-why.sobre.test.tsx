@@ -146,15 +146,29 @@ describe('useAskWhy — el sobre de error, en español', () => {
     expect(error?.mensaje).toBe('Esta cotización ya no está disponible.')
   })
 
-  it('🔴 «conexión» SÓLO sin respuesta: el TypeError del fetch (navegador y Node)', async () => {
-    for (const texto of ['Failed to fetch', 'fetch failed']) {
-      const { error } = await preguntarCon(async () => {
-        throw new TypeError(texto)
-      })
-      expect(error?.code).toBe('network')
-      expect(error?.mensaje).toMatch(/conexión/)
-      expect(error?.mensaje).not.toContain(texto)
+  it('🔴 «conexión» SÓLO sin respuesta: el TypeError del fetch (navegador y Node), sin internet', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      for (const texto of ['Failed to fetch', 'fetch failed']) {
+        const { error } = await preguntarCon(async () => {
+          throw new TypeError(texto)
+        })
+        expect(error?.code).toBe('network')
+        expect(error?.mensaje).toMatch(/conexión/)
+        expect(error?.mensaje).not.toContain(texto)
+      }
+    } finally {
+      enLinea.mockRestore()
     }
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano: «el asistente no está disponible», no «de nuestro lado» ni la conexión', async () => {
+    const { error } = await preguntarCon(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    expect(error?.code).toBe(500)
+    expect(error?.mensaje).toMatch(/El asistente de Leasefy no está disponible/)
+    expect(error?.mensaje).not.toMatch(/conexi[oó]n/i)
   })
 
   it('una respuesta 200 que no se puede leer NO es la conexión, y no se muestra el error de JavaScript', async () => {

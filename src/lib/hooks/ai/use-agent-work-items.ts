@@ -8,7 +8,7 @@
  *   GET  /api/agency/{agencyId}/ai-hub/work-items?agente=…[&status][&page][&pageSize]
  *   POST {WorkItemAction.path}   (the action's own existing endpoint)
  *
- * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders pattern used by
+ * Follows the NEXT_PUBLIC_AGENT_URL + agentFetch pattern used by
  * use-conciliacion-queue.ts / use-escalations.ts. Read-only data + the
  * mutating actions the backend declared on each WorkItem (F0 is adapter-first).
  */
@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { accionQueNoSalio, accionSinRespuesta } from './accion-del-micro'
 import type {
   AgenteId,
@@ -107,8 +107,7 @@ export function useAgentWorkItems(
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url.toString(), {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url.toString(), {
         signal: controller.signal,
       })
       if (controller.signal.aborted && !timedOut) return
@@ -171,9 +170,9 @@ export function useAgentWorkItems(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(`${agentUrl}${action.path}`, {
+        const res = await agentFetch(`${agentUrl}${action.path}`, {
           method: action.method,
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body ?? {}),
         })
         if (!res.ok) return await accionQueNoSalio(res)

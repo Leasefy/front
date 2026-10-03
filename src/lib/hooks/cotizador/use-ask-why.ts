@@ -11,7 +11,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { falloDeLaRespuesta } from '@/lib/hooks/cotizador/fallo-de-la-respuesta'
 import {
@@ -20,6 +20,7 @@ import {
   mensajeParaLaPersona,
   type CampoConError,
 } from '@/lib/errores/traductor-de-errores'
+import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible'
 
 export type AskWhyVariable = 'canon' | 'ciudad' | 'tipo' | 'codeudores'
 
@@ -156,11 +157,11 @@ export function useAskWhy(agencyId: string | null): {
       setError(null)
 
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cotizador/ask-why`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
             signal: controller.signal,
           },
@@ -199,14 +200,19 @@ export function useAskWhy(agencyId: string | null): {
         // Cualquier otra cosa —una respuesta que no se pudo leer— es nuestra.
         // (El texto de un error de JavaScript —«Unexpected end of JSON
         // input»— no es para nadie: va la frase de «nuestro lado».)
+        // 🔴 ARREGLOS-4 (03-10-2026): con el micro caído y el back sano,
+        // `agentFetch` lo dice como 503 del «asistente»: esa frase, no «de
+        // nuestro lado» genérico (el modal lo trata como un 5xx: reintento).
         const typed: AskWhyError =
           leerFallo(caught).tipo === 'sinRespuesta'
             ? { code: 'network', mensaje: mensajeParaLaPersona(caught), fallo: caught }
-            : {
-                code: 500,
-                mensaje: `No pudimos ${ACCION}: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.`,
-                fallo: caught,
-              }
+            : mensajeDeCaida(caught)
+              ? { code: 500, mensaje: mensajeParaLaPersona(caught), fallo: caught }
+              : {
+                  code: 500,
+                  mensaje: `No pudimos ${ACCION}: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.`,
+                  fallo: caught,
+                }
         setError(typed)
         throw typed
       } finally {

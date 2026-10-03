@@ -230,7 +230,10 @@ async function getJson<T>(
     if (reloj) clearTimeout(reloj)
   }
   if (res.status === 404) return { data: null, notAvailable: true }
-  if (!res.ok) throw new Error(`${res.status}`)
+  // El sobre entero (status, `code`, `message`, referencia) para el traductor:
+  // con un `Error('500')` la pantalla no sabía si era un 403, un 429 o un 5xx
+  // (ARREGLOS-4, 03-10-2026).
+  if (!res.ok) throw await falloDelMicro(res)
   return { data: (await res.json()) as T, notAvailable: false }
 }
 

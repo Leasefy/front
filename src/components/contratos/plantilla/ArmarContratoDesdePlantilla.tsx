@@ -434,7 +434,9 @@ function CamposDelContrato({
       {campos.map((campo) => {
         const id = `plantilla-campo-${campo.nombre}`;
         const valor = valores[campo.nombre] ?? '';
-        const vacio = campo.requerida && valor.trim() === '';
+        // 🔴 ARREGLOS-4 (03-10-2026): un requerido vacío no lleva `aria-invalid`:
+        // el adaptador del campo pinta el borde rojo con él, y el formulario no
+        // puede abrirse ya en rojo.
         return (
           <div key={campo.nombre} className="space-y-1.5">
             <Label htmlFor={id}>
@@ -454,7 +456,6 @@ function CamposDelContrato({
                 data-testid={id}
                 rows={3}
                 value={valor}
-                aria-invalid={vacio}
                 onChange={(e) => onEscribir(campo.nombre, e.target.value)}
               />
             ) : (
@@ -462,7 +463,6 @@ function CamposDelContrato({
                 id={id}
                 data-testid={id}
                 value={valor}
-                aria-invalid={vacio}
                 inputMode={
                   campo.tipo === 'numero' ||
                   campo.tipo === 'porcentaje' ||

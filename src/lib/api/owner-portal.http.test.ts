@@ -56,8 +56,13 @@ describe('ownerGetConEstado (O1)', () => {
   });
 
   it('sin red es «falló» con status 0', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    expect(await ownerGetConEstado('ag-1', '/portafolio')).toMatchObject({ estado: 'fallo', status: 0 });
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      expect(await ownerGetConEstado('ag-1', '/portafolio')).toMatchObject({ estado: 'fallo', status: 0 });
+    } finally {
+      enLinea.mockRestore();
+    }
   });
 
   it('una respuesta que no se puede leer es «falló» (nuestro, 500), no «Próximamente»', async () => {
@@ -159,13 +164,27 @@ describe('ownerGetConEstado — el fallo entero, por el traductor', () => {
     expect(r.mensaje).not.toContain('respondió 500');
   });
 
-  it('sin red (el fetch no salió) es el único caso de «conexión»: status 0', async () => {
+  it('sin red (el fetch no salió, sin internet) es el único caso de «conexión»: status 0', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      const r = await ownerGetConEstado('ag-1', '/portafolio');
+      if (r.estado !== 'fallo') throw new Error(`esperaba un fallo y llegó ${r.estado}`);
+      expect(r.error.status).toBe(0);
+      expect(leerFallo(r.error).tipo).toBe('sinRespuesta');
+      expect(r.mensaje).toMatch(/conexi[oó]n/i);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, es el asistente (503), no la conexión', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     const r = await ownerGetConEstado('ag-1', '/portafolio');
     if (r.estado !== 'fallo') throw new Error(`esperaba un fallo y llegó ${r.estado}`);
-    expect(r.error.status).toBe(0);
-    expect(leerFallo(r.error).tipo).toBe('sinRespuesta');
-    expect(r.mensaje).toMatch(/conexi[oó]n/i);
+    expect(r.status).toBe(503);
+    expect(r.mensaje).toMatch(/El asistente de Leasefy no está disponible/);
+    expect(r.mensaje).not.toMatch(/conexi[oó]n/i);
   });
 });
 
@@ -222,11 +241,23 @@ describe('ownerPost — el fallo entero, por el traductor', () => {
   });
 
   it('sin red: `network`, status 0 y un fallo que habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      const r = await ownerPost('ag-1', '/solicitudes', {});
+      expect(r).toMatchObject({ ok: false, status: 0, error: 'network' });
+      expect(r.fallo?.status).toBe(0);
+      expect(mensajeParaLaPersona(r.fallo)).toMatch(/conexi[oó]n/i);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano: `unavailable`, 503 y la frase del asistente', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     const r = await ownerPost('ag-1', '/solicitudes', {});
-    expect(r).toMatchObject({ ok: false, status: 0, error: 'network' });
-    expect(r.fallo?.status).toBe(0);
-    expect(mensajeParaLaPersona(r.fallo)).toMatch(/conexi[oó]n/i);
+    expect(r).toMatchObject({ ok: false, status: 503, error: 'unavailable' });
+    expect(mensajeParaLaPersona(r.fallo)).toMatch(/El asistente de Leasefy no está disponible/);
   });
 
   it('sin agencyId: «unavailable» sin fallo (Próximamente)', async () => {

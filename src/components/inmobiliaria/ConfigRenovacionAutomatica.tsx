@@ -90,12 +90,16 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
   useEffect(() => setPrendida(prendidaGuardada), [prendidaGuardada]);
   useEffect(() => setIpcTexto(escribirIpc(ipcGuardado)), [ipcGuardado]);
 
+  /**
+   * `'ok'` · `'campo'` (el back rechazó el IPC y su frase quedó bajo el campo)
+   * · `'fallo'` (403, 5xx, la red: el padre ya avisó).
+   */
   const guardar = useCallback(
-    async (payload: UpdateAgencyPayload) => {
+    async (payload: UpdateAgencyPayload): Promise<'ok' | 'campo' | 'fallo'> => {
       setGuardando(true);
       try {
         await onSave?.(payload);
-        return true;
+        return 'ok';
       } catch (error) {
         // Un 400 con campos: el IPC va BAJO su campo, con la frase del back;
         // lo que esta sección no muestra, a un toast. Sin campos (403, 5xx,
@@ -103,7 +107,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
         const { delCampo, sueltos } = loQueElBackDijoDelIpc(error, 'ipcVigente');
         if (delCampo) setErrorDeIpc(delCampo);
         if (sueltos.length > 0) toast.error(sueltos.join(' · '));
-        return false;
+        return delCampo ? 'campo' : 'fallo';
       } finally {
         setGuardando(false);
       }
@@ -113,21 +117,28 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
 
   const cambiarPrendida = async (valor: boolean) => {
     setPrendida(valor);
-    const ok = await guardar({ renovacionAutomatica: valor });
-    if (!ok) setPrendida(prendidaGuardada);
+    const r = await guardar({ renovacionAutomatica: valor });
+    if (r !== 'ok') setPrendida(prendidaGuardada);
   };
 
+  /*
+   * 🔴 ARREGLOS-4 (03-10-2026, Nico eligió la A de PRUEBAS-RESTO Q3): un IPC
+   * que no se puede guardar deja ESCRITO lo que puso la persona, con el error
+   * debajo — como «Incrementos del canon». Antes el campo volvía al guardado y
+   * la frase quedaba hablando de un número que ya no se veía. Escribir otra
+   * cosa borra el error. Sólo un fallo sin frase del campo (403, 5xx, la red)
+   * vuelve al guardado: ahí no hay nada que corregir en lo escrito.
+   */
   const confirmarIpc = async () => {
     const valor = leerIpc(ipcTexto);
     if (valor === undefined) {
       setErrorDeIpc(MENSAJES_DEL_IPC.ipcVigente);
-      setIpcTexto(escribirIpc(ipcGuardado));
       return;
     }
     setErrorDeIpc(null);
     if (valor === ipcGuardado) return;
-    const ok = await guardar({ ipcVigente: valor });
-    if (!ok) setIpcTexto(escribirIpc(ipcGuardado));
+    const r = await guardar({ ipcVigente: valor });
+    if (r === 'fallo') setIpcTexto(escribirIpc(ipcGuardado));
   };
 
   // ── Qué pasaría hoy ────────────────────────────────────────────────────────
@@ -229,7 +240,10 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
           disabled={!canEdit || guardando}
           aria-invalid={!!errorDeIpc}
           aria-describedby="renovacion-ipc-ayuda-error"
-          onChange={(e) => setIpcTexto(e.target.value)}
+          onChange={(e) => {
+            setIpcTexto(e.target.value);
+            setErrorDeIpc(null);
+          }}
           onBlur={() => void confirmarIpc()}
           onKeyDown={(e) => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();

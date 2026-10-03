@@ -105,7 +105,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // admins. Falls back to the i18n title while loading / if empty, so the brand
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
-  const { config } = useInmobiliariaConfig();
+  // 🔴 ARREGLOS-4 (03-10-2026): sólo quien PUEDE leerla la pide. El back la
+  // cierra con `configuracion:view`; pedirla igual era un 403 en cada pantalla
+  // del contador y de la asesora (y el nombre ya viene de `useAuth().agency`).
+  const { config } = useInmobiliariaConfig(canAccess('configuracion', 'view'));
   // El mismo gate que usa la propia pantalla de Equipo (`SeccionEquipo`) para
   // decidir si muestra el formulario de invitación.
   // 🔴 Comentado con la tarjeta de invitar (Nico, 01-10: «no me interesa que
@@ -127,7 +130,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // T-0031 WU-4: el "Retomar" del importador era page-local (N10) — sólo se
   // veía si ya se había entrado a /contratos/migrar. Este badge lo hace
   // visible siempre, en la nav.
-  const { pendientes: migracionesPendientes } = useMigracionesPendientes();
+  // 🔴 ARREGLOS-4: `GET /contracts/migrar/lotes` pide `contratos:view`; sin él
+  // (la asesora) no se pide — era otro 403 en cada pantalla — y no hay badge.
+  const { pendientes: migracionesPendientes } = useMigracionesPendientes(canAccess('contratos', 'view'));
   // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
   // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
   const { total: pilotoPendientes } = usePilotoBadge();

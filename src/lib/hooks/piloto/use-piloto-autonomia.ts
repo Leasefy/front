@@ -94,7 +94,13 @@ export interface UsePilotoAutonomiaResult {
   totalRoster: number
   isLoading: boolean
   /** Sólo cuando no hay nada que mostrar y la petición falló de verdad. */
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   /** Agente cuyo PUT está en vuelo (deshabilita su control). */
   busyAgente: AgentePiloto | null
   /** `fallo` es el error entero para el traductor; `error`, el código viejo (no es para la persona). */
@@ -108,7 +114,7 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
 
   const [rows, setRows] = useState<AutonomiaRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [busyAgente, setBusyAgente] = useState<AgentePiloto | null>(null)
 
   /** Guard de respuestas viejas: cada lectura aborta la anterior. */
@@ -153,7 +159,7 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
       setError(null)
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'fetch_failed')
+      setError(err ?? new Error('fetch_failed'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }

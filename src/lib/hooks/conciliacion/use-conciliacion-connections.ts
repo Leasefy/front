@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Closed sets (mirror the backend CHECK constraints) ───────────────────────
@@ -140,8 +140,7 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url, {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url, {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
@@ -196,11 +195,11 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
       }
 
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/connections`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )
@@ -228,11 +227,11 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
       }
 
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/connections/${id}`,
           {
             method: 'PATCH',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )

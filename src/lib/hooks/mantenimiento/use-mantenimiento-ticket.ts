@@ -38,7 +38,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   SIN_AGENTE_CONFIGURADO,
   SIN_AGENCIA,
@@ -113,9 +113,8 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/mantenimiento/tickets/${ticketId}`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/mantenimiento/tickets/${ticketId}`
       )
       if (!vigente()) return
       if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'el ticket'))

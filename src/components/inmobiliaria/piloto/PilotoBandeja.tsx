@@ -127,7 +127,8 @@ export interface PilotoBandejaProps {
    */
   atrasadas?: number
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch: () => Promise<void>

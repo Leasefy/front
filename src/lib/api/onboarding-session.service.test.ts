@@ -172,7 +172,8 @@ describe('submitAgency — error map', () => {
     })
   })
 
-  it('throws OnboardingSessionError(kind=network) when fetch itself rejects', async () => {
+  it('throws OnboardingSessionError(kind=network) when fetch itself rejects (sin internet)', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     globalThis.fetch = vi
       .fn()
       .mockRejectedValueOnce(new TypeError('Failed to fetch')) as unknown as typeof globalThis.fetch
@@ -181,6 +182,16 @@ describe('submitAgency — error map', () => {
       kind: 'network',
       status: null,
     })
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, es el asistente (503), no la conexión', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch')) as unknown as typeof globalThis.fetch
+    const error = await submitAgency(SESSION_ID, AGENCY_BODY).catch((e: unknown) => e)
+    expect(error).toMatchObject({ status: 503 })
+    expect((error as Error).message).toMatch(/El asistente de Leasefy no está disponible/)
+    expect((error as Error).message).not.toMatch(/conexi[oó]n/i)
   })
 })
 
@@ -310,7 +321,8 @@ describe('submitAgency — los mensajes con la regla de oro', () => {
     expect(error.message).toBe('La razón social no puede tener más de 200 caracteres.')
   })
 
-  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+  it('sin respuesta (la red del navegador caída): ahí sí se habla de la conexión', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     globalThis.fetch = vi
       .fn()
       .mockRejectedValueOnce(new TypeError('Failed to fetch')) as unknown as typeof globalThis.fetch

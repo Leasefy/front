@@ -13,7 +13,7 @@
  * 404 esa propuesta no es tuya.
  */
 
-import { agentAuthHeaders } from './agent-auth';
+import { agentFetch } from './agent-fetch';
 import { ApiError } from './client';
 import { falloDelMicro } from './fallo-del-micro';
 
@@ -88,7 +88,7 @@ async function postAccion(
   const url = `${agentBaseUrl()}/api/agency/${agencyId}/ai-hub/chat/acciones/${encodeURIComponent(
     propuestaId,
   )}/${ruta}`;
-  const res = await fetch(url, { method: 'POST', headers: agentAuthHeaders() });
+  const res = await agentFetch(url, { method: 'POST' });
   if (!res.ok) {
     const fallo = await falloDelMicro(res);
     throw new ErrorDeAccion(fallo.status, fallo.messages ?? fallo.message, fallo.code, fallo.detalle);

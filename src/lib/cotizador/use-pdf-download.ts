@@ -16,7 +16,7 @@
 // caller (StreamCompleteBanner) keeps working with the smaller props change.
 
 import { useState } from 'react'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface UsePdfDownloadOptions {
   agencyId: string
@@ -45,7 +45,7 @@ export function usePdfDownload(options: UsePdfDownloadOptions): {
       }
 
       const url = `${agentUrl}/api/agency/${options.agencyId}/cotizador/quote/${options.quoteId}/verdict.pdf`
-      const resp = await fetch(url, { headers: agentAuthHeaders() })
+      const resp = await agentFetch(url)
       if (!resp.ok) {
         throw new Error(`[usePdfDownload] backend returned ${resp.status}`)
       }

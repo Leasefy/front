@@ -43,7 +43,8 @@ const CAMPOS: Campo[] = ['topeMontoCop', 'topeDestinatarios', 'graciaSegundos']
 export interface PilotoTopesProps {
   data: PilotoPreferenciasResponse | null
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   notAvailable: boolean
   guardando: boolean
   /** `fallo` es el error entero (un 400 trae `campos` por tope); `error`, el código viejo, no se muestra. */

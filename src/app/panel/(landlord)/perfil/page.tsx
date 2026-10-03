@@ -33,6 +33,7 @@ import { getSupabase } from '@/lib/supabase/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { revisarDatosPersonales, type CampoPersonal } from '@/lib/perfil/datos-personales';
+import { pasosDelPerfilDelPropietario, type IdDelPasoDelPerfil } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 
 /**
  * Los campos que esta pantalla muestra. El nombre y el contacto de emergencia
@@ -133,41 +134,44 @@ export default function PropietarioPerfilPage() {
    * así que no se ofrece ningún «verificar»: son los mismos pasos que el
    * perfil del inquilino.
    */
+  // La misma fuente que el «Completa tu perfil» de la barra (ARREGLOS-4).
+  const pasosGuardados = pasosDelPerfilDelPropietario(user);
+  const completo = (id: IdDelPasoDelPerfil) => pasosGuardados.some((p) => p.id === id && p.completo);
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
       description: locale === 'es' ? 'Nombre y apellido' : 'First and last name',
       icon: User,
-      completed: !!(user?.firstName && user?.lastName),
+      completed: completo('basic-info'),
     },
     {
       id: 'phone',
       label: locale === 'es' ? 'Teléfono' : 'Phone',
       description: locale === 'es' ? 'Agrega tu número de teléfono' : 'Add your phone number',
       icon: Phone,
-      completed: !!user?.phone,
+      completed: completo('phone'),
     },
     {
       id: 'id-number',
       label: t('landlordProfile.fields.cedula'),
       description: locale === 'es' ? 'Tu documento de identidad' : 'Your ID number',
       icon: Shield,
-      completed: !!user?.rut,
+      completed: completo('id-number'),
     },
     {
       id: 'address',
       label: locale === 'es' ? 'Dirección' : 'Address',
       description: locale === 'es' ? 'Agrega tu dirección' : 'Add your address',
       icon: MapPin,
-      completed: !!user?.address,
+      completed: completo('address'),
     },
     {
       id: 'emergency-contact',
       label: locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact',
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
+      completed: completo('emergency-contact'),
     },
   ];
 

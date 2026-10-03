@@ -9,7 +9,7 @@
  *
  * The SSE transport is POST (the message is in the body), so we consume it with
  * fetch + a stream reader — NOT EventSource (GET-only). Auth = Supabase bearer
- * via agentAuthHeaders(); base URL = NEXT_PUBLIC_AGENT_URL.
+ * via agentFetch; base URL = NEXT_PUBLIC_AGENT_URL.
  *
  * Pure mappers (backend → the front `beta-chat` contract) + the SSE parser are
  * exported for unit testing without a browser/network.
@@ -36,7 +36,7 @@ import {
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from './agent-fetch';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
@@ -634,9 +634,9 @@ export async function postChatTurn(args: {
   signal?: AbortSignal;
 }): Promise<BackendChatResponse> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
@@ -658,9 +658,9 @@ export async function resolveChatApproval(args: {
   outcome: 'approved' | 'rejected';
 }): Promise<void> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/approvals/${encodeURIComponent(args.approvalId)}/resolve`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ outcome: args.outcome }),
   });
   // El fallo entero (status, `code`, cuerpo): la tarjeta lo dice por el traductor.
@@ -688,9 +688,8 @@ export async function fetchEjecucion(args: {
   signal?: AbortSignal;
 }): Promise<TarjetaDeEjecucion | null> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/ejecuciones/${encodeURIComponent(args.ejecucionId)}`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'GET',
-    headers: agentAuthHeaders(),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (res.status === 404) return null;
@@ -713,12 +712,12 @@ export async function streamChatTurn(args: {
   handlers: ChatStreamHandlers;
 }): Promise<void> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/stream`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({
+    headers: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
-    }),
+    },
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
@@ -769,9 +768,9 @@ export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
     action: args.action,
   };
   if (args.reason) body.reason = args.reason;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
     ...(args.signal ? { signal: args.signal } : {}),
   });
@@ -1047,9 +1046,8 @@ export async function fetchBriefing(args: {
 }): Promise<DailyBriefing | null> {
   try {
     const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/briefing`;
-    const res = await fetch(url, {
+    const res = await agentFetch(url, {
       method: 'GET',
-      headers: agentAuthHeaders(),
       ...(args.signal ? { signal: args.signal } : {}),
     });
     if (!res.ok) return null;

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDeLaRespuesta } from './fallo-de-la-respuesta'
 
 // =============================================================================
@@ -97,9 +97,8 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/registry`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/registry`
       )
       if (!res.ok) throw await falloDeLaRespuesta(res)
       const json = await res.json() as RegistryResponse
@@ -140,11 +139,11 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
     if (!agentUrl) throw new Error(SIN_AGENTE)
     if (!agencyId) throw new Error(SIN_INMOBILIARIA)
 
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override`,
       {
         method: 'PUT',
-        headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ route, ...fields }),
       },
     )
@@ -164,11 +163,10 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
     if (!agentUrl) throw new Error(SIN_AGENTE)
     if (!agencyId) throw new Error(SIN_INMOBILIARIA)
 
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override?route=${encodeURIComponent(route)}`,
       {
         method: 'DELETE',
-        headers: agentAuthHeaders(),
       },
     )
     if (!res.ok) throw await falloDeLaRespuesta(res)

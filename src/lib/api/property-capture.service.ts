@@ -8,7 +8,7 @@
  * de creación existente (CAPT-04 sin cambios).
  */
 
-import { getAccessToken } from './client';
+import { agentFetch } from './agent-fetch';
 import { errorDeLaExtraccion } from './error-de-la-extraccion';
 import type {
   PropertyAudioMediaType,
@@ -84,13 +84,11 @@ export async function extractPropertyFromCapture(
   }
 
   // Bearer-only auth (no cookies) — credentials:'include' would force the agent
-  // CORS allowlist to drop the wildcard for no reason.
-  const res = await globalThis.fetch(`${agentUrl}/property-capture/extract`, {
+  // CORS allowlist to drop the wildcard for no reason. `agentFetch` pone el
+  // bearer y reintenta una vez ante un 401 (token vencido).
+  const res = await agentFetch(`${agentUrl}/property-capture/extract`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAccessToken() ?? ''}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       audioBase64,
       audioMediaType,

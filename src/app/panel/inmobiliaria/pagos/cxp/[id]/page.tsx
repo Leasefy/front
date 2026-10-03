@@ -28,7 +28,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 import { cn } from '@/lib/utils';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -167,9 +167,9 @@ function ApBillDetailContent({ billId }: { billId: string }) {
 
     (async () => {
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agency.id}/ap/bills`,
-          { headers: agentAuthHeaders(), signal: controller.signal },
+          { signal: controller.signal },
         );
         if (!res.ok) throw new Error(`${res.status}`);
         const json = (await res.json()) as { bills: ApBill[] };

@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ---------------------------------------------------------------------------
 // Response types (mirrors backend 35-04 shapes)
@@ -118,14 +118,13 @@ export function useInsights(): UseInsightsResult {
     }
 
     const base = `${agentUrl}/api/agency/${agencyId}/cotizador/insights`
-    const opts: RequestInit = { headers: agentAuthHeaders() }
 
     try {
       const [approvalRes, primaRes, assumptionsRes, costRes] = await Promise.all([
-        globalThis.fetch(`${base}/approval-rate-monthly`, opts),
-        globalThis.fetch(`${base}/prima-distribution`, opts),
-        globalThis.fetch(`${base}/assumptions`, opts),
-        globalThis.fetch(`${base}/monthly-cost-trend`, opts),
+        agentFetch(`${base}/approval-rate-monthly`),
+        agentFetch(`${base}/prima-distribution`),
+        agentFetch(`${base}/assumptions`),
+        agentFetch(`${base}/monthly-cost-trend`),
       ])
 
       // Parse each response; on individual failure preserve previous data

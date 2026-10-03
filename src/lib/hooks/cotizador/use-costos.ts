@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // =============================================================================
 // Interfaces — declared inline (types not yet in generated OpenAPI types)
@@ -205,9 +205,8 @@ export function useCostos(): {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cotizador/costos/summary`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cotizador/costos/summary`
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as ResumenDeCostosDelAgente
@@ -246,9 +245,8 @@ export function useCostos(): {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cotizador/costos/series?group_by=day`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cotizador/costos/series?group_by=day`
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as { rows?: DiaDeCostosDelAgente[] }

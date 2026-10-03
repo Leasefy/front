@@ -673,9 +673,22 @@ describe('NuevaCotizacionPage — lo que dice cuando el micro no acepta la consu
     unmount(h)
   })
 
-  it('🔴 sin respuesta (el `fetch` no salió) habla de la conexión', async () => {
+  it('🔴 sin respuesta (el `fetch` no salió, sin internet) habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const h = await enviar(() => Promise.reject(new TypeError('Failed to fetch')))
+      expect(h.container.textContent ?? '').toMatch(/conexi[oó]n/i)
+      unmount(h)
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, dice que el asistente no está disponible', async () => {
     const h = await enviar(() => Promise.reject(new TypeError('Failed to fetch')))
-    expect(h.container.textContent ?? '').toMatch(/conexi[oó]n/i)
+    const texto = h.container.textContent ?? ''
+    expect(texto).toMatch(/El asistente de Leasefy no está disponible/)
+    expect(texto).not.toMatch(/conexi[oó]n/i)
     unmount(h)
   })
 

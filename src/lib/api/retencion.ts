@@ -1,10 +1,10 @@
 /**
  * Cliente del agente de Retención ("Laura"). Llama
  * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con bearer
- * (`agentAuthHeaders`). Mock-first: sin URL del agente, o si el backend responde
+ * (`agentFetch`). Mock-first: sin URL del agente, o si el backend responde
  * error/404/flag-OFF, cae a mock data para que la demo siempre renderice.
  */
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from './agent-fetch'
 import {
   getMockBandeja,
   getMockCaseBundle,
@@ -35,7 +35,7 @@ function agentBase(agencyId: string): string | null {
 }
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await globalThis.fetch(path, { headers: agentAuthHeaders(), signal })
+  const res = await agentFetch(path, { signal })
   if (!res.ok) throw new Error(`${res.status}`)
   return (await res.json()) as T
 }
@@ -129,8 +129,8 @@ export async function fetchDecisions(
 
 /**
  * Revisa una decisión autónoma. `PATCH ${base}/decisions/:id`. Mock-first.
- * `agentAuthHeaders({ 'content-type': 'application/json' })` conserva el bearer
- * (construye `new Headers(extra)` y luego setea Authorization — no se pierde).
+ * `agentFetch` agrega el bearer encima de `content-type` (construye `new Headers(extra)`
+ * y luego setea Authorization — no se pierde) y reintenta una vez ante un 401.
  */
 export async function patchDecisionReview(
   agencyId: string,
@@ -141,9 +141,9 @@ export async function patchDecisionReview(
   const base = agentBase(agencyId)
   if (!base) return { data: patchMockDecision(decisionId, body), usingMock: true }
   try {
-    const res = await globalThis.fetch(`${base}/decisions/${encodeURIComponent(decisionId)}`, {
+    const res = await agentFetch(`${base}/decisions/${encodeURIComponent(decisionId)}`, {
       method: 'PATCH',
-      headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
       signal,
     })

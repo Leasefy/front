@@ -17,7 +17,7 @@
  * href: /panel/inmobiliaria/postulaciones/asegurabilidad/:id
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { agentSearch } from '@/lib/search/agent-search-client';
@@ -117,9 +117,9 @@ export const cotizacionesSource: SearchSource = {
     }
 
     // ── Fallback: overview endpoint with client-side filter ─────────────────
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${ctx.agencyId}/cotizador/overview`,
-      { headers: agentAuthHeaders(), signal },
+      { signal },
     );
     if (!res.ok) throw new Error(`${res.status}`);
     const json = (await res.json()) as CotizadorOverviewResponse;

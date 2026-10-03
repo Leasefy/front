@@ -23,14 +23,14 @@
  * throws — the caller degrades to the current screen state (no row confirmed,
  * honest error toast) rather than breaking.
  *
- * Mirrors the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders pattern of
+ * Mirrors the NEXT_PUBLIC_AGENT_URL + agentFetch pattern of
  * use-conciliacion-queue.ts.
  */
 
 import { useCallback } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { accionQueNoSalioConCuerpo } from '@/lib/hooks/ai/accion-del-micro'
 
 /**
@@ -82,11 +82,11 @@ export function useConciliacionBulk(): UseConciliacionBulkResult {
         return { ok: false, confirmados: 0, fallidos: [], error: 'not_configured' }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/queue/bulk-confirm`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )

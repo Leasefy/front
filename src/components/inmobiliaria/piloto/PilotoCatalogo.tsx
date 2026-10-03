@@ -53,7 +53,8 @@ const COLUMNAS = ['proceso', 'quien', 'cuando', 'ultima'] as const
 export interface PilotoCatalogoProps {
   data: PilotoCatalogoResponse | null
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   notAvailable: boolean
   onRefetch?: () => Promise<void> | void
 }

@@ -19,7 +19,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   SIN_AGENTE_CONFIGURADO,
   SIN_AGENCIA,
@@ -140,9 +140,8 @@ export function useMantenimientoInbox(filters?: InboxFilters): UseMantenimientoI
     try {
       // Los filtros se aplican en el cliente (`applyFilters`); la ruta del micro
       // no recibe querystring todavía.
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/mantenimiento/inbox`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/mantenimiento/inbox`
       )
       if (!vigente()) return
       if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'la bandeja de mantenimiento'))

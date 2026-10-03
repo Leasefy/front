@@ -183,7 +183,7 @@ describe('ConfigRenovacionAutomatica — el IPC vigente', () => {
     expect(props.onSave).toHaveBeenCalledWith({ ipcVigente: 5.2 })
   })
 
-  it('🔴 un IPC inválido no llega al back: se avisa y el campo vuelve al guardado', async () => {
+  it('🔴 un IPC inválido no llega al back: lo escrito SE QUEDA, con el error debajo y el borde rojo (ARREGLOS-4)', async () => {
     const props = await render({ agency: { ...AGENCY, ipcVigente: 5.2 } })
     const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
     await act(async () => {
@@ -195,7 +195,31 @@ describe('ConfigRenovacionAutomatica — el IPC vigente', () => {
     expect(q('renovacion-ipc-ayuda')!.textContent).toContain('entre 0 y 100')
     // La MISMA frase que el back (`limites-del-ipc.ts`).
     expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
-    expect(input.value).toBe('5,2')
+    // Como en «Incrementos del canon»: la persona ve lo que escribió y por qué no va.
+    expect(input.value).toBe('101')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.hasAttribute('data-invalid')).toBe(true)
+  })
+
+  it('🔴 escribir otra cosa borra el error; un valor bueno se guarda (ARREGLOS-4)', async () => {
+    const props = await render({ agency: { ...AGENCY, ipcVigente: 5.2 } })
+    const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
+    await act(async () => {
+      setInputValue(input, '101')
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
+
+    await act(async () => {
+      setInputValue(input, '9,3')
+    })
+    expect(q('renovacion-ipc-ayuda')!.textContent).not.toContain(MENSAJES_DEL_IPC.ipcVigente)
+    expect(input.hasAttribute('data-invalid')).toBe(false)
+
+    await act(async () => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(props.onSave).toHaveBeenCalledWith({ ipcVigente: 9.3 })
   })
 
   it('vaciarlo manda null: vuelve al IPC de diciembre de la tabla de Leasefy', async () => {
@@ -258,7 +282,8 @@ describe('ConfigRenovacionAutomatica — lo que dice el back (02-10-2026)', () =
     expect(onSave).toHaveBeenCalledWith({ ipcVigente: 12.5 })
     expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
     expect(input.getAttribute('aria-invalid')).toBe('true')
-    expect(input.value).toBe('5,2')
+    // 🔴 ARREGLOS-4: lo que el back rechazó se queda escrito bajo su frase.
+    expect(input.value).toBe('12,5')
     expect(toastError).not.toHaveBeenCalled()
   })
 

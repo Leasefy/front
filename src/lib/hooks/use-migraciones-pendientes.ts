@@ -22,7 +22,12 @@ import { contractsApi } from '@/lib/api/contracts.service'
 /** Cada cuánto se refresca. Cinco minutos, mismo ritmo que postulaciones. */
 const REFRESCO_MS = 5 * 60 * 1000
 
-export function useMigracionesPendientes(): { pendientes: number | undefined } {
+/**
+ * `activo = false` no pide nada y no hay indicador (ARREGLOS-4, 03-10-2026):
+ * el back cierra la ruta con `contratos:view`, y el layout la pedía para TODO
+ * miembro — un 403 en cada pantalla de la asesora, que no ve contratos.
+ */
+export function useMigracionesPendientes(activo = true): { pendientes: number | undefined } {
   // `undefined` = todavía no sabemos, o falló. Las dos se dibujan igual: sin
   // indicador. Es distinto de `0`, que sí es una respuesta.
   const [pendientes, setPendientes] = useState<number | undefined>(undefined)
@@ -50,10 +55,14 @@ export function useMigracionesPendientes(): { pendientes: number | undefined } {
   }, [])
 
   useEffect(() => {
+    if (!activo) {
+      setPendientes(undefined)
+      return
+    }
     void cargar()
     const id = setInterval(() => void cargar(), REFRESCO_MS)
     return () => clearInterval(id)
-  }, [cargar])
+  }, [cargar, activo])
 
   return { pendientes }
 }

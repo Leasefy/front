@@ -21,7 +21,7 @@ import { ChatContainer } from '@/components/beta/ChatContainer';
 export default function InmobiliariaInicioPage() {
   return (
     <BetaErrorBoundary>
-      <BetaLayout basePath="/panel/inmobiliaria" variant="embedded">
+      <BetaLayout basePath="/panel/inmobiliaria" variant="embedded" dentroDelPanel>
         <ChatContainer />
       </BetaLayout>
     </BetaErrorBoundary>

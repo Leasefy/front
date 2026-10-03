@@ -4,7 +4,7 @@
  * Phase 30 plan 30-06 | COTI-UI-03 | XR-02 | XR-03
  *
  * Connects to: ${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/cotizador/quote/:quoteId/stream
- * Authenticated with the user's Supabase JWT via agentAuthHeaders()
+ * Authenticated with the user's Supabase JWT via agentFetch
  * (Authorization: Bearer). The agent service is Bearer-only and reads no
  * cookies, so a native EventSource(withCredentials) cookie handshake 401'd in
  * prod — we read the stream with fetch()+ReadableStream and parse SSE frames.
@@ -29,7 +29,7 @@ import type {
   SSEPartialRankingSchema,
 } from '@/lib/cotizador/sse-schemas'
 import type { z } from 'zod'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -296,11 +296,12 @@ export function useQuoteStream(
 
     void (async () => {
       try {
-        const headers = agentAuthHeaders({ Accept: 'text/event-stream' })
+        const headers = new Headers({ Accept: 'text/event-stream' })
         // Manual reconnect resume: the relay also reads the Last-Event-ID header.
         if (cursor && cursor !== '0') headers.set('Last-Event-ID', cursor)
 
-        const res = await fetch(url, { headers, signal: ac.signal })
+        // `agentFetch` pone el bearer y reintenta una vez ante un 401.
+        const res = await agentFetch(url, { headers, signal: ac.signal })
         if (!res.ok || !res.body) {
           onDrop()
           return

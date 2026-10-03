@@ -283,7 +283,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           {/* Un fallo real primero: «vacía» es una respuesta correcta con
               cero agentes, no lo que pasó cuando la petición ni siquiera
               volvió (T-0076: antes esto se mostraba idéntico a un 404). */}
-          {!isLoading && error && rows.length === 0 && (
+          {!isLoading && Boolean(error) && rows.length === 0 && (
             <FalloDeCarga
               error={error}
               queEs="la autonomía de los agentes"

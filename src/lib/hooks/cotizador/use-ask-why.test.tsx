@@ -141,7 +141,8 @@ describe('useAskWhy', () => {
     expect(result.current!.error?.code).toBe('timeout')
   })
 
-  it('Test 5 — on network failure (non-abort throw), error code=network', async () => {
+  it('Test 5 — on network failure (non-abort throw, sin internet), error code=network', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch'))
     const result = renderHook('agency-test')
     await act(async () => {

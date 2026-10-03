@@ -705,12 +705,16 @@ export function useActasEntrega() {
  * `config.agency` carries the real agency profile (name, nit, phone, logoUrl,
  * financial defaults, memberRole...). There are no top-level `name`/`branding`
  * fields — that shape never existed in the backend.
+ *
+ * `activo = false` no pide nada (ARREGLOS-4, 03-10-2026): el back la cierra con
+ * `configuracion:view`, y el layout del panel la pedía para TODO miembro — un
+ * 403 en cada pantalla del contador y de la asesora.
  */
-export function useInmobiliariaConfig() {
+export function useInmobiliariaConfig(activo = true) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaConfigApi.getConfigOverview(),
-    [],
-    false,
+    [activo],
+    !activo,
     0,
     ['config', 'agency'],
   );

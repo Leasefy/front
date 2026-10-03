@@ -513,6 +513,24 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   symlink (worktrees, copias del laboratorio) no lo tiene y responde 404 también con `next build`. Correr
   `node scripts/copiar-trabajador-de-maplibre.mjs` en ese árbol.
 
+## ARREGLOS-4 (03-10-2026, modo autónomo)
+
+- **Al micro, SIEMPRE `agentFetch`** (Nico, PRUEBAS-RESTO Q1 a): con el micro caído y el back sano dice «El asistente
+  de Leasefy no está disponible» (503 del servicio `asistente`) y reintenta una vez ante un token vencido. Guardián
+  `src/lib/api/micro-por-agent-fetch.guardian.test.ts` (AST: ningún `fetch` crudo en un archivo que habla con el
+  micro; excepciones declaradas con su porqué: ARCO y embudo públicos, `/admin`, `senales.ts`, `PermissionsContext`).
+  Los hooks del Piloto guardan el error ENTERO (`error: unknown`), no su texto: la pantalla lo dice con
+  `FalloDeCarga`/`mensajeParaLaPersona`; `piloto.ts` lanza el `ApiError` de `falloDelMicro`, no `Error('500')`.
+- **`aria-invalid` pinta el borde** (Q2 a): `Input`, `Textarea` y `SelectTrigger` del adaptador ponen `data-invalid`
+  con `aria-invalid` verdadero (`ui/campo-invalido.ts`). Un requerido VACÍO no lleva `aria-invalid` hasta que haya
+  un error dicho; el guardián de `ui/campo-invalido.test.tsx` no deja `aria-invalid={vacio}` ni `{!valor}`.
+- **El vacío dentro de una tabla ancha**: `<AlAnchoVisible>` (`ui/al-ancho-visible.tsx`) lo pega a la izquierda con el
+  ancho VISIBLE del contenedor que se desplaza (a 390 px se cortaba en Documentos).
+- El layout del panel pide `/inmobiliaria/config` sólo con `configuracion:view` y los lotes de migración sólo con
+  `contratos:view` (`useInmobiliariaConfig(activo)`, `useMigracionesPendientes(activo)`).
+- Un `route.ts` sólo exporta verbos y configuración del segmento (`src/app/rutas-solo-exportan-lo-de-next.test.ts`).
+- «Completa tu perfil» de la barra del propietario y la tarjeta del perfil leen `lib/perfil/pasos-del-perfil-del-propietario.ts`.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

@@ -336,6 +336,8 @@ function DialogoDelCierre({
   onCerrar: () => void;
   onCambio: () => void;
 }) {
+  // «Leyendo…» → la foto con los mismos tokens que el resto del extracto.
+  const aparecer = useAparecer();
   const [confirmo, setConfirmo] = useState(false);
   const [tarjeta, setTarjeta] = useState('');
   const [saldo, setSaldo] = useState('');
@@ -432,7 +434,7 @@ function DialogoDelCierre({
           {foto ? (
             <VistaDeLaFoto key="foto" foto={foto} />
           ) : (
-            <motion.p key="leyendo" className="text-body-sm text-fg-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <motion.p key="leyendo" className="text-body-sm text-fg-muted" {...aparecer}>
               Leyendo…
             </motion.p>
           )}

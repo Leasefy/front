@@ -44,11 +44,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { detalleDelFallo, nominaApi } from '@/lib/api/nomina.service';
@@ -270,9 +271,9 @@ export function PeriodosDeNominaPanel() {
                       <TableHead />
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBodyAnimado>
                     {datos.periodos.map((p) => (
-                      <TableRow key={p.id} data-testid={`periodo-${p.id}`}>
+                      <TableRowAnimada key={p.id} data-testid={`periodo-${p.id}`}>
                         <TableCell>
                           <Link
                             className="font-medium text-brand underline"
@@ -349,9 +350,9 @@ export function PeriodosDeNominaPanel() {
                             ) : null}
                           </div>
                         </TableCell>
-                      </TableRow>
+                      </TableRowAnimada>
                     ))}
-                  </TableBody>
+                  </TableBodyAnimado>
                 </Table>
               </div>
             )}

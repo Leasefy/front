@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import {
   Image,
   Upload,
@@ -321,20 +321,20 @@ export function ConfigBranding({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
+      <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="h-48 bg-muted rounded-lg" />
         <div className="h-32 bg-muted rounded-lg" />
-      </div>
+      </CrossFade>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
-    >
+    // Esqueleto → contenido con fundido cruzado: es el MISMO `CrossFade` que
+    // devuelve la rama de carga (React lo reconcilia como uno solo), así que
+    // sólo se anima la llegada después de cargar; con los datos ya en mano
+    // no hay entrada propia (la pone la transición de la página/sección).
+    <CrossFade swapKey="listo" className="space-y-8">
       {/* Logo Section */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
@@ -381,7 +381,7 @@ export function ConfigBranding({
               }}
               aria-disabled={!canUpload}
               className={cn(
-                'h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-all',
+                'h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors',
                 canUpload ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
                 isDragging
                   ? 'border-primary/40 bg-primary-soft'
@@ -641,7 +641,7 @@ export function ConfigBranding({
           </div>
         </div>
       </div>
-    </motion.div>
+    </CrossFade>
   );
 }
 

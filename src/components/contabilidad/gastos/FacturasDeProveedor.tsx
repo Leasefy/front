@@ -58,6 +58,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -437,11 +439,11 @@ export function FacturasDeProveedor({
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBodyAnimado>
                 {pagina.facturas.map((f) => {
                   const p = permisos(f);
                   return (
-                    <TableRow key={f.id} data-testid={`factura-${f.id}`}>
+                    <TableRowAnimada key={f.id} data-testid={`factura-${f.id}`}>
                       <TableCell className="whitespace-nowrap">
                         <p className="font-mono text-caption text-fg">
                           {f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}
@@ -519,10 +521,10 @@ export function FacturasDeProveedor({
                           </AccionConMotivo>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
         )}

@@ -11,9 +11,11 @@
  * permisos, en qué URL); este componente sólo lo dibuja.
  */
 
+import { useId } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
+import { CrossFade, MotionIndicator, PageTransition } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import {
@@ -62,6 +64,9 @@ export function MarcoDeConfiguracion({
   children,
 }: MarcoDeConfiguracionProps) {
   const router = useRouter();
+  // La marca de la sección activa se desliza a la nueva (una por marco: el
+  // `layoutId` no se cruza con otro marco montado a la vez).
+  const indicador = `marco-de-configuracion-${useId()}`;
   const entradas = menu.flatMap((g) => g.entradas);
   const activa = entradas.find((e) => e.id === activaId) ?? null;
 
@@ -101,7 +106,11 @@ export function MarcoDeConfiguracion({
           </div>
 
           {/* Escritorio: nav vertical agrupada, pegada al scroll. */}
-          <div className="hidden lg:sticky lg:top-20 lg:block lg:space-y-5">
+          {/* Esqueleto → menú con fundido cruzado (los permisos llegan después). */}
+          <CrossFade
+            swapKey={cargando ? 'cargando' : 'menu'}
+            className="hidden lg:sticky lg:top-20 lg:block lg:space-y-5"
+          >
             {cargando
               ? Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="mx-2 h-8 animate-pulse rounded-md bg-surface-muted" />
@@ -112,14 +121,31 @@ export function MarcoDeConfiguracion({
                       {grupo.label}
                     </p>
                     {grupo.entradas.map((e) => (
-                      <EnlaceDeSeccion key={e.id} entrada={e} activa={activa?.id === e.id} />
+                      <EnlaceDeSeccion
+                        key={e.id}
+                        entrada={e}
+                        activa={activa?.id === e.id}
+                        indicador={indicador}
+                      />
                     ))}
                   </div>
                 ))}
-          </div>
+          </CrossFade>
         </nav>
 
-        <div className="min-w-0 flex-1 space-y-4">
+        {/* Cambiar de sección no remonta el `template.tsx` del panel (el
+            segmento de arriba sigue siendo `configuracion`): la sección nueva
+            entra acá, con la misma transición de página. Al llegar a
+            Configuración desde otro módulo anima el template y ésta no (nunca
+            dos a la vez); la primera pantalla de la sesión no se anima. */}
+        <PageTransition
+          // La llave sale de la RUTA, no del menú: el menú depende de los
+          // permisos, y al llegar no debe remontar la sección ya pintada.
+          key={activaId ?? 'sin-seccion'}
+          distance="xs"
+          duration="base"
+          className="min-w-0 flex-1 space-y-4"
+        >
           {activa && (
             <div className="space-y-1">
               <h2 className="text-base font-semibold text-fg">{activa.label}</h2>
@@ -127,23 +153,39 @@ export function MarcoDeConfiguracion({
             </div>
           )}
           {children}
-        </div>
+        </PageTransition>
       </div>
     </div>
   );
 }
 
-function EnlaceDeSeccion({ entrada, activa }: { entrada: EntradaDeConfiguracion; activa: boolean }) {
+function EnlaceDeSeccion({
+  entrada,
+  activa,
+  indicador,
+}: {
+  entrada: EntradaDeConfiguracion;
+  activa: boolean;
+  indicador: string;
+}) {
   const Icono = entrada.icon;
   return (
     <Link
       href={entrada.href}
       aria-current={activa ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-        activa ? 'bg-surface-muted font-medium text-fg' : 'text-fg-muted hover:bg-surface-muted/60 hover:text-fg',
+        'relative isolate flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
+        activa ? 'font-medium text-fg' : 'text-fg-muted hover:bg-surface-muted/60 hover:text-fg',
       )}
     >
+      {/* El fondo de la activa es la marca que se desliza (mismo color de antes). */}
+      {activa && (
+        <MotionIndicator
+          layoutId={indicador}
+          data-indicador-de-la-activa=""
+          className="inset-0 -z-10 rounded-md bg-surface-muted"
+        />
+      )}
       <Icono className="h-4 w-4 shrink-0" weight={activa ? 'fill' : 'regular'} />
       <span className="truncate">{entrada.label}</span>
     </Link>

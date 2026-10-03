@@ -27,11 +27,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
@@ -144,9 +145,9 @@ export function Copropiedades() {
                   <TableHead numeric>Inmuebles</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBodyAnimado>
                 {error ? (
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow key="fallo" className="hover:bg-transparent">
                     <TableCell colSpan={COLUMNAS} className="p-0">
                       <SinDatos
                         queSon="copropiedades"
@@ -162,7 +163,7 @@ export function Copropiedades() {
                     </TableCell>
                   </TableRow>
                 ) : pageItems.length === 0 ? (
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow key="vacio" className="hover:bg-transparent">
                     <TableCell colSpan={COLUMNAS} className="p-0">
                       {texto !== '' ? (
                         <SinDatos
@@ -207,7 +208,7 @@ export function Copropiedades() {
                   </TableRow>
                 ) : (
                   pageItems.map((c) => (
-                    <TableRow key={c.id} data-testid="fila-de-copropiedad">
+                    <TableRowAnimada key={c.id} data-testid="fila-de-copropiedad">
                       <TableCell>
                         <span className={cn('text-fg', !c.activa && 'text-fg-muted line-through')}>
                           {c.nombre}
@@ -224,10 +225,10 @@ export function Copropiedades() {
                       <TableCell numeric className="tabular-nums">
                         {c.inmuebles.toLocaleString('es-CO')}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 )}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
 
             {shouldPaginate ? (

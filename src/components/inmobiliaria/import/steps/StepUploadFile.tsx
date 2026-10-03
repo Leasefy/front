@@ -234,7 +234,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         <div
           {...getRootProps()}
           className={cn(
-            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200',
+            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-base',
             isDragActive
               ? 'border-primary/30 bg-primary-soft'
               : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'

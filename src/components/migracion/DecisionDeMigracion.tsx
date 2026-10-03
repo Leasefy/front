@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { motionStagger } from '@leasefy/cadence'
 import { ArrowRight, Buildings, Clock, ListNumbers, Stack, Users, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
@@ -200,7 +201,12 @@ export function ModalDecisionDeMigracion({
                 key={titulo}
                 initial={animar ? { opacity: 0, y: 6 } : false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: animar ? 0.14 + i * 0.07 : 0, duration: animar ? 0.26 : 0, ease: SUAVE }}
+                // Escalonado con el techo del sistema (antes 70 ms por ítem, sin tope).
+                transition={{
+                  delay: animar ? 0.14 + Math.min(i * motionStagger.step, motionStagger.max) : 0,
+                  duration: animar ? 0.26 : 0,
+                  ease: SUAVE,
+                }}
                 className="flex items-start gap-3.5"
               >
                 {/* Tinted Icon Tile (DESIGN §4), el del recorrido. */}

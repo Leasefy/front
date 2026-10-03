@@ -43,11 +43,12 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -288,9 +289,9 @@ export function LibroDeAsientos() {
                   <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBodyAnimado>
                 {filas.length === 0 ? (
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow key="vacio" className="hover:bg-transparent">
                     <TableCell colSpan={COLUMNAS} className="p-0">
                       <SinDatos
                         hayFiltros={conFiltros}
@@ -305,7 +306,7 @@ export function LibroDeAsientos() {
                   </TableRow>
                 ) : (
                   filas.map(({ asiento, totales }) => (
-                    <TableRow
+                    <TableRowAnimada
                       key={asiento.id}
                       tabIndex={0}
                       role="button"
@@ -364,10 +365,10 @@ export function LibroDeAsientos() {
                           {asiento.cerrado ? 'Cerrado' : 'Abierto'}
                         </span>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 )}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
 

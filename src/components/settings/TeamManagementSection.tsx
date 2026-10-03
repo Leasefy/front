@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Users, UserPlus, PencilSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -20,7 +19,11 @@ import { errorDelCorreoDelEquipo, errorDelNombreDelEquipo } from '@/lib/perfil/l
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
-export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
+export function TeamManagementSection(
+  // `delay` ya no se usa (la entrada la pone el marco); se conserva para no
+  // romper a quien lo pasa.
+  _props: { delay?: number },
+) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -153,10 +156,10 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
 
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
+      {/* Sin entrada propia (era un fundido que subía 20 px con retraso): la
+          sección entra con el marco de Configuración, que ya anima el cambio
+          de sección. */}
+      <section
         // La tarjeta de Configuración de la inmobiliaria: el título «Equipo» ya
         // lo pone el marco, acá quedan el conteo y la acción (Nico, 2026-09-15).
         className="rounded-lg border border-border bg-surface overflow-hidden"
@@ -240,7 +243,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
           )}
         </div>
-      </motion.section>
+      </section>
 
       {/* Invite Team Member Modal */}
       <SettingsModal
@@ -304,7 +307,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setInviteForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     inviteForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'
@@ -396,7 +399,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setEditMemberForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     editMemberForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'

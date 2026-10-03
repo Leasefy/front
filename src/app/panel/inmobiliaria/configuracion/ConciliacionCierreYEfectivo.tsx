@@ -133,7 +133,9 @@ export function ConciliacionCierreYEfectivo() {
   const diasLeidos = diasDeAlertaValidos(dias);
 
   return (
-    <motion.section {...aparecer} className="space-y-5 rounded-lg border border-border bg-surface p-5" data-testid="conciliacion-cierre-y-efectivo">
+    // Sin entrada propia al montarse: la sección ya entra con el marco de
+    // Configuración. Lo de adentro (avisos) sí entra y sale con `aparecer`.
+    <motion.section {...aparecer} initial={false} className="space-y-5 rounded-lg border border-border bg-surface p-5" data-testid="conciliacion-cierre-y-efectivo">
       <header className="space-y-1">
         <h2 className="text-h4 text-fg">Conciliación: alerta, efectivo y cierre del mes</h2>
         {!config.disponible && (

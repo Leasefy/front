@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef, createContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   UploadSimple,
   MapPin,
@@ -163,6 +164,13 @@ export function ImportWizard({
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
+  // ¿Se avanzó o se volvió? Lo lee el render en que `currentStep` cambió
+  // (la ref todavía tiene el paso anterior) y se actualiza después.
+  const pasoAnterior = useRef(currentStep);
+  const direccionDelPaso = currentStep >= pasoAnterior.current ? 'forward' : 'backward';
+  useEffect(() => {
+    pasoAnterior.current = currentStep;
+  }, [currentStep]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
   const [ranuraSecundaria, setRanuraSecundaria] =
@@ -479,7 +487,7 @@ export function ImportWizard({
               >
                 <div className="flex flex-col items-center gap-2 shrink-0">
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                    'w-12 h-12 rounded-full flex items-center justify-center transition-[color,background-color,box-shadow]',
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
@@ -537,11 +545,12 @@ export function ImportWizard({
           </div>
           {/* Misma razón que los círculos: el riel se perdía contra el fondo. */}
           <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+            {/* Avanza con `translateX` (sólo transform), no con el ancho. */}
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full bg-primary"
               initial={false}
-              animate={{ width: `${(pasoMacro / PASOS_VISIBLES.length) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ x: `${(pasoMacro / PASOS_VISIBLES.length) * 100 - 100}%` }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.standard }}
             />
           </div>
         </div>
@@ -572,21 +581,15 @@ export function ImportWizard({
               inert={congelado}
               className={congelado ? "cursor-progress" : undefined}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
+              {/* El paso nuevo entra por la derecha al avanzar y por la
+                  izquierda al volver (`CrossFade` con dirección). */}
+              <CrossFade swapKey={currentStep} direction={direccionDelPaso}>
                   <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
                   <RanuraDelPie.Provider value={ranuraDelPie}>
                     {renderStepContent()}
                   </RanuraDelPie.Provider>
                   </RanuraDelPieSecundaria.Provider>
-                </motion.div>
-              </AnimatePresence>
+              </CrossFade>
             </div>
 
             {/*

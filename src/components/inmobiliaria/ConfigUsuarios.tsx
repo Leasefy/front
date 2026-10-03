@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
   Plus,
@@ -42,9 +41,10 @@ import {
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -468,9 +468,12 @@ export function ConfigUsuarios({
               <TableHead className="w-12 p-4"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Las filas entran escalonadas (techo del sistema) y salen al
+              filtrar, buscar o cambiar de página; el vacío entra solo (su
+              `SinDatos` ya trae la entrada). */}
+          <TableBodyAnimado>
             {pageItems.length === 0 && (
-              <TableRow>
+              <TableRow key="sin-miembros">
                 <TableCell colSpan={5} className="p-0">
                   <SinDatos
                     hayFiltros={hayFiltros}
@@ -492,21 +495,16 @@ export function ConfigUsuarios({
                 </TableCell>
               </TableRow>
             )}
-            <AnimatePresence mode="popLayout">
-              {pageItems.map((user, index) => {
+              {pageItems.map((user) => {
                 const initials = getInitials(user.name, user.email);
                 const roleColor = getRoleColor(user.role);
                 const statusColor = getUserStatusColor(user.status);
 
                 return (
-                  <motion.tr
+                  <TableRowAnimada
                     key={user.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ delay: index * 0.02 }}
                     className={cn(
-                      'border-b border-border hover:bg-muted/40 transition-colors',
+                      'border-b border-border hover:bg-muted/40 transition-colors last:border-b',
                       onVerFicha && 'cursor-pointer',
                     )}
                     tabIndex={onVerFicha ? 0 : undefined}
@@ -703,11 +701,10 @@ export function ConfigUsuarios({
                         </DropdownListContent>
                       </DropdownList>
                     </TableCell>
-                  </motion.tr>
+                  </TableRowAnimada>
                 );
               })}
-            </AnimatePresence>
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
         </div>
 

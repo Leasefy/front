@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { Presence } from '@leasefy/cadence';
 import {
   ArrowClockwise,
   Check,
@@ -164,7 +164,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
           <div className="flex items-center justify-center">
             <label
               className={cn(
-                'relative flex items-center justify-center w-10 h-10 rounded-md transition-all cursor-pointer',
+                'relative flex items-center justify-center w-10 h-10 rounded-md transition-colors cursor-pointer',
                 isEnabled
                   ? isDangerous
                     ? 'bg-warning-soft text-warning'
@@ -235,11 +235,9 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
   const someEnabled = enabledActions.length > 0 && !allEnabled;
 
   return (
-    <motion.tr
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="border-b border-border hover:bg-muted/40 transition-colors"
-    >
+    // Sin entrada propia: al cambiar de rol ya entra el panel de la pestaña
+    // (Tabs de Cadence); un fundido por fila se sumaba a ése.
+    <tr className="border-b border-border hover:bg-muted/40 transition-colors">
       {/* Module Name */}
       <TableCell className="p-4">
         <div className="flex items-center gap-3">
@@ -276,7 +274,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
           />
         </TableCell>
       ))}
-    </motion.tr>
+    </tr>
   );
 }
 
@@ -454,18 +452,17 @@ export function ConfigPermisos({
       </div>
 
       {/* Unsaved changes indicator */}
-      {hasChanges && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
-        >
-          <Info className="w-5 h-5 text-warning shrink-0" />
-          <p className="text-sm text-warning">
-            {t('inmobiliaria.config.permissions.unsavedChanges')}
-          </p>
-        </motion.div>
-      )}
+      {/* Entra bajando y, al guardar o descartar, SALE (antes desaparecía de golpe). */}
+      <Presence
+        show={hasChanges}
+        direction="down"
+        className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
+      >
+        <Info className="w-5 h-5 text-warning shrink-0" />
+        <p className="text-sm text-warning">
+          {t('inmobiliaria.config.permissions.unsavedChanges')}
+        </p>
+      </Presence>
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as AgencyRole)}>

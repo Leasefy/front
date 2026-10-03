@@ -1,5 +1,6 @@
 'use client';
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { useCallback } from 'react';
 import { ArrowRight, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -220,7 +221,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                   ? 'bg-surface-muted'
                   : 'bg-transparent'
               )}
-              style={{ animationDelay: `${index * 40}ms` }}
+              style={{ animationDelay: retrasoEscalonado(index) }}
             >
               {/* Source Column */}
               <div className="flex-1 min-w-0">

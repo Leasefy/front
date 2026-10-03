@@ -37,11 +37,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import type { EventoContable, MapeoDeEvento, CuentaPuc } from '@/lib/api/contabilidad.service';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
@@ -178,9 +179,9 @@ export function EventosDeGasto({
                     <TableHead>Propuesta</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBodyAnimado>
                   {lista.map((e) => (
-                    <TableRow key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
+                    <TableRowAnimada key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
                       <TableCell className="max-w-[320px]">
                         <p className="font-medium text-fg">{e.nombre}</p>
                         <p className="truncate text-caption text-fg-muted" title={e.explicacion}>
@@ -252,9 +253,9 @@ export function EventosDeGasto({
                           </span>
                         )}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             </div>
           </div>

@@ -43,11 +43,12 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -272,13 +273,13 @@ export function RubrosDelPyg() {
                 <TableHead className="min-w-[240px]">Agregar una cuenta</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBodyAnimado>
               {mapeo.rubros.map((r) => {
                 const segundaLectura = explicacionDeLaSegundaLectura(r);
                 const mayores = cuentasMayores(r);
                 const ocupada = guardando.has(r.rubro);
                 return (
-                  <TableRow key={r.rubro} data-testid={`rubro-${r.rubro}`}>
+                  <TableRowAnimada key={r.rubro} data-testid={`rubro-${r.rubro}`}>
                     <TableCell className="max-w-[320px] align-top">
                       <p className="font-medium text-fg">{r.nombre}</p>
                       <p className="text-caption text-fg-muted">
@@ -387,10 +388,10 @@ export function RubrosDelPyg() {
                         </p>
                       ) : null}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 );
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       </section>

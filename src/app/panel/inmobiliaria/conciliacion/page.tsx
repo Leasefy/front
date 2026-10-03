@@ -52,6 +52,7 @@
  * de hoy sino una función que todavía no existe en ese entorno.
  */
 
+import { Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
@@ -446,8 +447,9 @@ function ConciliacionSala() {
 
       {/* K1: falló un refresco. Los números se quedan, pero no se hacen pasar
           por los de ahora. */}
-      {summary && summaryError && !summaryLoading && (
-        <div
+      {/* Entra cuando falla un refresco y SALE cuando el siguiente llega bien. */}
+      <Presence
+          show={Boolean(summary && summaryError && !summaryLoading)}
           className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-warning-soft px-4 py-3"
           role="status"
           data-testid="conciliacion-resumen-desactualizado"
@@ -459,8 +461,7 @@ function ConciliacionSala() {
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetchSummary()}>
             Intentar de nuevo
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* 2. Lo que encontró el agente — la tarjeta protagonista. */}
       <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
@@ -482,11 +483,12 @@ function ConciliacionSala() {
           <h2 className="text-base font-semibold text-fg">
             {t(`${WORKSPACE_NS}.sala.feedTitle`)}
           </h2>
-          <ul className="mt-3 divide-y divide-border">
+          {/* Lo nuevo que llega con el sondeo entra arriba y empuja lo demás. */}
+          <Stagger as="ul" className="mt-3 divide-y divide-border">
             {feed.map((entrada) => {
               const meta = actorMeta(entrada.actorType)
               return (
-                <li key={entrada.id} className="flex items-start gap-2 py-2.5 first:pt-0 last:pb-0">
+                <StaggerItem as="li" key={entrada.id} className="flex items-start gap-2 py-2.5 first:pt-0 last:pb-0">
                   <span
                     className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-caption ring-1 ${meta.cls}`}
                   >
@@ -499,10 +501,10 @@ function ConciliacionSala() {
                   <span className="mt-0.5 shrink-0 text-caption tabular-nums text-fg-muted">
                     {relativeTime(entrada.occurredAt, t)}
                   </span>
-                </li>
+                </StaggerItem>
               )
             })}
-          </ul>
+          </Stagger>
         </section>
       )}
 

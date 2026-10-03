@@ -42,10 +42,12 @@ import { CaretDown, Warning } from '@phosphor-icons/react'
 import {
   Table,
   TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -178,9 +180,9 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
           <TableHead className="whitespace-nowrap">Estado</TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBodyAnimado>
         {filas.map((f) => (
-          <TableRow key={f.clave} data-testid={`rango-fila-${f.clave}`}>
+          <TableRowAnimada key={f.clave} data-testid={`rango-fila-${f.clave}`}>
             <TableCell className="whitespace-nowrap tabular-nums font-medium text-fg">
               {f.numeroExterno ?? `#${f.codigo ?? '—'}`}
             </TableCell>
@@ -242,9 +244,9 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
                   </span>
                 )}
             </TableCell>
-          </TableRow>
+          </TableRowAnimada>
         ))}
-      </TableBody>
+      </TableBodyAnimado>
     </Table>
   )
 }

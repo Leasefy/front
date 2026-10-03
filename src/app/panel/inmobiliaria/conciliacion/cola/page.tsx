@@ -47,11 +47,12 @@ import {
 } from '@/components/ui/dialog'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
@@ -63,7 +64,7 @@ import {
 } from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
-import { Chip } from '@leasefy/cadence'
+import { Chip, Presence } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -364,9 +365,9 @@ function ConciliacionCola() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBodyAnimado>
               {items.length === 0 ? (
-                <TableRow>
+                <TableRow key="vacio">
                   <TableCell colSpan={COLUMNAS.length + 1} className="p-0">
                     <SinDatos
                       hayFiltros={caseFilter !== 'todos'}
@@ -407,7 +408,7 @@ function ConciliacionCola() {
                   const caso = item.caseType ?? null
                   const filaOcupada = busyRow === item.id
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={item.id}
                       className={cn(filaOcupada && 'opacity-60')}
                       data-testid={`conciliacion-row-${item.id}`}
@@ -510,11 +511,11 @@ function ConciliacionCola() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   )
                 })
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {shouldPaginate && (
@@ -542,7 +543,13 @@ function ConciliacionCola() {
             hay marcados— ya lo dice la barra, así que el control sólo tenía que
             saber hacer una cosa, y «marcar los 12 de alta confianza» se lee sin
             tener que interpretar un tilde a medias. */}
-        {!isLoading && !error && eligibleIds.length > 0 && (
+        {/* La barra SALE animada cuando ya no queda nada elegible (D-MOV 4 a).
+            La caja de `Presence` es la que se pega al borde de abajo. */}
+        <Presence
+          show={!isLoading && !error && eligibleIds.length > 0}
+          initial={false}
+          className="sticky bottom-0 z-30"
+        >
           <BarraDeAccionesMasivas
             variant="pie"
             testid="conciliacion-acciones"
@@ -603,7 +610,7 @@ function ConciliacionCola() {
               </Button>
             )}
           </BarraDeAccionesMasivas>
-        )}
+        </Presence>
         </EstadoDeDatos>
       </section>
 

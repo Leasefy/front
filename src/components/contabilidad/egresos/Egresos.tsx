@@ -63,11 +63,12 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -104,6 +105,7 @@ import {
 import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { Presence } from '@leasefy/cadence';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
@@ -483,11 +485,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBodyAnimado>
                     {egresos.map((e) => {
                       const falta = faltaParaGirar(e);
                       return (
-                        <TableRow
+                        <TableRowAnimada
                           key={e.id}
                           data-testid={`egreso-${e.id}`}
                           tabIndex={0}
@@ -638,10 +640,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               </AccionConMotivo>
                             </div>
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       );
                     })}
-                  </TableBody>
+                  </TableBodyAnimado>
                 </Table>
               </div>
             )}
@@ -653,7 +655,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 DENTRO de ella: es parte de la acción, no un campo aparte. Nico:
                 «deben de verse muy bien y que sí estén juntas […] revisa también
                 el resto de tablas para que tengan consistencia». */}
-            {armables.length > 0 ? (
+            {/* La barra SALE animada cuando ya no queda nada por armar (D-MOV
+                4 a). La caja de `Presence` es la que se pega al borde de abajo:
+                adentro, la barra no tendría lugar para pegarse. */}
+            <Presence show={armables.length > 0} initial={false} className="sticky bottom-0 z-30">
               <BarraDeAccionesMasivas
                 variant="pie"
                 testid="armar-lote"
@@ -712,7 +717,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                   Armar el lote
                 </AccionConMotivo>
               </BarraDeAccionesMasivas>
-            ) : null}
+            </Presence>
           </div>
         </TabsContent>
 

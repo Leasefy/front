@@ -18,6 +18,7 @@
  * `sinMedir`.
  */
 
+import { AnimatedNumber } from '@leasefy/cadence';
 import type { ReactNode } from 'react';
 import { enCristiano } from '@/lib/errores/en-cristiano';
 import { Warning, WarningOctagon } from '@phosphor-icons/react';
@@ -65,7 +66,9 @@ export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie }: 
         )}
         data-testid={`valor-${id}`}
       >
-        {medido ? formatCurrency(valor as number) : SIN_MEDIR}
+        {/* Si la cifra cambia sin recargar (otro período, otro filtro),
+            cuenta desde la anterior; al montarse se muestra quieta. */}
+        {medido ? <AnimatedNumber value={valor as number} format={formatCurrency} /> : SIN_MEDIR}
       </p>
       <p className="text-caption leading-relaxed text-fg-muted">
         {medido ? definicion : (sinMedir ?? definicion)}

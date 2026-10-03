@@ -40,11 +40,12 @@ import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pag
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -267,9 +268,9 @@ export function ConceptosDeExogena({
                 <TableHead>De dónde sale</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBodyAnimado>
               {pageItems.length === 0 ? (
-                <TableRow>
+                <TableRow key="vacio">
                   <TableCell colSpan={4} className="py-8 text-center text-sm text-fg-muted">
                     {conceptos.conceptos.length === 0
                       ? `Todavía no hay conceptos asignados para ${anio}.`
@@ -280,7 +281,7 @@ export function ConceptosDeExogena({
                 pageItems.map((c) => {
                   const cambio = cambios[c.cuentaId];
                   return (
-                    <TableRow key={`${c.cuentaId}-${c.formato}`} data-testid={`concepto-${c.codigo}`}>
+                    <TableRowAnimada key={`${c.cuentaId}-${c.formato}`} data-testid={`concepto-${c.codigo}`}>
                       <TableCell>
                         <p className="font-mono text-caption text-fg">{c.codigo}</p>
                         <p className="text-caption text-fg-muted">{c.nombre}</p>
@@ -333,11 +334,11 @@ export function ConceptosDeExogena({
                           {c.fuente === 'AGENCIA' ? 'Lo fijó el contador' : 'Propuesto por Leasefy'}
                         </Badge>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
 

@@ -38,11 +38,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
@@ -181,9 +182,9 @@ export function PersonasDeNominaPanel() {
                         <TableHead>Estado</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBodyAnimado>
                       {personas.personas.map((p) => (
-                        <TableRow key={p.id} data-testid={`persona-${p.id}`}>
+                        <TableRowAnimada key={p.id} data-testid={`persona-${p.id}`}>
                           <TableCell>
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
@@ -224,9 +225,9 @@ export function PersonasDeNominaPanel() {
                               ? 'Activo'
                               : `Retirado${p.fechaRetiro ? ` el ${p.fechaRetiro.slice(0, 10)}` : ''}`}
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       ))}
-                    </TableBody>
+                    </TableBodyAnimado>
                   </Table>
                 </div>
               )}

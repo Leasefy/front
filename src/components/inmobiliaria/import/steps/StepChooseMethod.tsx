@@ -1,5 +1,6 @@
 'use client';
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { FileXls, Desktop, Globe, DownloadSimple, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -112,14 +113,14 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               aria-pressed={isSelected}
               onClick={() => handleSelect(card.method, card.disabled)}
               className={cn(
-                'animate-stagger-in text-left rounded-lg border-2 p-6 transition-all duration-200',
+                'animate-stagger-in text-left rounded-lg border-2 p-6 transition-[border-color,background-color,box-shadow] duration-base',
                 card.disabled
                   ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
                   : isSelected
                     ? 'border-primary/30 bg-primary-soft cursor-pointer'
                     : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
               )}
-              style={{ animationDelay: `${index * 80}ms` }}
+              style={{ animationDelay: retrasoEscalonado(index) }}
               disabled={card.disabled}
             >
               {/* Icon */}

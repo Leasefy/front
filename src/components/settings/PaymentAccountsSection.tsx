@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { Bank, Wallet, House, Star, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
-import { IconButton } from '@leasefy/cadence';
+import { Collapse, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -60,7 +59,11 @@ function mapaDelServidor(metodo: 'bank' | 'wallet'): Partial<Record<string, Camp
 
 const idDelCampo = (campo: CampoDeLaCuenta) => `cuenta-de-pago-${campo}`;
 
-export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
+export function PaymentAccountsSection(
+  // `delay` ya no se usa (la entrada la pone el marco); se conserva para no
+  // romper a quien lo pasa.
+  _props: { delay?: number },
+) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -356,10 +359,10 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
+      {/* Sin entrada propia (era un fundido que subía 20 px con retraso): la
+          sección entra con el marco de Configuración, que ya anima el cambio
+          de sección. */}
+      <section
         // La tarjeta de Configuración de la inmobiliaria: el título y la bajada
         // de «Cuentas de pago» ya los pone el marco (Nico, 2026-09-15).
         className="rounded-lg border border-border bg-surface overflow-hidden"
@@ -463,7 +466,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
           </Button>
         </div>
-      </motion.section>
+      </section>
 
       {/* Unified Add Account Modal */}
       <SettingsModal
@@ -506,7 +509,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => { setAccountMethodType('bank'); setFieldErrors({}); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-colors',
                   accountMethodType === 'bank'
                     ? 'bg-surface text-fg'
                     : 'text-fg-subtle hover:text-fg-muted'
@@ -519,7 +522,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => { setAccountMethodType('wallet'); setFieldErrors({}); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-colors',
                   accountMethodType === 'wallet'
                     ? 'bg-surface text-fg'
                     : 'text-fg-subtle hover:text-fg-muted'
@@ -565,7 +568,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     type="button"
                     onClick={() => { setBankForm(prev => ({ ...prev, accountType: 'savings' })); limpiarError('accountType'); }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'savings'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -577,7 +580,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     type="button"
                     onClick={() => { setBankForm(prev => ({ ...prev, accountType: 'checking' })); limpiarError('accountType'); }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'checking'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -716,7 +719,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => setShowPropertyDropdown(prev => !prev)}
                 className={cn(
-                  'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-all appearance-none cursor-pointer',
+                  'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-[color,background-color,border-color,box-shadow] appearance-none cursor-pointer',
                   showPropertyDropdown
                     ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-surface'
                     : 'border-border bg-surface'
@@ -738,13 +741,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 )} />
               </button>
               {/* Selected chips */}
-              {selectedPropertyIds.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
+              {/* Cada inmueble elegido entra como pastilla y, al quitarlo, SALE
+                  (las demás se corren). Sin pastillas, la fila no ocupa lugar. */}
+              <Stagger className="flex flex-wrap gap-1.5 mt-2 empty:hidden">
                   {selectedPropertyIds.map((pid) => {
                     const prop = landlordProperties.find(p => p.id === pid);
                     if (!prop) return null;
                     return (
-                      <span
+                      <StaggerItem
+                        as="span"
                         key={pid}
                         className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-md"
                       >
@@ -758,13 +763,12 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                           icon={<X className="w-3 h-3" />}
                           className="w-4 h-4 min-h-0 rounded-full ml-0.5 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
                         />
-                      </span>
+                      </StaggerItem>
                     );
                   })}
-                </div>
-              )}
-              {/* Dropdown panel with checkboxes */}
-              {showPropertyDropdown && (
+              </Stagger>
+              {/* Dropdown panel with checkboxes: se abre y se cierra con su altura. */}
+              <Collapse open={showPropertyDropdown}>
                 <div className="mt-1 border border-border rounded-lg bg-surface overflow-hidden max-h-48 overflow-y-auto">
                   {landlordProperties.map((property) => {
                     const isSelected = selectedPropertyIds.includes(property.id);
@@ -780,7 +784,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-muted transition-colors text-left"
                       >
                         <div className={cn(
-                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
                           isSelected
                             ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                             : 'border-border-strong'
@@ -794,7 +798,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     );
                   })}
                 </div>
-              )}
+              </Collapse>
             </div>
           )}
 

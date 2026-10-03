@@ -25,6 +25,14 @@
 
 import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import {
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionScale,
+  motionSpring,
+  motionStagger,
+} from "@leasefy/cadence";
 import { ArrowRight } from "@phosphor-icons/react";
 import confetti from "canvas-confetti";
 
@@ -93,15 +101,15 @@ export function BienvenidaALeasefy({
       data-testid="bienvenida-a-leasefy"
     >
       <motion.div
-        initial={sinMovimiento ? false : { opacity: 0, y: 16, scale: 0.98 }}
+        initial={sinMovimiento ? false : { opacity: 0, y: motionDistance.md, scale: motionScale.pop }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: motionDuration.reveal, ease: motionEase.emphasis }}
         className="w-full max-w-lg text-center"
       >
         <motion.div
           initial={sinMovimiento ? false : { scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 18 }}
+          transition={{ ...motionSpring.bouncy, delay: 0.15 }}
           className="mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-lg shadow-primary/20"
         >
           {/* El logo azul, redondo (Nico, 2026-09-01) — la firma del producto
@@ -132,9 +140,15 @@ export function BienvenidaALeasefy({
             {cargado.map((p, i) => (
               <motion.li
                 key={p.id}
-                initial={sinMovimiento ? false : { opacity: 0, y: 6 }}
+                initial={sinMovimiento ? false : { opacity: 0, y: motionDistance.sm }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 + i * 0.07 }}
+                // El escalonado del sistema, con su techo (antes 70 ms por
+                // ítem, sin tope).
+                transition={{
+                  delay: 0.35 + Math.min(i * motionStagger.step, motionStagger.max),
+                  duration: motionDuration.base,
+                  ease: motionEase.enter,
+                }}
                 className="rounded-full border border-border bg-surface px-3 py-1 font-mono text-caption tabular-nums text-fg-muted"
               >
                 {p.detalle ?? `${p.conteo} ${p.id}`}
@@ -146,7 +160,7 @@ export function BienvenidaALeasefy({
         <motion.div
           initial={sinMovimiento ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.7, duration: motionDuration.base, ease: motionEase.enter }}
           className="mt-8"
         >
           <Button

@@ -4,6 +4,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Shield, Sparkle, Lock, Crown, Robot, ChartBar, Buildings, WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { AgencyCheckoutOverlay } from '@/components/inmobiliaria/AgencyCheckoutOverlay';
@@ -254,6 +255,8 @@ function AgencyUpgradeContent() {
         </div>
 
         {/* Plans table */}
+        {/* Esqueleto → planes con fundido cruzado. */}
+        <CrossFade swapKey={isLoading ? 'cargando' : 'planes'}>
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
@@ -267,6 +270,7 @@ function AgencyUpgradeContent() {
             onSelectPlan={handleSelectPlan}
           />
         )}
+        </CrossFade>
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">

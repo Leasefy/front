@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
-import { Banner, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { Banner, Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -353,8 +353,9 @@ export function AgenteFormModal({
           )}
 
           {/* ──── Agent-specific fields ──── */}
-          {showAgentFields && (
-            <>
+          {/* Los campos del agente se abren y se cierran con su altura al
+              cambiar el rol (antes aparecían y desaparecían de golpe). */}
+          <Collapse open={showAgentFields} className="space-y-5">
               {variant === 'member' && (
                 <div className="pt-2 border-t border-border">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
@@ -421,7 +422,7 @@ export function AgenteFormModal({
               </div>
 
               {/* Commission — solo para agentes, no para coordinator/director */}
-              {agentRole === 'agent' && (
+              <Collapse open={agentRole === 'agent'}>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Percent className="w-4 h-4 text-muted-foreground" />
@@ -445,9 +446,8 @@ export function AgenteFormModal({
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
                   <ErrorDelCampo id={`${idDelFormulario}-commissionSplit-error`} mensaje={errors.commissionSplit} className="mt-0" />
                 </div>
-              )}
-            </>
-          )}
+              </Collapse>
+          </Collapse>
 
           {/* Message — member variant only */}
           {variant === 'member' && (

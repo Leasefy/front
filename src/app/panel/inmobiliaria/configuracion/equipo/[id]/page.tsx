@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui';
 import {
   CaretLeft,
@@ -105,71 +105,49 @@ function AgenteDetailContent() {
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Content (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* La ficha llega desde la lista de Equipo dentro del mismo módulo (el
+            template del panel no se vuelve a montar): sus bloques entran
+            escalonados con el techo del sistema, no con retrasos a mano. */}
+        <Stagger className="lg:col-span-2 space-y-6">
           {/* Profile Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <StaggerItem key="perfil">
             <AgenteProfile agente={agente} onEdit={() => setEditando(true)} />
-          </motion.div>
+          </StaggerItem>
 
           {/* Metrics Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-lg border border-border bg-card p-5"
-          >
+          <StaggerItem key="metricas" className="rounded-lg border border-border bg-card p-5">
             <AgenteMetrics metrics={agente.metrics} />
-          </motion.div>
+          </StaggerItem>
 
           {/* Properties Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
+          <StaggerItem key="inmuebles">
             <AgentePropertyList
               consignaciones={consignaciones}
               onAssignProperty={() => setAsignando(true)}
             />
-          </motion.div>
+          </StaggerItem>
 
           {/* Visit working-hours — one schedule for all the agent's properties */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
+          <StaggerItem key="horario">
             <AgenteHorarioVisitas agenteId={agenteId} />
-          </motion.div>
-        </div>
+          </StaggerItem>
+        </Stagger>
 
         {/* Right Column - Sidebar (1/3) */}
-        <div className="space-y-6">
+        <Stagger className="space-y-6" delay={0.08}>
           {/* Pipeline Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
+          <StaggerItem key="pipeline">
             <AgentePipeline pipelineItems={pipelineItems} />
-          </motion.div>
+          </StaggerItem>
 
           {/* 🔴 17-09: acá había un «Historial de comisiones — próximamente».
               La comisión del asesor se liquida por fuera de Leasefy, así que
               esa pantalla no va a existir; lo que sí es un hecho —qué captó y
               qué arrendó— es esto. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-lg border border-border bg-card p-5"
-          >
+          <StaggerItem key="captaciones" className="rounded-lg border border-border bg-card p-5">
             <CaptacionesYArriendos userId={agente.userId} />
-          </motion.div>
-        </div>
+          </StaggerItem>
+        </Stagger>
       </div>
 
       <EditarPerfilDelAsesor

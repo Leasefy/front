@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Clock, CaretDown } from '@phosphor-icons/react';
+import { Collapse, CrossFade } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
@@ -94,8 +95,11 @@ export function AgenteHorarioVisitas({
         <CaretDown className={cn('w-4 h-4 text-fg-muted flex-shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
 
-      {open && (
+      {/* Se abre y se cierra con su altura (antes, de golpe). */}
+      <Collapse open={open}>
       <div className="p-5 border-t border-border">
+        {/* Cargando → horario con fundido cruzado. */}
+        <CrossFade swapKey={schedule ? 'horario' : 'cargando'}>
         {schedule ? (
           <div className="space-y-4">
             <div>
@@ -131,8 +135,9 @@ export function AgenteHorarioVisitas({
             <Spinner />
           </div>
         )}
+        </CrossFade>
       </div>
-      )}
+      </Collapse>
     </div>
   );
 }

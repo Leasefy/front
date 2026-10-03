@@ -54,11 +54,12 @@ import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { codigoSinMigrar, finanzasApi } from '@/lib/api/finanzas.service';
@@ -263,11 +264,11 @@ function Comparacion({
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBodyAnimado>
             {comparacion.filas.map((fila) => {
               const suFila = porRubro.get(fila.rubro);
               return (
-                <TableRow key={fila.rubro} data-testid={`rubro-${fila.rubro}`}>
+                <TableRowAnimada key={fila.rubro} data-testid={`rubro-${fila.rubro}`}>
                   <TableCell>
                     <div className="space-y-0.5">
                       <p className="font-medium text-fg">{fila.nombre}</p>
@@ -333,10 +334,10 @@ function Comparacion({
                       </Button>
                     ) : null}
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               );
             })}
-            <TableRow className="border-t-2 border-border font-medium">
+            <TableRow key="total" className="border-t-2 border-border font-medium">
               <TableCell>Total</TableCell>
               <Monto id="total-presupuesto" valor={comparacion.totales.presupuestoCop} />
               <Monto id="total-real" valor={comparacion.totales.realCop} />
@@ -347,7 +348,7 @@ function Comparacion({
               </TableCell>
               <TableCell />
             </TableRow>
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
       </div>
     </div>

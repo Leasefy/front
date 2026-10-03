@@ -1,5 +1,6 @@
 'use client';
 
+import { CrossFade } from '@leasefy/cadence';
 import { useEffect } from 'react';
 import { ArrowSquareOut, CheckCircle, Clock } from '@phosphor-icons/react';
 import {
@@ -179,10 +180,14 @@ export function AgencyCheckoutOverlay({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="sm" variant={variante} icon={icono} hideClose={sinSalida}>
-        <DialogHeader>
-          <DialogTitle>{titulo}</DialogTitle>
-          <DialogDescription>{descripcion}</DialogDescription>
-        </DialogHeader>
+        {/* Procesando → listo / error / programado: el texto se cruza en su
+            lugar, sin un corte seco. */}
+        <CrossFade swapKey={state}>
+          <DialogHeader>
+            <DialogTitle>{titulo}</DialogTitle>
+            <DialogDescription>{descripcion}</DialogDescription>
+          </DialogHeader>
+        </CrossFade>
 
         {/* Awaiting payment — hosted Wompi tab */}
         {state === 'awaiting' && (paymentUrl || pollError) && (

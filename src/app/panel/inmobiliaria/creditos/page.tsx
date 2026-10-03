@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
 import { useEffect, useState, useCallback } from 'react';
 import {
   Sparkle,
@@ -46,6 +47,9 @@ import type {
   PseLegalIdType,
   PseUserType,
 } from '@/lib/api/pse-checkout.types';
+
+// La cifra tal cual la pintaba la pantalla (sin separador de miles), contando.
+const comoEntero = (n: number) => String(Math.round(n));
 
 // ============================================================================
 // Page
@@ -108,7 +112,8 @@ function CreditosContent() {
           </p>
         </header>
 
-        {/* Balance */}
+        {/* Balance: cargando → saldo (o el fallo) con fundido cruzado. */}
+        <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : balance ? 'saldo' : 'nada'}>
         {isLoading ? (
           <div className="rounded-lg border border-border bg-card p-8 flex items-center justify-center">
             <Spinner size="md" variant="muted" />
@@ -128,7 +133,8 @@ function CreditosContent() {
                   Saldo total
                 </p>
                 <p className="text-5xl font-bold tabular-nums">
-                  {balance.total}
+                  {/* Después de comprar, el saldo cuenta hasta el nuevo. */}
+                  <AnimatedNumber value={balance.total} format={comoEntero} />
                   <span className="text-2xl font-normal text-white/80 ml-2">créditos</span>
                 </p>
               </div>
@@ -138,7 +144,7 @@ function CreditosContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/20">
               <div>
                 <p className="text-xs text-white/70 mb-1">Del plan</p>
-                <p className="text-2xl font-semibold tabular-nums">{balance.planBalance}</p>
+                <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={balance.planBalance} format={comoEntero} /></p>
                 {expiresAt && (
                   <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -148,12 +154,13 @@ function CreditosContent() {
               </div>
               <div>
                 <p className="text-xs text-white/70 mb-1">Comprados</p>
-                <p className="text-2xl font-semibold tabular-nums">{balance.purchasedBalance}</p>
+                <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={balance.purchasedBalance} format={comoEntero} /></p>
                 <p className="text-xs text-white/70 mt-1">Sin vencimiento</p>
               </div>
             </div>
           </section>
         ) : null}
+        </CrossFade>
 
         {/* How consumption works */}
         <div className="rounded-lg bg-primary-soft border border-primary/30 p-4 mb-8">

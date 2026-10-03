@@ -14,7 +14,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { toast } from '@/components/ui/toast';
 import { Plus, Trash } from '@phosphor-icons/react';
-import { Banner, CurrencyInput } from '@leasefy/cadence';
+import { Banner, CrossFade, CurrencyInput, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -315,6 +315,9 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                 <span />
               </div>
 
+              {/* La línea que se agrega entra y la que se quita SALE (las de
+                  abajo suben), con el escalonado del sistema. */}
+              <Stagger className="space-y-2">
               {lineas.map((l, i) => {
                 const errorDeLinea = intentado ? veredicto.porLinea[l.clave] : undefined;
                 const mensajeDeLinea = errorDeLinea
@@ -323,7 +326,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                 const idDelError = `${id}-linea-${l.clave}-error`;
                 const describe = mensajeDeLinea ? idDelError : undefined;
                 return (
-                  <div key={l.clave} className="space-y-1" data-testid="linea-de-asiento">
+                  <StaggerItem key={l.clave} className="space-y-1" data-testid="linea-de-asiento">
                     <div className="grid grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] items-center gap-2">
                       <SelectorDeCuenta
                         cuentas={cuentas}
@@ -383,9 +386,10 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                       mensaje={mensajeDeLinea}
                       className="px-1"
                     />
-                  </div>
+                  </StaggerItem>
                 );
               })}
+              </Stagger>
 
               <Button
                 type="button"
@@ -433,6 +437,15 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
               </div>
             </dl>
             <p className="text-sm" data-testid="diferencia">
+              {/* «Cuadra» ⇄ «Faltan…» se cruzan en su lugar. Las cifras no
+                  cuentan: están en una región `aria-live` y cada paso del
+                  conteo se leería en voz alta. */}
+              <CrossFade
+                as="span"
+                swapKey={diferencia === 0 ? (veredicto.totales.debitos > 0 ? 'cuadra' : 'vacio') : diferencia > 0 ? 'faltan-creditos' : 'faltan-debitos'}
+                mode="popLayout"
+                className="inline-block"
+              >
               {diferencia === 0 ? (
                 veredicto.totales.debitos > 0 ? (
                   <span className="font-medium text-success">Cuadra</span>
@@ -448,6 +461,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                   Faltan <Monto valor={-diferencia} /> en débitos
                 </span>
               )}
+              </CrossFade>
             </p>
           </div>
 

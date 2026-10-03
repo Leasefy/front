@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Spinner } from '@/components/ui';
-import { CrossFade, IconButton } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, IconButton, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -445,11 +445,13 @@ export default function InmobiliariaPerfilPage() {
                 </div>
               </div>
               <div className="h-2 bg-card/60 rounded-full overflow-hidden">
+                {/* Avanza con `translateX` (sólo transform; el extremo redondo
+                    no se deforma como con `scaleX`), con la curva del sistema. */}
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${completionPercentage}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-full bg-primary rounded-full"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: `${completionPercentage - 100}%` }}
+                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                  className="h-full w-full bg-primary rounded-full"
                 />
               </div>
               <p className="text-xs text-fg-muted mt-2">
@@ -483,13 +485,17 @@ export default function InmobiliariaPerfilPage() {
                     className="text-primary"
                     initial={{ strokeDasharray: '0 251.2' }}
                     animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-semibold tabular-nums text-fg">
-                    {completionPercentage}%
-                  </span>
+                  {/* Cuenta junto con el anillo; si cambia, desde la anterior. */}
+                  <AnimatedNumber
+                    value={completionPercentage}
+                    from={0}
+                    format={(n) => `${Math.round(n)}%`}
+                    className="text-2xl font-semibold tabular-nums text-fg"
+                  />
                 </div>
               </div>
             </div>
@@ -619,7 +625,7 @@ export default function InmobiliariaPerfilPage() {
                     onDrop={handleDrop}
                     onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
                       isDragging
                         ? "border-primary/40 bg-primary-soft"
                         : "border-border hover:border-primary/40 hover:bg-surface-muted"
@@ -758,6 +764,8 @@ export default function InmobiliariaPerfilPage() {
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
+                {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
+                <CrossFade swapKey={editingSection === 'personal' ? 'editando' : 'viendo'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('personal')}>
                     <Pencil className="w-3.5 h-3.5" />
@@ -774,6 +782,7 @@ export default function InmobiliariaPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Nombre */}
@@ -878,6 +887,8 @@ export default function InmobiliariaPerfilPage() {
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
                 </h3>
+                {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editando' : 'viendo'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')}>
                     <Pencil className="w-3.5 h-3.5" />
@@ -894,6 +905,7 @@ export default function InmobiliariaPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

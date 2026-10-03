@@ -45,11 +45,12 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -382,7 +383,7 @@ function ConexionRow({
   }
 
   return (
-    <TableRow data-testid={`conexion-row-${item.id}`}>
+    <TableRowAnimada data-testid={`conexion-row-${item.id}`}>
       <TableCell className="max-w-[260px]">
         <p className="truncate font-medium text-fg" title={item.displayName}>
           {item.displayName}
@@ -427,7 +428,7 @@ function ConexionRow({
           </SelectContent>
         </Select>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   )
 }
 
@@ -566,9 +567,11 @@ function ConciliacionConexiones() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* La conexión recién registrada entra; la tabla está paginada
+                (`TableBodyAnimado` ya va sin `layout`). */}
+            <TableBodyAnimado>
               {isEmpty ? (
-                <TableRow>
+                <TableRow key="vacio">
                   <TableCell colSpan={COLUMNAS.length} className="p-0">
                     <SinDatos
                       queSon="conexiones"
@@ -588,7 +591,7 @@ function ConciliacionConexiones() {
                   />
                 ))
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {shouldPaginate && (

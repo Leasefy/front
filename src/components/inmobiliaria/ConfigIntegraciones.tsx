@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plugs,
   Bank,
@@ -29,7 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { Chip } from '@leasefy/cadence';
+import { Chip, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -183,7 +182,7 @@ export function ConfigIntegraciones({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
+      <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="flex gap-2">
           {[...Array(5)].map((_, i) => (
@@ -195,7 +194,7 @@ export function ConfigIntegraciones({
             <div key={i} className="h-36 bg-muted rounded-lg" />
           ))}
         </div>
-      </div>
+      </CrossFade>
     );
   }
 
@@ -204,11 +203,11 @@ export function ConfigIntegraciones({
   const IconoDeLaElegida = selectedIntegration ? ICON_MAP[selectedIntegration.icon] : undefined;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    // Esqueleto → contenido con fundido cruzado: es el MISMO `CrossFade` que
+    // devuelve la rama de carga (React lo reconcilia como uno solo), así que
+    // sólo se anima la llegada después de cargar; con los datos ya en mano
+    // no hay entrada propia (la pone la transición de la página/sección).
+    <CrossFade swapKey="listo" className="space-y-6">
       {/* Cabecera. Sin título ni subtítulo propios: el marco de Configuración
           ya pone «Integraciones» y su explicación arriba, y repetirlos dejaba
           dos encabezados iguales pegados. Queda lo que ESE marco no dice:
@@ -252,19 +251,17 @@ export function ConfigIntegraciones({
       </div>
 
       {/* Integration Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence mode="popLayout">
+      {/* Al cambiar de categoría o buscar, las tarjetas que quedan se
+          reacomodan y las que entran o salen lo hacen con el escalonado del
+          sistema (antes, un AnimatePresence armado a mano). */}
+      <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredIntegrations.map((integration) => {
             const Icon = ICON_MAP[integration.icon] || Plugs;
             const isToggling = togglingId === integration.id;
 
             return (
-              <motion.div
+              <StaggerItem
                 key={integration.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
                 className={cn(
                   'p-5 rounded-lg bg-card border transition-colors',
                   integration.status === 'error'
@@ -381,20 +378,19 @@ export function ConfigIntegraciones({
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </StaggerItem>
             );
           })}
-        </AnimatePresence>
 
         {filteredIntegrations.length === 0 && (
-          <div className="col-span-full py-12 text-center">
+          <StaggerItem key="sin-resultados" className="col-span-full py-12 text-center">
             <Plugs className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-muted-foreground">
               {t('inmobiliaria.config.integrations.noResults')}
             </p>
-          </div>
+          </StaggerItem>
         )}
-      </div>
+      </Stagger>
 
       {/* Detalle de la integración.
           Era un formulario de API Key con «Probar conexión» y «Guardar»: los
@@ -469,7 +465,7 @@ export function ConfigIntegraciones({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </CrossFade>
   );
 }
 

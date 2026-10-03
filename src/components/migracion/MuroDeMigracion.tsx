@@ -1021,7 +1021,7 @@ export function PanelDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="muro-migracion-titulo"
-        className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
+        className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-base"
       >
         {/*
           ── Arriba, fijo: el mapa ──────────────────────────────────────────

@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useId } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Bank,
@@ -32,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
-import { Chip, CurrencyInput } from '@leasefy/cadence';
+import { Chip, CrossFade, CurrencyInput } from '@leasefy/cadence';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
@@ -783,23 +782,23 @@ export function ConfigPerfilAgencia({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
+      <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="space-y-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-12 bg-muted rounded-md" />
           ))}
         </div>
-      </div>
+      </CrossFade>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
-    >
+    // Esqueleto → contenido con fundido cruzado: es el MISMO `CrossFade` que
+    // devuelve la rama de carga (React lo reconcilia como uno solo), así que
+    // sólo se anima la llegada después de cargar; con los datos ya en mano
+    // no hay entrada propia (la pone la transición de la página/sección).
+    <CrossFade swapKey="listo" className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
@@ -1996,7 +1995,7 @@ export function ConfigPerfilAgencia({
           </Button>
         </div>
       )}
-    </motion.div>
+    </CrossFade>
   );
 }
 

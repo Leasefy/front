@@ -34,11 +34,12 @@ import { TablePagination } from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
@@ -390,9 +391,9 @@ export function MapeoContable({
               <TableHead>Propuesta</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBodyAnimado>
             {pageItems.map((e) => (
-              <TableRow key={e.evento} data-testid={`evento-${e.evento}`}>
+              <TableRowAnimada key={e.evento} data-testid={`evento-${e.evento}`}>
                 <TableCell className="max-w-[320px]">
                   {/* La explicación en UNA línea, con el texto entero en el
                       `title`: nueve filas de tres renglones eran media
@@ -463,9 +464,9 @@ export function MapeoContable({
                     </span>
                   )}
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
 
         {shouldPaginate ? (

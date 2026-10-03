@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import {
   CreditCard,
   Bank,
@@ -286,14 +286,14 @@ export function ConfigFacturacion({
 
   if (planLoading) {
     return (
-      <div className="animate-pulse space-y-6">
+      <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="h-48 bg-muted rounded-lg" />
           <div className="h-48 bg-muted rounded-lg" />
         </div>
         <div className="h-64 bg-muted rounded-lg" />
-      </div>
+      </CrossFade>
     );
   }
 
@@ -305,11 +305,11 @@ export function ConfigFacturacion({
       : Crown;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    // Esqueleto → contenido con fundido cruzado: es el MISMO `CrossFade` que
+    // devuelve la rama de carga (React lo reconcilia como uno solo), así que
+    // sólo se anima la llegada después de cargar; con los datos ya en mano
+    // no hay entrada propia (la pone la transición de la página/sección).
+    <CrossFade swapKey="listo" className="space-y-6">
       {/* Sin encabezado propio: el marco de Configuración ya pone «Plan y
           facturación» con su explicación justo arriba, y los dos juntos se
           leían como el mismo título repetido. */}
@@ -711,7 +711,7 @@ export function ConfigFacturacion({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </CrossFade>
   );
 }
 

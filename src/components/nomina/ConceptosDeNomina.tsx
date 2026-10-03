@@ -32,11 +32,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
@@ -174,9 +175,9 @@ export function ConceptosDeNominaPanel() {
                             <TableHead>Contrapartida</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBodyAnimado>
                           {lista.map((c) => (
-                            <TableRow key={c.id} data-testid={`concepto-${c.codigo}`}>
+                            <TableRowAnimada key={c.id} data-testid={`concepto-${c.codigo}`}>
                               <TableCell className="font-mono text-caption">
                                 {c.codigo}
                               </TableCell>
@@ -253,9 +254,9 @@ export function ConceptosDeNominaPanel() {
                                   <span className="text-caption text-fg-muted">—</span>
                                 )}
                               </TableCell>
-                            </TableRow>
+                            </TableRowAnimada>
                           ))}
-                        </TableBody>
+                        </TableBodyAnimado>
                       </Table>
                     </div>
                   </div>

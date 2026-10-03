@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { motionDistance, motionDuration, motionEase } from '@leasefy/cadence';
 import { Plus, Scales, Trash } from '@phosphor-icons/react';
 
@@ -56,16 +56,12 @@ import {
 
 type ErroresPorFila = Record<string, Partial<Record<CampoDeLaFila, string>>>;
 
-/** La fila entra subiendo y sale con un fundido; con movimiento reducido, nada se mueve. */
+/**
+ * La fila entra subiendo y sale con un fundido. El movimiento reducido lo
+ * aplica el `MotionProvider` de la app (`reducedMotion="user"`: sin
+ * desplazamiento, queda el fundido), como en el resto del sistema.
+ */
 function useMovimientoDeLaFila() {
-  const reducido = useReducedMotion() ?? false;
-  if (reducido) {
-    return {
-      initial: { opacity: 1 },
-      animate: { opacity: 1, transition: { duration: 0 } },
-      exit: { opacity: 0, transition: { duration: 0 } },
-    };
-  }
   return {
     initial: { opacity: 0, y: motionDistance.sm },
     animate: { opacity: 1, y: 0, transition: { duration: motionDuration.base, ease: motionEase.enter } },

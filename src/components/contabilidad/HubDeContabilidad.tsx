@@ -103,6 +103,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -513,6 +514,10 @@ function UltimosAsientos({
         </Link>
       </header>
 
+      {/* Esqueleto → lo último que entró (o el vacío, o el fallo) con fundido. */}
+      <CrossFade
+        swapKey={cargando ? 'cargando' : fallo ? 'fallo' : asientos === null ? 'sin-leer' : asientos.length === 0 ? 'vacio' : 'asientos'}
+      >
       {cargando ? (
         <ul className="divide-y divide-border-faint" data-testid="ultimos-asientos-cargando">
           {Array.from({ length: ULTIMOS }, (_, i) => (
@@ -563,6 +568,7 @@ function UltimosAsientos({
           ))}
         </ul>
       )}
+      </CrossFade>
     </section>
   );
 }
@@ -1108,6 +1114,8 @@ export function HubDeContabilidad() {
         className="rounded-lg border border-border bg-surface p-5"
         aria-label="Resumen del libro"
       >
+        {/* Esqueleto → la frase del libro con fundido cruzado. */}
+        <CrossFade swapKey={cargando ? 'cargando' : 'frase'}>
         {cargando ? (
           // La forma de la frase que va a llegar —un renglón largo y uno más
           // corto—, no una barra suelta (Nico, 22-09: «ese diseño de carga es
@@ -1138,6 +1146,7 @@ export function HubDeContabilidad() {
             )}
           </p>
         )}
+        </CrossFade>
         {/* Cada consulta falla por separado y lo DICE: sin esto, un número que
             no se pudo leer saldría como un guion mudo. */}
         {!cargando &&
@@ -1172,19 +1181,20 @@ export function HubDeContabilidad() {
         </section>
       ) : null}
 
-      {alertas.length > 0 ? (
-        <section className="space-y-3" aria-label="Alertas de contabilidad">
+      {/* Las alertas entran escalonadas y, al resolverse (reprocesar, cerrar
+          el mes), SALEN; sin ninguna, el bloque no ocupa lugar (`empty:hidden`). */}
+      <Stagger as="section" className="space-y-3 empty:hidden" aria-label="Alertas de contabilidad">
           {alertas.map((a) => (
+            <StaggerItem key={a.clave}>
             <Alerta
-              key={a.clave}
               alerta={a}
               onReprocesar={() => setConfirmandoReproceso(true)}
               onCerrarMes={irAlCierre}
               ocupado={reprocesando}
             />
+            </StaggerItem>
           ))}
-        </section>
-      ) : null}
+      </Stagger>
 
       {/* 🔴 22-09 · LA JERARQUÍA (Nico: «no le hiciste el glow up y eso se ve
           por ahí tirado todo»). Lo que un contador hace acá, en orden:

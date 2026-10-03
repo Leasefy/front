@@ -4,7 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -110,7 +111,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-[transform,box-shadow,border-color] duration-fast ease-standard hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -143,33 +144,46 @@ const AVISOS_DE_CONFIRMACION = new Set(['contrasena-actualizada']);
  * un error del usuario ni una falla del sistema, es lo que tiene que pasar. El
  * rojo del ErrorBanner de abajo queda para lo que sí salió mal.
  */
-function AvisoBanner({ children, confirmacion = false }: { children: React.ReactNode; confirmacion?: boolean }) {
+function AvisoBanner({ mensaje, confirmacion = false }: { mensaje: string | null; confirmacion?: boolean }) {
+  const texto = useUltimoTexto(mensaje);
+  // `Presence`: entra subiendo 8 px y, cuando la persona vuelve a intentar,
+  // SALE acelerando en vez de cortarse. `initial={false}`: si ya viene puesto
+  // al montar no arranca invisible.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      role="status"
-      data-testid="aviso-de-sesion"
-      className={confirmacion
-        ? 'px-3.5 py-2.5 rounded-lg bg-success-soft border border-success/30'
-        : 'px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30'}
-    >
-      <p className={confirmacion ? 'text-[12.5px] text-success' : 'text-[12.5px] text-warning'}>{children}</p>
-    </motion.div>
+    <Presence show={Boolean(mensaje)} initial={false}>
+      <div
+        role="status"
+        data-testid="aviso-de-sesion"
+        className={confirmacion
+          ? 'px-3.5 py-2.5 rounded-lg bg-success-soft border border-success/30'
+          : 'px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30'}
+      >
+        <p className={confirmacion ? 'text-[12.5px] text-success' : 'text-[12.5px] text-warning'}>{texto}</p>
+      </div>
+    </Presence>
   );
 }
 
-/** Brand-critical error banner. */
-function ErrorBanner({ children }: { children: React.ReactNode }) {
+/** Brand-critical error banner. Entra y sale con `Presence` (ver `AvisoBanner`). */
+function ErrorBanner({ mensaje }: { mensaje: string | null }) {
+  const texto = useUltimoTexto(mensaje);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30"
-    >
-      <p className="text-[12.5px] text-danger">{children}</p>
-    </motion.div>
+    <Presence show={Boolean(mensaje)} initial={false}>
+      <div className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30">
+        <p className="text-[12.5px] text-danger">{texto}</p>
+      </div>
+    </Presence>
   );
+}
+
+/**
+ * El último texto no vacío. Mientras un aviso SALE sigue diciendo lo que
+ * decía; sin esto se vaciaba en plena salida y se encogía antes de irse.
+ */
+function useUltimoTexto(texto: string | null): string | null {
+  const [ultimo, setUltimo] = React.useState(texto);
+  if (texto && texto !== ultimo) setUltimo(texto);
+  return texto || ultimo;
 }
 
 /** El enlace de texto azul de esta pantalla («Crear cuenta», «Inicia sesión»…). */
@@ -195,9 +209,13 @@ function SugerenciaDeCorreo({
   onAceptar?: () => void;
 }) {
   const r = validarCorreo(valor ?? '');
-  if (!r.sugerencia || (aceptado && aceptado === r.correo)) return null;
-  const sugerencia = r.sugerencia;
+  const visible = Boolean(r.sugerencia) && !(aceptado && aceptado === r.correo);
+  // Mientras sale, sigue diciendo la última sugerencia (no se vacía).
+  const sugerencia = useUltimoTexto(visible ? r.sugerencia ?? null : null) ?? '';
+  // Aparece y se va con `Presence` (4 px): se escribe letra a letra, así que
+  // no puede saltar al ritmo del teclado.
   return (
+    <Presence show={visible} distance="xs" initial={false}>
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]" data-testid="sugerencia-de-correo">
       <button type="button" onClick={() => onUsar(sugerencia)} className="text-fg-muted transition-colors hover:text-fg">
         ¿Quisiste decir <span className="font-medium text-[#1A40FF]">{sugerencia}</span>?
@@ -213,6 +231,7 @@ function SugerenciaDeCorreo({
         </button>
       )}
     </div>
+    </Presence>
   );
 }
 
@@ -291,6 +310,12 @@ function ReenvioDeConfirmacion({
 }) {
   return (
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
+      {/* «¿No te llegó?» → «Listo, te lo reenviamos» (o el tope): se cruzan,
+          no se reemplazan de golpe. La cuenta regresiva del botón NO entra
+          acá: cambia cada segundo y no es un cambio de estado. */}
+      <CrossFade
+        swapKey={reenvio.agotado ? 'agotado' : reenvio.estado === 'enviado' ? 'enviado' : 'ofrecer'}
+      >
       {reenvio.agotado ? (
         <p data-testid="reenvio-agotado">
           Ya te enviamos {MAXIMO_DE_REENVIOS} enlaces. Si no aparecen en tu bandeja ni en spam, escríbenos a{' '}
@@ -321,6 +346,7 @@ function ReenvioDeConfirmacion({
           </button>
         </p>
       )}
+      </CrossFade>
       <ErrorDelCampo id="reenvio-de-confirmacion-error" mensaje={reenvio.error} className="mt-0" />
       {onCorregir && (
         <p>
@@ -951,8 +977,20 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     );
   }
 
+  /*
+   * La vista de la tarjeta. Al cambiar (entrar ↔ crear cuenta ↔ recuperar,
+   * «Revisa tu correo»), el encabezado y el formulario salen JUNTOS y entra la
+   * vista nueva: `CrossFade` (sale en 150 ms acelerando, entra en 200 ms
+   * subiendo 4 px). Antes el título cambiaba de golpe y sólo el cuerpo se
+   * fundía. Su `initial` es `false`: la vista del primer pintado llega visible
+   * desde el HTML del servidor (antes el login nacía en `opacity: 0` hasta
+   * hidratar).
+   */
+  const vista = mode === 'register' ? `register-${registerStep}` : mode;
+
   return (
     <div className={cn('w-full', className)}>
+      <CrossFade swapKey={vista}>
       {/* Header — left-aligned, quiet hierarchy. `lg:pr-12`: la ✕ de la
           tarjeta vive en esta misma fila, a la derecha. */}
       <div className="mb-7 lg:pr-12">
@@ -968,10 +1006,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         )}
 
         {(mode === 'reset-sent' || (mode === 'register' && registerStep === 'confirm-email')) && (
+          // El visto «llega» con el resorte de rebote leve del sistema.
           <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            transition={motionSpring.bouncy}
             className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
           >
             <CheckCircle className="w-5 h-5 text-success" weight="fill" />
@@ -1000,16 +1039,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         </p>
       </div>
 
-      <AnimatePresence mode="wait">
         {/* ── Login ─────────────────────────────────────────────────────── */}
         {mode === 'login' && (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <div>
             <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading}>
               {isLoading ? 'Conectando...' : 'Continuar con Google'}
             </GoogleButton>
@@ -1058,8 +1090,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </div>
               </div>
-              {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+              <ErrorBanner mensaje={error} />
               {error && correoSinConfirmar && (
                 <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
               )}
@@ -1078,7 +1110,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <Button
                 type="submit"
                 disabled={isLoading || !hidratado}
-                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
+                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
                 {isLoading ? (
                   <>
@@ -1103,18 +1135,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Crear cuenta
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Register: Credentials ──────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'credentials' && (
-          <motion.div
-            key="register-credentials"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <div>
             <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
               Registrarse con Google
             </GoogleButton>
@@ -1173,8 +1199,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
-              {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+              <ErrorBanner mensaje={error} />
               {error && correoYaRegistrado && (
                 <p className="text-[13px] text-fg-subtle">
                   <button
@@ -1187,7 +1213,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </p>
               )}
-              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
+              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
@@ -1204,19 +1230,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Inicia sesión
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Register: Confirm email ────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'confirm-email' && (
-          <motion.div
-            key="confirm-email"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-5"
-          >
+          <div className="space-y-5">
             {/*
               Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
               sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
@@ -1259,17 +1278,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Inicia sesión
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Forgot Password ────────────────────────────────────────────── */}
         {mode === 'forgot-password' && (
-          <motion.form
-            key="forgot-password"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+          <form
             method="post"
             onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
             className="space-y-4"
@@ -1294,27 +1308,20 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
               />
             </div>
-            {avisoDeSesion && !error && <AvisoBanner confirmacion={avisoDeConfirmacion}>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
+            <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+            <ErrorBanner mensaje={error} />
             <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
             <p className="text-[12px] text-fg-subtle leading-relaxed">
               Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
             </p>
-          </motion.form>
+          </form>
         )}
 
         {/* ── Reset Email Sent ───────────────────────────────────────────── */}
         {mode === 'reset-sent' && (
-          <motion.div
-            key="reset-sent"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-5"
-          >
+          <div className="space-y-5">
             <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
@@ -1346,9 +1353,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Reenviar enlace
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </CrossFade>
     </div>
   );
 }

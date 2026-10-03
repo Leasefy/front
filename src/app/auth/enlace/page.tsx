@@ -42,6 +42,7 @@ import { useSearchParams } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
+import { CrossFade } from '@leasefy/cadence'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils'
@@ -213,6 +214,9 @@ function EnlaceContent() {
             <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
           </div>
 
+          {/* «Verificando tu enlace» → el aviso o el error: se cruzan, no se
+              reemplazan de golpe. */}
+          <CrossFade swapKey={aviso ? 'aviso' : error ? 'error' : 'verificando'}>
           {aviso ? (
             <>
               <h1 className="text-xl font-semibold text-fg mb-2">{aviso.titulo}</h1>
@@ -244,6 +248,7 @@ function EnlaceContent() {
               <p className="text-sm text-fg-muted">Un segundo…</p>
             </>
           )}
+          </CrossFade>
         </div>
       </div>
     </ForceLightMode>

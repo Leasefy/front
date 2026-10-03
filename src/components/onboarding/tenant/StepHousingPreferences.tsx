@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { motion } from 'framer-motion'
 import { Check, MapPin, PawPrint, Plus, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { DatePicker, IconButton, Presence } from '@leasefy/cadence'
+import { Collapse, DatePicker, IconButton, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
@@ -84,17 +83,15 @@ function Rotulo({ children, requerido }: { children: ReactNode; requerido?: bool
   )
 }
 
-/** Aparece despacio y en orden; con «reducir movimiento», sólo el fundido. */
-function Seccion({ children, orden }: { children: ReactNode; orden: number }) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.04 * orden, duration: 0.24 }}
-    >
-      {children}
-    </motion.section>
-  )
+/**
+ * Una sección del paso. Antes: «Aparece despacio y en orden; con «reducir
+ * movimiento», sólo el fundido». Ahora sin entrada propia: el paso entero ya
+ * entra con el `CrossFade` del asistente (`TenantOnboardingShell`); sumarle
+ * otra por sección (con su retraso por `orden`) era una «doble entrada»
+ * (DESIGN.md §8b). `orden` se conserva en la firma: ya no mueve nada.
+ */
+function Seccion({ children }: { children: ReactNode; orden: number }) {
+  return <section>{children}</section>
 }
 
 /** Sin proveedor que los traiga (las pruebas de cada paso), no hay errores del servidor. */
@@ -423,12 +420,9 @@ export function StepHousingPreferences() {
             </button>
           </div>
 
-          {draft.hasPets && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-2"
-            >
+          {/* Se abre y se cierra con su altura (`Collapse`); antes sólo abría
+              y al desmarcar desaparecía de golpe. `pt-2` adentro, no `mt-2`. */}
+          <Collapse open={Boolean(draft.hasPets)} className="pt-2">
               <Input
                 type="text"
                 id="petDetails"
@@ -441,8 +435,7 @@ export function StepHousingPreferences() {
                 onChange={(e) => updateDraft({ petDetails: e.target.value })}
                 placeholder="Describe tus mascotas (tipo, tamaño, cantidad)"
               />
-            </motion.div>
-          )}
+          </Collapse>
           <ErrorDelCampo id="mascotas-error" mensaje={errorDe('petDetails')} />
         </fieldset>
       </Seccion>

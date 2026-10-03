@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { WarningCircle, X } from '@phosphor-icons/react'
+import { CrossFade } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
@@ -142,6 +143,16 @@ export function PanelAntesDeComenzar({
       ) : null}
 
       <div className="p-5 sm:p-8">
+        {/* Esqueleto → formulario (o el error): se cruzan, no se reemplazan de golpe. */}
+        <CrossFade
+          swapKey={
+            status === 'resuming'
+              ? 'cargando'
+              : status === 'needs-info' || status === 'provisioning'
+                ? 'formulario'
+                : 'error'
+          }
+        >
         {status === 'resuming' ? (
           <div role="status" aria-label="Cargando tu registro" className="space-y-5" data-testid="panel-cargando">
             <div className="space-y-2.5">
@@ -181,6 +192,7 @@ export function PanelAntesDeComenzar({
         ) : (
           <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
         )}
+        </CrossFade>
       </div>
     </div>
   )

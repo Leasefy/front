@@ -2,6 +2,7 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { MotionGlobalConfig } from 'framer-motion'
 
 void React
 
@@ -54,6 +55,13 @@ function setInputValue(input: HTMLInputElement, value: string) {
   })
 }
 
+/** Lo que sale (una fila de `Stagger`) se desmonta después de su salida. */
+async function esperarLaSalida() {
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 50))
+  })
+}
+
 function clickButton(testId: string) {
   const btn = container.querySelector(`[data-testid="${testId}"]`) as HTMLButtonElement
   if (!btn) throw new Error(`Button with data-testid="${testId}" not found`)
@@ -98,7 +106,7 @@ describe('<MembersStepForm>', () => {
     expect(onSubmit).toHaveBeenCalledWith({ members: [] })
   })
 
-  it('adds and removes member rows', () => {
+  it('adds and removes member rows', async () => {
     render()
 
     clickButton('members-add-row')
@@ -106,17 +114,42 @@ describe('<MembersStepForm>', () => {
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
 
     clickButton('members-remove-row-0')
+    await esperarLaSalida()
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
   })
 
-  it('la última fila también se puede quitar: se vuelve al paso vacío', () => {
+  it('la última fila también se puede quitar: se vuelve al paso vacío', async () => {
     render()
 
     clickButton('members-add-row')
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
 
     clickButton('members-remove-row-0')
+    await esperarLaSalida()
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(0)
+  })
+
+  /**
+   * La fila que se quita SALE animada (`Stagger`): sigue montada mientras se
+   * va y después ya no está. Con animaciones de verdad (sin el atajo de las
+   * pruebas) para ver que no se corta de golpe.
+   */
+  it('la fila quitada sale con su animación: sigue mientras se va y después se desmonta', async () => {
+    render()
+    clickButton('members-add-row')
+    clickButton('members-add-row')
+    MotionGlobalConfig.skipAnimations = false
+    try {
+      clickButton('members-remove-row-0')
+      // Recién tocado «Quitar»: la persona sigue viendo cómo se va.
+      expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 400))
+      })
+      expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+    } finally {
+      MotionGlobalConfig.skipAnimations = true
+    }
   })
 
   it('shows a validation error for an invalid email and blocks submit', async () => {

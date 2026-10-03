@@ -1,13 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { CTASection } from '@/components/home/CTASection';
 import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, Buildings, UserCheck, ArrowRight, Circle } from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
+import {
+  Appear,
+  AnimatedNumber,
+  CrossFade,
+  Pressable,
+  Stagger,
+  StaggerItem,
+  cssEase,
+  motionScale,
+  motionSpring,
+  motionTransition,
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { AgencyTierCard, BenefitCard } from '@/components/pricing/AgencyTierCard';
 import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
@@ -166,12 +178,7 @@ function FlexCalculator() {
   const sliderPercentage = Math.min(((units - 10) / (500 - 10)) * 100, 100);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="mb-12 rounded-[20px] overflow-hidden border border-border"
-    >
+    <Appear inView distance="md" duration="slow" className="mb-12 rounded-[20px] overflow-hidden border border-border">
       <div className="relative bg-foreground text-background px-6 py-5">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-warning via-warning to-danger" />
         <div className="flex items-center gap-3">
@@ -203,13 +210,14 @@ function FlexCalculator() {
                 />
               </div>
               <div className="relative h-10 flex items-center">
+                {/* El relleno crece con `scaleX` (no `width`) y el resorte ágil del sistema. */}
                 <div className="absolute inset-x-0 h-1.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-foreground rounded-full"
-                    style={{ width: `${sliderPercentage}%` }}
+                    className="h-full w-full origin-left bg-foreground rounded-full"
+                    style={{ scaleX: sliderPercentage / 100 }}
                     initial={false}
-                    animate={{ width: `${sliderPercentage}%` }}
-                    transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+                    animate={{ scaleX: sliderPercentage / 100 }}
+                    transition={motionSpring.snappy}
                   />
                 </div>
                 <input
@@ -220,13 +228,19 @@ function FlexCalculator() {
                   onChange={(e) => setUnits(parseInt(e.target.value))}
                   className="absolute inset-x-0 w-full h-10 opacity-0 cursor-pointer"
                 />
+                {/* La perilla viaja con `translateX` (no `left`): una franja del
+                    ancho del riel se corre ese porcentaje de SU ancho y lleva la
+                    perilla en su borde. No recibe clics: los toma el `range`. */}
                 <motion.div
-                  className="absolute w-4 h-4 bg-foreground rounded-full cursor-pointer"
-                  style={{ left: `calc(${sliderPercentage}% - 8px)` }}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 flex items-center"
+                  style={{ x: `${sliderPercentage}%` }}
                   initial={false}
-                  animate={{ left: `calc(${sliderPercentage}% - 8px)` }}
-                  transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-                />
+                  animate={{ x: `${sliderPercentage}%` }}
+                  transition={motionSpring.snappy}
+                >
+                  <span className="-ml-2 block w-4 h-4 bg-foreground rounded-full" />
+                </motion.div>
               </div>
               <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
                 <span>10</span>
@@ -251,7 +265,7 @@ function FlexCalculator() {
                     const numValue = parseInt(rawValue, 10);
                     if (!isNaN(numValue) && numValue >= 0) setAvgRent(numValue);
                   }}
-                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
+                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-[border-color,box-shadow] duration-fast ease-standard"
                 />
               </div>
             </div>
@@ -259,8 +273,9 @@ function FlexCalculator() {
           <div className="flex flex-col justify-center">
             <div className="bg-muted/30 rounded-[18px] p-5 border border-border">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
+              {/* La cifra cuenta desde la anterior al mover el control (`AnimatedNumber`). */}
               <p className="text-[36px] font-mono font-bold text-foreground tracking-tight leading-none tabular-nums">
-                ${monthlyFee.toLocaleString('es-CO')}
+                <AnimatedNumber value={monthlyFee} format={(n) => `$${Math.round(n).toLocaleString('es-CO')}`} />
               </p>
               <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
               <div className="mt-4 pt-4 space-y-2 border-t border-border">
@@ -280,7 +295,7 @@ function FlexCalculator() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </Appear>
   );
 }
 
@@ -297,6 +312,32 @@ function FlexCalculator() {
  * lo dice el back (QA 23-09: acá decía 149.900 y el back cobra 149.000);
  * mientras no llega, «—».
  */
+/**
+ * El visto de la tarjeta elegida en «¿Qué necesitas?»: llega con el resorte de
+ * rebote leve y se va acelerando al elegir otra (antes aparecía y desaparecía
+ * de golpe).
+ */
+function VistoDeLaElegida({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence initial={false}>
+      {visible ? (
+        <motion.div
+          key="visto"
+          initial={{ scale: motionScale.pop, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ opacity: 0, transition: motionTransition.exit }}
+          transition={motionSpring.bouncy}
+          className="absolute top-3 right-3 z-10"
+        >
+          <div className="w-7 h-7 bg-primary text-primary-fg uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
+            <Check className="w-4 h-4" strokeWidth={2.5} />
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 function cifraDelPlan(valor: number | null): string {
   return valor === null ? '—' : valor.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
@@ -308,20 +349,25 @@ export default function PricingPage() {
   const [selectedAgencyPlan, setSelectedAgencyPlan] = useState<AgencyPlan>(null);
   const [detailPlan, setDetailPlan] = useState<AgencyPlan>(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
+  // El carrusel del héroe sólo corre mientras se ve: fuera de pantalla (o con
+  // la pestaña al fondo) no hay por qué seguir cambiando fotos.
+  const heroRef = useRef<HTMLElement>(null);
+  const heroEnVista = useInView(heroRef);
 
   // Auto-cycle hero images
   useEffect(() => {
+    if (!heroEnVista) return;
     const interval = setInterval(() => {
       setActiveHeroImage((prev) => (prev + 1) % PRICING_HERO_IMAGES.length);
     }, HERO_IMAGE_INTERVAL);
     return () => clearInterval(interval);
-  }, []);
+  }, [heroEnVista]);
 
   return (
     <LandingChrome>
       <main className="min-h-screen bg-background">
         {/* Hero Section - Full width like home, starts behind navbar */}
-        <section className="relative h-[500px] overflow-hidden bg-black">
+        <section ref={heroRef} className="relative h-[500px] overflow-hidden bg-black">
           {/* Background — crossfade image slideshow */}
           {PRICING_HERO_IMAGES.map((src, i) => (
             <div
@@ -329,7 +375,8 @@ export default function PricingPage() {
               className="absolute inset-0"
               style={{
                 opacity: i === activeHeroImage ? 1 : 0,
-                transition: 'opacity 4s cubic-bezier(0.4, 0, 0.2, 1)',
+                // Fundido lento a propósito (fondo ambiental), con la curva estándar.
+                transition: `opacity 4s ${cssEase('standard')}`,
               }}
             >
               <img
@@ -351,28 +398,20 @@ export default function PricingPage() {
               <div className="max-w-xl space-y-4">
                 {/* Headline */}
                 <div className="space-y-2 mb-2">
-                  <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                  <h1
                     className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em]"
                   >
                     Precios simples.
-                  </motion.h1>
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
+                  </h1>
+                  <p
                     className="text-base md:text-lg text-white/60"
                   >
                     Administración completa o herramientas para hacerlo tú mismo.
-                  </motion.p>
+                  </p>
                 </div>
 
                 {/* Stats row */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
+                <div
                   className="flex flex-wrap gap-6"
                 >
                   {[
@@ -385,7 +424,7 @@ export default function PricingPage() {
                       <span className="text-[13px] text-white/50">{stat.label}</span>
                     </div>
                   ))}
-                </motion.div>
+                </div>
               </div>
             </div>
 
@@ -399,11 +438,8 @@ export default function PricingPage() {
                 ].map((prop, i) => {
                   const Icon = prop.icon;
                   return (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
                       className="w-full text-left p-4 rounded-xl bg-white/15 backdrop-blur-2xl border border-white/20"
                     >
                       <div className="flex items-start gap-3">
@@ -415,7 +451,7 @@ export default function PricingPage() {
                           <p className="text-[12px] leading-relaxed mt-0.5 text-white/60">{prop.description}</p>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
@@ -426,45 +462,34 @@ export default function PricingPage() {
       {/* User Type Selector - Clear clickable cards */}
       <section className="py-12 md:py-16">
         <div className="container-platform">
-          {/* Section intro */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-8"
-          >
+          {/* Section intro. Sin entrada propia: en escritorio queda ARRIBA del
+              pliegue (debajo de un héroe de 500 px) y tiene que llegar visible
+              desde el HTML del servidor (DESIGN.md §8b). */}
+          <div className="text-center mb-8">
             <h2 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground tracking-[-0.02em]">
               ¿Qué necesitas?
             </h2>
             <p className="text-[15px] text-muted-foreground mt-2">
               Elige una opción para ver precios y detalles
             </p>
-          </motion.div>
+          </div>
 
-          {/* 4 equal cards grid */}
+          {/* 4 equal cards grid: visibles desde el servidor (arriba del pliegue);
+              cada una sube 2 px al pasar y se hunde al presionar (`Pressable`). */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Managed */}
-            <motion.button
+            <div key="owner-managed" className="h-full">
+            <Pressable
+              as="button"
               onClick={() => setUserTextT('owner-managed')}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.3 }}
               className={cn(
-                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-surface hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer border-2 bg-surface hover:ring-1 hover:ring-primary",
                 userTextT === 'owner-managed'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
               )}
             >
-              {userTextT === 'owner-managed' && (
-                <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-primary text-primary-fg uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
+              <VistoDeLaElegida visible={userTextT === 'owner-managed'} />
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
                 <div className="w-9 h-9 rounded-md bg-surface-muted border border-border-faint flex items-center justify-center">
@@ -481,30 +506,22 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-            </motion.button>
+            </Pressable>
+            </div>
 
             {/* Card 2: DIY */}
-            <motion.button
+            <div key="owner-diy" className="h-full">
+            <Pressable
+              as="button"
               onClick={() => setUserTextT('owner-diy')}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
               className={cn(
-                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'owner-diy'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
               )}
             >
-              {userTextT === 'owner-diy' && (
-                <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-primary text-primary-fg uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
+              <VistoDeLaElegida visible={userTextT === 'owner-diy'} />
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
                 <div className="w-9 h-9 rounded-md bg-surface-muted border border-border-faint flex items-center justify-center">
@@ -521,30 +538,22 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-            </motion.button>
+            </Pressable>
+            </div>
 
             {/* Card 3: Evaluation */}
-            <motion.button
+            <div key="evaluation" className="h-full">
+            <Pressable
+              as="button"
               onClick={() => setUserTextT('evaluation')}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
               className={cn(
-                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'evaluation'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
               )}
             >
-              {userTextT === 'evaluation' && (
-                <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-primary text-primary-fg uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
+              <VistoDeLaElegida visible={userTextT === 'evaluation'} />
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
                 <div className="w-9 h-9 rounded-md bg-surface-muted border border-border-faint flex items-center justify-center">
@@ -562,30 +571,22 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-            </motion.button>
+            </Pressable>
+            </div>
 
             {/* Card 4: Agency */}
-            <motion.button
+            <div key="agency" className="h-full">
+            <Pressable
+              as="button"
               onClick={() => setUserTextT('agency')}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
               className={cn(
-                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
+                "group relative h-full w-full text-left rounded-[20px] overflow-hidden transition-[border-color,box-shadow] duration-slow ease-standard cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-primary",
                 userTextT === 'agency'
                   ? "border-primary/30 ring-2 ring-primary/10"
                   : "border-border-faint hover:border-primary/30"
               )}
             >
-              {userTextT === 'agency' && (
-                <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-primary text-primary-fg uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
+              <VistoDeLaElegida visible={userTextT === 'agency'} />
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
                 <div className="w-9 h-9 rounded-md bg-surface-muted border border-border-faint flex items-center justify-center">
@@ -602,15 +603,12 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-            </motion.button>
+            </Pressable>
+            </div>
           </div>
 
           {/* Social proof strip */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
+          <Appear inView direction="none" duration="slow" delay={0.32}
             className="flex items-center justify-center gap-3 mt-8"
           >
             <div className="flex -space-x-2">
@@ -626,20 +624,22 @@ export default function PricingPage() {
             <p className="text-[13px] text-muted-foreground">
               <span className="font-semibold text-foreground">+2,400 clientes</span> confían en nosotros
             </p>
-          </motion.div>
+          </Appear>
         </div>
       </section>
 
+      {/*
+        Lo que se ve según la tarjeta elegida: la sección vieja sale y la
+        nueva entra (`CrossFade`). Antes cada sección cambiaba de golpe y sólo
+        su título se animaba.
+      */}
+      <CrossFade swapKey={userTextT}>
       {/* Property Management Section */}
       {userTextT === 'owner-managed' && (
         <section className="pb-20">
           <div className="container-platform">
             {/* Section Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-10"
-            >
+            <div className="mb-10">
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-primary" />
                 <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
@@ -649,13 +649,10 @@ export default function PricingPage() {
               <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
                 Nosotros <span className="font-medium">manejamos todo</span>
               </h2>
-            </motion.div>
+            </div>
 
             {/* Interactive Rent Calculator - Compact light style */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+            <Appear inView distance="md" duration="slow"
               className="mb-10 p-5 rounded-[20px] bg-surface-muted border border-border-faint"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
@@ -685,7 +682,7 @@ export default function PricingPage() {
                         }}
                         placeholder="2.000.000"
                         aria-label="Valor del arriendo mensual"
-                        className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border-faint focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-fg-placeholder"
+                        className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border-faint focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-[border-color,box-shadow] duration-fast ease-standard placeholder:text-fg-placeholder"
                       />
                     </div>
                     <span className="text-[12px] text-muted-foreground">/mes</span>
@@ -717,7 +714,7 @@ export default function PricingPage() {
                 <span className="text-fg-subtle">•</span>
                 <span className="text-muted-foreground">Sin compromisos</span>
               </div>
-            </motion.div>
+            </Appear>
 
             {/* Management Tiers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -768,11 +765,7 @@ export default function PricingPage() {
         <section className="pb-20">
           <div className="container-platform">
             {/* Section Header - Premium editorial style */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-12"
-            >
+            <div className="mb-12">
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-primary" />
                 <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
@@ -785,7 +778,7 @@ export default function PricingPage() {
               <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
                 Tú administras, nosotros te damos las <span className="text-primary font-medium">herramientas profesionales</span>.
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <AgencyTierCard
@@ -847,11 +840,7 @@ export default function PricingPage() {
         <section className="pb-20">
           <div className="container-platform">
             {/* Section Header - Premium editorial style */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-12"
-            >
+            <div className="mb-12">
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-warning" />
                 <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
@@ -864,7 +853,7 @@ export default function PricingPage() {
               <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
                 Precios que <span className="text-warning font-medium">escalan con tu negocio</span>. Empieza gratis, crece sin límites.
               </p>
-            </motion.div>
+            </div>
 
             {/* Pricing Tiers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
@@ -995,11 +984,7 @@ export default function PricingPage() {
       <section className="pb-20">
         <div className="container-platform">
           {/* Section Header - Premium editorial style */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
+          <div className="mb-12">
             <div className="flex items-center gap-2 mb-3">
               <Circle className="w-4 h-4 text-success" />
               <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
@@ -1012,7 +997,7 @@ export default function PricingPage() {
             <p className="text-[16px] text-muted-foreground mt-4 max-w-2xl leading-relaxed">
               Para propietarios, inmobiliarias, agentes o cualquiera que necesite verificar la confiabilidad de un inquilino. También útil si eres inquilino y quieres <span className="text-success font-medium">pre-verificarte</span>.
             </p>
-          </motion.div>
+          </div>
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -1063,10 +1048,7 @@ export default function PricingPage() {
           </div>
 
           {/* B2B Plan-based Pricing Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <Appear inView distance="md" duration="slow"
             className="p-6 bg-gradient-to-br from-warning/10 via-card to-card rounded-[20px] border border-warning/30 mb-16"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1087,13 +1069,10 @@ export default function PricingPage() {
                 </Button>
               </Link>
             </div>
-          </motion.div>
+          </Appear>
 
           {/* How it works */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <Appear inView distance="md" duration="slow"
             className="p-8 md:p-10 bg-card rounded-[20px] border border-border"
           >
             <div className="flex items-center justify-center gap-2 mb-8">
@@ -1102,19 +1081,15 @@ export default function PricingPage() {
                 ¿Cómo funciona?
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <Stagger inView className="grid grid-cols-1 md:grid-cols-4 gap-8" layout={false} distance="md">
               {[
                 { num: '1', title: 'Elige tu plan', desc: 'Básica, Pass o Premium según tu necesidad' },
                 { num: '2', title: 'Completa tu perfil', desc: 'Sube documentos y autoriza verificaciones' },
                 { num: '3', title: 'Recibe tu score', desc: 'En minutos tienes tu reporte verificado' },
                 { num: '4', title: 'Aplica con confianza', desc: 'Propietarios ven tu perfil verificado' },
-              ].map((step, i) => (
-                <motion.div
+              ].map((step) => (
+                <StaggerItem
                   key={step.num}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
                   className="text-center"
                 >
                   <div className="w-12 h-12 bg-primary text-primary-foreground rounded-md flex items-center justify-center mx-auto mb-4 shadow-primary/25">
@@ -1122,33 +1097,28 @@ export default function PricingPage() {
                   </div>
                   <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
                   <p className="text-[12px] text-muted-foreground leading-relaxed">{step.desc}</p>
-                </motion.div>
+                </StaggerItem>
               ))}
-            </div>
-          </motion.div>
+            </Stagger>
+          </Appear>
 
           {/* Trust note */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+          <Appear inView direction="none" duration="slow"
             className="mt-8 text-center"
           >
             <p className="text-[14px] text-muted-foreground">
               <span className="font-semibold text-foreground">Resultados en minutos</span> — Verificaciones powered by DataCrédito y fuentes oficiales colombianas.
             </p>
-          </motion.div>
+          </Appear>
         </div>
       </section>
       )}
+      </CrossFade>
 
       {/* Value props - Premium Bento Style */}
       <section className="py-20 bg-muted/30">
         <div className="container-platform">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <Appear inView distance="md" duration="slow"
             className="mb-14"
           >
             <div className="flex items-center gap-2 mb-3">
@@ -1160,16 +1130,13 @@ export default function PricingPage() {
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
               Por qué elegir <span className="font-medium">Leasefy</span>
             </h2>
-          </motion.div>
+          </Appear>
 
           {/* Bento Grid */}
           <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4">
             {/* Large card - Security */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="md:col-span-3 lg:col-span-5 rounded-[20px] p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 transition-all relative overflow-hidden"
+            <Appear inView distance="md" duration="slow"
+              className="md:col-span-3 lg:col-span-5 rounded-[20px] p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 relative overflow-hidden"
             >
               {/* Decorative corner */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
@@ -1201,15 +1168,11 @@ export default function PricingPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </Appear>
 
             {/* Medium card - Speed */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="md:col-span-3 lg:col-span-4 rounded-[20px] p-6 bg-surface border border-border-faint transition-all"
+            <Appear inView distance="md" duration="slow" delay={0.1}
+              className="md:col-span-3 lg:col-span-4 rounded-[20px] p-6 bg-surface border border-border-faint"
             >
               <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center mb-4">
                 <Lightning className="w-5 h-5 text-warning" />
@@ -1221,14 +1184,10 @@ export default function PricingPage() {
                 Encuentra inquilinos calificados en días, no semanas.
               </p>
               {/* Speed visual */}
-              <div className="space-y-2">
+              <Stagger inView className="space-y-2" layout={false} direction="right" distance="md" delay={0.1}>
                 {['Publicar', 'Evaluar', 'Contratar'].map((step, i) => (
-                  <motion.div
+                  <StaggerItem
                     key={step}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className={cn(
@@ -1239,18 +1198,14 @@ export default function PricingPage() {
                     </div>
                     <span className="text-[13px] text-foreground">{step}</span>
                     {i < 2 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </div>
-            </motion.div>
+              </Stagger>
+            </Appear>
 
             {/* Small card - Support */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="md:col-span-6 lg:col-span-3 rounded-[20px] p-6 bg-surface-muted border border-border-faint transition-all"
+            <Appear inView distance="md" duration="slow" delay={0.2}
+              className="md:col-span-6 lg:col-span-3 rounded-[20px] p-6 bg-surface-muted border border-border-faint"
             >
               <div className="w-10 h-10 rounded-md bg-surface flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
@@ -1265,7 +1220,7 @@ export default function PricingPage() {
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 <span className="text-[12px] text-muted-foreground">Online ahora</span>
               </div>
-            </motion.div>
+            </Appear>
           </div>
         </div>
       </section>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Info } from '@phosphor-icons/react'
+import { CrossFade } from '@leasefy/cadence'
+import { useDireccionDelPaso } from '@/components/onboarding/wizard/use-direccion-del-paso'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
@@ -405,6 +407,35 @@ function OnboardingWizard({
   const cargando = status === 'loading' && error === null
   const conErrorDeSesion = error !== null && error.kind !== 'validation' && error.kind !== 'conflict'
 
+  /*
+   * Qué se ve en la tarjeta. Al cambiar, el paso nuevo entra por la derecha
+   * al avanzar y por la izquierda al volver a uno hecho (`CrossFade` de
+   * pasos); la carga y el error de la sesión entran subiendo. `popLayout`: lo
+   * nuevo monta YA, al mismo tiempo que el título del paso (que recibe el
+   * foco), y lo viejo se va por encima, acelerando.
+   */
+  const pasoDeLaVista: OnboardingWizardStep =
+    pasoYaGuardado && completeStepOverride
+      ? completeStepOverride
+      : pendingMembersInvites || effectiveStep === 'members'
+        ? 'members'
+        : effectiveStep === null || effectiveStep === 'start'
+          ? 'agency'
+          : effectiveStep
+  const claveDeLaVista = cargando
+    ? 'cargando'
+    : conErrorDeSesion
+      ? 'error-de-la-sesion'
+      : status === 'loading'
+        ? 'esperando'
+        : pasoYaGuardado
+          ? `ya-guardado-${pasoDeLaVista}`
+          : pasoDeLaVista
+  const direccion = useDireccionDelPaso(
+    claveDeLaVista,
+    cargando || conErrorDeSesion || status === 'loading' ? null : ORDEN_DEL_MICRO.indexOf(pasoDeLaVista),
+  )
+
   // El marco (pasos a la izquierda, el paso al centro, lo informativo a la
   // derecha) es el mismo del inquilino: `MarcoDelAsistente`. Acá sólo se
   // decide qué va adentro.
@@ -416,7 +447,8 @@ function OnboardingWizard({
       sinEncabezado={cargando || conErrorDeSesion}
       volver={volver}
     >
-      <div className="space-y-6">
+      <div className="relative">
+      <CrossFade swapKey={claveDeLaVista} direction={direccion} mode="popLayout" className="space-y-6">
         {cargando && (
           <CargaDeMarca
             tamano="lg"
@@ -522,6 +554,7 @@ function OnboardingWizard({
             )}
           </>
         )}
+      </CrossFade>
       </div>
     </MarcoDelAsistente>
   )

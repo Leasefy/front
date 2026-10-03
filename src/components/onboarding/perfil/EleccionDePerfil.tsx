@@ -3,7 +3,16 @@
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { AnimatePresence, LayoutGroup, MotionConfig, motion, type Transition } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, motion, type Transition } from 'framer-motion'
+import {
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionScale,
+  motionSpring,
+  motionStagger,
+  motionTransition,
+} from '@leasefy/cadence'
 import { ArrowRight, Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -28,8 +37,11 @@ import {
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
 import type { RegistroAMedias } from './PanelAntesDeComenzar'
 
-/** El resorte de las tarjetas al irse a la izquierda y al volver al centro. */
-const RESORTE: Transition = { type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }
+/**
+ * El resorte de las tarjetas al irse a la izquierda y al volver al centro: el
+ * `soft` de Cadence (superficies que se acomodan, sin rebote).
+ */
+const RESORTE: Transition = motionSpring.soft
 
 /**
  * La línea de apoyo bajo la pregunta: saluda por el nombre cuando lo hay y
@@ -214,7 +226,9 @@ export function EleccionDePerfil({
       : undefined
 
   return (
-    <MotionConfig reducedMotion="user">
+    <>
+      {/* Sin `MotionConfig` propio: el `MotionProvider` del layout raíz ya
+          respeta el movimiento reducido en toda la app. */}
       <div className="flex min-h-screen flex-col bg-bg">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
@@ -232,10 +246,10 @@ export function EleccionDePerfil({
                 <motion.div
                   key="bienvenida"
                   layout="position"
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -motionDistance.sm }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22 }}
+                  exit={{ opacity: 0, y: -motionDistance.sm, transition: motionTransition.exit }}
+                  transition={motionTransition.enter}
                   className="mx-auto max-w-xl pb-8 pt-4 text-center sm:pb-12 sm:pt-10"
                 >
                   {/* Los títulos de la casa: peso medio, nunca negrita, tracking cerrado (ver /auth). */}
@@ -311,9 +325,9 @@ export function EleccionDePerfil({
                   <motion.section
                     key="panel"
                     aria-label="Antes de comenzar"
-                    initial={{ opacity: 0, x: 32 }}
-                    animate={{ opacity: 1, x: 0, transition: { ...RESORTE, delay: 0.08 } }}
-                    exit={{ opacity: 0, x: 32, transition: { duration: 0.16 } }}
+                    initial={{ opacity: 0, x: motionDistance.lg }}
+                    animate={{ opacity: 1, x: 0, transition: { ...RESORTE, delay: motionStagger.step * 2 } }}
+                    exit={{ opacity: 0, x: motionDistance.lg, transition: motionTransition.exit }}
                     className={cn('min-w-0', abriendoRegistro && 'mx-auto w-full max-w-md')}
                   >
                     {panelDeInmobiliaria(
@@ -371,7 +385,7 @@ export function EleccionDePerfil({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MotionConfig>
+    </>
   )
 }
 
@@ -404,7 +418,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
   { opcion, indice, elegida, yendo, deshabilitada, compacta, onElegir },
   ref,
 ) {
-  const entrada = 0.05 + indice * 0.08
+  // Llegan después de cargar los perfiles (no están en el HTML del servidor):
+  // una tras otra con el paso del escalonado del sistema y su techo.
+  const entrada = Math.min(indice * motionStagger.step, motionStagger.max)
   // La atenuación va en el `animate` de framer, no en una clase: framer deja
   // `opacity` como estilo inline y una clase `opacity-45` nunca le gana.
   const atenuada = deshabilitada && !elegida && !yendo
@@ -416,20 +432,20 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
       onClick={onElegir}
       disabled={deshabilitada}
       aria-busy={yendo || undefined}
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: motionDistance.md }}
       animate={{ opacity: atenuada ? 0.4 : 1, y: 0 }}
       transition={{
         ...RESORTE,
-        opacity: { duration: 0.4, delay: entrada },
-        y: { type: 'spring', stiffness: 260, damping: 30, delay: entrada },
+        opacity: { duration: motionDuration.slow, ease: motionEase.enter, delay: entrada },
+        y: { ...RESORTE, delay: entrada },
       }}
-      whileHover={deshabilitada ? undefined : { y: -4 }}
-      whileTap={deshabilitada ? undefined : { scale: 0.985 }}
+      whileHover={deshabilitada ? undefined : { y: -motionDistance.xs }}
+      whileTap={deshabilitada ? undefined : { scale: motionScale.press }}
       data-testid={`perfil-${opcion.valor}`}
       data-elegida={elegida || undefined}
       className={cn(
         'group relative flex w-full cursor-pointer flex-col overflow-hidden bg-surface text-left',
-        'transition-[box-shadow,opacity] duration-300',
+        'transition-[box-shadow,opacity] duration-slow ease-standard',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:cursor-default',
         compacta ? 'aspect-square rounded-lg' : 'aspect-[4/5] rounded-xl sm:aspect-[3/4]',
@@ -450,7 +466,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
           priority
           sizes="(min-width: 1024px) 460px, (min-width: 640px) 50vw, 100vw"
           className={cn(
-            'object-cover transition-[transform,filter] duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]',
+            // Sólo `transform` se anima (el zoom lento del hover); el gris de la
+            // atenuada se pone de una mientras la tarjeta se funde.
+            'object-cover transition-transform duration-reveal ease-enter motion-safe:group-enabled:group-hover:scale-[1.04]',
             atenuada && 'grayscale-[0.5]',
           )}
           style={{ objectPosition: opcion.encuadre }}
@@ -462,7 +480,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
             aria-hidden
             className={cn(
               'pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3.5 py-1.5',
-              'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-all duration-300',
+              'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-[opacity,transform] duration-slow ease-enter',
               'motion-safe:translate-y-1 group-hover:opacity-100 group-focus-visible:opacity-100',
               'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0',
             )}
@@ -474,9 +492,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
 
         {elegida || yendo ? (
           <motion.span
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+            transition={motionSpring.bouncy}
             className={cn(
               'absolute right-4 top-4 flex size-8 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)]',
               yendo ? 'bg-surface text-primary' : 'bg-primary text-primary-fg',

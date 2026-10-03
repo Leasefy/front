@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { enterTransition, motionDistance, usePrefersReducedMotion } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
 import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
 import { EsqueletoDelPanel } from '@/components/inmobiliaria/EsqueletoDelPanel';
-import { SUAVE, TarjetaDePuestaEnMarcha } from '@/components/puesta-en-marcha/TarjetaDePuestaEnMarcha';
+import { TarjetaDePuestaEnMarcha } from '@/components/puesta-en-marcha/TarjetaDePuestaEnMarcha';
 import { leerRelevo } from '@/components/puesta-en-marcha/relevo';
 import { AvisoDelMuroContext } from '@/components/migracion/migracion-context';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
@@ -123,7 +124,7 @@ function EscenaDelSegundoFactor({
   const caja = useRef<HTMLDivElement>(null);
   const idTitulo = useId();
   const idEntrada = useId();
-  const animar = !useReducedMotion();
+  const reducido = usePrefersReducedMotion();
   /**
    * El portal va después de montar: en el servidor no hay `document`, y
    * decidirlo en el render con `typeof document` hace que el HTML del servidor
@@ -240,9 +241,11 @@ function EscenaDelSegundoFactor({
             className="flex flex-1 flex-col"
             // En el relevo, el contenido nuevo entra donde se fue el de la
             // decisión; llegando sola, entra con la tarjeta.
-            initial={animar && relevo ? { opacity: 0, y: 8 } : false}
+            // (0,08 s: lo que tarda en irse el de la decisión; el resto, los
+            // tokens. Con movimiento reducido queda un fundido corto, sin subir.)
+            initial={relevo ? { opacity: 0, y: motionDistance.sm } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: animar && relevo ? 0.08 : 0, duration: animar ? 0.34 : 0, ease: SUAVE }}
+            transition={enterTransition(reducido, { duration: 'slow', delay: relevo ? 0.08 : 0 })}
           >
             {activado ? (
               // El «Listo» trae su propio título a la vista; éste sólo nombra el diálogo.

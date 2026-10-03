@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { Appear, CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence'
 import { ArrowRight, ArrowLeft, Check, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn, sanitizeReturnUrl } from '@/lib/utils'
 import { apiClient } from '@/lib/api/client'
@@ -87,6 +88,9 @@ function OnboardingPropietarioContent() {
   const [isComplete, setIsComplete] = useState(false)
   // Shown when the user taps a disabled CTA: explains the first missing field
   const [disabledHint, setDisabledHint] = useState<string | null>(null)
+  // La última pista, para que no se vacíe mientras sale (`Presence`).
+  const [pistaVisible, setPistaVisible] = useState<string | null>(null)
+  if (disabledHint && disabledHint !== pistaVisible) setPistaVisible(disabledHint)
 
   // Clear the disabled-CTA hint when changing steps
   useEffect(() => {
@@ -278,14 +282,17 @@ function OnboardingPropietarioContent() {
   if (isComplete) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full text-center"
-        >
-          <div className="w-20 h-20 bg-success-soft rounded-full flex items-center justify-center mx-auto mb-6">
+        {/* «¡Listo!» llega después de guardar (nunca en el HTML del servidor):
+            sube 8 px y el visto entra con el resorte de rebote leve. */}
+        <Appear className="max-w-md w-full text-center">
+          <motion.div
+            initial={{ scale: motionScale.pop, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={motionSpring.bouncy}
+            className="w-20 h-20 bg-success-soft rounded-full flex items-center justify-center mx-auto mb-6"
+          >
             <Check className="w-10 h-10 text-success" weight="bold" />
-          </div>
+          </motion.div>
           <h1 className="text-3xl font-bold text-fg mb-3">
             ¡Listo, {data.displayName.split(' ')[0]}!
           </h1>
@@ -319,7 +326,7 @@ function OnboardingPropietarioContent() {
               </>
             )}
           </div>
-        </motion.div>
+        </Appear>
       </div>
     )
   }
@@ -381,15 +388,15 @@ function OnboardingPropietarioContent() {
 
       {/* Main Content */}
       <main className="max-w-md mx-auto px-6 py-12">
-        <AnimatePresence mode="wait">
+        {/*
+          Paso 1 ↔ paso 2: el nuevo entra por la derecha al avanzar y por la
+          izquierda al volver (`CrossFade` de pasos). Su `initial` es `false`:
+          el paso 1 llega visible desde el HTML del servidor (antes nacía en
+          `opacity: 0` hasta hidratar).
+        */}
+        <CrossFade swapKey={step} direction={step === 2 ? 'forward' : 'backward'}>
           {step === 1 ? (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div>
               {/* Step 1: About You */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft text-primary rounded-full text-sm font-medium mb-4">
@@ -510,21 +517,16 @@ function OnboardingPropietarioContent() {
                 )}
               </Button>
               </span>
-              {disabledHint && !isStep1Valid && (
+              {/* La pista del botón apagado aparece y se va con `Presence`. */}
+              <Presence show={Boolean(disabledHint) && !isStep1Valid} distance="xs">
                 <p role="status" className="mt-3 text-xs text-warning text-center">
-                  {disabledHint}
+                  {disabledHint || pistaVisible}
                 </p>
-              )}
+              </Presence>
               </form>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div>
               {/* Step 2: Your Property */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-success-soft text-success rounded-full text-sm font-medium mb-4">
@@ -559,7 +561,7 @@ function OnboardingPropietarioContent() {
                         type="button"
                         onClick={() => updateData({ propertyTextT: type.value })}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-left",
+                          "flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-colors duration-fast ease-standard text-left",
                           data.propertyTextT === type.value
                             ? "border-fg bg-surface-muted"
                             : "border-border bg-surface hover:border-border-strong"
@@ -673,15 +675,16 @@ function OnboardingPropietarioContent() {
                   </Button>
                 </span>
               </div>
-              {disabledHint && !isStep2Valid && (
+              {/* La pista del botón apagado aparece y se va con `Presence`. */}
+              <Presence show={Boolean(disabledHint) && !isStep2Valid} distance="xs">
                 <p role="status" className="mt-3 text-xs text-warning text-center">
-                  {disabledHint}
+                  {disabledHint || pistaVisible}
                 </p>
-              )}
+              </Presence>
               </form>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </CrossFade>
       </main>
     </div>
   )

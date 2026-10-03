@@ -10,6 +10,7 @@ import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { Input } from '@/components/ui/input';
+import { Appear, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
@@ -137,6 +138,9 @@ function RegistroContent() {
   const [invitationError, setInvitationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // El último error, para que el aviso no se vacíe mientras sale (`Presence`).
+  const [errorVisible, setErrorVisible] = useState<string | null>(null);
+  if (formError && formError !== errorVisible) setErrorVisible(formError);
   const [confirmed, setConfirmed] = useState(false);
   // True while silently auto-completing onboarding after email confirmation click
   const [autoCompleting, setAutoCompleting] = useState(false);
@@ -369,7 +373,8 @@ function RegistroContent() {
   if (invitationError || !invitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-        <div className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
+        {/* Llega después de la carga (nunca en el HTML del servidor): sube 8 px. */}
+        <Appear className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <WarningCircle className="w-7 h-7 text-destructive" />
           </div>
@@ -398,7 +403,7 @@ function RegistroContent() {
               </Link>
             </div>
           )}
-        </div>
+        </Appear>
       </div>
     );
   }
@@ -407,10 +412,16 @@ function RegistroContent() {
 
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
+      {/*
+        Las dos tarjetas llegan después de la carga de la invitación (nunca en
+        el HTML del servidor): entran escalonadas (`Stagger`, techo 320 ms).
+        `layout={false}`: el alto del formulario cambia (perfil → «Revisa tu
+        email») y con `layout` la tarjeta se estiraría con `scale`.
+      */}
+      <Stagger className="max-w-md w-full" layout={false}>
 
         {/* Invitation card */}
-        <div className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
+        <StaggerItem key="invitacion" className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
               <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
@@ -442,10 +453,12 @@ function RegistroContent() {
               <p className="text-xs text-warning">Esta invitación expiró. Pídele al administrador que la reenvíe.</p>
             </div>
           )}
-        </div>
+        </StaggerItem>
 
         {!isExpired && (
-          <div className="bg-white dark:bg-card rounded-xl border border-border p-6">
+          <StaggerItem key="formulario" className="bg-white dark:bg-card rounded-xl border border-border p-6">
+            {/* Perfil ↔ crear cuenta ↔ «Revisa tu email»: se cruzan (`CrossFade`). */}
+            <CrossFade swapKey={needsOnboarding ? 'perfil' : confirmed ? 'revisa-tu-correo' : 'crear-cuenta'}>
 
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
@@ -512,12 +525,12 @@ function RegistroContent() {
                     <ErrorDelCampo id="perfil-telefono-error" mensaje={profileForm.formState.errors.phone?.message} />
                   </div>
 
-                  {formError && (
+                  <Presence show={Boolean(formError)}>
                     <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                       <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                      <p className="text-[13px] text-destructive">{formError}</p>
+                      <p className="text-[13px] text-destructive">{errorVisible}</p>
                     </div>
-                  )}
+                  </Presence>
 
                   <button
                     type="submit"
@@ -636,12 +649,12 @@ function RegistroContent() {
                       <ErrorDelCampo id="cuenta-contrasena-error" mensaje={authForm.formState.errors.password?.message} />
                     </div>
 
-                    {formError && (
+                    <Presence show={Boolean(formError)}>
                       <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                         <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                        <p className="text-[13px] text-destructive">{formError}</p>
+                        <p className="text-[13px] text-destructive">{errorVisible}</p>
                       </div>
-                    )}
+                    </Presence>
 
                     <button
                       type="submit"
@@ -661,9 +674,10 @@ function RegistroContent() {
                 )}
               </>
             )}
-          </div>
+            </CrossFade>
+          </StaggerItem>
         )}
-      </div>
+      </Stagger>
     </div>
   );
 }

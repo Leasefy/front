@@ -7,6 +7,7 @@ import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
+import { Presence } from '@leasefy/cadence'
 
 export interface TermsStepFormProps {
   isSubmitting: boolean
@@ -34,6 +35,9 @@ export interface TermsStepFormProps {
 export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStepFormProps) {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [terminosAbiertos, setTerminosAbiertos] = useState(false)
+  // El último error, para que no se vacíe mientras sale (`Presence`).
+  const [ultimoError, setUltimoError] = useState(submitError ?? null)
+  if (submitError && submitError !== ultimoError) setUltimoError(submitError)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,11 +92,11 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         </SheetContent>
       </Sheet>
 
-      {submitError && (
+      <Presence show={Boolean(submitError)}>
         <div data-testid="terms-step-form-error" className="rounded-md border border-danger/20 bg-danger-soft p-3">
-          <p className="text-sm text-danger">{submitError}</p>
+          <p className="text-sm text-danger">{submitError || ultimoError}</p>
         </div>
-      )}
+      </Presence>
 
       <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow className="w-full">
         {isSubmitting ? (

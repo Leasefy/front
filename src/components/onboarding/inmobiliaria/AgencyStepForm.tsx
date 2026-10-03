@@ -6,7 +6,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
-import { PhoneInput } from '@leasefy/cadence'
+import { PhoneInput, Presence } from '@leasefy/cadence'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -192,6 +192,9 @@ export function AgencyStepForm({
   const avisoDelFormulario = errorDelServidor !== undefined
     ? sueltosDelServidor.join(' · ') || null
     : submitError
+  // El último aviso, para que no se vacíe mientras sale (`Presence`).
+  const [ultimoAviso, setUltimoAviso] = useState(avisoDelFormulario)
+  if (avisoDelFormulario && avisoDelFormulario !== ultimoAviso) setUltimoAviso(avisoDelFormulario)
 
   const submit = handleSubmit(async (values) => {
     const parsed = agencyStepSchema.safeParse(values)
@@ -436,15 +439,15 @@ export function AgencyStepForm({
         />
       </div>
 
-      {avisoDelFormulario && (
+      <Presence show={Boolean(avisoDelFormulario)}>
         <div
           data-testid="agency-step-form-error"
           role="alert"
           className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
-          <p className="text-sm text-danger">{avisoDelFormulario}</p>
+          <p className="text-sm text-danger">{avisoDelFormulario || ultimoAviso}</p>
         </div>
-      )}
+      </Presence>
 
       <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (

@@ -13,6 +13,8 @@
  * El puntaje sale de `fortalezaDeContrasena`; acá sólo se pinta.
  */
 
+import { useState } from 'react';
+import { Presence } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 
@@ -27,6 +29,9 @@ const BARRAS = [1, 2, 3, 4, 5] as const;
 
 export function MedidorDeContrasena({ contrasena, correo, className }: MedidorDeContrasenaProps) {
   const fortaleza = fortalezaDeContrasena(contrasena, { correo });
+  // El último consejo, para que no se vacíe mientras sale.
+  const [ultimoConsejo, setUltimoConsejo] = useState(fortaleza.consejo);
+  if (fortaleza.consejo && fortaleza.consejo !== ultimoConsejo) setUltimoConsejo(fortaleza.consejo);
   const tono =
     fortaleza.puntaje === 0
       ? null
@@ -58,7 +63,7 @@ export function MedidorDeContrasena({ contrasena, correo, className }: MedidorDe
               data-testid="medidor-barra"
               data-encendida={tono !== null && barra <= fortaleza.puntaje ? 'si' : 'no'}
               className={cn(
-                'h-1 flex-1 rounded-full transition-colors duration-200',
+                'h-1 flex-1 rounded-full transition-colors duration-base ease-standard',
                 tono !== null && barra <= fortaleza.puntaje ? tono.barra : 'bg-border',
               )}
             />
@@ -72,11 +77,13 @@ export function MedidorDeContrasena({ contrasena, correo, className }: MedidorDe
           {fortaleza.etiqueta}
         </span>
       </div>
-      {fortaleza.consejo && (
+      {/* El consejo aparece y se va con `Presence` (4 px): cambia mientras se
+          escribe y no debe saltar al ritmo del teclado. */}
+      <Presence show={Boolean(fortaleza.consejo)} distance="xs" initial={false}>
         <p className="text-[12px] leading-relaxed text-fg-subtle" data-testid="medidor-consejo">
-          {fortaleza.consejo}
+          {fortaleza.consejo || ultimoConsejo}
         </p>
-      )}
+      </Presence>
     </div>
   );
 }

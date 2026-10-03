@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { MotionIndicator } from '@leasefy/cadence'
 import { Reveal } from '@/components/landing/motion/Reveal'
 import { blogPosts, blogCategories } from '@/lib/data/blog-posts'
 
@@ -21,6 +22,7 @@ import { blogPosts, blogCategories } from '@/lib/data/blog-posts'
  */
 export function BlogListing() {
   const [activeCategory, setActiveCategory] = useState('Todos')
+  const id = useId()
 
   const filtered =
     activeCategory === 'Todos' ? blogPosts : blogPosts.filter((post) => post.category === activeCategory)
@@ -49,10 +51,16 @@ export function BlogListing() {
                 role="tab"
                 aria-selected={activeCategory === category}
                 className={
-                  activeCategory === category ? 'landing-bp__tab landing-bp__tab--on' : 'landing-bp__tab'
+                  activeCategory === category
+                    ? 'landing-bp__tab landing-bp__tab--on relative isolate'
+                    : 'landing-bp__tab relative isolate'
                 }
                 onClick={() => setActiveCategory(category)}
               >
+                {/* La píldora de la activa se desliza a la nueva (`MotionIndicator`). */}
+                {activeCategory === category ? (
+                  <MotionIndicator layoutId={`${id}-categoria`} className="landing-bp__tab-marca" />
+                ) : null}
                 {category}
               </button>
             ))}
@@ -65,8 +73,11 @@ export function BlogListing() {
           </p>
         )}
 
+        {/* Sin `Reveal`: el destacado está arriba del pliegue y su imagen
+            (`priority`) es el LCP del blog; tiene que llegar visible desde el
+            servidor, no en `opacity: 0` hasta hidratar (DESIGN.md §8b). */}
         {featured && (
-          <Reveal>
+          <div>
             <Link href={featured.href} className="landing-bp__feat" data-testid="blog-featured">
               <div className="landing-bp__media">
                 <Image
@@ -92,7 +103,7 @@ export function BlogListing() {
                 </span>
               </div>
             </Link>
-          </Reveal>
+          </div>
         )}
 
         {rest.length > 0 && (

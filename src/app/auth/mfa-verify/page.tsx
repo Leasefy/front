@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
@@ -394,6 +395,21 @@ export default function MfaVerifyPage() {
     router.replace('/auth');
   }, [signOut, router]);
 
+  /*
+   * Qué muestra la tarjeta. Al cambiar (verificar ↔ «no tengo la app» ↔
+   * activarlo de nuevo), el título y el cuerpo se cruzan JUNTOS con
+   * `CrossFade`: sale lo viejo en 150 ms y entra lo nuevo subiendo 4 px. La
+   * primera vista llega visible desde el servidor (`initial` en `false`).
+   */
+  const tituloDeLaTarjeta = restablecido
+    ? 'restablecido'
+    : sinLaApp
+      ? 'sin-la-app'
+      : inscribiendo
+        ? 'inscribir'
+        : 'verificar';
+  const cuerpoDeLaTarjeta = sinLaApp && !restablecido ? 'restablecer' : inscribiendo ? 'inscribir' : 'codigo';
+
   return (
     <ForceLightMode>
       {/*
@@ -446,6 +462,7 @@ export default function MfaVerifyPage() {
                     seguridad» se parte en dos renglones dentro de una tarjeta
                     de 480. (`DESIGN.md` dice que `.text-h2` son 22 px y no es
                     cierto — medido: 36.) */}
+                <CrossFade swapKey={tituloDeLaTarjeta} className="space-y-2">
                 <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
                   {restablecido
                     ? 'Activa tu segundo factor de nuevo'
@@ -468,8 +485,18 @@ export default function MfaVerifyPage() {
                         ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
                         : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
+                </CrossFade>
                 {/* Con qué cuenta se está entrando: quien se fue y volvió (o
-                    tiene varias) lo ve sin adivinar (Nico, 01-10). */}
+                    tiene varias) lo ve sin adivinar (Nico, 01-10). El
+                    esqueleto y el correo miden lo mismo: se cruzan en el
+                    lugar (`popLayout`). `empty:hidden`: sin nada que mostrar
+                    no deja un hueco. */}
+                <div className="relative empty:hidden">
+                <CrossFade
+                  swapKey={correoDeLaCuenta ? 'correo' : buscandoElCorreo ? 'cargando' : 'nada'}
+                  mode="popLayout"
+                  className="empty:hidden"
+                >
                 {correoDeLaCuenta ? (
                   <p className="flex justify-center pt-1" data-testid="mfa-verify-cuenta">
                     <span className="inline-flex h-9 max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 text-body-sm text-fg">
@@ -482,6 +509,8 @@ export default function MfaVerifyPage() {
                     <Skeleton className="h-9 w-64 rounded-full bg-surface-muted" />
                   </div>
                 ) : null}
+                </CrossFade>
+                </div>
               </div>
 
               {/*
@@ -489,6 +518,7 @@ export default function MfaVerifyPage() {
                 ofrece inscribirlo, acá mismo, porque Configuración → Seguridad
                 está del otro lado del muro que esta pantalla levanta.
               */}
+              <CrossFade swapKey={cuerpoDeLaTarjeta}>
               {sinLaApp && !restablecido ? (
                 <RestablecerSegundoFactorPorCorreo
                   correo={correoDeLaCuenta}
@@ -530,7 +560,8 @@ export default function MfaVerifyPage() {
                     autoFocus
                   />
 
-                  {rechazados >= 3 ? (
+                  {/* Al tercer rechazo aparece la salida, subiendo 8 px. */}
+                  <Presence show={rechazados >= 3}>
                     <div
                       className="space-y-2 rounded-md bg-warning-soft px-3.5 py-3 text-left text-body-sm text-fg"
                       data-testid="mfa-verify-ninguno-sirve"
@@ -550,7 +581,7 @@ export default function MfaVerifyPage() {
                         Restablecer con un código al correo
                       </Button>
                     </div>
-                  ) : null}
+                  </Presence>
 
                   <Button
                     onClick={() => void handleVerify()}
@@ -571,10 +602,12 @@ export default function MfaVerifyPage() {
                   </p>
                 </div>
               )}
+              </CrossFade>
 
               {/* 🔴 La puerta de emergencia: sin app no hay código, y hay que
                   poder decirlo aunque el SDK no conteste. */}
-              {!inscribiendo && !sinLaApp && (
+              {/* El pie se va (y vuelve) con `Presence`, junto con el cambio de la tarjeta. */}
+              <Presence show={!inscribiendo && !sinLaApp} initial={false}>
                 <div className="space-y-1 border-t border-border-faint pt-5 text-center">
                   {/* La pregunta nombra los casos: «No tengo la app» sola no
                       la reconoce quien cambió de celular o ve que ningún
@@ -599,7 +632,7 @@ export default function MfaVerifyPage() {
                     {revisandoLaCuenta ? 'Revisando tu cuenta…' : 'Restablécelo con un código a tu correo'}
                   </Button>
                 </div>
-              )}
+              </Presence>
 
               <div className="text-center">
                 <button

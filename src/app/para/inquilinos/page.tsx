@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Appear } from '@leasefy/cadence';
+import { Bucle, ZonaDeBucles } from '@/components/landing/motion/bucles';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { Button } from '@/components/ui/button';
@@ -48,9 +50,9 @@ const testimonials = [
    ================================================================ */
 function MagnifyingGlassVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-6 py-4">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-6 py-4">
       {/* Animated glow effects */}
-      <motion.div
+      <Bucle.div
         className="absolute top-[10%] right-[20%] w-[150px] h-[150px] bg-neutral-500/[0.08] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.2, 1],
@@ -58,7 +60,7 @@ function MagnifyingGlassVisual() {
         }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
+      <Bucle.div
         className="absolute bottom-[20%] left-[10%] w-[120px] h-[120px] bg-[#1A40FF]/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
@@ -74,23 +76,23 @@ function MagnifyingGlassVisual() {
         transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         className="w-full bg-white/10 backdrop-blur-sm px-3 py-2.5 flex items-center gap-2 border border-white/10"
       >
-        <motion.div
+        <Bucle.div
           animate={{ rotate: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
           <MagnifyingGlass className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />
-        </motion.div>
+        </Bucle.div>
         <span className="text-[10px] text-white/40 flex-1">Apartamento pet-friendly en Chapinero...</span>
-        <motion.div
+        <Bucle.div
           className="bg-white text-foreground text-[8px] font-semibold px-2.5 py-1.5 flex items-center gap-1"
           animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 12px 2px rgba(255,255,255,0.2)", "0 0 0 0 rgba(255,255,255,0)"] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <motion.div animate={{ rotate: [0, 180, 360] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
+          <Bucle.div animate={{ rotate: [0, 180, 360] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
             <Sparkle className="w-2.5 h-2.5" />
-          </motion.div>
+          </Bucle.div>
           IA
-        </motion.div>
+        </Bucle.div>
       </motion.div>
 
       {/* AI chips with staggered pop-in */}
@@ -147,7 +149,7 @@ function MagnifyingGlassVisual() {
         >
           <div className="h-[60px] bg-gradient-to-br from-[#B7791F]/20 via-[#B7791F]/15 to-[#C4503B]/20 relative overflow-hidden">
             {/* Animated shimmer */}
-            <motion.div
+            <Bucle.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
@@ -159,12 +161,12 @@ function MagnifyingGlassVisual() {
               whileHover={{ scale: 1.1 }}
               className="absolute top-2 right-2 bg-white text-foreground text-[8px] font-bold px-2 py-1 flex items-center gap-1"
             >
-              <motion.div
+              <Bucle.div
                 animate={{ rotate: [0, 15, -15, 0] }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
               >
                 <Sparkle className="w-2.5 h-2.5 text-primary" />
-              </motion.div>
+              </Bucle.div>
               96% match
             </motion.div>
             <motion.div
@@ -242,14 +244,14 @@ function MagnifyingGlassVisual() {
         transition={{ delay: 1.3 }}
         className="text-center mt-3 text-[8px] text-white/30"
       >
-        <motion.span
+        <Bucle.span
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
           24 propiedades encontradas
-        </motion.span>
+        </Bucle.span>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -259,7 +261,7 @@ function MagnifyingGlassVisual() {
    ================================================================ */
 function ArriendoPassVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-4 pt-4">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-4 pt-4">
       {/* Pass card with 3D tilt effect */}
       <motion.div
         initial={{ y: 20, opacity: 0, rotateX: 15, scale: 0.9 }}
@@ -274,7 +276,7 @@ function ArriendoPassVisual() {
         style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
       >
         {/* Animated decorative circles */}
-        <motion.div
+        <Bucle.div
           className="absolute -top-8 -right-8 w-24 h-24 bg-white/10 rounded-full"
           animate={{
             scale: [1, 1.2, 1],
@@ -282,7 +284,7 @@ function ArriendoPassVisual() {
           }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
-        <motion.div
+        <Bucle.div
           className="absolute -bottom-6 -left-6 w-20 h-20 bg-white/5 rounded-full"
           animate={{
             scale: [1, 1.3, 1],
@@ -292,7 +294,7 @@ function ArriendoPassVisual() {
         />
 
         {/* Shimmer effect */}
-        <motion.div
+        <Bucle.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
           animate={{ x: ["-200%", "200%"] }}
           transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 }}
@@ -305,12 +307,12 @@ function ArriendoPassVisual() {
             transition={{ delay: 0.3, type: "spring" }}
             className="flex items-center gap-2 mb-3"
           >
-            <motion.div
+            <Bucle.div
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
             >
               <SealCheck className="w-5 h-5 text-white" />
-            </motion.div>
+            </Bucle.div>
             <span className="text-[13px] font-bold text-white">Arriendo Pass</span>
           </motion.div>
 
@@ -402,17 +404,17 @@ function ArriendoPassVisual() {
             className="text-right"
           >
             <span className="text-[9px] font-semibold text-[#2C7A53] block">Aplica a 3+ y ahorras</span>
-            <motion.span
+            <Bucle.span
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
               className="text-[12px] font-bold text-[#2C7A53] inline-block"
             >
               $59.800+
-            </motion.span>
+            </Bucle.span>
           </motion.div>
         </div>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -422,7 +424,7 @@ function ArriendoPassVisual() {
    ================================================================ */
 function VerifiedVisual() {
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
+    <ZonaDeBucles className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
       {/* Property preview with hover effect */}
       <motion.div
         initial={{ y: 20, opacity: 0, scale: 0.95 }}
@@ -434,27 +436,27 @@ function VerifiedVisual() {
       >
         <div className="h-[50px] bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#1A40FF] relative flex items-center justify-center overflow-hidden">
           {/* Animated shimmer */}
-          <motion.div
+          <Bucle.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
             animate={{ x: ["-100%", "200%"] }}
             transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
           />
-          <motion.span
+          <Bucle.span
             className="text-[20px]"
             animate={{ y: [0, -3, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
             🏠
-          </motion.span>
+          </Bucle.span>
           <motion.div
             initial={{ scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
             className="absolute top-2 right-2 bg-[#2C7A53] text-white text-[7px] font-bold px-1.5 py-0.5 flex items-center gap-0.5"
           >
-            <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+            <Bucle.div animate={{ rotate: [0, 360] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
               <CheckCircle className="w-2 h-2" />
-            </motion.div>
+            </Bucle.div>
             100%
           </motion.div>
         </div>
@@ -534,7 +536,7 @@ function VerifiedVisual() {
         className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-[#E8F3EC] cursor-pointer"
         style={{ border: "1px solid rgba(16,185,129,0.15)" }}
       >
-        <motion.div
+        <Bucle.div
           animate={{
             scale: [1, 1.2, 1],
             boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 0 4px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
@@ -543,10 +545,10 @@ function VerifiedVisual() {
           className="rounded-full"
         >
           <Shield className="w-3 h-3 text-[#2C7A53]" />
-        </motion.div>
+        </Bucle.div>
         <span className="text-[8px] font-semibold text-[#2C7A53]">Cero estafas garantizado</span>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -562,7 +564,7 @@ function ContractVisual() {
   }, []);
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
+    <ZonaDeBucles className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
       {/* Timeline with connecting lines */}
       <div className="flex items-center gap-2 mb-4 relative">
         {/* Connecting line */}
@@ -628,12 +630,12 @@ function ContractVisual() {
         style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-          <motion.div
+          <Bucle.div
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
           >
             <FileText className="w-4 h-4 text-muted-foreground" />
-          </motion.div>
+          </Bucle.div>
           <div className="flex-1">
             <motion.div
               initial={{ opacity: 0, x: -10 }}
@@ -695,19 +697,19 @@ function ContractVisual() {
             whileHover={!signed ? { borderColor: "rgba(0,0,0,0.3)" } : {}}
           >
             {!signed ? (
-              <motion.div
+              <Bucle.div
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="flex items-center gap-1.5"
               >
-                <motion.div
+                <Bucle.div
                   animate={{ y: [0, -2, 0], rotate: [0, 10, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
                   <PenNib className="w-3 h-3 text-muted-foreground" />
-                </motion.div>
+                </Bucle.div>
                 <span className="text-[9px] text-muted-foreground">Toca para firmar</span>
-              </motion.div>
+              </Bucle.div>
             ) : (
               <motion.svg width="100" height="20" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
@@ -731,7 +733,7 @@ function ContractVisual() {
               transition={{ type: "spring", stiffness: 300, damping: 15 }}
               className="absolute top-3 right-3"
             >
-              <motion.div
+              <Bucle.div
                 className="w-12 h-12 rounded-full border-2 border-[#2C7A53]/30 flex items-center justify-center bg-[#E8F3EC]/80"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 15px 3px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
@@ -739,7 +741,7 @@ function ContractVisual() {
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
-              </motion.div>
+              </Bucle.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -767,7 +769,7 @@ function ContractVisual() {
           </motion.span>
         ))}
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -794,7 +796,7 @@ export default function InquilinosPage() {
               {/* Left Content */}
               <div className="space-y-4">
                 <motion.span
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
@@ -803,9 +805,8 @@ export default function InquilinosPage() {
                 </motion.span>
 
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
                   className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   Encuentra tu hogar
@@ -813,9 +814,8 @@ export default function InquilinosPage() {
                 </motion.h1>
 
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
                   className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   Inmuebles verificados, postulación simple, contratos claros.
@@ -823,9 +823,8 @@ export default function InquilinosPage() {
                 </motion.p>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/propiedades">
@@ -846,9 +845,8 @@ export default function InquilinosPage() {
 
                 {/* Hero Stats */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
                   className="flex items-center gap-8 pt-6"
                 >
                   {[
@@ -866,23 +864,20 @@ export default function InquilinosPage() {
 
               {/* Right - Hero Card */}
               <motion.div
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
                   <motion.div
-                    initial={{ opacity: 0 }}
+                    initial={false}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
                     className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Header with profile */}
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
                       className="flex items-center gap-3 mb-5 pb-4 border-b border-white/10"
                     >
                       <Image
@@ -903,9 +898,8 @@ export default function InquilinosPage() {
 
                     {/* Main Pass card */}
                     <motion.div
-                      initial={{ opacity: 0, y: 15 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 0.4 }}
                       className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
                     >
                       <div className="flex items-center justify-between mb-1.5">
@@ -921,9 +915,8 @@ export default function InquilinosPage() {
                     {/* Stats grid */}
                     <div className="grid grid-cols-2 gap-2">
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -933,9 +926,8 @@ export default function InquilinosPage() {
                         <p className="text-xl font-bold text-white">12</p>
                       </motion.div>
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -949,9 +941,8 @@ export default function InquilinosPage() {
 
                   {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
@@ -989,18 +980,14 @@ export default function InquilinosPage() {
             {/* Top Row - Image Cards with Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-4 lg:mb-5">
               {/* Card 1 - Estafas */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-interior.jpg"
                   alt="Interior moderno"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -1019,21 +1006,17 @@ export default function InquilinosPage() {
                     Fotos robadas, precios irreales, propiedades que no existen
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 2 - Rechazos */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-4.jpg"
                   alt="Espacio moderno"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -1052,21 +1035,17 @@ export default function InquilinosPage() {
                     Criterios subjetivos y sesgos que nadie explica
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 3 - Tiempo */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-6.jpg"
                   alt="Habitación moderna"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -1085,17 +1064,13 @@ export default function InquilinosPage() {
                     Documentos, visitas, negociaciones interminables
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
 
             {/* Robottom Row - Illustration Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {/* Card 4 - Scam Widget */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
@@ -1127,14 +1102,10 @@ export default function InquilinosPage() {
                     Anuncios falsos con precios irreales para capturar tu dinero. Sin verificación, estás solo.
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 5 - Paperwork Widget */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
@@ -1172,7 +1143,7 @@ export default function InquilinosPage() {
                     Requisitos infinitos que varían en cada propiedad. Un proceso diseñado para excluir.
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>
@@ -1195,11 +1166,7 @@ export default function InquilinosPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
               {/* Large Card - Búsqueda con IA */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-7 bg-foreground rounded-xl p-8 min-h-[360px] flex flex-col justify-between relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
@@ -1221,14 +1188,10 @@ export default function InquilinosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - Arriendo Pass */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
@@ -1249,14 +1212,10 @@ export default function InquilinosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - 100% Verificado */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
@@ -1277,21 +1236,17 @@ export default function InquilinosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Large Card - Contratos Digitales */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-7 relative rounded-xl overflow-hidden min-h-[360px] group"
               >
                 <Image
                   src="/hero-7.jpg"
                   alt="Espacio moderno"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
@@ -1314,7 +1269,7 @@ export default function InquilinosPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>

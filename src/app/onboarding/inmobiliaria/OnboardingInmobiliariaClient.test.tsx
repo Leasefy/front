@@ -552,7 +552,7 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
-  it('🔴 clic en un paso hecho de la barra vuelve a ese paso EDITABLE, con lo que ya quedó (Nico, 2026-09-07 y 30-09)', () => {
+  it('🔴 clic en un paso hecho de la barra vuelve a ese paso EDITABLE, con lo que ya quedó (Nico, 2026-09-07 y 30-09)', async () => {
     mockUseOnboardingSession.mockReturnValue(
       baseHookResult({
         currentStep: 'habeas_data',
@@ -567,6 +567,9 @@ describe('<OnboardingInmobiliariaClient>', () => {
     act(() => {
       volverAAgencia.click()
     })
+    // El paso que se va sale animado (`CrossFade` en `popLayout`): se espera
+    // a que termine de irse antes de mirar que ya no está.
+    await act(async () => {})
 
     // La sesión sigue abierta: el formulario se puede editar y trae lo guardado.
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
@@ -997,6 +1000,8 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     act(() => {
       volverAAgencia.click()
     })
+    // El paso que se va sale animado (`CrossFade` en `popLayout`).
+    await act(async () => {})
 
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="agency-step-form"]')).toBeFalsy()
@@ -1008,6 +1013,7 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     act(() => {
       ;(container.querySelector('[data-testid="volver-al-paso-actual"]') as HTMLButtonElement).click()
     })
+    await act(async () => {})
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
   })

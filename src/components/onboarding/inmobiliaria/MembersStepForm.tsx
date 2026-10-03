@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import type { InvitacionCreada } from './crear-invitaciones'
 import {
   MEMBER_ROLE_OPTIONS,
@@ -166,7 +167,8 @@ function MembersInviteLinksScreen({
         </div>
       )}
 
-      {conError.length > 0 && (
+      {/* Tras «Reintentar» el aviso se va con su salida si ya no queda ninguna. */}
+      <Presence show={conError.length > 0} initial={false}>
         <div
           data-testid="members-invite-errors"
           className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2"
@@ -199,13 +201,14 @@ function MembersInviteLinksScreen({
             )}
           </div>
         </div>
-      )}
+      </Presence>
 
-      <ul className="space-y-2">
+      {/* Las personas invitadas entran una tras otra al llegar a esta pantalla. */}
+      <Stagger as="ul" className="space-y-2" layout={false}>
         {invitaciones.map((invitacion) => {
           const copiadoAhora = copiado === invitacion.email
           return (
-            <li key={invitacion.email} data-testid={`invite-row-${invitacion.email}`} className="space-y-1.5">
+            <StaggerItem as="li" key={invitacion.email} data-testid={`invite-row-${invitacion.email}`} className="space-y-1.5">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-fg truncate">
                   {invitacion.nombre || invitacion.email}
@@ -234,20 +237,23 @@ function MembersInviteLinksScreen({
                   type="button"
                   onClick={() => copiar(invitacion.email, invitacion.enlace as string)}
                   data-testid={`invite-copy-${invitacion.email}`}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
+                  className="relative w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
                 >
                   <span className="truncate font-mono text-caption text-fg-muted">{invitacion.enlace}</span>
-                  {copiadoAhora ? (
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
-                  )}
+                  {/* Copiar ↔ copiado: los dos íconos miden lo mismo y se cruzan en el lugar. */}
+                  <CrossFade swapKey={copiadoAhora ? 'copiado' : 'copiar'} mode="popLayout" className="flex shrink-0">
+                    {copiadoAhora ? (
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
+                    )}
+                  </CrossFade>
                 </button>
               )}
-            </li>
+            </StaggerItem>
           )
         })}
-      </ul>
+      </Stagger>
 
       <Button
         type="button"
@@ -332,6 +338,9 @@ export function MembersStepForm({
 
   const avisoDelFormulario =
     errorDelServidor !== undefined ? sueltosDelServidor.join(' · ') || null : submitError
+  // El último aviso, para que no se vacíe mientras sale (`Presence`).
+  const [ultimoAviso, setUltimoAviso] = useState(avisoDelFormulario)
+  if (avisoDelFormulario && avisoDelFormulario !== ultimoAviso) setUltimoAviso(avisoDelFormulario)
 
   const submit = handleSubmit(async (values) => {
     const parsed = membersStepSchema.safeParse(values)
@@ -345,17 +354,21 @@ export function MembersStepForm({
     if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   })
 
-  if (pendingInvites) {
-    return (
+  /*
+   * Formulario → «Invitaciones enviadas»: la pantalla de los enlaces entra
+   * por la derecha (`CrossFade` de pasos; el paso del asistente sigue siendo
+   * Miembros, así que el cambio lo anima esta pieza). `popLayout`: monta ya.
+   */
+  return (
+    <div className="relative">
+    <CrossFade swapKey={pendingInvites ? 'enlaces' : 'formulario'} direction="forward" mode="popLayout">
+    {pendingInvites ? (
       <MembersInviteLinksScreen
         pendingInvites={pendingInvites}
         onContinueAfterInvites={onContinueAfterInvites}
         onReintentarInvitaciones={onReintentarInvitaciones}
       />
-    )
-  }
-
-  return (
+    ) : (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
       {/* Sólo la instrucción: qué pasa al invitar (el correo con su enlace,
           qué define el rol) lo cuenta la columna informativa del marco. */}
@@ -377,9 +390,16 @@ export function MembersStepForm({
           controles sueltos sin rótulo y el selector del rol quedaba más alto
           que el correo: no se entendía qué iba en cada uno ni que las tres
           cosas eran de la misma persona (Nico, 2026-09-07). */}
-      <div className="space-y-4">
+      {/*
+        Cada persona entra subiendo 8 px al tocar «Agregar miembro» y se va
+        con su salida al quitarla (`Stagger`, `key` = el id de la fila). Sin
+        `layout` (un error bajo un campo cambia el alto de la tarjeta y la
+        estiraría) y salida «sync»: la tarjeta se funde en su lugar y después
+        se cierra el hueco, sin encimarse con la de abajo.
+      */}
+      <Stagger className="space-y-4" layout={false} presenceMode="sync">
         {fields.map((field, index) => (
-          <div
+          <StaggerItem
             key={field.id}
             data-testid={`member-row-${index}`}
             className="space-y-3 rounded-md border border-border bg-bg p-4"
@@ -486,9 +506,9 @@ export function MembersStepForm({
                 mensaje={errors.members?.[index]?.nombre?.message}
               />
             </div>
-          </div>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
       <Button
         type="button"
@@ -502,15 +522,15 @@ export function MembersStepForm({
         Agregar miembro
       </Button>
 
-      {avisoDelFormulario && (
+      <Presence show={Boolean(avisoDelFormulario)}>
         <div
           data-testid="members-step-form-error"
           role="alert"
           className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
-          <p className="text-sm text-danger">{avisoDelFormulario}</p>
+          <p className="text-sm text-danger">{avisoDelFormulario || ultimoAviso}</p>
         </div>
-      )}
+      </Presence>
 
       {/*
         `enviando` cubre TODO el envío: el micro (`isSubmitting` del padre
@@ -533,5 +553,8 @@ export function MembersStepForm({
         )}
       </Button>
     </form>
+    )}
+    </CrossFade>
+    </div>
   )
 }

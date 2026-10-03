@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ArrowRight } from '@phosphor-icons/react'
-import { FormField, FormLabel, FormControl, FormError } from '@leasefy/cadence'
+import { Collapse, FormField, FormLabel, FormControl, FormError } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -276,7 +276,9 @@ export function OwnerNameStepForm({
         <span>Soy el representante legal de la inmobiliaria</span>
       </label>
 
-      {!esElRepresentante && (
+      {/* El campo del representante se abre y se cierra con su altura al
+          (des)marcar «Soy el representante legal» (`Collapse`). */}
+      <Collapse open={!esElRepresentante}>
         <FormField
           id="legalRepresentative"
           required
@@ -304,7 +306,7 @@ export function OwnerNameStepForm({
             {errorDe('representante')}
           </FormError>
         </FormField>
-      )}
+      </Collapse>
 
 
       <FormField id="agencyName" required invalid={!!errorDe('razonSocial')}>

@@ -20,6 +20,8 @@ import { borrarMarcaDeRecuperacion, rutaParaEntrarConLaNueva } from '@/lib/auth/
 import { anunciarCierre } from '@/lib/auth/session-terminal';
 import { codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { motion } from 'framer-motion';
+import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
 
 /**
  * Supabase no deja cambiar la contraseña de una cuenta con segundo factor
@@ -134,6 +136,9 @@ function UpdatePasswordContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // El último error, para que el aviso no se vacíe mientras sale.
+  const [errorVisible, setErrorVisible] = useState<string | null>(null);
+  if (error && error !== errorVisible) setErrorVisible(error);
   /** El error de la contraseña nueva (débil, repetida): va debajo del campo. */
   const [errorDeLaClave, setErrorDeLaClave] = useState<string | null>(null);
   const claveRef = useRef<HTMLInputElement>(null);
@@ -254,11 +259,19 @@ function UpdatePasswordContent() {
             </BrandHomeLink>
           </div>
 
+          {/* Formulario → «Contraseña actualizada»: se cruzan (`CrossFade`) y
+              el visto llega con el resorte de rebote leve. */}
+          <CrossFade swapKey={success ? 'lista' : 'formulario'}>
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4">
+              <motion.div
+                initial={{ scale: motionScale.pop, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={motionSpring.bouncy}
+                className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4"
+              >
                 <CheckCircle className="h-9 w-9 text-success" weight="fill" />
-              </div>
+              </motion.div>
               <h1 className="text-xl font-semibold text-fg mb-2">
                 {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
@@ -361,11 +374,12 @@ function UpdatePasswordContent() {
                   />
                 </div>
 
-                {error && (
+                {/* Entra y sale con `Presence`; mientras sale, conserva el texto. */}
+                <Presence show={Boolean(error)}>
                   <p role="alert" className="text-sm text-danger bg-danger-soft px-4 py-3 rounded-[12px]">
-                    {error}
+                    {errorVisible}
                   </p>
-                )}
+                </Presence>
 
                 <Button
                   type="submit"
@@ -394,6 +408,7 @@ function UpdatePasswordContent() {
               )}
             </>
           )}
+          </CrossFade>
         </div>
       </div>
     </ForceLightMode>

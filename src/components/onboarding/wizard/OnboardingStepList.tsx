@@ -13,7 +13,10 @@
  * usa la lista (cada asistente tiene su regla); acá sólo se pinta.
  */
 
+import { useId, useState } from 'react'
 import { Check } from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
+import { MotionIndicator, motionScale, motionSpring } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 
 export type EstadoDelPaso = 'hecho' | 'actual' | 'pendiente'
@@ -44,6 +47,14 @@ export interface OnboardingStepListProps {
 }
 
 export function OnboardingStepList({ pasos, etiqueta, nota, className }: OnboardingStepListProps) {
+  // La marca azul del paso actual es UNA (`MotionIndicator`): al avanzar se
+  // desliza del círculo de un paso al del siguiente, por la línea de tiempo.
+  const id = useId()
+  // Lo que ya venía hecho al abrir (un registro retomado) se ve quieto: sólo
+  // «llega» el visto que se gana con la persona mirando.
+  const [hechosAlMontar] = useState(
+    () => new Set(pasos.filter((p) => p.estado === 'hecho').map((p) => p.key)),
+  )
   return (
     <div className={className}>
       <ol aria-label={etiqueta} className="flex items-center gap-2 lg:flex-col lg:items-stretch lg:gap-0">
@@ -59,13 +70,31 @@ export function OnboardingStepList({ pasos, etiqueta, nota, className }: Onboard
                 data-active={actual}
                 aria-current={actual ? 'step' : undefined}
                 className={cn(
-                  'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[12px] font-medium tabular-nums transition-colors duration-200',
+                  'relative isolate z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[12px] font-medium tabular-nums transition-colors duration-base ease-standard',
                   hecho && 'bg-primary-soft text-primary',
-                  actual && 'bg-primary text-primary-fg ring-4 ring-primary/15',
+                  actual && 'text-primary-fg',
                   paso.estado === 'pendiente' && 'border border-border bg-surface text-fg-subtle',
                 )}
               >
-                {hecho ? <Check className="h-3.5 w-3.5" weight="bold" aria-hidden /> : indice + 1}
+                {actual ? (
+                  <MotionIndicator
+                    layoutId={`${id}-paso-actual`}
+                    className="inset-0 -z-10 rounded-full bg-primary ring-4 ring-primary/15"
+                  />
+                ) : null}
+                {/* El visto de lo hecho «llega» con el resorte de rebote leve. */}
+                {hecho ? (
+                  <motion.span
+                    initial={hechosAlMontar.has(paso.key) ? false : { scale: motionScale.pop, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={motionSpring.bouncy}
+                    className="flex"
+                  >
+                    <Check className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                  </motion.span>
+                ) : (
+                  indice + 1
+                )}
               </span>
               <span className="sr-only lg:not-sr-only lg:block lg:min-w-0 lg:pt-1.5">
                 <span
@@ -96,7 +125,7 @@ export function OnboardingStepList({ pasos, etiqueta, nota, className }: Onboard
                 <span
                   aria-hidden
                   className={cn(
-                    'absolute bottom-0 left-[21px] top-[44px] hidden w-px lg:block',
+                    'absolute bottom-0 left-[21px] top-[44px] hidden w-px transition-colors duration-slow ease-standard lg:block',
                     hecho ? 'bg-primary/40' : 'bg-border',
                   )}
                 />
@@ -120,7 +149,10 @@ export function OnboardingStepList({ pasos, etiqueta, nota, className }: Onboard
               {!ultimo ? (
                 <span
                   aria-hidden
-                  className={cn('h-px min-w-3 flex-1 lg:hidden', hecho ? 'bg-primary/40' : 'bg-border')}
+                  className={cn(
+                    'h-px min-w-3 flex-1 transition-colors duration-slow ease-standard lg:hidden',
+                    hecho ? 'bg-primary/40' : 'bg-border',
+                  )}
                 />
               ) : null}
             </li>

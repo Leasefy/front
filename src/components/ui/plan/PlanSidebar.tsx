@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X, SidebarSimple } from '@phosphor-icons/react';
-import { MotionConfig, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { motionDuration, motionEase } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { LeasefyLogo, LeasefySymbol, LeasefyLogotype } from '@/components/brand';
 import { SidebarThemeToggle } from './SidebarThemeToggle';
@@ -391,7 +392,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
           data-tour-target={item.dataTourTarget}
           className={cn(
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
-            'transition-colors duration-100',
+            'transition-colors duration-instant',
             (isActive || isChildActive)
               ? 'text-fg font-medium'
               : 'text-plan-secondary hover:text-plan-primary',
@@ -410,7 +411,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
               <span className="flex-1 text-left">{item.label}</span>
               <CaretDown
                 className={cn(
-                  'w-4 h-4 text-plan-muted transition-transform duration-150',
+                  'w-4 h-4 text-plan-muted transition-transform duration-fast',
                   isExpanded && 'rotate-180'
                 )}
               />
@@ -614,7 +615,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
           'group/seccion flex w-full items-center gap-2 rounded-[12px] px-[10px] py-[7px] text-left',
           // El mismo tinte al pasar que las filas (`surface-hover`): en oscuro
           // `surface-muted` era más claro que la fila activa y la competía.
-          'transition-colors duration-150 hover:bg-surface-hover',
+          'transition-colors duration-fast hover:bg-surface-hover',
           'outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'active:scale-[0.99] motion-reduce:active:scale-100',
         )}
@@ -653,7 +654,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
           aria-hidden="true"
           weight="bold"
           className={cn(
-            'h-3 w-3 shrink-0 text-fg-subtle transition-transform duration-200 ease-out group-hover/seccion:text-fg',
+            'h-3 w-3 shrink-0 text-fg-subtle transition-transform duration-base ease-enter group-hover/seccion:text-fg',
             'motion-reduce:transition-none',
             !abierta && '-rotate-90',
           )}
@@ -668,7 +669,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
       <div
         id={idFilas}
         data-abierta={abierta ? 'true' : 'false'}
-        className="grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none"
+        className="grid transition-[grid-template-rows,opacity] duration-base ease-enter motion-reduce:transition-none"
         style={{ gridTemplateRows: abierta ? '1fr' : '0fr', opacity: abierta ? 1 : 0 }}
         inert={!abierta}
       >
@@ -899,7 +900,6 @@ export function SidebarContent({
     //
     // `reducedMotion="user"`: con «reducir movimiento» el resaltado de la fila
     // activa salta en vez de deslizarse.
-    <MotionConfig reducedMotion="user">
     <ResalteConFundido.Provider value={resalteConFundido}>
     <div className="flex flex-col h-full bg-bg relative">
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
@@ -1099,7 +1099,7 @@ export function SidebarContent({
               {/* Progress bar */}
               <div className="h-1.5 bg-border rounded-full overflow-hidden mb-3">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  className="h-full rounded-full bg-primary transition-[width] duration-slow ease-enter"
                   style={{ width: `${profileCompletion.percentage}%` }}
                 />
               </div>
@@ -1207,7 +1207,6 @@ export function SidebarContent({
       )}
     </div>
     </ResalteConFundido.Provider>
-    </MotionConfig>
   );
 }
 
@@ -1225,7 +1224,7 @@ export function SidebarContent({
  *
  * Movimiento: se hunde al apretarlo (`whileTap`, framer) y, como cambia de
  * lugar al plegar, entra con el fundido de la cabecera. Con «reducir
- * movimiento» no se hunde (`MotionConfig reducedMotion="user"`).
+ * movimiento» no se hunde (`MotionProvider reducedMotion="user"` del layout raíz).
  */
 function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar: () => void }) {
   const textos = useTextosDeLaBarra();
@@ -1243,11 +1242,11 @@ function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar:
             aria-keyshortcuts={atajoParaAria(mac)}
             data-testid="boton-de-la-barra"
             whileTap={PRESION_DEL_BOTON}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            transition={{ duration: motionDuration.fast, ease: motionEase.standard }}
             className={cn(
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-[12px]',
               'border border-border bg-surface text-fg-muted',
-              'transition-colors duration-150',
+              'transition-colors duration-fast',
               'hover:bg-surface-hover hover:text-fg',
               'outline-none focus-visible:ring-2 focus-visible:ring-ring',
             )}
@@ -1431,7 +1430,9 @@ export function PlanSidebar({
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
           'bg-bg border-r border-border',
-          'transition-all duration-200',
+          // Plegar la barra cambia su ancho (el contenido se reacomoda): se
+          // nombra la propiedad en vez de `transition-all`.
+          'transition-[width] duration-base ease-emphasis',
           isCollapsed ? 'lg:w-16' : 'lg:w-[240px]',
           className
         )}

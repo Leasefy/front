@@ -1003,7 +1003,7 @@ export function PlanHeader({
                               );
                             });
                           }}
-                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-all"
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-[opacity,color,background-color] duration-fast"
                           title="Eliminar"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

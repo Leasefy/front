@@ -19,12 +19,19 @@
  *
  * El vestido sale del DS (`Alert` + `AlertAction` de @leasefy/cadence);
  * esto sólo fija el contrato de contenido.
+ *
+ * Movimiento: el `Alert` del DS ya ENTRA subiendo 8 px. Para que también SALGA
+ * animada (la persona resolvió lo que pedía, el dato cambió), la pantalla le
+ * pasa `mostrar` en vez de montarla con `{cond && <AlertaAccionable … />}`:
+ * entonces la maneja un `Presence` (entra subiendo 8 px, sale acelerando en
+ * 150 ms y recién ahí se desmonta). La que ya estaba al montarse la pantalla
+ * no se anima: esa entrada la pone el template.
  */
 
 import * as React from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@phosphor-icons/react'
-import { Alert, AlertAction } from '@leasefy/cadence'
+import { Alert, AlertAction, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -51,6 +58,11 @@ export interface AlertaAccionableProps extends Omit<React.HTMLAttributes<HTMLDiv
   /** Un segundo camino, más discreto (p. ej. «Ver detalle»). */
   secundaria?: AccionDeAlerta
   icon?: React.ReactNode
+  /**
+   * Si se pasa, la alerta entra y SALE animada según este valor (`Presence`).
+   * Sin él, se monta y desmonta con quien la pinta, como siempre.
+   */
+  mostrar?: boolean
 }
 
 function BotonDeAccion({ accion, principal }: { accion: AccionDeAlerta; principal: boolean }) {
@@ -94,15 +106,17 @@ export function AlertaAccionable({
   accion,
   secundaria,
   icon,
+  mostrar,
   className,
   ...props
 }: AlertaAccionableProps) {
-  return (
+  const alerta = (
     <Alert
       variant={severidad}
       title={titulo}
       icon={icon}
-      className={cn(className)}
+      // Dentro del `Presence` la entrada la pone él: sin la del DS, no sube dos veces.
+      className={cn(mostrar !== undefined && '!animate-none', className)}
       data-severidad={severidad}
       {...props}
     >
@@ -114,6 +128,12 @@ export function AlertaAccionable({
         </AlertAction>
       )}
     </Alert>
+  )
+  if (mostrar === undefined) return alerta
+  return (
+    <Presence show={mostrar} initial={false}>
+      {alerta}
+    </Presence>
   )
 }
 

@@ -72,7 +72,7 @@ export function PlanTabs({
             onClick={() => !tab.disabled && onChange(tab.id)}
             disabled={tab.disabled}
             className={cn(
-              'rounded-sm font-medium transition-all duration-200',
+              'rounded-sm font-medium transition-[color,background-color,box-shadow] duration-base',
               sizeClasses[size],
               fullWidth && 'flex-1',
               activeTab === tab.id
@@ -117,7 +117,7 @@ export function PlanTabs({
             onClick={() => !tab.disabled && onChange(tab.id)}
             disabled={tab.disabled}
             className={cn(
-              'relative font-medium transition-colors duration-200 -mb-px',
+              'relative font-medium transition-colors duration-base -mb-px',
               sizeClasses[size],
               fullWidth && 'flex-1',
               activeTab === tab.id
@@ -142,11 +142,13 @@ export function PlanTabs({
           </button>
         ))}
         {/* Animated underline indicator */}
+        {/* Movimiento: la línea se desliza con `transform` (translateX + scaleX
+            de una barra de 1 px), no con `left`/`width`: mismo dibujo, sin
+            recalcular el layout en cada cuadro. */}
         <div
-          className="absolute bottom-0 h-0.5 bg-primary transition-all duration-200 ease-out"
+          className="absolute bottom-0 left-0 h-0.5 w-px origin-left bg-primary transition-transform duration-base ease-enter"
           style={{
-            left: indicatorStyle.left,
-            width: indicatorStyle.width,
+            transform: `translateX(${indicatorStyle.left}px) scaleX(${indicatorStyle.width})`,
           }}
         />
       </div>
@@ -166,7 +168,7 @@ export function PlanTabs({
           onClick={() => !tab.disabled && onChange(tab.id)}
           disabled={tab.disabled}
           className={cn(
-            'rounded-sm font-medium transition-all duration-200',
+            'rounded-sm font-medium transition-[color,background-color,box-shadow] duration-base',
             sizeClasses[size],
             fullWidth && 'flex-1',
             activeTab === tab.id

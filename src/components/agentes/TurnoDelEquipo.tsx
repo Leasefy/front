@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, CaretDown, Check, WarningCircle } from '@phosphor-icons/react'
-import { Collapse } from '@leasefy/cadence'
+import { Collapse, motionDistance, motionDuration, motionEase, motionTransition } from '@leasefy/cadence'
 
 import { agenteDelDespacho, nombreDelAgente, type IdDeAgente } from '@/lib/agentes/equipo'
 import type { Delegacion, LecturaDelTurno, PasoDeRazonamiento } from '@/lib/agentes/agente-que-habla'
@@ -87,9 +87,9 @@ function FilaDeDelegacion({
   const tienePasos = d.pasos.length > 0
   return (
     <motion.li
-      initial={reducir ? false : { opacity: 0, y: 6 }}
+      initial={reducir ? false : { opacity: 0, y: motionDistance.sm }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
+      transition={motionTransition.enter}
       className="rounded-md border border-border-faint bg-surface px-3 py-2.5"
       data-testid="turno-delegacion"
       data-agente={agente?.id ?? d.clave}
@@ -143,7 +143,7 @@ function FilaDeDelegacion({
               className="mt-1.5 inline-flex items-center gap-1 text-caption font-medium text-fg-muted hover:text-fg"
             >
               {t('agentes.turno.loQueHizo')} · {d.pasos.length}
-              <CaretDown size={11} aria-hidden="true" className={cn('transition-transform', abierta && 'rotate-180')} />
+              <CaretDown size={11} aria-hidden="true" className={cn('transition-transform duration-slow ease-emphasis', abierta && 'rotate-180')} />
             </button>
           )}
           <AnimatePresence initial={false}>
@@ -151,8 +151,13 @@ function FilaDeDelegacion({
               <motion.ul
                 initial={reducir ? { opacity: 0 } : { opacity: 0, height: 0 }}
                 animate={reducir ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
-                exit={reducir ? { opacity: 0 } : { opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
+                // El alto es la excepción del colapsable (como `Collapse`).
+                exit={
+                  reducir
+                    ? { opacity: 0, transition: motionTransition.reduced }
+                    : { opacity: 0, height: 0, transition: { duration: motionDuration.base, ease: motionEase.exit } }
+                }
+                transition={reducir ? motionTransition.reduced : { duration: motionDuration.slow, ease: motionEase.emphasis }}
                 className="m-0 mt-1.5 list-none space-y-1 overflow-hidden p-0"
               >
                 {d.pasos.map((p, i) => (

@@ -565,6 +565,7 @@ clases para lo que se anima en CSS. Las historias de Storybook «Foundations/Mot
 | Token | JS (`@leasefy/cadence`) | Tailwind | CSS |
 |---|---|---|---|
 | Duraciones | `motionDuration.instant/fast/base/slow/reveal` (s) | `duration-instant` 100 · `duration-fast` 150 · `duration-base` 200 · `duration-slow` 300 · `duration-reveal` 500 | `--motion-duration-*` |
+| Bucles decorativos | `motionDuration.ambient` (2,4 s): el período de un halo que respira, un orbe que late, un brillo que barre (`repeat: Infinity`). Nunca para entradas ni salidas; pausado fuera de pantalla y quieto con movimiento reducido | `duration-ambient` (transición) · en CSS `[animation-duration:var(--motion-duration-ambient)]` | `--motion-duration-ambient` |
 | Curvas | `motionEase.enter/exit/emphasis/standard/spring` | `ease-enter` · `ease-exit` · `ease-emphasis` · `ease-standard` · `ease-spring` | `--motion-ease-*` |
 | Resortes | `motionSpring.soft` (sin rebote, superficies) · `.snappy` (indicadores, layout) · `.bouncy` (rebote leve, algo que «llega») | — | — |
 | Distancias | `motionDistance.xs` 4 · `sm` 8 · `md` 16 · `lg` 24 | — | `--motion-distance-*` |
@@ -620,6 +621,7 @@ y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
   contenido va en una `motion.div` (`empty:hidden` si no pinta nada); un componente entre varios
   hijos queda quieto (una caja le cambiaría el padre). **Una pantalla que
   usa `EstadoDeDatos` NO lo envuelve en otro `CrossFade`.** (`components/estado/entrada-del-estado.tsx`)
+- `KpiCard` (Cadence, 03-10-2026): `value` acepta un NÚMERO (con `format`) además del texto de siempre o un nodo; el número cuenta con `AnimatedNumber` al cambiar, y desde 0 si llega después de montarse la tarjeta sin cifra. Un texto se pinta igual que antes.
 - `KpiValor`: la cifra que llega después de cargar entra con fundido y, si es un número, cuenta
   desde 0 (`AnimatedNumber`, `reveal`); si después cambia, cuenta desde la anterior.
 - `BarraDePestanas` y `RielDePestanas`: la marca de la activa (card o subrayado) es un

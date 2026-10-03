@@ -56,7 +56,8 @@ import {
   type Icon,
   Bank,
 } from '@phosphor-icons/react'
-import { Chip } from '@leasefy/cadence'
+import { AnimatePresence } from 'framer-motion'
+import { Chip, StaggerItem } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -323,12 +324,17 @@ export function PilotoBandeja({
         }
       >
         <ul role="list" className="divide-y divide-border">
+          {/* Movimiento: lo que llega a la bandeja entra (8 px) y lo que se resuelve SALE
+              acelerando, con los vecinos corriéndose (`StaggerItem`). Lo que ya estaba al
+              abrir la pantalla no se anima: esa entrada es del template. */}
+          <AnimatePresence initial={false}>
           {enPantalla.map((item) => {
             const meta = metaDe(item.fuente)
             const FuenteIcon = meta.icon
             const ocupado = enVuelo === item.id
             return (
-              <li
+              <StaggerItem
+                as="li"
                 key={item.id}
                 className="group relative flex items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover"
               >
@@ -421,9 +427,10 @@ export function PilotoBandeja({
                     </span>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             )
           })}
+          </AnimatePresence>
         </ul>
 
         {visibles.length > POR_PAGINA && (

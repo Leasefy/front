@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { motionDistance, motionDuration, motionEase } from "@leasefy/cadence";
 import { ArrowsClockwise, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
@@ -29,7 +30,6 @@ interface FranjaDeMigracionProps {
   onCerrar: () => void;
 }
 
-const CURVA = [0.22, 1, 0.36, 1] as const;
 
 export function FranjaDeMigracion({
   paso,
@@ -46,15 +46,19 @@ export function FranjaDeMigracion({
       aria-label={t("beta.welcome.aviso.region")}
       // El alto va en este contenedor (sin padding) para que al cerrarla la
       // caja se recoja suave en vez de saltar.
-      initial={{ opacity: 0, height: 0, y: -10, clipPath: "inset(0 0 100% 0)" }}
-      animate={{
-        opacity: 1,
-        height: "auto",
-        y: 0,
-        clipPath: "inset(0 0 0% 0)",
+      // Movimiento (Cadence): el alto es la excepción del colapsable (como
+      // `Collapse`: 300 ms con la curva de énfasis al abrir, 200 ms acelerando
+      // al cerrar); lo demás, opacidad y 8 px. Sin `clipPath` animado: repinta
+      // la franja en cada cuadro.
+      initial={{ opacity: 0, height: 0, y: -motionDistance.sm }}
+      animate={{ opacity: 1, height: "auto", y: 0 }}
+      exit={{
+        opacity: 0,
+        height: 0,
+        y: -motionDistance.sm,
+        transition: { duration: motionDuration.base, ease: motionEase.exit },
       }}
-      exit={{ opacity: 0, height: 0, y: -10, clipPath: "inset(0 0 100% 0)" }}
-      transition={{ duration: 0.45, ease: CURVA }}
+      transition={{ duration: motionDuration.slow, ease: motionEase.emphasis }}
       className="relative overflow-hidden"
     >
       <div className="flex items-center gap-2.5 border-b border-border-faint py-2.5 pl-4 pr-2.5 sm:gap-3 sm:pl-5">

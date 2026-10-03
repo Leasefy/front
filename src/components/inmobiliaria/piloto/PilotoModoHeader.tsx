@@ -59,7 +59,7 @@
  *     ayuda funde de un modo a otro sin mover nada (los tres textos ocupan la
  *     misma celda); la confirmación de Automático reemplaza a la línea con un
  *     fundido cruzado; la grilla de agentes y los chips entran escalonados.
- *   · Sólo `transform` y `opacity`. `MotionConfig reducedMotion="user"`: con
+ *   · Sólo `transform` y `opacity`. `MotionProvider reducedMotion="user"` del layout raíz: con
  *     `prefers-reduced-motion` no hay desplazamientos ni deslizamientos,
  *     quedan los fundidos.
  *   · Los valores son los del sistema de movimiento de Cadence (ver `MOV`).
@@ -67,7 +67,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, MotionConfig, motion, type Transition } from 'framer-motion'
+import { AnimatePresence, motion, type Transition } from 'framer-motion'
 import {
   motionDistance,
   motionDuration,
@@ -334,7 +334,7 @@ export function PilotoModoHeader() {
         )}
         <span
           className={cn(
-            'relative inline-flex h-2 w-2 rounded-full transition-colors duration-200',
+            'relative inline-flex h-2 w-2 rounded-full transition-colors duration-base',
             data ? (activo ? PUNTO[modo ?? 'mixto'] : 'bg-border-strong') : 'bg-border animate-pulse',
           )}
         />
@@ -376,7 +376,7 @@ export function PilotoModoHeader() {
         )}
       </AnimatePresence>
       <CaretDown
-        className="hidden h-3.5 w-3.5 shrink-0 text-fg-muted transition-transform duration-200 ease-out motion-reduce:transition-none group-data-[state=open]:rotate-180 sm:block"
+        className="hidden h-3.5 w-3.5 shrink-0 text-fg-muted transition-transform duration-base ease-standard motion-reduce:transition-none group-data-[state=open]:rotate-180 sm:block"
         aria-hidden="true"
       />
     </button>
@@ -530,7 +530,7 @@ export function PilotoModoHeader() {
                 // `isolate`: el marco del elegido (`-z-10`) queda sobre el
                 // fondo de la tarjeta y debajo del texto.
                 'relative isolate flex items-center gap-3 rounded-md border border-border bg-surface py-3 pl-3 pr-9 text-left sm:flex-col sm:items-start sm:gap-2.5 sm:pr-3',
-                'outline-none transition-[background-color,border-color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-primary/40',
+                'outline-none transition-[background-color,border-color] duration-fast ease-standard focus-visible:ring-2 focus-visible:ring-primary/40',
                 !actual && !apagada && 'hover:border-border-strong hover:bg-surface-hover',
                 apagada && 'cursor-not-allowed',
               )}
@@ -547,7 +547,7 @@ export function PilotoModoHeader() {
               )}
               <span
                 className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-base',
                   actual ? 'bg-surface text-primary' : 'bg-surface-muted text-fg-muted',
                 )}
               >
@@ -710,7 +710,7 @@ export function PilotoModoHeader() {
               data-distinto={distinto || undefined}
               {...entrada(retrasoEscalonado(i, agentesQueActuan.length, desdeGrilla), MOV.cerca)}
               className={cn(
-                'flex min-w-0 items-start gap-2 rounded-md border px-2.5 py-2 text-caption leading-snug transition-colors duration-200',
+                'flex min-w-0 items-start gap-2 rounded-md border px-2.5 py-2 text-caption leading-snug transition-colors duration-base',
                 distinto ? 'border-warning bg-warning-soft' : 'border-border-faint bg-surface-muted',
               )}
             >
@@ -826,8 +826,7 @@ export function PilotoModoHeader() {
 
   if (enHoja) {
     return (
-      <MotionConfig reducedMotion="user">
-        <Sheet open={abierto} onOpenChange={alCambiarApertura}>
+      <Sheet open={abierto} onOpenChange={alCambiarApertura}>
           <SheetTrigger asChild>{pildora}</SheetTrigger>
           {/* `layout="manual"`: el cuerpo ya trae su scroll (`data-lenis-prevent`),
               el pie es nuestro. La forma, el asa, la ✕ y la entrada (sube desde
@@ -836,12 +835,10 @@ export function PilotoModoHeader() {
             {cuerpo}
           </SheetContent>
         </Sheet>
-      </MotionConfig>
     )
   }
 
   return (
-    <MotionConfig reducedMotion="user">
       <Popover open={abierto} onOpenChange={alCambiarApertura}>
         <PopoverTrigger asChild>{pildora}</PopoverTrigger>
         <PopoverContent
@@ -861,6 +858,5 @@ export function PilotoModoHeader() {
           {cuerpo}
         </PopoverContent>
       </Popover>
-    </MotionConfig>
   )
 }

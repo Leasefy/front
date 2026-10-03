@@ -71,6 +71,13 @@ export function ParaEntenderMas({
   className,
 }: ParaEntenderMasProps) {
   const [abierto, setAbierto] = useState(false);
+  /*
+   * Movimiento: el modal SALE con su animación (Cadence, 150 ms), y para que
+   * no se encoja vacío el contenido sigue montado hasta que terminó de salir
+   * — Radix avisa con `onCloseAutoFocus`, que llega cuando el contenido ya se
+   * desmontó—. Cerrado, sigue sin montarse.
+   */
+  const [contenidoMontado, setContenidoMontado] = useState(false);
 
   return (
     <>
@@ -80,7 +87,10 @@ export function ParaEntenderMas({
         size="sm"
         hideArrow
         className={className}
-        onClick={() => setAbierto(true)}
+        onClick={() => {
+          setContenidoMontado(true);
+          setAbierto(true);
+        }}
         data-testid="para-entender-mas"
       >
         <Question className="h-4 w-4" />
@@ -96,6 +106,7 @@ export function ParaEntenderMas({
              en cada apertura (QA 23-09). El contenido del modal ya es la
              explicación; una descripción de relleno repetiría el título. */
           {...(descripcion ? {} : { 'aria-describedby': undefined })}
+          onCloseAutoFocus={() => setContenidoMontado(false)}
         >
           <DialogHeader>
             <DialogTitle>{titulo ?? etiqueta}</DialogTitle>
@@ -104,8 +115,8 @@ export function ParaEntenderMas({
           {/* `data-lenis-prevent`: el scroll suave de la casa se apropia de la
               rueda dentro de los modales si no se le dice que no. */}
           <div className="max-h-[70vh] overflow-y-auto" data-lenis-prevent>
-            {/* Montado sólo mientras está abierto. */}
-            {abierto ? children : null}
+            {/* Montado sólo mientras está abierto (y lo que dura su salida). */}
+            {abierto || contenidoMontado ? children : null}
           </div>
         </DialogContent>
       </Dialog>

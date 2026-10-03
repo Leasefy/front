@@ -12,10 +12,10 @@
  * que publica el micro para cada modo. Sin elección, Copiloto (nada sale solo).
  *
  * Movimiento: entra con los tokens de Cadence (sólo opacidad y desplazamiento,
- * `MotionConfig reducedMotion="user"`).
+ * `MotionProvider reducedMotion="user"` del layout raíz).
  */
 
-import { MotionConfig, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { SegmentedControl, motionDistance, motionTransition } from '@leasefy/cadence'
 
 import { MODOS_DEL_PILOTO, type AutonomiaModo, type ModoPropioDelProceso } from '@/lib/api/piloto'
@@ -42,7 +42,6 @@ export function PilotoModoPropio({ proceso, puedeEditar, guardable, porQueNo, oc
   const sePuedeCambiar = puedeEditar && guardable !== false
   const sinElegir = proceso.origen === 'default'
   return (
-    <MotionConfig reducedMotion="user">
       <motion.div
         initial={{ opacity: 0, y: motionDistance.xs }}
         animate={{ opacity: 1, y: 0 }}
@@ -79,6 +78,5 @@ export function PilotoModoPropio({ proceso, puedeEditar, guardable, porQueNo, oc
         </p>
         {!sePuedeCambiar && porQueNo && <p className="text-caption leading-snug text-fg-subtle">{porQueNo}</p>}
       </motion.div>
-    </MotionConfig>
   )
 }

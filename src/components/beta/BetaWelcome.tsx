@@ -1,7 +1,8 @@
 'use client';
 
 import { useContext, useMemo, useState } from 'react';
-import { motion, MotionConfig } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
 import { Buildings } from '@phosphor-icons/react';
 import { useMigracion } from '@/components/migracion/migracion-context';
 import { migracionSinTerminar, progresoDeMigracion } from '@/components/migracion/muro-reglas';
@@ -38,13 +39,12 @@ export const ATAJOS_DE_LLEGADA = ['cobros', 'contratos', 'propiedades'] as const
 const CLAVES_DE_EJEMPLOS = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] as const;
 
 /** La curva de la referencia (`sa-hero`): sale rápido y se posa despacio. */
-const CURVA = [0.22, 1, 0.36, 1] as const;
 
 function entrada(paso: number) {
   return {
     initial: { opacity: 0, y: 22 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.7, ease: CURVA, delay: paso * 0.06 },
+    transition: { duration: motionDuration.slow, ease: motionEase.enter, delay: Math.min(paso * motionStagger.step, motionStagger.max) },
   };
 }
 
@@ -166,12 +166,10 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   );
 
   return (
-    // `reducedMotion="user"`: con «reducir movimiento» framer apaga los
-    // desplazamientos y deja sólo el fundido (y el marcado del servidor es el
-    // mismo en los dos casos).
-    <MotionConfig reducedMotion="user">
-      {/* `llegada-grises`: en oscuro, grises neutros en vez de los cálidos de
-          Cadence (Nico, 02-10: «unos grises como amarillos súper feos»). */}
+    // Movimiento reducido: lo resuelve `MotionProvider reducedMotion="user"`
+    // del layout raíz (framer apaga los desplazamientos y deja el fundido).
+    // `llegada-grises`: en oscuro, grises neutros en vez de los cálidos de
+    // Cadence (Nico, 02-10: «unos grises como amarillos súper feos»).
       <div
         className={cn(
           'llegada-grises flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16',
@@ -229,7 +227,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                   key={tpl.id}
                   variants={{
                     oculto: { opacity: 0, y: 12 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: CURVA } },
+                    visible: { opacity: 1, y: 0, transition: { duration: motionDuration.reveal, ease: motionEase.enter } },
                   }}
                 >
                   <button
@@ -240,14 +238,14 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                     className={cn(
                       'group inline-flex h-11 items-center gap-2.5 rounded-full border border-border bg-surface py-1 pl-1.5 pr-4',
                       'text-[14px] font-medium text-fg',
-                      'transition-[transform,border-color,box-shadow] duration-200 ease-out',
+                      'transition-[transform,border-color,box-shadow] duration-base ease-enter',
                       'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md active:scale-[0.98]',
                       'motion-reduce:hover:translate-y-0'
                     )}
                   >
                     <span
                       aria-hidden
-                      className="flex size-8 items-center justify-center rounded-full bg-surface-muted text-fg-muted transition-colors duration-200 group-hover:bg-primary-soft group-hover:text-primary"
+                      className="flex size-8 items-center justify-center rounded-full bg-surface-muted text-fg-muted transition-colors duration-base group-hover:bg-primary-soft group-hover:text-primary"
                     >
                       <Icono size={15} />
                     </span>
@@ -271,6 +269,5 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
           </motion.div>
         </div>
       </div>
-    </MotionConfig>
   );
 }

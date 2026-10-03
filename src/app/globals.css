@@ -1700,6 +1700,7 @@ select:-webkit-autofill:active {
   --motion-duration-base: 200ms;
   --motion-duration-slow: 300ms;
   --motion-duration-reveal: 500ms;
+  --motion-duration-ambient: 2400ms; /* el período de un bucle decorativo (halo, orbe, brillo) */
   --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --motion-ease-emphasis: cubic-bezier(0.32, 0.72, 0, 1);

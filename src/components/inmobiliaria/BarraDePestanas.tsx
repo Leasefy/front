@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
-import { MotionIndicator } from '@leasefy/cadence';
+import { MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretDown, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -113,6 +113,14 @@ export interface BarraDePestanasProps {
   caras?: readonly CaraDeLaBarra[];
   /** Cómo se llama el conjunto de caras para un lector de pantalla. */
   carasAriaLabel?: string;
+  /**
+   * Sólo `nivel="secciones"`: la clave del juego de cards que se ve (módulo +
+   * cara). Si viene, las cards ENTRAN escalonadas (`Stagger`, 4 px) cada vez
+   * que la clave cambia — otro módulo, otra cara, la franja que vuelve
+   * después de una ficha—. Sin ella (la primera pintada del panel) se pintan
+   * quietas: esa entrada ya la pone el template de afuera.
+   */
+  escalonar?: string;
 }
 
 const PILDORA_IA = (
@@ -352,6 +360,7 @@ export function BarraDePestanas({
   pathname,
   caras,
   carasAriaLabel,
+  escalonar,
 }: BarraDePestanasProps) {
   const indicador = `${useId()}-activa`;
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
@@ -512,6 +521,27 @@ export function BarraDePestanas({
             // El rectángulo: UN riel hundido con las cards adentro. Con dos
             // caras, acá abajo van SÓLO las de la cara elegida — la elección
             // vive en el renglón de arriba, que es otro nivel.
+            escalonar !== undefined ? (
+              // Un juego de cards NUEVO (otro módulo, otra cara): entran en
+              // fila, 4 px y 40 ms entre una y otra (techo de 320 ms). La
+              // `key` lo vuelve a montar sólo cuando cambia el juego; pasar
+              // de una sección a otra del mismo módulo sólo desliza la marca.
+              <Stagger
+                key={escalonar}
+                distance="xs"
+                layout={false}
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1"
+              >
+                {items.map((item, i) => (
+                  <StaggerItem key={item.href} className="flex shrink-0 items-center">
+                    {item.sinCara === false && items[i - 1]?.sinCara === true && (
+                      <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
+                    )}
+                    <CardDeSeccion item={item} indicador={indicador} />
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            ) : (
             <div className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1">
               {items.map((item, i) => (
                 <Fragment key={item.href}>
@@ -526,6 +556,7 @@ export function BarraDePestanas({
                 </Fragment>
               ))}
             </div>
+            )
           ) : (
             items.map((item) => <PestanaDeProfundidad key={item.href} item={item} indicador={indicador} />)
           )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
 import { ArrowRight, CaretDown, ChatsCircle, Check, Trash, X } from '@phosphor-icons/react';
 import { toast } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,6 @@ interface ConversacionesRecientesProps {
   onAbierto?: (abierto: boolean) => void;
 }
 
-const CURVA = [0.22, 1, 0.36, 1] as const;
 
 export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbierto }: ConversacionesRecientesProps) {
   const { t } = useI18n();
@@ -99,7 +99,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
         data-testid="conversaciones-recientes"
         className={cn(
           'group -ml-1 inline-flex items-center gap-2 rounded-full py-0.5 pl-1 pr-2 text-[13px] font-medium text-fg',
-          'transition-colors duration-150 hover:bg-surface-hover'
+          'transition-colors duration-fast hover:bg-surface-hover'
         )}
       >
         <span aria-hidden className="flex size-6 items-center justify-center rounded-full bg-surface text-fg-muted">
@@ -109,7 +109,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
         <CaretDown
           size={12}
           aria-hidden
-          className={cn('text-fg-subtle transition-transform duration-200', abierto && 'rotate-180')}
+          className={cn('text-fg-subtle transition-transform duration-base', abierto && 'rotate-180')}
         />
       </button>
 
@@ -122,8 +122,8 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
             data-testid="panel-de-conversaciones"
             initial={{ opacity: 0, y: abajo ? -6 : 6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: abajo ? -4 : 4, scale: 0.98, transition: { duration: 0.14 } }}
-            transition={{ duration: 0.24, ease: CURVA }}
+            exit={{ opacity: 0, y: abajo ? -4 : 4, scale: 0.98, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+            transition={{ duration: motionDuration.base, ease: motionEase.enter }}
             style={{ transformOrigin: abajo ? 'top left' : 'bottom left' }}
             className={cn(
               'absolute left-0 z-50 w-[min(460px,calc(100vw-2.5rem))]',
@@ -147,10 +147,10 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
                     key={conv.id}
                     initial={{ opacity: 0, y: abajo ? -4 : 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, ease: CURVA, delay: 0.03 + i * 0.025 }}
+                    transition={{ duration: motionDuration.base, ease: motionEase.enter, delay: Math.min(i * motionStagger.step, motionStagger.max) }}
                     /* La fila es un <li> con DOS botones hermanos — abrir y
                        borrar — porque un botón dentro de otro es HTML inválido. */
-                    className="group relative flex items-center gap-2 rounded-[14px] pr-1.5 transition-colors duration-150 hover:bg-surface-hover"
+                    className="group relative flex items-center gap-2 rounded-[14px] pr-1.5 transition-colors duration-fast hover:bg-surface-hover"
                   >
                     <button
                       type="button"
@@ -163,7 +163,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
                     >
                       <span
                         aria-hidden
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-fg"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition-colors duration-base group-hover:bg-primary group-hover:text-primary-fg"
                       >
                         <LeasefyMark className="h-auto w-4" />
                       </span>
@@ -212,7 +212,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
                           title={t('beta.conversations.deleteConversation')}
                           className={cn(
                             'inline-flex size-7 items-center justify-center rounded-full text-fg-subtle',
-                            'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
+                            'opacity-0 transition-opacity duration-fast group-hover:opacity-100 focus-visible:opacity-100',
                             'hover:bg-surface-muted hover:text-danger'
                           )}
                         >
@@ -221,7 +221,7 @@ export function ConversacionesRecientes({ historial, onAbrir, onBorrar, onAbiert
                         <ArrowRight
                           size={14}
                           aria-hidden
-                          className="text-fg-subtle transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary"
+                          className="text-fg-subtle transition-[transform,color] duration-base group-hover:translate-x-0.5 group-hover:text-primary"
                         />
                       </span>
                     )}

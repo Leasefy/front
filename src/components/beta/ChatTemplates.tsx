@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
 import {
   ArrowUpRight,
   CurrencyDollar,
@@ -70,7 +71,6 @@ interface ChatTemplatesMenuProps {
   className?: string;
 }
 
-const CURVA = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Menú accionable de plantillas.
@@ -169,8 +169,8 @@ export function ChatTemplatesMenu({
           data-testid="menu-de-plantillas"
           initial={{ opacity: 0, y: abajo ? -6 : 6, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: abajo ? -4 : 4, scale: 0.98, transition: { duration: 0.14 } }}
-          transition={{ duration: 0.24, ease: CURVA }}
+          exit={{ opacity: 0, y: abajo ? -4 : 4, scale: 0.98, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+          transition={{ duration: motionDuration.base, ease: motionEase.enter }}
           style={{ transformOrigin: abajo ? 'top left' : 'bottom left' }}
           className={cn(
             // Ancho: el botón arranca ~2,25rem adentro de la pantalla (margen
@@ -206,21 +206,21 @@ export function ChatTemplatesMenu({
                   role="menuitem"
                   initial={{ opacity: 0, y: abajo ? -4 : 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22, ease: CURVA, delay: 0.03 + i * 0.025 }}
+                  transition={{ duration: motionDuration.base, ease: motionEase.enter, delay: Math.min(i * motionStagger.step, motionStagger.max) }}
                   onClick={() => {
                     onSelect(desc);
                     onClose();
                   }}
                   className={cn(
                     'group flex w-full items-center gap-3 rounded-[14px] px-2.5 py-2 text-left',
-                    'transition-colors duration-150 hover:bg-surface-hover focus-visible:bg-surface-hover'
+                    'transition-colors duration-fast hover:bg-surface-hover focus-visible:bg-surface-hover'
                   )}
                 >
                   <span
                     aria-hidden
                     className={cn(
                       'flex size-9 shrink-0 items-center justify-center rounded-full',
-                      'bg-surface-muted text-fg-muted transition-colors duration-150',
+                      'bg-surface-muted text-fg-muted transition-colors duration-fast',
                       'group-hover:bg-primary-soft group-hover:text-primary'
                     )}
                   >
@@ -233,7 +233,7 @@ export function ChatTemplatesMenu({
                   <ArrowUpRight
                     size={14}
                     aria-hidden
-                    className="shrink-0 text-fg-subtle opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:text-primary"
+                    className="shrink-0 text-fg-subtle opacity-0 transition-[opacity,color] duration-fast group-hover:opacity-100 group-hover:text-primary"
                   />
                 </motion.button>
               );

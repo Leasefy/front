@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
+import { CrossFade, motionDistance, motionStagger, motionTransition } from '@leasefy/cadence'
 import { ArrowLeft, ArrowRight, Check, MagnifyingGlass, Prohibit, X } from '@phosphor-icons/react'
 
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -240,7 +241,7 @@ export function EquipoDeAgentes({
                           estado={estados.get(a.id) as EstadoDeUnAgente}
                           seleccionado={a.id === seleccion}
                           onElegir={() => elegir(a.id)}
-                          retraso={reducir ? 0 : Math.min(i, 6) * 0.03}
+                          retraso={reducir ? 0 : Math.min(i * motionStagger.step, motionStagger.max)}
                         />
                       ))}
                     </ul>
@@ -264,14 +265,9 @@ export function EquipoDeAgentes({
               <ArrowLeft size={16} aria-hidden="true" />
               {t('agentes.equipo.volver')}
             </button>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={elegido.id}
-                initial={reducir ? { opacity: 0 } : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reducir ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                transition={{ duration: reducir ? 0.12 : 0.24, ease: [0.32, 0.72, 0, 1] }}
-              >
+            {/* Un agente por otro: `CrossFade` (sale el viejo en 150 ms y entra
+                el nuevo subiendo 8 px); el mismo nodo que antes, con los tokens. */}
+            <CrossFade swapKey={elegido.id} distance="sm">
                 <DetalleDelAgente
                   agente={elegido}
                   estado={estados.get(elegido.id) as EstadoDeUnAgente}
@@ -283,8 +279,7 @@ export function EquipoDeAgentes({
                   onElegir={elegir}
                   cuando={(iso) => formatRelativeDate(iso)}
                 />
-              </motion.div>
-            </AnimatePresence>
+            </CrossFade>
           </div>
         </DialogBody>
       </DialogContent>
@@ -313,9 +308,9 @@ function FilaDelAgente({
   const activo = estado.tipo === 'activo'
   return (
     <motion.li
-      initial={reducir ? false : { opacity: 0, y: 6 }}
+      initial={reducir ? false : { opacity: 0, y: motionDistance.sm }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: retraso, ease: 'easeOut' }}
+      transition={{ ...motionTransition.enter, delay: retraso }}
       className="relative"
     >
       {seleccionado && (

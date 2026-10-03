@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { motionDuration, motionEase } from '@leasefy/cadence';
 import { ArrowUp, Cards, Microphone, Stop, WarningCircle, X } from '@phosphor-icons/react';
 import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
@@ -80,7 +81,6 @@ interface CajaDeLlegadaProps {
 }
 
 const ALTO_MAXIMO = 200;
-const CURVA = [0.22, 1, 0.36, 1] as const;
 
 export function CajaDeLlegada({
   onEnviar,
@@ -189,7 +189,7 @@ export function CajaDeLlegada({
               'relative z-[1] border bg-surface',
               compacta ? 'rounded-[26px]' : 'rounded-[30px]',
               'shadow-[0_12px_40px_-18px_rgba(20,19,15,0.18)] dark:shadow-[0_12px_40px_-18px_rgba(0,0,0,0.7)]',
-              'transition-[border-color,box-shadow] duration-500',
+              'transition-[border-color,box-shadow] duration-reveal',
               encendida || dictado.escuchando ? 'border-border-faint' : 'border-border'
             )}
           >
@@ -238,8 +238,8 @@ export function CajaDeLlegada({
                     data-testid="voz-escuchando"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6, transition: { duration: 0.16 } }}
-                    transition={{ duration: 0.25, ease: CURVA }}
+                    exit={{ opacity: 0, y: -6, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+                    transition={{ duration: motionDuration.base, ease: motionEase.enter }}
                   >
                     <p
                       role="status"
@@ -272,7 +272,7 @@ export function CajaDeLlegada({
                       <button
                         type="button"
                         onClick={dictado.cancelar}
-                        className="h-10 shrink-0 rounded-full px-3 text-[14px] font-medium text-fg-muted transition-colors duration-150 hover:bg-surface-hover hover:text-fg"
+                        className="h-10 shrink-0 rounded-full px-3 text-[14px] font-medium text-fg-muted transition-colors duration-fast hover:bg-surface-hover hover:text-fg"
                       >
                         {t('beta.welcome.vozCancelar')}
                       </button>
@@ -282,7 +282,7 @@ export function CajaDeLlegada({
                         aria-label={t('beta.welcome.vozListo')}
                         title={t('beta.welcome.vozListo')}
                         data-testid="voz-listo"
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition-transform duration-150 hover:scale-105 active:scale-95"
+                        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition-transform duration-fast hover:scale-105 active:scale-95"
                       >
                         <Stop size={14} weight="fill" aria-hidden />
                       </button>
@@ -294,8 +294,8 @@ export function CajaDeLlegada({
                     key="texto"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6, transition: { duration: 0.16 } }}
-                    transition={{ duration: 0.25, ease: CURVA }}
+                    exit={{ opacity: 0, y: -6, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+                    transition={{ duration: motionDuration.base, ease: motionEase.enter }}
                   >
                     <div className="relative">
                       <textarea
@@ -316,7 +316,7 @@ export function CajaDeLlegada({
                         className={cn(
                           'block w-full resize-none bg-transparent px-1.5',
                           compacta ? 'text-[16px]' : 'text-[17px]',
-                          'leading-[1.5] text-fg transition-[min-height] duration-300',
+                          'leading-[1.5] text-fg transition-[min-height] duration-slow',
                           altoMinimo,
                           'outline-none [&::-webkit-scrollbar]:hidden'
                         )}
@@ -374,7 +374,7 @@ export function CajaDeLlegada({
                             'inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4',
                             boton,
                             'text-[14px] font-medium text-fg',
-                            'transition-[background-color,border-color,transform] duration-150',
+                            'transition-[background-color,border-color,transform] duration-fast',
                             'hover:border-border-strong hover:bg-bg active:scale-[0.98]',
                             plantillasAbiertas && 'border-border-strong bg-bg'
                           )}
@@ -390,7 +390,7 @@ export function CajaDeLlegada({
                         <span
                           aria-hidden
                           className={cn(
-                            'hidden items-center gap-1.5 text-[12px] text-fg-subtle transition-opacity duration-300 sm:inline-flex',
+                            'hidden items-center gap-1.5 text-[12px] text-fg-subtle transition-opacity duration-slow sm:inline-flex',
                             puedeEnviar ? 'opacity-100' : 'opacity-0'
                           )}
                         >
@@ -408,7 +408,7 @@ export function CajaDeLlegada({
                             className={cn(
                               'group inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-[14px] font-medium text-fg',
                               boton,
-                              'transition-colors duration-150 hover:border-border-strong hover:bg-bg active:scale-[0.98]'
+                              'transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]'
                             )}
                           >
                             {/* La onda de la referencia: quieta, se mueve al pasar el mouse. */}
@@ -440,12 +440,12 @@ export function CajaDeLlegada({
                             // referencia: .94 → 1.06 → 1 en 0,55 s).
                             animate={puedeEnviar && !reducido ? { scale: [0.94, 1.06, 1] } : { scale: 1 }}
                             whileTap={puedeEnviar && !reducido ? { scale: 0.9 } : undefined}
-                            transition={{ duration: 0.55, ease: CURVA }}
+                            transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                             className={cn(
                               'relative flex shrink-0 items-center justify-center rounded-full',
                               redondo,
                               "before:absolute before:-inset-1 before:content-['']",
-                              'transition-colors duration-300 ease-out',
+                              'transition-colors duration-slow ease-enter',
                               puedeEnviar
                                 ? 'bg-primary text-primary-fg hover:bg-primary-600'
                                 : 'cursor-not-allowed bg-surface-muted text-fg-subtle'

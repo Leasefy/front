@@ -45,6 +45,7 @@ import { Button } from '@/components/ui'
 import { usePendientes, type PendienteItem } from '@/lib/hooks/cobranza/use-pendientes'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { errorLegible } from '@/lib/cobranza/error-legible'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
@@ -82,7 +83,7 @@ function haceCuanto(iso: string): string {
   return `hace ${Math.round(hr / 24)}d`
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

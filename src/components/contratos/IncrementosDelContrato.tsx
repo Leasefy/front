@@ -32,8 +32,9 @@ import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-contrato-vigente";
+import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 
-const PESOS = new Intl.NumberFormat("es-CO", {
+const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,

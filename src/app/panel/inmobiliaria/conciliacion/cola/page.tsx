@@ -75,6 +75,7 @@ import {
   useConciliacionBulk,
   BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR,
 } from '@/lib/hooks/conciliacion/use-conciliacion-bulk'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ── Taxonomía de excepciones (los 7 caseTypes, set cerrado) ──────────────────
 // Copy en español literal (contrato §9 — ES-first, sin keys t() nuevas).
@@ -125,7 +126,7 @@ const COLUMNAS = [
 // ── Formato ──────────────────────────────────────────────────────────────────
 
 function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

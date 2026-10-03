@@ -55,6 +55,8 @@ import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/Comis
 import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { AREAS_DE_LA_DEUDA, esPlataQueSeAcepta, fraseDeLaPlata } from '@/lib/plata/con-centavos'
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
@@ -88,6 +90,9 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   const [elegido, setElegido] = useState('')
   const [valor, setValor] = useState('')
   const [recurrente, setRecurrente] = useState(true)
+  // «Centavos en todo» (C3-FRONT): el valor del concepto es plata de la deuda;
+  // con sus dos áreas prendidas viaja con centavos, tal cual se escribió.
+  const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA)
 
   useEffect(() => {
     let vigente = true
@@ -154,11 +159,16 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
     const catalogo = CONCEPTOS.find((c) => c.id === elegido)
     if (!catalogo) return
     const n = Number(valor)
+    // Con centavos va EXACTO (el campo ya frena el tercer decimal); sin ellos,
+    // al peso como siempre.
+    const valorCop = conCentavos ? n : Math.round(n)
     // Lo que el back rechazaría se ataja acá, con su misma frase.
     const delCliente =
       !Number.isFinite(n) || n <= 0
         ? 'El valor tiene que ser mayor que cero.'
-        : topeDePesos(Math.round(n), MENSAJES_DEL_CONTRATO_VIGENTE.valorDelConceptoMaximo)
+        : conCentavos && !esPlataQueSeAcepta(n, true)
+          ? fraseDeLaPlata(MENSAJES_DEL_CONTRATO_VIGENTE.valorDelConceptoEntero, true)
+          : topeDePesos(valorCop, MENSAJES_DEL_CONTRATO_VIGENTE.valorDelConceptoMaximo)
     if (delCliente) {
       setErrorDelValor(delCliente)
       campoDelValor.current?.focus()
@@ -174,7 +184,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         base: catalogo.base,
         paga: catalogo.paga,
         recibe: catalogo.recibe,
-        valorCop: Math.round(n),
+        valorCop,
         recurrente,
       })
       setConceptos((prev) => [...(prev ?? []), creado])
@@ -318,6 +328,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <MoneyInput
               ref={campoDelValor}
               id="valor-del-concepto"
+              areas={AREAS_DE_LA_DEUDA}
               value={valor}
               onChange={(v) => {
                 setValor(v)
@@ -446,6 +457,8 @@ function ConceptoEnLista({
   onQuitar: () => void
 }) {
   const [abierto, setAbierto] = useState(false)
+  // El IVA y las retenciones del concepto, al centavo con las llaves de la deuda.
+  const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA)
 
   const perfiles = contract.perfilesTributarios ?? null
 
@@ -466,8 +479,9 @@ function ConceptoEnLista({
       uso,
       paga: perfilDeParte(concepto.paga, perfiles),
       recibe: perfilDeParte(concepto.recibe, perfiles),
+      conCentavos,
     })
-  }, [concepto, uso, perfiles])
+  }, [concepto, uso, perfiles, conCentavos])
 
   return (
     <div className="rounded-lg border border-border p-3">

@@ -183,8 +183,12 @@ export function RegistrarDescuentoDialog({
             <label htmlFor="descuento-valor" className="block text-sm font-medium text-fg">
               {t(k('valor'))} <span className="text-danger">*</span>
             </label>
+            {/* «Centavos en todo»: la deducción es plata de la liquidación al
+                propietario; con esa área prendida acepta centavos
+                (`@EsPlataDeLasAreas(['dispersion_y_liquidacion'])` del back). */}
             <MoneyInput
               id="descuento-valor"
+              areas="dispersion_y_liquidacion"
               value={valor}
               onChange={(crudo) => {
                 setValor(crudo);

@@ -1,3 +1,4 @@
+import { decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 /**
  * Cuando al propietario NO le queda plata: «queda debiendo».
  *
@@ -21,9 +22,14 @@
  *      da un total que no es ni una cosa ni la otra.
  */
 
-/** `$1.234.567`. Sin decimales: el peso colombiano no los usa en pantalla. */
+/**
+ * `$1.234.567`. P8 a («centavos en todo»): los centavos SÓLO si el valor los
+ * tiene (`$1.234.567,29`); un entero, como siempre.
+ */
 export function pesos(valorCop: number): string {
-  return `$${Math.round(valorCop).toLocaleString('es-CO')}`
+  return seMuestranLosCentavos(valorCop)
+    ? `$${valorCop.toLocaleString('es-CO', decimalesEnPantalla(valorCop))}`
+    : `$${Math.round(valorCop).toLocaleString('es-CO')}`
 }
 
 export interface NetoDelPropietario {

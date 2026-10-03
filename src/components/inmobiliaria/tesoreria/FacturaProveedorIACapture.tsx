@@ -41,6 +41,7 @@ import type {
   FacturaExtraida,
   FacturaItem,
 } from '@/lib/api/ap.types';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 interface FacturaProveedorIACaptureProps {
   agencyId: string;
@@ -777,7 +778,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                       </span>
                       {it.valorCop !== null ? (
                         <span className="font-mono tabular-nums text-muted-foreground flex-shrink-0">
-                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
+                          {plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
                         </span>
                       ) : null}
                     </li>

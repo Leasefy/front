@@ -22,9 +22,10 @@ import {
   ArrowsLeftRight,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const BLUE = '#1A40FF'
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+const COP = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
 
 const TONE = {

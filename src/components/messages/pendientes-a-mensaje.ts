@@ -24,18 +24,30 @@ import type {
   DocumentoDelHilo,
   GiroPendienteDelHilo,
 } from '@/lib/api/messages.types';
+import { seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
+import { aCentavos } from '@/lib/plata/plata';
 
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-/** `1234567` → `$1.234.567`. Enteros en pesos: el back no manda decimales. */
+/**
+ * `1234567` → `$1.234.567`; con centavos (voz a de «centavos en todo»: en el
+ * chat, el valor exacto), `1234567.29` → `$1.234.567,29`. Un entero sale como
+ * siempre.
+ */
 export function formatearPesos(monto: number): string {
-  const negativo = monto < 0;
-  const entero = Math.abs(Math.round(monto)).toString();
-  const conPuntos = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${negativo ? '-' : ''}$${conPuntos}`;
+  if (!seMuestranLosCentavos(monto)) {
+    const negativo = monto < 0;
+    const entero = Math.abs(Math.round(monto)).toString();
+    const conPuntos = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${negativo ? '-' : ''}$${conPuntos}`;
+  }
+  const c = aCentavos(monto);
+  const absoluto = Math.abs(c);
+  const conPuntos = Math.floor(absoluto / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${c < 0 ? '-' : ''}$${conPuntos},${String(absoluto % 100).padStart(2, '0')}`;
 }
 
 /** `'2026-09-05'` → `'05/09/2026'`. Nunca pasa por `Date` (ver el encabezado). */

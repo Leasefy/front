@@ -40,9 +40,10 @@ import {
   hallazgosPorTipo,
 } from '@/lib/hooks/conciliacion/hallazgos'
 import type { ConciliacionSummaryResponse } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
-const copFormatter = new Intl.NumberFormat('es-CO', {
+const copFormatter = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

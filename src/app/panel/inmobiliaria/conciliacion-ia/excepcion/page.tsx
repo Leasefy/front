@@ -38,10 +38,11 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { Button, Card } from '@/components/ui'
 import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const BLUE = '#1A40FF'
 const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+const COP = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
 
 // ── Niveles de confianza (§9) ───────────────────────────────────────────────

@@ -45,13 +45,14 @@ import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limites-del-contrato-vigente";
+import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const PESOS = new Intl.NumberFormat("es-CO", {
+const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,

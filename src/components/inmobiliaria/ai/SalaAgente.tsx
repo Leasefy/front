@@ -23,6 +23,7 @@ import { useI18n } from '@/lib/i18n'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -48,7 +49,7 @@ const percentFormatter = new Intl.NumberFormat('es-CO', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
-const copFormatter = new Intl.NumberFormat('es-CO', {
+const copFormatter = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

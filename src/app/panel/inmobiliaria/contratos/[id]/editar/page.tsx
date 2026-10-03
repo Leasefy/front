@@ -41,6 +41,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import {
   ariaDelCampoDelContrato,
   enfocarCampoDelContrato,
@@ -155,18 +157,26 @@ function EditarContratoContent() {
     onPickFile(e.dataTransfer.files[0] ?? null);
   }, [onPickFile]);
 
+  // «Centavos en todo» (C3-FRONT): el canon acepta centavos con las dos áreas
+  // de la deuda prendidas; el depósito NO al editar (`UpdateContractDto.deposit`
+  // sigue con `@IsInt` en el back).
+  const canonConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
+
   const validation = useMemo(() => {
     // 02-10-2026: los MISMOS topes y frases del DTO del back
     // (`lib/contratos/limites-del-contrato`): el canon de once cifras se
     // ataja acá en vez de volver como un 500.
     const errors: Record<string, string> = {
-      ...revisarTerminosDelContrato({
-        startDate: form.startDate,
-        endDate: form.endDate,
-        monthlyRent: form.monthlyRent,
-        deposit: form.deposit,
-        paymentDay: form.paymentDay,
-      }),
+      ...revisarTerminosDelContrato(
+        {
+          startDate: form.startDate,
+          endDate: form.endDate,
+          monthlyRent: form.monthlyRent,
+          deposit: form.deposit,
+          paymentDay: form.paymentDay,
+        },
+        { canonConCentavos },
+      ),
     };
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
@@ -178,7 +188,7 @@ function EditarContratoContent() {
       errors.pdfFile = 'Sube el PDF nuevo o desactiva el reemplazo.';
     }
     return errors;
-  }, [form, replacePdf]);
+  }, [form, replacePdf, canonConCentavos]);
 
   const isValid = Object.keys(validation).length === 0;
 
@@ -484,6 +494,7 @@ function EditarContratoContent() {
             >
               <MoneyInput
                 {...ariaDelCampoDelContrato('monthlyRent', errorDe('monthlyRent'))}
+                areas={AREAS_DE_LA_DEUDA}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />

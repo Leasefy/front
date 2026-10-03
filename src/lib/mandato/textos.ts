@@ -11,6 +11,7 @@ import type {
   ModalidadDeLaLiquidacion,
   ModalidadResuelta,
 } from '@/lib/api/mandato.service';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 export const NOMBRE_DE_LA_MODALIDAD: Record<ModalidadDeLaLiquidacion, string> = {
   GARANTIZADO: 'Garantizado',
@@ -63,7 +64,7 @@ export const ESTADO_DEL_CAMBIO_DE_CUENTA: Record<EstadoDelCambioDeCuenta, string
   ANULADO: 'Anulado',
 };
 
-export const PESOS = new Intl.NumberFormat('es-CO', {
+export const PESOS = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

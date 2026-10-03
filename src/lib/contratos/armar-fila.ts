@@ -25,9 +25,11 @@ import {
   fechaDeOrigen,
   listaDePersonas,
   listaDePlata,
+  plataDeOrigen,
   repartoEnBps,
   type PersonaDeOrigen,
 } from '@/lib/migracion/valores-de-origen'
+import { aCentavos } from '@/lib/plata/plata'
 import {
   comoEntero,
   comoFecha,
@@ -46,11 +48,37 @@ import {
  * entero con 400, no la fila), y uno que supera el INT4 de Postgres tampoco.
  * Los dos casos vuelven ausentes → faltante visible de ESA fila.
  */
-function plataDeContrato(v: unknown): number | undefined {
+function plataDeContrato(v: unknown, conCentavos = false): number | undefined {
   if (!hayValor(v)) return undefined
-  const n = comoEntero(v)
+  const n = conCentavos ? plataConCentavosDeLaCelda(v) : comoEntero(v)
   if (n === undefined || n < 0 || n > MAX_COP_POR_MOVIMIENTO) return undefined
   return n
+}
+
+/**
+ * «Centavos en todo» (C3-FRONT; P14 a «que no se redondee, se trae tal
+ * cual»): con la llave de los contratos, la celda trae sus centavos
+ * («$2.350.000,29» → 2350000.29). Un entero se lee EXACTAMENTE como siempre
+ * (`comoEntero`); con más de dos decimales la celda no se adivina ni se
+ * redondea: queda ausente y la fila sale con su faltante.
+ */
+function plataConCentavosDeLaCelda(v: unknown): number | undefined {
+  const exacta = plataDeOrigen(v)
+  if (exacta === undefined || Number.isInteger(exacta)) return comoEntero(v)
+  try {
+    return aCentavos(exacta, { talCual: true }) / 100
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * La llave de los contratos para leer la plata del archivo (la misma de
+ * `MigrarContratoDto` en el back: `contratos_y_cuotas`). Ausente = pesos
+ * enteros, como hoy.
+ */
+export interface OpcionesDeLaLectura {
+  conCentavos?: boolean
 }
 
 /**
@@ -136,8 +164,9 @@ export interface FilaLeida {
 export function armarFilaAMigrar(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
+  opciones: OpcionesDeLaLectura = {},
 ): FilaAMigrar {
-  return leerFilaDelArchivo(fila, mapeo).fila
+  return leerFilaDelArchivo(fila, mapeo, opciones).fila
 }
 
 /**
@@ -186,6 +215,7 @@ export function diaDelMesDe(valor: unknown): number | undefined {
 export function leerFilaDelArchivo(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
+  { conCentavos = false }: OpcionesDeLaLectura = {},
 ): FilaLeida {
   const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
 
@@ -232,15 +262,21 @@ export function leerFilaDelArchivo(
    * del archivo, no un invento — y sin ella el contrato quedaba en $0.
    */
   const rawCanon = v('canon')
-  const listaDelCanon = listaDePlata(rawCanon)
+  const listaDelCanon = listaDePlata(rawCanon, { conCentavos })
   const canonPorPropietario =
     listaDelCanon && listaDelCanon.length >= 2 && listaDelCanon.every((n) => n >= 0)
       ? listaDelCanon
       : undefined
-  const canonTotal = plataDeContrato(v('canonTotal'))
-  const canonSuelto = canonPorPropietario ? undefined : plataDeContrato(rawCanon)
+  const canonTotal = plataDeContrato(v('canonTotal'), conCentavos)
+  const canonSuelto = canonPorPropietario ? undefined : plataDeContrato(rawCanon, conCentavos)
   const sumaDeLasPartes = canonPorPropietario
-    ? plataDeContrato(canonPorPropietario.reduce((a, n) => a + n, 0))
+    ? plataDeContrato(
+        // Con centavos, la suma exacta al centavo (con enteros, la de siempre).
+        conCentavos
+          ? canonPorPropietario.reduce((a, n) => a + aCentavos(n), 0) / 100
+          : canonPorPropietario.reduce((a, n) => a + n, 0),
+        conCentavos,
+      )
     : undefined
   const monthlyRent = canonTotal ?? canonSuelto ?? sumaDeLasPartes
 
@@ -288,7 +324,7 @@ export function leerFilaDelArchivo(
     referenciaDeRecaudo,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
     monthlyRent,
-    deposit: plataDeContrato(rawDeposito),
+    deposit: plataDeContrato(rawDeposito, conCentavos),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
     // fechadas al 1 de todos los meses sin que nadie lo pidiera.

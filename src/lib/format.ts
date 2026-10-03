@@ -6,6 +6,7 @@
 
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
+import { decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
 
 type SupportedLocale = 'es-CO' | 'en-US';
 
@@ -20,18 +21,33 @@ function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
  *
  * 🔴 «Centavos en todo» (C1-C): si llega TEXTO (`"1500000"`), en una prueba
  * LANZA (`plataQueNoEsNumero`); en el navegador sigue pintando «$ 0» como antes.
+ *
+ * P8 a (C3-FRONT): en pantalla los centavos SÓLO si el valor los tiene; un
+ * entero sale exactamente como siempre (`lib/plata/escribir-plata.ts`).
  * @example formatCurrency(2500000) → "$ 2.500.000"
+ * @example formatCurrency(1234567.29) → "$ 1.234.567,29"
  */
 export function formatCurrency(amount: number | null | undefined, locale?: 'es' | 'en'): string {
   plataQueNoEsNumero('formatCurrency', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
-  return (
-    '$ ' +
-    safe.toLocaleString(getLocaleString(locale), {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-  );
+  return '$ ' + safe.toLocaleString(getLocaleString(locale), decimalesEnPantalla(safe));
+}
+
+/**
+ * La plata de un DOCUMENTO (estado de cuenta, extracto, liquidación): P8 a.
+ * Con `conCentavos` —la llave del área del documento— SIEMPRE dos decimales
+ * («$ 2.500.000,00»); sin ella, igual que `formatCurrency` (al peso, como
+ * siempre, con la plata entera de hoy).
+ */
+export function formatCurrencyEnDocumento(
+  amount: number | null | undefined,
+  conCentavos: boolean,
+  locale?: 'es' | 'en',
+): string {
+  if (!conCentavos) return formatCurrency(amount, locale);
+  plataQueNoEsNumero('formatCurrencyEnDocumento', amount);
+  const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
+  return '$ ' + safe.toLocaleString(getLocaleString(locale), decimalesEnDocumento(safe, true));
 }
 
 /**

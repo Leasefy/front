@@ -55,6 +55,7 @@ import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-e
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -67,7 +68,7 @@ const REJECT_REASONS: RejectReasonSlug[] = [
   'other',
 ]
 
-const copFormat = new Intl.NumberFormat('es-CO', {
+const copFormat = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

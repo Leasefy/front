@@ -775,14 +775,26 @@ export function useCarteraDelCliente(
   };
 }
 
-/** El plan que se muestra antes de emitir. Memoizado: se recalcula al teclear. */
+/**
+ * El plan que se muestra antes de emitir. Memoizado: se recalcula al teclear.
+ *
+ * `conCentavos` (las dos llaves de la deuda, «centavos en todo»): el monto va
+ * tal cual y la regla corre al centavo, como en el back. Ausente: al peso,
+ * como siempre.
+ */
 export function usePlanDeImputacion(
   cartera: CarteraDelCliente | null,
   monto: number,
+  conCentavos = false,
 ): Imputacion {
   return React.useMemo(
-    () => imputarPago(cartera ? deudasDeLaCartera(cartera.cuotas) : [], Math.round(monto)),
-    [cartera, monto],
+    () =>
+      imputarPago(
+        cartera ? deudasDeLaCartera(cartera.cuotas) : [],
+        conCentavos ? monto : Math.round(monto),
+        { conCentavos },
+      ),
+    [cartera, monto, conCentavos],
   );
 }
 

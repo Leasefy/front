@@ -16,6 +16,8 @@ import * as React from 'react';
 
 import { toast } from '@/components/ui/toast';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import { texto } from './textos';
 
 /** `J Y C PAPAS S.A.S` → `j-y-c-papas-s-a-s`. Para el nombre del archivo. */
@@ -46,6 +48,9 @@ export function useDescargarPdfDelEstado(
   nota?: string,
 ): UsarPdfDelEstado {
   const [armando, setArmando] = React.useState(false);
+  // «Centavos en todo» (P8 a): con las dos llaves de la deuda, el PDF escribe
+  // toda cifra con dos decimales; apagadas, como siempre.
+  const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
 
   const descargar = React.useCallback(async () => {
     if (!doc || armando) return;
@@ -66,6 +71,7 @@ export function useDescargarPdfDelEstado(
         doc,
         hoy,
         nota,
+        conCentavos,
       }) as unknown as Parameters<typeof pdf>[0];
       const blob = await pdf(elemento).toBlob();
       const url = URL.createObjectURL(blob);
@@ -81,7 +87,7 @@ export function useDescargarPdfDelEstado(
     } finally {
       setArmando(false);
     }
-  }, [doc, hoy, nota, armando]);
+  }, [doc, hoy, nota, armando, conCentavos]);
 
   return { descargar, armando };
 }

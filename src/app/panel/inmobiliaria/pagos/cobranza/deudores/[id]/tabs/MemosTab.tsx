@@ -33,6 +33,7 @@ import { useDebtorMemos } from '@/lib/hooks/cobranza/use-debtor-memos'
 import { Button, Textarea } from '@/components/ui'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 import { summaryOutcomeLabel } from '@/lib/cobranza/call-vocab'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -62,7 +63,7 @@ const EMOCION: Record<string, string> = {
   distressed: 'Angustiado',
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

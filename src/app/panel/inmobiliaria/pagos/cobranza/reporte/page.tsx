@@ -41,8 +41,9 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { MonoLabel } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
-const COP_FORMATTER = new Intl.NumberFormat('es-CO', {
+const COP_FORMATTER = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

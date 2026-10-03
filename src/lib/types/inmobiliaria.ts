@@ -11,6 +11,7 @@ import type {
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
+import { decimalesEnPantalla } from '@/lib/plata/escribir-plata';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
  * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
@@ -2021,13 +2022,9 @@ export function formatCurrency(amount: number): string {
   // prefix — `{ style:'currency', currency:'COP' }` would insert a space after
   // the "$", so the prefix keeps the exact existing visual ("$2.500.000",
   // negatives "$-2.500") while fixing the es-CL/CLP (Chile) misnomer.
-  return (
-    '$' +
-    new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  );
+  // P8 a (C3-FRONT): los centavos SÓLO si el valor los tiene ("$1.234.567,29");
+  // un entero sale exactamente como siempre.
+  return '$' + new Intl.NumberFormat('es-CO', decimalesEnPantalla(amount)).format(amount);
 }
 
 export function getDaysLate(dueDate: string): number {

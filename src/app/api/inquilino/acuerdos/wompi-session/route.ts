@@ -55,6 +55,7 @@ import { NextResponse } from 'next/server'
 
 import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
+import { aCentavosWompi } from '@/lib/plata/plata'
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types'
 
 export const runtime = 'nodejs'
@@ -230,7 +231,11 @@ export async function POST(req: Request) {
     return sobre(502, 'MONTO_INVALIDO', MENSAJES_DE_LA_SESION_DE_PAGO.montoInvalido)
   }
 
-  const amountInCents = Math.round(amountCop * 100)
+  // «Centavos en todo» (C3-FRONT, P7 a): el valor va a Wompi EXACTO al
+  // centavo ($1.234.567,29 → 123456729), sin pasar por `pesos * 100` en
+  // flotante (`0.29 * 100 === 28.999999999999996`). La guarda de arriba ya
+  // dejó sólo un número finito y positivo, lo único que `aCentavosWompi` acepta.
+  const amountInCents = aCentavosWompi(amountCop)
   const currency = 'COP'
   const reference = buildAcuerdoReference(planId, cuotaNumber)
 

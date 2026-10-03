@@ -10,7 +10,15 @@
  * Los topes de plata son SÓLO los de la columna (`int4`, 2.147.483.647): el
  * criterio de Nico para el presupuesto del prospecto. No son una regla de
  * negocio; una cifra así siempre es un cero de más.
+ *
+ * «Centavos en todo» (C3-FRONT): el canon y el depósito aceptan centavos sólo
+ * con las dos áreas de la deuda prendidas (`AREAS_DE_LA_DEUDA`; el back usa
+ * `@EsPlataDeLasAreas(AREAS_DE_LA_DEUDA, …)`). Apagadas, pesos enteros y la
+ * frase «sin centavos» de siempre; prendidas, hasta dos decimales y la frase
+ * del back (`MENSAJE_PLATA_HASTA_EL_CENTAVO`).
  */
+
+import { esPlataQueSeAcepta, fraseDeLaPlata } from '@/lib/plata/con-centavos'
 
 export const CANON_MINIMO_COP = 100_000
 export const CANON_MAXIMO_COP = 2_000_000_000
@@ -72,8 +80,19 @@ export interface TerminosEscritos {
 /**
  * Las mismas reglas del DTO, con las mismas frases. Devuelve un error por
  * campo; vacío = el back no va a rechazar los términos por topes.
+ *
+ * La llave de la deuda (`usePlataConCentavos(AREAS_DE_LA_DEUDA)`) va por campo,
+ * como en el back: crear acepta centavos en el canon y en el depósito; editar,
+ * sólo en el canon (`UpdateContractDto.deposit` sigue con `@IsInt`). Ausente =
+ * apagada, como hoy.
  */
-export function revisarTerminosDelContrato(t: TerminosEscritos): Partial<Record<CampoDeLosTerminos, string>> {
+export function revisarTerminosDelContrato(
+  t: TerminosEscritos,
+  {
+    canonConCentavos = false,
+    depositoConCentavos = false,
+  }: { canonConCentavos?: boolean; depositoConCentavos?: boolean } = {},
+): Partial<Record<CampoDeLosTerminos, string>> {
   const errores: Partial<Record<CampoDeLosTerminos, string>> = {}
   const M = MENSAJES_DEL_CONTRATO
 
@@ -92,7 +111,7 @@ export function revisarTerminosDelContrato(t: TerminosEscritos): Partial<Record<
   const canonTexto = t.monthlyRent?.trim()
   if (canonTexto) {
     const canon = Number(canonTexto)
-    if (!Number.isFinite(canon) || !Number.isInteger(canon)) errores.monthlyRent = M.canonEntero
+    if (!esPlataQueSeAcepta(canon, canonConCentavos)) errores.monthlyRent = fraseDeLaPlata(M.canonEntero, canonConCentavos)
     else if (canon < CANON_MINIMO_COP) errores.monthlyRent = M.canonMinimo
     else if (canon > CANON_MAXIMO_COP) errores.monthlyRent = M.canonMaximo
   }
@@ -100,7 +119,7 @@ export function revisarTerminosDelContrato(t: TerminosEscritos): Partial<Record<
   const depositoTexto = t.deposit?.trim()
   if (depositoTexto) {
     const deposito = Number(depositoTexto)
-    if (!Number.isFinite(deposito) || !Number.isInteger(deposito)) errores.deposit = M.depositoEntero
+    if (!esPlataQueSeAcepta(deposito, depositoConCentavos)) errores.deposit = fraseDeLaPlata(M.depositoEntero, depositoConCentavos)
     else if (deposito < 0) errores.deposit = M.depositoNegativo
     else if (deposito > DEPOSITO_MAXIMO_COP) errores.deposit = M.depositoMaximo
   }

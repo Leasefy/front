@@ -487,6 +487,40 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   cuándo, el motivo y la fecha del giro antes → después). Sin la migración de la bitácora (`desmarcarDisponible: false`) lo
   dice; un back anterior (sin el campo) no lo ofrece.
 
+## Centavos en todo: la plata con centavos detrás de las llaves del back (C3-FRONT, 03-10-2026)
+
+Nico: «que no se redondee, se trae tal cual» y «centavos en todo». El front NO decide: pregunta al back
+`GET /config/plata` → `{ conCentavos: { [area]: boolean } }` (9 áreas de C2; `src/lib/plata/con-centavos.ts`,
+servicio `src/lib/api/config-de-plata.service.ts`). Una pregunta cada 60 s compartida por todos; sólo un `true`
+literal prende un área; un back viejo (404), caído o raro = sin centavos, EXACTAMENTE como hoy.
+
+- **Hook** `usePlataConCentavos(areas)` (`lib/plata/use-plata-con-centavos.ts`): `false` en el servidor, en la
+  primera pintada y sin `areas`. Con varias áreas, TODAS. La deuda (canon, recibos, conceptos) pide las dos:
+  `AREAS_DE_LA_DEUDA`. Fuera de React (servicios, traductores) se mira la foto `configDePlataAhora()`.
+- **Campos**: `MoneyInput` con `areas` acepta coma decimal (hasta 2; el tercero se frena con una pista animada,
+  `Presence` de Cadence, i18n `plata.hastaDosDecimales`) y entrega `"1234567.29"`; sin `areas` es el de siempre.
+  `MoneyInputNumerico` (valor `number`, `NaN` = vacío) y `CampoDePlata` (= el `CurrencyInput` de Cadence con la
+  llave apagada) para las pantallas que guardaban número. Cableados: contrato nuevo/editar (deuda; el depósito al
+  editar sigue entero porque `UpdateContractDto.deposit` es `@IsInt`), conceptos, recibo de caja, deducciones
+  (`dispersion_y_liquidacion`), asiento manual y de apertura (`contabilidad_facturacion_y_exogena`), extracto,
+  saldo del cierre y relación de aseguradoras (`tesoreria_y_conciliacion`), migración de contratos
+  (`contratos_y_cuotas`).
+- **Espejos**: cada `limites-*` / regla de entero recibe la llave (`esPlataQueSeAcepta`, `fraseDeLaPlata`): la
+  frase «sin centavos» SÓLO con la llave apagada; prendida, `MENSAJE_PLATA_HASTA_EL_CENTAVO` (la del back). Las
+  cuentas espejo del back (`imputarPago`, `liquidar`, la partida doble, el cuadre del extracto, la apertura) van
+  en centavos enteros con la llave. Un espejo se prende SÓLO si el DTO del back ya usa `@EsPlataDeLasAreas`.
+- **Formatos (P8 a)** en `lib/plata/escribir-plata.ts`: en pantalla, centavos SÓLO si el valor los tiene Y
+  alguna llave está prendida (`seMuestranLosCentavos`; la respuesta la pide `components/plata/LlavesDeLaPlata`
+  en el layout raíz y el `formatCurrency` de `useI18n` se repinta al cambiar). Con TODAS apagadas, cada pantalla
+  es EXACTAMENTE la de hoy, también una cifra con fracción (regla de Nico «no dañar lo que ya estaba»).
+  `formatCurrency` de las dos copias, `plataEnPantalla(locale, opcionesDeHoy)` en lugar de un `Intl` con
+  `maximumFractionDigits: 0`; con un entero el texto es idéntico al de antes; en documentos (PDF del estado de
+  cuenta, Excel/PDF del cierre, PDF de la liquidación del recaudo) con la llave del área SIEMPRE dos decimales
+  (`formatCurrencyEnDocumento`, `plataEnDocumento`), sin ella como siempre. Precios del SaaS (P12), avalúos,
+  conteos y abreviaturas («$620 M») no se tocan.
+- **Wompi**: las rutas `wompi-session` (arriendo y acuerdo) calculan `amountInCents` con `aCentavosWompi`
+  ($1.234.567,29 → 123456729), nunca `pesos * 100`.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

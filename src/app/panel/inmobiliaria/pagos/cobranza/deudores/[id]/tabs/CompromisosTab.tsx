@@ -25,6 +25,7 @@ import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromiso
 import { Button } from '@/components/ui'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -76,7 +77,7 @@ function etiqueta(mapa: Record<string, string>, slug: string): string {
   return mapa[slug] ?? slug.replaceAll('_', ' ')
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

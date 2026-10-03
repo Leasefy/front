@@ -15,6 +15,7 @@ import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacio
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
 import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
+import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
@@ -168,6 +169,9 @@ export default async function RootLayout({
               o no deje pasar. Una sola en toda la app; no la montes en un
               layout. Ver src/lib/conexion/estado-de-conexion.ts. */}
           <AvisoDeConexion />
+          {/* «Centavos en todo»: qué áreas ya escriben centavos, para los
+              formatos de pantalla (no pinta nada). */}
+          <LlavesDeLaPlata />
         </ThemeProvider>
         </MotionProvider>
       </body>

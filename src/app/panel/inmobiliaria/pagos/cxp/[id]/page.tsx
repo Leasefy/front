@@ -32,6 +32,7 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { cn } from '@/lib/utils';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ---------------------------------------------------------------------------
 // AP Bill shape (mirrors ap-bills-source.ts)
@@ -92,7 +93,7 @@ const STATUS_COLORS: Record<
 function formatCOP(amountStr: string): string {
   const amount = Number(amountStr);
   if (isNaN(amount) || amount === 0) return '$0';
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

@@ -16,7 +16,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, Info, Plus, Warning, X } from "@phosphor-icons/react";
-import { CurrencyInput } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +56,7 @@ import {
   type ProblemaDeApertura,
 } from "@/lib/migracion/asiento-de-apertura";
 import { formatCurrency } from "@/lib/format";
+import { CampoDePlata } from "@/components/ui/campo-de-plata";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { TerceroDeApertura } from "./TerceroDeApertura";
@@ -382,7 +382,8 @@ export function AsientoDeApertura({
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <CurrencyInput
+                  <CampoDePlata
+                    areas="contabilidad_facturacion_y_exogena"
                     aria-label={`Débito de la línea ${i + 1}`}
                     value={fila.debitoCop > 0 ? fila.debitoCop : undefined}
                     onChange={(v) =>
@@ -394,7 +395,8 @@ export function AsientoDeApertura({
                   />
                 </TableCell>
                 <TableCell>
-                  <CurrencyInput
+                  <CampoDePlata
+                    areas="contabilidad_facturacion_y_exogena"
                     aria-label={`Crédito de la línea ${i + 1}`}
                     value={fila.creditoCop > 0 ? fila.creditoCop : undefined}
                     onChange={(v) =>

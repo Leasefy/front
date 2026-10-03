@@ -42,7 +42,7 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-import { formatCurrency } from '@/lib/format';
+import { formatCurrencyEnDocumento } from '@/lib/format';
 import type {
   ContratoDelEstadoDeCuenta,
   EstadoDeCuenta,
@@ -485,6 +485,19 @@ const estilos = StyleSheet.create({
   pieNumero: { fontFamily: MONO, fontSize: 6.5, color: COLOR.tenue },
 });
 
+// ══ La plata del documento ══════════════════════════════════════════════════
+
+/**
+ * «Centavos en todo» (P8 a): el estado de cuenta en PDF es un DOCUMENTO. Con
+ * las dos llaves de la deuda (`conCentavos`), toda cifra con dos decimales
+ * («$ 2.350.000,00», «$ 2.350.000,29»); sin ellas, exactamente como siempre.
+ * Baja por props (no por contexto): cada pedazo del papel es una función pura
+ * que las pruebas llaman sin montar React.
+ */
+function plataDelPdf(conCentavos: boolean | undefined): (valor: number | null | undefined) => string {
+  return (valor) => formatCurrencyEnDocumento(valor, conCentavos === true);
+}
+
 // ══ El documento ════════════════════════════════════════════════════════════
 
 export interface EstadoDeCuentaPDFProps {
@@ -493,9 +506,14 @@ export interface EstadoDeCuentaPDFProps {
   hoy: string;
   /** Lo que dice que el documento sale filtrado. Va bajo el título. */
   nota?: string;
+  /**
+   * Las dos llaves de la deuda prendidas (`usePlataConCentavos(AREAS_DE_LA_DEUDA)`):
+   * la plata con dos decimales siempre. Ausente = como siempre.
+   */
+  conCentavos?: boolean;
 }
 
-export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): JSX.Element {
+export function EstadoDeCuentaPDF({ doc, hoy, nota, conCentavos = false }: EstadoDeCuentaPDFProps): JSX.Element {
   return (
     <Document
       title={`${frase('estadoDeCuenta.titulo')} · ${doc.cliente.nombre}`}
@@ -504,12 +522,18 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
       creator="Leasefy"
       producer="@react-pdf/renderer"
     >
-      <Portada doc={doc} hoy={hoy} nota={nota} />
+      <Portada doc={doc} hoy={hoy} nota={nota} conCentavos={conCentavos} />
       {/* Un contrato por hoja: no hace falta `break` porque cada `<Page>` ya
           empieza en papel nuevo, y así el encabezado `fixed` del contrato sólo
           se repite dentro de SU contrato. */}
       {doc.contratos.map((contrato) => (
-        <PaginaDelContrato key={contrato.numero} doc={doc} contrato={contrato} hoy={hoy} />
+        <PaginaDelContrato
+          key={contrato.numero}
+          doc={doc}
+          contrato={contrato}
+          hoy={hoy}
+          conCentavos={conCentavos}
+        />
       ))}
     </Document>
   );
@@ -517,7 +541,8 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
 
 // ══ Portada ═════════════════════════════════════════════════════════════════
 
-function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
+function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
+  const formatCurrency = plataDelPdf(conCentavos);
   // Del lado PROPIETARIO la portada no dice «Resta por pagar · En mora» (QA 22-09).
   const esPropietario = doc.cliente.tipo === 'PROPIETARIO';
   const frase = (clave: string, params?: Record<string, string | number>) =>
@@ -671,7 +696,7 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
           </>
         ) : (
           doc.contratos.map((contrato) => (
-            <ContratoEnLaPortada key={contrato.numero} contrato={contrato} hoy={hoy} />
+            <ContratoEnLaPortada key={contrato.numero} contrato={contrato} hoy={hoy} conCentavos={conCentavos} />
           ))
         )}
       </View>
@@ -684,10 +709,13 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
 function ContratoEnLaPortada({
   contrato,
   hoy,
+  conCentavos,
 }: {
   contrato: ContratoDelEstadoDeCuenta;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const amortizacion = amortizacionDe(contrato);
   const proxima = proximaCuotaDe(contrato, hoy);
 
@@ -708,7 +736,7 @@ function ContratoEnLaPortada({
       </View>
 
       <View style={{ flexGrow: 1, paddingRight: 18 }}>
-        <BarraDeAmortizacion amortizacion={amortizacion} numero={contrato.numero} />
+        <BarraDeAmortizacion amortizacion={amortizacion} numero={contrato.numero} conCentavos={conCentavos} />
       </View>
 
       <View style={{ width: 150, alignItems: 'flex-end' }}>
@@ -738,10 +766,13 @@ function ContratoEnLaPortada({
 function BarraDeAmortizacion({
   amortizacion,
   numero,
+  conCentavos,
 }: {
   amortizacion: AmortizacionDelContrato;
   numero: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   if (amortizacion.total === 0) return null;
 
   return (
@@ -793,11 +824,14 @@ function PaginaDelContrato({
   doc,
   contrato,
   hoy,
+  conCentavos,
 }: {
   doc: EstadoDeCuenta;
   contrato: ContratoDelEstadoDeCuenta;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const todas = [...contrato.secciones.arriendos, ...contrato.secciones.otrosConceptos];
   const intereses = interesesDelContrato(contrato);
   const conIntereses = Boolean(intereses && intereses.filas.length > 0);
@@ -854,6 +888,7 @@ function PaginaDelContrato({
         rol={contrato.rol}
         hoy={hoy}
         vacio={frase('estadoDeCuenta.sinArriendos')}
+        conCentavos={conCentavos}
       />
 
       <SeccionDeLaTabla
@@ -867,6 +902,7 @@ function PaginaDelContrato({
         rol={contrato.rol}
         hoy={hoy}
         vacio={frase('estadoDeCuenta.sinOtrosConceptos')}
+        conCentavos={conCentavos}
       />
 
       {omitidas.length > 0 ? (
@@ -1061,6 +1097,7 @@ function SeccionDeLaTabla({
   rol,
   hoy,
   vacio,
+  conCentavos,
 }: {
   titulo: string;
   filas: FilaDelEstadoDeCuenta[];
@@ -1070,6 +1107,7 @@ function SeccionDeLaTabla({
   rol: RolEnElContrato;
   hoy: string;
   vacio: string;
+  conCentavos?: boolean;
 }) {
   const renglones = intercalarCortes(filas, cortes);
 
@@ -1092,6 +1130,7 @@ function SeccionDeLaTabla({
               medidas={medidas}
               rol={rol}
               hoy={hoy}
+              conCentavos={conCentavos}
             />
           ),
         )
@@ -1132,13 +1171,16 @@ function FilaDeLaTabla({
   medidas,
   rol,
   hoy,
+  conCentavos,
 }: {
   fila: FilaDelEstadoDeCuenta;
   columnas: ColumnaDeImpuesto[];
   medidas: MedidasDeLaTabla;
   rol: RolEnElContrato;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const tono = TONO_DEL_ESTADO[fila.estado];
   // `ANULADA` dejó de existir y `ANTERIOR` no está en nuestra cartera: ninguna
   // de las dos suma, así que ninguna de las dos se lee con la tinta de las que sí.

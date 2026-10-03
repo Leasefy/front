@@ -42,6 +42,7 @@ import {
   errorDelDiaDePago,
   erroresDeLasFechas,
 } from "@/components/migracion/limites-de-la-migracion";
+import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
 
 /**
  * Los campos de esta fila que tienen dónde pintar su error, con el nombre que
@@ -236,6 +237,9 @@ interface Props {
 }
 
 export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
+  // «Centavos en todo»: el canon corregido a mano acepta centavos con la llave
+  // de los contratos (`ResolverFilaDto` del back).
+  const contratosConCentavos = usePlataConCentavos('contratos_y_cuotas');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /*
@@ -402,7 +406,7 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 tipo="number"
                 ocupado={ocupado}
                 // El mismo tope y la misma frase que `ResolverFilaDto`.
-                validar={errorDelCanon}
+                validar={(v) => errorDelCanon(v, { conCentavos: contratosConCentavos })}
                 onGuardar={(v) =>
                   correr(() =>
                     contractsApi.migracion.resolver(fila.id, {

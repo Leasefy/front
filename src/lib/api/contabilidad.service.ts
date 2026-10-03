@@ -315,8 +315,9 @@ export interface FiltrosDeAsientos {
 
 export const MAX_LIMITE_DE_ASIENTOS = 200;
 
-/** `MovimientoDto` (anidado en `CrearAsientoDto`). Montos en pesos enteros,
- * sin centavos; débito XOR crédito por línea. */
+/** `MovimientoDto` (anidado en `CrearAsientoDto`). Montos en pesos enteros
+ * (con la llave de la contabilidad de «centavos en todo», hasta dos decimales:
+ * `partida-doble.ts`); débito XOR crédito por línea. */
 export const CLAVES_DE_MOVIMIENTO = [
   'cuentaId',
   'debitoCop',

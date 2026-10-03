@@ -19,6 +19,7 @@ import type {
   ResultadoDeCarga,
 } from '@/lib/api/conciliacion-bancaria.types';
 import { plata } from './formato';
+import { aCentavos, restar, sumar } from '@/lib/plata/plata';
 
 /** Dónde se registran las cuentas de la inmobiliaria. */
 export const RUTA_DE_LOS_MEDIOS_DE_PAGO = '/panel/inmobiliaria/configuracion/medios-de-pago';
@@ -66,8 +67,10 @@ export function cuadreEnVivo(
   finalCop: number | undefined,
 ): { sumaCop: number; diferenciaCop: number } | null {
   if (inicialCop === undefined || finalCop === undefined) return null;
-  const sumaCop = filas.reduce((t, f) => t + f.valorCop, 0);
-  return { sumaCop, diferenciaCop: inicialCop + sumaCop - finalCop };
+  // Exacto al centavo («centavos en todo»): con centavos, sumar en flotante
+  // dejaba «no cuadra por $ 0» (0,1 + 0,2 ≠ 0,3). Con pesos enteros da lo mismo.
+  const sumaCop = filas.reduce((t, f) => t + aCentavos(f.valorCop), 0) / 100;
+  return { sumaCop, diferenciaCop: restar(sumar(inicialCop, sumaCop), finalCop) };
 }
 
 /** La frase del cuadre en vivo. */

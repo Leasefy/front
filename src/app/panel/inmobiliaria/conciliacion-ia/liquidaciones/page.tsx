@@ -16,9 +16,10 @@ import Link from 'next/link'
 import { ArrowLeft, CaretDown, PaperPlaneTilt } from '@phosphor-icons/react'
 
 import { BrandContour, Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+const COP = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
 
 type Estado = 'listo' | 'parcial' | 'mora'

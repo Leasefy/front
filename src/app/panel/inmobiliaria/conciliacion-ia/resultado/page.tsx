@@ -29,11 +29,12 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui'
 import { BrandContour, Eyebrow, StatusBadge } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
 const BLUE = '#1A40FF'
 const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+const COP = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 
 // Desaturated semantic signals (§2).
 const SUCCESS = { dot: '#2C7A53', soft: '#E9F3EE', fg: '#22663F' }

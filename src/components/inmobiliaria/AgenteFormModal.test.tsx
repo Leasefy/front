@@ -162,6 +162,28 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('🔴 el 409 «ya es miembro» (sin campos) va bajo «Email» con el foco, no al aviso de abajo que queda fuera de la vista', async () => {
+    const ApiError = await ApiErrorDe();
+    const onClose = montarCon(
+      vi.fn().mockRejectedValue(
+        new ApiError(409, 'El usuario ya es miembro activo de esta inmobiliaria.', undefined, {
+          statusCode: 409,
+          message: 'El usuario ya es miembro activo de esta inmobiliaria.',
+        }),
+      ),
+    );
+    await llenarYEnviar();
+    await act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+
+    expect(errorDe('email')?.textContent).toBe('El usuario ya es miembro activo de esta inmobiliaria.');
+    expect(campo('email').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(campo('email'));
+    expect(dialogo().querySelector('[data-testid="invitacion-error"]')).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('sin respuesta (status 0) habla de la conexión', async () => {
     montarCon(vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await llenarYEnviar();

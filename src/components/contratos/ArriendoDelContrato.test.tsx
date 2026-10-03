@@ -152,6 +152,9 @@ describe('ArriendoDelContrato — un contrato AL DÍA, de arriba abajo', () => {
     expect(barra.getAttribute('aria-valuetext')).toBe('Mes 13 de 24 · del 21 ago 2025 al 20 ago 2027')
     expect(barra.children).toHaveLength(24)
     expect($('marca-de-hoy')).not.toBeNull()
+    // 🔴 03-10: «Hoy · 3 oct 2026» no se parte en dos renglones a 390 px
+    // (bajaba «2026» encima de la barra).
+    expect($('etiqueta-de-hoy')?.className).toContain('whitespace-nowrap')
   })
 
   it('3 · cuánto paga y cuándo, sin «Día 21 / +2 de plazo»', () => {

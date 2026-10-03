@@ -47,12 +47,23 @@ export function SeccionEquipo() {
   const searchParams = useSearchParams();
   const { canAccess, isAdmin } = usePermissions();
 
-  const [vista, setVista] = useState<Vista>('miembros');
+  /*
+   * 🔴 03-10 (pruebas en el navegador): el padrón (`GET /inmobiliaria/agency/members`)
+   * es `configuracion:view` en el back —ningún rol fuera del ADMIN lo trae por
+   * defecto—, pero la sección se abre con el módulo `agentes`. La asesora
+   * entraba a «Miembros», la primera pestaña, y lo primero que veía era «No
+   * tienes acceso a Configuración» (Ranking, Carga y Captaciones sí le
+   * funcionan). Quien no ve el padrón no tiene esa pestaña, entra a Ranking y
+   * no se pide la lista.
+   */
+  const puedeVerElPadron = isAdmin || canAccess('configuracion', 'view');
+  const [vistaElegida, setVista] = useState<Vista>('miembros');
+  const vista: Vista = !puedeVerElPadron && vistaElegida === 'miembros' ? 'ranking' : vistaElegida;
   // 🔴 22-09 noche · «Permisos de esta persona». Las rutas del back son sólo
   // del ADMIN (`ensureAdmin`), así que el gate es `isAdmin` y no el de invitar.
   const [personaDePermisos, setPersonaDePermisos] = useState<AgencyUser | null>(null);
 
-  const { users, isLoading, errorCrudo, refetch } = useAgencyUsers();
+  const { users, isLoading, errorCrudo, refetch } = useAgencyUsers(puedeVerElPadron);
   // Sólo para Ranking y Carga: métricas por agente activo. No es un padrón, y
   // no se pide hasta que se mira (`skip`): el 90% de las visitas es al padrón.
   const {
@@ -84,17 +95,17 @@ export function SeccionEquipo() {
    */
   const puedeAdministrarEquipo = isAdmin || canAccess('agentes', 'create');
 
-  const VISTAS: Array<{ id: Vista; label: string; icon: React.ElementType }> = useMemo(
-    () => [
+  const VISTAS: Array<{ id: Vista; label: string; icon: React.ElementType }> = useMemo(() => {
+    const todas: Array<{ id: Vista; label: string; icon: React.ElementType }> = [
       { id: 'miembros', label: t('inmobiliaria.config.tabs.miembros'), icon: UsersThree },
       { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
       { id: 'carga', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
       // 17-09: quién captó y quién arrendó. Reemplaza a las comisiones por
       // asesor, que se liquidan por fuera de Leasefy.
       { id: 'captaciones', label: 'Captaciones y arriendos', icon: Handshake },
-    ],
-    [t],
-  );
+    ];
+    return todas.filter((v) => v.id !== 'miembros' || puedeVerElPadron);
+  }, [t, puedeVerElPadron]);
 
   /*
    * Cuando el correo no sale, la invitación igual quedó creada — lo que falta

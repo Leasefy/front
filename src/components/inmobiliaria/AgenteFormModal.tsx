@@ -233,13 +233,42 @@ export function AgenteFormModal({
         porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
         accion: 'enviar la invitación',
       });
-      setErrors((prev) => ({ ...prev, ...reparto.porCampo }));
-      const general = reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null;
+      const leido = leerElError(error);
+      const porCampo: Partial<Record<CampoDelFormulario, string>> = { ...reparto.porCampo };
+      let orden: CampoDelFormulario[] = reparto.orden;
+      let sueltos = reparto.sueltos;
+      /*
+       * 🔴 03-10 (pruebas en el navegador): los tres 409 de invitar son del
+       * CORREO —ya es miembro activo, ya tiene una invitación pendiente o es de
+       * otra inmobiliaria (`AgencyService.inviteMember`)— y llegan sin `campos`.
+       * Iban al aviso de abajo, que en un portátil queda fuera de la vista del
+       * cuerpo del diálogo: la persona apretaba «Enviar invitación» y no veía
+       * nada. Van bajo «Email», con el foco ahí.
+       */
+      if (leido.status === 409 && orden.length === 0 && sueltos.length > 0) {
+        porCampo.email = sueltos.join(' · ');
+        orden = ['email'];
+        sueltos = [];
+      }
+      setErrors((prev) => ({ ...prev, ...porCampo }));
+      const general = sueltos.length > 0 ? sueltos.join(' · ') : null;
       if (general) setErrorGeneral(general);
       setVerErrorGeneral(!!general);
-      setTopeDelPlan(leerElError(error).code === CODIGO_LIMITE_DEL_PLAN);
-      const primero = reparto.orden[0];
+      setTopeDelPlan(leido.code === CODIGO_LIMITE_DEL_PLAN);
+      const primero = orden[0];
       if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
+      // Lo que no tiene campo se dice abajo, pegado al pie: se trae a la vista
+      // (el cuerpo del diálogo se desplaza y el aviso podía quedar escondido).
+      else if (general) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            document
+              .getElementById(idDelFormulario)
+              ?.querySelector<HTMLElement>('[data-testid="invitacion-error"]')
+              ?.scrollIntoView?.({ block: 'nearest' }),
+          ),
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }

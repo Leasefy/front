@@ -435,8 +435,12 @@ function Barra({
       {marcarHoy ? (
         <span
           aria-hidden="true"
+          data-testid="etiqueta-de-hoy"
+          // 🔴 03-10 (pruebas a 390 px): sin `whitespace-nowrap`, cerca del fin
+          // de la línea el ancho que le queda a la etiqueta es poco y «2026»
+          // bajaba al renglón de abajo, encima de la barra.
           className={cn(
-            'absolute top-0 font-mono text-[11px] font-medium uppercase tracking-wide text-primary',
+            'absolute top-0 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide text-primary',
             alinearHoy,
           )}
           style={{ left: `${porcentaje}%` }}

@@ -819,6 +819,12 @@ export function GenerarDocumentoDialog({
                                 : undefined
                             }
                             aria-invalid={vacio || !!errorDelCampo}
+                            // 🔴 03-10 (pruebas en el navegador): el borde rojo lo pinta
+                            // el DS con `invalid`; con sólo `aria-invalid` la fecha
+                            // rechazada se veía igual que una buena. Sólo con el error
+                            // dicho: un requerido vacío lo dice el pie, no un borde rojo
+                            // desde que se abre el diálogo.
+                            invalid={!!errorDelCampo}
                             aria-describedby={
                               campo.nombre === 'fechaDeVigencia' ? `${id}-error` : undefined
                             }

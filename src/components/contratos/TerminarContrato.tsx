@@ -259,6 +259,7 @@ export function TerminarContrato({
               }}
               data-testid="terminado-en"
               aria-invalid={errores.terminadoEn ? true : undefined}
+              invalid={!!errores.terminadoEn}
               aria-describedby="terminadoEn-error"
             />
             <ErrorDelCampo id="terminadoEn-error" mensaje={errores.terminadoEn} className="mt-0" />
@@ -274,7 +275,7 @@ export function TerminarContrato({
             <Label htmlFor="motivo">Motivo</Label>
             <select
               id="motivo"
-              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm aria-[invalid=true]:border-danger"
               value={motivo}
               onChange={(e) => {
                 setMotivo(e.target.value);
@@ -329,6 +330,10 @@ export function TerminarContrato({
               }}
               data-testid="penalidad-de-terminacion"
               aria-invalid={errorDeLaPenalidad ? true : undefined}
+              // 🔴 03-10 (pruebas en el navegador): el borde rojo del DS sale de
+              // `invalid`; con sólo `aria-invalid` el campo pasado del tope se veía
+              // igual que uno bueno (lo mismo en la fecha y en la parte).
+              invalid={!!errorDeLaPenalidad}
               aria-describedby="penalidad-error"
             />
             {/* La ayuda y el error se cruzan: nunca los dos a la vez. */}
@@ -364,6 +369,7 @@ export function TerminarContrato({
                 }}
                 data-testid="penalidad-para-la-inmobiliaria"
                 aria-invalid={errorDeLaParte ? true : undefined}
+                invalid={!!errorDeLaParte}
                 aria-describedby="penalidad-inmobiliaria-error"
               />
               <ErrorDelCampo

@@ -397,10 +397,26 @@ describe('TemplatePage — errores al guardar y publicar', () => {
     expect(texto).toContain('faceb00c')
   })
 
-  it('un `fetch` que no salió (status 0) habla de la conexión', async () => {
+  // 🔴 03-10-2026: con el back respondiendo, un `fetch` al micro que no salió
+  // es el asistente caído (capa 2, `agent-fetch.ts`), no la red de la persona.
+  it('un `fetch` al micro que no salió, con el back sano, dice que el asistente no está disponible', async () => {
     mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
     responderAlPut(() => Promise.reject(new TypeError('Failed to fetch')))
     await guardarBorrador()
-    expect(await avisoDeError()).toMatch(/conexi[oó]n/i)
+    const aviso = await avisoDeError()
+    expect(aviso).toMatch(/asistente de Leasefy no está disponible/)
+    expect(aviso).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('sin red en el navegador, un `fetch` que no salió (status 0) habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
+      responderAlPut(() => Promise.reject(new TypeError('Failed to fetch')))
+      await guardarBorrador()
+      expect(await avisoDeError()).toMatch(/conexi[oó]n/i)
+    } finally {
+      enLinea.mockRestore()
+    }
   })
 })

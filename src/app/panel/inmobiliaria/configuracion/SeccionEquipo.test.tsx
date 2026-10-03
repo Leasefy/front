@@ -24,7 +24,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k.split('.').pop() as string, locale: 'es' }),
 }))
 
-let permisos = { isAdmin: true, canAccess: () => true }
+let permisos: { isAdmin: boolean; canAccess: (modulo?: string, accion?: string) => boolean } = { isAdmin: true, canAccess: () => true }
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => permisos,
 }))
@@ -35,7 +35,7 @@ const miembros = [
 ]
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  useAgencyUsers: () => ({ users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() }),
+  useAgencyUsers: vi.fn(() => ({ users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() })),
   useAgentes: () => ({ agentes: [], isLoading: false, errorCrudo: null, refetch: vi.fn() }),
   inmobiliariaConfigApi: { inviteUser: vi.fn(), deleteUser: vi.fn() },
 }))
@@ -130,7 +130,8 @@ describe('sección Equipo', () => {
     }
 
     it('sin permiso para administrar el equipo, el menú sólo ofrece ver la ficha', async () => {
-      permisos = { isAdmin: false, canAccess: () => false }
+      // Ve el padrón (un permiso puntual de `configuracion:view`) pero no invita.
+      permisos = { isAdmin: false, canAccess: (m, a) => m === 'configuracion' && a === 'view' }
       await render()
       const items = await abrirMenuDe('nuevo@agencia.com')
 
@@ -183,6 +184,24 @@ describe('sección Equipo', () => {
     await render()
     expect(h.modal).not.toBeNull()
     await expect(h.modal!.onSubmit({ email: 'x@y.co', name: 'X', role: 'agente' })).rejects.toBe(error)
+  })
+
+  it('🔴 quien no ve el padrón (la asesora: `agentes:view`, sin `configuracion`) entra a Ranking: sin la pestaña «Miembros» y sin pedir la lista', async () => {
+    const pedidos: boolean[] = []
+    const { useAgencyUsers } = await import('@/lib/hooks/useInmobiliaria')
+    vi.mocked(useAgencyUsers).mockImplementation(((habilitado?: boolean) => {
+      pedidos.push(habilitado !== false)
+      return { users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() }
+    }) as never)
+    permisos = { isAdmin: false, canAccess: (m, a) => m === 'agentes' && a === 'view' }
+    await render()
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('miembros')
+    expect(texto).toContain('leaderboard')
+    expect(container.querySelectorAll('table')).toHaveLength(0)
+    expect(texto).not.toContain('Ana Pérez')
+    expect(pedidos.length).toBeGreaterThan(0)
+    expect(pedidos.every((p) => p === false)).toBe(true)
   })
 
   it('ofrece las tres vistas: el padrón y los dos tableros de desempeño', async () => {

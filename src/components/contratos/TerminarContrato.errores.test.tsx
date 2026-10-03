@@ -213,6 +213,8 @@ describe('<TerminarContrato> — el tope que definió la inmobiliaria', () => {
     await escribir(penalidad, '9000001')
     expect(q('#penalidad-error')?.textContent).toBe(MENSAJE)
     expect(penalidad.getAttribute('aria-invalid')).toBe('true')
+    // 🔴 03-10: y se VE en rojo (el borde del DS sale de `data-invalid`).
+    expect(penalidad.hasAttribute('data-invalid')).toBe(true)
     expect(q<HTMLButtonElement>('[data-testid="confirmar-terminacion"]')!.disabled).toBe(true)
     expect(api.terminar).not.toHaveBeenCalled()
   })

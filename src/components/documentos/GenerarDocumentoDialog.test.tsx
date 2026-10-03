@@ -362,6 +362,8 @@ describe('GenerarDocumentoDialog', () => {
       'La fecha de vigencia no es un día real del calendario: febrero de 2026 tiene 28 días.',
     )
     expect(campo.getAttribute('aria-invalid')).toBe('true')
+    // 🔴 03-10: y se VE en rojo (el borde del DS sale de `data-invalid`, no de `aria-invalid`).
+    expect(campo.hasAttribute('data-invalid')).toBe(true)
     expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
 
     await act(async () => escribir(campo, '2101-01-01'))
@@ -376,6 +378,7 @@ describe('GenerarDocumentoDialog', () => {
       expect.objectContaining({ codigo: 'CARTA_INCREMENTO', fechaDeVigencia: '2026-12-01' }),
     )
     expect(campo.getAttribute('aria-invalid')).toBe('false')
+    expect(campo.hasAttribute('data-invalid')).toBe(false)
     expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
   })
 

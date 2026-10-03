@@ -37,9 +37,10 @@ import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -306,7 +307,9 @@ export function ReglasDeMora() {
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    {/* Una regla nueva (de una plantilla o del editor) ENTRA en
+                        su lugar; cada página es un cuerpo nuevo. */}
+                    <TableBodyAnimado key={`${page}|${pageSize}`}>
                       {pageItems.map((regla) => (
                         <FilaDeRegla
                           key={regla.id}
@@ -317,7 +320,7 @@ export function ReglasDeMora() {
                           onCambiarActiva={(activa) => void cambiarActiva(regla, activa)}
                         />
                       ))}
-                    </TableBody>
+                    </TableBodyAnimado>
                   </Table>
                 </div>
 
@@ -380,16 +383,17 @@ function FilaDeRegla({
   const { t } = useI18n();
 
   return (
-    <TableRow
+    <TableRowAnimada
       data-testid={`regla-${regla.id}`}
       // La frase entera sigue disponible al pasar el mouse: las columnas la
       // parten para poder comparar dos reglas de un vistazo, no para esconderla.
       title={describirRegla(regla)}
       onClick={puedeEditar ? onEditar : undefined}
       className={cn(
-        'border-b border-border/50 transition-colors',
+        'border-b last:border-b border-border/50 transition-colors',
         puedeEditar && 'cursor-pointer hover:bg-muted/50',
-        !regla.activa && 'opacity-70',
+        // En las celdas: la fila anima su propia opacidad al entrar.
+        !regla.activa && '[&>td]:opacity-70',
       )}
     >
       <TableCell className="p-4 align-middle">
@@ -456,7 +460,7 @@ function FilaDeRegla({
           {t('reglasDeMora.tabla.editar')}
         </Button>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   );
 }
 

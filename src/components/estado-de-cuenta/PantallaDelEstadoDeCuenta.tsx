@@ -22,6 +22,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { CaretLeft, Printer } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -254,7 +255,7 @@ export function PantallaDelEstadoDeCuenta({
 
   return (
     <div
-      className={cn('mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
+      className={cn('relative mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
       data-estado-pagina
     >
       <div data-estado-barra className="space-y-3">
@@ -297,6 +298,28 @@ export function PantallaDelEstadoDeCuenta({
         </div>
       </div>
 
+      {/* Movimiento (ola 2, 03-10-2026): cargando → el documento / vacío /
+          fallo se cruzan (`popLayout`: lo nuevo entra ya y el esqueleto se va
+          por encima). Las filas del documento NO se animan: es un documento
+          que se imprime, y una fila a media entrada saldría transparente en
+          el papel. */}
+      <CrossFade
+        mode="popLayout"
+        swapKey={
+          cargando
+            ? 'cargando'
+            : sinContratos(error)
+              ? 'sin-contratos'
+              : error
+                ? 'fallo'
+                : entero && vista
+                  ? vista.contratos.length === 0 && conFiltros
+                    ? 'sin-resultados'
+                    : 'documento'
+                  : 'nada'
+        }
+        className="empty:hidden"
+      >
       {cargando ? (
         <div className="space-y-4 rounded-lg border border-border bg-surface p-10">
           <Skeleton className="h-8 w-1/3" />
@@ -399,6 +422,7 @@ export function PantallaDelEstadoDeCuenta({
           )}
         </section>
       ) : null}
+      </CrossFade>
     </div>
   );
 }

@@ -70,7 +70,15 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBodyAnimado,
+  TableRow,
+  TableRowAnimada,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -114,6 +122,12 @@ export interface CuotasDelMesTablaProps {
    * tabla»). Dos bordes anidados a 1 px de distancia se leen como dos cajas.
    */
   sinMarco?: boolean
+  /**
+   * Qué se está mirando (la pestaña del cajón). Al cambiar, el cuerpo de la
+   * tabla se monta de nuevo y las filas nuevas entran escalonadas, sin esperar
+   * a que salgan las de antes. Buscar, en cambio, saca las que ya no están.
+   */
+  vista?: string
 }
 
 /** Las seis de datos más la del kebab. */
@@ -125,6 +139,7 @@ export function CuotasDelMesTabla({
   hayFiltros = false,
   onLimpiarFiltros,
   sinMarco = false,
+  vista = '',
 }: CuotasDelMesTablaProps) {
   const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
@@ -160,9 +175,14 @@ export function CuotasDelMesTabla({
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Movimiento (ola 2, 03-10-2026): las filas entran escalonadas (techo
+            de 320 ms); al buscar, la que ya no está sale en su lugar (`key` =
+            la cuota). Cambiar de pestaña, de mes o de página monta un cuerpo
+            nuevo: entran las nuevas y la tabla no crece mientras salen las
+            viejas. */}
+        <TableBodyAnimado key={`${mes}|${vista}|${page}|${pageSize}`}>
           {filas.length === 0 ? (
-            <TableRow>
+            <TableRowAnimada key="vacio">
               <TableCell colSpan={COLUMNAS} className="p-0">
                 {/*
                   🔴 El vacío NO puede decir «todavía no hay cobros»: con
@@ -178,10 +198,10 @@ export function CuotasDelMesTabla({
                   onLimpiarFiltros={hayFiltros ? onLimpiarFiltros : undefined}
                 />
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ) : (
             pageItems.map((f) => (
-              <TableRow
+              <TableRowAnimada
                 key={f.cuotaId}
                 data-testid="cuota-fila"
                 onClick={() => setAbierta(f)}
@@ -311,10 +331,10 @@ export function CuotasDelMesTabla({
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))
           )}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {shouldPaginate && (

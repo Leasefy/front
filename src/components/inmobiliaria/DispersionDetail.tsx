@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { toast } from '@/components/ui/toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   X,
   User,
@@ -459,7 +459,7 @@ export function DispersionDetail({
    */
   const registrarElGiro =
     !ofreceLote && (conReferencia || (esperaReferencia && !esQuienAprobo)) ? (
-      <section className="space-y-3" data-testid="dispersion-registrar-el-giro">
+      <StaggerItem as="section" key="registrar-el-giro" className="space-y-3" data-testid="dispersion-registrar-el-giro">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Lightning className="w-4 h-4 text-primary" />
           {t('inmobiliaria.dispersiones.detailView.registrarElGiro')}
@@ -511,7 +511,7 @@ export function DispersionDetail({
             </p>
           )}
         </div>
-      </section>
+      </StaggerItem>
     ) : null;
 
   /*
@@ -550,13 +550,14 @@ export function DispersionDetail({
         }
       />
 
-      <CajonCuerpo className="space-y-6">
+      <CajonCuerpo>
+        {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas
+            con el techo del sistema (320 ms) y 4 px mientras entra el cajón;
+            antes cada una tenía su retraso a mano. «Registrar el giro», la
+            referencia y el error ENTRAN y SALEN cuando cambia el estado. */}
+        <Stagger className="space-y-6" distance="xs" layout={false}>
         {/* Propietario Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="propietario" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.propietario')}
@@ -608,17 +609,12 @@ export function DispersionDetail({
               </div>
             )}
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {registrarElGiro}
 
         {/* Bank Account Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="cuenta" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Bank className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.bankAccount')}
@@ -708,8 +704,8 @@ export function DispersionDetail({
                     })}
                   </p>
                   <ul className="mt-1 space-y-1">
-                    {dispersion.repartoDeLaCuenta.map((parte, i) => (
-                      <li key={i} className="text-sm text-foreground">
+                    {dispersion.repartoDeLaCuenta.map((parte) => (
+                      <li key={parte.enUnaLinea} className="text-sm text-foreground">
                         <span className="font-mono">{parte.enUnaLinea}</span>
                         {parte.titularDeOtraPersona ? (
                           <span className="block text-muted-foreground">
@@ -726,15 +722,10 @@ export function DispersionDetail({
             </div>
             )}
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Amount Summary Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="montos" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
@@ -822,15 +813,10 @@ export function DispersionDetail({
               {t('inmobiliaria.dispersiones.detailView.queEsCanonCausado')}
             </p>
           )}
-        </motion.section>
+        </StaggerItem>
 
         {/* Commission Breakdown Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="desglose" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Receipt className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
@@ -842,15 +828,10 @@ export function DispersionDetail({
             variant="compact"
             showPercentages={true}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Status Timeline Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="historial" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.history')}
@@ -910,14 +891,13 @@ export function DispersionDetail({
               />
             )}
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Transfer Reference (if completed) */}
         {isCompleted && dispersion.transferReference && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+          <StaggerItem
+            as="section"
+            key="referencia"
             className="p-4 rounded-lg bg-success-soft border border-success/30 dark:border-success/40"
           >
             <div className="flex items-center justify-between">
@@ -944,15 +924,14 @@ export function DispersionDetail({
               </div>
               <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
             </div>
-          </motion.section>
+          </StaggerItem>
         )}
 
         {/* Error Message (if failed) */}
         {isFailed && dispersion.failureReason && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+          <StaggerItem
+            as="section"
+            key="error"
             className="p-4 rounded-lg bg-danger-soft border border-danger/30 dark:border-danger/40"
           >
             <div className="flex items-start gap-3">
@@ -966,11 +945,14 @@ export function DispersionDetail({
                 </p>
               </div>
             </div>
-          </motion.section>
+          </StaggerItem>
         )}
 
         {/* Quién aprobó, marcó girada o bajó el extracto, con su rol. */}
+        <StaggerItem key="bitacora">
         <BitacoraDelRecurso tipo="dispersion" id={dispersion.id} />
+        </StaggerItem>
+        </Stagger>
       </CajonCuerpo>
 
       {/* Pie fijo: bajar el extracto a la izquierda; ver el extracto y la

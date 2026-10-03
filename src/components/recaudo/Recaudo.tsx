@@ -62,12 +62,15 @@ import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
+  TableBodyAnimado,
   TableCell,
   TableFooter,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table';
+import { AnimatedNumber, Appear, Presence } from '@leasefy/cadence';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { PuntoDeLaSerie, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
@@ -193,7 +196,11 @@ export function Recaudo() {
             <CaretLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
           <p className="min-w-[11rem] text-center font-mono text-sm tabular-nums" data-testid="mes-en-foco">
+            {/* El mes nuevo entra con un fundido; las cifras de abajo cuentan
+                desde las del mes anterior. */}
+            <Appear as="span" key={month} direction="none">
             {conMayusculaInicial(nombreDelMes(month))}
+            </Appear>
           </p>
           <Button
             variant="secondary"
@@ -242,8 +249,10 @@ export function Recaudo() {
             único que cambia es una línea que lo dice. */}
         {!resumen ? null : (
           <>
-            {mesSinMovimiento(resumen) && (
-              <p
+            <Presence
+              as="p"
+              show={mesSinMovimiento(resumen)}
+              initial={false}
                 className="flex flex-wrap items-center gap-x-2 rounded-lg border border-border bg-surface-muted/40 px-4 py-3 text-sm text-fg-muted"
                 data-testid="mes-sin-movimiento"
               >
@@ -255,8 +264,7 @@ export function Recaudo() {
                 <Link href="/panel/inmobiliaria/pagos" className="font-medium text-primary underline-offset-2 hover:underline">
                   Ir a la deuda del mes
                 </Link>
-              </p>
-            )}
+            </Presence>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="cifras">
               {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
                   cuelgan las demás, y la que existe desde que se firma cada
@@ -464,9 +472,11 @@ export function Recaudo() {
                     <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                {/* Cada mes es un cuerpo nuevo: sus medios de pago entran
+                    escalonados. */}
+                <TableBodyAnimado key={month}>
                   {resumen.porMedio.length === 0 ? (
-                    <TableRow>
+                    <TableRowAnimada key="vacio">
                       <TableCell colSpan={3} className="p-0" data-testid="sin-recibos">
                         <SinDatos
                           queSon="recibos de caja"
@@ -475,19 +485,19 @@ export function Recaudo() {
                           descripcion={`Los recibos con fecha en ${nombreDelMes(month)} aparecen acá, agrupados por cómo entró la plata.`}
                         />
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ) : (
                     resumen.porMedio.map((m) => (
-                      <TableRow key={m.medio} data-testid="medio-fila">
+                      <TableRowAnimada key={m.medio} data-testid="medio-fila">
                         <TableCell className="text-fg">{nombreDelMedio(m.medio)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg-muted">{m.cantidad}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg">
                           {formatCurrency(m.valorCop)}
                         </TableCell>
-                      </TableRow>
+                      </TableRowAnimada>
                     ))
                   )}
-                </TableBody>
+                </TableBodyAnimado>
                 {resumen.porMedio.length > 0 && (
                   <TableFooter>
                     <TableRow data-testid="medio-total">
@@ -496,7 +506,7 @@ export function Recaudo() {
                         {totalDeRecibos.cantidad}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium tabular-nums text-fg">
-                        {formatCurrency(totalDeRecibos.valorCop)}
+                        <AnimatedNumber value={totalDeRecibos.valorCop} format={formatCurrency} />
                       </TableCell>
                     </TableRow>
                   </TableFooter>
@@ -537,7 +547,8 @@ function Cifra({
         )}
         data-testid={`valor-${id}`}
       >
-        {formatCurrency(valor)}
+        {/* Cuenta desde la del mes anterior al cambiar de mes. */}
+        <AnimatedNumber value={valor} format={formatCurrency} />
       </p>
       <p className="text-xs leading-relaxed text-fg-muted">{definicion}</p>
     </section>

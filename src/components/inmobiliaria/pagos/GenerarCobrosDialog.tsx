@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
-import { Banner } from '@leasefy/cadence'
+import { Appear, Banner } from '@leasefy/cadence'
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   cobrosApi,
@@ -284,19 +284,25 @@ export function GenerarCobrosDialog({
           )}
         </DialogHeader>
 
+        {/* Movimiento (ola 2, 03-10-2026): el resultado de la corrida y el
+            fallo ENTRAN (fundido y 4 px) en lugar del formulario. */}
         {omitidos ? (
+          <Appear distance="xs">
           <OmitidosPorVencido omitidos={omitidos} />
+          </Appear>
         ) : error && esUnRechazo(error) ? (
           <Banner variant="danger" role="alert" data-testid="generar-rechazo">
             {mensajeParaLaPersona(error, { accion: 'generar los cobros' })}
           </Banner>
         ) : error ? (
+          <Appear distance="xs">
           <FalloDeCarga
             error={error}
             queEs={t('inmobiliaria.ai.pagos_home.resumen.generar.queEs')}
             onReintentar={confirmar}
             enmarcado={false}
           />
+          </Appear>
         ) : (
           <div className="space-y-3">
             {/* El alcance, en hechos: sobre qué mes y qué hay hoy. */}

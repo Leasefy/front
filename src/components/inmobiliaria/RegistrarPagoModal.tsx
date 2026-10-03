@@ -109,7 +109,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
+import { Appear, Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -957,20 +957,23 @@ export function RegistrarPagoModal({
             ése fue el defecto que originó todo este cambio. El pie se dibuja
             igual, con «Cerrar»: sin eso el modal quedaba sin botones.
           */}
+          {/* Movimiento (ola 2, 03-10-2026): lo que llega después de elegir al
+              cliente —su cartera, el «no debe nada», la conciliación— ENTRA
+              con un fundido y 4 px en vez de aparecer de golpe. */}
           {conciliando === null && !cargando && cartera !== null && !hayCartera && (
-            <div data-testid="cliente-sin-deuda">
+            <Appear distance="xs" data-testid="cliente-sin-deuda">
               <SinDatos
                 queSon="cuotas pendientes"
                 icono={Receipt}
                 titulo={t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
                 descripcion="No le queda ninguna cuota pendiente: ni vencida ni por vencer. Cuando su contrato genere la siguiente vas a poder recibírsela, incluso antes de que venza."
               />
-            </div>
+            </Appear>
           )}
 
           {/* Conciliar la plata vieja (409) */}
           {conciliando !== null && (
-            <div className="space-y-4" data-testid="panel-conciliacion">
+            <Appear distance="xs" className="space-y-4" data-testid="panel-conciliacion">
               <Banner variant="warning" title={t('recibos.conciliar.titulo')}>
                 {t('recibos.conciliar.porQue')}
               </Banner>
@@ -1006,11 +1009,12 @@ export function RegistrarPagoModal({
               </div>
 
               {errorDeConciliacion && <Banner variant="danger">{errorDeConciliacion}</Banner>}
-            </div>
+            </Appear>
           )}
 
           {/* 3. El recibo */}
           {conciliando === null && hayCartera && cartera && (
+            <Appear distance="xs">
             <form
               id={ID_FORM}
               className="space-y-6"
@@ -1101,21 +1105,21 @@ export function RegistrarPagoModal({
                     vencen. Es legítimo y es lo que el CEO pidió, pero tiene que
                     estar dicho ANTES de emitir, no descubrirse en el recibo. */}
                 {vencido > 0 && futuro > 0 && (
-                  <p className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
                     {t('recibos.form.adelantoDesde', {
                       vencido: formatCurrency(vencido),
                       futuro: formatCurrency(futuro),
                     })}
-                  </p>
+                  </Appear>
                 )}
                 {/* Decir a dónde va el excedente ANTES de emitir: si no, la
                     plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
                 {excedente > 0 && puedeGuardarAFavor && (
-                  <p className="text-xs text-fg-muted" data-testid="aviso-a-favor">
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-a-favor">
                     {formatCurrency(excedente)} superan TODA la deuda de {cartera?.nombre ?? 'el cliente'}
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
-                  </p>
+                  </Appear>
                 )}
                 {excedente > 0 && puedeGuardarAFavor && !seExcede && (
                   <label className="flex items-start gap-2 text-sm text-fg" data-testid="confirmar-a-favor">
@@ -1354,6 +1358,7 @@ export function RegistrarPagoModal({
                 </Banner>
               )}
             </form>
+            </Appear>
           )}
         </>
 

@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { ArrowRight, Bank, Plus } from '@phosphor-icons/react';
-import { Banner } from '@leasefy/cadence';
+import { Banner, MotionIndicator } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,11 +44,12 @@ import {
 } from '@/components/ui/dialog';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
@@ -217,10 +218,14 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                 aria-selected={filtro === f.id}
                 onClick={() => setFiltro(f.id)}
                 className={cn(
-                  'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  filtro === f.id ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
+                  'relative isolate rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                  filtro === f.id ? 'text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
                 )}
               >
+                {/* La píldora del filtro elegido SE DESLIZA al nuevo. */}
+                {filtro === f.id ? (
+                  <MotionIndicator layoutId="lotes-filtro" className="inset-0 -z-10 rounded-full bg-primary" />
+                ) : null}
                 {f.nombre}
               </button>
             ))}
@@ -253,11 +258,13 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                   <TableHead className="sr-only">Abrir</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Filas escalonadas con techo; cada filtro o página monta un
+                  cuerpo nuevo. */}
+              <TableBodyAnimado key={`${filtro}|${page}|${pageSize}`}>
                 {pageItems.map((lote) => {
                   const enTotal = lote._count?.items ?? lote.cantidad;
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={lote.id}
                       className="cursor-pointer"
                       onClick={() => irAlLote(lote.id)}
@@ -291,10 +298,10 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                           </Link>
                         </Button>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
         )}

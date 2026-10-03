@@ -85,6 +85,7 @@
 
 import Link from 'next/link'
 import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { SectionLabel } from '@/components/ui/section-label'
@@ -208,6 +209,11 @@ function PagosHome() {
           una agencia del ERP viene vacía casi siempre: reservarle media
           pantalla a un vacío estructural es regalarle el lugar más valioso de
           la vista a la nada. */}
+      {/* Movimiento (ola 2, 03-10-2026): la sección entra y SALE (si al
+          terminar de cargar no hay nada, se va con su salida en vez de
+          cortarse), y el fallo ⇄ la bandeja se cruzan. */}
+      <Presence show={Boolean(wiError) || hayAtencion || wiLoading} initial={false}>
+        <CrossFade swapKey={wiError ? 'fallo' : 'bandeja'} initial={false}>
       {wiError ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
           <h2 className="text-base font-semibold text-fg">
@@ -240,6 +246,8 @@ function PagosHome() {
           <PrioridadInbox items={items} onAction={runAction} isLoading={wiLoading} />
         </section>
       ) : null}
+        </CrossFade>
+      </Presence>
 
       {/* El bloque operativo: el mes, lo que se debe, lo pagado, dónde está lo
           que falta, y el recibo de caja. */}
@@ -262,6 +270,13 @@ function PagosHome() {
             </Link>
           )}
         </div>
+        {/* Cargando → fallo / vacío / la lista: se cruzan. Las entradas nuevas
+            del feed (al volver a leerlo) entran escalonadas por su id. */}
+        <CrossFade
+          swapKey={
+            ovError ? 'fallo' : ovLoading ? 'cargando' : feedVisible.length === 0 ? 'vacio' : 'lista'
+          }
+        >
         {ovError ? (
           <FalloDeCarga
             error={ovError}
@@ -281,9 +296,9 @@ function PagosHome() {
           </p>
         ) : (
           <Card className="p-2">
-            <ul className="divide-y divide-border">
+              <Stagger as="ul" className="divide-y divide-border" distance="xs">
               {feedVisible.map((entry) => (
-                <li key={entry.id} className="flex items-start gap-3 px-3 py-3">
+                  <StaggerItem as="li" key={entry.id} className="flex items-start gap-3 px-3 py-3">
                   <FeedActorChip actorType={entry.actorType} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-fg">{entry.titulo}</p>
@@ -292,11 +307,12 @@ function PagosHome() {
                   <span className="shrink-0 text-xs tabular-nums text-fg-muted">
                     {tiempoRelativo(entry.occurredAt)}
                   </span>
-                </li>
+                  </StaggerItem>
               ))}
-            </ul>
+              </Stagger>
           </Card>
         )}
+        </CrossFade>
       </section>
     </div>
   )

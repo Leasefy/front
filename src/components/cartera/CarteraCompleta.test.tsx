@@ -607,15 +607,23 @@ describe('CarteraCompleta', () => {
     expect(host.querySelector('[data-testid="avisos-de-la-cartera"]')).toBeNull()
   })
 
-  it('la búsqueda filtra, y sin resultados ofrece quitar los filtros — dentro de la tabla', () => {
+  it('la búsqueda filtra, y sin resultados ofrece quitar los filtros — dentro de la tabla', async () => {
     conReporte(reporte())
     montar()
+    // Movimiento (03-10-2026): al buscar, las filas que ya no coinciden SALEN
+    // (150 ms) antes de desmontarse; se espera a que terminen de irse.
+    const queSalgan = () =>
+      act(async () => {
+        await new Promise((r) => setTimeout(r, 50))
+      })
 
     const input = $('[data-testid="buscar-cartera"]') as HTMLInputElement
     escribir(input, 'ana pérez')
+    await queSalgan()
     expect(todos('[data-testid="cartera-fila"]')).toHaveLength(1)
 
     escribir(input, 'zzz')
+    await queSalgan()
     expect(todos('[data-testid="cartera-fila"]')).toHaveLength(0)
     // Los encabezados siguen: el vacío vive en el cuerpo de la tabla.
     expect($('[data-testid="cartera-tabla"]').textContent).toContain('cartera.tabla.inquilino')

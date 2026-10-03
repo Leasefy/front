@@ -5,7 +5,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
   Bank,
@@ -84,7 +83,7 @@ import {
 import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
-import { SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -716,7 +715,9 @@ function DispersionesContent() {
    *   - falló y la lista sí está → estimado con las filas, rotulado.
    */
   let bloqueDeResumen: JSX.Element;
+  let claseDeResumen: 'resumen' | 'fallo' | 'cargando';
   if (resumenDelBack || (resumenFallo && !cargandoLista && !listaCaida)) {
+    claseDeResumen = 'resumen';
     bloqueDeResumen = (
       <DispersionResumen
         summary={summary}
@@ -731,6 +732,7 @@ function DispersionesContent() {
       />
     );
   } else if (resumenFallo && listaCaida) {
+    claseDeResumen = 'fallo';
     bloqueDeResumen = (
       <FalloDeCarga
         error={resumenFallo}
@@ -739,6 +741,7 @@ function DispersionesContent() {
       />
     );
   } else {
+    claseDeResumen = 'cargando';
     bloqueDeResumen = <EsqueletoIndicadores cantidad={3} className="lg:grid-cols-3" />;
   }
 
@@ -771,18 +774,18 @@ function DispersionesContent() {
         </div>
       </div>
 
-      {/* Summary Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        data-testid="dispersiones-resumen"
-      >
+      {/* Summary Section — la página ya no anima su propia entrada (la pone el
+          `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se
+          cruzan (`popLayout`: lo nuevo entra ya y lo viejo se va encima). */}
+      <div className="relative" data-testid="dispersiones-resumen">
+        <CrossFade swapKey={claseDeResumen} mode="popLayout">
         {bloqueDeResumen}
-      </motion.div>
+        </CrossFade>
+      </div>
 
       {/* El informe de «Aprobar todas» cuando no salieron todas: queda hasta
           que se cierre, con el motivo de cada una. */}
+      <Presence show={Boolean(informe)} initial={false}>
       {informe && (
         <AlertaAccionable
           severidad="warning"
@@ -799,14 +802,10 @@ function DispersionesContent() {
           </ul>
         </AlertaAccionable>
       )}
+      </Presence>
 
       {/* Unified Card - View Toggle + Filters + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card"
-      >
+      <div className="rounded-lg border border-border bg-card">
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl
@@ -838,11 +837,15 @@ function DispersionesContent() {
           />
           {/* El conteo sólo cuando la lista es de verdad: «0 dispersiones»
               encima de un fallo es otro «no hay». */}
-          {!cargandoLista && !listaCaida && (
-            <span className="text-xs text-fg-muted tabular-nums">
+          <Presence
+            as="span"
+            show={!cargandoLista && !listaCaida}
+            initial={false}
+            direction="none"
+            className="text-xs text-fg-muted tabular-nums"
+          >
               {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
-            </span>
-          )}
+          </Presence>
         </div>
 
         {/* Filters Section - SECOND */}
@@ -887,9 +890,13 @@ function DispersionesContent() {
               />
             }
           >
+            {/* Tabla ⇄ tarjetas se cruzan; dentro, las filas y las tarjetas
+                entran escalonadas (cuerpo nuevo por mes y página). */}
+            <CrossFade swapKey={viewMode}>
             {viewMode === 'table' ? (
               <DispersionTable
                 dispersiones={paginatedDispersiones}
+                  clave={`${filters.month}|${page}|${pageSize}`}
                 onViewDetail={handleDispersionClick}
                 // Con aprobación por lote la fila no ofrece aprobar ni girar:
                 // las dos dan 409. «Ver detalle» sigue, y ahí está el enlace.
@@ -898,10 +905,13 @@ function DispersionesContent() {
                 showSummary
               />
             ) : (
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Stagger
+                  key={`${filters.month}|${page}|${pageSize}`}
+                  className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                >
                 {paginatedDispersiones.map((dispersion) => (
+                    <StaggerItem key={dispersion.id}>
                   <DispersionCard
-                    key={dispersion.id}
                     dispersion={dispersion}
                     onViewDetail={handleDispersionClick}
                     onProcess={
@@ -910,9 +920,11 @@ function DispersionesContent() {
                         : undefined
                     }
                   />
+                    </StaggerItem>
                 ))}
-              </div>
+                </Stagger>
             )}
+            </CrossFade>
           </EstadoDeDatos>
         </div>
 
@@ -930,7 +942,7 @@ function DispersionesContent() {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Dispersion Detail Modal */}
       <DispersionDetail

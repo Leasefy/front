@@ -28,6 +28,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowUUpLeft, CheckCircle, Hourglass } from '@phosphor-icons/react';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinLaMigracion } from '@/components/finanzas/piezas';
@@ -209,9 +210,12 @@ export function PendientesDeAplicarPanel() {
                 ? `Hoy se podrían aplicar ${formatCurrency(datos.totalAplicableCop)} a deuda ya vencida.`
                 : 'Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.'}
             </p>
-            <ul className="space-y-4" data-testid="pendientes">
+            {/* Movimiento (ola 2, 03-10-2026): las entradas llegan escalonadas;
+                la que se aplica o se devuelve SALE de la lista (`key` = el id). */}
+            <Stagger as="ul" className="space-y-4" data-testid="pendientes" distance="xs">
               {datos.aplicables.map((item) => (
-                <li
+                <StaggerItem
+                  as="li"
                   key={item.pendiente.id}
                   className="space-y-3 rounded-lg border border-border bg-surface p-5"
                   data-testid={`pendiente-${item.pendiente.id}`}
@@ -303,9 +307,9 @@ export function PendientesDeAplicarPanel() {
                       Devolver
                     </Button>
                   </div>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           </>
         ) : null}
       </EstadoDeDatos>

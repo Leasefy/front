@@ -5,7 +5,7 @@ import { mesEnTitulo } from '@/lib/utils/mes';
 import { toast } from '@/components/ui/toast';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   X,
   Buildings,
@@ -250,13 +250,14 @@ export function CobroDetail({
         actions={<StatusBadge status={cobro.status} />}
       />
 
-      <CajonCuerpo className="space-y-6">
+      <CajonCuerpo>
+        {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas
+            con el techo del sistema (320 ms) y 4 px, mientras el cajón entra.
+            Antes cada una tenía su retraso a mano (0 → 0,3 s) y la última
+            terminaba de llegar casi medio segundo después del cajón. */}
+        <Stagger className="space-y-6" distance="xs" layout={false}>
         {/* Property Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="inmueble" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Buildings className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.propertySection')}
@@ -291,15 +292,10 @@ export function CobroDetail({
               )}
             </div>
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Tenant Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="inquilino" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.tenantSection')}
@@ -347,16 +343,11 @@ export function CobroDetail({
               )}
             </div>
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Propietario Section */}
         {propietario && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-3"
-          >
+          <StaggerItem as="section" key="propietario" className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.ownerSection')}
@@ -375,16 +366,11 @@ export function CobroDetail({
                 </Link>
               </div>
             </div>
-          </motion.section>
+          </StaggerItem>
         )}
 
         {/* Amount Breakdown Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="desglose" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.breakdownSection')}
@@ -438,15 +424,10 @@ export function CobroDetail({
               </div>
             </div>
           )}
-        </motion.section>
+        </StaggerItem>
 
         {/* Recibos de caja — cada abono, su documento */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="recibos" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Receipt className="w-4 h-4 text-primary" />
             {t('recibos.historial.titulo')}
@@ -458,15 +439,10 @@ export function CobroDetail({
             onReintentar={recargar}
             onAnular={anularRecibo}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Reminder History Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="recordatorios" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Bell className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
@@ -501,7 +477,8 @@ export function CobroDetail({
               {t('inmobiliaria.cobros.detail.noReminders')}
             </p>
           )}
-        </motion.section>
+        </StaggerItem>
+        </Stagger>
       </CajonCuerpo>
 
       {/* Pie fijo. A la izquierda lo secundario (la cuenta de cobro); a la derecha las acciones del cobro. */}

@@ -85,10 +85,10 @@
  * no tienen con qué identificarse y no llevan enlace.
  */
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Appear, MotionIndicator, Presence } from '@leasefy/cadence'
 import {
-  CaretDown,
   CaretRight,
   CurrencyCircleDollar,
   DotsThreeVertical,
@@ -243,6 +243,8 @@ export function CarteraPorConcepto() {
    * que sólo podía expresar dos estados de cuatro (Nico, 21-09).
    */
   const [cajon, setCajon] = useState<CajonDeLaCartera>('TODAS')
+  /** La marca de la pestaña elegida (una por pantalla): se desliza a la nueva. */
+  const marca = `${useId()}-cajon`
   const [abiertos, setAbiertos] = useState<ReadonlySet<string>>(new Set())
   /** El deudor abierto en el cajón. `null` = cerrado. */
   const [enElCajon, setEnElCajon] = useState<InquilinoEnCartera | null>(null)
@@ -345,7 +347,7 @@ export function CarteraPorConcepto() {
           amortización no es un contrato sin deuda: es una deuda que todavía
           nadie generó. Callarlo deja la franja mintiendo por omisión.
         */}
-        {avisos.length > 0 && (
+        <Presence show={avisos.length > 0} initial={false}>
           <div
             className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
             data-testid="avisos-de-la-cartera"
@@ -368,7 +370,7 @@ export function CarteraPorConcepto() {
               ) : null}
             </div>
           </div>
-        )}
+        </Presence>
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           {/* 🔴 Las pestañas, DENTRO de la tarjeta de la tabla que gobiernan, y
@@ -387,6 +389,7 @@ export function CarteraPorConcepto() {
               Ver en la tabla
             </span>
             <PestanaDeLaCartera
+              marca={marca}
               label="Toda la deuda"
               monto={datos?.totales.saldoCop ?? 0}
               detalle="Los tres momentos juntos."
@@ -395,6 +398,7 @@ export function CarteraPorConcepto() {
               onClick={() => setCajon('TODAS')}
             />
             <PestanaDeLaCartera
+              marca={marca}
               label="Por vencer"
               monto={datos?.totales.porVencerCop ?? 0}
               detalle="Todavía no vence. Es deuda, no cartera."
@@ -404,6 +408,7 @@ export function CarteraPorConcepto() {
               onClick={() => setCajon('POR_VENCER')}
             />
             <PestanaDeLaCartera
+              marca={marca}
               label="Vencido, en plazo"
               monto={datos?.totales.vencidaEnPlazoCop ?? 0}
               detalle="Venció, pero el plazo del contrato sigue corriendo."
@@ -413,6 +418,7 @@ export function CarteraPorConcepto() {
               onClick={() => setCajon('VENCIDA_EN_PLAZO')}
             />
             <PestanaDeLaCartera
+              marca={marca}
               label="Cartera"
               monto={datos?.totales.enMoraCop ?? 0}
               detalle="Pasó el plazo. Es lo único que la cobranza persigue."
@@ -442,7 +448,10 @@ export function CarteraPorConcepto() {
             className="border-b border-border px-4 py-2 text-xs text-fg-muted"
             data-testid="que-es-este-cajon"
           >
+            {/* La frase del cajón nuevo entra con un fundido. */}
+            <Appear as="span" key={cajon} direction="none">
             {QUE_ES_ESTE_CAJON[cajon]}
+            </Appear>
           </p>
 
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -604,6 +613,7 @@ function PestanaDeLaCartera({
   testId,
   onClick,
   extra,
+  marca,
 }: {
   label: string
   monto: number
@@ -614,6 +624,8 @@ function PestanaDeLaCartera({
   testId: string
   onClick: () => void
   extra?: React.ReactNode
+  /** El `layoutId` de la marca de la elegida. */
+  marca: string
 }) {
   return (
     <button
@@ -647,13 +659,11 @@ function PestanaDeLaCartera({
         {formatCurrency(monto)}
       </span>
       {extra}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute inset-x-0 bottom-0 h-0.5 bg-primary transition-opacity',
-          activa ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {/* La marca de la elegida SE DESLIZA a la nueva (antes se apagaba en
+          una y se prendía en la otra). */}
+      {activa ? (
+        <MotionIndicator layoutId={marca} className="inset-x-0 bottom-0 h-0.5 bg-primary" />
+      ) : null}
     </button>
   )
 }
@@ -688,7 +698,6 @@ function FilasDelInquilino({
   onAlternar: () => void
   onAbrirDetalle: () => void
 }) {
-  const Caret = abierto ? CaretDown : CaretRight
   const interesDelInquilino = sumarIntereses(inquilino.filas)
   const href = hrefDelEstadoDeCuenta(inquilino.clave)
   return (
@@ -725,7 +734,14 @@ function FilasDelInquilino({
             aria-label={`Ver los meses de ${inquilino.nombre ?? 'este inquilino'} en la tabla`}
             className="flex items-start gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Caret className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+            {/* Un solo caret que gira (antes se cambiaba un ícono por otro). */}
+            <CaretRight
+              className={cn(
+                'mt-0.5 h-4 w-4 shrink-0 text-fg-muted transition-transform duration-slow ease-emphasis',
+                abierto && 'rotate-90',
+              )}
+              aria-hidden="true"
+            />
             <span>
               <span className="block font-medium text-fg">
                 {inquilino.nombre ?? 'Sin nombre en el contrato'}

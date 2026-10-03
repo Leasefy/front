@@ -25,11 +25,12 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
@@ -176,9 +177,10 @@ export function DeduccionesDelPropietario({
                     {puedeAnular && <TableHead />}
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                {/* Un descuento recién registrado ENTRA en su lugar (`key` = el id). */}
+                <TableBodyAnimado>
                   {deducciones.map((d) => (
-                    <TableRow key={d.id} data-testid={`deduccion-${d.id}`} data-estado={d.estado}>
+                    <TableRowAnimada key={d.id} data-testid={`deduccion-${d.id}`} data-estado={d.estado}>
                       <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums">{d.fecha}</TableCell>
                       <TableCell>
                         <p className="text-sm text-fg">
@@ -232,9 +234,9 @@ export function DeduccionesDelPropietario({
                             )}
                         </TableCell>
                       )}
-                    </TableRow>
+                    </TableRowAnimada>
                   ))}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             </div>
           )}

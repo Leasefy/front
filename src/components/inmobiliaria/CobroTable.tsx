@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -22,10 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableFooter,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import {
@@ -75,6 +75,12 @@ interface CobroTableProps {
    */
   onCobroAnulado?: (resultado: CobroAnulado) => void;
   showSummary?: boolean;
+  /**
+   * Qué página/mes/vista se está mirando. Al cambiar, el cuerpo se monta de
+   * nuevo y las filas entran escalonadas sin esperar a que salgan las de
+   * antes; buscar o filtrar, en cambio, saca las que ya no están.
+   */
+  clave?: string;
 }
 
 /**
@@ -87,6 +93,7 @@ export function CobroTable({
   onRegisterPayment,
   onCobroAnulado,
   showSummary = false,
+  clave,
 }: CobroTableProps) {
   const [cobroPorAnular, setCobroPorAnular] = useState<Cobro | null>(null);
   const { canAccess, isLoading: cargandoPermisos } = usePermissions();
@@ -237,18 +244,18 @@ export function CobroTable({
             <TableHead className="w-12 p-4" />
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sortedCobros.map((cobro, index) => {
+        {/* Las filas entran escalonadas con el techo de 320 ms (antes
+            `index * 0.02` sin tope) y, al filtrar o cambiar de mes, las que
+            se van salen en su lugar (`key` = el id). */}
+        <TableBodyAnimado key={clave}>
+          {sortedCobros.map((cobro) => {
             const statusLabel = STATUS_LABELS[cobro.status];
 
             return (
-              <motion.tr
+              <TableRowAnimada
                 key={cobro.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 onClick={() => onCobroClick?.(cobro)}
-                className="hover:bg-surface-hover cursor-pointer transition-colors"
+                className="border-b-0 hover:bg-surface-hover cursor-pointer transition-colors"
               >
                 {/* Property */}
                 <TableCell className="p-4">
@@ -436,10 +443,10 @@ export function CobroTable({
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>
-              </motion.tr>
+              </TableRowAnimada>
             );
           })}
-        </TableBody>
+        </TableBodyAnimado>
 
         {/* Summary Row */}
         {showSummary && cobros.length > 0 && (

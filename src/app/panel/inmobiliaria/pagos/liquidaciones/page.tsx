@@ -44,7 +44,16 @@ import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import {
+  Table,
+  TableHeader,
+  TableBodyAnimado,
+  TableRow,
+  TableRowAnimada,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { Button, Badge } from '@/components/ui';
 import {
   Select,
@@ -349,8 +358,11 @@ function TesoreriaContent() {
                         >
                           {t(k(row.labelKey))}
                         </span>
+                        {/* Al cambiar de mes, las cifras cuentan desde las del
+                            mes anterior (`AnimatedNumber`). */}
                         <span className={cn('font-mono tabular-nums', row.tone)}>
-                          {row.sign}{formatCurrency(row.value)}
+                          {row.sign}
+                          <AnimatedNumber value={row.value} format={formatCurrency} />
                         </span>
                       </div>
                       {/* Qué es ese canon, en una línea: «causado» no se
@@ -374,7 +386,7 @@ function TesoreriaContent() {
                       )}
                       data-testid="tesoreria-neto-total"
                     >
-                      {formatCurrency(neto)}
+                      <AnimatedNumber value={neto} format={formatCurrency} />
                     </span>
                   </div>
                   {deduccionesDelMes > 0 && (
@@ -388,7 +400,7 @@ function TesoreriaContent() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
                         <span className="font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
-                          {formatCurrency(aGirarDelMes)}
+                          <AnimatedNumber value={aGirarDelMes} format={formatCurrency} />
                         </span>
                       </div>
                       {enContraDelMes > 0 && (
@@ -399,22 +411,19 @@ function TesoreriaContent() {
                       )}
                     </>
                   )}
-                  {quedanEnCero > 0 && (
-                    <p className="text-xs text-warning" data-testid="tesoreria-quedan-en-cero">
+                  {/* Los avisos del mes entran y salen al cambiar de mes. */}
+                  <Presence as="p" show={quedanEnCero > 0} initial={false} className="text-xs text-warning" data-testid="tesoreria-quedan-en-cero">
                       {quedanEnCero === 1
                         ? t('inmobiliaria.deducciones.liquidacion.quedanEnContraUno')
                         : t('inmobiliaria.deducciones.liquidacion.quedanEnContraVarios', { cuantos: quedanEnCero })}
-                    </p>
-                  )}
-                  {quedanDebiendo > 0 && (
-                    <p className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                  </Presence>
+                  <Presence as="p" show={quedanDebiendo > 0} initial={false} className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
                       {/* Con base CAUSADO no se compara contra lo recaudado:
                           contra el canon del mes, pagado o no. */}
                       {quedanDebiendo === 1
                         ? `1 propietario queda debiendo este mes: lo que paga supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`
                         : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`}
-                    </p>
-                  )}
+                  </Presence>
                 </div>
               </section>
 
@@ -466,7 +475,9 @@ function TesoreriaContent() {
                     />
                   </div>
                   <p className="text-xs text-fg-muted" data-testid="alcance-de-liquidaciones">
-                    {visibles.length} de {propietarios.length}{' '}
+                    {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. */}
+                    <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} />{' '}
+                    de {propietarios.length}{' '}
                     {propietarios.length === 1 ? 'propietario' : 'propietarios'} de{' '}
                     {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
                   </p>
@@ -491,9 +502,13 @@ function TesoreriaContent() {
                         <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    {/* Movimiento (ola 2, 03-10-2026): las filas entran
+                        escalonadas (techo de 320 ms); al buscar, las que ya no
+                        coinciden salen en su lugar (`key` = el propietario).
+                        Otro mes u otra página monta un cuerpo nuevo. */}
+                    <TableBodyAnimado key={`${month}|${paginado.page}|${paginado.pageSize}`}>
                       {paginado.pageItems.map((p) => (
-                        <TableRow
+                        <TableRowAnimada
                           key={p.propietarioId}
                           data-testid="tesoreria-fila"
                           onClick={() => setAbierta(p)}
@@ -609,9 +624,9 @@ function TesoreriaContent() {
                               </DropdownListContent>
                             </DropdownList>
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       ))}
-                    </TableBody>
+                    </TableBodyAnimado>
                   </Table>
                 </div>
                 {paginado.shouldPaginate && (

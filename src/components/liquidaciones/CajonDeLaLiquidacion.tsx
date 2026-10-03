@@ -13,6 +13,7 @@
  * neto puede ser negativo y se dice «queda debiendo».
  */
 
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
@@ -68,8 +69,12 @@ export function CajonDeLaLiquidacion({
             titulo={p.propietarioName}
             descripcion={`Liquidación de ${mes} · ${p.yaExiste ? 'dispersión generada' : 'pendiente de generar'}`}
           />
-          <CajonCuerpo className="space-y-6">
-            <section>
+          <CajonCuerpo>
+            {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas
+                (techo de 320 ms, 4 px) mientras entra el cajón, como en el
+                cajón del cobro y el de la dispersión. */}
+            <Stagger className="space-y-6" distance="xs" layout={false}>
+            <StaggerItem as="section" key="el-mes">
               <h3 className="mb-1 text-sm font-semibold text-fg">El mes, en plata</h3>
               <div className="divide-y divide-border-faint">
                 <Renglon
@@ -135,10 +140,10 @@ export function CajonDeLaLiquidacion({
                   </p>
                 )}
               </div>
-            </section>
+            </StaggerItem>
 
             {p.items.length > 0 && (
-              <section>
+              <StaggerItem as="section" key="inmuebles">
                 <h3 className="mb-1 text-sm font-semibold text-fg">Inmueble por inmueble</h3>
                 <ul className="divide-y divide-border-faint" data-testid="cajon-liquidacion-inmuebles">
                   {p.items.map((i, n) => (
@@ -154,10 +159,10 @@ export function CajonDeLaLiquidacion({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </StaggerItem>
             )}
 
-            <section>
+            <StaggerItem as="section" key="a-donde">
               <h3 className="mb-1 text-sm font-semibold text-fg">A dónde se gira</h3>
               <p className="text-sm text-fg-muted">
                 {p.propietarioBankAccount
@@ -170,7 +175,8 @@ export function CajonDeLaLiquidacion({
                   A nombre de {titularEnUnaLinea(p.titularDeLaCuenta) || 'otra persona, sin datos'} (otra persona)
                 </p>
               ) : null}
-            </section>
+            </StaggerItem>
+            </Stagger>
           </CajonCuerpo>
         </>
       )}

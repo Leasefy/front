@@ -1,6 +1,8 @@
 'use client';
 
+import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import {
   Sparkle,
   UploadSimple,
@@ -50,6 +52,9 @@ interface FacturaProveedorIACaptureProps {
 }
 
 type Step = 'upload' | 'extracting' | 'review' | 'error';
+
+/** El orden de los pasos: con él se decide si el cruce va hacia adelante o hacia atrás. */
+const ORDEN_DEL_PASO: Record<Step, number> = { upload: 0, extracting: 1, error: 1, review: 2 };
 
 /** Lo que el `<input type="file">` deja elegir: fotos y PDF. */
 const ACCEPT = ['image/*', FACTURA_PDF_MEDIA_TYPE, '.pdf'].join(',');
@@ -162,6 +167,11 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   const k = useCallback((s: string) => `inmobiliaria.tesoreria.facturas.${s}`, []);
 
   const [step, setStep] = useState<Step>('upload');
+  /** El paso de antes, para saber hacia dónde se mueve el asistente. */
+  const pasoAnterior = useRef<Step>(step);
+  useEffect(() => {
+    pasoAnterior.current = step;
+  }, [step]);
   const [files, setFiles] = useState<File[]>([]);
   const [arrastrando, setArrastrando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -444,6 +454,20 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
   const confidencePct = Math.round(confidence * 100);
 
+  /*
+   * Movimiento (ola 2, 03-10-2026): los pasos (subir → leyendo → revisar, y el
+   * error) se CRUZAN con dirección: hacia adelante el nuevo entra por la
+   * derecha; al volver a subir, por la izquierda. `popLayout`: el nuevo entra
+   * ya (no espera los 150 ms de salida del viejo). Todos los `return` pasan
+   * por aquí, así el `CrossFade` es el mismo y sólo cambia su `swapKey`.
+   */
+  const haciaAdelante = ORDEN_DEL_PASO[step] >= ORDEN_DEL_PASO[pasoAnterior.current];
+  const envolver = (contenido: React.ReactNode) => (
+    <CrossFade swapKey={step} mode="popLayout" direction={haciaAdelante ? 'forward' : 'backward'}>
+      {contenido}
+    </CrossFade>
+  );
+
   // ── Review ──────────────────────────────────────────────────────────────
   if (step === 'review') {
     const detectadosLegibles = detectados
@@ -452,7 +476,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
     const proveedorSinMatch = extracted?.proveedorNombre && !form.vendorId;
     const nitParaCrear = nitNuevo.replace(/\D/g, '');
 
-    return (
+    return envolver(
       <form onSubmit={handleSubmit} className="space-y-5" noValidate data-testid="factura-form">
         {extracted ? (
           <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
@@ -803,7 +827,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
   // ── Extracting ──────────────────────────────────────────────────────────
   if (step === 'extracting') {
-    return (
+    return envolver(
       <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
         <Spinner size="md" variant="muted" />
         <p className="text-sm text-muted-foreground">{t(k('extractingN'), { n: String(files.length) })}</p>
@@ -813,7 +837,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
   // ── Error ───────────────────────────────────────────────────────────────
   if (step === 'error') {
-    return (
+    return envolver(
       <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
         <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
           <WarningCircle className="w-7 h-7 text-danger" />
@@ -839,7 +863,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   }
 
   // ── Upload (default) ────────────────────────────────────────────────────
-  return (
+  return envolver(
     <div className="space-y-5">
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">

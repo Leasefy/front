@@ -24,7 +24,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CaretDown, CaretRight, Scales } from '@phosphor-icons/react'
+import { CaretRight, Scales } from '@phosphor-icons/react'
+import { Collapse } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -198,11 +199,14 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
         onClick={() => setAbierto((v) => !v)}
         data-testid="abrir-proponer-castigo"
       >
-        {abierto ? (
-          <CaretDown className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-        ) : (
-          <CaretRight className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+        {/* Un solo caret que gira con la curva de los paneles. */}
+        <CaretRight
+          className={cn(
+            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            abierto && 'rotate-90',
         )}
+          aria-hidden="true"
+        />
         <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
         <span className="text-sm font-medium text-fg">Proponer un castigo</span>
         <span className="text-xs text-fg-muted">
@@ -210,7 +214,8 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
         </span>
       </button>
 
-      {abierto && (
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={abierto}>
         <div className="space-y-4 border-t border-border p-4">
           {/* ── 1. De quién ──────────────────────────────────────────── */}
           {!elegido && (
@@ -397,7 +402,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
             </div>
           )}
         </div>
-      )}
+      </Collapse>
     </Card>
   )
 }

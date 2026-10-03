@@ -53,7 +53,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Presence } from '@leasefy/cadence';
 import { ArrowUUpLeft, WarningCircle } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +79,6 @@ import {
   type MotivoDeDevolucion,
   type Regiro,
 } from '@/lib/api/finanzas.types';
-import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { diaLegible } from '@/lib/mandato/textos';
@@ -348,7 +347,6 @@ export function MarcarDevueltoDialog({
    */
   const [lineas, setLineas] = useState<LineaDeLaDevolucion[]>([]);
   const [lineaElegida, setLineaElegida] = useState<string>('');
-  const aparecer = useAparecer();
 
   useEffect(() => {
     if (!abierto) return;
@@ -520,14 +518,9 @@ export function MarcarDevueltoDialog({
                 {t('inmobiliaria.dispersiones.giroDevuelto.soporteAyuda')}
               </p>
             </div>
-            <AnimatePresence initial={false}>
-              {lineas.length > 0 ? (
-                <motion.fieldset
-                  key="lineas-del-extracto"
-                  {...aparecer}
-                  className="space-y-2"
-                  data-testid="lineas-de-la-devolucion"
-                >
+            {/* Las entradas del extracto aparecen (y se van) con `Presence`. */}
+            <Presence show={lineas.length > 0} initial={false}>
+              <fieldset className="space-y-2" data-testid="lineas-de-la-devolucion">
                   <legend className="text-sm font-medium text-fg">
                     La entrada del extracto con la que volvió la plata
                   </legend>
@@ -567,9 +560,8 @@ export function MarcarDevueltoDialog({
                       </span>
                     </label>
                   ))}
-                </motion.fieldset>
-              ) : null}
-            </AnimatePresence>
+              </fieldset>
+            </Presence>
             <div className="space-y-1.5">
               <Label htmlFor="codigo-del-banco">Código del banco</Label>
               <Input

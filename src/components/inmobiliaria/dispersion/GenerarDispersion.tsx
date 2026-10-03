@@ -48,6 +48,7 @@ import {
   Warning,
 } from '@phosphor-icons/react';
 
+import { AnimatedNumber, Appear, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -429,6 +430,7 @@ export function GenerarDispersion({
         <SelectorDeMes mes={mes} onCambiar={cambiarMes} testId="mes-de-la-liquidacion" />
       </div>
 
+      <Presence show={previa != null && previa.yaGenerados > 0} initial={false}>
       {previa != null && previa.yaGenerados > 0 && (
         <AlertaAccionable
           severidad="warning"
@@ -439,6 +441,7 @@ export function GenerarDispersion({
           después, se les suman a la liquidación que ya existe.
         </AlertaAccionable>
       )}
+      </Presence>
 
       {cargando ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
@@ -460,8 +463,11 @@ export function GenerarDispersion({
         />
       ) : null}
 
+      {/* Movimiento (ola 2, 03-10-2026): al terminar de calcular, lo que hay
+          que elegir ENTRA (fundido y 4 px) en vez de aparecer de golpe donde
+          estaba «Calculando…». */}
       {hayQueElegir && (
-        <>
+        <Appear distance="xs" className="space-y-4">
           {/* D1/D2: qué parte del mes se gira sin recaudo y qué intereses le
               tocan al propietario. */}
           <ResumenDelMandato numeros={mandato} />
@@ -483,7 +489,7 @@ export function GenerarDispersion({
                   className="font-mono text-sm text-fg-muted tabular-nums"
                   data-testid="cuantos-seleccionados"
                 >
-                  {dentro.length} de {candidatos.length}{' '}
+                  <AnimatedNumber value={dentro.length} format={conteo} /> de {candidatos.length}{' '}
                   {candidatos.length === 1 ? 'propietario' : 'propietarios'}
                 </span>
               </div>
@@ -529,7 +535,15 @@ export function GenerarDispersion({
                 Ningún propietario ni inmueble coincide con «{busqueda}».
               </p>
             ) : (
-              <ul className="divide-y divide-border-faint">
+              /* Las filas entran escalonadas; al buscar, la que ya no coincide
+                 sale. Cada página es una lista nueva. */
+              <Stagger
+                as="ul"
+                key={`${paginado.page}|${paginado.pageSize}`}
+                className="divide-y divide-border-faint"
+                distance="xs"
+                layout={false}
+              >
                 {paginado.pageItems.map((p) => (
                   <FilaDelPropietario
                     key={p.propietarioId}
@@ -546,7 +560,7 @@ export function GenerarDispersion({
                     }
                   />
                 ))}
-              </ul>
+              </Stagger>
             )}
 
             {paginado.shouldPaginate && (
@@ -562,16 +576,18 @@ export function GenerarDispersion({
               </div>
             )}
           </section>
-        </>
+        </Appear>
       )}
 
       {/* El motivo del back al confirmar, pegado al botón que lo disparó. */}
+      <Presence show={errorAlGenerar != null} initial={false}>
       {errorAlGenerar != null && (
         <FalloDelAsistente
           error={errorAlGenerar}
           queNoSalio="No se generaron las dispersiones"
         />
       )}
+      </Presence>
 
       {/* ── LO QUE VAS A GIRAR, y confirmar acá mismo. Era el paso 6. */}
       {hayQueElegir && total != null && (
@@ -583,17 +599,18 @@ export function GenerarDispersion({
             <dl className="flex flex-wrap items-end gap-x-8 gap-y-2">
               <Cifra
                 rotulo="Propietarios"
-                valor={String(total.propietarios)}
+                monto={total.propietarios}
+                formato={conteo}
                 testId="total-propietarios"
               />
               <Cifra
                 rotulo={ROTULO_DEL_CANON[base]}
-                valor={formatCurrency(total.canonCop)}
+                monto={total.canonCop}
                 testId="total-canon"
               />
               <Cifra
                 rotulo="Comisiones"
-                valor={formatCurrency(total.comisionesCop)}
+                monto={total.comisionesCop}
                 testId="total-comisiones"
               />
               {/* 🔴 22-09: el IVA de la comisión, entre la comisión y lo que
@@ -601,13 +618,13 @@ export function GenerarDispersion({
               {total.ivaComisionesCop > 0 && (
                 <Cifra
                   rotulo="IVA de las comisiones"
-                  valor={formatCurrency(total.ivaComisionesCop)}
+                  monto={total.ivaComisionesCop}
                   testId="total-iva-comisiones"
                 />
               )}
               <Cifra
                 rotulo="Total a girar"
-                valor={formatCurrency(total.aGirarCop)}
+                monto={total.aGirarCop}
                 testId="total-a-girar"
                 grande
               />
@@ -661,14 +678,26 @@ export function GenerarDispersion({
   );
 }
 
+/**
+ * Un conteo mientras cuenta: entero y sin separador de miles, igual que el
+ * `{n}` que se pintaba antes (la cifra final no cambia).
+ */
+const conteo = (n: number) => String(Math.round(n));
+
+/**
+ * Una cifra del total. Cuenta desde la anterior cuando la selección cambia
+ * (`AnimatedNumber`): destildar a un propietario se VE bajar en el total.
+ */
 function Cifra({
   rotulo,
-  valor,
+  monto,
+  formato = formatCurrency,
   testId,
   grande,
 }: {
   rotulo: string;
-  valor: string;
+  monto: number;
+  formato?: (n: number) => string;
   testId: string;
   grande?: boolean;
 }) {
@@ -682,7 +711,7 @@ function Cifra({
         )}
         data-testid={testId}
       >
-        {valor}
+        <AnimatedNumber value={monto} format={formato} />
       </dd>
     </div>
   );
@@ -733,8 +762,9 @@ function FilaDelPropietario({
        dato que se busca con el ojo— y ninguna línea por debajo de 14 px: la
        cuenta bancaria y el desglose estaban en 12, que no es un texto
        secundario, es un texto que no se lee. */
-    <li
-      className={cn('px-4 py-4', !dentro && 'bg-surface-muted/40')}
+    <StaggerItem
+      as="li"
+      className={cn('px-4 py-4 transition-colors duration-base', !dentro && 'bg-surface-muted/40')}
       data-testid="fila-propietario"
       data-propietario={p.propietarioId}
       data-dentro={dentro ? 'si' : 'no'}
@@ -784,18 +814,22 @@ function FilaDelPropietario({
               aria-expanded={abierto}
               aria-controls={`inmuebles-de-${p.propietarioId}`}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition',
+                'inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors',
                 abierto
                   ? 'border-primary/40 bg-primary-soft text-primary'
                   : 'border-border bg-surface text-fg-muted hover:border-primary/40 hover:text-primary',
               )}
               data-testid="abrir-inmuebles"
             >
-              {abierto ? (
-                <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
-              ) : (
-                <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
+              {/* Un solo caret que gira con la curva de los paneles (antes se
+                  cambiaba de golpe un ícono por otro). */}
+              <CaretRight
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform duration-slow ease-emphasis',
+                  abierto && 'rotate-90',
               )}
+                aria-hidden="true"
+              />
               <span className="font-mono tabular-nums">{inmuebles.length}</span>
               {abierto ? 'inmuebles — ocultar' : 'inmuebles — ver cuáles'}
               {conInmueblesFuera > 0 && (
@@ -823,7 +857,7 @@ function FilaDelPropietario({
             )}
             data-testid="neto-del-propietario"
           >
-            {formatCurrency(numeros.netoCop)}
+            <AnimatedNumber value={numeros.netoCop} format={formatCurrency} />
           </p>
           <p className="font-mono text-sm text-fg-muted tabular-nums">
             {ROTULO_DEL_CANON[base]} {formatCurrency(numeros.canonCop)} · comisión{' '}
@@ -855,7 +889,8 @@ function FilaDelPropietario({
           con el total.
           Y trae su propio «dejarlos todos fuera / volver a marcarlos»: sin eso,
           apagar 27 de 28 inmuebles son 27 clics. */}
-      {varios && abierto && (
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={varios && abierto}>
         <div
           id={`inmuebles-de-${p.propietarioId}`}
           className="ml-9 mt-4 overflow-hidden rounded-lg border border-border-faint"
@@ -949,8 +984,8 @@ function FilaDelPropietario({
             })}
           </ul>
         </div>
-      )}
-    </li>
+      </Collapse>
+    </StaggerItem>
   );
 }
 

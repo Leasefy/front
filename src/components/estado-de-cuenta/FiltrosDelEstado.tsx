@@ -20,7 +20,7 @@
  */
 
 import * as React from 'react';
-import { SegmentedControl } from '@leasefy/cadence';
+import { Appear, SegmentedControl } from '@leasefy/cadence';
 import { Funnel, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -163,8 +163,9 @@ export function FiltrosDelEstado({
           </SelectContent>
         </Select>
 
+        {/* Las fechas exactas y «Limpiar» ENTRAN con un fundido al aparecer. */}
         {conFechas && (
-          <>
+          <Appear as="span" direction="none" className="flex flex-wrap items-center gap-3">
             <Input
               type="date"
               value={filtros.desde}
@@ -186,7 +187,7 @@ export function FiltrosDelEstado({
               className="w-[10.5rem]"
               data-testid="filtro-hasta"
             />
-          </>
+          </Appear>
         )}
 
         {contratos.length > 1 && (
@@ -213,6 +214,7 @@ export function FiltrosDelEstado({
         )}
 
         {activos && (
+          <Appear as="span" direction="none" className="inline-flex">
           <Button
             variant="link"
             size="sm"
@@ -228,6 +230,7 @@ export function FiltrosDelEstado({
             {t('estadoDeCuenta.limpiar')}
             <X className="w-3.5 h-3.5" />
           </Button>
+          </Appear>
         )}
 
         {/* «N de M»: las filas que quedan contra las del documento entero. */}

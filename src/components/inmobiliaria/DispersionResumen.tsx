@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import {
   CurrencyCircleDollar,
   Clock,
@@ -21,6 +21,7 @@ import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
+import { BarraDeAvance } from '@/components/inmobiliaria/pagos/BarraDeAvance';
 
 interface DispersionResumenProps {
   summary: DispersionSummary;
@@ -52,42 +53,13 @@ function getProgressColor(rate: number | null): string {
   return 'bg-muted-foreground/30';
 }
 
-/**
- * Animated counter component for currency values
+/*
+ * Movimiento (ola 2, 03-10-2026): las cifras cuentan con el `AnimatedNumber`
+ * de Cadence (desde 0 al llegar, desde la anterior al cambiar de mes) en vez
+ * del contador casero con `requestAnimationFrame`; la barra se corre con
+ * `transform` (`BarraDeAvance`), no con el ancho, y la tarjeta ya no anima su
+ * propia entrada (la página entra con su `template.tsx`).
  */
-function AnimatedCurrency({
-  value,
-  duration = 0.8,
-  className,
-  formatter,
-}: {
-  value: number;
-  duration?: number;
-  className?: string;
-  formatter: (amount: number) => string;
-}) {
-  const [displayValue, setDisplayValue] = React.useState(0);
-
-  React.useEffect(() => {
-    const startTime = Date.now();
-    const startValue = displayValue;
-    const diff = value - startValue;
-
-    const updateValue = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / (duration * 1000), 1);
-      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setDisplayValue(Math.round(startValue + diff * eased));
-      if (progress < 1) {
-        requestAnimationFrame(updateValue);
-      }
-    };
-
-    requestAnimationFrame(updateValue);
-  }, [value, duration]);
-
-  return <span className={className}>{formatter(displayValue)}</span>;
-}
 
 /** El aviso de totales estimados, con su reintento. */
 function AvisoResumenEstimado({ onReintentar }: { onReintentar: () => void | Promise<unknown> }) {
@@ -155,9 +127,7 @@ export function DispersionResumen({
   const hasFailed = summary.dispersionsFailed > 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
         'rounded-lg border border-border bg-card overflow-hidden',
         className
@@ -174,7 +144,11 @@ export function DispersionResumen({
         </p>
       </div>
 
+      {/* El aviso de «estimado» entra y, al cargar el resumen con el
+          reintento, sale (no se corta de golpe). */}
+      <Presence show={Boolean(estimado)} initial={false}>
       {estimado && <AvisoResumenEstimado onReintentar={estimado.onReintentar} />}
+      </Presence>
 
       {/* Main Stats Grid */}
       <div className="px-6 pb-6">
@@ -187,10 +161,11 @@ export function DispersionResumen({
                 {t('inmobiliaria.dispersiones.resumen.toDisburse')}
               </span>
             </div>
-            <AnimatedCurrency
+            <AnimatedNumber
               value={summary.totalToDisburse}
+              from={0}
+              format={formatCurrency}
               className="text-2xl font-semibold text-foreground tabular-nums"
-              formatter={formatCurrency}
             />
           </div>
 
@@ -202,10 +177,11 @@ export function DispersionResumen({
                 {t('inmobiliaria.dispersiones.resumen.commissions')}
               </span>
             </div>
-            <AnimatedCurrency
+            <AnimatedNumber
               value={summary.totalCommissions}
+              from={0}
+              format={formatCurrency}
               className="text-2xl font-semibold text-foreground tabular-nums"
-              formatter={formatCurrency}
             />
           </div>
 
@@ -218,32 +194,37 @@ export function DispersionResumen({
               </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+              {completionRate === null ? (
+                <span
                 className="text-2xl font-semibold text-foreground tabular-nums"
                 data-testid="dispersiones-avance"
               >
-                {completionRate === null ? SIN_MEDIR : completionRate.toFixed(0)}
-              </motion.span>
+                  {SIN_MEDIR}
+                </span>
+              ) : (
+                <AnimatedNumber
+                  value={completionRate}
+                  from={0}
+                  format={(n) => n.toFixed(0)}
+                  className="text-2xl font-semibold text-foreground tabular-nums"
+                  data-testid="dispersiones-avance"
+                />
+              )}
               {completionRate !== null && <span className="text-lg text-muted-foreground">%</span>}
             </div>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        {totalDispersions > 0 && (
-          <div className="mt-6">
+        {/* Progress Bar — aparece con la primera dispersión del mes y se
+            corre con `transform`. */}
+        <Presence show={totalDispersions > 0} initial={false} className="mt-6">
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: anchoDeBarra(completionRate) }}
-                transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-                className={cn('h-full rounded-full', getProgressColor(completionRate))}
+            <BarraDeAvance
+              ancho={anchoDeBarra(completionRate)}
+              className={getProgressColor(completionRate)}
               />
             </div>
-          </div>
-        )}
+        </Presence>
 
         {/* Status Counts - Inline */}
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
@@ -276,8 +257,8 @@ export function DispersionResumen({
         </div>
       </div>
 
-      {/* Action Footer */}
-      {hasPending && (onProcessAll || onViewPending || apruebaPorLote) && (
+      {/* Action Footer — al aprobar la última pendiente se va con su salida. */}
+      <Presence show={hasPending && Boolean(onProcessAll || onViewPending || apruebaPorLote)} initial={false}>
         <div className="px-6 py-4 bg-muted/30 border-t border-border flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {apruebaPorLote
@@ -321,8 +302,8 @@ export function DispersionResumen({
             )}
           </div>
         </div>
-      )}
-    </motion.div>
+      </Presence>
+    </div>
   );
 }
 
@@ -353,10 +334,7 @@ export function DispersionResumenCompact({
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-3">
-        <div
-          className={cn('h-full rounded-full transition-all duration-500', getProgressColor(completionRate))}
-          style={{ width: anchoDeBarra(completionRate) }}
-        />
+        <BarraDeAvance ancho={anchoDeBarra(completionRate)} className={getProgressColor(completionRate)} />
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>{formatCurrency(summary.totalToDisburse)}</span>

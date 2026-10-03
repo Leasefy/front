@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Bell,
   Gear,
@@ -359,14 +359,14 @@ export function RecordatorioConfig({
         descripcion={t('inmobiliaria.cobros.recordatorioConfig.description')}
       />
 
-      <CajonCuerpo className="space-y-8">
+      <CajonCuerpo>
+        {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas con
+            el techo del sistema (320 ms) y 4 px mientras entra el cajón. Antes
+            cada una tenía su retraso a mano (0,1 → 0,4 s): la última terminaba
+            de llegar más de medio segundo después. */}
+        <Stagger className="space-y-8" distance="xs" layout={false}>
         {/* Pre-vencimiento Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="antes" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Calendar className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -381,15 +381,10 @@ export function RecordatorioConfig({
             label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
             error={erroresDelServidor.daysBefore}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Post-vencimiento Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="despues" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Warning className="w-4 h-4 text-warning" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -404,15 +399,10 @@ export function RecordatorioConfig({
             label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
             error={erroresDelServidor.daysAfter}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Notification Channels Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="canales" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Bell className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -449,15 +439,10 @@ export function RecordatorioConfig({
           <p className="text-[11px] text-muted-foreground">
             {t('inmobiliaria.cobros.recordatorioConfig.canalesNoSeGuardan')}
           </p>
-        </motion.section>
+        </StaggerItem>
 
         {/* Message Templates Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="plantillas" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Envelope className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -475,7 +460,8 @@ export function RecordatorioConfig({
           <p className="text-xs text-muted-foreground">
             {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
           </p>
-        </motion.section>
+        </StaggerItem>
+        </Stagger>
       </CajonCuerpo>
 
       {/* Acciones: en el pie fijo del cajón, la principal a la derecha. */}

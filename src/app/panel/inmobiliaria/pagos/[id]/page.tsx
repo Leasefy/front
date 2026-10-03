@@ -26,6 +26,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CurrencyDollar, MagnifyingGlass } from '@phosphor-icons/react'
+import { CrossFade } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
@@ -76,25 +77,40 @@ function PagosCaso() {
     </header>
   )
 
-  // ── Carga ──────────────────────────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="space-y-6 p-6 lg:p-8" data-testid="pago-caso-loading">
-        {header}
+  // ── Qué se muestra: carga → fallo / no disponible / no encontrado / detalle.
+  // Movimiento (ola 2, 03-10-2026): el encabezado queda quieto y lo de abajo se
+  // CRUZA al cambiar de estado (antes cada estado era un `return` aparte y la
+  // página entera se reemplazaba de golpe al terminar de cargar).
+  const estado = isLoading
+    ? 'cargando'
+    : error
+      ? 'fallo'
+      : notAvailable
+        ? 'no-disponible'
+        : !data
+          ? 'no-encontrado'
+          : 'detalle'
+
+  return (
+    <div
+      className="space-y-6 p-6 lg:p-8"
+      data-testid={
+        estado === 'cargando'
+          ? 'pago-caso-loading'
+          : estado === 'detalle'
+            ? `pago-caso-page-${id}`
+            : undefined
+      }
+    >
+      {header}
+      <CrossFade swapKey={estado}>
+        {estado === 'cargando' ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
           <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
           <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
         </div>
-      </div>
-    )
-  }
-
-  // ── Error de carga ───────────────────────────────────────────────────────────
-  if (error) {
-    return (
-      <div className="space-y-6 p-6 lg:p-8">
-        {header}
+        ) : estado === 'fallo' ? (
         <Card data-testid="pago-caso-error">
           <div className="space-y-3 p-6">
             <p className="text-sm font-medium text-danger">No pudimos cargar este caso.</p>
@@ -104,17 +120,10 @@ function PagosCaso() {
             </Button>
           </div>
         </Card>
-      </div>
-    )
-  }
-
-  // ── Detalle no disponible (404 — el agente aún no publica el resolver) ──────
-  // Distinto de "Caso no encontrado": el caso puede existir, pero este agente
-  // todavía no expone un endpoint de detalle. Salida real a Tesorería.
-  if (notAvailable) {
-    return (
-      <div className="space-y-6 p-6 lg:p-8">
-        {header}
+        ) : estado === 'no-disponible' ? (
+          /* Distinto de «Caso no encontrado» (404 — el agente aún no publica el
+             resolver): el caso puede existir, pero este agente todavía no
+             expone un endpoint de detalle. Salida real a Tesorería. */
         <Card>
           <div
             role="status"
@@ -142,15 +151,7 @@ function PagosCaso() {
             </Button>
           </div>
         </Card>
-      </div>
-    )
-  }
-
-  // ── Caso no encontrado (el item no existe) ─────────────────────────────────
-  if (!data) {
-    return (
-      <div className="space-y-6 p-6 lg:p-8">
-        {header}
+        ) : estado === 'no-encontrado' || !data ? (
         <Card>
           <div
             role="status"
@@ -177,14 +178,7 @@ function PagosCaso() {
             </Button>
           </div>
         </Card>
-      </div>
-    )
-  }
-
-  // ── Detalle (3 columnas) ────────────────────────────────────────────────────
-  return (
-    <div className="space-y-6 p-6 lg:p-8" data-testid={`pago-caso-page-${id}`}>
-      {header}
+        ) : (
       <PagoCasoDetalle
         data={data}
         onAction={handleAction}
@@ -194,6 +188,8 @@ function PagosCaso() {
           href: `/panel/inmobiliaria/pagos/cxp/${id}`,
         }}
       />
+        )}
+      </CrossFade>
     </div>
   )
 }

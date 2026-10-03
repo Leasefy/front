@@ -34,6 +34,7 @@ import {
   Scales,
   XCircle,
 } from '@phosphor-icons/react'
+import { Collapse } from '@leasefy/cadence'
 
 import { Badge } from '@/components/ui'
 import { Button } from '@/components/ui/button'
@@ -465,6 +466,9 @@ export function CastigoDeCartera() {
                             </span>
                           )}
 
+                          {/* El motivo se abre debajo de la fila con `Collapse`
+                              (al cerrar se va con el contenido que tenía). */}
+                          <Collapse open={conMotivo?.id === c.id}>
                           {conMotivo?.id === c.id && (
                             <div className="mt-2 space-y-2 text-left" data-testid="motivo-del-castigo">
                               <div>
@@ -518,6 +522,7 @@ export function CastigoDeCartera() {
                               </div>
                             </div>
                           )}
+                          </Collapse>
                         </TableCell>
                       </TableRow>
                     ))

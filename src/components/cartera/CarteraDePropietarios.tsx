@@ -47,7 +47,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CaretDown, CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
+import { CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
+import { AnimatedNumber, Collapse, Presence } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -85,8 +86,14 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
       </span>
     )
   }
+  // Cuenta desde la cifra anterior cuando cambia (al buscar, el total de lo
+  // filtrado baja contando).
   return (
-    <span className={cn('font-mono tabular-nums', className)}>{formatCurrency(valor)}</span>
+    <AnimatedNumber
+      value={valor}
+      format={formatCurrency}
+      className={cn('font-mono tabular-nums', className)}
+    />
   )
 }
 
@@ -169,7 +176,7 @@ export function CarteraDePropietarios() {
         </div>
 
         {/* Los meses que no se pudieron liquidar, con su porqué. */}
-        {datos?.avisos.length ? (
+        <Presence show={Boolean(datos?.avisos.length)} initial={false}>
           <div
             className="rounded-lg border border-border bg-warning-soft p-4 text-sm text-fg"
             data-testid="avisos-de-liquidacion"
@@ -179,14 +186,14 @@ export function CarteraDePropietarios() {
               Hay meses que no se pudieron liquidar completos
             </p>
             <ul className="mt-2 space-y-1">
-              {datos.avisos.map((aviso) => (
+              {(datos?.avisos ?? []).map((aviso) => (
                 <li key={aviso.month}>
                   <span className="font-medium">{mesEnTitulo(aviso.month)}:</span> {aviso.mensaje}
                 </li>
               ))}
             </ul>
           </div>
-        ) : null}
+        </Presence>
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-end">
@@ -308,7 +315,6 @@ function FilasDelPropietario({
   abierto: boolean
   onAlternar: () => void
 }) {
-  const Caret = abierto ? CaretDown : CaretRight
   return (
     <>
       <TableRow data-testid="fila-propietario">
@@ -319,7 +325,14 @@ function FilasDelPropietario({
             aria-expanded={abierto}
             className="flex items-center gap-2 text-left font-medium text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Caret className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+            {/* Un solo caret que gira con la curva de los paneles. */}
+            <CaretRight
+              className={cn(
+                'h-4 w-4 shrink-0 text-fg-muted transition-transform duration-slow ease-emphasis',
+                abierto && 'rotate-90',
+              )}
+              aria-hidden="true"
+            />
             {propietario.nombre || 'Sin nombre'}
           </button>
           {/* Fuera del `button`: un enlace no vive dentro de otro control.
@@ -347,13 +360,19 @@ function FilasDelPropietario({
         </TableCell>
       </TableRow>
 
-      {abierto ? (
-        <TableRow className="bg-surface-muted/40">
-          <TableCell colSpan={COLUMNAS} className="px-4 py-3">
+      {/* El mes a mes se abre y se cierra con `Collapse` (altura + fundido).
+          La fila queda montada, en cero de alto y sin borde, mientras está
+          cerrado: así también se ANIMA el cierre. */}
+      <TableRow
+        className={cn('bg-surface-muted/40 hover:bg-surface-muted/40', !abierto && 'border-b-0')}
+        aria-hidden={abierto ? undefined : true}
+      >
+        <TableCell colSpan={COLUMNAS} className="p-0">
+          <Collapse open={abierto} className="px-4 py-3">
             <DetalleDeMeses meses={propietario.meses} />
+          </Collapse>
           </TableCell>
         </TableRow>
-      ) : null}
     </>
   )
 }

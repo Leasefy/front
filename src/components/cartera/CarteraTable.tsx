@@ -72,11 +72,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
@@ -193,9 +194,15 @@ export interface CarteraTableProps {
    */
   orden?: OrdenDeCartera
   onOrdenar?: (orden: OrdenDeCartera) => void
+  /**
+   * Qué se está mirando (filtros, orden, página). Al cambiar, el cuerpo se
+   * monta de nuevo y las filas entran escalonadas; buscar, en cambio, saca en
+   * su lugar las que ya no coinciden (`key` = la cuota).
+   */
+  clave?: string
 }
 
-export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave }: CarteraTableProps) {
   const { t } = useI18n()
   /*
    * Por defecto, lo más vencido arriba. Una pantalla de cartera se abre para
@@ -267,13 +274,14 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: Car
           <TableHead className="w-16" />
         </TableRow>
       </TableHeader>
-      <TableBody>
+      {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
+      <TableBodyAnimado key={clave}>
         {ordenados.length === 0 && vacio ? (
-          <TableRow>
+          <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS_DE_CARTERA} className="p-0">
               {vacio}
             </TableCell>
-          </TableRow>
+          </TableRowAnimada>
         ) : (
           ordenados.map((item) => (
             <FilaDeCartera
@@ -283,7 +291,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: Car
             />
           ))
         )}
-      </TableBody>
+      </TableBodyAnimado>
     </Table>
   )
 }
@@ -303,7 +311,7 @@ function FilaDeCartera({
     : null
 
   return (
-    <TableRow
+    <TableRowAnimada
       className="cursor-pointer"
       onClick={onVerCobro}
       data-testid="cartera-fila"
@@ -506,7 +514,7 @@ function FilaDeCartera({
           </Link>
         </Button>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   )
 }
 

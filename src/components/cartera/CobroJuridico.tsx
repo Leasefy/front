@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Gavel, Prohibit } from '@phosphor-icons/react';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -498,6 +499,9 @@ export function CobroJuridico() {
           )}
         </section>
 
+        {/* Movimiento (ola 2, 03-10-2026): al pasar un caso a jurídico, el
+            sugerido SALE de su lista y el caso ENTRA en la de abajo; lo mismo
+            al cerrar un caso o marcar un honorario pagado. */}
         {/* Sugeridos */}
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="sugeridos">
           <p className="text-body font-semibold text-fg">Sugeridos para jurídico</p>
@@ -507,9 +511,10 @@ export function CobroJuridico() {
           {sugeridos.length === 0 ? (
             <p className="mt-2 text-body-sm text-fg-muted">Ningún contrato cumple hoy.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {sugeridos.map((s) => (
-                <li
+                <StaggerItem
+                  as="li"
                   key={s.contractId}
                   className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
                   data-testid={`sugerido-${s.contractId}`}
@@ -549,9 +554,9 @@ export function CobroJuridico() {
                       </Button>
                     </span>
                   )}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           )}
         </section>
 
@@ -561,9 +566,10 @@ export function CobroJuridico() {
           {enJuridico.length === 0 ? (
             <p className="mt-2 text-body-sm text-fg-muted">Ningún caso en jurídico.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {enJuridico.map((c) => (
-                <li
+                <StaggerItem
+                  as="li"
                   key={c.id}
                   className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
                   data-testid={`caso-${c.id}`}
@@ -606,9 +612,9 @@ export function CobroJuridico() {
                       </Button>
                     </span>
                   )}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           )}
         </section>
 
@@ -622,9 +628,10 @@ export function CobroJuridico() {
           {porPagar.length === 0 ? (
             <p className="mt-2 text-body-sm text-fg-muted">No hay honorarios pendientes.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <Stagger as="ul" className="mt-2 space-y-2" distance="xs">
               {porPagar.map((h) => (
-                <li
+                <StaggerItem
+                  as="li"
                   key={h.id}
                   className="flex flex-col gap-2 border-t border-border pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between"
                   data-testid={`honorario-${h.id}`}
@@ -649,9 +656,9 @@ export function CobroJuridico() {
                       Marcar pagado
                     </Button>
                   )}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           )}
         </section>
         <AlertDialog

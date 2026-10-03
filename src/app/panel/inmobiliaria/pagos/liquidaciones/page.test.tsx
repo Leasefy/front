@@ -450,6 +450,11 @@ describe('buscar y paginar en vez de un scroll infinito', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await asentar();
+    // Movimiento (03-10-2026): las filas que ya no coinciden SALEN (150 ms)
+    // antes de desmontarse.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
   }
 
   it('con doce propietarios se ven diez, y el pie de la tabla aparece', async () => {

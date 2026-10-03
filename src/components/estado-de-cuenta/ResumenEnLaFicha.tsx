@@ -26,6 +26,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from '@phosphor-icons/react';
+import { AnimatedNumber, Appear } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -179,8 +180,12 @@ export function ResumenEnLaFicha({
     volverA ? `?volver=${encodeURIComponent(volverA)}` : ''
   }`;
 
+  // Movimiento (ola 2, 03-10-2026): al llegar reemplaza al esqueleto con un
+  // fundido y 4 px, y lo que resta por pagar cuenta desde 0 (como `KpiValor`).
   return (
-    <section
+    <Appear
+      as="section"
+      distance="xs"
       data-testid="resumen-en-la-ficha"
       className={cn(
         'rounded-lg border border-border bg-surface p-5 shadow-sm',
@@ -197,7 +202,7 @@ export function ResumenEnLaFicha({
               data-testid="ficha-resta-por-pagar"
               className="mt-1 font-mono text-2xl font-medium tabular-nums text-fg"
             >
-              {formatCurrency(numeros.restaPorPagar)}
+              <AnimatedNumber value={numeros.restaPorPagar} from={0} format={formatCurrency} />
             </p>
             {/* Capital arriba; el interés de mora, aparte y debajo. */}
             {(numeros.interesDeMora ?? 0) > 0 && (
@@ -264,6 +269,6 @@ export function ResumenEnLaFicha({
           </Link>
         </Button>
       </div>
-    </section>
+    </Appear>
   );
 }

@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { salidasDelEgresoApi, type SalidasParaElEgreso } from '@/lib/api/salidas-del-egreso';
-import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto';
 import { diaLegible } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 
@@ -48,7 +47,6 @@ export function ElegirLaSalidaDelExtracto({
   /** `aria-describedby` del error del campo, si lo hay. */
   describirError?: string;
 }) {
-  const aparecer = useAparecer();
   const nombreDelGrupo = useId();
   const [busqueda, setBusqueda] = useState('');
   const [datos, setDatos] = useState<SalidasParaElEgreso | null>(null);
@@ -119,37 +117,37 @@ export function ElegirLaSalidaDelExtracto({
         </p>
       )}
 
-      <AnimatePresence mode="wait" initial={false}>
+      {/* Buscando → la lista / vacío / fallo se cruzan con `CrossFade` (antes
+          un `AnimatePresence mode="wait"` armado a mano). */}
+      <CrossFade
+        swapKey={error ? 'error' : cargando && !datos ? 'cargando' : salidas.length === 0 ? 'vacio' : 'lista'}
+      >
         {error ? (
-          <motion.div key="error" {...aparecer} className="space-y-2" data-testid="salidas-del-egreso-error">
+          <div className="space-y-2" data-testid="salidas-del-egreso-error">
             <p className="text-body-sm text-danger">{error}</p>
             <Button size="sm" variant="secondary" hideArrow onClick={() => void leer(busqueda)}>
               Volver a intentar
             </Button>
-          </motion.div>
+          </div>
         ) : cargando && !datos ? (
-          <motion.p
-            key="cargando"
-            {...aparecer}
+          <p
             className="flex items-center gap-2 text-body-sm text-fg-muted"
             data-testid="salidas-del-egreso-cargando"
           >
             <Spinner size="sm" /> Buscando las salidas del extracto…
-          </motion.p>
+          </p>
         ) : salidas.length === 0 ? (
-          <motion.p key="vacio" {...aparecer} className="text-body-sm text-fg-muted" data-testid="salidas-del-egreso-vacio">
+          <p className="text-body-sm text-fg-muted" data-testid="salidas-del-egreso-vacio">
             {busqueda
               ? 'Ninguna salida pendiente del extracto coincide con esa búsqueda.'
               : 'No hay salidas pendientes del extracto cerca de la fecha de este egreso. Carga el extracto de la cuenta o busca por otra palabra o por el valor.'}
-          </motion.p>
+          </p>
         ) : (
-          <motion.div
-            key="lista"
-            {...aparecer}
+          <div
             role="radiogroup"
             aria-label="Las salidas del extracto"
             className={cn(
-              'max-h-64 space-y-1 overflow-y-auto rounded-md border p-1',
+              'max-h-64 space-y-1 overflow-y-auto rounded-md border p-1 transition-opacity duration-fast',
               invalido ? 'border-danger' : 'border-border',
               cargando && 'opacity-60',
             )}
@@ -161,7 +159,7 @@ export function ElegirLaSalidaDelExtracto({
                 <label
                   key={s.id}
                   className={cn(
-                    'flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-body-sm',
+                    'flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-body-sm transition-colors duration-fast',
                     marcada ? 'bg-primary-soft' : 'hover:bg-surface-muted',
                   )}
                   data-testid={`salida-del-egreso-${s.id}`}
@@ -197,9 +195,9 @@ export function ElegirLaSalidaDelExtracto({
                 Y {datos.total - salidas.length} más: afina la búsqueda para verlas.
               </p>
             )}
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </CrossFade>
     </div>
   );
 }

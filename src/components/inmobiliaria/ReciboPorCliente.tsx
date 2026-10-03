@@ -68,6 +68,7 @@
 
 import * as React from 'react';
 import { Buildings, CalendarBlank, Receipt, User, Warning } from '@phosphor-icons/react';
+import { Appear } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -543,7 +544,15 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
           const conceptos = periodo ? conceptosDelPeriodo(periodo) : [];
           const esAdelanto = periodo?.vencida === false;
           return (
-            <li key={parte.id} className="space-y-0.5" data-testid={`plan-parte-${parte.month}`}>
+            /* Cada mes que la plata alcanza ENTRA (fundido y 4 px) a medida
+               que se escribe el monto; el que deja de alcanzar se va. */
+            <Appear
+              as="li"
+              key={parte.id}
+              distance="xs"
+              className="space-y-0.5"
+              data-testid={`plan-parte-${parte.month}`}
+            >
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="min-w-0 truncate font-medium text-fg">
@@ -584,7 +593,7 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
                   {t(k('queda'), { monto: formatCurrency(parte.quedaPendiente) })}
                 </p>
               )}
-            </li>
+            </Appear>
           );
         })}
       </ul>

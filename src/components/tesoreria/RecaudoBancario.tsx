@@ -43,6 +43,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
+import { Appear } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
@@ -424,7 +425,14 @@ function ImportarArchivo({
           </p>
         ) : null}
 
-        {previa ? <Previa previa={previa} /> : null}
+        {/* Movimiento (ola 2, 03-10-2026): la vista previa del archivo y el
+            resultado de importarlo ENTRAN (fundido y 4 px); otro archivo leído
+            es otra vista previa, y vuelve a entrar. */}
+        {previa ? (
+          <Appear key={`${previa.lineas}|${previa.validas}|${previa.totalCop}`} distance="xs">
+            <Previa previa={previa} />
+          </Appear>
+        ) : null}
 
         {previa && previa.validas > 0 && previa.puedeImportarse ? (
           <Button
@@ -439,7 +447,11 @@ function ImportarArchivo({
           </Button>
         ) : null}
 
-        {resultado ? <Resultado resultado={resultado} /> : null}
+        {resultado ? (
+          <Appear distance="xs">
+            <Resultado resultado={resultado} />
+          </Appear>
+        ) : null}
       </div>
     </section>
   );

@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { motion } from 'framer-motion';
 import {
   Download,
   Printer,
@@ -26,11 +25,12 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
   TableFooter,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -373,9 +373,7 @@ export function ExtractoPropietario({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
         /*
          * `min-w-0` NO es decorativo: dentro de un grid o un flex, un hijo no
@@ -518,29 +516,30 @@ export function ExtractoPropietario({
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Las líneas entran escalonadas con el techo de 320 ms (antes
+                  `index * 0.05` sin tope). Cada página es un cuerpo nuevo
+                  (`key`): las de la página nueva entran sin esperar a que se
+                  vayan las de la vieja (la tabla no crece mientras salen). */}
+              <TableBodyAnimado key={`${page}|${pageSize}`}>
                 {/*
                   Un extracto sin líneas se leía en blanco, y «este dueño no
                   tiene inmuebles» y «este mes no se movió nada» son dos cosas
                   distintas que hay que poder decirle. El back manda cuál es.
                 */}
                 {extracto.lineItems.length === 0 && extracto.sinMovimiento && (
-                  <TableRow>
+                  <TableRowAnimada key="sin-movimiento">
                     <TableCell colSpan={10} className="py-10 text-center text-fg-muted">
                       {extracto.sinMovimiento.mensaje}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )}
-                {lineasDeLaPagina.map((prop, index) => {
+                {lineasDeLaPagina.map((prop) => {
                   const estado = aCobroStatus(prop.status);
                   const StatusIcon = getStatusIcon(estado);
                   return (
-                    <motion.tr
+                    <TableRowAnimada
                       key={prop.cuotaId ?? prop.cobroId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="group hover:bg-muted/30"
+                      className="group border-b-0 hover:bg-muted/30"
                     >
                       <TableCell className={cn('font-medium', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cuerpo'))}>
                         <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
@@ -619,10 +618,10 @@ export function ExtractoPropietario({
                         <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
                       </TableCell>
-                    </motion.tr>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
               <TableFooter>
                 {/* El rótulo del total va en la columna de Propiedad (fija) y no
                     en una celda de cuatro columnas: una celda tan ancha, fija a
@@ -859,7 +858,7 @@ export function ExtractoPropietario({
         <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

@@ -35,6 +35,12 @@ import { resumeOnboarding } from '@/lib/api/onboarding-session.service'
  *   2. `GET {agent}/onboarding/session/{id}/resume` (micro): `'complete'` =
  *      terminado (desde el 30-09 el micro sólo llega ahí al apretar «Crear mi
  *      inmobiliaria»); cualquier otro paso = `a-medias`.
+ *      🔴 Sólo a la FUNDADORA (03-10-2026, ARREGLOS-2): el micro le contesta
+ *      403 a cualquier otro miembro (`sub === startedByUserId`), y el
+ *      contador o la asesora invitados lo pedían en cada pantalla. Con
+ *      `esQuienLaRegistro: false` (lo dice el back) no se pregunta: el registro
+ *      no es suyo, así que es como `sin-agencia` (pasa, sin recordarlo). Lo que
+ *      ya pasaba antes (un 403 era `no-se`, que también deja pasar), sin el 403.
  *
  * Cualquier fallo de red, del back o del micro es `no-se`: fail-open, no se
  * expulsa a nadie por no poder preguntar (y no se recuerda: la próxima
@@ -95,6 +101,11 @@ export async function preguntarPorElRegistro(): Promise<Respuesta> {
   if (punto.provisioningStatus === 'FAILED' || punto.provisioningStatus === 'PENDING') {
     return 'a-medias'
   }
+
+  // El asistente sólo le contesta a quien registró la inmobiliaria: a nadie más
+  // se le pregunta (ver arriba). Ausente o `null` (back anterior, agencia sin
+  // fundador conocido): se pregunta como siempre.
+  if (punto.esQuienLaRegistro === false) return 'sin-agencia'
 
   try {
     const sesion = await resumeOnboarding(punto.agentSessionId)

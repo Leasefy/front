@@ -487,6 +487,21 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   cuándo, el motivo y la fecha del giro antes → después). Sin la migración de la bitácora (`desmarcarDisponible: false`) lo
   dice; un back anterior (sin el campo) no lo ofrece.
 
+## ARREGLOS-2 (03-10-2026, modo autónomo)
+
+- **PQRS desde el portal del inquilino** (Nico Q4 a): `POST /pqrs` existe. `GET /pqrs/mine` trae
+  `contratosParaRadicar`; `pqrsApi.listMineConDisponibilidad` devuelve `{ items, disponible, contratos }` y
+  `useTenantPqrs` expone `contratos`. «Nueva solicitud» se prende con un contrato vigente; con más de uno,
+  `NuevaSolicitudModal` pregunta sobre cuál (`#solicitud-contrato`, 400 `ELIGE_EL_CONTRATO` bajo ese campo). Las fotos
+  siguen sin ruta (la PQRS no tiene adjuntos): el aviso de siempre.
+- **El registro sólo se le pregunta a quien lo hizo**: `GET /users/me/onboarding/session` trae `esQuienLaRegistro`; con
+  `false`, `preguntarPorElRegistro` no pide el resume del micro (era un 403 en cada pantalla del contador y la asesora).
+- **«Mis propiedades» (`/panel/propiedades`) a 390 px**: esqueleto mientras carga (nunca el vacío ni contadores en 0),
+  el error con reintento, el «+» solo en pantallas chicas y el filtro de estado se desplaza dentro de su riel.
+- **El worker de MapLibre** (`public/maplibre/<versión>/`) lo copia el `postinstall`; un árbol con `node_modules` en
+  symlink (worktrees, copias del laboratorio) no lo tiene y responde 404 también con `next build`. Correr
+  `node scripts/copiar-trabajador-de-maplibre.mjs` en ese árbol.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

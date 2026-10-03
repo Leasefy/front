@@ -214,7 +214,7 @@ describe('pqrsApi.listMineConDisponibilidad', () => {
 
   it('404 (la ruta no existe): lista vacía y NO disponible', async () => {
     globalThis.fetch = mockFetch(404, { message: 'not found' });
-    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false, contratos: [] });
   });
 
   it('un 500 no se disfraza de «no disponible»: se propaga', async () => {
@@ -239,7 +239,28 @@ describe('pqrsApi.listMineConDisponibilidad', () => {
 
   it('el día que el back diga que sí se puede radicar, se prende', async () => {
     globalThis.fetch = mockFetch(200, { solicitudes: [], sePuedeRadicar: true });
-    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: true });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: true, contratos: [] });
+  });
+
+  /*
+   * ARREGLOS-2 (03-10-2026, Nico Q4 a): `POST /pqrs` existe y el back dice
+   * sobre qué contratos vigentes se puede radicar.
+   */
+  it('trae los contratos sobre los que se puede radicar (y descarta lo que no tiene forma)', async () => {
+    globalThis.fetch = mockFetch(200, {
+      solicitudes: [],
+      sePuedeRadicar: true,
+      contratosParaRadicar: [
+        { contratoId: 'c-1', inmueble: 'Apto 101' },
+        { contratoId: 7, inmueble: 'roto' },
+        null,
+      ],
+    });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({
+      items: [],
+      disponible: true,
+      contratos: [{ contratoId: 'c-1', inmueble: 'Apto 101' }],
+    });
   });
 
   it('listMine y getMine leen la lista dentro de la respuesta del back', async () => {
@@ -251,6 +272,6 @@ describe('pqrsApi.listMineConDisponibilidad', () => {
 
   it('una respuesta que no es ni la lista ni la del back no se toma por una lista', async () => {
     globalThis.fetch = mockFetch(200, { algo: 'raro' });
-    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false, contratos: [] });
   });
 });

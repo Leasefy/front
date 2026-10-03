@@ -9,6 +9,11 @@
  * header/body/footer, `Button isLoading`, `toast`); Lenis lo frena `SmoothScroll`
  * al ver el diálogo abierto. Mientras envía no se sale (ni Esc, ni el velo, ni la ✕).
  *
+ * 03-10-2026 (ARREGLOS-2, Nico Q4 a): `POST /pqrs` ya existe — la solicitud se
+ * radica de verdad sobre el contrato vigente del inquilino y la inmobiliaria la
+ * ve en su bandeja de PQRS. Con más de un contrato vigente, se pregunta sobre
+ * cuál (`contratos`, de `GET /pqrs/mine`).
+ *
  * Honest-degrade contract (T-v7-06-08):
  *   - Submit calls `pqrsApi.create(input)`. On success it uploads each photo via
  *     (pendiente de backend: ruta pqrs-scoped de adjuntos; el POST /documents genérico se retiró) — photos
@@ -45,7 +50,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n';
-import { pqrsApi, PqrsUnavailableError, type NuevaSolicitudInput } from '@/lib/api/pqrs.service';
+import {
+  pqrsApi,
+  PqrsUnavailableError,
+  type ContratoParaRadicar,
+  type NuevaSolicitudInput,
+} from '@/lib/api/pqrs.service';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
@@ -60,14 +70,20 @@ interface NuevaSolicitudModalProps {
     contratoId?: string;
     propiedadId?: string;
   };
+  /**
+   * Sus contratos vigentes (de `GET /pqrs/mine`). Con más de uno, la persona
+   * elige sobre cuál; con uno, va ése.
+   */
+  contratos?: ContratoParaRadicar[];
 }
 
 /** 10 MB per-file cap (mirrors the MessagesWidget photo picker). */
 const MAX_BYTES = 10 * 1024 * 1024;
 
-type CampoDeLaSolicitud = 'tipo' | 'asunto' | 'descripcion';
-const CAMPOS_DE_LA_SOLICITUD: readonly CampoDeLaSolicitud[] = ['tipo', 'asunto', 'descripcion'];
+type CampoDeLaSolicitud = 'contratoId' | 'tipo' | 'asunto' | 'descripcion';
+const CAMPOS_DE_LA_SOLICITUD: readonly CampoDeLaSolicitud[] = ['contratoId', 'tipo', 'asunto', 'descripcion'];
 const ID_DEL_CAMPO: Record<CampoDeLaSolicitud, string> = {
+  contratoId: 'solicitud-contrato',
   tipo: 'solicitud-tipo',
   asunto: 'solicitud-asunto',
   descripcion: 'solicitud-descripcion',
@@ -85,10 +101,13 @@ const TIPO_OPTIONS: { value: PqrsTipo; es: string; en: string }[] = [
   { value: 'solicitud', es: 'Solicitud', en: 'Request' },
 ];
 
-export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: NuevaSolicitudModalProps) {
+export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contratos = [] }: NuevaSolicitudModalProps) {
   const { locale } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const variosContratos = contratos.length > 1;
+  /** Sobre cuál contrato. Con uno solo, ése; con varios, lo elige la persona. */
+  const [contratoId, setContratoId] = useState('');
   const [tipo, setTipo] = useState<PqrsTipo>('reparacion');
   const [asunto, setAsunto] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -115,6 +134,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
   // Reset the form when the modal closes so a re-open starts clean.
   useEffect(() => {
     if (!open) {
+      setContratoId('');
       setTipo('reparacion');
       setAsunto('');
       setDescripcion('');
@@ -157,16 +177,24 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
   const handleSubmit = useCallback(async () => {
     const asuntoTrim = asunto.trim();
     const descripcionTrim = descripcion.trim();
-    if (!asuntoTrim || !descripcionTrim) {
+    const contratoElegido =
+      prefill?.contratoId ?? (variosContratos ? contratoId : contratos[0]?.contratoId ?? '');
+    const faltaElContrato = variosContratos && !contratoElegido;
+    if (!asuntoTrim || !descripcionTrim || faltaElContrato) {
       // Lo que falta se dice bajo SU campo (antes, un toast para los dos).
       const faltan: Partial<Record<CampoDeLaSolicitud, string>> = {};
+      if (faltaElContrato) {
+        faltan.contratoId =
+          locale === 'es' ? 'Elige sobre cuál contrato es tu solicitud.' : 'Choose which lease this is about.';
+      }
       if (!asuntoTrim) faltan.asunto = locale === 'es' ? 'Escribe el asunto.' : 'Write a subject.';
       if (!descripcionTrim) {
         faltan.descripcion =
           locale === 'es' ? 'Describe lo que necesitas.' : 'Describe what you need.';
       }
       setErrores(faltan);
-      document.getElementById(ID_DEL_CAMPO[!asuntoTrim ? 'asunto' : 'descripcion'])?.focus();
+      const primero = CAMPOS_DE_LA_SOLICITUD.find((c) => faltan[c]);
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
       return;
     }
     setErrores({});
@@ -178,7 +206,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
         tipo,
         asunto: asuntoTrim,
         descripcion: descripcionTrim,
-        ...(prefill?.contratoId ? { contratoId: prefill.contratoId } : {}),
+        ...(contratoElegido ? { contratoId: contratoElegido } : {}),
         ...(prefill?.propiedadId ? { propiedadId: prefill.propiedadId } : {}),
       };
 
@@ -231,7 +259,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
     } finally {
       setIsSubmitting(false);
     }
-  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose]);
+  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose, contratoId, contratos, variosContratos]);
 
   return (
     <Dialog
@@ -250,6 +278,35 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
               : 'Tell us what you need; your agency will follow up.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Contrato: sólo con más de uno vigente (con uno, va ése). */}
+        {variosContratos && !prefill?.contratoId && (
+          <div>
+            <label htmlFor="solicitud-contrato" className="block text-sm font-medium text-fg mb-1.5">
+              {locale === 'es' ? '¿Sobre cuál contrato?' : 'Which lease?'}
+            </label>
+            <select
+              id="solicitud-contrato"
+              value={contratoId}
+              onChange={(e) => {
+                setContratoId(e.target.value);
+                setErrores((prev) => ({ ...prev, contratoId: undefined }));
+              }}
+              disabled={isSubmitting}
+              aria-invalid={errores.contratoId ? true : undefined}
+              aria-describedby={errores.contratoId ? 'solicitud-contrato-error' : undefined}
+              className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+            >
+              <option value="">{locale === 'es' ? 'Elige el inmueble' : 'Choose the property'}</option>
+              {contratos.map((c) => (
+                <option key={c.contratoId} value={c.contratoId}>
+                  {c.inmueble}
+                </option>
+              ))}
+            </select>
+            <ErrorDelCampo id="solicitud-contrato-error" mensaje={errores.contratoId} />
+          </div>
+        )}
 
         {/* Tipo */}
         <div>

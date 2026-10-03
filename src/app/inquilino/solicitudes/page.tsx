@@ -150,14 +150,15 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
 export default function SolicitudesPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { items, isLoading, error, disponible, refetch } = useTenantPqrs();
-  // Sin la ruta del back, el botón se apaga ANTES de que la persona escriba
-  // (QA 22-09: se enteraba al enviar, con las fotos ya adjuntas).
+  const { items, isLoading, error, disponible, contratos, refetch } = useTenantPqrs();
+  // Sin un contrato vigente (o sin la ruta del back), el botón se apaga ANTES de
+  // que la persona escriba (QA 22-09: se enteraba al enviar, con las fotos ya
+  // adjuntas). Desde ARREGLOS-2 (03-10-2026) se radica de verdad (`POST /pqrs`).
   const sinRadicar = disponible === false;
   const motivoSinRadicar =
     locale === 'es'
-      ? 'Todavía no puedes radicar desde acá: escríbele a tu inmobiliaria.'
-      : 'You cannot submit requests here yet: write to your property manager.';
+      ? 'Para radicar desde acá necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
+      : 'To submit a request here you need an active lease with your property manager: write to them.';
   const [modalOpen, setModalOpen] = useState(false);
 
   // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
@@ -285,6 +286,7 @@ export default function SolicitudesPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={refetch}
+        contratos={contratos}
       />
     </div>
   );

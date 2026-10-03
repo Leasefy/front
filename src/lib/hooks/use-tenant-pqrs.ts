@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { pqrsApi } from '@/lib/api/pqrs.service';
+import { pqrsApi, type ContratoParaRadicar } from '@/lib/api/pqrs.service';
 import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 
 export interface UseTenantPqrsResult {
@@ -29,6 +29,8 @@ export interface UseTenantPqrsResult {
    * (404/403/0); `null` mientras no se sabe (cargando o con otro error).
    */
   disponible: boolean | null;
+  /** Sus contratos vigentes sobre los que puede radicar (ARREGLOS-2, 03-10-2026). */
+  contratos: ContratoParaRadicar[];
   refetch: () => Promise<void>;
 }
 
@@ -38,6 +40,7 @@ export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
   const [disponible, setDisponible] = useState<boolean | null>(null);
+  const [contratos, setContratos] = useState<ContratoParaRadicar[]>([]);
 
   const fetchPqrs = useCallback(async () => {
     setIsLoading(true);
@@ -46,6 +49,7 @@ export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult
       const result = await pqrsApi.listMineConDisponibilidad();
       setItems(result.items);
       setDisponible(result.disponible);
+      setContratos(result.contratos);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando solicitudes';
       setError(message);
@@ -68,6 +72,7 @@ export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult
     isLoading,
     error,
     disponible,
+    contratos,
     refetch: fetchPqrs,
   };
 }

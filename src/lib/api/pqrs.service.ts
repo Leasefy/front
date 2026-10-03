@@ -2,8 +2,10 @@
  * PQRS / Solicitudes API service — tolerant, frontend-first CONTRACT (v7-06).
  *
  * 03-10-2026: `GET /pqrs/mine` ya existe en el back y responde
- * `{ solicitudes, sePuedeRadicar }` (ver `listMineConDisponibilidad`). `POST /pqrs`
- * y la aprobación de la cotización siguen sin existir.
+ * `{ solicitudes, sePuedeRadicar, contratosParaRadicar }` (ver
+ * `listMineConDisponibilidad`). Desde ARREGLOS-2 (03-10-2026, Nico Q4 a) también
+ * existe `POST /pqrs`: el inquilino radica sobre su contrato vigente. La
+ * aprobación de la cotización sigue sin existir.
  *
  * Modeled 1:1 on the shipped honest-degrade idiom (`lease-documents.service.ts`,
  * `tenant-payment-requests.service.ts`). The NestJS/agent PQRS routes
@@ -93,27 +95,43 @@ async function listMine(): Promise<SolicitudPqrs[]> {
  * distinguir «no has radicado nada» de «todavía no se puede radicar». Con
  * `disponible: false` el botón se apaga ANTES de que la persona escriba.
  */
-async function listMineConDisponibilidad(): Promise<{ items: SolicitudPqrs[]; disponible: boolean }> {
+async function listMineConDisponibilidad(): Promise<MisSolicitudes> {
   try {
     return leerMisSolicitudes(
       await apiClient.get<SolicitudPqrs[] | RespuestaDeMisSolicitudes>('/pqrs/mine'),
     );
   } catch (err) {
-    if (isEndpointUnavailable(err)) return { items: [], disponible: false };
+    if (isEndpointUnavailable(err)) return { items: [], disponible: false, contratos: [] };
     throw err;
   }
 }
 
+/** Un contrato vigente del inquilino sobre el que puede radicar. */
+export interface ContratoParaRadicar {
+  contratoId: string;
+  /** Cómo se llama el inmueble (para elegir si hay más de uno). */
+  inmueble: string;
+}
+
+export interface MisSolicitudes {
+  items: SolicitudPqrs[];
+  /** ¿Se puede radicar desde el portal? */
+  disponible: boolean;
+  /** Sus contratos vigentes (con más de uno, el portal pregunta sobre cuál). */
+  contratos: ContratoParaRadicar[];
+}
+
 /**
- * Lo que responde el back desde el 03-10-2026 (`GET /pqrs/mine`, laboratorio E5:
- * la ruta daba 404): las solicitudes PROPIAS del inquilino y si se puede radicar
- * desde el portal. El back todavía NO tiene `POST /pqrs`, así que manda
- * `sePuedeRadicar: false` y «Nueva solicitud» sigue apagada ANTES de que la persona
- * escriba (QA 22-09) aunque la lista ya traiga sus solicitudes de verdad.
+ * Lo que responde el back (`GET /pqrs/mine`): las solicitudes PROPIAS del
+ * inquilino, si puede radicar desde el portal (tiene un contrato vigente con su
+ * inmobiliaria) y sobre qué contratos. Sin eso, «Nueva solicitud» queda apagada
+ * ANTES de que la persona escriba (QA 22-09). Un back anterior no manda
+ * `contratosParaRadicar`: lista vacía (el back elige si hay uno solo).
  */
 interface RespuestaDeMisSolicitudes {
   solicitudes: SolicitudPqrs[];
   sePuedeRadicar: boolean;
+  contratosParaRadicar?: ContratoParaRadicar[];
 }
 
 /**
@@ -123,12 +141,22 @@ interface RespuestaDeMisSolicitudes {
  */
 function leerMisSolicitudes(
   respuesta: SolicitudPqrs[] | RespuestaDeMisSolicitudes | null | undefined,
-): { items: SolicitudPqrs[]; disponible: boolean } {
-  if (Array.isArray(respuesta)) return { items: respuesta, disponible: true };
+): MisSolicitudes {
+  if (Array.isArray(respuesta)) return { items: respuesta, disponible: true, contratos: [] };
   if (respuesta && Array.isArray(respuesta.solicitudes)) {
-    return { items: respuesta.solicitudes, disponible: respuesta.sePuedeRadicar === true };
+    const contratos = Array.isArray(respuesta.contratosParaRadicar)
+      ? respuesta.contratosParaRadicar.filter(
+          (c): c is ContratoParaRadicar =>
+            !!c && typeof c.contratoId === 'string' && typeof c.inmueble === 'string',
+        )
+      : [];
+    return {
+      items: respuesta.solicitudes,
+      disponible: respuesta.sePuedeRadicar === true,
+      contratos,
+    };
   }
-  return { items: [], disponible: false };
+  return { items: [], disponible: false, contratos: [] };
 }
 
 /**

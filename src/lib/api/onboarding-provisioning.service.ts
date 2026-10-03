@@ -96,6 +96,12 @@ export interface OnboardingResumePoint {
   ownerLastName?: string | null
   legalRepresentative?: string | null
   onboardingCompleted: boolean
+  /**
+   * ¿Esta persona REGISTRÓ la inmobiliaria? El asistente del micro sólo le
+   * contesta a ella (403 a cualquier otro miembro). `null` sin inmobiliaria o
+   * en una agencia sin fundador conocido; ausente en un back anterior.
+   */
+  esQuienLaRegistro?: boolean | null
 }
 
 export function getOnboardingResumePoint(): Promise<OnboardingResumePoint> {

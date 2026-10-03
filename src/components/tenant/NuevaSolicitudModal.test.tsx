@@ -183,3 +183,95 @@ describe('<NuevaSolicitudModal> — errores (02-10-2026)', () => {
     expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
   })
 })
+
+/*
+ * ARREGLOS-2 (03-10-2026, Nico Q4 a): `POST /pqrs` radica sobre el contrato
+ * vigente. Con uno, va ése; con varios, la persona elige sobre cuál.
+ */
+describe('<NuevaSolicitudModal> — sobre cuál contrato (03-10-2026)', () => {
+  const C1 = { contratoId: 'contrato-1', inmueble: 'Apto 101 · Cra 43A #1-50' }
+  const C2 = { contratoId: 'contrato-2', inmueble: 'Local 2' }
+
+  function montarCon(contratos: typeof C1[]) {
+    act(() => {
+      raiz.render(<NuevaSolicitudModal open onClose={vi.fn()} contratos={contratos} />)
+    })
+  }
+
+  async function llenarYEnviar() {
+    act(() => escribir(dialogo().querySelector('#solicitud-asunto') as HTMLInputElement, 'Fuga en el baño'))
+    act(() =>
+      escribir(dialogo().querySelector('#solicitud-descripcion') as HTMLTextAreaElement, 'Se mete el agua'),
+    )
+    await act(async () => {
+      boton('Enviar solicitud').click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('con UN contrato vigente no pregunta y radica sobre ése', async () => {
+    h.create.mockResolvedValue({ id: 'pqrs-1' })
+    montarCon([C1])
+    expect(dialogo().querySelector('#solicitud-contrato')).toBeNull()
+    await llenarYEnviar()
+    expect(h.create).toHaveBeenCalledWith({
+      tipo: 'reparacion',
+      asunto: 'Fuga en el baño',
+      descripcion: 'Se mete el agua',
+      contratoId: 'contrato-1',
+    })
+  })
+
+  it('con DOS pregunta sobre cuál: sin elegir no envía y lo dice bajo el campo', async () => {
+    montarCon([C1, C2])
+    const select = dialogo().querySelector('#solicitud-contrato') as HTMLSelectElement
+    expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
+      'Elige el inmueble',
+      'Apto 101 · Cra 43A #1-50',
+      'Local 2',
+    ])
+    await llenarYEnviar()
+    expect(h.create).not.toHaveBeenCalled()
+    expect(document.getElementById('solicitud-contrato-error')?.textContent).toBe(
+      'Elige sobre cuál contrato es tu solicitud.',
+    )
+  })
+
+  it('con DOS, elegido el segundo, radica sobre ése', async () => {
+    h.create.mockResolvedValue({ id: 'pqrs-2' })
+    montarCon([C1, C2])
+    const select = dialogo().querySelector('#solicitud-contrato') as HTMLSelectElement
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, 'contrato-2')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await llenarYEnviar()
+    expect(h.create).toHaveBeenCalledWith(expect.objectContaining({ contratoId: 'contrato-2' }))
+    expect(h.toast.success).toHaveBeenCalled()
+  })
+
+  it('un 400 ELIGE_EL_CONTRATO del back va bajo el campo del contrato', async () => {
+    const mensaje = 'Tienes más de un contrato vigente: elige sobre cuál es tu solicitud.'
+    h.create.mockRejectedValue(
+      Object.assign(new Error(mensaje), {
+        name: 'ApiError',
+        status: 400,
+        code: 'ELIGE_EL_CONTRATO',
+        detalle: {
+          statusCode: 400,
+          code: 'ELIGE_EL_CONTRATO',
+          message: mensaje,
+          campos: [{ campo: 'contratoId', regla: 'requerido', mensaje }],
+        },
+      }),
+    )
+    montarCon([C1, C2])
+    const select = dialogo().querySelector('#solicitud-contrato') as HTMLSelectElement
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, 'contrato-1')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await llenarYEnviar()
+    expect(document.getElementById('solicitud-contrato-error')?.textContent).toBe(mensaje)
+  })
+})

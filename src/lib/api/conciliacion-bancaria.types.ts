@@ -145,6 +145,74 @@ export interface PropuestaDePasarela {
   porQue: string[];
 }
 
+/**
+ * 🔴 C2-AGREGADOR (Nico, P2): Leasefy recauda los pagos en línea en su cuenta
+ * de Wompi y le gira a la inmobiliaria con una LIQUIDACIÓN (qué pagos incluye
+ * y qué se descontó, tal como viene). «Es el giro de Leasefy»: la línea del
+ * banco es el NETO de esa liquidación; la diferencia la documenta la fuente.
+ */
+export interface DescuentoDeLaLiquidacion {
+  concepto: string;
+  valorCop: number;
+  fuente: 'reporte-de-wompi' | 'leasefy';
+}
+
+export interface PropuestaDelGiro {
+  tipo: 'liquidacion';
+  liquidacionId: string;
+  numero: string;
+  referenciaDelGiro: string;
+  /** `YYYY-MM-DD`. */
+  fechaDelGiro: string;
+  brutoCop: number;
+  netoCop: number;
+  cantidadDePagos: number;
+  descuentos: DescuentoDeLaLiquidacion[];
+  /** Bruto − neto: lo que documenta la liquidación (no se adivina). */
+  diferenciaCop: number;
+  documentadaPorLaFuente: true;
+  conLaReferencia: boolean;
+  confianza: 'alta' | 'media';
+  /** P7: el Piloto en Automático la puede aplicar sola. */
+  aplicableSola: boolean;
+  porQue: string[];
+}
+
+export interface PagoDeLaLiquidacionDeLeasefy {
+  transaccionId: string;
+  referencia: string | null;
+  reciboId: string | null;
+  reciboNumero: number | null;
+  brutoCop: number;
+  comisionCop: number;
+  ivaCop: number;
+  retencionesCop: number;
+  netoCop: number;
+}
+
+export interface LiquidacionDeLeasefy {
+  id: string;
+  numero: string;
+  referenciaDelGiro: string;
+  fechaDelGiro: string;
+  brutoCop: number;
+  descuentos: DescuentoDeLaLiquidacion[];
+  netoCop: number;
+  diferenciaCop: number;
+  documentadaPorLaFuente: true;
+  estado: 'pendiente' | 'conciliada';
+  movimientoId: string | null;
+  conciliadaAt: string | null;
+  conciliadaPor: string | null;
+  pagos: PagoDeLaLiquidacionDeLeasefy[];
+}
+
+export interface LiquidacionesDeLeasefy {
+  /** `false` mientras la base no tenga la migración: no hay liquidaciones. */
+  disponible: boolean;
+  data: LiquidacionDeLeasefy[];
+}
+
 /** Lo que va además de las líneas al cargar el extracto. */
 export interface OpcionesDeLaCarga {
   /** OBLIGATORIA: la cuenta de la inmobiliaria. */
@@ -271,6 +339,8 @@ export interface MovimientoBancario {
   saldoCop?: number | null;
   /** «Puede ser el pago en línea de…»: sólo en entradas PENDIENTES del banco. */
   pasarela?: { propuestas: PropuestaDePasarela[] } | null;
+  /** C2-AGREGADOR: «Es el giro de Leasefy de la liquidación N» (sólo entradas PENDIENTES del banco). */
+  giroDeLeasefy?: { propuestas: PropuestaDelGiro[] } | null;
 }
 
 // ── Muchos a uno: un movimiento = la suma de VARIOS recibos (02-10-2026) ────
@@ -330,9 +400,20 @@ export interface PropuestaMuchosAUno {
   sumaCop: number;
   /** `null` = la suma es EXACTA. */
   diferencia: DiferenciaConocida | null;
-  /** 0–1, dos decimales (alta 0,90–0,99 · media 0,50–0,89 · baja 0,05–0,49). */
+  /**
+   * 0–1, dos decimales (alta 0,90–0,99 · media 0,50–0,89 · baja 0,05–0,49).
+   * 🔴 NO se muestra (Nico, C1-MEDIR Q1, 03-10-2026: «sólo alta, media o baja;
+   * si hay número, el medido»): es una fórmula, no una medida. Lo que se
+   * muestra es `nivel` y, si viene, `deCadaDiez`.
+   */
   confianza: number;
   nivel: NivelDeConfianza;
+  /**
+   * De cada 10 propuestas de este nivel, cuántas eran la correcta, MEDIDO por
+   * el banco de casos del back (`confianza-medida.ts`). Aditivo: un back viejo
+   * no lo manda y la pantalla dice sólo el nivel.
+   */
+  deCadaDiez?: number | null;
   /** ¿Es la ÚNICA combinación con evidencia, en una búsqueda completa? */
   unica: boolean;
   /** Frases concretas, en español, de por qué es esta combinación. */
@@ -417,6 +498,9 @@ export interface ResultadoDeConciliarConRecibos {
  */
 export type AQuienAplicaLaDiferencia = 'aseguradoras' | 'empresas' | 'todos';
 
+/** C2-DESHACER: en la fuente, de ICA o de IVA (columnas del certificado). */
+export type ClaseDeRetencion = 'RETEFUENTE' | 'RETEICA' | 'RETEIVA';
+
 export type DiferenciaConfigurada =
   | {
       nombre: string;
@@ -424,6 +508,12 @@ export type DiferenciaConfigurada =
       /** 0 < p ≤ 100, hasta 2 decimales (3.5 = 3,5 %). */
       porcentaje: number;
       aQuien: AQuienAplicaLaDiferencia;
+      /**
+       * C2-DESHACER (03-10-2026): qué retención es, para el certificado anual
+       * del propietario. Sin ella se asienta igual, pero no entra al
+       * certificado (el back lo avisa). Un back viejo no la manda.
+       */
+      clase?: ClaseDeRetencion | null;
     }
   | {
       nombre: string;

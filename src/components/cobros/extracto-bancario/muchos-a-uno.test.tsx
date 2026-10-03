@@ -108,6 +108,7 @@ function propuesta(recibos: ReciboDeLaPropuesta[], sobre: Partial<PropuestaMucho
     diferencia: null,
     confianza: 0.98,
     nivel: 'alta',
+    deCadaDiez: 10,
     unica: true,
     porQue: [
       'Los 6 recibos de Seguros Bolívar (NIT 860002503) suman exacto $12.480.000.',
@@ -186,6 +187,7 @@ const RESPUESTA_AMBIGUA: RespuestaRecibosQueSuman = {
 const GMF = propuesta([recibo('r-g1', 301, 3_000_000), recibo('r-g2', 302, 2_000_000)], {
   confianza: 0.81,
   nivel: 'media',
+  deCadaDiez: 5,
   diferencia: {
     tipo: 'GMF_4X1000',
     valorCop: 20_000,
@@ -299,9 +301,12 @@ describe('muchos a uno — la propuesta clara (alta)', () => {
     expect(suma.querySelector('.sr-only')?.textContent).toBe(plata(12_480_000));
     expect(tarjeta.querySelector('[data-testid="calza"]')?.textContent).toContain('Calza exacto');
 
+    // 🔴 Nico (C1-MEDIR Q1): sólo el nivel y, si hay número, el MEDIDO.
     const confianza = $('[data-testid="confianza"]');
     expect(confianza.getAttribute('data-nivel')).toBe('alta');
-    expect(confianza.textContent).toContain('Confianza alta · 98 %');
+    expect(confianza.textContent).toContain('Confianza alta');
+    expect(confianza.textContent).not.toContain('%');
+    expect($('[data-testid="confianza-medida"]').textContent).toBe('de cada 10 así, 10 son la correcta');
     expect(tarjeta.textContent).toContain('El NIT del pagador viene en la descripción del banco.');
 
     expect(boton('aprobar-recibos-m-1').disabled).toBe(false);
@@ -343,7 +348,7 @@ describe('muchos a uno — la propuesta clara (alta)', () => {
     expect(diferencia).toContain('El banco descontó el 4×1000 (GMF) de la suma de los recibos.');
     expect(diferencia).toContain('No se aplica sola: tú decides si la apruebas.');
     expect(tarjeta.querySelector('[data-testid="calza"]')).toBeNull();
-    expect($('[data-testid="confianza"]').textContent).toContain('Confianza media · 81 %');
+    expect($('[data-testid="confianza"]').textContent).toBe('Confianza mediade cada 10 así, 5 son la correcta');
     // La persona la puede aprobar: la regla la explica.
     expect(boton('aprobar-recibos-m-3').disabled).toBe(false);
   });
@@ -527,5 +532,30 @@ describe('muchos a uno — movimiento reducido', () => {
     await montar([movimiento()]);
     const cifra = $('[data-testid="suma-m-1"] [data-valor]');
     expect(cifra.querySelector('[aria-hidden="true"]')).not.toBeNull();
+  });
+});
+
+// ── La confianza: el nivel y, si hay número, el medido (Nico, C1-MEDIR Q1) ──
+
+describe('muchos a uno — la confianza que se ve', () => {
+  it('textoDeLoMedido dice el número medido y nunca inventa uno', async () => {
+    const { textoDeLoMedido, textoDeLaConfianza } = await import('./muchos-a-uno');
+    expect(textoDeLaConfianza('media')).toBe('Confianza media');
+    expect(textoDeLoMedido(5)).toBe('de cada 10 así, 5 son la correcta');
+    expect(textoDeLoMedido(1)).toBe('de cada 10 así, 1 es la correcta');
+    expect(textoDeLoMedido(10)).toBe('de cada 10 así, 10 son la correcta');
+    expect(textoDeLoMedido(null)).toBeNull();
+    expect(textoDeLoMedido(undefined)).toBeNull();
+    expect(textoDeLoMedido(0.63)).toBeNull();
+    expect(textoDeLoMedido(11)).toBeNull();
+  });
+
+  it('un back que no manda la medida: sólo el nivel, sin porcentaje y sin barra', async () => {
+    const sinMedida = propuesta(SEIS, { deCadaDiez: undefined });
+    await montar([movimiento({ muchosAUno: { mejor: sinMedida, ambigua: false, total: 1, parcial: null } })]);
+    const confianza = $('[data-testid="confianza"]');
+    expect(confianza.textContent).toBe('Confianza alta');
+    expect(document.querySelector('[data-testid="confianza-medida"]')).toBeNull();
+    expect(confianza.querySelector('[aria-hidden="true"]')).toBeNull();
   });
 });

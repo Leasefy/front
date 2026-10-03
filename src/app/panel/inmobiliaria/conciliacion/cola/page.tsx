@@ -144,6 +144,19 @@ function isBulkEligible(item: ConciliacionQueueItem): boolean {
   return item.status === 'suggested' && item.confidenceScore >= BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR
 }
 
+/**
+ * 🔴 Sólo alta, media o baja (Nico, C1-MEDIR Q1, 03-10-2026: «si hay número,
+ * el medido»). El puntaje del agente es una fórmula que nadie midió contra lo
+ * que acierta, así que no se muestra. «Alta» es lo que entra al lote (el mismo
+ * piso de `isBulkEligible`); «media» desde 0,50.
+ */
+function nivelDelCruce(score: number | null | undefined): 'alta' | 'media' | 'baja' {
+  const s = typeof score === 'number' && Number.isFinite(score) ? score : 0
+  if (s >= BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR) return 'alta'
+  if (s >= 0.5) return 'media'
+  return 'baja'
+}
+
 // ── Página ───────────────────────────────────────────────────────────────────
 
 function ConciliacionCola() {
@@ -390,7 +403,7 @@ function ConciliacionCola() {
               ) : (
                 pageItems.map((item) => {
                   const elegible = isBulkEligible(item)
-                  const pct = Math.round((item.confidenceScore ?? 0) * 100)
+                  const nivel = nivelDelCruce(item.confidenceScore)
                   const caso = item.caseType ?? null
                   const filaOcupada = busyRow === item.id
                   return (
@@ -464,7 +477,7 @@ function ConciliacionCola() {
                             elegible ? 'text-success' : 'text-fg-muted',
                           )}
                         >
-                          {pct}% de confianza
+                          Confianza {nivel}
                         </p>
                       </TableCell>
 
@@ -557,8 +570,8 @@ function ConciliacionCola() {
                 disabled={busy}
                 data-testid="conciliacion-marcar-elegibles"
               >
-                Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} alta
-                confianza (≥{Math.round(BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR * 100)}%)
+                Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} confianza
+                alta
               </Button>
             )}
             {armed ? (

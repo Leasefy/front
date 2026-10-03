@@ -396,6 +396,36 @@ cuenta». (P4): la pasarela sólo se ignora sola con el id de la transacción; s
   se ve en la cola («Pago en línea») con lo que hay que hacer.
 - Todo bloque nuevo entra con `useAparecer` (tokens de Cadence; con movimiento reducido, en el lugar).
 
+## Conciliación, ola C2: las salidas del extracto (03-10-2026)
+
+Nico (P5): «se concilian TODAS las salidas: giros a propietarios, egresos/proveedores, 4×1000, comisiones
+bancarias y devoluciones». API en `src/lib/api/salidas-del-extracto.ts` (`/inmobiliaria/conciliacion-bancaria/salidas`).
+
+- **La página** (`SalidasDelExtracto.tsx`): `SalidasDeLaPagina` envuelve la tabla y pide UNA vez por lectura de la
+  lista las propuestas de las salidas (y de las entradas que hablan de un reverso, `hayQuePreguntarPorLaLinea`);
+  `AvisosDeLasSalidas` (arriba de la tabla) muestra el giro que NO salió o salió DOS veces y «Conciliar las salidas
+  seguras» (confirmación; sólo lo `alta` + único, regla P7).
+- **La fila** (`SalidaDelExtracto.tsx`, dentro de `MovimientoFila`): hasta 3 propuestas con su regla con nombre y
+  «Segura»; «Conciliar» manda ESA propuesta (el back re-verifica); sin propuesta, «Es un gasto del banco» (4×1000,
+  comisión, IVA o cuota); conciliada, contra qué quedó (y si fue el Piloto) y «Deshacer» con motivo (ADMIN/CONTADOR).
+  Un back sin la ruta o sin respuesta: la fila queda como antes («se puede ignorar»). Sin la migración, se ve pero
+  «Conciliar» está apagado.
+
+## Conciliación, ola C2: deshacer, cuentas de las diferencias y confianza (03-10-2026)
+
+- **Deshacer** (`DeshacerLaConciliacion.tsx`, columna de acciones de `MovimientoFila`; API
+  `src/lib/api/deshacer-la-conciliacion.ts`): Nico (P11) «desvincular con motivo y bitácora, sin anular el recibo. Sólo
+  administrador o contador». Sólo ADMIN/CONTADOR (`agencyRole`), sólo entradas CONCILIADAS que no son de la pasarela y
+  sin vínculo de salida (ésas tienen el «Deshacer» de `SalidaDelExtracto`). Pide motivo (5–500); el aviso dice qué recibos
+  quedaron vivos.
+- **Confianza** (Nico, C1-MEDIR Q1): «Confianza alta|media|baja» y, si el back manda `deCadaDiez` (medido por su banco de
+  casos), «de cada 10 así, N son la correcta» con la barra hasta ese número. Nunca el porcentaje de la fórmula. La cola del
+  agente (`/conciliacion/cola`) muestra sólo el nivel.
+- **Configuración → Costos de la plata**: `CuentasDeLasDiferencias.tsx` (API `src/lib/api/cuentas-de-las-diferencias.ts`)
+  elige la cuenta del 4×1000, de la comisión y de la retención del inquilino (asiento automático, P1), ofrece la de la
+  semilla, avisa sin migración y «Asentarlas» para lo aprobado sin asiento. La retención configurada lleva su clase
+  (en la fuente / ICA / IVA) para el certificado del propietario.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

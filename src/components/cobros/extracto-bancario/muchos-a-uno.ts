@@ -24,21 +24,33 @@ import type {
 
 // ── Cifras ──────────────────────────────────────────────────────────────────
 
-/** La confianza 0–1 como porcentaje entero, acotado a 0–100. */
-export function porcentaje(confianza: number): number {
-  if (!Number.isFinite(confianza)) return 0;
-  return Math.max(0, Math.min(100, Math.round(confianza * 100)));
-}
-
 export const NOMBRE_DEL_NIVEL: Record<NivelDeConfianza, string> = {
   alta: 'alta',
   media: 'media',
   baja: 'baja',
 };
 
-/** «Confianza alta · 98 %». */
-export function textoDeLaConfianza(nivel: NivelDeConfianza, confianza: number): string {
-  return `Confianza ${NOMBRE_DEL_NIVEL[nivel] ?? nivel} · ${porcentaje(confianza)} %`;
+/**
+ * «Confianza alta». 🔴 Sin porcentaje (Nico, C1-MEDIR Q1, 03-10-2026: «sólo
+ * alta, media o baja; si hay número, el medido»): el 0–1 que manda el back es
+ * una fórmula y en el banco de casos la «media» acertaba la mitad de las
+ * veces que decía 63 %.
+ */
+export function textoDeLaConfianza(nivel: NivelDeConfianza): string {
+  return `Confianza ${NOMBRE_DEL_NIVEL[nivel] ?? nivel}`;
+}
+
+/**
+ * El número MEDIDO por el banco de casos del back para ese nivel: «de cada 10
+ * así, 5 son la correcta». `null` (un back viejo, un nivel sin medir, un valor
+ * raro) = no se dice ningún número.
+ */
+export function textoDeLoMedido(deCadaDiez: number | null | undefined): string | null {
+  if (typeof deCadaDiez !== 'number' || !Number.isInteger(deCadaDiez)) return null;
+  if (deCadaDiez < 0 || deCadaDiez > 10) return null;
+  return deCadaDiez === 1
+    ? 'de cada 10 así, 1 es la correcta'
+    : `de cada 10 así, ${deCadaDiez} son la correcta`;
 }
 
 /**

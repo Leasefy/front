@@ -29,7 +29,11 @@ import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conc
 import { diaLegible, mesesLegibles, plata } from './formato';
 import { MuchosAUno } from './MuchosAUno';
 import { PropuestaDeLaPasarela } from './PropuestaDeLaPasarela';
+import { PropuestaDeLaPasarelaGiro } from './PropuestaDeLaPasarelaGiro';
 import { nombreDeLaCuenta } from './cuentas-del-extracto';
+import { DeshacerLaConciliacion } from './DeshacerLaConciliacion';
+// C2-SALIDAS (Nico, P5): las salidas se concilian (giros, egresos, gastos del banco, reversos).
+import { SalidaDelExtracto } from './SalidaDelExtracto';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -128,12 +132,27 @@ export function MovimientoFila({
             onCambio={onCambio}
           />
         )}
+        {/* 🔴 C2-AGREGADOR (Nico, P2): el giro de Leasefy (el neto de una liquidación). Va
+            arriba: conciliarlo contra una cuota emitiría otro recibo por plata que ya tiene los suyos. */}
+        {esPendiente && !esSalida && m.giroDeLeasefy && m.giroDeLeasefy.propuestas.length > 0 && (
+          <PropuestaDeLaPasarelaGiro
+            movimiento={m}
+            propuestas={m.giroDeLeasefy.propuestas}
+            puedeEditar={puedeEditar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+          />
+        )}
         {/* El pago en línea que no calzó con el canon: lo resuelve la inmobiliaria. */}
         {esPendiente && m.deLaPasarela && (
           <p className="mb-2 text-caption text-fg-muted" data-testid={`no-calzo-${m.id}`}>
             Pago en línea que no calzó con el canon: concílialo contra el cliente (la plata va a su deuda más
             vieja) o ignóralo con su motivo si se devolvió. Nunca se concilia solo.
           </p>
+        )}
+        {/* C2-SALIDAS: una entrada que habla de un reverso o de la devolución de un giro. */}
+        {esPendiente && !esSalida && (
+          <SalidaDelExtracto movimiento={m} puedeConciliar={puedeConciliar} ocupado={ocupado} onCambio={onCambio} />
         )}
         {esPendiente && !esSalida && m.muchosAUno && (
           <MuchosAUno
@@ -240,13 +259,29 @@ export function MovimientoFila({
             </ul>
           )
         ) : esPendiente && esSalida ? (
-          <p className="text-caption text-fg-muted">
-            Una salida no se concilia contra una cuota; se puede ignorar.
-          </p>
+          /* C2-SALIDAS (Nico, P5): el giro, el egreso, el pago al proveedor o el gasto del banco. */
+          <SalidaDelExtracto
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+            vacio={
+              <p className="text-caption text-fg-muted">
+                Una salida no se concilia contra una cuota; se puede ignorar.
+              </p>
+            }
+          />
         ) : m.estado === 'IGNORADO' && m.motivoIgnorado ? (
           <p className="text-caption text-fg-muted">Motivo: {m.motivoIgnorado}</p>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          /* C2-SALIDAS: la salida conciliada dice contra qué quedó. */
+          <SalidaDelExtracto
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+            vacio={<span className="text-fg-subtle">—</span>}
+          />
         )}
       </TableCell>
 
@@ -275,6 +310,9 @@ export function MovimientoFila({
             <ArrowCounterClockwise className="h-4 w-4" aria-hidden="true" />
             Volver a pendiente
           </Button>
+        ) : m.estado === 'CONCILIADO' ? (
+          /* C2-DESHACER (Nico, P11): sólo administrador o contador; sin anular el recibo. */
+          <DeshacerLaConciliacion movimiento={m} ocupado={ocupado} onCambio={onCambio} />
         ) : (
           <span className="text-fg-subtle">—</span>
         )}

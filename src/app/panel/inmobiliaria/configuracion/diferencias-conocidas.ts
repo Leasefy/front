@@ -13,6 +13,7 @@
 
 import { camposDelError, leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type {
+  ClaseDeRetencion,
   AQuienAplicaLaDiferencia,
   DiferenciaConfigurada,
 } from '@/lib/api/conciliacion-bancaria.types';
@@ -34,7 +35,16 @@ export interface FilaDeDiferencia {
   tipo: TipoDeDiferencia;
   valor: string;
   aQuien: AQuienAplicaLaDiferencia;
+  /** Sólo retención: qué retención es (para el certificado). `''` = sin decir. */
+  clase: ClaseDeRetencion | '';
 }
+
+/** C2-DESHACER (Nico, P1): la clase de una retención, en palabras. */
+export const NOMBRE_DE_LA_CLASE: Record<ClaseDeRetencion, string> = {
+  RETEFUENTE: 'En la fuente',
+  RETEICA: 'De ICA',
+  RETEIVA: 'De IVA',
+};
 
 export const NOMBRE_DE_A_QUIEN: Record<AQuienAplicaLaDiferencia, string> = {
   aseguradoras: 'Aseguradoras',
@@ -56,7 +66,7 @@ function claveNueva(): string {
 
 /** Una fila vacía: por defecto, una retención a empresas (el caso del 3,5 %). */
 export function filaNueva(): FilaDeDiferencia {
-  return { clave: claveNueva(), nombre: '', tipo: 'RETENCION', valor: '', aQuien: 'empresas' };
+  return { clave: claveNueva(), nombre: '', tipo: 'RETENCION', valor: '', aQuien: 'empresas', clase: '' };
 }
 
 /** «3,5» y no «3.5»: así se escribe un porcentaje en Colombia. */
@@ -72,6 +82,7 @@ export function filasDesde(diferencias: readonly DiferenciaConfigurada[]): FilaD
     tipo: d.tipo,
     valor: d.tipo === 'RETENCION' ? porcentajeEnTexto(d.porcentaje) : String(d.valorCop),
     aQuien: d.aQuien,
+    clase: d.tipo === 'RETENCION' ? (d.clase ?? '') : '',
   }));
 }
 
@@ -139,7 +150,13 @@ export function validar(filas: readonly FilaDeDiferencia[]): Validacion {
     errores,
     diferencias: filas.map((f): DiferenciaConfigurada =>
       f.tipo === 'RETENCION'
-        ? { nombre: f.nombre.trim(), tipo: 'RETENCION', porcentaje: leerPorcentaje(f.valor)!.valor, aQuien: f.aQuien }
+        ? {
+            nombre: f.nombre.trim(),
+            tipo: 'RETENCION',
+            porcentaje: leerPorcentaje(f.valor)!.valor,
+            aQuien: f.aQuien,
+            ...(f.clase ? { clase: f.clase } : {}),
+          }
         : { nombre: f.nombre.trim(), tipo: 'COMISION', valorCop: leerPesos(f.valor)!, aQuien: f.aQuien },
     ),
   };

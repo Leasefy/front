@@ -242,7 +242,7 @@ function PropuestaClara({
           <Stack className="h-4 w-4" aria-hidden="true" />
           {tituloDeLaPropuesta(p.recibos.length)}
         </p>
-        <ConfianzaDeLaPropuesta nivel={p.nivel} confianza={p.confianza} movimiento={mov} />
+        <ConfianzaDeLaPropuesta nivel={p.nivel} deCadaDiez={p.deCadaDiez} movimiento={mov} />
       </header>
 
       <ul className="space-y-1.5" aria-label="Recibos que lo componen">
@@ -358,7 +358,7 @@ function Ambigua({
           <ArrowsSplit className="h-4 w-4 text-warning" aria-hidden="true" />
           Este movimiento puede ser más de una combinación de recibos
         </p>
-        {mejor && <ConfianzaDeLaPropuesta nivel={mejor.nivel} confianza={mejor.confianza} movimiento={mov} />}
+        {mejor && <ConfianzaDeLaPropuesta nivel={mejor.nivel} deCadaDiez={mejor.deCadaDiez} movimiento={mov} />}
       </header>
       <p className="text-body-sm text-fg" data-testid={`ambigua-${m.id}`}>
         {total >= 2
@@ -404,7 +404,7 @@ function Parcial({ m, parcial: p, mov }: { m: MovimientoBancario; parcial: Propu
             ? 'Un recibo explica parte de este movimiento'
             : `${p.recibos.length} recibos explican parte de este movimiento`}
         </p>
-        <ConfianzaDeLaPropuesta nivel={nivelDeLaConfianza(p.confianza)} confianza={p.confianza} movimiento={mov} />
+        <ConfianzaDeLaPropuesta nivel={nivelDeLaConfianza(p.confianza)} movimiento={mov} />
       </header>
       <ul className="space-y-1.5" aria-label="Recibos que explican una parte">
         {p.recibos.map((r, i) => (

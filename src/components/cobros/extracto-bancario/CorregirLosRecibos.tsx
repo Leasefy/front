@@ -288,7 +288,7 @@ export function CorregirLosRecibos({
                               </span>
                               <ConfianzaDeLaPropuesta
                                 nivel={p.nivel}
-                                confianza={p.confianza}
+                                deCadaDiez={p.deCadaDiez}
                                 movimiento={mov}
                               />
                             </span>

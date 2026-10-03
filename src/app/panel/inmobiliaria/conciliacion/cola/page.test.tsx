@@ -163,7 +163,9 @@ describe('Por revisar — la tabla', () => {
     expect(fila.textContent).toContain('Ref. 0009812')
     expect(fila.textContent).toContain('Pago parcial')
     expect(fila.textContent).toContain('Contrato 111')
-    expect(fila.textContent).toContain('72% de confianza')
+    // 🔴 Nico (C1-MEDIR Q1): sólo el nivel, nunca el porcentaje que nadie midió.
+    expect(fila.textContent).toContain('Confianza media')
+    expect(fila.textContent).not.toContain('72')
     // El pie del design system se monta siempre que haya filas.
     expect(document.body.textContent).toContain('Mostrando 1–1 de 1')
   })

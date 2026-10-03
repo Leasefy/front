@@ -25,6 +25,7 @@ import { SeccionMigracion } from './SeccionMigracion';
 import { SeccionMandato } from './SeccionMandato';
 import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { DiferenciasConocidas } from './DiferenciasConocidas';
+import { CuentasDeLasDiferencias } from './CuentasDeLasDiferencias';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
 import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
 import { SeccionSedes } from './SeccionSedes';
@@ -59,6 +60,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
         <div className="space-y-6">
           <SeccionCostosDeLaPlata />
           <DiferenciasConocidas />
+          {/* C2-DESHACER (Nico, P1): las cuentas del asiento automático de las diferencias. */}
+          <CuentasDeLasDiferencias />
         </div>
       );
     case 'sedes':

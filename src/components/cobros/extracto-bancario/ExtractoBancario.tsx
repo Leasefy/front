@@ -72,6 +72,9 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { CargarExtracto } from './CargarExtracto';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
+import { LiquidacionesDeLeasefy } from './LiquidacionesDeLeasefy';
+// C2-SALIDAS (Nico, P5): las salidas del extracto se concilian y se avisan.
+import { AvisosDeLasSalidas, SalidasDeLaPagina } from './SalidasDelExtracto';
 import { MovimientoFila } from './MovimientoFila';
 import { PorCuenta } from './PorCuenta';
 import { diaLegible, plata } from './formato';
@@ -380,6 +383,17 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         onCambio={() => void cargar()}
       />
 
+      {/* C2-AGREGADOR: los giros de Leasefy por los pagos en línea (sólo si hay). */}
+      <LiquidacionesDeLeasefy version={versionDelLote} />
+
+      {/* C2-SALIDAS: el giro que no salió o salió dos veces, y lo seguro de un golpe. */}
+      <AvisosDeLasSalidas
+        version={versionDelLote}
+        puedeConciliar={puedeConciliar}
+        onCambio={() => void cargar()}
+      />
+
+      <SalidasDeLaPagina movimientos={movimientos}>
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Pestañas y lote, dentro de la tarjeta y encima de la tabla. */}
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -482,6 +496,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
           )}
         </EstadoDeDatos>
       </section>
+      </SalidasDeLaPagina>
 
       <Dialog
         open={conCliente !== null}

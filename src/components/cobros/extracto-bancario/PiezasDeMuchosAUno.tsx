@@ -18,7 +18,7 @@ import type {
   ReciboDeLaPropuesta,
 } from '@/lib/api/conciliacion-bancaria.types';
 import { diaLegible, plata } from './formato';
-import { MENSAJE_SIN_TABLA, medioLegible, textoDeLaConfianza, type Rechazo } from './muchos-a-uno';
+import { MENSAJE_SIN_TABLA, medioLegible, textoDeLaConfianza, textoDeLoMedido, type Rechazo } from './muchos-a-uno';
 import type { MovimientoDeMuchosAUno } from './movimiento-de-muchos-a-uno';
 
 /**
@@ -68,26 +68,40 @@ const RELLENO_DEL_NIVEL: Record<NivelDeConfianza, string> = {
   baja: 'bg-fg-subtle',
 };
 
-/** «Confianza alta · 98 %» con una barra que crece hasta el porcentaje. */
+/**
+ * «Confianza media · de cada 10 así, 5 son la correcta».
+ *
+ * 🔴 Nico (C1-MEDIR Q1, 03-10-2026): «sólo alta, media o baja; si hay número,
+ * el medido». El nivel siempre; el número sólo si el back lo midió
+ * (`deCadaDiez`, del banco de casos), y la barra crece hasta ESE número. Sin
+ * medida no hay barra: una barra es un número.
+ */
 export function ConfianzaDeLaPropuesta({
   nivel,
-  confianza,
+  deCadaDiez,
   movimiento: mov,
 }: {
   nivel: NivelDeConfianza;
-  confianza: number;
+  deCadaDiez?: number | null;
   movimiento: MovimientoDeMuchosAUno;
 }) {
-  const fraccion = Math.max(0, Math.min(1, Number.isFinite(confianza) ? confianza : 0));
+  const medido = textoDeLoMedido(deCadaDiez);
   return (
-    <span className="inline-flex items-center gap-2" data-testid="confianza" data-nivel={nivel}>
-      <Badge variant={VARIANTE_DEL_NIVEL[nivel] ?? 'secondary'}>{textoDeLaConfianza(nivel, confianza)}</Badge>
-      <span className="relative h-1 w-12 overflow-hidden rounded-full bg-border" aria-hidden="true">
-        <motion.span
-          className={cn('absolute inset-0 origin-left rounded-full', RELLENO_DEL_NIVEL[nivel] ?? 'bg-fg-subtle')}
-          {...mov.barra(fraccion)}
-        />
-      </span>
+    <span className="inline-flex flex-wrap items-center gap-2" data-testid="confianza" data-nivel={nivel}>
+      <Badge variant={VARIANTE_DEL_NIVEL[nivel] ?? 'secondary'}>{textoDeLaConfianza(nivel)}</Badge>
+      {medido && typeof deCadaDiez === 'number' && (
+        <>
+          <span className="relative h-1 w-12 overflow-hidden rounded-full bg-border" aria-hidden="true">
+            <motion.span
+              className={cn('absolute inset-0 origin-left rounded-full', RELLENO_DEL_NIVEL[nivel] ?? 'bg-fg-subtle')}
+              {...mov.barra(deCadaDiez / 10)}
+            />
+          </span>
+          <span className="text-caption text-fg-muted" data-testid="confianza-medida">
+            {medido}
+          </span>
+        </>
+      )}
     </span>
   );
 }

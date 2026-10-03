@@ -18,6 +18,7 @@ import type {
   DiferenciasConocidasDeLaInmobiliaria,
   FilaDeExtracto,
   FiltrosDeMovimientos,
+  LiquidacionesDeLeasefy,
   LoteActual,
   LoteDeConciliacion,
   MovimientoBancario,
@@ -48,7 +49,14 @@ function conQuery(path: string, params: Record<string, string | number | undefin
  */
 export function diferenciaParaElBack(d: DiferenciaConfigurada): Record<string, unknown> {
   return d.tipo === 'RETENCION'
-    ? { nombre: d.nombre.trim(), tipo: d.tipo, porcentaje: d.porcentaje, aQuien: d.aQuien }
+    ? {
+        nombre: d.nombre.trim(),
+        tipo: d.tipo,
+        porcentaje: d.porcentaje,
+        aQuien: d.aQuien,
+        // C2-DESHACER: la clase de la retención (certificado), sólo si se dijo.
+        ...(d.clase ? { clase: d.clase } : {}),
+      }
     : { nombre: d.nombre.trim(), tipo: d.tipo, valorCop: d.valorCop, aQuien: d.aQuien };
 }
 
@@ -107,6 +115,21 @@ export const conciliacionBancariaApi = {
    * 🔴 (Nico, P4) «Esta línea del banco ES el pago en línea»: queda ignorada con
    * el recibo de ese pago. No emite nada. Lleva sólo `pagoEnLineaId`.
    */
+  /** C2-AGREGADOR: «Esta línea ES el giro de Leasefy de esta liquidación» (no emite recibos). */
+  async esElGiroDeLeasefy(movimientoId: string, liquidacionId: string): Promise<MovimientoBancario> {
+    const res = await apiClient.post<MovimientoBancario>(
+      `${BASE}/movimientos/${movimientoId}/es-el-giro-de-leasefy`,
+      { liquidacionId },
+    );
+    invalidar('cobros');
+    return res;
+  },
+
+  /** C2-AGREGADOR: las liquidaciones del recaudo en línea que Leasefy le gira a la inmobiliaria. */
+  async liquidacionesDeLeasefy(): Promise<LiquidacionesDeLeasefy> {
+    return apiClient.get<LiquidacionesDeLeasefy>(`${BASE}/liquidaciones-de-leasefy`);
+  },
+
   async esDeLaPasarela(movimientoId: string, pagoEnLineaId: string): Promise<MovimientoBancario> {
     const res = await apiClient.post<MovimientoBancario>(
       `${BASE}/movimientos/${movimientoId}/es-de-la-pasarela`,

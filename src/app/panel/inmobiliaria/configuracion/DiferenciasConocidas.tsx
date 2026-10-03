@@ -36,6 +36,7 @@ import { toast } from '@/components/ui/toast';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type {
   AQuienAplicaLaDiferencia,
+  ClaseDeRetencion,
   DiferenciasConocidasDeLaInmobiliaria,
 } from '@/lib/api/conciliacion-bancaria.types';
 import { EsqueletoDeSeccion } from './piezas';
@@ -43,6 +44,7 @@ import {
   AYUDA_DE_A_QUIEN,
   MAXIMO_DE_DIFERENCIAS,
   NOMBRE_DE_A_QUIEN,
+  NOMBRE_DE_LA_CLASE,
   erroresDelServidor,
   filaNueva,
   filasDesde,
@@ -307,6 +309,36 @@ function FilaEditable({
             <SelectItem value="COMISION">Comisión ($)</SelectItem>
           </SelectContent>
         </Select>
+        {/* C2-DESHACER (Nico, P1): la retención entra al certificado del propietario en su columna. */}
+        {esRetencion && (
+          <>
+            <Label htmlFor={`${id}-clase`} className="sr-only">
+              Qué retención es
+            </Label>
+            <Select
+              value={f.clase || 'SIN_DECIR'}
+              disabled={deshabilitado}
+              onValueChange={(v) => onCambio({ clase: v === 'SIN_DECIR' ? '' : (v as ClaseDeRetencion) })}
+            >
+              <SelectTrigger id={`${id}-clase`} className="h-10" data-testid={`diferencia-${indice}-clase`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(NOMBRE_DE_LA_CLASE) as ClaseDeRetencion[]).map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {NOMBRE_DE_LA_CLASE[c]}
+                  </SelectItem>
+                ))}
+                <SelectItem value="SIN_DECIR">Sin decir</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-caption text-fg-muted">
+              {f.clase
+                ? 'Entra al certificado del propietario en esa columna.'
+                : 'Sin decir, se asienta igual pero no entra al certificado.'}
+            </p>
+          </>
+        )}
       </div>
 
       <div className="space-y-1.5">

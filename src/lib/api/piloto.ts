@@ -542,6 +542,75 @@ export async function putPilotoGobierno(
   }
 }
 
+// ── La perilla PROPIA de un proceso (ola E, 03-10-2026) ─────────────────────
+//
+// Nico (C2-IA Q5): «perilla propia `conciliacion.alias`». Algunos procesos del
+// Piloto tienen su Manual / Copiloto / Automático aparte del de su agente
+// (hoy, conciliar por un alias confirmado). Sin elección: Copiloto.
+
+export interface ModoPropioDelProceso {
+  id: string
+  agente: string
+  nombre: string
+  queHace: string
+  nota: string | null
+  modo: AutonomiaModo
+  /** `piloto` = lo eligió un administrador; `default` = sin elección (Copiloto). */
+  origen: 'piloto' | 'default'
+  queHaceEnCadaModo: Record<AutonomiaModo, string>
+  cambiadoPor: string | null
+  cambiadoEn: string | null
+}
+
+export interface PilotoModosPropiosResponse {
+  procesos: ModoPropioDelProceso[]
+  puedeEditar: boolean
+  /** `false` = todavía no se puede guardar (falta una actualización de la base). */
+  guardable: boolean | null
+  porQueNo: string | null
+}
+
+/** Los procesos del Piloto con perilla propia y su modo. Un micro viejo responde 404: lista vacía. */
+export async function fetchPilotoModosPropios(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; data?: PilotoModosPropiosResponse; error?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/modos-propios`, { signal })
+    if (res.status === 404) return { ok: true, data: { procesos: [], puedeEditar: false, guardable: null, porQueNo: null } }
+    if (!res.ok) return { ok: false, error: `${res.status}` }
+    return { ok: true, data: (await res.json()) as PilotoModosPropiosResponse }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' }
+  }
+}
+
+/** Cambia el modo de un proceso con perilla propia. Sólo un administrador. */
+export async function putPilotoModoPropio(
+  agencyId: string,
+  procesoId: string,
+  modo: AutonomiaModo,
+): Promise<{ ok: boolean; data?: ModoPropioDelProceso; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(
+      `${agentUrl}/api/agency/${agencyId}/piloto/modos-propios/${encodeURIComponent(procesoId)}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ modo }),
+      },
+    )
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as ModoPropioDelProceso }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
 /**
  * Ejecuta la `accion` declarada por el micro en un item de la bandeja —
  * método + path + body (si viene) son del backend, VERBATIM; acá nunca se

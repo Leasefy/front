@@ -49,9 +49,13 @@ import type { AutonomiaModo } from '@/lib/api/piloto'
 import {
   MODOS_DEL_PILOTO,
   fetchPilotoGobierno,
+  fetchPilotoModosPropios,
   putPilotoGobierno,
+  putPilotoModoPropio,
   type GobiernoItem,
+  type PilotoModosPropiosResponse,
 } from '@/lib/api/piloto'
+import { PilotoModoPropio } from '@/components/inmobiliaria/piloto/PilotoModoPropio'
 import { useAuth } from '@/lib/auth'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
@@ -101,6 +105,9 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   // cuánta correa. Optimista con rollback, como el modo.
   const [gobierno, setGobierno] = useState<Map<string, GobiernoItem>>(new Map())
   const [gobiernoBusy, setGobiernoBusy] = useState<string | null>(null)
+  // Ola E: los procesos con perilla propia (se cargan con el gobierno, al abrir).
+  const [modosPropios, setModosPropios] = useState<PilotoModosPropiosResponse | null>(null)
+  const [modoPropioBusy, setModoPropioBusy] = useState<string | null>(null)
   useEffect(() => {
     if (!abierto || !agency?.id) return
     const controller = new AbortController()
@@ -108,8 +115,42 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
       if (controller.signal.aborted || !r.ok || !r.data) return
       setGobierno(new Map(r.data.agentes.map((a) => [a.agente, a])))
     })
+    // Ola E (03-10-2026): los procesos con perilla PROPIA (hoy, el alias de la
+    // conciliación). Un micro viejo no los tiene: la lista queda vacía.
+    void fetchPilotoModosPropios(agency.id, controller.signal).then((r) => {
+      if (controller.signal.aborted || !r.ok || !r.data) return
+      setModosPropios(r.data)
+    })
     return () => controller.abort()
   }, [abierto, agency?.id])
+
+  // ── La perilla PROPIA de un proceso (ola E, Nico C2-IA Q5) ──────────────
+  const cambiarModoPropio = async (procesoId: string, modo: AutonomiaModo) => {
+    if (!agency?.id || !modosPropios) return
+    const previa = modosPropios
+    setModoPropioBusy(procesoId)
+    setModosPropios({
+      ...modosPropios,
+      procesos: modosPropios.procesos.map((p) => (p.id === procesoId ? { ...p, modo } : p)),
+    })
+    const res = await putPilotoModoPropio(agency.id, procesoId, modo)
+    setModoPropioBusy(null)
+    if (res.ok && res.data) {
+      const guardado = res.data
+      setModosPropios((cur) =>
+        cur ? { ...cur, procesos: cur.procesos.map((p) => (p.id === procesoId ? guardado : p)) } : cur,
+      )
+      toast.success(`«${guardado.nombre}» quedó en ${t(`inmobiliaria.piloto.autonomia.modo.${modo}`).toLowerCase()}.`)
+    } else {
+      setModosPropios(previa)
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo cambiar el modo de este proceso.',
+          accion: 'cambiar el modo de este proceso',
+        }),
+      )
+    }
+  }
 
   const cambiarCorre = async (agente: string, habilitado: boolean) => {
     if (!agency?.id) return
@@ -364,6 +405,22 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                     ))}
                   </ul>
                 )}
+
+                {/* Ola E: los procesos de este agente con perilla PROPIA (no
+                    los mueve el modo de arriba). */}
+                {(modosPropios?.procesos ?? [])
+                  .filter((p) => p.agente === row.agente)
+                  .map((p) => (
+                    <PilotoModoPropio
+                      key={p.id}
+                      proceso={p}
+                      puedeEditar={isAdmin && modosPropios?.puedeEditar === true}
+                      guardable={modosPropios?.guardable ?? null}
+                      porQueNo={modosPropios?.porQueNo ?? null}
+                      ocupado={modoPropioBusy === p.id}
+                      onCambiar={(modo) => void cambiarModoPropio(p.id, modo)}
+                    />
+                  ))}
               </div>
             )
           })}

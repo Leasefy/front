@@ -11,6 +11,12 @@
  * gastos bancarios y 28150505 para la retención). Sin cuenta, la diferencia
  * aprobada NO se asienta (nunca a una cuenta adivinada) y queda «por
  * asentar»: el botón la asienta cuando ya hay cuenta.
+ *
+ * 🔴 Seguimiento 6 («"Asentarlas" no reprocesaba las salidas»): «por asentar»
+ * cuenta también el 4×1000 y las comisiones conciliados como salida, y los
+ * gastos del banco del extracto que las reglas de las salidas reconocen
+ * seguros y siguen sin conciliar se ofrecen en el mismo clic: el diálogo dice
+ * cuántos y cuánto, y sólo se concilian si la persona lo deja marcado.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -23,6 +29,15 @@ import { SelectorDeCuenta } from '@/components/contabilidad/SelectorDeCuenta';
 import { useCuentas } from '@/components/contabilidad/use-cuentas';
 import { usePuedeEscribir } from '@/components/contabilidad/use-puede-escribir';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -32,11 +47,42 @@ import {
   type CuentasDeLasDiferencias as Datos,
   type DiferenciasPorAsentar,
   type EventoDeDiferencia,
+  type ResultadoDelReproceso,
 } from '@/lib/api/cuentas-de-las-diferencias';
 import { EsqueletoDeSeccion } from './piezas';
 
 function plata(cop: number): string {
   return `$${Math.round(cop).toLocaleString('es-CO')}`;
+}
+
+/** Lo que dice el toast después de «Asentarlas» (seguimiento 6). */
+export function frasesDelReproceso(r: ResultadoDelReproceso): { bien: string[]; mal: string[] } {
+  const bien: string[] = [];
+  const mal: string[] = [];
+  const g = r.gastosDelBanco;
+  if (g && g.conciliados > 0) {
+    bien.push(
+      g.conciliados === 1
+        ? `Se concilió 1 gasto del banco del extracto (${plata(g.totalCop)}).`
+        : `Se conciliaron ${g.conciliados} gastos del banco del extracto (${plata(g.totalCop)}).`,
+    );
+  }
+  if (g && g.yaNoSonSeguros > 0) {
+    mal.push(
+      g.yaNoSonSeguros === 1
+        ? '1 gasto del banco ya no era seguro: sigue pendiente en el extracto.'
+        : `${g.yaNoSonSeguros} gastos del banco ya no eran seguros: siguen pendientes en el extracto.`,
+    );
+  }
+  if (r.asentadas > 0) {
+    bien.push(r.asentadas === 1 ? 'Se asentó 1 diferencia.' : `Se asentaron ${r.asentadas} diferencias.`);
+  }
+  if (r.sinAsentar > 0 || (r.motivos.length > 0 && r.asentadas === 0 && !(g && g.conciliados > 0))) {
+    const cuantas =
+      r.sinAsentar > 0 ? (r.sinAsentar === 1 ? 'Quedó 1 sin asentar' : `Quedaron ${r.sinAsentar} sin asentar`) : 'No se pudo';
+    mal.push(`${cuantas}: ${r.motivos.join(' · ')}`);
+  }
+  return { bien, mal };
 }
 
 export function CuentasDeLasDiferencias() {
@@ -46,6 +92,9 @@ export function CuentasDeLasDiferencias() {
   const [error, setError] = useState<unknown>(null);
   const [guardando, setGuardando] = useState<EventoDeDiferencia | null>(null);
   const [asentando, setAsentando] = useState(false);
+  /** El diálogo de «Asentarlas» cuando hay gastos del banco del extracto que ofrecer. */
+  const [confirmando, setConfirmando] = useState(false);
+  const [conciliarLosGastos, setConciliarLosGastos] = useState(true);
   const { cuentas } = useCuentas();
   const escritura = usePuedeEscribir();
   const aparecer = useAparecer();
@@ -90,20 +139,29 @@ export function CuentasDeLasDiferencias() {
     }
   }
 
-  async function asentarLasPendientes() {
+  const gastos = porAsentar?.gastosDelExtracto ?? null;
+  const hayGastos = !!gastos && gastos.cantidad > 0;
+
+  /** Con gastos del banco que ofrecer, primero el diálogo; si no, asienta de una. */
+  function alApretarAsentarlas() {
+    if (hayGastos) {
+      setConciliarLosGastos(gastos!.puedeConciliar);
+      setConfirmando(true);
+      return;
+    }
+    void asentarLasPendientes(false);
+  }
+
+  async function asentarLasPendientes(conLosGastos: boolean) {
     setAsentando(true);
     try {
-      const r = await cuentasDeLasDiferenciasApi.reprocesar();
-      if (r.asentadas > 0) {
-        toast.success(
-          r.asentadas === 1 ? 'Se asentó 1 diferencia.' : `Se asentaron ${r.asentadas} diferencias.`,
-        );
-      }
-      if (r.sinAsentar > 0) {
-        toast.error(
-          `${r.sinAsentar === 1 ? 'Quedó 1 sin asentar' : `Quedaron ${r.sinAsentar} sin asentar`}: ${r.motivos.join(' · ')}`,
-        );
-      }
+      const r = await cuentasDeLasDiferenciasApi.reprocesar(
+        conLosGastos && gastos && gastos.puedeConciliar ? gastos : null,
+      );
+      const { bien, mal } = frasesDelReproceso(r);
+      if (bien.length > 0) toast.success(bien.join(' '));
+      if (mal.length > 0) toast.error(mal.join(' '));
+      setConfirmando(false);
       setPorAsentar(await cuentasDeLasDiferenciasApi.porAsentar().catch(() => null));
     } catch (e) {
       toast.error(
@@ -209,24 +267,39 @@ export function CuentasDeLasDiferencias() {
             )}
 
             <AnimatePresence initial={false}>
-              {porAsentar && porAsentar.total > 0 && (
+              {porAsentar && (porAsentar.total > 0 || hayGastos) && (
                 <motion.div
                   key="por-asentar"
                   {...aparecer}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-warning bg-warning-soft px-4 py-3"
                   data-testid="diferencias-por-asentar"
                 >
-                  <p className="text-body-sm text-fg">
-                    {porAsentar.total === 1
-                      ? `1 diferencia aprobada (${plata(porAsentar.valorCop)}) no tiene asiento todavía.`
-                      : `${porAsentar.total} diferencias aprobadas (${plata(porAsentar.valorCop)}) no tienen asiento todavía.`}
-                  </p>
+                  <div className="space-y-1">
+                    {porAsentar.total > 0 && (
+                      <p className="text-body-sm text-fg">
+                        {porAsentar.total === 1
+                          ? `1 diferencia aprobada (${plata(porAsentar.valorCop)}) no tiene asiento todavía.`
+                          : `${porAsentar.total} diferencias aprobadas (${plata(porAsentar.valorCop)}) no tienen asiento todavía.`}
+                        {(porAsentar.deLasSalidas?.total ?? 0) > 0 &&
+                          (porAsentar.deLasSalidas!.total === porAsentar.total
+                            ? ' Son gastos del banco conciliados como salidas (4×1000 y comisiones).'
+                            : ` ${porAsentar.deLasSalidas!.total} son gastos del banco conciliados como salidas (4×1000 y comisiones).`)}
+                      </p>
+                    )}
+                    {hayGastos && (
+                      <p className="text-body-sm text-fg" data-testid="gastos-del-extracto">
+                        {gastos!.cantidad === 1
+                          ? `En el extracto hay 1 gasto del banco (${plata(gastos!.totalCop)}) que se reconoce solo y sigue sin conciliar.`
+                          : `En el extracto hay ${gastos!.cantidad} gastos del banco (${plata(gastos!.totalCop)}) que se reconocen solos y siguen sin conciliar.`}
+                      </p>
+                    )}
+                  </div>
                   <Button
                     size="sm"
                     hideArrow
                     isLoading={asentando}
                     disabled={!escritura.puede || !datos.disponible}
-                    onClick={() => void asentarLasPendientes()}
+                    onClick={alApretarAsentarlas}
                     data-testid="asentar-las-pendientes"
                   >
                     Asentarlas
@@ -234,6 +307,75 @@ export function CuentasDeLasDiferencias() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <Dialog open={confirmando} onOpenChange={(v) => !v && !asentando && setConfirmando(false)}>
+              <DialogContent variant="confirm" icon={<Bank weight="bold" />} data-testid="dialogo-asentarlas">
+                <DialogHeader>
+                  <DialogTitle>Asentar lo que falta</DialogTitle>
+                  <DialogDescription>
+                    {porAsentar && porAsentar.total > 0
+                      ? porAsentar.total === 1
+                        ? `Se asienta 1 diferencia aprobada (${plata(porAsentar.valorCop)}).`
+                        : `Se asientan ${porAsentar.total} diferencias aprobadas (${plata(porAsentar.valorCop)}).`
+                      : 'No hay diferencias aprobadas sin asiento.'}
+                  </DialogDescription>
+                </DialogHeader>
+                {gastos && hayGastos && (
+                  <div className="space-y-2">
+                    {gastos.puedeConciliar ? (
+                      <label className="flex items-start gap-2 text-body-sm text-fg">
+                        <Checkbox
+                          checked={conciliarLosGastos}
+                          onCheckedChange={(v) => setConciliarLosGastos(v === true)}
+                          data-testid="conciliar-los-gastos"
+                        />
+                        <span>
+                          También conciliar {gastos.cantidad === 1 ? 'el gasto del banco' : `los ${gastos.cantidad} gastos del banco`}{' '}
+                          del extracto ({plata(gastos.totalCop)}) y asentarlos. Sólo los que siguen siendo seguros: el
+                          4×1000 y las comisiones que el banco escribe con su nombre.
+                        </span>
+                      </label>
+                    ) : (
+                      <p className="text-body-sm text-fg-muted" data-testid="gastos-sin-permiso">
+                        {gastos.porQueNo ?? 'No puedes conciliar los gastos del banco del extracto.'}
+                      </p>
+                    )}
+                    <ul
+                      className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border p-2"
+                      aria-label="Los gastos del banco del extracto"
+                    >
+                      {gastos.salidas.map((g) => (
+                        <li key={g.movimientoId} className="flex items-start justify-between gap-3 text-body-sm">
+                          <span className="min-w-0">
+                            <span className="block truncate text-fg" title={g.descripcion}>
+                              {g.descripcion}
+                            </span>
+                            <span className="block text-caption text-fg-muted">
+                              {g.fecha} · {g.etiqueta}
+                            </span>
+                          </span>
+                          <span className="shrink-0 tabular-nums text-fg">{plata(g.valorCop)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="ghost" hideArrow onClick={() => setConfirmando(false)} disabled={asentando}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    hideArrow
+                    isLoading={asentando}
+                    disabled={!(porAsentar && porAsentar.total > 0) && !(conciliarLosGastos && gastos?.puedeConciliar)}
+                    onClick={() => void asentarLasPendientes(conciliarLosGastos)}
+                    data-testid="confirmar-asentarlas"
+                  >
+                    {conciliarLosGastos && gastos?.puedeConciliar ? 'Conciliar y asentar' : 'Asentar'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         ) : null}
       </EstadoDeDatos>

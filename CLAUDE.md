@@ -446,6 +446,42 @@ API en `src/lib/api/cierre-de-conciliacion.ts`; lo puro (exportar, leer la relac
 - **Configuración → Costos de la plata** (`ConciliacionCierreYEfectivo.tsx`): días de la alerta, el interruptor del efectivo y
   la cuenta contable (grupo 11) de cada cuenta bancaria.
 
+## Conciliación, seguimiento 6 (ola E, E3; 03-10-2026)
+
+- **«Conciliar las salidas seguras» con confirmación** (Nico, C2-SALIDAS Q3; `SalidasDelExtracto.tsx`): el diálogo pide
+  `salidasDelExtractoApi.seguras()` y muestra cuántas, cuánto y cuáles; «Conciliar N salidas» manda ESA lista
+  (`aplicarSeguras(vista)`). Sin seguras / sin migración / sin respuesta: lo dice y el botón queda apagado.
+- **«Asentarlas»** (`CuentasDeLasDiferencias.tsx`): dice cuántas por asentar vienen de las salidas y los gastos del banco del
+  extracto que se reconocen solos; con gastos, un diálogo con la lista y la casilla «También conciliar…» (marcada si la
+  persona tiene `cobros:create`; si no, el porqué). `reprocesar(gastos | null)`.
+- **El cajón del movimiento** (`LoQueProponeElAgente.tsx`, botón «Lo que propone el agente» en cada línea pendiente): lee
+  `GET {micro}/…/movimientos/{id}/agente` SÓLO al abrir (`src/lib/api/agente-de-conciliacion.ts`); «Por el alias» con
+  cuántas veces se confirmó, las salidas que propone (el gasto del banco se concilia por la ruta del back; un giro o egreso,
+  en la fila), «No es esta» / «No es esta persona». 409 = agente apagado; 404 = micro sin la ruta.
+- **Egresos elige la salida del extracto** (`ElegirLaSalidaDelExtracto.tsx`, API `src/lib/api/salidas-del-egreso.ts`): radios
+  con búsqueda (pausa de 300 ms), primero lo que calza con el neto. Ya no se teclea el id.
+- **Configuración → cuenta contable de cada cuenta bancaria**: ahí se asientan los recibos conciliados desde su extracto; si la
+  cuenta es mayor o está inactiva, lo dice (`porQueNoAsientaLosRecibos`).
+- ⚠ Las rutas nuevas del back (`salidas/seguras`, `egresos/:id/salidas-del-extracto`) no están en `rutas-del-back.json`
+  todavía: las llaman archivos que el guardián no barre (no son `*.service.ts`); regenerarlo con el back de esta ola.
+
+## /admin/recaudo-en-linea: el reporte de Wompi y las liquidaciones de Leasefy (ola E, E2; 03-10-2026)
+
+Nico (C2-AGREGADOR Q3/Q4): Leasefy recauda en SU cuenta de Wompi y le gira a cada inmobiliaria con una liquidación.
+Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente `src/lib/admin/recaudo-en-linea.ts`
+(back `src/admin/resources/recaudo-en-linea/`). Tres pestañas (`MotionIndicator` + `CrossFade`):
+- **Liquidaciones**: filtros inmobiliaria / fecha del giro / estado (`generada | girada | conciliada`); cada una se abre
+  (`Collapse`) con sus pagos y lo descontado TAL COMO VINO; «Descargar Excel/PDF» (`src/lib/admin/documento-de-la-liquidacion.ts`,
+  `xlsx`/`jspdf` perezosos, sale del detalle del back; en el PDF el menos es «-»: Helvetica no trae «−»); «Marcar como
+  girada» con confirmación, día (no futuro) y comprobante. **Generar liquidaciones** (`GenerarLiquidaciones.tsx`): rango +
+  fecha del giro + «sólo lo que Wompi ya desembolsó» (marcado), vista previa por inmobiliaria con lo que queda FUERA y su
+  frase; un descuento de Leasefy (concepto + valor, tal como viene) obliga a actualizar la vista previa antes de generar.
+- 🔴 **«Frecuencia del giro: por definir»** se ve siempre arriba (`FRECUENCIA_POR_DEFINIR`); no se inventa una.
+- **Reporte de Wompi**: el CSV (tope 10 MB, como el back) va a la vista previa; las frenadas se listan con su frase;
+  «Importar N» manda sólo lo legible (idempotente).
+- **Cuadre Wompi → Leasefy**: totales, tabla por desembolso y diferencias marcadas.
+- Sin la migración del agregador lo dice y no pide nada más; sin la del giro, todo menos «girada».
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

@@ -27,7 +27,9 @@ import type { Egreso, LoteDeEgreso } from '@/lib/api/gastos.service';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { gastos, escrituraMock, cambioMock, toastMock } = vi.hoisted(() => ({
+const { gastos, escrituraMock, cambioMock, toastMock, salidasDelEgreso } = vi.hoisted(() => ({
+  // Seguimiento 6: la salida del extracto se elige de una lista (ya no se teclea el id).
+  salidasDelEgreso: { listar: vi.fn() },
   gastos: {
     egresos: {
       listar: vi.fn(),
@@ -75,6 +77,7 @@ vi.mock('../use-puede-escribir', async () => {
   };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+vi.mock('@/lib/api/salidas-del-egreso', () => ({ salidasDelEgresoApi: salidasDelEgreso }));
 vi.mock('@/lib/i18n', async () => {
   const { t } = await import('@/lib/i18n/i18n-test-stub');
   return {
@@ -553,6 +556,49 @@ describe('conciliación y comprobante', () => {
     const boton = q('anular-egreso-e1') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
     expect(q('anular-egreso-e1-motivo')!.textContent).toContain('Un egreso pagado no se anula');
+  });
+
+  /**
+   * 🔴 Seguimiento 6 (pendiente técnico de las salidas): conciliar ya no pide
+   * el id del movimiento a mano: se elige la salida de la lista del extracto
+   * (primero lo que calza con el neto) y eso es lo que viaja.
+   */
+  it('🔴 conciliar: se ELIGE la salida del extracto de la lista y viaja su id (sin teclearlo)', async () => {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [egreso({ id: 'e1', estado: 'PAGADO', numero: 87, movimientoBancarioId: null })],
+    });
+    salidasDelEgreso.listar.mockResolvedValue({
+      egreso: { id: 'e1', netoCop: 462_960, fecha: '2026-09-10', beneficiario: 'Ferretería El Tornillo SAS' },
+      sePuedeConciliar: true,
+      porQueNo: null,
+      total: 2,
+      salidas: [
+        { id: 'mb-calza', fecha: '2026-09-11', descripcion: 'PAGO PROVEEDOR FERRETERIA', referencia: null, valorCop: 462_960, calza: true, dias: 1, cuenta: { id: 'c1', nombre: 'Ahorros Bancolombia •••• 6789' } },
+        { id: 'mb-otra', fecha: '2026-09-12', descripcion: 'PAGO ABOGADO', referencia: null, valorCop: 900_000, calza: false, dias: 2, cuenta: null },
+      ],
+    });
+    gastos.egresos.conciliar.mockResolvedValue({});
+    await pintar();
+    await act(async () => (q('conciliar-e1') as HTMLButtonElement).click());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(salidasDelEgreso.listar).toHaveBeenCalledWith('e1', '');
+    expect(q('movimiento-bancario')).toBeNull();
+    expect(q('salida-del-egreso-mb-calza')!.textContent).toContain('Calza con el neto');
+    expect((q('confirmar-conciliacion') as HTMLButtonElement).disabled).toBe(true);
+    const radio = q('salida-del-egreso-mb-calza')!.querySelector('input[type="radio"]') as HTMLInputElement;
+    await act(async () => radio.click());
+    expect((q('confirmar-conciliacion') as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      (q('confirmar-conciliacion') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(gastos.egresos.conciliar).toHaveBeenCalledWith('e1', 'mb-calza');
   });
 
   it('un egreso pagado dice si quedó conciliado o no', async () => {

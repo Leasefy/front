@@ -350,7 +350,7 @@ describe('ExtractoBancario — pendientes', () => {
     expect(api.listar).toHaveBeenCalledTimes(2);
   });
 
-  it('una salida no ofrece candidatos ni conciliar, sólo ignorar', async () => {
+  it('una salida no ofrece cuotas ni conciliar contra un cobro: ignorar y ver lo que propone el agente', async () => {
     api.listar.mockResolvedValue({
       data: [movimiento({ id: 'm-s', valorCop: -45000, descripcion: 'CUOTA DE MANEJO', candidatos: [] })],
       total: 1,
@@ -361,7 +361,11 @@ describe('ExtractoBancario — pendientes', () => {
     const fila = $('[data-testid="movimiento-m-s"]');
     expect(fila.textContent).toContain('Salida');
     expect(fila.textContent).toContain('−$ 45.000');
-    expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Ignorar']);
+    // Seguimiento 6: el cajón del movimiento con lo que propone el agente (las salidas también).
+    expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([
+      'Ignorar',
+      'Lo que propone el agente',
+    ]);
   });
 
   it('sin permiso de crear no se puede conciliar ni cargar; sin editar no se ignora', async () => {

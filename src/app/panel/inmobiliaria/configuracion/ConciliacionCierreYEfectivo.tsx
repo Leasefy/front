@@ -9,7 +9,10 @@
  *     transferencia y pasarela»); prendido, la planilla de caja del día entra
  *     a la conciliación;
  *   · P9 — la cuenta contable (PUC, grupo 11) de cada cuenta bancaria: de ahí
- *     sale el «saldo en libros» del cierre del mes.
+ *     sale el «saldo en libros» del cierre del mes. 🔴 Seguimiento 6 (Nico,
+ *     D-CONC 2 a): los recibos conciliados desde el extracto de esa cuenta se
+ *     asientan en ella (si admite movimientos); si no, en la de bancos del
+ *     mapeo, y aquí se dice.
  *
  * Sin la migración del back, se dice por qué y no se puede guardar.
  */
@@ -203,9 +206,10 @@ export function ConciliacionCierreYEfectivo() {
           <h3 className="text-body font-semibold text-fg">Cuenta contable de cada cuenta bancaria</h3>
         </div>
         <p className="text-caption text-fg-muted">
-          De aquí sale el «saldo en libros» del cierre del mes.
+          De aquí sale el «saldo en libros» del cierre del mes, y aquí se asientan los recibos que se concilian desde
+          el extracto de esa cuenta (y lo que el banco cobra en ella).
           {contables.cuentaDeLosRecibos
-            ? ` Hoy los recibos que emite Leasefy se asientan en ${contables.cuentaDeLosRecibos.codigo} ${contables.cuentaDeLosRecibos.nombre}.`
+            ? ` Sin cuenta contable, van a ${contables.cuentaDeLosRecibos.codigo} ${contables.cuentaDeLosRecibos.nombre}, la de bancos del mapeo.`
             : ''}
         </p>
         {!contables.disponible && <p className="text-caption text-fg-muted">{contables.motivo}</p>}
@@ -232,6 +236,16 @@ export function ConciliacionCierreYEfectivo() {
                   {c.compartida && (
                     <motion.p key="compartida" {...aparecer} className="text-caption text-warning sm:basis-full">
                       Esta cuenta contable también recibe lo de otra cuenta bancaria: el cierre no la compara con los libros.
+                    </motion.p>
+                  )}
+                  {c.asientaLosRecibos === false && c.porQueNoAsientaLosRecibos && c.activa && (
+                    <motion.p
+                      key="sin-recibos"
+                      {...aparecer}
+                      className="text-caption text-fg-muted sm:basis-full"
+                      data-testid={`cuenta-contable-sin-recibos-${c.id}`}
+                    >
+                      {c.porQueNoAsientaLosRecibos}
                     </motion.p>
                   )}
                 </AnimatePresence>

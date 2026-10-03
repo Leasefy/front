@@ -107,6 +107,8 @@ import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
+// Seguimiento 6: la salida del extracto se ELIGE de una lista con búsqueda (ya no se teclea el id).
+import { ElegirLaSalidaDelExtracto } from './ElegirLaSalidaDelExtracto';
 import { APROBADO_POR_TI, notaDelLote } from '@/lib/doble-control/el-administrador';
 import { useI18n } from '@/lib/i18n';
 
@@ -1032,22 +1034,24 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           <AlertDialogHeader>
             <AlertDialogTitle>Conciliar contra el extracto</AlertDialogTitle>
             <AlertDialogDescription>
-              Amarra este egreso a la salida del extracto bancario, para que el saldo del banco en el
-              libro y el del banco de verdad digan lo mismo.
+              Elige la salida del extracto bancario que pagó este egreso, para que el saldo del banco en
+              el libro y el del banco de verdad digan lo mismo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="movimiento-bancario">Id del movimiento del extracto</Label>
-            <Input
-              id="movimiento-bancario"
-              value={movimientoBancarioId}
-              onChange={(e) => {
-                olvidar('movimientoBancarioId');
-                setMovimientoBancarioId(e.target.value);
-              }}
-              data-testid="movimiento-bancario"
-              {...describir('movimientoBancarioId')}
-            />
+            {conciliando && (
+              <ElegirLaSalidaDelExtracto
+                egresoId={conciliando.id}
+                elegido={movimientoBancarioId}
+                onElegir={(id) => {
+                  olvidar('movimientoBancarioId');
+                  setMovimientoBancarioId(id);
+                }}
+                idDeLaBusqueda={ID_DEL_CAMPO.movimientoBancarioId}
+                invalido={!!errorDelCampo.movimientoBancarioId}
+                describirError={errorDelCampo.movimientoBancarioId ? 'movimiento-bancario-error' : undefined}
+              />
+            )}
             <ErrorDelCampo
               id="movimiento-bancario-error"
               mensaje={errorDelCampo.movimientoBancarioId}

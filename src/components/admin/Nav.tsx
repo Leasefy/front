@@ -43,6 +43,7 @@ export const NAV_ITEMS = [
   { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
   { href: '/admin/modulos-pagos', label: 'Módulos', hint: 'nómina · qué compró cada una', code: '34' },
   { href: '/admin/exogena', label: 'Exógena', hint: 'conceptos por año · publicar', code: '34' },
+  { href: '/admin/recaudo-en-linea', label: 'Recaudo en línea', hint: 'wompi · liquidaciones', code: '35' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {

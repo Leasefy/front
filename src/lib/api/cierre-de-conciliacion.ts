@@ -204,6 +204,13 @@ export interface CuentasContables {
     activa: boolean;
     cuentaPuc: { id: string; codigo: string; nombre: string } | null;
     compartida: boolean;
+    /**
+     * 🔴 Seguimiento 6 (Nico, D-CONC 2 a): ¿los recibos conciliados desde el
+     * extracto de esta cuenta se asientan en SU cuenta contable? (activa e
+     * imputable). Un back viejo no lo manda.
+     */
+    asientaLosRecibos?: boolean;
+    porQueNoAsientaLosRecibos?: string | null;
   }[];
 }
 

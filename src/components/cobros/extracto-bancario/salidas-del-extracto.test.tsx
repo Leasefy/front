@@ -18,6 +18,7 @@ const { api, toastMock, permisos } = vi.hoisted(() => ({
     propuestas: vi.fn(),
     avisos: vi.fn(),
     conciliar: vi.fn(),
+    seguras: vi.fn(),
     aplicarSeguras: vi.fn(),
     desvincular: vi.fn(),
   },
@@ -41,6 +42,7 @@ import { Table, TableBody } from '@/components/ui/table';
 import { hayQuePreguntarPorLaLinea } from '@/lib/api/salidas-del-extracto';
 import { MovimientoFila } from './MovimientoFila';
 import { AvisosDeLasSalidas, SalidasDeLaPagina } from './SalidasDelExtracto';
+import { plata } from './formato';
 
 function movimiento(sobre: Partial<MovimientoBancario> = {}): MovimientoBancario {
   return {
@@ -279,11 +281,95 @@ describe('🔴 la tarjeta de las salidas', () => {
     await act(async () => {});
     expect(q('[data-testid="aviso-NO_SALIO-g-1"]')!.textContent).toContain('No aparece en el extracto');
     expect(q('[data-testid="aviso-SALIO_DOS_VECES-g-2"]')!.textContent).toContain('Salió dos veces');
-    api.aplicarSeguras.mockResolvedValue({ aplicadas: 3, errores: [], quedanParaUnaPersona: 2 });
+    api.seguras.mockResolvedValue(VISTA);
+    api.aplicarSeguras.mockResolvedValue({ aplicadas: 2, totalCop: 14_500, errores: [], yaNoSonSeguras: [], quedanParaUnaPersona: 2 });
     await act(async () => q('[data-testid="conciliar-salidas-seguras"]')!.click());
+    await act(async () => {});
     await act(async () => (document.querySelector('[data-testid="confirmar-salidas-seguras"]') as HTMLButtonElement).click());
     expect(api.aplicarSeguras).toHaveBeenCalledTimes(1);
-    expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining('Se conciliaron 3 salidas seguras'));
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringContaining('Se conciliaron 2 salidas seguras'));
     expect(onCambio).toHaveBeenCalled();
+  });
+});
+
+const VISTA = {
+  sePuedeAplicar: true,
+  cantidad: 2,
+  totalCop: 14_500,
+  quedanParaUnaPersona: 3,
+  desde: '2026-06-01',
+  salidas: [
+    { movimientoId: 'g-1', fecha: '2026-09-14', descripcion: 'GMF 4X1000', valorCop: 6_000, tipo: 'GASTO_BANCARIO', clase: 'GMF_4X1000', etiqueta: '4×1000 (gravamen a los movimientos financieros)', regla: { id: 'x', nombre: 'El 4×1000 con su nombre en la línea' } },
+    { movimientoId: 'c-1', fecha: '2026-09-15', descripcion: 'COMISION TRANSFERENCIA ACH', valorCop: 8_500, tipo: 'GASTO_BANCARIO', clase: 'COMISION', etiqueta: 'Comisión del banco', regla: { id: 'y', nombre: 'Una comisión' } },
+  ],
+};
+
+/**
+ * 🔴 Seguimiento 6 (Nico, C2-SALIDAS Q3): «Conciliar las salidas seguras»
+ * también lo aprieta una persona, CON CONFIRMACIÓN: el diálogo dice cuántas
+ * son, cuánto suman y cuáles, y confirmar manda ESA lista.
+ */
+describe('🔴 «Conciliar las salidas seguras» con confirmación: cuántas, cuánto y cuáles', () => {
+  const abrir = async () => {
+    await act(async () => {
+      raiz.render(<AvisosDeLasSalidas puedeConciliar onCambio={vi.fn()} />);
+    });
+    await act(async () => {});
+    await act(async () => q('[data-testid="conciliar-salidas-seguras"]')!.click());
+    await act(async () => {});
+  };
+  const enElDialogo = (sel: string) => document.querySelector(sel) as HTMLElement | null;
+
+  it('el diálogo pregunta al back y muestra cuántas son, cuánto suman y cuáles', async () => {
+    api.seguras.mockResolvedValue(VISTA);
+    await abrir();
+    expect(api.seguras).toHaveBeenCalledTimes(1);
+    expect(enElDialogo('[data-testid="seguras-resumen"]')!.textContent).toBe(`2 salidas por ${plata(14_500)}`);
+    expect(enElDialogo('[data-testid="segura-g-1"]')!.textContent).toContain('GMF 4X1000');
+    expect(enElDialogo('[data-testid="segura-c-1"]')!.textContent).toContain('Comisión del banco');
+    expect(enElDialogo('[data-testid="confirmar-salidas-seguras"]')!.textContent).toContain('Conciliar 2 salidas');
+    expect(document.body.textContent).toContain('Quedan 3 sin respuesta segura');
+  });
+
+  it('🔴 confirmar manda EXACTAMENTE lo que la persona vio, y el toast dice lo que ya no era seguro', async () => {
+    api.seguras.mockResolvedValue(VISTA);
+    api.aplicarSeguras.mockResolvedValue({
+      aplicadas: 1,
+      totalCop: 6_000,
+      errores: [],
+      yaNoSonSeguras: [{ movimientoId: 'c-1', mensaje: 'Ya no es segura' }],
+      quedanParaUnaPersona: 4,
+    });
+    await abrir();
+    await act(async () => enElDialogo('[data-testid="confirmar-salidas-seguras"]')!.click());
+    expect(api.aplicarSeguras).toHaveBeenCalledWith(VISTA);
+    const frase = toastMock.success.mock.calls[0][0] as string;
+    expect(frase).toContain(`Se concilió 1 salida segura por ${plata(6_000)}`);
+    expect(frase).toContain('1 ya no era segura');
+  });
+
+  it('sin salidas seguras: lo dice y «Conciliar» no se aprieta', async () => {
+    api.seguras.mockResolvedValue({ ...VISTA, cantidad: 0, totalCop: 0, salidas: [] });
+    await abrir();
+    expect(enElDialogo('[data-testid="seguras-ninguna"]')!.textContent).toContain('No hay salidas seguras');
+    expect((enElDialogo('[data-testid="confirmar-salidas-seguras"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('sin la migración del back: se ve cuántas hay, pero no se concilia', async () => {
+    api.seguras.mockResolvedValue({ ...VISTA, sePuedeAplicar: false });
+    await abrir();
+    expect(enElDialogo('[data-testid="seguras-sin-tabla"]')!.textContent).toContain('2 salidas');
+    expect((enElDialogo('[data-testid="confirmar-salidas-seguras"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('si no se pudo mirar, lo dice y deja volver a intentar (nunca concilia a ciegas)', async () => {
+    api.seguras.mockRejectedValueOnce(new Error('caído')).mockResolvedValueOnce(VISTA);
+    await abrir();
+    expect(enElDialogo('[data-testid="seguras-error"]')).not.toBeNull();
+    expect((enElDialogo('[data-testid="confirmar-salidas-seguras"]') as HTMLButtonElement).disabled).toBe(true);
+    const reintentar = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Volver a intentar')!;
+    await act(async () => reintentar.click());
+    await act(async () => {});
+    expect(enElDialogo('[data-testid="seguras-resumen"]')).not.toBeNull();
   });
 });

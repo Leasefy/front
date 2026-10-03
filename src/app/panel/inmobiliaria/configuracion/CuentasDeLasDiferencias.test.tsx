@@ -137,3 +137,84 @@ describe('las cuentas de las diferencias', () => {
     expect($('[data-testid="retencion-sin-liquidacion"]')).not.toBeNull();
   });
 });
+
+/**
+ * 🔴 Seguimiento 6 («"Asentarlas" no reprocesaba las salidas»): «por asentar»
+ * cuenta también los gastos del banco conciliados como salida, y los gastos del
+ * banco del extracto que se reconocen solos se ofrecen en el mismo clic, con
+ * un diálogo que dice cuántos y cuánto. Sólo se concilian si la persona los
+ * deja marcados (y puede).
+ */
+describe('🔴 «Asentarlas» también reprocesa las salidas', () => {
+  const GASTOS = {
+    cantidad: 2,
+    totalCop: 14_500,
+    puedeConciliar: true,
+    porQueNo: null,
+    salidas: [
+      { movimientoId: 'g-1', fecha: '2026-09-14', descripcion: 'GMF 4X1000', valorCop: 6_000, etiqueta: '4×1000' },
+      { movimientoId: 'c-1', fecha: '2026-09-15', descripcion: 'COMISION ACH', valorCop: 8_500, etiqueta: 'Comisión del banco' },
+    ],
+  };
+
+  it('dice cuántas de las por asentar vienen de las salidas', async () => {
+    api.porAsentar.mockResolvedValue({ total: 3, valorCop: 125_000, deLasSalidas: { total: 2, valorCop: 10_000 }, gastosDelExtracto: null });
+    await montar();
+    expect($('[data-testid="diferencias-por-asentar"]')?.textContent).toContain(
+      '2 son gastos del banco conciliados como salidas',
+    );
+  });
+
+  it('🔴 con gastos del banco del extracto: el diálogo dice cuántos y cuánto, y «Conciliar y asentar» los manda', async () => {
+    api.porAsentar
+      .mockResolvedValueOnce({ total: 1, valorCop: 4_000, deLasSalidas: { total: 1, valorCop: 4_000 }, gastosDelExtracto: GASTOS })
+      .mockResolvedValue({ total: 0, valorCop: 0, gastosDelExtracto: { ...GASTOS, cantidad: 0, totalCop: 0, salidas: [] } });
+    api.reprocesar.mockResolvedValue({
+      asentadas: 3,
+      sinAsentar: 0,
+      motivos: [],
+      gastosDelBanco: { conciliados: 2, totalCop: 14_500, yaNoSonSeguros: 0 },
+    });
+    await montar();
+    expect($('[data-testid="gastos-del-extracto"]')?.textContent).toContain('2 gastos del banco ($14.500)');
+    await act(async () => $('[data-testid="asentar-las-pendientes"]')!.click());
+    expect(api.reprocesar).not.toHaveBeenCalled();
+    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('Se asienta 1 diferencia aprobada ($4.000)');
+    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('GMF 4X1000');
+    expect($('[data-testid="confirmar-asentarlas"]')?.textContent).toBe('Conciliar y asentar');
+    await act(async () => $('[data-testid="confirmar-asentarlas"]')!.click());
+    await act(async () => {});
+    expect(api.reprocesar).toHaveBeenCalledWith(GASTOS);
+    expect(toastMock.success).toHaveBeenCalledWith(
+      'Se conciliaron 2 gastos del banco del extracto ($14.500). Se asentaron 3 diferencias.',
+    );
+  });
+
+  it('si la persona desmarca los gastos, sólo asienta', async () => {
+    api.porAsentar.mockResolvedValue({ total: 1, valorCop: 4_000, gastosDelExtracto: GASTOS });
+    api.reprocesar.mockResolvedValue({ asentadas: 1, sinAsentar: 0, motivos: [], gastosDelBanco: null });
+    await montar();
+    await act(async () => $('[data-testid="asentar-las-pendientes"]')!.click());
+    await act(async () => $('[data-testid="conciliar-los-gastos"]')!.click());
+    expect($('[data-testid="confirmar-asentarlas"]')?.textContent).toBe('Asentar');
+    await act(async () => $('[data-testid="confirmar-asentarlas"]')!.click());
+    await act(async () => {});
+    expect(api.reprocesar).toHaveBeenCalledWith(null);
+  });
+
+  it('sin el permiso de cobros: lo dice y no ofrece conciliar', async () => {
+    api.porAsentar.mockResolvedValue({
+      total: 1,
+      valorCop: 4_000,
+      gastosDelExtracto: { ...GASTOS, puedeConciliar: false, porQueNo: 'Conciliar los gastos del banco del extracto pide el permiso de cobros.' },
+    });
+    api.reprocesar.mockResolvedValue({ asentadas: 1, sinAsentar: 0, motivos: [], gastosDelBanco: null });
+    await montar();
+    await act(async () => $('[data-testid="asentar-las-pendientes"]')!.click());
+    expect($('[data-testid="gastos-sin-permiso"]')?.textContent).toContain('permiso de cobros');
+    expect($('[data-testid="conciliar-los-gastos"]')).toBeNull();
+    await act(async () => $('[data-testid="confirmar-asentarlas"]')!.click());
+    await act(async () => {});
+    expect(api.reprocesar).toHaveBeenCalledWith(null);
+  });
+});

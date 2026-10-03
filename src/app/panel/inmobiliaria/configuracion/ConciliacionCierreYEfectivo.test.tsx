@@ -67,6 +67,25 @@ describe('configuración de la conciliación (ola 3)', () => {
     expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/planilla de caja/));
   });
 
+  /** 🔴 Seguimiento 6 (Nico, D-CONC 2 a): cada recibo en la cuenta contable de SU cuenta bancaria. */
+  it('dice que los recibos del extracto de cada cuenta se asientan en su cuenta contable, y cuándo no se puede', async () => {
+    api.cuentasContables.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      cuentaDeLosRecibos: { id: 'p-gen', codigo: '111005', nombre: 'Bancos nacionales' },
+      cuentas: [
+        { id: 'c-1', nombre: 'Ahorros Bancolombia', numeroEnmascarado: '•••• 6789', banco: 'Bancolombia', activa: true, cuentaPuc: { id: 'p-1', codigo: '11100501', nombre: 'Bancolombia' }, compartida: false, asientaLosRecibos: true, porQueNoAsientaLosRecibos: null },
+        { id: 'c-2', nombre: 'Corriente Davivienda', numeroEnmascarado: null, banco: 'Davivienda', activa: true, cuentaPuc: { id: 'p-2', codigo: '1110', nombre: 'Bancos' }, compartida: false, asientaLosRecibos: false, porQueNoAsientaLosRecibos: 'La cuenta 1110 Bancos es una cuenta mayor: no admite movimientos, así que sus recibos se asientan en la de bancos del mapeo. Elige una subcuenta.' },
+      ],
+    });
+    await montar();
+    await act(async () => {});
+    expect(document.body.textContent).toContain('aquí se asientan los recibos que se concilian desde el extracto de esa cuenta');
+    expect(document.body.textContent).toContain('Sin cuenta contable, van a 111005 Bancos nacionales');
+    expect($('cuenta-contable-sin-recibos-c-1')).toBeNull();
+    expect($('cuenta-contable-sin-recibos-c-2')?.textContent).toContain('es una cuenta mayor');
+  });
+
   it('sin la migración: lo dice y no deja guardar', async () => {
     api.configuracion.mockResolvedValue({ disponible: false, diasDeAlerta: 30, efectivoActivo: false, porDefecto: true });
     await montar();

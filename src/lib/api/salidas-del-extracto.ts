@@ -8,7 +8,12 @@
  *     que habla de un reverso) y con qué quedó conciliada;
  *   · `GET avisos` → el giro que no salió o salió dos veces;
  *   · `POST movimientos/:id/conciliar` `{ tipo, destinoId?, clase? }`;
- *   · `POST aplicar-seguras` → todas las alta + únicas de un golpe (regla P7);
+ *   · `GET seguras` → cuántas salidas seguras hay, cuánto suman y cuáles (no
+ *     escribe nada: es lo que ve la persona ANTES de confirmar);
+ *   · `POST aplicar-seguras` `{ movimientoIds, cantidad, totalCop }` → concilia
+ *     de un golpe SÓLO lo que la persona vio y sigue siendo seguro (regla P7;
+ *     seguimiento 6, Nico C2-SALIDAS Q3: «también lo aprieta una persona, con
+ *     confirmación»);
  *   · `POST movimientos/:id/desvincular` `{ motivo }` (P11: sólo administrador o
  *     contador; la fila queda como bitácora).
  *
@@ -91,8 +96,35 @@ export interface PedidoDeSalida {
 
 export interface SalidasSegurasAplicadas {
   aplicadas: number;
+  /** Cuánto sumó lo que se concilió. */
+  totalCop?: number;
   errores: { movimientoId: string; mensaje: string }[];
+  /** Lo que la persona confirmó y ya no era seguro: queda en la tabla. */
+  yaNoSonSeguras?: { movimientoId: string; mensaje: string }[];
   quedanParaUnaPersona: number;
+}
+
+/** Una salida segura tal como la ve la persona en el diálogo. */
+export interface SalidaSeguraALaVista {
+  movimientoId: string;
+  fecha: string;
+  descripcion: string;
+  /** Lo que salió, en positivo. */
+  valorCop: number;
+  tipo: TipoDeSalida;
+  clase: ClaseDeGastoBancario | null;
+  etiqueta: string;
+  regla: { id: string; nombre: string };
+}
+
+export interface VistaPreviaDeLasSeguras {
+  /** `false` = falta la migración del back: se ve, no se concilia. */
+  sePuedeAplicar: boolean;
+  cantidad: number;
+  totalCop: number;
+  salidas: SalidaSeguraALaVista[];
+  quedanParaUnaPersona: number;
+  desde: string;
 }
 
 export const NOMBRE_DEL_GASTO: Record<ClaseDeGastoBancario, string> = {
@@ -133,8 +165,18 @@ export const salidasDelExtractoApi = {
     return res;
   },
 
-  async aplicarSeguras(): Promise<SalidasSegurasAplicadas> {
-    const res = await apiClient.post<SalidasSegurasAplicadas>(`${BASE}/aplicar-seguras`, {});
+  /** Lo que ve la persona antes de confirmar: cuántas, cuánto y cuáles. */
+  seguras(): Promise<VistaPreviaDeLasSeguras> {
+    return apiClient.get<VistaPreviaDeLasSeguras>(`${BASE}/seguras`);
+  },
+
+  /** Concilia SÓLO lo que la persona vio (el back vuelve a mirar que siga seguro). */
+  async aplicarSeguras(vista: Pick<VistaPreviaDeLasSeguras, 'salidas' | 'cantidad' | 'totalCop'>): Promise<SalidasSegurasAplicadas> {
+    const res = await apiClient.post<SalidasSegurasAplicadas>(`${BASE}/aplicar-seguras`, {
+      movimientoIds: vista.salidas.map((s) => s.movimientoId),
+      cantidad: vista.cantidad,
+      totalCop: Math.round(vista.totalCop),
+    });
     invalidar('cobros');
     return res;
   },

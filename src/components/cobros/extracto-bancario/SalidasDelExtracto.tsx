@@ -11,6 +11,12 @@
  *   · `AvisosDeLasSalidas` (tarjeta arriba de la tabla): el giro que no salió o
  *     que salió dos veces se AVISA, y «Conciliar las salidas seguras» concilia
  *     de un golpe lo `alta` + único (regla P7), con confirmación.
+ *
+ * 🔴 Seguimiento 6 (Nico, C2-SALIDAS Q3: «también lo aprieta una persona, con
+ * confirmación»): el diálogo primero pregunta al back CUÁLES son, cuántas y
+ * cuánto suman (`GET …/salidas/seguras`) y lo muestra; confirmar manda esa
+ * lista y el back concilia sólo lo que la persona vio y sigue siendo seguro.
+ * El clic queda en la bitácora con la persona.
  */
 
 import {
@@ -25,6 +31,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowsLeftRight, CheckCircle, Warning } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Dialog,
   DialogContent,
@@ -42,8 +49,10 @@ import {
   type AvisoDeSalida,
   type SalidaDeLaPagina,
   type SalidasDeLaPagina,
+  type VistaPreviaDeLasSeguras,
 } from '@/lib/api/salidas-del-extracto';
 import { useAparecer } from './cuentas-del-extracto';
+import { diaLegible, plata } from './formato';
 
 interface Contexto {
   datos: SalidasDeLaPagina | null;
@@ -116,6 +125,41 @@ export function useSalidaDeLaFila(id: string): {
 
 const MAXIMO_DE_AVISOS_A_LA_VISTA = 5;
 
+/** «1 salida» / «3 salidas». */
+function salidas(n: number): string {
+  return n === 1 ? '1 salida' : `${n} salidas`;
+}
+
+/** Lo que dice el toast después de conciliar de un golpe. */
+export function fraseDeLasSegurasAplicadas(r: {
+  aplicadas: number;
+  totalCop?: number;
+  yaNoSonSeguras?: { movimientoId: string }[];
+  quedanParaUnaPersona: number;
+}): string {
+  if (r.aplicadas === 0 && !(r.yaNoSonSeguras?.length ?? 0)) {
+    return 'No había salidas seguras para conciliar: las que quedan las decide una persona.';
+  }
+  const partes: string[] = [];
+  partes.push(
+    r.aplicadas === 0
+      ? 'No se concilió ninguna salida.'
+      : `${r.aplicadas === 1 ? 'Se concilió 1 salida segura' : `Se conciliaron ${r.aplicadas} salidas seguras`}${
+          r.totalCop ? ` por ${plata(r.totalCop)}` : ''
+        }.`,
+  );
+  const ya = r.yaNoSonSeguras?.length ?? 0;
+  if (ya > 0) {
+    partes.push(
+      ya === 1
+        ? '1 ya no era segura (alguien la tocó o apareció otra respuesta): sigue en la tabla.'
+        : `${ya} ya no eran seguras (alguien las tocó o apareció otra respuesta): siguen en la tabla.`,
+    );
+  }
+  if (r.quedanParaUnaPersona > 0) partes.push(`Quedan ${r.quedanParaUnaPersona} para revisar una por una.`);
+  return partes.join(' ');
+}
+
 /** La tarjeta de las salidas: los avisos y «Conciliar las salidas seguras». */
 export function AvisosDeLasSalidas({
   version = 0,
@@ -131,6 +175,9 @@ export function AvisosDeLasSalidas({
   const [confirmando, setConfirmando] = useState(false);
   const [aplicando, setAplicando] = useState(false);
   const [lecturas, setLecturas] = useState(0);
+  /** Lo que se le muestra a la persona antes de confirmar (`null` = mirando). */
+  const [vista, setVista] = useState<VistaPreviaDeLasSeguras | null>(null);
+  const [errorDeLaVista, setErrorDeLaVista] = useState<string | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -143,17 +190,32 @@ export function AvisosDeLasSalidas({
     };
   }, [version, lecturas]);
 
+  const mirarLasSeguras = useCallback(async () => {
+    setVista(null);
+    setErrorDeLaVista(null);
+    try {
+      setVista(await salidasDelExtractoApi.seguras());
+    } catch (e) {
+      setErrorDeLaVista(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo ver cuáles salidas son seguras.',
+          accion: 'ver las salidas seguras',
+        }),
+      );
+    }
+  }, []);
+
+  const abrir = () => {
+    setConfirmando(true);
+    void mirarLasSeguras();
+  };
+
   const aplicar = async () => {
+    if (!vista || vista.cantidad === 0) return;
     setAplicando(true);
     try {
-      const r = await salidasDelExtractoApi.aplicarSeguras();
-      toast.success(
-        r.aplicadas === 0
-          ? 'No había salidas seguras para conciliar: las que quedan las decide una persona.'
-          : `${r.aplicadas === 1 ? 'Se concilió 1 salida segura' : `Se conciliaron ${r.aplicadas} salidas seguras`}. ${
-              r.quedanParaUnaPersona > 0 ? `Quedan ${r.quedanParaUnaPersona} para revisar una por una.` : ''
-            }`.trim(),
-      );
+      const r = await salidasDelExtractoApi.aplicarSeguras(vista);
+      toast.success(fraseDeLasSegurasAplicadas(r));
       setConfirmando(false);
       setLecturas((n) => n + 1);
       onCambio();
@@ -194,7 +256,7 @@ export function AvisosDeLasSalidas({
             variant="secondary"
             hideArrow
             className="shrink-0"
-            onClick={() => setConfirmando(true)}
+            onClick={abrir}
             data-testid="conciliar-salidas-seguras"
           >
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
@@ -247,12 +309,82 @@ export function AvisosDeLasSalidas({
               toca: queda en la tabla para que lo decidas.
             </DialogDescription>
           </DialogHeader>
+          <AnimatePresence mode="wait" initial={false}>
+            {errorDeLaVista ? (
+              <motion.div key="error" {...aparecer} className="space-y-2" data-testid="seguras-error">
+                <p className="text-body-sm text-danger">{errorDeLaVista}</p>
+                <Button size="sm" variant="secondary" hideArrow onClick={() => void mirarLasSeguras()}>
+                  Volver a intentar
+                </Button>
+              </motion.div>
+            ) : !vista ? (
+              <motion.p
+                key="mirando"
+                {...aparecer}
+                className="flex items-center gap-2 text-body-sm text-fg-muted"
+                data-testid="seguras-mirando"
+              >
+                <Spinner size="sm" /> Mirando cuáles son seguras…
+              </motion.p>
+            ) : !vista.sePuedeAplicar ? (
+              <motion.p key="sin-tabla" {...aparecer} className="text-body-sm text-fg-muted" data-testid="seguras-sin-tabla">
+                Hay {salidas(vista.cantidad)} seguras, pero conciliarlas necesita una actualización de la base que
+                todavía no está. No se toca nada.
+              </motion.p>
+            ) : vista.cantidad === 0 ? (
+              <motion.p key="ninguna" {...aparecer} className="text-body-sm text-fg-muted" data-testid="seguras-ninguna">
+                No hay salidas seguras para conciliar.
+                {vista.quedanParaUnaPersona > 0
+                  ? ` Las ${vista.quedanParaUnaPersona} pendientes las decides una por una en la tabla.`
+                  : ''}
+              </motion.p>
+            ) : (
+              <motion.div key="lista" {...aparecer} className="space-y-2" data-testid="seguras-lista">
+                <p className="text-body font-medium text-fg" data-testid="seguras-resumen">
+                  {salidas(vista.cantidad)} por {plata(vista.totalCop)}
+                </p>
+                <ul
+                  className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border p-2"
+                  aria-label="Las salidas que se van a conciliar"
+                >
+                  {vista.salidas.map((x) => (
+                    <li
+                      key={x.movimientoId}
+                      className="flex items-start justify-between gap-3 text-body-sm"
+                      data-testid={`segura-${x.movimientoId}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-fg" title={x.descripcion}>
+                          {x.descripcion}
+                        </span>
+                        <span className="block text-caption text-fg-muted">
+                          {diaLegible(x.fecha)} · {x.etiqueta}
+                        </span>
+                      </span>
+                      <span className="shrink-0 tabular-nums text-fg">{plata(x.valorCop)}</span>
+                    </li>
+                  ))}
+                </ul>
+                {vista.quedanParaUnaPersona > 0 && (
+                  <p className="text-caption text-fg-muted">
+                    Quedan {vista.quedanParaUnaPersona} sin respuesta segura: ésas las decides una por una.
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <DialogFooter>
             <Button variant="ghost" hideArrow onClick={() => setConfirmando(false)} disabled={aplicando}>
               Cancelar
             </Button>
-            <Button hideArrow isLoading={aplicando} onClick={() => void aplicar()} data-testid="confirmar-salidas-seguras">
-              Conciliar
+            <Button
+              hideArrow
+              isLoading={aplicando}
+              disabled={!vista || !vista.sePuedeAplicar || vista.cantidad === 0}
+              onClick={() => void aplicar()}
+              data-testid="confirmar-salidas-seguras"
+            >
+              {vista && vista.cantidad > 0 ? `Conciliar ${salidas(vista.cantidad)}` : 'Conciliar'}
             </Button>
           </DialogFooter>
         </DialogContent>

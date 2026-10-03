@@ -34,6 +34,8 @@ import { nombreDeLaCuenta } from './cuentas-del-extracto';
 import { DeshacerLaConciliacion } from './DeshacerLaConciliacion';
 // C2-SALIDAS (Nico, P5): las salidas se concilian (giros, egresos, gastos del banco, reversos).
 import { SalidaDelExtracto } from './SalidaDelExtracto';
+// Seguimiento 6: el cajón del movimiento con lo que propone el agente («por el alias», las salidas).
+import { LoQueProponeElAgente } from './LoQueProponeElAgente';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -288,17 +290,26 @@ export function MovimientoFila({
       {/* Acciones */}
       <TableCell className="whitespace-nowrap">
         {esPendiente ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            hideArrow
-            disabled={!puedeEditar || ocupado}
-            onClick={() => onIgnorar(m)}
-            aria-label={`Ignorar «${m.descripcion}»`}
-          >
-            <Prohibit className="h-4 w-4" aria-hidden="true" />
-            Ignorar
-          </Button>
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              hideArrow
+              disabled={!puedeEditar || ocupado}
+              onClick={() => onIgnorar(m)}
+              aria-label={`Ignorar «${m.descripcion}»`}
+            >
+              <Prohibit className="h-4 w-4" aria-hidden="true" />
+              Ignorar
+            </Button>
+            <LoQueProponeElAgente
+              movimiento={m}
+              puedeConciliar={puedeConciliar}
+              puedeEditar={puedeEditar}
+              ocupado={ocupado}
+              onCambio={onCambio}
+            />
+          </div>
         ) : m.estado === 'IGNORADO' ? (
           <Button
             size="sm"

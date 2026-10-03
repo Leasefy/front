@@ -7,8 +7,9 @@
  *
  * Antes el botón preguntaba a `acuerdosApi.getCuotaPaymentUrl`
  * (`/cartera/payment-plans/:id/installments/:n/payment-url`), una ruta que no
- * existe en ningún servicio: quedaba apagado para siempre con «Próximamente».
- * Ahora hace lo mismo que `PayRentModal` con el arriendo:
+ * existió nunca en ningún servicio (se borró el 02-10-2026, «seguimiento 3»):
+ * quedaba apagado para siempre con «Próximamente». Ahora hace lo mismo que
+ * `PayRentModal` con el arriendo:
  *
  *   1. POST `/api/inquilino/acuerdos/wompi-session` con `{ planId, cuotaNumber }`
  *      y el token del inquilino. NUNCA un monto: la ruta lo saca del plan y

@@ -1,9 +1,10 @@
 /**
  * «Pagar cuota» (ACUE-03) conectado por la sesión de pago (Nico, 02-10-2026, noche).
  *
- * El botón ya no espera a `getCuotaPaymentUrl` (una ruta que no existe): pide
- * la sesión a `/api/inquilino/acuerdos/wompi-session` con `{ planId,
- * cuotaNumber }` y el token del inquilino, y redirige a Wompi. Los errores
+ * El botón pide la sesión a `/api/inquilino/acuerdos/wompi-session` con
+ * `{ planId, cuotaNumber }` y el token del inquilino, y redirige a Wompi
+ * (`acuerdosApi.getCuotaPaymentUrl`, la ruta que nunca existió, se borró el
+ * 02-10-2026 en «seguimiento 3»). Los errores
  * llegan con el sobre y se dicen bajo el botón con el traductor. Nada de Wompi
  * real: `fetch` es un doble y `window.location` un objeto.
  */
@@ -19,8 +20,7 @@ import type { AcuerdoDetail, AcuerdoInstallment } from '@/lib/api/tenant-acuerdo
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { getCuotaPaymentUrl, acuerdosDelInquilino } = vi.hoisted(() => ({
-  getCuotaPaymentUrl: vi.fn(),
+const { acuerdosDelInquilino } = vi.hoisted(() => ({
   acuerdosDelInquilino: vi.fn(),
 }));
 
@@ -31,11 +31,6 @@ vi.mock('@/lib/api/client', async (original) => ({
   ...(await original<typeof import('@/lib/api/client')>()),
   getAccessToken: () => 'tenant-jwt',
 }));
-
-vi.mock('@/lib/api/tenant-acuerdos.service', async (original) => {
-  const real = await original<typeof import('@/lib/api/tenant-acuerdos.service')>();
-  return { ...real, acuerdosApi: { ...real.acuerdosApi, getCuotaPaymentUrl } };
-});
 
 vi.mock('@/lib/hooks/use-tenant-acuerdos', () => ({
   useTenantAcuerdos: () => acuerdosDelInquilino(),
@@ -80,8 +75,6 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   });
-  // Lo que da hoy el servicio: la ruta no existe (404) → `null`.
-  getCuotaPaymentUrl.mockReset().mockResolvedValue(null);
   acuerdosDelInquilino.mockReset();
 });
 
@@ -294,7 +287,7 @@ describe('la pantalla del acuerdo usa «Pagar cuota» conectado', () => {
     installments: [{ ...CUOTA, number: 1, status: 'paid', paidAt: '2026-10-05T00:00:00.000Z' }, CUOTA],
   } as AcuerdoDetail;
 
-  it('🔴 con el plan aceptado, el botón de la próxima cuota está habilitado y no pregunta a `getCuotaPaymentUrl`', async () => {
+  it('🔴 con el plan aceptado, el botón de la próxima cuota está habilitado y no pide nada hasta el clic', async () => {
     acuerdosDelInquilino.mockReturnValue({ items: [PLAN], isLoading: false, error: null, refetch: vi.fn() });
     const params = Promise.resolve({ id: 'plan-1' });
     await act(async () => {
@@ -311,7 +304,6 @@ describe('la pantalla del acuerdo usa «Pagar cuota» conectado', () => {
     expect(boton().textContent).toContain('Pagar cuota 2');
     expect(boton().disabled).toBe(false);
     expect(container.textContent).not.toMatch(/Próximamente|disponible pronto/);
-    expect(getCuotaPaymentUrl).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

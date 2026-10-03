@@ -29,20 +29,26 @@
  * (`components/tenant/PagarCuota.tsx`) y lo lee con `falloDelMicro` y el
  * traductor (`mensajeParaLaPersona`), como `PayRentModal`.
  *
- * ── Quién sirve el plan (comprobado el 02-10-2026, noche) ────────────────────
+ * ── Quién sirve el plan (Nico, 02-10-2026, «seguimiento 3»: el back de puente) ─
  *
- * El plan vive en el micro (`agent/src/cartera/payment-plans/`), pero su única
- * lectura es `GET /api/agency/{agencyId}/cartera/payment-plans/{planId}`
- * (`agent/src/server/routes/cartera-payment-plans.ts`), con alcance de
- * INMOBILIARIA: exige un miembro de la agencia (OWNER/ADMIN/OPERATOR/VIEWER) y
- * el `agencyId` en la ruta. Un inquilino no pasa por ahí, y armar una ruta con
- * `agencyId` desde el portal sería un IDOR. El back todavía no tiene
- * `/cartera/payment-plans/*`. Esta ruta sigue el contrato de
- * `tenant-acuerdos.service.ts` (el back como intermediario hacia el micro, como
- * `agent-contact`): hasta que exista la lectura con alcance de inquilino, el
- * back responde 404 y la persona lee «No encontramos este acuerdo de pago a tu
- * nombre». Hoy la pantalla tampoco llega a pintar el botón: sin `/mine` la
- * lista de acuerdos sale vacía.
+ * El plan vive en el micro (`agent/src/cartera/payment-plans/`). El back
+ * expone `GET /cartera/payment-plans/:planId` con el alcance del inquilino
+ * autenticado (`back/src/acuerdos-de-pago/`) y se lo pide al micro por S2S con
+ * la llave interna (`POST /internal/cartera/payment-plans/{planId}/del-deudor`):
+ * el deudor es el documento del inquilino dentro de SUS inmobiliarias. Un plan
+ * que no existe, el de otra persona o el de otra inmobiliaria son el mismo 404
+ * `ACUERDO_NO_ENCONTRADO` («No encontramos este acuerdo de pago a tu nombre.»),
+ * que esta ruta reenvía con su `code` y su frase. Nunca hay un `agencyId` desde
+ * el portal (sería un IDOR).
+ *
+ * ── Cómo se cierra la cuota ──────────────────────────────────────────────────
+ *
+ * La referencia `acuerdo-<planId>-c<n>` llega al webhook de Wompi del back, que
+ * tiene registrado el prefijo `acuerdo-` (`AcuerdosDePagoService`): un
+ * `APPROVED` le pide al micro cerrar ESA cuota (idempotente, y sólo si el
+ * monto es el de la cuota). La referencia sin cuota (`acuerdo-<planId>`, el
+ * plan entero por `totalDueCop`) NO se cierra sola: el back deja el evento
+ * FALLIDO para una persona. «Pagar cuota» siempre manda `cuotaNumber`.
  */
 
 import { NextResponse } from 'next/server'

@@ -148,47 +148,6 @@ describe('acuerdosApi.getMine (resolve-from-list, anti-IDOR)', () => {
   });
 });
 
-describe('acuerdosApi.getCuotaPaymentUrl (server-provided URL only)', () => {
-  const realFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = realFetch;
-  });
-
-  it('returns the server paymentUrl string on 200', async () => {
-    globalThis.fetch = mockFetch(200, { paymentUrl: 'https://checkout.wompi.co/l/cuota-1' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBe(
-      'https://checkout.wompi.co/l/cuota-1',
-    );
-  });
-
-  it('returns null on 404 (never a fabricated checkout URL)', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('returns null on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('returns null on network failure (status 0)', async () => {
-    globalThis.fetch = mockNetworkFailure();
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('rethrows any other status (e.g. 500)', async () => {
-    globalThis.fetch = mockFetch(500, { message: 'boom' });
-    await expect(acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).rejects.toThrow();
-  });
-
-  it('routes through the BFF, never the agency /api/agency path (A6)', async () => {
-    const f = mockFetch(200, { paymentUrl: 'https://x' });
-    globalThis.fetch = f;
-    await acuerdosApi.getCuotaPaymentUrl('plan-1', 1);
-    for (const call of f.mock.calls) expectBffOnly(String(call[0]));
-  });
-});
-
 describe('acuerdosApi.accept', () => {
   const realFetch = globalThis.fetch;
   afterEach(() => {

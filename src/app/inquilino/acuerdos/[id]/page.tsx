@@ -75,7 +75,8 @@ function formatLongDate(iso: string, locale: string): string {
 // ============================================================================
 // Pagar cuota (ACUE-03) — `PagarCuota` (Nico, 02-10-2026, noche: conectado YA
 // por `/api/inquilino/acuerdos/wompi-session`; antes preguntaba a
-// `getCuotaPaymentUrl`, una ruta que no existe, y quedaba en «Próximamente»).
+// `getCuotaPaymentUrl`, una ruta que nunca existió —se borró el 02-10-2026— y
+// quedaba en «Próximamente»). El plan lo sirve el back de puente hacia el micro.
 // ============================================================================
 
 // A cuota that is settled/closed is not payable. Neutral string compare only —

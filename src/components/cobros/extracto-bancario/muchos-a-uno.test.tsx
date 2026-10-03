@@ -299,7 +299,8 @@ describe('muchos a uno — la propuesta clara (alta)', () => {
     expect(suma.querySelector('[data-valor]')?.getAttribute('data-valor')).toBe('12480000');
     expect(suma.textContent).toContain(`de ${plata(12_480_000)} del banco`);
     expect(suma.querySelector('.sr-only')?.textContent).toBe(plata(12_480_000));
-    expect(tarjeta.querySelector('[data-testid="calza"]')?.textContent).toContain('Calza exacto');
+    // ARREGLOS-5 (Nico Q6 a): «Calza exacto» es sólo el del lote; aquí, la suma.
+    expect(tarjeta.querySelector('[data-testid="calza"]')?.textContent).toContain('Suma exacta');
 
     // 🔴 Nico (C1-MEDIR Q1): sólo el nivel y, si hay número, el MEDIDO.
     const confianza = $('[data-testid="confianza"]');
@@ -351,6 +352,45 @@ describe('muchos a uno — la propuesta clara (alta)', () => {
     expect($('[data-testid="confianza"]').textContent).toBe('Confianza mediade cada 10 así, 5 son la correcta');
     // La persona la puede aprobar: la regla la explica.
     expect(boton('aprobar-recibos-m-3').disabled).toBe(false);
+  });
+
+  /**
+   * 🔴 ARREGLOS-5 (Nico Q4 a): «recibo de más». Con recibos YA emitidos que
+   * suman exacto la línea, la fila no ofrece las cuotas del 1:1 ni «Conciliar
+   * con un cliente»: cualquiera de los dos emitiría otro recibo por la misma plata.
+   */
+  it('🔴 con recibos ya emitidos que suman exacto, la fila NO ofrece el 1:1 (otro recibo por la misma plata)', async () => {
+    const candidato = {
+      contractId: 'ct-9',
+      tenantId: 't-9',
+      tenantName: 'Laura Pérez Gómez',
+      propertyTitle: 'Apto 301',
+      meses: ['2026-09'],
+      pendienteCop: 12_480_000,
+      cuotaIds: ['q-9'],
+      cobroId: null,
+      adelanto: false,
+      puntaje: 80,
+      porQue: ['El valor es igual a lo pendiente de la cuota de septiembre de 2026.'],
+      seguro: true,
+    };
+    await montar([
+      movimiento({ candidatos: [candidato] }),
+      movimiento({
+        id: 'm-3',
+        valorCop: 4_980_000,
+        candidatos: [{ ...candidato, pendienteCop: 4_980_000 }],
+        muchosAUno: { mejor: GMF, ambigua: false, total: 1, parcial: null },
+      }),
+    ]);
+    // La que suma exacto: sin cuotas ni «Conciliar con un cliente», y dice por qué.
+    expect(document.querySelector('[data-testid="candidato-m-1-ct-9"]')).toBeNull();
+    expect(document.querySelector('[data-testid="conciliar-cliente-m-1"]')).toBeNull();
+    expect($('[data-testid="sin-uno-a-uno-m-1"]').textContent).toContain('emitiría otro recibo por la misma plata');
+    expect($('[data-testid="calza"]').textContent).toContain('Suma exacta');
+    // Con una diferencia (no suma exacto), la persona sigue pudiendo elegir la cuota.
+    expect(document.querySelector('[data-testid="candidato-m-3-ct-9"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="sin-uno-a-uno-m-3"]')).toBeNull();
   });
 
   it('un back viejo (sin `muchosAUno`) deja la fila como siempre', async () => {

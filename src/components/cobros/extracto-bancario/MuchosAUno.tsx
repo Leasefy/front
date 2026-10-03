@@ -281,7 +281,8 @@ function PropuestaClara({
           <span className="text-fg-muted">Suman</span>
           <CifraQueCuenta valor={p.sumaCop} cuenta={mov.cuenta} desdeCero className="font-semibold text-fg" />
           <span className="text-fg-muted">de {plata(m.valorCop)} del banco</span>
-          {estado.tipo === 'calza' && <Calza movimiento={mov}>Calza exacto</Calza>}
+          {/* «Calza exacto» es sólo el del lote (referencia de recaudo + valor): aquí, la suma (ARREGLOS-5, Nico Q6 a). */}
+          {estado.tipo === 'calza' && <Calza movimiento={mov}>Suma exacta</Calza>}
         </p>
         {p.diferencia && (
           <p className="text-caption text-fg" data-testid={`diferencia-${m.id}`}>

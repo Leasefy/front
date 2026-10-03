@@ -35,6 +35,7 @@ import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-e
 import {
   cierreDeConciliacionApi,
   DIAS_DE_ALERTA_POR_DEFECTO,
+  efectivoSePuedeGuardar,
   type ConfiguracionDeLaConciliacion,
   type CuentasContables,
 } from '@/lib/api/cierre-de-conciliacion';
@@ -49,6 +50,8 @@ export function diasDeAlertaValidos(texto: string): number | null {
 export function ConciliacionCierreYEfectivo() {
   const { canAccess, isLoading } = usePermissions();
   const puede = isLoading || canAccess('cobros', 'edit');
+  // 🔴 ARREGLOS-5: el efectivo es el interruptor de los medios de recibo; lo mueve quien edita la configuración.
+  const puedeElEfectivo = isLoading || (canAccess('cobros', 'edit') && canAccess('configuracion', 'edit'));
   const aparecer = useAparecer();
   const { cuentas: puc } = useCuentas();
   const delDisponible = useMemo(() => puc.filter((c) => c.codigo.startsWith('11')), [puc]);
@@ -98,8 +101,8 @@ export function ConciliacionCierreYEfectivo() {
         cambios.efectivoActivo === undefined
           ? `La alerta avisa desde los ${c.diasDeAlerta} días.`
           : c.efectivoActivo
-            ? 'Efectivo prendido: la planilla de caja de cada día entra a la conciliación.'
-            : 'Efectivo apagado: la planilla de caja ya no entra a la conciliación.',
+            ? 'Efectivo prendido: ya se pueden registrar recibos en efectivo y la planilla de caja de cada día entra a la conciliación.'
+            : 'Efectivo apagado: ya no se registran recibos en efectivo y la planilla de caja deja de entrar a la conciliación.',
       );
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
@@ -135,8 +138,9 @@ export function ConciliacionCierreYEfectivo() {
         <h2 className="text-h4 text-fg">Conciliación: alerta, efectivo y cierre del mes</h2>
         {!config.disponible && (
           <p className="text-caption text-fg-muted" data-testid="conciliacion-config-sin-migracion">
-            Todavía no se puede guardar: falta una actualización de la base. Mientras tanto la alerta avisa a los {DIAS_DE_ALERTA_POR_DEFECTO} días y el
-            efectivo está apagado.
+            {efectivoSePuedeGuardar(config)
+              ? `Los días de la alerta todavía no se pueden guardar: falta una actualización de la base. Mientras tanto la alerta avisa a los ${DIAS_DE_ALERTA_POR_DEFECTO} días.`
+              : `Todavía no se puede guardar: falta una actualización de la base. Mientras tanto la alerta avisa a los ${DIAS_DE_ALERTA_POR_DEFECTO} días y el efectivo está apagado.`}
           </p>
         )}
       </header>
@@ -187,14 +191,18 @@ export function ConciliacionCierreYEfectivo() {
             <Label htmlFor="efectivo-activo">La inmobiliaria recibe efectivo</Label>
             <p className="text-caption text-fg-muted">
               Apagado por defecto: sólo transferencia y pasarela. Prendido, los recibos en efectivo de cada día (la planilla de caja) se cruzan
-              contra la consignación del banco.
+              contra la consignación del banco y, al conciliarla, el efectivo sale de caja hacia la cuenta de tu banco.
+            </p>
+            <p className="text-caption text-fg-muted" data-testid="efectivo-un-solo-interruptor">
+              Es el mismo interruptor de «Efectivo» en Configuración → Medios de recibo: cambiarlo aquí también deja (o no) registrar
+              recibos en efectivo.
             </p>
           </div>
         </div>
         <Switch
           id="efectivo-activo"
           checked={config.efectivoActivo}
-          disabled={!config.disponible || !puede || guardando === 'efectivo'}
+          disabled={!efectivoSePuedeGuardar(config) || !puedeElEfectivo || guardando === 'efectivo'}
           onCheckedChange={(v) => void guardar({ efectivoActivo: v === true }, 'efectivo')}
           data-testid="efectivo-activo"
         />

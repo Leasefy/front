@@ -447,7 +447,7 @@ function SumaEnVivo({
         <AnimatePresence mode="popLayout" initial={false}>
           {estado.tipo === "calza" && (
             <Calza key="calza" movimiento={mov}>
-              Calza exacto
+              Suma exacta
             </Calza>
           )}
         </AnimatePresence>

@@ -291,7 +291,8 @@ function PropuestaDelAgenteFila({
           </Badge>
         )}
         {p.calza ? (
-          <Badge variant="success">Calza exacto</Badge>
+          // «Calza exacto» es sólo el del lote (referencia de recaudo + valor): aquí, el valor (ARREGLOS-5, Nico Q6 a).
+          <Badge variant="success">Valor exacto</Badge>
         ) : (
           <Badge variant="outline">Diferencia de {plata(Math.abs(p.diferenciaCop))}</Badge>
         )}

@@ -112,6 +112,12 @@ describe('planilla de caja', () => {
     await act(async () => $('conciliar-planilla-2026-09-14-m1')!.click());
     expect(api.conciliarPlanilla).toHaveBeenCalledWith('2026-09-14', 'm1');
     expect(onCambio).toHaveBeenCalled();
+    // ARREGLOS-5 (Nico Q6 a): el aviso también dice el día en palabras.
+    const aviso = String(toastMock.success.mock.calls.at(-1)?.[0] ?? '');
+    expect(aviso).toMatch(/La planilla del 14 de sept?\.? de 2026 quedó conciliada/);
+    expect(aviso).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    // Y la tarjeta dice qué pasa en libros (ARREGLOS-5, Nico Q1 a).
+    expect($('planilla-de-caja')?.textContent).toContain('el efectivo sale de caja hacia la cuenta contable del banco');
   });
 });
 

@@ -59,6 +59,10 @@ describe('PropuestaDeLaPasarelaGiro', () => {
     expect(texto).toContain('2.328.600');
     expect(texto).toContain('Comisión de Wompi');
     expect(texto).toContain('lo documenta la liquidación');
+    // ARREGLOS-5 (Nico Q3 a): dice qué pasa en libros al conciliarlo.
+    expect(contenedor.querySelector('[data-testid="giro-en-libros-mov-1"]')?.textContent).toContain(
+      'el neto pasa a la cuenta contable de tu banco',
+    );
   });
 
   it('«Es el giro de Leasefy» confirma contra la liquidación y recarga', async () => {

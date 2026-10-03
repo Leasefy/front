@@ -53,7 +53,8 @@ export function PlanillaDeCaja({ puedeConciliar, version = 0, onCambio }: { pued
     setOcupado(`${fecha}:${movimientoId}`);
     try {
       await cierreDeConciliacionApi.conciliarPlanilla(fecha, movimientoId);
-      toast.success(`La planilla del ${fecha} quedó conciliada con su consignación.`);
+      // ARREGLOS-5 (Nico Q6 a): el día en palabras, nunca AAAA-MM-DD.
+      toast.success(`La planilla del ${diaLegible(fecha)} quedó conciliada con su consignación.`);
       await leer();
       onCambio();
     } catch (e) {
@@ -71,6 +72,8 @@ export function PlanillaDeCaja({ puedeConciliar, version = 0, onCambio }: { pued
         <span className="text-caption text-fg-muted">
           {/* 🔴 (03-10-2026) Las fechas en palabras, como el resto del extracto (antes «Del 2026-08-04 al 2026-10-03»). */}
           Del {datos.desde ? diaLegible(datos.desde) : '—'} al {datos.hasta ? diaLegible(datos.hasta) : '—'}: los recibos en efectivo de cada día contra su consignación.
+          {/* ARREGLOS-5 (Nico Q1 a): qué pasa en libros al conciliarla. */}
+          {' '}Al conciliarla, el efectivo sale de caja hacia la cuenta contable del banco.
         </span>
       </div>
       {conAlgo.length === 0 ? (

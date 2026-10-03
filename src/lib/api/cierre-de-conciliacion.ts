@@ -170,10 +170,24 @@ export interface EventoDeLaBitacora {
 // ── Configuración y alerta ───────────────────────────────────────────────
 
 export interface ConfiguracionDeLaConciliacion {
+  /** `false` = falta la migración del cierre: los días de la alerta no se guardan. */
   disponible: boolean;
   diasDeAlerta: number;
   efectivoActivo: boolean;
   porDefecto: boolean;
+  /**
+   * 🔴 ARREGLOS-5 (Nico Q2 a): UN SOLO interruptor de efectivo. La fuente son los
+   * medios de recibo (Configuración → Medios de recibo, «Efectivo»); la
+   * conciliación los lee y, al guardar, los escribe. Aditivos: un back anterior
+   * no los manda (entonces el efectivo se guarda sólo con `disponible`).
+   */
+  efectivoDesde?: 'medios-de-recibo' | 'conciliacion';
+  efectivoSePuedeGuardar?: boolean;
+}
+
+/** ¿Se puede prender o apagar el efectivo? Un back sin el campo: como antes (con la migración). */
+export function efectivoSePuedeGuardar(c: ConfiguracionDeLaConciliacion): boolean {
+  return typeof c.efectivoSePuedeGuardar === 'boolean' ? c.efectivoSePuedeGuardar : c.disponible;
 }
 
 export interface AlertaDePartidas {

@@ -79,6 +79,16 @@ describe('medios de recibo', () => {
     );
   });
 
+  /** 🔴 ARREGLOS-5 (Nico Q2 a): un solo interruptor de efectivo. */
+  it('el efectivo dice que es el mismo de la conciliación (y los demás medios no)', async () => {
+    await pintar();
+    expect(
+      document.body.querySelector('[data-testid="medio-EFECTIVO"] [data-testid="efectivo-tambien-en-la-conciliacion"]')
+        ?.textContent,
+    ).toContain('La inmobiliaria recibe efectivo');
+    expect(document.body.querySelectorAll('[data-testid="efectivo-tambien-en-la-conciliacion"]')).toHaveLength(1);
+  });
+
   it('dice cuándo rige el ajuste de fábrica y no lo esconde', async () => {
     await pintar();
     expect(document.body.querySelector('[data-testid="es-el-preset"]')?.textContent).toContain(

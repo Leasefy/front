@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conciliacion-bancaria.types';
 import { diaLegible, mesesLegibles, plata } from './formato';
 import { MuchosAUno } from './MuchosAUno';
+import { yaLaRespaldanRecibosEmitidos } from './muchos-a-uno';
 import { PropuestaDeLaPasarela } from './PropuestaDeLaPasarela';
 import { PropuestaDeLaPasarelaGiro } from './PropuestaDeLaPasarelaGiro';
 import { nombreDeLaCuenta } from './cuentas-del-extracto';
@@ -72,6 +73,8 @@ export function MovimientoFila({
 }: Props) {
   const esSalida = m.valorCop < 0;
   const esPendiente = m.estado === 'PENDIENTE';
+  // 🔴 ARREGLOS-5 (Nico Q4 a): recibos ya emitidos suman exacto esta línea: nada de 1:1 (otro recibo por la misma plata).
+  const yaTieneSusRecibos = esPendiente && !esSalida && yaLaRespaldanRecibosEmitidos(m);
 
   return (
     <TableRow
@@ -170,7 +173,12 @@ export function MovimientoFila({
             onCambio={onCambio}
           />
         )}
-        {esPendiente && !esSalida ? (
+        {yaTieneSusRecibos ? (
+          <p className="text-caption text-fg-muted" data-testid={`sin-uno-a-uno-${m.id}`}>
+            Los recibos de arriba ya están emitidos y suman exacto este movimiento: apruébalos, o usa «Corregir» si son
+            otros. Conciliarlo contra una cuota o un cliente emitiría otro recibo por la misma plata.
+          </p>
+        ) : esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
             /*
              * 🔴 Antes acá decía «ningún cobro con saldo se parece», y eso

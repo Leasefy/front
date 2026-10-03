@@ -86,10 +86,41 @@ describe('configuración de la conciliación (ola 3)', () => {
     expect($('cuenta-contable-sin-recibos-c-2')?.textContent).toContain('es una cuenta mayor');
   });
 
+  /** 🔴 ARREGLOS-5 (Nico Q2 a): un solo interruptor de efectivo, el de los medios de recibo. */
+  it('el efectivo dice que es el mismo de Medios de recibo y se guarda aun sin la migración del cierre', async () => {
+    api.configuracion.mockResolvedValue({
+      disponible: false,
+      diasDeAlerta: 30,
+      efectivoActivo: false,
+      porDefecto: true,
+      efectivoDesde: 'medios-de-recibo',
+      efectivoSePuedeGuardar: true,
+    });
+    api.guardarConfiguracion.mockResolvedValue({
+      disponible: false,
+      diasDeAlerta: 30,
+      efectivoActivo: true,
+      porDefecto: false,
+      efectivoDesde: 'medios-de-recibo',
+      efectivoSePuedeGuardar: true,
+    });
+    await montar();
+    expect($('efectivo-un-solo-interruptor')?.textContent).toContain('Medios de recibo');
+    expect(($('dias-de-alerta') as HTMLInputElement).disabled).toBe(true);
+    expect($('conciliacion-config-sin-migracion')?.textContent).toContain('Los días de la alerta todavía no se pueden guardar');
+    const sw = $('efectivo-activo')!;
+    expect(sw.hasAttribute('disabled')).toBe(false);
+    await act(async () => sw.click());
+    expect(api.guardarConfiguracion).toHaveBeenCalledWith({ efectivoActivo: true });
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/recibos en efectivo/));
+  });
+
   it('sin la migración: lo dice y no deja guardar', async () => {
     api.configuracion.mockResolvedValue({ disponible: false, diasDeAlerta: 30, efectivoActivo: false, porDefecto: true });
     await montar();
     expect($('conciliacion-config-sin-migracion')).not.toBeNull();
     expect(($('dias-de-alerta') as HTMLInputElement).disabled).toBe(true);
+    // Un back sin el campo nuevo: el efectivo sigue la migración, como antes.
+    expect($('efectivo-activo')!.hasAttribute('disabled')).toBe(true);
   });
 });

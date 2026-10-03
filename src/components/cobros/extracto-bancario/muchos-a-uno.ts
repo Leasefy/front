@@ -111,6 +111,23 @@ export function medioLegible(medio: string | null | undefined): string | null {
   return MEDIOS[clave] ?? limpio.charAt(0).toUpperCase() + limpio.slice(1);
 }
 
+// ── El 1:1 cuando la plata ya tiene sus recibos ─────────────────────────────
+
+/**
+ * 🔴 ARREGLOS-5 (Nico Q4 a): cuando el muchos a uno encuentra recibos YA
+ * EMITIDOS que suman exacto la línea del banco (sin diferencia), la fila NO
+ * ofrece las cuotas del 1:1 ni «Conciliar con un cliente»: cualquiera de los
+ * dos emitiría OTRO recibo por la misma plata. La salida es aprobar esos
+ * recibos o «Corregir» la combinación.
+ */
+export function yaLaRespaldanRecibosEmitidos(m: {
+  valorCop: number;
+  muchosAUno?: { mejor: { sumaCop: number; diferencia: unknown | null } | null } | null;
+}): boolean {
+  const mejor = m.muchosAUno?.mejor;
+  return Boolean(mejor) && !mejor!.diferencia && mejor!.sumaCop === m.valorCop && m.valorCop > 0;
+}
+
 // ── El conjunto que arma la persona ─────────────────────────────────────────
 
 /** ¿Los dos conjuntos tienen exactamente los mismos ids (sin importar el orden)? */

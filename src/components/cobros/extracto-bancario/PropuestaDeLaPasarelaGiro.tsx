@@ -82,6 +82,11 @@ export function PropuestaDeLaPasarelaGiro({ movimiento, propuestas, puedeEditar,
                     ` − ${p.descuentos.map((d) => `${d.concepto} ${plata(d.valorCop)}`).join(', ')} (lo documenta la liquidación)`}
                 </p>
                 <p className="text-caption text-fg-muted">{p.porQue.join(' ')}</p>
+                {/* ARREGLOS-5 (Nico Q3 a): qué pasa en libros al conciliarlo. */}
+                <p className="text-caption text-fg-muted" data-testid={`giro-en-libros-${movimiento.id}`}>
+                  Al conciliarlo, el neto pasa a la cuenta contable de tu banco y la comisión y su IVA se asientan en la cuenta de la
+                  comisión; si todavía no la has elegido, quedan por asentar en Configuración → Costos de la plata.
+                </p>
               </div>
               <Button
                 size="sm"

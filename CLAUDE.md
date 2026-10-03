@@ -476,6 +476,18 @@ API en `src/lib/api/cierre-de-conciliacion.ts`; lo puro (exportar, leer la relac
 - La carga del extracto separa `descartadasPorMesCerrado` de las ilegibles; «idéntica a otra del archivo cuenta aparte» (no
   «entró»: en una recarga no entra nada). Huecos: «Falta el extracto del …».
 
+## Conciliación, ARREGLOS-5 (03-10-2026, Nico Q2/Q4/Q6 a)
+
+- **Un solo interruptor de efectivo**: «La inmobiliaria recibe efectivo» (`ConciliacionCierreYEfectivo.tsx`) y «Efectivo» de
+  Medios de recibo (`SeccionMediosDeRecibo.tsx`) son el MISMO dato (lo guarda el back en los medios de recibo); los dos lo dicen.
+  El de la conciliación se aprieta con `cobros:edit` + `configuracion:edit` y con `efectivoSePuedeGuardar(config)` (un back sin el
+  campo: como antes, con `disponible`).
+- **Recibo de más**: con recibos YA emitidos que suman exacto la línea (`yaLaRespaldanRecibosEmitidos`, `muchos-a-uno.ts`), la fila no
+  ofrece las cuotas del 1:1 ni «Conciliar con un cliente»; dice por qué (`sin-uno-a-uno-<id>`).
+- **«Calza exacto» es sólo el del lote** (referencia de recaudo + valor): en muchos a uno y en «Corregir» la suma dice «Suma exacta»;
+  en el cajón del agente, «Valor exacto».
+- La planilla y la tarjeta del giro de Leasefy dicen qué pasa en libros al conciliar; el aviso de la planilla, el día en palabras.
+
 ## /admin/recaudo-en-linea: el reporte de Wompi y las liquidaciones de Leasefy (ola E, E2; 03-10-2026)
 
 Nico (C2-AGREGADOR Q3/Q4): Leasefy recauda en SU cuenta de Wompi y le gira a cada inmobiliaria con una liquidación.

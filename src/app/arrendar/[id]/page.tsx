@@ -147,7 +147,7 @@ export default function ArrendarPage({ params }: Props) {
                 >
                   <div className="relative aspect-[4/3] w-full bg-surface-muted">
                     {arriendo.foto ? (
-                      <Image src={arriendo.foto} alt={arriendo.titulo} fill sizes="(min-width: 768px) 360px, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                      <Image src={arriendo.foto} alt={arriendo.titulo} fill sizes="(min-width: 768px) 360px, 100vw" className="object-cover transition-transform duration-reveal group-hover:scale-[1.03]" />
                     ) : (
                       <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary-soft to-surface-muted text-primary">
                         <HouseLine weight="duotone" className="h-14 w-14" aria-hidden="true" />
@@ -181,7 +181,7 @@ export default function ArrendarPage({ params }: Props) {
                       role="img"
                       aria-label={`Este canon usa el ${usoDelTope} % de lo que tu ingreso te permite pagar`}
                     >
-                      <div className="h-full rounded-full bg-success motion-safe:transition-[width] motion-safe:duration-700" style={{ width: `${usoDelTope}%` }} />
+                      <div className="h-full w-full rounded-full bg-success motion-safe:transition-transform motion-safe:duration-reveal motion-safe:ease-enter" style={{ transform: `translateX(${usoDelTope - 100}%)` }} />
                     </div>
                     <div className="mt-2 flex items-baseline justify-between gap-3 text-caption text-fg-muted">
                       <span>Este canon usa el {usoDelTope} %</span>

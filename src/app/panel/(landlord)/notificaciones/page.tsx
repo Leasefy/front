@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Bell,
   Check,
@@ -35,7 +35,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
-import { IconButton, Chip } from '@leasefy/cadence';
+import { IconButton, Chip, CrossFade, StaggerItem } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
@@ -211,8 +211,20 @@ export default function NotificacionesPage() {
         ))}
       </div>
 
-      {/* Notifications List */}
+      {/* Notifications List — cargando → lista, cambiar de filtro o quedar
+          vacío cruzan el contenido; dentro de un filtro, marcar o borrar saca
+          la fila y las demás se corren (lo que ya estaba no se anima). */}
       <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        <CrossFade
+          className="relative"
+          swapKey={
+            isLoading
+              ? 'cargando'
+              : filteredNotifications.length === 0
+                ? `vacio-${filter}`
+                : `lista-${filter}`
+          }
+        >
         {isLoading ? (
           // Loading skeleton
           <div>
@@ -220,9 +232,7 @@ export default function NotificacionesPage() {
               <NotificationSkeleton key={i} />
             ))}
           </div>
-        ) : (
-        <AnimatePresence mode="popLayout">
-          {filteredNotifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
             <EmptyState
               icon={Bell}
               title={
@@ -236,18 +246,14 @@ export default function NotificacionesPage() {
               className="border-0 rounded-none bg-transparent"
             />
           ) : (
-            filteredNotifications.map((notification, index) => {
+          <AnimatePresence initial={false} mode="popLayout">
+            {filteredNotifications.map((notification, index) => {
               const IconComponent = getNotificationIcon(notification.type);
               const categoryConfig = getCategoryConfig(notification.category);
 
               return (
-                <motion.div
+                <StaggerItem
                   key={notification.id}
-                  layout
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ duration: 0.2 }}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
                     'flex items-start gap-4 px-5 py-4 hover:bg-surface-hover transition-colors cursor-pointer group',
@@ -357,12 +363,12 @@ export default function NotificacionesPage() {
                     )}
                     <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
                   </div>
-                </motion.div>
+                </StaggerItem>
               );
-            })
+            })}
+          </AnimatePresence>
           )}
-        </AnimatePresence>
-        )}
+        </CrossFade>
       </div>
 
       {/* Summary */}

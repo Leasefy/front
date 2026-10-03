@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatedNumber, CrossFade, Presence, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
 // Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
@@ -293,6 +295,9 @@ function PagosPageContent() {
     }
   };
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || leasesLoading || requestsLoading);
+
   // Loading state
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
@@ -337,25 +342,17 @@ function PagosPageContent() {
   if (!primaryLease) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <motion.header
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
+        <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <header className="mb-8">
             <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('payments.title')}
             </h1>
             <p className="mt-1 text-fg-muted">
               {t('payments.subtitle')}
             </p>
-          </motion.header>
+          </header>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <EmptyState
               icon={CurrencyCircleDollar}
               title={locale === 'es' ? 'Sin pagos por ahora' : 'No payments yet'}
@@ -366,35 +363,31 @@ function PagosPageContent() {
                  haría quien todavía no tiene un arriendo. */
               action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('payments.title')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {t('payments.subtitle')}
           </p>
-        </motion.header>
+        </header>
 
-        {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta» */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+        {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta».
+            Llega en su propia consulta: el cargando se cruza con las cifras, que
+            cuentan desde 0 al llegar (como `KpiValor`) y desde la anterior si cambian. */}
+        <CrossFade
+          swapKey={errorResumen ? 'fallo' : cargandoResumen || !resumen ? 'cargando' : 'listo'}
           className="mb-8"
         >
           {errorResumen ? (
@@ -412,7 +405,13 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Próxima cuota' : 'Next installment'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {resumen.proxima ? formatCurrencyI18n(resumen.proxima.valor) : '—'}
+                  {resumen.proxima ? (
+                    <AnimatedNumber
+                      value={resumen.proxima.valor}
+                      from={0}
+                      format={(n) => formatCurrencyI18n(Math.round(n))}
+                    />
+                  ) : '—'}
                 </p>
                 <p className="text-sm text-fg-muted mt-2">
                   {resumen.proxima
@@ -432,7 +431,11 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Vencido' : 'Overdue'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {formatCurrencyI18n(resumen.vencidoCop)}
+                  <AnimatedNumber
+                    value={resumen.vencidoCop}
+                    from={0}
+                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                  />
                 </p>
                 <p className="text-sm text-fg-muted mt-2">
                   {resumen.cuotasVencidas === 0
@@ -450,7 +453,11 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Resta por pagar' : 'Remaining'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {formatCurrencyI18n(resumen.restaPorPagar)}
+                  <AnimatedNumber
+                    value={resumen.restaPorPagar}
+                    from={0}
+                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                  />
                 </p>
                 <Link href="/inquilino/estado-de-cuenta" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
                   {locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}
@@ -459,28 +466,27 @@ function PagosPageContent() {
               </div>
             </div>
           )}
-        </motion.div>
+        </CrossFade>
 
         {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}
         <MediosDePagoDeLaInmobiliaria />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Payment History */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-2"
-          >
+          <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-fg">{t('payments.history')}</h2>
-              <span className="text-sm text-fg-muted">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
+              <span className="text-sm text-fg-muted"><AnimatedNumber value={allRequests.length} /> {t('nav.payments').toLowerCase()}</span>
             </div>
 
+            {/* Vacío → primer pago y cambiar de página se cruzan; un pago nuevo
+                entra a la lista y los demás se corren (lo que ya estaba no se anima). */}
+            <CrossFade swapKey={allRequests.length > 0 ? `pagina-${currentPage}` : 'vacio'}>
             {allRequests.length > 0 ? (
               <>
-                <div className="space-y-3">
-                  {paginatedRequests.map((request, index) => {
+                <div className="relative space-y-3">
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {paginatedRequests.map((request) => {
                     const statusConfig = getStatusConfig(request.status);
                     const StatusIcon = statusConfig.icon;
 
@@ -492,12 +498,9 @@ function PagosPageContent() {
                           : `${locale === 'es' ? 'Vence' : 'Due'} ${formatShortDate(request.dueDate)}`;
 
                     return (
-                      <motion.div
+                      <StaggerItem
                         key={request.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
                           <div className={cn(
@@ -569,9 +572,10 @@ function PagosPageContent() {
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
 
                 {/* Pagination */}
@@ -602,16 +606,14 @@ function PagosPageContent() {
                 action={{ label: locale === 'es' ? 'Ver arriendo' : 'View rental', href: '/inquilino/arriendo' }}
               />
             )}
-          </motion.div>
+            </CrossFade>
+          </div>
 
           {/* Sidebar — only with active lease */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-6"
-          >
-            {/* Period Status Card — depende de currentPeriodStatus */}
+          <div className="space-y-6">
+            {/* Period Status Card — depende de currentPeriodStatus. Llega en su
+                propia consulta: si llega después, entra; si ya estaba, no. */}
+            <Presence show={Boolean(paymentInfo)} initial={false}>
             {paymentInfo && (
               <PeriodStatusCard
                 status={paymentInfo.currentPeriodStatus}
@@ -628,6 +630,7 @@ function PagosPageContent() {
                 formatCurrency={formatCurrencyI18n}
               />
             )}
+            </Presence>
 
             {/* Quick Links */}
             <div className="rounded-xl bg-surface-muted p-5">
@@ -636,8 +639,8 @@ function PagosPageContent() {
                 {[
                   { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
+                ].map((action) => (
+                  <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted" />
@@ -663,9 +666,9 @@ function PagosPageContent() {
               contractId={primaryLease?.contractId ?? null}
               canonCop={primaryLease?.monthlyRent ?? null}
             />
-          </motion.div>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {primaryLease && (
         <PayRentModal

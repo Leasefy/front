@@ -26,6 +26,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
   CaretRight,
@@ -65,18 +66,14 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
 // Acuerdo row — plan header (link to detail) + verbatim cuota plan
 // ============================================================================
 
-function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; locale: string }) {
+function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   const { formatCurrency } = useI18n();
   const badge = TONE_BADGE[acuerdoStatusToTone(p.status)];
   const ToneIcon = badge.icon;
   const nCuotas = p.installments.length;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <div>
       <Link href={`/inquilino/acuerdos/${encodeURIComponent(p.planId)}`} className="group block">
         <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 hover:border-primary/40 transition-colors">
           <div className="flex items-center gap-4">
@@ -116,7 +113,7 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
           )}
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
@@ -131,6 +128,9 @@ export default function AcuerdosPage() {
 
   // The only mutation entry point on this read surface: propose a payment plan.
   const [requestOpen, setRequestOpen] = useState(false);
+
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
 
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
@@ -172,14 +172,10 @@ export default function AcuerdosPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-        >
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
@@ -198,18 +194,14 @@ export default function AcuerdosPage() {
           >
             {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
           </Button>
-        </motion.header>
+        </header>
 
         {/* List — real own-acuerdos, or an honest empty-state (incl. not-live []) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <section>
           {items.length > 0 ? (
             <div className="space-y-3">
-              {items.map((p, index) => (
-                <AcuerdoRow key={p.planId} p={p} index={index} locale={locale} />
+              {items.map((p) => (
+                <AcuerdoRow key={p.planId} p={p} locale={locale} />
               ))}
             </div>
           ) : (
@@ -228,8 +220,8 @@ export default function AcuerdosPage() {
               </Button>
             </div>
           )}
-        </motion.section>
-      </div>
+        </section>
+      </motion.div>
 
       {/* Propose-a-plan modal — intent only; the agency defines and approves terms. */}
       <SolicitarPlanPagoModal

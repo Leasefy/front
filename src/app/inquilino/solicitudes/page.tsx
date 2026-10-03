@@ -21,7 +21,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Lifebuoy,
   Wrench,
@@ -106,17 +108,13 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
 // Solicitud row — deep-links to the UNIFIED caso detail (no duplicated timeline)
 // ============================================================================
 
-function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; locale: string }) {
+function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
   const TypeIcon = s.tipo === 'reparacion' ? Wrench : ChatCircle;
   const badge = TONE_BADGE[pqrsStatusToTone(s.estado)];
   const ToneIcon = badge.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <StaggerItem>
       <Link href={`/inquilino/casos/${encodeURIComponent(s.id)}`} className="group block">
         <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
           <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -141,7 +139,7 @@ function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; l
           <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
-    </motion.div>
+    </StaggerItem>
   );
 }
 
@@ -161,6 +159,9 @@ export default function SolicitudesPage() {
       ? 'Todavía no puedes radicar desde acá: escríbele a tu inmobiliaria.'
       : 'You cannot submit requests here yet: write to your property manager.';
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
 
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
@@ -202,14 +203,10 @@ export default function SolicitudesPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
-        >
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {locale === 'es' ? 'Solicitudes' : 'Requests'}
@@ -239,19 +236,20 @@ export default function SolicitudesPage() {
               </p>
             )}
           </div>
-        </motion.header>
+        </header>
 
-        {/* List — real own-requests, or an honest empty-state (incl. not-live []) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        {/* List — real own-requests, or an honest empty-state (incl. not-live []).
+            Vacío → primera solicitud se cruzan. Lo que ya estaba al llegar no se
+            anima; una solicitud nueva entra y las demás se corren. */}
+        <section>
+          <CrossFade swapKey={items.length > 0 ? 'lista' : 'vacio'}>
           {items.length > 0 ? (
             <div className="space-y-3">
-              {items.map((s, index) => (
-                <SolicitudRow key={s.id} s={s} index={index} locale={locale} />
-              ))}
+              <AnimatePresence initial={false}>
+                {items.map((s) => (
+                  <SolicitudRow key={s.id} s={s} locale={locale} />
+                ))}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="space-y-4">
@@ -279,8 +277,9 @@ export default function SolicitudesPage() {
               </div>
             </div>
           )}
-        </motion.section>
-      </div>
+          </CrossFade>
+        </section>
+      </motion.div>
 
       <NuevaSolicitudModal
         open={modalOpen}

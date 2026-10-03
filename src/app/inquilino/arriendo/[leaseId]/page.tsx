@@ -4,7 +4,16 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AnimatedNumber,
+  CrossFade,
+  Presence,
+  StaggerItem,
+  motionDuration,
+  motionEase,
+} from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -53,6 +62,9 @@ export default function LeaseDetailPage() {
   // o fue rechazado, el tenant puede pagar.
   const canPay = isActive && (periodStatus === 'NONE' || periodStatus === 'REJECTED' || !paymentInfo);
 
+  // Carga → contenido: el arriendo entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(leaseLoading);
+
   if (leaseLoading) {
     return (
       <div className="min-h-screen bg-bg">
@@ -83,11 +95,7 @@ export default function LeaseDetailPage() {
   if (!lease) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
+        <motion.div {...entrada} className="text-center">
           <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
             <House className="w-10 h-10 text-fg-subtle" />
           </div>
@@ -165,6 +173,15 @@ export default function LeaseDetailPage() {
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
   const approvedRequests = requests.filter(r => r.status === 'APPROVED');
   const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+  // Qué bloque de renovación toca: cuando cambia (pidió renovar, avisó que
+  // no renueva), el viejo sale y el nuevo entra.
+  const claveDeRenovacion = lease.renovacion?.avisoNoRenovar
+    ? 'aviso'
+    : lease.renovacion
+      ? 'renovacion'
+      : lease.status === 'ending_soon'
+        ? 'termina'
+        : null;
 
   // Account-status card: drive label / icon / color from the real period status
   // (paymentInfo.currentPeriodStatus) instead of always showing "Al día".
@@ -254,24 +271,15 @@ export default function LeaseDetailPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <BackButton label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'} />
-        </motion.div>
+        </div>
 
         {/* Hero Section - Property Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-xl border border-border bg-surface overflow-hidden mb-8"
-        >
+        <div className="rounded-xl border border-border bg-surface overflow-hidden mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
@@ -348,36 +356,43 @@ export default function LeaseDetailPage() {
                     {formatDate(lease.endDate)}
                   </span>
                 </div>
+                {/* La barra se llena con `transform` (translateX), no con
+                    `width`/`left`: el ancho animado recalculaba el layout en
+                    cada cuadro. Se revela desde 0 al llegar (`reveal`, curva de
+                    entrar), igual que una cifra que cuenta. */}
                 <div className="relative h-3 bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${leaseProgress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${leaseProgress - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                     className={cn(
-                      "h-full rounded-full",
+                      "h-full w-full rounded-full",
                       daysRemaining < 30 ? "bg-warning" : "bg-success"
                     )}
                   />
-                  {/* Progress Indicator Dot */}
+                  {/* Progress Indicator Dot — viaja en una capa del ancho de la
+                      barra que se corre `leaseProgress`% de su propio ancho. */}
                   <motion.div
-                    initial={{ left: 0 }}
-                    animate={{ left: `${leaseProgress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                    initial={{ x: '0%' }}
+                    animate={{ x: `${leaseProgress}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="pointer-events-none absolute inset-0"
                   >
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-4 border-white",
-                      daysRemaining < 30 ? "bg-warning" : "bg-success"
-                    )} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+                      <div className={cn(
+                        "w-5 h-5 rounded-full border-4 border-white",
+                        daysRemaining < 30 ? "bg-warning" : "bg-success"
+                      )} />
+                    </div>
                   </motion.div>
                 </div>
                 <p className="text-xs text-fg-muted mt-2 text-center">
-                  {leaseProgress}% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
+                  <AnimatedNumber value={leaseProgress} from={0} format={(n) => String(Math.round(n))} />% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
                 </p>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - 2 columns */}
@@ -389,15 +404,14 @@ export default function LeaseDetailPage() {
                 cambia por el aviso: ofrecer «Aceptar renovación» al lado de
                 «avisaste que no vas a renovar» son dos pantallas distintas
                 peleando en el mismo lugar. */}
+            {claveDeRenovacion && (
+            // Pedir la renovación o avisar que no cambia el bloque entero:
+            // el viejo sale y el nuevo entra (CrossFade), no un salto seco.
+            <CrossFade swapKey={claveDeRenovacion}>
             {lease.renovacion?.avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : lease.renovacion ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8"
-              >
+              <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
                 <div className="flex items-center gap-2 mb-2">
                   <ArrowsClockwise className="w-5 h-5 text-primary" />
                   <span className="text-sm font-medium text-primary">
@@ -448,14 +462,9 @@ export default function LeaseDetailPage() {
                     )}
                   </>
                 )}
-              </motion.div>
+              </div>
             ) : lease.status === 'ending_soon' ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8"
-              >
+              <div className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
@@ -484,8 +493,10 @@ export default function LeaseDetailPage() {
                     {locale === 'es' ? 'Quiero renovar' : 'I want to renew'}
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             ) : null}
+            </CrossFade>
+            )}
 
             {/* La otra mitad de la decisión. Va debajo y en voz baja —una línea,
                 sin tarjeta— porque no es lo que la mayoría viene a hacer; pero
@@ -497,23 +508,26 @@ export default function LeaseDetailPage() {
             ) : null}
 
             {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
-            {isActive && paymentInfo && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className={cn(
-                  'rounded-xl border p-6 lg:p-8',
-                  periodStatus === 'PENDING_VALIDATION'
-                    ? 'bg-warning-soft border-warning/30'
-                    : periodStatus === 'APPROVED'
-                      ? 'bg-success-soft border-success/30'
-                      : 'bg-primary-soft border-primary/30'
-                )}
-              >
+            {/* La info del período llega en su propia consulta: si llega
+                después del arriendo, la tarjeta entra; si ya estaba, no. */}
+            <Presence
+              show={Boolean(isActive && paymentInfo)}
+              initial={false}
+              className={cn(
+                'rounded-xl border p-6 lg:p-8 transition-colors duration-base',
+                periodStatus === 'PENDING_VALIDATION'
+                  ? 'bg-warning-soft border-warning/30'
+                  : periodStatus === 'APPROVED'
+                    ? 'bg-success-soft border-success/30'
+                    : 'bg-primary-soft border-primary/30'
+              )}
+            >
+              {paymentInfo && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    {/* Pagar → «en verificación» → «confirmado»: la línea del
+                        estado se cruza con la nueva. */}
+                    <CrossFade swapKey={periodStatus ?? 'NONE'} className="flex items-center gap-2 mb-2">
                       {periodStatus === 'PENDING_VALIDATION' ? (
                         <>
                           <Clock className="w-4 h-4 text-warning" />
@@ -543,7 +557,7 @@ export default function LeaseDetailPage() {
                           </span>
                         </>
                       )}
-                    </div>
+                    </CrossFade>
                     <p className="text-4xl font-bold tracking-tight text-fg">
                       {formatCurrency(paymentInfo.monthlyRent)}
                     </p>
@@ -573,28 +587,27 @@ export default function LeaseDetailPage() {
                     </Button>
                   )}
                 </div>
-              </motion.div>
-            )}
+              )}
+            </Presence>
 
-            {/* Quick Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-            >
+            {/* Quick Stats — las cifras cuentan cuando cambian (un pago aprobado). */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="rounded-xl bg-surface-muted p-5">
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
                   <TrendUp className="w-5 h-5 text-success" />
                 </div>
-                <p className="text-2xl font-bold text-fg">{formatCurrency(totalPaid)}</p>
+                <p className="text-2xl font-bold text-fg">
+                  <AnimatedNumber value={totalPaid} format={(n) => formatCurrency(Math.round(n))} />
+                </p>
                 <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
               </div>
               <div className="rounded-xl bg-surface-muted p-5">
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
                   <Receipt className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-2xl font-bold text-fg">{approvedRequests.length}</p>
+                <p className="text-2xl font-bold text-fg">
+                  <AnimatedNumber value={approvedRequests.length} />
+                </p>
                 <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
               <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
@@ -604,15 +617,10 @@ export default function LeaseDetailPage() {
                 <p className="text-2xl font-bold text-fg">{accountStatus.label}</p>
                 <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
               </div>
-            </motion.div>
+            </div>
 
             {/* Payment History */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
@@ -620,14 +628,19 @@ export default function LeaseDetailPage() {
                   </div>
                   <div>
                     <h2 className="font-semibold text-fg">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
-                    <p className="text-sm text-fg-muted">{requests.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
+                    <p className="text-sm text-fg-muted"><AnimatedNumber value={requests.length} /> {locale === 'es' ? 'transacciones' : 'transactions'}</p>
                   </div>
                 </div>
               </div>
 
+              {/* Vacío → primer pago: se cruzan. Lo que ya estaba al llegar no se
+                  anima (lo trae la entrada del contenido); un pago nuevo entra y
+                  los demás se corren. */}
+              <CrossFade swapKey={requests.length > 0 ? 'lista' : 'vacio'}>
               {requests.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {requests.map((request, index) => {
+                <div className="relative divide-y divide-border">
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {requests.map((request) => {
                     const statusInfo = getRequestStatusInfo(request.status);
                     const StatusIcon = statusInfo.icon;
                     const dateText =
@@ -638,11 +651,8 @@ export default function LeaseDetailPage() {
                           : `${locale === 'es' ? 'Vence el' : 'Due on'} ${formatDate(request.dueDate)}`;
 
                     return (
-                      <motion.div
+                      <StaggerItem
                         key={request.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + index * 0.05 }}
                         className="flex items-center gap-4 px-6 py-4 hover:bg-surface-muted transition-colors"
                       >
                         <div className={cn(
@@ -684,9 +694,10 @@ export default function LeaseDetailPage() {
                             {formatCurrency(request.amount)}
                           </p>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
               ) : (
                 <div className="py-16 text-center">
@@ -696,19 +707,15 @@ export default function LeaseDetailPage() {
                   <p className="text-fg-muted">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
                 </div>
               )}
-            </motion.div>
+              </CrossFade>
+            </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
 
             {/* Contract Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
@@ -779,15 +786,10 @@ export default function LeaseDetailPage() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Landlord Contact Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
                   <User className="w-5 h-5 text-fg-muted" />
@@ -831,15 +833,10 @@ export default function LeaseDetailPage() {
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
-            </motion.div>
+            </div>
 
             {/* Payment Methods Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-success" />
@@ -865,11 +862,11 @@ export default function LeaseDetailPage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <PayRentModal
         open={payModalOpen}

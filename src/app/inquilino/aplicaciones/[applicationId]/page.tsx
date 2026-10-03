@@ -4,6 +4,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Collapse, CrossFade, Presence } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -161,6 +163,8 @@ export default function ApplicationDetailPage() {
   };
 
   // Loading state
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg">
@@ -192,11 +196,7 @@ export default function ApplicationDetailPage() {
   if (!application) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center px-6"
-        >
+        <motion.div {...entrada} className="text-center px-6">
           <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
             <FileText className="w-10 h-10 text-fg-subtle" />
           </div>
@@ -305,23 +305,14 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />
-        </motion.div>
+        </div>
 
         {/* Hero Card - Property with Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8"
-        >
+        <div className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
@@ -341,6 +332,8 @@ export default function ApplicationDetailPage() {
             <div className="flex-1 p-6 lg:p-8">
               {/* Status Badge */}
               <div className="flex items-center justify-between mb-4">
+                {/* Retirar cambia el estado: la insignia vieja sale y entra la nueva. */}
+                <CrossFade as="span" swapKey={application.status}>
                 <span className={cn(
                   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
                   status.bgColor, status.color
@@ -348,12 +341,15 @@ export default function ApplicationDetailPage() {
                   <StatusIcon className="w-4 h-4" />
                   {status.label}
                 </span>
+                </CrossFade>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={copyTrackingCode}
                   className="rounded-full bg-surface/80 hover:bg-surface-muted text-fg-muted"
                 >
+                  {/* Copiar → «Copiado» → el código otra vez, cruzados. */}
+                  <CrossFade as="span" swapKey={copied ? 'copiado' : 'codigo'} className="inline-flex items-center gap-2">
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 text-success" />
@@ -365,6 +361,7 @@ export default function ApplicationDetailPage() {
                       {application.trackingCode}
                     </>
                   )}
+                  </CrossFade>
                 </Button>
               </div>
 
@@ -403,9 +400,8 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
 
-              {/* Progress Steps */}
-              {!isFinalStatus && (
-                <div className="pt-6 border-t border-border">
+              {/* Progress Steps — al retirar la postulación se pliega. */}
+              <Collapse open={!isFinalStatus} className="pt-6 border-t border-border">
                   <div className="flex items-center justify-between">
                     {progressSteps.map((step, index) => {
                       const StepIcon = step.icon;
@@ -416,7 +412,7 @@ export default function ApplicationDetailPage() {
                         <div key={step.key} className="flex items-center">
                           <div className="flex flex-col items-center">
                             <div className={cn(
-                              'w-10 h-10 rounded-full flex items-center justify-center transition-all',
+                              'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
                               isCompleted
                                 ? isCurrent
                                   ? 'bg-primary text-white'
@@ -446,11 +442,14 @@ export default function ApplicationDetailPage() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+              </Collapse>
 
-              {/* Final Status Message — approved: depende del contrato */}
-              {application.status === 'approved' && (() => {
+              {/* Final Status Message — approved: depende del contrato.
+                  El contrato llega en su propia consulta: el aviso de «aprobada»
+                  se cruza con el del contrato cuando llega o cambia. */}
+              {application.status === 'approved' && (
+              <CrossFade swapKey={contract ? contract.status : 'sin-contrato'}>
+              {(() => {
                 const contractStatus = contract?.status;
 
                 // Sin contrato todavía: el landlord no lo creó.
@@ -671,6 +670,8 @@ export default function ApplicationDetailPage() {
 
                 return null;
               })()}
+              </CrossFade>
+              )}
 
               {(application.status === 'needs_info') && !responseSubmitted && (
                 <div className="mt-6 p-4 rounded-xl bg-warning-soft border border-warning/30">
@@ -749,18 +750,13 @@ export default function ApplicationDetailPage() {
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Timeline */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-xl bg-surface-muted p-6"
-            >
+            <section className="rounded-xl bg-surface-muted p-6">
               <h2 className="text-lg font-semibold text-fg mb-6">
                 {locale === 'es' ? 'Historial de la postulación' : 'Application history'}
               </h2>
@@ -776,16 +772,10 @@ export default function ApplicationDetailPage() {
                     const isFirst = index === 0;
 
                     return (
-                      <motion.div
-                        key={event.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.05 }}
-                        className="relative flex gap-4"
-                      >
+                      <div key={event.id} className="relative flex gap-4">
                         {/* Icon */}
                         <div className={cn(
-                          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all',
+                          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-colors',
                           isFirst
                             ? 'bg-primary text-white'
                             : 'bg-surface border-2 border-border text-fg-muted'
@@ -806,21 +796,16 @@ export default function ApplicationDetailPage() {
                             {formatDate(event.timestamp)} · {formatTime(event.timestamp)}
                           </p>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
-            </motion.section>
+            </section>
 
             {/* Property Info Card */}
             {property && (
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-xl border border-border bg-surface p-6"
-              >
+              <section className="rounded-xl border border-border bg-surface p-6">
                 <h2 className="text-lg font-semibold text-fg mb-4">
                   {locale === 'es' ? 'Propiedad' : 'Property'}
                 </h2>
@@ -855,19 +840,14 @@ export default function ApplicationDetailPage() {
                   {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
-              </motion.section>
+              </section>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-xl bg-primary-soft border border-primary/30 p-6"
-            >
+            <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
               <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Acciones' : 'Actions'}
               </h3>
@@ -875,7 +855,7 @@ export default function ApplicationDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => setShowChat((prev) => !prev)}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center group-hover:opacity-90 transition-colors">
                     <ChatCircle className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
@@ -892,9 +872,12 @@ export default function ApplicationDetailPage() {
                   </div>
                 </button>
 
-                {showChat && <ChatThread applicationId={applicationId} />}
+                {/* La conversación se abre y se cierra con su altura. */}
+                <Collapse open={showChat}>
+                  <ChatThread applicationId={applicationId} />
+                </Collapse>
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group">
+                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center group-hover:bg-success transition-colors">
                     <Phone className="w-5 h-5 text-success group-hover:text-white transition-colors" />
                   </div>
@@ -911,7 +894,7 @@ export default function ApplicationDetailPage() {
                 {application.status === 'needs_info' && !responseSubmitted && (
                   <button
                     onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning-soft transition-all group border border-warning/30"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning-soft transition-colors group border border-warning/30"
                   >
                     <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center group-hover:bg-warning transition-colors">
                       <ArrowClockwise className="w-5 h-5 text-warning group-hover:text-white transition-colors" />
@@ -927,12 +910,13 @@ export default function ApplicationDetailPage() {
                   </button>
                 )}
 
-                {!isFinalStatus && (
+                {/* Retirada la postulación, la acción sale (no desaparece de golpe). */}
+                <Presence show={!isFinalStatus} initial={false}>
                   <button
                     type="button"
                     onClick={() => setConfirmWithdrawOpen(true)}
                     disabled={isWithdrawing}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 hover:bg-danger-soft transition-all group border border-transparent hover:border-danger/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 hover:bg-danger-soft transition-[color,background-color,border-color,opacity] group border border-transparent hover:border-danger/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center group-hover:bg-danger/20 transition-colors">
                       <XCircle className="w-5 h-5 text-danger" />
@@ -946,18 +930,16 @@ export default function ApplicationDetailPage() {
                       </p>
                     </div>
                   </button>
-                )}
+                </Presence>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Status Tips */}
-            {application.status === 'needs_info' && !responseSubmitted && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="rounded-xl bg-warning-soft border border-warning/30 p-6"
-              >
+            {/* Status Tips — entran y salen cuando cambia el estado. */}
+            <Presence
+              show={application.status === 'needs_info' && !responseSubmitted}
+              initial={false}
+              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+            >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
                     <Warning className="w-5 h-5 text-warning" />
@@ -973,16 +955,13 @@ export default function ApplicationDetailPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
-            )}
+            </Presence>
 
-            {application.status === 'under_review' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="rounded-xl bg-warning-soft border border-warning/30 p-6"
-              >
+            <Presence
+              show={application.status === 'under_review'}
+              initial={false}
+              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+            >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
                     <Sparkle className="w-5 h-5 text-warning" />
@@ -998,16 +977,10 @@ export default function ApplicationDetailPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
-            )}
+            </Presence>
 
             {/* Quick Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl bg-surface-muted p-6"
-            >
+            <div className="rounded-xl bg-surface-muted p-6">
               <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Resumen' : 'Summary'}
               </h3>
@@ -1031,7 +1004,9 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Estado actual' : 'Current status'}
                   </span>
-                  <span className={cn('text-sm font-medium', status.color)}>{status.label}</span>
+                  <CrossFade as="span" swapKey={application.status} className={cn('text-sm font-medium', status.color)}>
+                    {status.label}
+                  </CrossFade>
                 </div>
                 <div className="h-px bg-surface-muted" />
                 <div className="flex items-center justify-between">
@@ -1041,10 +1016,10 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm font-medium text-fg">{property?.city || '-'}</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Withdraw confirmation */}
       <AlertDialog open={confirmWithdrawOpen} onOpenChange={setConfirmWithdrawOpen}>

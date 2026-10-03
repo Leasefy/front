@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, SpinnerGap, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
-import { Progress } from '@leasefy/cadence';
+import { Appear, CrossFade, Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePublish } from '@/lib/context/PublishContext';
@@ -51,6 +51,18 @@ export function PublishShell({ children }: PublishShellProps) {
       enfocarElPrimerError(contenidoRef.current, ordenDeLosErrores);
     }
   }, [erroresDelServidor, ordenDeLosErrores]);
+
+  /*
+   * Hacia dónde va el paso: adelante entra por la derecha, atrás por la
+   * izquierda (`CrossFade direction`). Se compara con el paso anterior en el
+   * render; un `useRef` y no un estado, porque sólo tiene que recordar.
+   */
+  const pasoAnteriorRef = useRef(currentStep);
+  const direccionRef = useRef<'forward' | 'backward'>('forward');
+  if (currentStep !== pasoAnteriorRef.current) {
+    direccionRef.current = currentStep > pasoAnteriorRef.current ? 'forward' : 'backward';
+    pasoAnteriorRef.current = currentStep;
+  }
 
   const currentStepConfig = PUBLISH_STEPS[currentStep - 1];
   const isFirstStep = currentStep === 1;
@@ -179,7 +191,7 @@ export function PublishShell({ children }: PublishShellProps) {
                               : undefined
                           }
                           className={cn(
-                            'relative z-10 size-8 rounded-full flex items-center justify-center transition-all',
+                            'relative z-10 size-8 rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow]',
                             'font-mono text-[13px] font-semibold tabular-nums',
                             isCompleted && !isCurrent
                               ? 'bg-primary border-2 border-primary text-primary-fg'
@@ -249,9 +261,14 @@ export function PublishShell({ children }: PublishShellProps) {
                 </h3>
               </div>
 
-              {/* Form content */}
+              {/* Form content — cada paso se cruza con el siguiente (16 px hacia
+                  donde se avanza). `popLayout`: el paso nuevo se monta YA (el
+                  foco al primer campo con error lo necesita montado) y el
+                  viejo sale por encima. */}
               <div ref={contenidoRef} className="px-4 py-6 lg:px-6 lg:py-8">
-                {children}
+                <CrossFade swapKey={currentStep} direction={direccionRef.current} mode="popLayout">
+                  {children}
+                </CrossFade>
               </div>
 
               {/* El aviso del pie — Cadence error alert. SÓLO lo que no tiene
@@ -260,14 +277,15 @@ export function PublishShell({ children }: PublishShellProps) {
                   campo, que además recibe el foco. Sin nada suelto, no hay
                   aviso (02-10-2026). */}
               {submissionError && (
-                <div
+                // Entra subiendo 8 px como los avisos del sistema.
+                <Appear
                   role="alert"
                   data-testid="publicar-aviso-del-pie"
                   className="mx-4 mb-4 lg:mx-6 p-3 bg-danger-soft border border-danger/20 rounded-[14px] flex items-start gap-2"
                 >
                   <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-danger">{submissionError}</p>
-                </div>
+                </Appear>
               )}
 
               {/* Compass */}

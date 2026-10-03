@@ -3,7 +3,8 @@
 import { Check, Buildings, User, EnvelopeSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Collapse, CrossFade, motionScale, motionSpring } from '@leasefy/cadence';
 import { AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
 import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
@@ -96,12 +97,14 @@ export function StepPlan() {
               <motion.button
                 key={ownerType.id}
                 type="button"
-                whileTap={{ scale: 0.98 }}
+                // La presión del sistema (97 %, resorte ágil) en vez de un 0,98 suelto.
+                whileTap={{ scale: motionScale.press }}
+                transition={motionSpring.snappy}
                 onClick={() =>
                   updateDraft({ ownerType: ownerType.id, selectedPlan: '' })
                 }
                 className={cn(
-                  'relative p-4 rounded-xl border text-left transition-all duration-200',
+                  'relative p-4 rounded-xl border text-left transition-colors duration-base',
                   isSelected
                     ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-border',
@@ -140,17 +143,11 @@ export function StepPlan() {
         </div>
       </div>
 
-      {/* Plans - shown after owner type selection */}
-      <AnimatePresence mode="wait">
-        {draft.ownerType && (
-          <motion.div
-            key={draft.ownerType}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="space-y-4"
-          >
+      {/* Plans - shown after owner type selection. Elegir el tipo por primera
+          vez abre los planes con su altura; cambiar de tipo los cruza (sale
+          el viejo, entra el nuevo) — `CrossFade` en vez de `mode="wait"`. */}
+      <Collapse open={Boolean(draft.ownerType)}>
+          <CrossFade swapKey={draft.ownerType || 'sin-tipo'} className="space-y-4">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 Elige tu plan
@@ -161,17 +158,14 @@ export function StepPlan() {
             </div>
 
             <div className="space-y-4">
-              {planOptions.map((plan, index) => {
+              {planOptions.map((plan) => {
                 const isSelected = draft.selectedPlan === plan.id;
 
                 // Enterprise plan — show contact CTA instead of selectable card
                 if (plan.isEnterprise) {
                   return (
-                    <motion.div
+                    <div
                       key={plan.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
                       className="relative w-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-border"
                     >
                       <div className="flex items-start gap-4">
@@ -197,20 +191,17 @@ export function StepPlan() {
                           </a>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 }
 
                 return (
-                  <motion.button
+                  <button
                     key={plan.id}
                     type="button"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
                     onClick={() => updateDraft({ selectedPlan: plan.id })}
                     className={cn(
-                      'relative w-full text-left p-5 rounded-xl border transition-all duration-200',
+                      'relative w-full text-left p-5 rounded-xl border transition-[transform,background-color,border-color] duration-base',
                       plan.highlighted &&
                         !isSelected &&
                         'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 scale-[1.01]',
@@ -236,7 +227,7 @@ export function StepPlan() {
                       {/* Icon */}
                       <div
                         className={cn(
-                          'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                          'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-base',
                           plan.highlighted
                             ? 'bg-primary text-white uppercase tracking-wide font-mono'
                             : isSelected
@@ -310,7 +301,7 @@ export function StepPlan() {
                       {/* Selection indicator */}
                       <div
                         className={cn(
-                          'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                          'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-base',
                           isSelected
                             ? 'border-primary/30 bg-primary'
                             : plan.highlighted
@@ -323,7 +314,7 @@ export function StepPlan() {
                         )}
                       </div>
                     </div>
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
@@ -343,9 +334,8 @@ export function StepPlan() {
                 Pago seguro
               </span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </CrossFade>
+      </Collapse>
     </div>
   );
 }

@@ -65,14 +65,14 @@ export function StepAmenities() {
                 onClick={() => toggleAmenity(amenity.value)}
                 aria-pressed={isSelected}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-[14px] text-left transition-all duration-200',
+                  'flex items-center gap-3 px-4 py-3 rounded-[14px] text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                   isSelected
                     ? 'border-2 border-primary bg-primary-soft'
                     : 'border border-border hover:border-border-strong bg-surface'
                 )}
               >
                 <div className={cn(
-                  'w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                  'w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-[color,background-color,border-color,box-shadow] duration-base',
                   isSelected
                     ? 'bg-primary border-primary'
                     : 'border-border-strong'
@@ -96,7 +96,7 @@ export function StepAmenities() {
               type="button"
               onClick={() => toggleAmenity(amenity)}
               aria-pressed
-              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border-2 border-primary bg-primary-soft text-left transition-all duration-200"
+              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border-2 border-primary bg-primary-soft text-left transition-[color,background-color,border-color,box-shadow] duration-base"
             >
               <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 bg-primary border-primary">
                 <Check className="w-3 h-3 text-primary-fg" weight="bold" />
@@ -110,7 +110,7 @@ export function StepAmenities() {
             <button
               type="button"
               onClick={() => setShowCustom(true)}
-              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border border-dashed border-border-strong text-left transition-all duration-200 hover:border-border-strong hover:bg-surface-hover bg-surface"
+              className="flex items-center gap-3 px-4 py-3 rounded-[14px] border border-dashed border-border-strong text-left transition-[color,background-color,border-color,box-shadow] duration-base hover:border-border-strong hover:bg-surface-hover bg-surface"
             >
               <div className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 border-border-strong">
                 <Plus className="w-3 h-3 text-fg-subtle" weight="bold" />

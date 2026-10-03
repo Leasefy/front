@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { AnimatedNumber, Appear, Collapse, motionDuration, motionEase } from '@leasefy/cadence';
 import { Plus, Play, CreditCard, CaretRight, Check, ArrowRight, Shield, Lightning, Users, Buildings, Clock, TrendUp, VideoCamera, FileText, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -217,32 +218,25 @@ export function LandlordDashboardEmpty() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      {/* Llega después de cargar los inmuebles del inicio: entra UNA vez, con
+          4 px (carga → contenido), en vez de cinco entradas escalonadas a mano. */}
+      <Appear distance="xs" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <p className="text-sm font-medium text-fg-muted mb-1">
             {greeting}
           </p>
           <h1 className="text-3xl sm:text-4xl font-medium text-fg tracking-tight">
             {locale === 'es' ? `Bienvenido, ${firstName}` : `Welcome, ${firstName}`} 👋
           </h1>
-        </motion.header>
+        </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
 
             {/* Getting Started Widget */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-lg bg-surface overflow-hidden"
-            >
+            <div className="rounded-lg bg-surface overflow-hidden">
               {/* Header */}
               <button
                 onClick={toggleCollapsed}
@@ -264,27 +258,28 @@ export function LandlordDashboardEmpty() {
                 <div className="flex items-center gap-4">
                   {/* Progress */}
                   <div className="hidden sm:flex items-center gap-3">
+                    {/* Se llena con `transform` (translateX), no con `width`. */}
                     <div className="w-32 h-2 bg-surface-muted rounded-full overflow-hidden">
                       <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPercentage}%` }}
-                        className="h-full bg-fg rounded-full"
+                        initial={{ x: '-100%' }}
+                        animate={{ x: `${progressPercentage - 100}%` }}
+                        transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                        className="h-full w-full bg-fg rounded-full"
                       />
                     </div>
                     <span className="text-sm font-medium text-fg-muted">
-                      {progressPercentage}%
+                      <AnimatedNumber value={progressPercentage} from={0} format={(n) => String(Math.round(n))} />%
                     </span>
                   </div>
                   <CaretRight className={cn(
-                    'w-5 h-5 text-fg-subtle transition-transform',
+                    'w-5 h-5 text-fg-subtle transition-transform duration-slow ease-emphasis',
                     !isCollapsed && 'rotate-90'
                   )} />
                 </div>
               </button>
 
-              {/* Steps List */}
-              {!isCollapsed && (
-                <div className="px-6 pb-6 space-y-2">
+              {/* Steps List — se abre y se cierra con su altura; el chevrón gira con la misma curva. */}
+              <Collapse open={!isCollapsed} className="px-6 pb-6 space-y-2">
                   {steps.map((step, index) => {
                     const Icon = step.icon;
                     const isNext = !step.completed && index === steps.findIndex(s => !s.completed);
@@ -292,7 +287,7 @@ export function LandlordDashboardEmpty() {
                     const content = (
                       <div
                         className={cn(
-                          'flex items-center gap-4 p-4 rounded-lg transition-all',
+                          'flex items-center gap-4 p-4 rounded-lg transition-[opacity,background-color,border-color]',
                           step.completed
                             ? 'bg-success-soft dark:bg-[#2C7A53]/15'
                             : isNext
@@ -359,17 +354,11 @@ export function LandlordDashboardEmpty() {
 
                     return <div key={step.id}>{content}</div>;
                   })}
-                </div>
-              )}
-            </motion.div>
+              </Collapse>
+            </div>
 
             {/* Value Proposition Cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 {
                   icon: Shield,
@@ -408,15 +397,10 @@ export function LandlordDashboardEmpty() {
                   </p>
                 </div>
               ))}
-            </motion.div>
+            </div>
 
             {/* Empty state for properties — estilo limpio canónico */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
-            >
+            <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
               <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
                 <Buildings weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
               </div>
@@ -433,22 +417,17 @@ export function LandlordDashboardEmpty() {
               <div className="mt-1">
                 <Link
                   href="/publicar?from=panel"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
                 >
                   <Plus className="w-4 h-4" />
                   {locale === 'es' ? 'Publicar propiedad' : 'List property'}
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             {/* Quick Stats (placeholder) */}
             <div className="rounded-lg bg-surface p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -516,9 +495,9 @@ export function LandlordDashboardEmpty() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </div>
+      </Appear>
 
       {/* VideoCamera Modal */}
       <VideoCameraModal

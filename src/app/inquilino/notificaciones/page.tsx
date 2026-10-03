@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { AnimatedNumber, CrossFade, MotionIndicator, StaggerItem } from '@leasefy/cadence';
 import {
   Bell,
   Check,
@@ -152,6 +153,8 @@ export default function NotificacionesPage() {
   } = useTenantNotifications();
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
+  // La píldora del filtro activo se desliza al nuevo (antes saltaba).
+  const idDelFiltro = useId();
 
   // 02-10-2026 · Antes, cualquier fallo decía el mismo texto fijo. Ahora por
   // el traductor: un 4xx dice qué pasó, un 5xx que fue nuestro (con la
@@ -199,11 +202,7 @@ export default function NotificacionesPage() {
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
@@ -251,29 +250,31 @@ export default function NotificacionesPage() {
               />
             </div>
           </div>
-        </motion.header>
+        </header>
 
         {/* Filtros — solo con notificaciones. Seis pestañas para filtrar nada
             es andamiaje alrededor de un vacío. */}
         {notifications.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {filters.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id as FilterType)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
+                  'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
                   filter === f.id
-                    ? 'bg-ink dark:bg-surface text-white dark:text-fg'
+                    ? 'text-white dark:text-fg'
                     : 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface-muted'
                 )}
               >
+                {/* El fondo oscuro del activo es un `MotionIndicator`: se desliza al filtro nuevo. */}
+                {filter === f.id && (
+                  <MotionIndicator
+                    layoutId={`${idDelFiltro}-filtro`}
+                    className="inset-0 -z-10 rounded-full bg-ink dark:bg-surface"
+                  />
+                )}
                 {f.label}
                 {f.count !== undefined && f.count > 0 && (
                   <span
@@ -284,30 +285,31 @@ export default function NotificacionesPage() {
                         : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                     )}
                   >
-                    {f.count}
+                    <AnimatedNumber value={f.count} />
                   </span>
                 )}
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
         )}
 
-        {/* Notifications List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+        {/* Notifications List — cargando → lista, cambiar de filtro o quedar
+            vacío cruzan el contenido; dentro de un mismo filtro, marcar o
+            borrar saca la fila y las demás se corren. */}
+        <CrossFade
+          swapKey={
+            isLoading
+              ? 'cargando'
+              : filteredNotifications.length === 0
+                ? `vacio-${filter}`
+                : `lista-${filter}-${hideRead ? 'sin-leidas' : 'todas'}`
+          }
         >
           {isLoading ? (
             <NotificationSkeleton />
-          ) : (
-          <AnimatePresence mode="popLayout">
-            {filteredNotifications.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
+          ) : filteredNotifications.length === 0 ? (
+              <div>
                 <EmptyState
                   icon={Bell}
                   title={
@@ -330,21 +332,17 @@ export default function NotificacionesPage() {
                   }
                   className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-surface-muted"
                 />
-              </motion.div>
+              </div>
             ) : (
-              <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
-                {filteredNotifications.map((notification, index) => {
+              <div className="relative rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
+                <AnimatePresence initial={false} mode="popLayout">
+                {filteredNotifications.map((notification) => {
                   const IconComponent = getNotificationIcon(notification.type);
                   const categoryConfig = getCategoryConfig(notification.category);
 
                   return (
-                    <motion.div
+                    <StaggerItem
                       key={notification.id}
-                      layout
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -100 }}
-                      transition={{ delay: 0.03 * index, duration: 0.2 }}
                       onClick={() => handleNotificationClick(notification)}
                       className={cn(
                         'flex items-start gap-4 p-5 cursor-pointer group transition-colors',
@@ -464,23 +462,17 @@ export default function NotificacionesPage() {
                       <div className="flex items-center flex-shrink-0">
                         <CaretRight className="w-5 h-5 text-fg-subtle dark:text-fg-muted group-hover:text-fg-subtle dark:group-hover:text-fg-muted transition-colors" />
                       </div>
-                    </motion.div>
+                    </StaggerItem>
                   );
                 })}
+                </AnimatePresence>
               </div>
             )}
-          </AnimatePresence>
-          )}
-        </motion.div>
+        </CrossFade>
 
         {/* Summary Card */}
         {notifications.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 p-4 rounded-xl bg-surface-muted border border-border-faint dark:border-white/5"
-          >
+          <div className="mt-6 p-4 rounded-xl bg-surface-muted border border-border-faint dark:border-white/5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-muted dark:text-fg-subtle">
                 {locale === 'es'
@@ -499,7 +491,7 @@ export default function NotificacionesPage() {
                 </Button>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

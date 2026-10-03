@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedNumber, CrossFade, MotionIndicator, Presence, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -333,6 +335,11 @@ export default function DocumentosPage() {
   // (reviewStatus), not the legacy `verified` boolean.
   const reviewCounts = deriveReviewCounts(documents);
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+  // La píldora del filtro activo se desliza al nuevo.
+  const idDelFiltro = useId();
+
   // Loading state
   if (isLoading) {
     return (
@@ -373,28 +380,19 @@ export default function DocumentosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {t('documents.title')}
           </h1>
           <p className="mt-1 text-fg-muted dark:text-fg-subtle">
             {t('documents.subtitle')}
           </p>
-        </motion.header>
+        </header>
 
         {/* Documentos del arriendo (contrato firmado + recibos) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mb-8"
-        >
+        <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-fg dark:text-white">
               {locale === 'es' ? 'Documentos del arriendo' : 'Lease documents'}
@@ -517,7 +515,7 @@ export default function DocumentosPage() {
               </p>
             </div>
           )}
-        </motion.section>
+        </section>
 
         {/* 🔴 Paz y salvo (DOCU-02) — hasta el 21-09-2026 esto eran DOS tarjetas
             diciendo «Próximamente» sobre endpoints que no existían. Ya existen
@@ -533,24 +531,15 @@ export default function DocumentosPage() {
             y en el portal del propietario. Lo que sí falta —que un inquilino
             agente de retención pueda EMITIR el suyo— es una pieza aparte y no
             se disfraza de «próximamente» acá. */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.075 }}
-          className="mb-8"
-        >
+        <section className="mb-8">
           <MisCertificados />
-        </motion.section>
+        </section>
 
         {/* Stats Grid — solo con documentos. Cuatro contadores en cero no
-            resumen nada y ocupan justo el lugar del único mensaje útil. */}
+            resumen nada y ocupan justo el lugar del único mensaje útil.
+            Borrar un documento hace contar las cifras desde la anterior. */}
         {documents.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
-        >
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {/* Total */}
           <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
@@ -558,7 +547,7 @@ export default function DocumentosPage() {
             </div>
             <p className="text-sm text-primary mb-1">Total</p>
             <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              {reviewCounts.total}
+              <AnimatedNumber value={reviewCounts.total} />
             </p>
             <p className="text-sm text-fg-muted mt-2">{t('nav.documents')}</p>
           </div>
@@ -572,7 +561,7 @@ export default function DocumentosPage() {
               {locale === 'es' ? 'Aprobados' : 'Approved'}
             </p>
             <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              {reviewCounts.approved}
+              <AnimatedNumber value={reviewCounts.approved} />
             </p>
             <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Verificados' : 'Verified'}
@@ -588,7 +577,7 @@ export default function DocumentosPage() {
               {locale === 'es' ? 'En revisión' : 'Under review'}
             </p>
             <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              {reviewCounts.inReview + reviewCounts.pending}
+              <AnimatedNumber value={reviewCounts.inReview + reviewCounts.pending} />
             </p>
             <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Pendientes' : 'Pending'}
@@ -604,23 +593,18 @@ export default function DocumentosPage() {
               {locale === 'es' ? 'Rechazados' : 'Rejected'}
             </p>
             <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
-              {reviewCounts.rejected}
+              <AnimatedNumber value={reviewCounts.rejected} />
             </p>
             <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Requieren acción' : 'Need action'}
             </p>
           </div>
-        </motion.div>
+        </div>
         )}
 
         {/* Filtros — sin documentos no hay nada que buscar ni que filtrar. */}
         {documents.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4 mb-6"
-        >
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           {/* Search */}
           <div className="relative flex-1">
             <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
@@ -644,12 +628,19 @@ export default function DocumentosPage() {
                     key={cat.value}
                     onClick={() => handleFilterChange(cat.value)}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
+                      'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
                       selectedType === cat.value
-                        ? 'bg-surface dark:bg-border text-fg dark:text-white'
+                        ? 'text-fg dark:text-white'
                         : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
                     )}
                   >
+                    {/* El fondo del activo es un `MotionIndicator`: se desliza al tipo nuevo. */}
+                    {selectedType === cat.value && (
+                      <MotionIndicator
+                        layoutId={`${idDelFiltro}-tipo`}
+                        className="inset-0 -z-10 rounded-full bg-surface dark:bg-border"
+                      />
+                    )}
                     <IconComponent className="w-4 h-4" />
                     <span className="hidden sm:inline">{cat.label}</span>
                   </button>
@@ -657,19 +648,14 @@ export default function DocumentosPage() {
               })}
             </div>
           )}
-        </motion.div>
+        </div>
         )}
 
         {/* Habeas Data (Ley 1581) — per-purpose consent gate. Blocks doc access until the
             mandatory purpose is granted. Avalúo model: separate booleans, unchecked default,
             one purpose each, Ley 1581 notice. Shown only when there are documents to access. */}
         {documents.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="mb-6"
-          >
+          <section className="mb-6">
             <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -709,13 +695,18 @@ export default function DocumentosPage() {
                 <p id="consent-doc-access-desc" className="text-xs text-fg-muted dark:text-fg-subtle pl-7">
                   {locale === 'es' ? 'Necesario para acceder a tus documentos.' : 'Required to access your documents.'}
                 </p>
-                {!consent.purposeDocAccess && (
-                  <p className="text-xs text-warning pl-7">
+                {/* Al aceptar, el aviso sale; al quitar el visto, vuelve a entrar. */}
+                <Presence
+                  as="p"
+                  show={!consent.purposeDocAccess}
+                  initial={false}
+                  distance="xs"
+                  className="text-xs text-warning pl-7"
+                >
                     {locale === 'es'
                       ? 'Debes aceptar este consentimiento para ver o descargar tus documentos.'
                       : 'You must accept this consent to view or download your documents.'}
-                  </p>
-                )}
+                </Presence>
               </div>
 
               {/* Consent 2 — purposeThirdPartyShare (OPTIONAL) */}
@@ -742,15 +733,11 @@ export default function DocumentosPage() {
                   : 'Your data is processed in accordance with Law 1581 of 2012 (Habeas Data) and Leasefy’s privacy policy.'}
               </p>
             </div>
-          </motion.section>
+          </section>
         )}
 
         {/* Documents Grid */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <section>
           {/* El encabezado con el contador tampoco va sobre el vacío: "0
               documentos" arriba de "No hay documentos" lo dice dos veces. */}
           {documents.length > 0 && (
@@ -759,7 +746,7 @@ export default function DocumentosPage() {
                 {t('nav.documents')}
               </h2>
               <span className="text-sm text-fg-muted">
-                {filteredDocuments.length} {locale === 'es'
+                <AnimatedNumber value={filteredDocuments.length} /> {locale === 'es'
                   ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
                   : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
               </span>
@@ -777,21 +764,23 @@ export default function DocumentosPage() {
                 : 'When you apply to a property, the documents you upload will appear here.'}
               action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
-          ) : filteredDocuments.length > 0 ? (
+          ) : (
+            /* Con resultados ↔ sin resultados (buscar, filtrar) se cruzan; dentro
+               de la grilla, lo que entra o sale al filtrar, paginar o borrar lo
+               hace con la entrada y la salida del sistema (lo que ya estaba al
+               llegar no se anima) y los demás se corren. */
+            <CrossFade swapKey={filteredDocuments.length > 0 ? 'con-resultados' : 'sin-resultados'}>
+          {filteredDocuments.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence mode="popLayout">
-                  {paginatedDocuments.map((doc, index) => {
+              <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {paginatedDocuments.map((doc) => {
                     const Icon = getDocIcon(doc.type);
 
                     return (
-                      <motion.div
+                      <StaggerItem
                         key={doc.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong hover: transition-colors duration-slow overflow-hidden"
                       >
                         {/* Document Header */}
                         <div className="p-5">
@@ -886,7 +875,7 @@ export default function DocumentosPage() {
                             <Trash className="w-4 h-4" />
                           </button>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
                 </AnimatePresence>
@@ -954,8 +943,10 @@ export default function DocumentosPage() {
               </p>
             </div>
           )}
-        </motion.section>
-      </div>
+            </CrossFade>
+          )}
+        </section>
+      </motion.div>
 
       {/* Visor del documento: el modal del sistema (DESIGN.md §17). La ✕, el
           velo, el Esc y el foco los pone la primitiva. */}

@@ -31,6 +31,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
 import { X, Lifebuoy, Paperclip, ImageSquare, FileText } from '@phosphor-icons/react';
+import { AnimatePresence } from 'framer-motion';
+import { StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -91,6 +93,21 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
   const [asunto, setAsunto] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  /*
+   * Una clave estable por archivo (no el índice): con el índice, quitar la
+   * foto 2 animaba la salida de la última. Un `WeakMap` por objeto `File`: el
+   * mismo archivo conserva su clave mientras esté en la lista.
+   */
+  const clavesDeArchivo = useRef(new WeakMap<File, string>());
+  const siguienteClave = useRef(0);
+  const claveDe = (file: File) => {
+    let clave = clavesDeArchivo.current.get(file);
+    if (!clave) {
+      clave = `adjunto-${siguienteClave.current++}`;
+      clavesDeArchivo.current.set(file, clave);
+    }
+    return clave;
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   /** Lo que falta o el back rechazó, bajo su campo (02-10-2026). */
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaSolicitud, string>>>({});
@@ -347,14 +364,17 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
               : 'Images or PDF, up to 10 MB each.'}
           </p>
 
+          {/* Cada adjunto entra (8 px) y, al quitarlo, sale y los demás se corren. */}
           {files.length > 0 && (
-            <ul className="mt-3 space-y-2">
+            <ul className="relative mt-3 space-y-2">
+              <AnimatePresence initial={false} mode="popLayout">
               {files.map((file, index) => {
                 const isImage = file.type.startsWith('image/');
                 const ChipIcon = isImage ? ImageSquare : FileText;
                 return (
-                  <li
-                    key={`${file.name}-${index}`}
+                  <StaggerItem
+                    as="li"
+                    key={claveDe(file)}
                     className="flex items-center gap-2 rounded-lg border border-border bg-surface-hover px-3 py-2"
                   >
                     <ChipIcon className="w-4 h-4 text-fg-muted flex-shrink-0" aria-hidden="true" />
@@ -368,9 +388,10 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
                     >
                       <X className="w-4 h-4" />
                     </button>
-                  </li>
+                  </StaggerItem>
                 );
               })}
+              </AnimatePresence>
             </ul>
           )}
         </div>

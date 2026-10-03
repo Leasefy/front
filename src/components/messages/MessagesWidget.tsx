@@ -22,7 +22,18 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { IconButton, MonoLabel } from '@leasefy/cadence';
+import {
+  AnimatedNumber,
+  CrossFade,
+  IconButton,
+  MonoLabel,
+  Presence,
+  enterTransition,
+  exitTransition,
+  motionDistance,
+  motionScale,
+  usePrefersReducedMotion,
+} from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -178,6 +189,9 @@ function MessagesSkeleton() {
 
 export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
+  // Para las transiciones hechas a mano (filas, burbujas, el menú): con
+  // movimiento reducido quedan fundidos cortos, como en las primitivas.
+  const reducido = usePrefersReducedMotion();
   /* Para `{{inmobiliaria}}` de las plantillas: el nombre real de la agencia
      del usuario, no uno inventado. Ver `datosDePlantilla`. */
   const { agency } = useAuth();
@@ -574,11 +588,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         {/* Header — en pantalla completa no hay título ni bajada: el sidebar
             ya dice «Mensajes» y el contador de no leídos vive en su badge. */}
         {!pantallaCompleta && (
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex-shrink-0"
-        >
+        <header className="mb-6 flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold text-foreground tracking-tight">
@@ -588,23 +598,24 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 {headerSubtitle}
               </p>
             </div>
-            {totalUnread > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full shrink-0">
+            {/* «N sin leer»: cuenta cuando cambia y sale cuando se lee todo. */}
+            <Presence
+              show={totalUnread > 0}
+              initial={false}
+              distance="xs"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full shrink-0"
+            >
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-primary">
-                  {totalUnread} {locale === 'es' ? 'sin leer' : 'unread'}
+                  <AnimatedNumber value={totalUnread} /> {locale === 'es' ? 'sin leer' : 'unread'}
                 </span>
-              </div>
-            )}
+            </Presence>
           </div>
-        </motion.header>
+        </header>
         )}
 
         {/* Chat Container */}
-        <motion.div
-          initial={{ opacity: 0, y: pantallaCompleta ? 0 : 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: pantallaCompleta ? 0 : 0.1 }}
+        <div
           className={cn(
             'bg-card overflow-hidden flex-1 min-h-0',
             !pantallaCompleta && 'rounded-lg border border-border',
@@ -644,8 +655,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 />
               </div>
 
-              {/* Conversations */}
+              {/* Conversations — cargando → lista (o el fallo, o el vacío) se
+                  cruzan; dentro de la lista, buscar o una conversación nueva
+                  hace entrar y salir filas, y las demás se corren. */}
               <div className="flex-1 overflow-y-auto">
+                <CrossFade
+                  swapKey={
+                    isLoadingConversations
+                      ? 'cargando'
+                      : errorConversaciones
+                        ? 'fallo'
+                        : filteredConversations.length === 0
+                          ? 'vacio'
+                          : 'lista'
+                  }
+                >
                 {isLoadingConversations ? (
                   <ConversationsSkeleton />
                 ) : errorConversaciones ? (
@@ -687,16 +711,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                     )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
-                    {filteredConversations.map((conversation, index) => (
+                  <div className="relative divide-y divide-border">
+                    <AnimatePresence initial={false} mode="popLayout">
+                    {filteredConversations.map((conversation) => (
                       <motion.button
                         key={conversation.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                        layout="position"
+                        initial={{ opacity: 0, y: motionDistance.sm }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: exitTransition(reducido) }}
+                        transition={enterTransition(reducido)}
                         onClick={() => handleSelectConversation(conversation)}
                         className={cn(
-                          'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
+                          'w-full flex items-start gap-3 px-4 py-4 text-left transition-colors',
                           selectedConversationId === conversation.id
                             ? 'bg-card border-l-2 border-l-primary'
                             : 'hover:bg-card/80',
@@ -749,8 +776,10 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         )}
                       </motion.button>
                     ))}
+                    </AnimatePresence>
                   </div>
                 )}
+                </CrossFade>
               </div>
             </div>
 
@@ -853,10 +882,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         <AnimatePresence>
                           {showOptionsList && (
                             <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              // Flotante del sistema: nace al 96 % desde su ancla
+                              // (arriba a la derecha) y sale acelerando.
+                              initial={{ opacity: 0, scale: motionScale.pop, y: -motionDistance.xs }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              transition={{ duration: 0.15 }}
+                              exit={{ opacity: 0, scale: motionScale.pop, transition: exitTransition(reducido) }}
+                              transition={enterTransition(reducido)}
+                              style={{ transformOrigin: 'top right' }}
                               /*
                                 `w-52` (208 px) no le daba: «Silenciar
                                 notificaciones» se partía en dos renglones y
@@ -987,11 +1019,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             )}
                             <AnimatePresence initial={false}>
                               {messages.map((message, index) => (
+                                // Sólo los mensajes NUEVOS entran (el hilo que ya
+                                // estaba no se anima): suben 8 px sin retraso. El
+                                // retraso por índice hacía esperar ~2 s al mensaje
+                                // 100 de un hilo largo.
                                 <motion.div
                                   key={message.id}
-                                  initial={{ opacity: 0, y: 10 }}
+                                  initial={{ opacity: 0, y: motionDistance.sm }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.02 }}
+                                  transition={enterTransition(reducido)}
                                   className={cn('flex', message.isMine ? 'justify-end' : 'justify-start')}
                                 >
                                   <div
@@ -1212,16 +1248,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       </div>
                     </div>
 
-                    {/* Info Panel */}
-                    <AnimatePresence>
-                      {showInfoPanel && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          transition={{ duration: 0.2 }}
-                          className="w-full lg:w-80 border-l border-border bg-card overflow-y-auto"
-                        >
+                    {/* Info Panel — entra desde la derecha (16 px) y sale por el mismo lado. */}
+                    <Presence
+                      show={showInfoPanel}
+                      direction="left"
+                      distance="md"
+                      className="w-full lg:w-80 border-l border-border bg-card overflow-y-auto"
+                    >
                           {/* Panel Header */}
                           <div className="flex items-center justify-between p-4 border-b border-border">
                             <h3 className="text-base font-semibold text-foreground">
@@ -1318,15 +1351,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             </div>
                             )}
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    </Presence>
                   </div>
                 </>
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
 

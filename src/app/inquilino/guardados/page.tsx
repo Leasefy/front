@@ -5,6 +5,8 @@ import { Heart, MagnifyingGlass, TrashSimple, MapPin, CaretRight, House, Plus, C
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { motion } from 'framer-motion';
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -48,6 +50,20 @@ export default function GuardadosPage() {
     setSheetOpen(true);
   };
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading);
+
+  // Qué se ve debajo del encabezado: cuando cambia (cargó, falló, se vació al
+  // quitar la última) lo viejo sale y lo nuevo entra.
+  const estadoDeGuardadas =
+    cargandoGuardadas && wishlist.length > 0
+      ? 'cargando'
+      : errorGuardadas
+        ? 'fallo'
+        : properties.length === 0
+          ? 'vacio'
+          : 'lista';
+
   // Loading state
   if (isOnboardingLoading) {
     return (
@@ -71,13 +87,9 @@ export default function GuardadosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-medium text-fg tracking-tight">
@@ -105,7 +117,7 @@ export default function GuardadosPage() {
               </Link>
             )}
           </div>
-        </motion.header>
+        </header>
 
         {/* Content
 
@@ -119,6 +131,7 @@ export default function GuardadosPage() {
 
             El tercero se veía como el primero: «No tienes propiedades
             guardadas» a alguien que guardó cinco y se las despublicaron. */}
+        <CrossFade swapKey={estadoDeGuardadas}>
         {cargandoGuardadas && wishlist.length > 0 ? (
           <div className="flex items-center justify-center py-20">
             <Spinner size="lg" />
@@ -131,11 +144,7 @@ export default function GuardadosPage() {
           />
         ) : properties.length === 0 ? (
           /* Empty State */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             {/*
               Era un tercer estilo de vacío —círculo gris sobre `surface-muted/80`—
               mientras Documentos, Contratos, Pagos y Postulaciones usan el
@@ -172,22 +181,16 @@ export default function GuardadosPage() {
                 href: '/inquilino/para-ti',
               }}
             />
-          </motion.div>
+          </div>
         ) : (
-          /* Properties Grid */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {properties.map((property, index) => (
-                <motion.div
+          /* Properties Grid — llega después de su carga (entra escalonada, techo
+             de 320 ms); quitar una guardada la saca y las demás se corren. */
+          <div>
+            <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {properties.map((property) => (
+                <StaggerItem
                   key={property.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05 }}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300"
+                  className="group relative overflow-hidden rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow"
                 >
                   {/* Image */}
                   <button
@@ -198,7 +201,7 @@ export default function GuardadosPage() {
                       property={property}
                       alt={property.title}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="group-hover:scale-105 transition-transform duration-500"
+                      className="group-hover:scale-105 transition-transform duration-reveal"
                     />
 
                     {/* Status badge */}
@@ -217,7 +220,7 @@ export default function GuardadosPage() {
                         e.stopPropagation();
                         removeFromWishlist(property.id);
                       }}
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-all backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-danger group/btn"
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-danger group/btn"
                       title={t('saved.remove')}
                       aria-label={t('saved.remove')}
                       icon={
@@ -275,18 +278,14 @@ export default function GuardadosPage() {
                       </span>
                     </div>
                   </div>
-                </motion.div>
+                </StaggerItem>
               ))}
 
               {/* Add More Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + properties.length * 0.05 }}
-              >
+              <StaggerItem key="agregar-mas">
                 <Link
                   href="/inquilino/explorar"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-all group"
+                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 group-hover:bg-primary-soft transition-colors">
                     <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors" />
@@ -298,16 +297,11 @@ export default function GuardadosPage() {
                     {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
                   </p>
                 </Link>
-              </motion.div>
-            </div>
+              </StaggerItem>
+            </Stagger>
 
             {/* Summary Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-8 rounded-xl bg-primary-soft border border-primary/30 p-6"
-            >
+            <div className="mt-8 rounded-xl bg-primary-soft border border-primary/30 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-surface border border-primary/30 flex items-center justify-center">
@@ -315,7 +309,7 @@ export default function GuardadosPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-fg">
-                      {displayCount} {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
+                      <AnimatedNumber value={displayCount} /> {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
                     </p>
                     <p className="text-sm text-fg-muted">
                       {locale === 'es' ? '¿Listo para postularte a alguna?' : 'Ready to apply to one?'}
@@ -330,10 +324,11 @@ export default function GuardadosPage() {
                   {locale === 'es' ? 'Ver más propiedades' : 'View more properties'}
                 </Link>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </div>
+        </CrossFade>
+      </motion.div>
 
       {/* Property Detail Sheet */}
       <PropertyDetailSheet

@@ -287,7 +287,7 @@ export function PropertyDetailSheet({
                           src={image}
                           alt={`Foto ${index + 1}`}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="object-cover group-hover:scale-105 transition-transform duration-slow"
                           sizes="100px"
                         />
                         {index === 3 && property.images.length > 4 && (

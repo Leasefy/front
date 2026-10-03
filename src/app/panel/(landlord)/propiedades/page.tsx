@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Eye, PencilSimple, DotsThreeVertical, Users, CurrencyDollar, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
@@ -15,7 +16,7 @@ import {
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button, Card } from '@/components/ui';
-import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton } from '@leasefy/cadence';
+import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'grid' | 'list';
 type FunnelStatus = 'all' | 'available' | 'rented' | 'pending';
@@ -146,24 +147,29 @@ export default function PropiedadesPage() {
           </div>
         </Card>
 
-        {/* Properties Grid/List */}
+        {/* Properties Grid/List — cambiar de vista (o quedar sin resultados) cruza
+            el contenido; buscar o filtrar saca y mete tarjetas con la salida y la
+            entrada del sistema, y las demás se corren. Lo que ya estaba no se anima. */}
+        <CrossFade swapKey={filteredProperties.length > 0 ? viewMode : 'vacio'}>
         {filteredProperties.length > 0 ? (
           viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence initial={false} mode="popLayout">
               {filteredProperties.map((property) => {
                 const candidateCount = property.candidateCount ?? 0;
                 return (
+                  <StaggerItem key={property.id} className="grid">
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
+                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-[box-shadow,border-color] duration-slow block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">
                       <PortadaDelInmueble
                         property={property}
                         alt={property.title}
-                        className="group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-reveal"
                       />
                       <div className="absolute top-3 left-3">
                         {getStatusBadge(property.status)}
@@ -246,15 +252,19 @@ export default function PropiedadesPage() {
                       </div>
                     </div>
                   </Link>
+                  </StaggerItem>
                 );
               })}
+              </AnimatePresence>
             </div>
           ) : (
             /* List View */
-            <div className="bg-surface rounded-lg border border-border overflow-hidden">
+            <div className="relative bg-surface rounded-lg border border-border overflow-hidden">
+              <AnimatePresence initial={false} mode="popLayout">
               {filteredProperties.map((property, index) => {
                 const candidateCount = property.candidateCount ?? 0;
                 return (
+                  <StaggerItem key={property.id} className="grid">
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
@@ -344,8 +354,10 @@ export default function PropiedadesPage() {
                       </DropdownList>
                     </div>
                   </Link>
+                  </StaggerItem>
                 );
               })}
+              </AnimatePresence>
             </div>
           )
         ) : (
@@ -368,6 +380,7 @@ export default function PropiedadesPage() {
             </Button>
           </div>
         )}
+        </CrossFade>
       </div>
     </div>
   );

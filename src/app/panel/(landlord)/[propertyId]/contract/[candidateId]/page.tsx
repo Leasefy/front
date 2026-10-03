@@ -101,7 +101,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                   aria-pressed={isSelected}
                   onClick={() => { onSelect(template.type); onFileChange(null); }}
                   className={cn(
-                    'w-full rounded-lg border p-4 text-left transition-all group',
+                    'w-full rounded-lg border p-4 text-left transition-[background-color,border-color,box-shadow] group',
                     isSelected
                       ? 'border-primary bg-primary-soft ring-2 ring-primary'
                       : 'border-border hover:border-border-strong hover:bg-surface-hover'
@@ -163,7 +163,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
             {!uploadedFile ? (
               <label
                 className={cn(
-                  'flex flex-col items-center justify-center gap-3 w-full rounded-lg border-2 border-dashed p-8 cursor-pointer transition-all',
+                  'flex flex-col items-center justify-center gap-3 w-full rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors',
                   selectedType === 'custom'
                     ? 'border-primary bg-primary-soft'
                     : 'border-border-strong hover:border-border-strong bg-surface-muted'
@@ -189,7 +189,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
               </label>
             ) : (
               <div className={cn(
-                'flex items-center gap-3 w-full rounded-lg border p-4 transition-all',
+                'flex items-center gap-3 w-full rounded-lg border p-4 transition-colors',
                 'border-primary bg-primary-soft'
               )}>
                 <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
@@ -525,7 +525,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     <div key={i} className="flex items-center flex-1 last:flex-none">
                       <div className="flex items-center gap-3">
                         <div className={cn(
-                          'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all',
+                          'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-colors',
                           isCompleted && 'bg-primary text-primary-fg font-mono tabular-nums',
                           isCurrent && 'bg-primary text-primary-fg font-mono tabular-nums',
                           !isCompleted && !isCurrent && 'bg-surface-muted text-fg-subtle',

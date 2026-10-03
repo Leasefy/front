@@ -55,7 +55,7 @@ export function PriceMarker({
         // Default colors
         'bg-foreground text-white',
         // Transitions
-        'transition-all duration-200 ease-out',
+        'transition-[transform,background-color,color,box-shadow] duration-base ease-enter',
         // Hover effect
         'hover:scale-110 hover:z-20',
         // Selected state

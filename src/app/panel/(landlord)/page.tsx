@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { AnimatedNumber, Collapse, CrossFade, Presence } from '@leasefy/cadence';
+import { useEntradaTrasCargar, useHuboEsqueleto } from '@/components/portales/use-entrada-tras-cargar';
+import { AparecerSi } from '@/components/portales/AparecerSi';
 import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { BrandDot, BrandContour, MonoLabel, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
@@ -35,7 +38,7 @@ const ACTION_ICONS: Record<DashboardUrgentAction['type'], React.ElementType> = {
   pending_visit: CalendarBlank,
 };
 
-function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) {
+function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentAction[]; entra: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const { t } = useI18n();
 
@@ -43,11 +46,8 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
   const PRIORITY_TONE: Record<string, SemanticTone> = { high: 'critical', medium: 'warning', low: 'neutral' };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-lg bg-surface border border-border overflow-hidden"
-    >
+    // Llega con el resumen: aparece si vino después de cargar.
+    <AparecerSi si={entra} className="mb-8 rounded-lg bg-surface border border-border overflow-hidden">
       <button
         type="button"
         aria-expanded={expanded}
@@ -69,13 +69,13 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
           </p>
         </div>
         <CaretDown className={cn(
-          'w-5 h-5 text-fg-subtle transition-transform',
+          'w-5 h-5 text-fg-subtle transition-transform duration-slow ease-emphasis',
           expanded && 'rotate-180'
         )} />
       </button>
 
-      {expanded && (
-        <div className="px-4 pb-4 space-y-2">
+      {/* Se abre y se cierra con su altura; el chevrón gira con la misma curva. */}
+      <Collapse open={expanded} className="px-4 pb-4 space-y-2">
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.type] || WarningCircle;
             const tone = PRIORITY_TONE[action.priority] ?? 'neutral';
@@ -103,9 +103,8 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
               </Link>
             );
           })}
-        </div>
-      )}
-    </motion.div>
+      </Collapse>
+    </AparecerSi>
   );
 }
 
@@ -126,6 +125,11 @@ export default function PanelPage() {
   const { dashboard, isLoading: dashboardLoading } = useLandlordDashboard();
   // Propietario de una inmobiliaria: sus contratos no salen por `landlordId`.
   const administrados = useContratosAdministrados();
+  // ¿Se vieron los esqueletos? Entonces las cifras que llegan cuentan desde 0
+  // (como `KpiValor`) y las tarjetas que dependen del resumen aparecen; si los
+  // datos ya estaban, todo se pinta quieto.
+  const huboCarga = useHuboEsqueleto(propertiesLoading || dashboardLoading);
+  const entradaAdministrados = useEntradaTrasCargar(propertiesLoading || administrados.cargando);
 
   // Check if coming from onboarding or if user hasn't completed onboarding
   const isSetupMode = searchParams.get('setup') === 'true';
@@ -188,7 +192,7 @@ export default function PanelPage() {
   if (hasNoProperties && administrados.doc) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+        <motion.div {...entradaAdministrados} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
           <header>
             <span className="inline-flex items-center gap-2 mb-2">
               <BrandDot />
@@ -199,7 +203,7 @@ export default function PanelPage() {
             </h1>
           </header>
           <ContratosConLaInmobiliaria doc={administrados.doc} />
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -265,11 +269,7 @@ export default function PanelPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
-        >
+        <header className="mb-10">
           <div>
             <span className="inline-flex items-center gap-2 mb-2">
               <BrandDot />
@@ -281,7 +281,7 @@ export default function PanelPage() {
               {t('dashboard.hello', { name: firstName })}
             </h1>
           </div>
-        </motion.header>
+        </header>
 
         {/* Stats Grid - Landing Style */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -298,19 +298,28 @@ export default function PanelPage() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
                 <CurrencyDollar className="w-5 h-5 text-white/90" />
               </div>
-              {!isLoading && (
-                <span className="px-2.5 py-1 text-white/90 text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
+              <Presence
+                as="span"
+                show={!isLoading}
+                initial={false}
+                distance="xs"
+                className="px-2.5 py-1 text-white/90 text-xs font-medium rounded-full flex items-center gap-1"
+                style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
+              >
                   <TrendUp className="w-3 h-3" weight="bold" />
                   +12%
-                </span>
-              )}
+              </Presence>
             </div>
             <MonoLabel className="block text-[11px] font-medium text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</MonoLabel>
             {isLoading ? (
               <Skeleton className="h-9 w-36 rounded-md bg-white/10" />
             ) : (
               <p className="font-heading text-[28px] font-semibold text-white tracking-tight tabular-nums leading-none">
-                {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
+                <AnimatedNumber
+                  value={dashboardData.financial.monthlyIncome}
+                  from={huboCarga ? 0 : undefined}
+                  format={(n) => i18nFormatCurrency(Math.round(n))}
+                />
               </p>
             )}
             {isLoading ? (
@@ -332,7 +341,7 @@ export default function PanelPage() {
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
               <p className="text-3xl font-bold text-fg tracking-tight">
-                {properties.length}
+                <AnimatedNumber value={properties.length} from={huboCarga ? 0 : undefined} />
               </p>
             )}
             {isLoading ? (
@@ -354,7 +363,7 @@ export default function PanelPage() {
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
               <p className="text-3xl font-bold text-fg tracking-tight">
-                {totalCandidates}
+                <AnimatedNumber value={totalCandidates} from={huboCarga ? 0 : undefined} />
               </p>
             )}
             {isLoading ? (
@@ -384,7 +393,11 @@ export default function PanelPage() {
               <>
                 <div className="flex items-center gap-2">
                   <p className="font-heading text-3xl font-semibold text-fg tracking-tight tabular-nums">
-                    {dashboardData.financial.collectionRate}%
+                    <AnimatedNumber
+                      value={dashboardData.financial.collectionRate}
+                      from={huboCarga ? 0 : undefined}
+                      format={(n) => String(Math.round(n))}
+                    />%
                   </p>
                   <StatusBadge tone="success" dot={false}>
                     {t('landlord.dashboard.excellent')}
@@ -400,7 +413,7 @@ export default function PanelPage() {
 
         {/* Urgent Actions Banner */}
         {dashboardData.urgentActions.length > 0 && (
-          <UrgentActionsBanner actions={dashboardData.urgentActions} />
+          <UrgentActionsBanner actions={dashboardData.urgentActions} entra={huboCarga} />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -408,11 +421,7 @@ export default function PanelPage() {
           <div className="lg:col-span-2 space-y-8">
 
             {/* Properties Section */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.myProperties')}</h2>
                 <Link
@@ -424,6 +433,8 @@ export default function PanelPage() {
                 </Link>
               </div>
 
+              {/* Cargando → inmuebles (o el vacío): se cruzan. */}
+              <CrossFade swapKey={propertiesLoading ? 'cargando' : properties.length > 0 ? 'lista' : 'vacio'}>
               {propertiesLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
@@ -449,7 +460,7 @@ export default function PanelPage() {
                 </div>
               ) : properties.length > 0 ? (
                 <div className="space-y-4">
-                  {properties.slice(0, 3).map((property, index) => {
+                  {properties.slice(0, 3).map((property) => {
                     const riskDist = calculateRiskDistribution(property);
                     const totalRisk = riskDist.levelA + riskDist.levelB + riskDist.levelC + riskDist.levelD;
                     const goodCandidatePercent = totalRisk > 0
@@ -457,21 +468,16 @@ export default function PanelPage() {
                       : 0;
 
                     return (
-                      <motion.div
-                        key={property.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 + index * 0.05 }}
-                      >
+                      <div key={property.id}>
                         <Link href={`/panel/${property.id}`}>
-                          <div className="group relative overflow-hidden rounded-lg bg-surface-muted hover: transition-all duration-300">
+                          <div className="group relative overflow-hidden rounded-lg bg-surface-muted hover: transition-colors duration-slow">
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
                                 <PortadaDelInmueble
                                   property={property}
                                   alt={property.title}
-                                  className="group-hover:scale-105 transition-transform duration-500"
+                                  className="group-hover:scale-105 transition-transform duration-reveal"
                                 />
                                 {/* Status badge on image */}
                                 <div className="absolute top-3 left-3">
@@ -526,11 +532,12 @@ export default function PanelPage() {
 
                                   {property.candidateCount > 0 && (
                                     <div className="flex items-center gap-2">
+                                      {/* `transform`, no `width`: la barra entera corrida a su avance. */}
                                       <div className="w-20 h-2 bg-surface-muted rounded-full overflow-hidden">
                                         <div
-                                          className="h-full rounded-full transition-all"
+                                          className="h-full w-full rounded-full transition-[transform,background-color] duration-slow ease-enter"
                                           style={{
-                                            width: `${goodCandidatePercent}%`,
+                                            transform: `translateX(${goodCandidatePercent - 100}%)`,
                                             backgroundColor: goodCandidatePercent >= 50 ? SEMANTIC.success.fg : SEMANTIC.warning.fg,
                                           }}
                                         />
@@ -558,7 +565,7 @@ export default function PanelPage() {
                             </div>
                           </div>
                         </Link>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -582,6 +589,7 @@ export default function PanelPage() {
                   </Link>
                 </div>
               )}
+              </CrossFade>
 
               {/* Show "Ver todas" when there are more than 3 properties */}
               {properties.length > 3 && (
@@ -595,19 +603,19 @@ export default function PanelPage() {
                   </span>
                 </Link>
               )}
-            </motion.section>
+            </section>
 
             {/* Recent Activity */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+            <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
-              <div className="bg-surface-muted rounded-lg overflow-hidden divide-y divide-border-faint">
+              {/* Cargando → actividad: la caja entera se cruza (es la misma lista con `divide-y`). */}
+              <CrossFade
+                swapKey={dashboardLoading ? 'cargando' : 'listo'}
+                className="bg-surface-muted rounded-lg overflow-hidden divide-y divide-border-faint"
+              >
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
@@ -649,26 +657,23 @@ export default function PanelPage() {
                     Sin actividad reciente
                   </div>
                 )}
-              </div>
-            </motion.section>
+              </CrossFade>
+            </section>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
 
             {/* Financial Summary Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-lg bg-surface border border-border p-6"
-            >
+            <div className="rounded-lg bg-surface border border-border p-6">
               <div className="flex items-center gap-2 mb-3">
                 <BrandDot />
                 <MonoLabel className="text-[11px] font-medium text-fg-muted">
                   {t('landlord.dashboard.financialSummary')}
                 </MonoLabel>
               </div>
+              {/* Cargando → resumen: se cruzan; la cifra cuenta desde 0 y la barra se corre. */}
+              <CrossFade swapKey={dashboardLoading ? 'cargando' : 'listo'}>
               {dashboardLoading ? (
                 <>
                   <Skeleton className="h-9 w-36 rounded-md" />
@@ -684,7 +689,11 @@ export default function PanelPage() {
               ) : (
                 <>
                   <p className="text-3xl font-bold tracking-tight text-fg">
-                    {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
+                    <AnimatedNumber
+                      value={dashboardData.financial.monthlyIncome}
+                      from={huboCarga ? 0 : undefined}
+                      format={(n) => i18nFormatCurrency(Math.round(n))}
+                    />
                   </p>
                   <p className="text-fg-muted text-sm mt-1">
                     {t('landlord.dashboard.incomeThisMonth')}
@@ -697,8 +706,8 @@ export default function PanelPage() {
                     </div>
                     <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${dashboardData.financial.collectionRate}%`, backgroundColor: '#1A40FF' }}
+                        className="h-full w-full rounded-full transition-transform duration-slow ease-enter"
+                        style={{ transform: `translateX(${dashboardData.financial.collectionRate - 100}%)`, backgroundColor: '#1A40FF' }}
                       />
                     </div>
                     {dashboardData.financial.pendingPayments > 0 && (
@@ -718,15 +727,11 @@ export default function PanelPage() {
                   </Link>
                 </>
               )}
-            </motion.div>
+              </CrossFade>
+            </div>
 
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-lg bg-surface-muted p-5"
-            >
+            <div className="rounded-lg bg-surface-muted p-5">
               <h3 className="font-semibold text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
@@ -734,8 +739,8 @@ export default function PanelPage() {
                   { href: '/panel/candidatos', icon: Users, label: t('landlord.dashboard.viewCandidates'), desc: t('landlord.dashboard.applicantsCount', { count: totalCandidates }), badge: pendingReviews > 0 },
                   { href: '/panel/visitas', icon: CalendarBlank, label: t('landlord.dashboard.visits'), desc: t('landlord.dashboard.scheduledCount', { count: upcomingVisits.length }) },
                   { href: '/panel/contratos', icon: FileText, label: t('landlord.dashboard.contracts'), desc: t('landlord.dashboard.manageLeases') },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
+                ].map((action) => (
+                  <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-hover transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted" />
@@ -754,16 +759,16 @@ export default function PanelPage() {
                   </Link>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Upcoming Visits */}
             {upcomingVisits.length > 0 && (
-              <UpcomingVisitsCard visits={upcomingVisits} />
+              <UpcomingVisitsCard visits={upcomingVisits} entra={huboCarga} />
             )}
 
             {/* Upcoming Events */}
             {dashboardData.upcomingEvents.length > 0 && (
-              <UpcomingEventsCard events={dashboardData.upcomingEvents} />
+              <UpcomingEventsCard events={dashboardData.upcomingEvents} entra={huboCarga} />
             )}
 
           </div>
@@ -787,7 +792,7 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
   no_show: 'bg-warning',
 };
 
-function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
+function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean }) {
   const { t, locale, formatDate: i18nFmtDate } = useI18n();
   const [selected, setSelected] = useState<Visit | null>(null);
 
@@ -842,12 +847,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="rounded-lg bg-surface-muted p-5"
-      >
+      <AparecerSi si={entra} className="rounded-lg bg-surface-muted p-5">
         <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
           <CalendarBlank className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingVisits')}
@@ -881,7 +881,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             {t('landlord.dashboard.viewAllVisits')} →
           </Link>
         )}
-      </motion.div>
+      </AparecerSi>
 
       <PlanDetailSheet
         open={!!selected}
@@ -919,7 +919,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
 // Upcoming Events Card
 // ============================================================================
 
-function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
+function UpcomingEventsCard({ events, entra }: { events: DashboardUpcomingEvent[]; entra: boolean }) {
   const { t, locale, formatDate: i18nFmtDate } = useI18n();
   const [selected, setSelected] = useState<DashboardUpcomingEvent | null>(null);
 
@@ -989,12 +989,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="rounded-lg bg-surface-muted p-5"
-      >
+      <AparecerSi si={entra} className="rounded-lg bg-surface-muted p-5">
         <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingEvents')}
@@ -1023,7 +1018,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
             );
           })}
         </div>
-      </motion.div>
+      </AparecerSi>
 
       <PlanDetailSheet
         open={!!selected}

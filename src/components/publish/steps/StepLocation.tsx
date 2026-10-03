@@ -67,14 +67,14 @@ export function StepLocation() {
                   aria-pressed={isSelected}
                   style={isSelected ? { boxShadow: '0 0 0 3px rgba(26,64,255,0.12)' } : undefined}
                   className={cn(
-                    'relative p-4 rounded-[18px] text-left transition-all duration-200',
+                    'relative p-4 rounded-[18px] text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-2 border-primary bg-primary-soft'
                       : 'border border-border hover:border-border-strong bg-surface'
                   )}
                 >
                   <div className={cn(
-                    'absolute top-2.5 right-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
+                    'absolute top-2.5 right-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-primary bg-primary'
                       : 'border-border-strong'

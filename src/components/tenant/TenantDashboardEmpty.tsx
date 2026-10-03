@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { motionDuration, motionEase } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { User, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -129,17 +131,16 @@ export function TenantDashboardEmpty() {
   const allComplete = completedCount >= totalSteps;
   const nextIncompleteStep = allComplete ? null : steps.find(s => !s.completed);
 
+  // Llega después del esqueleto del inicio (y de leer el avance): entra con 4 px.
+  const entrada = useEntradaTrasCargar(!isLoaded);
+
   if (!isLoaded) return null;
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
-        >
+        <header className="mb-10">
           <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-1">
             {greeting}
           </p>
@@ -152,16 +153,11 @@ export function TenantDashboardEmpty() {
               ? 'Completa tu perfil para postularte más rápido'
               : 'Complete your profile to apply to properties faster'}
           </p>
-        </motion.header>
+        </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-2 space-y-6"
-          >
+          <div className="lg:col-span-2 space-y-6">
             {/* Progress Card - Clean Style */}
             <div className="rounded-xl bg-surface-muted p-6 md:p-8">
               <div className="flex items-start justify-between mb-6">
@@ -183,7 +179,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -193,12 +189,13 @@ export function TenantDashboardEmpty() {
 
               {/* Progress bar */}
               <div className="relative">
+                {/* Se llena con `transform` (translateX), no con `width`. */}
                 <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercentage}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-ink dark:bg-surface rounded-full"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${progressPercentage - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="h-full w-full bg-ink dark:bg-surface rounded-full"
                   />
                 </div>
                 <div className="flex items-center justify-between mt-3">
@@ -215,7 +212,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />
@@ -238,7 +235,7 @@ export function TenantDashboardEmpty() {
                       key={step.id}
                       href={step.href}
                       className={cn(
-                        'flex items-center gap-4 p-4 rounded-xl transition-all group',
+                        'flex items-center gap-4 p-4 rounded-xl transition-[opacity,background-color,border-color] group',
                         step.completed
                           ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
@@ -278,7 +275,7 @@ export function TenantDashboardEmpty() {
                         </p>
                       </div>
                       <div className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all',
+                        'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
                         step.completed
                           ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : 'bg-surface-muted dark:bg-ink'
@@ -319,12 +316,9 @@ export function TenantDashboardEmpty() {
                   descEs: 'Destaca entre otros',
                   descEn: 'Stand out',
                 },
-              ].map((benefit, index) => (
-                <motion.div
+              ].map((benefit) => (
+                <div
                   key={benefit.titleEs}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
                   className="rounded-xl bg-surface-muted p-5"
                 >
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center mb-3">
@@ -336,18 +330,13 @@ export function TenantDashboardEmpty() {
                   <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
                     {locale === 'es' ? benefit.descEs : benefit.descEn}
                   </p>
-                </motion.div>
+                </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
           {/* Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             {/* Quick Actions */}
             <div className="rounded-xl bg-surface-muted p-5">
               <h3 className="text-base font-semibold text-fg dark:text-white mb-4">
@@ -366,7 +355,7 @@ export function TenantDashboardEmpty() {
                     <span className="flex-1 text-sm font-medium text-fg dark:text-fg-subtle group-hover:text-fg dark:group-hover:text-white transition-colors">
                       {locale === 'es' ? action.labelEs : action.labelEn}
                     </span>
-                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle group-hover:translate-x-0.5 transition-all" />
+                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle group-hover:translate-x-0.5 transition-[transform,color]" />
                   </Link>
                 ))}
               </div>
@@ -409,9 +398,9 @@ export function TenantDashboardEmpty() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

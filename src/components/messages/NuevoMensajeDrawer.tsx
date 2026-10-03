@@ -46,6 +46,7 @@ import {
 } from '@/lib/api/messages.types';
 import { ApiError } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
+import { EntraAlCambiar } from '@/components/portales/EntraAlCambiar';
 
 function perfilDe(role: string): PerfilEnLaConversacion {
   if (role === 'TENANT' || role === 'LANDLORD' || role === 'AGENT') return role;
@@ -224,6 +225,20 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
         </SheetHeader>
 
         <SheetBody className="p-0">
+          {/* Cargando → lista, el vacío o cambiar de pestaña: lo nuevo entra
+              suave y lo viejo se va al instante (una fila de otra pestaña no
+              puede quedarse en pantalla mientras sale). */}
+          <EntraAlCambiar
+            clave={
+              cargando
+                ? 'cargando'
+                : error
+                  ? 'fallo'
+                  : vacio
+                    ? 'vacio'
+                    : `lista-${pestana}`
+            }
+          >
           {cargando ? (
             <div className="flex items-center justify-center py-16">
               <Spinner size="lg" />
@@ -284,6 +299,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
               ))}
             </ul>
           )}
+          </EntraAlCambiar>
         </SheetBody>
       </SheetContent>
     </Sheet>

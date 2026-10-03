@@ -3,6 +3,8 @@
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { toast } from 'sonner';
@@ -72,6 +74,8 @@ export default function ArriendoPage() {
   };
 
   // Loading state
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
   if (isOnboardingLoading || isLoading) {
     return (
       <div className="min-h-screen bg-bg">
@@ -149,21 +153,17 @@ export default function ArriendoPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('rental.title')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {locale === 'es' ? 'Gestiona tus contratos de arriendo activos' : 'Manage your active rental contracts'}
           </p>
-        </motion.header>
+        </header>
 
         {/*
           Los KPI solo cuando hay algo que resumir.
@@ -173,12 +173,7 @@ export default function ArriendoPage() {
           estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
         */}
         {activeLeases.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {/* Active Leases */}
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
@@ -222,15 +217,11 @@ export default function ArriendoPage() {
                 : (locale === 'es' ? 'Sin información de pago' : 'No payment info')}
             </p>
           </div>
-        </motion.div>
+        </div>
         )}
 
         {/* Leases List */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <section>
           {/* Sin contratos no va el encabezado: "Contratos activos · 0
               contratos" arriba de "No tienes arriendos activos" dice lo mismo
               dos veces, y la segunda ya lo dice mejor. */}
@@ -251,14 +242,9 @@ export default function ArriendoPage() {
                 const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
 
                 return (
-                  <motion.div
-                    key={lease.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
+                  <div key={lease.id}>
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
+                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -270,7 +256,7 @@ export default function ArriendoPage() {
                               alt={lease.propertyTitle}
                               sizes="(max-width: 1024px) 100vw, 288px"
                               priority={index === 0}
-                              className="transition-transform duration-500 group-hover:scale-105"
+                              className="transition-transform duration-reveal group-hover:scale-105"
                             />
                             {/* Status Badge */}
                             <div className="absolute top-4 left-4">
@@ -299,6 +285,8 @@ export default function ArriendoPage() {
                                     {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
                                   </span>
                                 </p>
+                                {/* Aceptar → «Aceptaste»: el botón se cruza con la confirmación. */}
+                                <CrossFade swapKey={lease.renovacion.tenantAcceptedAt ? 'aceptada' : 'pendiente'}>
                                 {lease.renovacion.tenantAcceptedAt ? (
                                   <p className="mt-2 text-xs font-medium text-success flex items-center gap-1.5">
                                     <CheckCircle className="w-4 h-4" weight="fill" />
@@ -326,6 +314,7 @@ export default function ArriendoPage() {
                                     {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
                                   </button>
                                 )}
+                                </CrossFade>
                               </div>
                             )}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
@@ -384,12 +373,13 @@ export default function ArriendoPage() {
                                 <span>{formatDate(lease.endDate)}</span>
                               </div>
                               <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+                                {/* `transform`, no `width`: la barra entera corrida a su avance. */}
                                 <div
                                   className={cn(
-                                    "h-full rounded-full transition-all duration-500",
+                                    "h-full w-full rounded-full transition-transform duration-slow ease-enter",
                                     daysRemaining < 30 ? "bg-warning" : "bg-success"
                                   )}
-                                  style={{ width: `${leaseProgress}%` }}
+                                  style={{ transform: `translateX(${leaseProgress - 100}%)` }}
                                 />
                               </div>
                               <p className="text-xs text-fg-muted mt-1.5 text-right">
@@ -421,7 +411,7 @@ export default function ArriendoPage() {
                         </div>
                       </div>
                     </Link>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -436,9 +426,9 @@ export default function ArriendoPage() {
               action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
             />
           )}
-        </motion.section>
+        </section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

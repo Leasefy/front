@@ -12,7 +12,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Appear } from '@leasefy/cadence';
+import { Appear, Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
@@ -107,7 +107,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
                 variant={result.scoreFinal >= 70 ? 'success' : result.scoreFinal >= 50 ? 'warning' : 'danger'}
               />
             </div>
-            <CaretDown className={cn('w-4 h-4 text-fg-subtle transition-transform', expanded && 'rotate-180')} />
+            <CaretDown className={cn('w-4 h-4 text-fg-subtle transition-transform duration-slow ease-emphasis', expanded && 'rotate-180')} />
           </div>
         )}
 
@@ -116,8 +116,9 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
         )}
       </button>
 
-      {/* Expanded details */}
-      {expanded && result.status === 'COMPLETED' && (
+      {/* Expanded details — se abre y se cierra con su altura; el chevrón gira
+          con la misma curva. */}
+      <Collapse open={expanded && result.status === 'COMPLETED'}>
         <div className="border-t border-border px-4 py-3 space-y-3 bg-surface">
           {/* Risk level */}
           {result.nivelRiesgo && (
@@ -172,7 +173,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
             </p>
           )}
         </div>
-      )}
+      </Collapse>
     </div>
   );
 }

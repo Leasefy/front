@@ -19,7 +19,7 @@ import {
   type DialogVariant,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { MonoLabel } from '@leasefy/cadence';
+import { CrossFade, MonoLabel } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { leasesApi } from '@/lib/api/leases.service';
@@ -258,6 +258,9 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
           )}
         </DialogHeader>
 
+        {/* Los pasos (cargando → confirmar → redirigiendo, o el período ya
+            pagado) se cruzan: lo nuevo entra ya y lo viejo sale por encima. */}
+        <CrossFade swapKey={loadError ? 'error' : step} mode="popLayout">
         {/* Loading */}
         {step === 'loading' && !loadError && (
           <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-fg-muted">
@@ -313,6 +316,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
             <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
           </div>
         )}
+        </CrossFade>
 
         {/* Pie: sólo los estados con acciones (cargando y redirigiendo no tienen). */}
         {step === 'period-blocked' ? (

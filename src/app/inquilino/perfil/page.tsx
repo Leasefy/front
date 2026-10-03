@@ -4,7 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
-import { CrossFade, IconButton } from '@leasefy/cadence';
+import {
+  AnimatedNumber,
+  Collapse,
+  CrossFade,
+  IconButton,
+  motionDuration,
+  motionEase,
+} from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
   buildChangedFields,
@@ -359,11 +366,7 @@ export default function PerfilPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <div>
             <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('profile.title')}
@@ -372,15 +375,11 @@ export default function PerfilPage() {
               {t('profile.subtitle')}
             </p>
           </div>
-        </motion.header>
+        </header>
 
-        {/* Setup Progress Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
+            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
+        <section className="mb-8">
           <div className="rounded-xl bg-primary-soft p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
@@ -400,12 +399,13 @@ export default function PerfilPage() {
                     </p>
                   </div>
                 </div>
+                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
                 <div className="h-2 bg-surface/50 rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercentage}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-primary rounded-full"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${completionPercentage - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="h-full w-full bg-primary rounded-full"
                   />
                 </div>
                 <p className="text-xs text-fg-muted mt-2">
@@ -439,12 +439,12 @@ export default function PerfilPage() {
                       strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
                       animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-2xl font-bold text-fg">
-                      {completionPercentage}%
+                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
                     </span>
                   </div>
                 </div>
@@ -456,13 +456,10 @@ export default function PerfilPage() {
               {setupSteps.map((step, index) => {
                 const Icon = step.icon;
                 return (
-                  <motion.div
+                  <div
                     key={step.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-xl p-4 transition-all',
+                      'rounded-xl p-4 transition-colors',
                       step.completed
                         ? 'bg-surface/80'
                         : 'bg-surface border-2 border-dashed border-primary/30'
@@ -503,21 +500,16 @@ export default function PerfilPage() {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-1 space-y-6"
-          >
+          <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
             <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="relative bg-primary-soft h-28">
@@ -576,15 +568,15 @@ export default function PerfilPage() {
                   )}
                 </div>
 
-                {/* Avatar upload area when editing */}
-                {editingSection === 'avatar' && (
+                {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
+                <Collapse open={editingSection === 'avatar'}>
                   <div
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
                       isDragging
                         ? "border-primary/30 bg-primary-soft"
                         : "border-border hover:border-primary/30 hover:bg-surface-muted"
@@ -638,13 +630,13 @@ export default function PerfilPage() {
                       </>
                     )}
                   </div>
-                )}
+                </Collapse>
 
                 <h2 className="text-xl font-semibold text-fg">{displayName}</h2>
                 <p className="text-sm text-fg-muted mt-1">{user.email}</p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
-                {editingSection === 'avatar' && (
+                <Collapse open={editingSection === 'avatar'}>
                   <div className="flex items-center gap-2 mt-4">
                     <Button
                       variant="ghost"
@@ -668,7 +660,7 @@ export default function PerfilPage() {
                       {t('common.save')}
                     </Button>
                   </div>
-                )}
+                </Collapse>
               </div>
             </div>
 
@@ -691,19 +683,16 @@ export default function PerfilPage() {
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Profile Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            {/* Personal Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
+                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{t('profile.personalInfo')}</h3>
+                <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button
                     variant="ghost"
@@ -740,8 +729,13 @@ export default function PerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CrossFade
+                swapKey={editingSection === 'personal' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.firstName')}
@@ -907,13 +901,14 @@ export default function PerfilPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </CrossFade>
             </div>
 
-            {/* Emergency Contact */}
+            {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{t('profile.emergencyContact')}</h3>
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button
                     variant="ghost"
@@ -950,8 +945,13 @@ export default function PerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CrossFade
+                swapKey={editingSection === 'emergency' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     {locale === 'es' ? 'Nombre' : 'Name'}
@@ -998,7 +998,7 @@ export default function PerfilPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </CrossFade>
             </div>
 
             {/* Housing preferences (tenant_preferences table — authoritative) */}
@@ -1025,7 +1025,7 @@ export default function PerfilPage() {
                 {t('settings.account.deleteAccount')}
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

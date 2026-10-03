@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Appear, motionDuration, motionEase } from '@leasefy/cadence';
 import { UserCircle, ArrowRight, CheckCircle, ClipboardText } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -51,11 +52,8 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full text-center"
-      >
+      {/* Como un vacío del sistema: aparece después de cargar (8 px, `Appear`). */}
+      <Appear className="max-w-md w-full text-center">
         {/* Icon */}
         <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
           <ClipboardText className="w-10 h-10 text-[#1A40FF] dark:text-[#5570FF]" />
@@ -82,11 +80,12 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
             </span>
           </div>
           <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+            {/* Se llena con `transform` (translateX), no con `width`. */}
             <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full"
+              initial={{ x: '-100%' }}
+              animate={{ x: `${progressPercentage - 100}%` }}
+              transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+              className="h-full w-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full"
             />
           </div>
         </div>
@@ -137,7 +136,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
             {locale === 'es' ? 'Ver propiedades' : 'Browse properties'}
           </Link>
         </p>
-      </motion.div>
+      </Appear>
     </div>
   );
 }

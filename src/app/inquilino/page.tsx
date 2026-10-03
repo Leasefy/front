@@ -5,6 +5,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
@@ -206,7 +208,12 @@ export default function InquilinoPage() {
   const { openCasesCount } = useTenantCases({ skip: !dashboardWillRender });
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
-  if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
+  const cargandoElPanel =
+    authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading;
+  // Carga → contenido: si se vio el esqueleto, el panel entra con 4 px; si los
+  // datos ya estaban, no anima (la entrada de la página es del template).
+  const entrada = useEntradaTrasCargar(cargandoElPanel);
+  if (cargandoElPanel) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
@@ -262,14 +269,10 @@ export default function InquilinoPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-1">
             {greeting}
           </p>
@@ -279,7 +282,7 @@ export default function InquilinoPage() {
           {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
               palabra, la tarjeta que viene justo debajo. Dos felicitaciones
               seguidas por el mismo hecho. Queda una. */}
-        </motion.header>
+        </header>
 
         {/*
           Lo primero del home es la aprobación, y reemplaza al viejo
@@ -296,12 +299,7 @@ export default function InquilinoPage() {
           `detalle` apunta a "para ti" y no a la pantalla del tope.
         */}
         {isNewUser && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
+          <div className="mb-8">
             <TopeAprobadoBanner
               aprobacion={aprobacion}
               vigente={aprobacionVigente}
@@ -311,14 +309,11 @@ export default function InquilinoPage() {
                 variant: 'default',
               }}
             />
-          </motion.div>
+          </div>
         )}
 
         {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+        <div
           className={`grid gap-4 mb-8 ${
             isNewUser
               ? 'grid-cols-1 sm:grid-cols-2'
@@ -416,18 +411,14 @@ export default function InquilinoPage() {
               </div>
             </Link>
           )}
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
 
             {/* Recommended Properties - Always show prominently */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-semibold text-fg dark:text-white">
@@ -458,21 +449,20 @@ export default function InquilinoPage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {featuredProperties.map((property, index) => (
-                  <motion.button
-                    key={property.id}
+              {/* Las destacadas llegan DESPUÉS del panel (su propia consulta):
+                  entran escalonadas, con el techo de 320 ms del sistema. */}
+              <Stagger className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {featuredProperties.map((property) => (
+                  <StaggerItem key={property.id} className="flex">
+                  <button
                     onClick={() => handleViewProperty(property)}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 + index * 0.05 }}
-                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong transition-colors duration-300 text-left w-full"
+                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong transition-colors duration-slow text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <PortadaDelInmueble
                         property={property}
                         alt={property.title}
-                        className="group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-reveal"
                       />
 
                       {/*
@@ -491,7 +481,7 @@ export default function InquilinoPage() {
                       {/* Heart - Glass effect */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-surface/30 cursor-pointer"
+                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-surface/30 cursor-pointer"
                       >
                         <Heart className="w-4 h-4 text-white drop-" />
                       </div>
@@ -548,10 +538,11 @@ export default function InquilinoPage() {
                         </div>
                       )}
                     </div>
-                  </motion.button>
+                  </button>
+                  </StaggerItem>
                 ))}
-              </div>
-            </motion.section>
+              </Stagger>
+            </section>
 
             {/*
               Antes esto era un bloque suelto: sin encabezado y sobre un fondo
@@ -565,11 +556,7 @@ export default function InquilinoPage() {
               borde como el resto de las superficies del home.
             */}
             {activeApplications.length === 0 && (
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-              >
+              <section>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-semibold text-fg dark:text-white">
@@ -607,7 +594,7 @@ export default function InquilinoPage() {
                     }}
                   />
                 </div>
-              </motion.section>
+              </section>
             )}
           </div>
 
@@ -615,10 +602,7 @@ export default function InquilinoPage() {
           <div className="space-y-6">
 
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
+            <div
               className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
             >
               <h3 className="font-semibold text-fg dark:text-white mb-4">
@@ -650,8 +634,8 @@ export default function InquilinoPage() {
                     label: locale === 'es' ? 'Mi perfil' : 'My profile',
                     desc: locale === 'es' ? 'Editar información' : 'Edit information'
                   },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
+                ].map((action) => (
+                  <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
@@ -667,14 +651,11 @@ export default function InquilinoPage() {
                   </Link>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Tips Card for New Users */}
             {isNewUser && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+              <div
                 className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
               >
                 <div className="flex items-start gap-3">
@@ -692,14 +673,11 @@ export default function InquilinoPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Help Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
+            <div
               className="rounded-xl bg-surface dark:bg-surface-muted border border-border dark:border-border-strong p-5"
             >
               <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
@@ -717,10 +695,10 @@ export default function InquilinoPage() {
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />
               </Link>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Property Detail Sheet */}
       <PropertyDetailSheet

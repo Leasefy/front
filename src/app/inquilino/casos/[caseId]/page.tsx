@@ -26,6 +26,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   CreditCard,
   FileText,
@@ -133,7 +134,16 @@ function BackLink({ locale }: { locale: string }) {
 // Resolved detail
 // ============================================================================
 
-function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
+function CaseDetail({
+  caso,
+  locale,
+  entrada,
+}: {
+  caso: TenantCase;
+  locale: string;
+  /** Carga → contenido: la entrada de 4 px si se vio el esqueleto (si no, quieto). */
+  entrada: EntradaTrasCargar;
+}) {
   const badge = TONE_BADGE[caso.tone];
   const ToneIcon = badge.icon;
   const TypeIcon = TYPE_ICON[caso.type] ?? ClipboardText;
@@ -164,11 +174,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
     : '';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <motion.div {...entrada} className="space-y-6">
       {/* Header — title + neutral status badge */}
       <header className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -303,6 +309,9 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   // aggregated list — NO API call with the raw route id, NO fetch-by-id hook.
   const caso = cases.find((c) => c.id === params.caseId);
 
+  // Carga → contenido: el caso entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+
   // Loading gate — never flash a fake not-found while any source is in flight.
   if (isLoading) {
     return (
@@ -350,7 +359,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   return (
     <PageShell>
       <BackLink locale={locale} />
-      <CaseDetail caso={caso} locale={locale} />
+      <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );
 }

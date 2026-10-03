@@ -30,6 +30,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
   CaretLeft,
@@ -128,10 +129,13 @@ function AcuerdoDetailView({
   plan,
   locale,
   onAccepted,
+  entrada,
 }: {
   plan: AcuerdoDetail;
   locale: string;
   onAccepted: () => void;
+  /** Carga → contenido: la entrada de 4 px si se vio el esqueleto (si no, quieto). */
+  entrada: EntradaTrasCargar;
 }) {
   const { formatCurrency } = useI18n();
   const es = locale === 'es';
@@ -174,7 +178,7 @@ function AcuerdoDetailView({
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div {...entrada} className="space-y-6">
       {/* Header — title + neutral status badge */}
       <header className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -310,6 +314,9 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   // NO API call with the raw route id, NO fetch-by-id hook.
   const plan = items.find((p) => p.planId === params.id);
 
+  // Carga → contenido: el acuerdo entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+
   // Loading gate — never flash a fake not-found while the source is in flight.
   if (isLoading) {
     return (
@@ -359,7 +366,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
     <PageShell>
       <BackLink locale={locale} />
       <AvisoDelPagoDelAcuerdo show={volvioDeWompi} locale={locale} className="mb-6" />
-      <AcuerdoDetailView plan={plan} locale={locale} onAccepted={refetch} />
+      <AcuerdoDetailView plan={plan} locale={locale} onAccepted={refetch} entrada={entrada} />
     </PageShell>
   );
 }

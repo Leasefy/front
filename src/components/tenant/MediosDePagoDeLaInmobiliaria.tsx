@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
+import { Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { useMediosDePagoParaInquilino } from '@/lib/hooks/use-medios-de-pago';
 import type { MedioDePagoParaInquilino, TipoDeMedioDePago } from '@/lib/api/medios-de-pago.types';
@@ -33,9 +34,11 @@ function tipoDeCuentaLegible(t: string | null): string | null {
 export function MediosDePagoDeLaInmobiliaria() {
   const { bloques, cargando } = useMediosDePagoParaInquilino();
   const conMedios = bloques.filter((b) => b.medios.length > 0);
-  if (cargando || conMedios.length === 0) return null;
 
+  // Llega después que el resto de «Pagos» (su propia consulta): se abre con su
+  // altura en vez de empujar de golpe lo de abajo. Si ya estaba, se pinta quieto.
   return (
+    <Collapse open={!cargando && conMedios.length > 0}>
     <section aria-labelledby="como-pagar" className="mb-8 space-y-4" data-testid="como-pagar">
       <div>
         <h2 id="como-pagar" className="text-xl font-semibold text-fg">
@@ -58,6 +61,7 @@ export function MediosDePagoDeLaInmobiliaria() {
         </div>
       ))}
     </section>
+    </Collapse>
   );
 }
 

@@ -8,7 +8,14 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button, Input, Spinner } from '@/components/ui';
-import { CrossFade, IconButton } from '@leasefy/cadence';
+import {
+  AnimatedNumber,
+  Collapse,
+  CrossFade,
+  IconButton,
+  motionDuration,
+  motionEase,
+} from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -365,11 +372,7 @@ export default function PropietarioPerfilPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <div>
             <h1 className="text-3xl font-medium text-fg tracking-tight">
               {locale === 'es' ? 'Mi Perfil' : 'My Profile'}
@@ -378,15 +381,11 @@ export default function PropietarioPerfilPage() {
               {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
             </p>
           </div>
-        </motion.header>
+        </header>
 
-        {/* Setup Progress Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
+            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
+        <section className="mb-8">
           <div className="rounded-lg bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex-1">
@@ -405,12 +404,13 @@ export default function PropietarioPerfilPage() {
                     </p>
                   </div>
                 </div>
+                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
                 <div className="h-2 bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercentage}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-[#1A40FF] rounded-full"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${completionPercentage - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="h-full w-full bg-[#1A40FF] rounded-full"
                   />
                 </div>
                 <p className="text-xs text-fg-muted mt-2">
@@ -428,11 +428,13 @@ export default function PropietarioPerfilPage() {
                       cx="50" cy="50" r="40" fill="none" stroke="#1A40FF" strokeWidth="8" strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
                       animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-fg">{completionPercentage}%</span>
+                    <span className="text-2xl font-bold text-fg">
+                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -442,13 +444,10 @@ export default function PropietarioPerfilPage() {
               {setupSteps.map((step, index) => {
                 const Icon = step.icon;
                 return (
-                  <motion.div
+                  <div
                     key={step.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-lg p-4 transition-all',
+                      'rounded-lg p-4 transition-colors',
                       step.completed
                         ? 'bg-white/80 dark:bg-white/10'
                         : 'bg-surface border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
@@ -476,21 +475,16 @@ export default function PropietarioPerfilPage() {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-1 space-y-6"
-          >
+          <div className="lg:col-span-1 space-y-6">
             <div className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {editingSection !== 'avatar' && (
@@ -532,11 +526,12 @@ export default function PropietarioPerfilPage() {
                   )}
                 </div>
 
-                {editingSection === 'avatar' && (
+                {/* El área de la foto se abre y se cierra con su altura. */}
+                <Collapse open={editingSection === 'avatar'}>
                   <div
                     onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
                       isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15" : "border-border hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-surface-muted"
                     )}
                   >
@@ -572,7 +567,7 @@ export default function PropietarioPerfilPage() {
                       </>
                     )}
                   </div>
-                )}
+                </Collapse>
 
                 {editingSection === 'avatar' ? (
                   <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-semibold" />
@@ -582,7 +577,7 @@ export default function PropietarioPerfilPage() {
                 {/* «Propietario desde Enero 2024» era una fecha inventada, igual
                     para todos (Nico, 02-10-2026): no se muestra. */}
 
-                {editingSection === 'avatar' && (
+                <Collapse open={editingSection === 'avatar'}>
                   <div className="flex items-center gap-2 mt-4">
                     <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
@@ -592,7 +587,7 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
-                )}
+                </Collapse>
 
                 {/* Quick Stats */}
                 <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
@@ -629,21 +624,18 @@ export default function PropietarioPerfilPage() {
             {/* «Estado de verificación» decía «Verificado» en el correo, el
                 teléfono, la identidad y la propiedad de TODO propietario, sin
                 que nada lo verificara (Nico, 02-10-2026): se quitó. */}
-          </motion.div>
+          </div>
 
           {/* Profile Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            {/* Personal Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
+                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
+                <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('personal')} className="gap-1.5">
                     <Pencil className="w-3.5 h-3.5" />
@@ -660,8 +652,13 @@ export default function PropietarioPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CrossFade
+                swapKey={editingSection === 'personal' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre completo' : 'Full name'}</label>
                   {editingSection === 'personal' ? (
@@ -744,13 +741,14 @@ export default function PropietarioPerfilPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </CrossFade>
             </div>
 
-            {/* Emergency Contact */}
+            {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')} className="gap-1.5">
                     <Pencil className="w-3.5 h-3.5" />
@@ -767,9 +765,11 @@ export default function PropietarioPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
               <div>
                 <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection === 'emergency' ? (
                   <>
                     <Input type="text" {...propsDelCampo('emergencia')} value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
@@ -782,6 +782,7 @@ export default function PropietarioPerfilPage() {
                     <span className="text-sm text-fg">{emergencyContactDisplay || notSet}</span>
                   </div>
                 )}
+                </CrossFade>
               </div>
             </div>
 
@@ -799,7 +800,7 @@ export default function PropietarioPerfilPage() {
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

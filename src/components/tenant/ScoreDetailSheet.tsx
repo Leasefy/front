@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork } from '@phosphor-icons/react';
-import { ProgressRing, RiskBadge, type RiskGrade } from '@leasefy/cadence';
+import { motion } from 'framer-motion';
+import { CrossFade, ProgressRing, RiskBadge, motionDuration, motionEase, type RiskGrade } from '@leasefy/cadence';
 import {
   Sheet,
   SheetBody,
@@ -277,10 +278,13 @@ function UnlockedContent({
                   <span className="text-sm font-semibold text-fg">{cat.score}</span>
                 </div>
               </div>
+              {/* La barra se llena al abrir el detalle, con `transform` (no `width`). */}
               <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
-                <div
-                  className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
-                  style={{ width: `${cat.score}%` }}
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: `${cat.score - 100}%` }}
+                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                  className={cn('h-full w-full rounded-full', colors.bar)}
                 />
               </div>
             </div>
@@ -335,11 +339,14 @@ function UnlockedContent({
             <span className="font-mono text-lg font-semibold tracking-wider text-fg">
               {verificationCode}
             </span>
-            {copiedCode ? (
-              <Check className="w-4 h-4 text-success flex-shrink-0" />
-            ) : (
-              <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
-            )}
+            {/* Copiar → visto → copiar: los íconos se cruzan en el lugar. */}
+            <CrossFade as="span" swapKey={copiedCode ? 'copiado' : 'copiar'} mode="popLayout" className="inline-flex flex-shrink-0">
+              {copiedCode ? (
+                <Check className="w-4 h-4 text-success flex-shrink-0" />
+              ) : (
+                <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
+              )}
+            </CrossFade>
           </button>
           <p className="text-xs text-fg-muted mt-1.5">
             {locale === 'es'

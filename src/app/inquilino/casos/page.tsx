@@ -29,6 +29,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { AnimatedNumber } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   CreditCard,
   FileText,
@@ -105,17 +107,13 @@ function formatRelative(iso: string, locale: string): string {
 // Case row
 // ============================================================================
 
-function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: string }) {
+function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
   const TypeIcon = TYPE_ICON[c.type] ?? ClipboardText;
   const badge = TONE_BADGE[c.tone];
   const ToneIcon = badge.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <div>
       <Link href={c.detailLink} className="group block">
         <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
           <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -142,7 +140,7 @@ function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: s
           <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
@@ -157,6 +155,9 @@ export default function CasosPage() {
   // CASO-03: in-app notifications are already real; surface the unread count as a
   // subtle badge. This hook owns its own existing poll — no new poller is added here.
   const { unreadCount } = useTenantNotifications();
+
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isCasesLoading);
 
   // Loading gate — never flash a fake-empty while any source is in flight.
   if (isOnboardingLoading || isCasesLoading) {
@@ -198,14 +199,10 @@ export default function CasosPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {locale === 'es' ? 'Mis casos' : 'My cases'}
           </h1>
@@ -214,13 +211,10 @@ export default function CasosPage() {
               ? 'Tus pagos y postulaciones en curso, en un solo lugar.'
               : 'Your ongoing payments and applications, all in one place.'}
           </p>
-        </motion.header>
+        </header>
 
         {/* CASO-03 — in-app notification strip (real) + push/WhatsApp Próximamente (honest) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+        <div
           className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 flex flex-col sm:flex-row sm:items-center gap-4"
         >
           <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
@@ -255,25 +249,21 @@ export default function CasosPage() {
               {locale === 'es' ? 'Ver notificaciones' : 'View notifications'}
               {unreadCount > 0 && (
                 <Badge variant="default" className="ml-0.5 h-auto px-2 py-0.5 font-mono tabular-nums">
-                  {unreadCount}
+                  {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
+                  <AnimatedNumber value={unreadCount} />
                 </Badge>
               )}
               <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </div>
-        </motion.div>
+        </div>
 
         {/* Case list (CASO-01) — real rows, or an honest neutral "todo al día" empty */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-10"
-        >
+        <section className="mb-10">
           {cases.length > 0 ? (
             <div className="space-y-3">
-              {cases.map((c, index) => (
-                <CaseRow key={c.id} c={c} index={index} locale={locale} />
+              {cases.map((c) => (
+                <CaseRow key={c.id} c={c} locale={locale} />
               ))}
             </div>
           ) : (
@@ -285,14 +275,10 @@ export default function CasosPage() {
                 : 'You have no open cases right now.'}
             />
           )}
-        </motion.section>
+        </section>
 
         {/* More in the portal — one REAL entry point (Solicitudes) + honest Próximamente (Acuerdos) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
+        <section>
           <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle dark:text-fg-muted mb-4">
             {locale === 'es' ? 'Más en tu portal' : 'More in your portal'}
           </h2>
@@ -349,9 +335,9 @@ export default function CasosPage() {
               </span>
             </Link>
           </div>
-        </motion.section>
+        </section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

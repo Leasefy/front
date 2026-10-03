@@ -22,7 +22,7 @@
  * panel never approves/sets terms, T-323/A5); es-CO dates; additive route only.
  */
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -45,6 +45,8 @@ import { useI18n } from '@/lib/i18n';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
 import { AcuerdoAcceptPanel } from '@/components/tenant/AcuerdoAcceptPanel';
 import { PagarCuota } from '@/components/tenant/PagarCuota';
+import { AvisoDelPagoDelAcuerdo } from '@/components/tenant/AvisoDelPagoDelAcuerdo';
+import { transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
@@ -191,10 +193,23 @@ function AcuerdoDetailView({
         <CuotaPlanTable installments={plan.installments} locale={locale} />
       </section>
 
-      {/* Accept-by-signing (ACUE-02) — only while unaccepted; else a factual state */}
-      {plan.acceptedAt === null ? (
+      {/* Accept-by-signing (ACUE-02) — only while OFFERED and unaccepted; else a factual state.
+          Un acuerdo cancelado (la inmobiliaria lo rechazó) o roto ya no se acepta: el back
+          respondería 409 `ACUERDO_NO_ACEPTABLE`, así que ni se ofrece firmar (02-10-2026). */}
+      {plan.acceptedAt === null && plan.status === 'offered' ? (
         <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
+        </section>
+      ) : plan.acceptedAt === null ? (
+        <section
+          data-testid="acuerdo-no-aceptable"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6"
+        >
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {es
+              ? 'Este acuerdo ya no se puede aceptar. Si quieres un acuerdo de pago, pídelo a tu inmobiliaria desde Acuerdos.'
+              : 'This agreement can no longer be accepted. If you want a payment agreement, request one from your agency in Agreements.'}
+          </p>
         </section>
       ) : (
         <section className="rounded-xl border border-success/30 bg-success-soft p-5 sm:p-6">
@@ -241,6 +256,17 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   const params = use(props.params);
   const { locale } = useI18n();
   const { items, isLoading, error, refetch } = useTenantAcuerdos();
+
+  // Al volver de Wompi (`?id=<transacción>`, «Pagar cuota»): el aviso de que el
+  // pago se está confirmando y qué pasa con un pago que no es de una cuota (Nico,
+  // 02-10-2026). Se lee la URL una vez y se limpia, para que recargar no lo repita.
+  const [volvioDeWompi, setVolvioDeWompi] = useState(false);
+  useEffect(() => {
+    if (transaccionDelRetorno(new URLSearchParams(window.location.search))) {
+      setVolvioDeWompi(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   // Own-only resolution (anti-IDOR, T-v7-07-14): filter the tenant's OWN list —
   // NO API call with the raw route id, NO fetch-by-id hook.
@@ -294,6 +320,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   return (
     <PageShell>
       <BackLink locale={locale} />
+      <AvisoDelPagoDelAcuerdo show={volvioDeWompi} locale={locale} className="mb-6" />
       <AcuerdoDetailView plan={plan} locale={locale} onAccepted={refetch} />
     </PageShell>
   );

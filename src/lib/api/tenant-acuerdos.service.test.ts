@@ -173,25 +173,33 @@ describe('acuerdosApi.accept', () => {
     expect(init?.method).toBe('POST');
   });
 
-  it('throws AcuerdoUnavailableError on 404 (no fake "aceptado")', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
+  // «Todavía no» es SÓLO lo que el back dice con su `code` (seguimiento 4).
+  it.each([
+    [503, 'ACEPTAR_ACUERDO_NO_DISPONIBLE'],
+    [404, 'ACEPTAR_ACUERDO_NO_DISPONIBLE'],
+  ])('throws AcuerdoUnavailableError on %s %s (no fake "aceptado")', async (status, code) => {
+    globalThis.fetch = mockFetch(status, { statusCode: status, code, message: 'Todavía no.' });
     await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
       AcuerdoUnavailableError,
     );
   });
 
-  it('throws AcuerdoUnavailableError on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
-      AcuerdoUnavailableError,
-    );
+  it('un 404 ACUERDO_NO_ENCONTRADO NO es «pronto»: sube con su frase', async () => {
+    globalThis.fetch = mockFetch(404, {
+      statusCode: 404,
+      code: 'ACUERDO_NO_ENCONTRADO',
+      message: 'No encontramos este acuerdo de pago a tu nombre.',
+    });
+    const err = await acuerdosApi.accept('plan-1', ACCEPT_INPUT).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as Error).message).toBe('No encontramos este acuerdo de pago a tu nombre.');
   });
 
-  it('throws AcuerdoUnavailableError on network failure (status 0)', async () => {
+  it('la red caída NO es «pronto»: sube para que se diga «conexión»', async () => {
     globalThis.fetch = mockNetworkFailure();
-    await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
-      AcuerdoUnavailableError,
-    );
+    const err = await acuerdosApi.accept('plan-1', ACCEPT_INPUT).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as { status?: number }).status).toBe(0);
   });
 
   it('rethrows the raw ApiError on any other status (e.g. 500)', async () => {
@@ -226,25 +234,38 @@ describe('acuerdosApi.requestPremoraPlan', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ leaseId: 'lease-1' });
   });
 
-  it('throws AcuerdoUnavailableError on 404 (no fabricated plan)', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
+  it.each([
+    [503, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
+    [404, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
+  ])('throws AcuerdoUnavailableError on %s %s (no fabricated plan)', async (status, code) => {
+    globalThis.fetch = mockFetch(status, { statusCode: status, code, message: 'Todavía no.' });
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
     ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
   });
 
-  it('throws AcuerdoUnavailableError on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    await expect(
-      acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
-    ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
+  it('un 409 FALTA_TU_DOCUMENTO sube con su frase (dice qué hacer)', async () => {
+    globalThis.fetch = mockFetch(409, {
+      statusCode: 409,
+      code: 'FALTA_TU_DOCUMENTO',
+      message: 'Para pedir un acuerdo necesitamos tu número de documento. Complétalo en tu perfil e intenta de nuevo.',
+    });
+    const err = await acuerdosApi
+      .requestPremoraPlan({ leaseId: 'lease-1' })
+      .catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as { code?: string }).code).toBe('FALTA_TU_DOCUMENTO');
   });
 
-  it('throws AcuerdoUnavailableError on network failure (status 0)', async () => {
+  it('un 404 ARRIENDO_NO_ENCONTRADO o la red caída NO son «pronto»', async () => {
+    globalThis.fetch = mockFetch(404, { statusCode: 404, code: 'ARRIENDO_NO_ENCONTRADO', message: 'No encontramos ese arriendo a tu nombre.' });
+    await expect(
+      acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
+    ).rejects.not.toBeInstanceOf(AcuerdoUnavailableError);
     globalThis.fetch = mockNetworkFailure();
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
-    ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
+    ).rejects.not.toBeInstanceOf(AcuerdoUnavailableError);
   });
 
   it('rethrows the raw ApiError on any other status (e.g. 500)', async () => {

@@ -25,18 +25,30 @@ export function isPeriodPayable(status: CurrentPeriodStatus): boolean {
 }
 
 /**
- * Rent payment reference: rent-namespaced and idempotent per period, so rent
- * and avalúo references never collide during reconciliation (RESEARCH §1
- * invariant 5). Month is zero-padded to 2 digits.
+ * Rent payment reference: rent-namespaced, so rent and avalúo references never
+ * collide during reconciliation (RESEARCH §1 invariant 5). Month is
+ * zero-padded to 2 digits.
  *
- * buildRentReference('L1', 2026, 7) === 'rent-L1-2026-07'
+ * ── Una referencia por intento (Nico, 02-10-2026, «seguimiento 4») ────────────
+ *
+ * Antes era la MISMA para todos los intentos del período
+ * (`rent-<leaseId>-AAAA-MM`): un segundo intento (después de un rechazo, o de
+ * cerrar el checkout) volvía a Wompi con una referencia ya usada. Ahora cada
+ * sesión de pago lleva su marca de tiempo (`-<epochMs>`, la misma forma de
+ * `lease-`). El back ya la entiende
+ * (`back/src/tenant-payments/wompi/referencia-del-arriendo.ts`: sufijo de 10 a
+ * 16 dígitos) y cierra el MISMO período; el doble pago lo frena el back (un
+ * pago por período) y el período «en verificación» mientras hay uno en curso.
+ *
+ * buildRentReference('L1', 2026, 7, 1759449600123) === 'rent-L1-2026-07-1759449600123'
  */
 export function buildRentReference(
   leaseId: string,
   year: number,
-  month: number
+  month: number,
+  intento: number = Date.now()
 ): string {
-  return `rent-${leaseId}-${year}-${String(month).padStart(2, '0')}`
+  return `rent-${leaseId}-${year}-${String(month).padStart(2, '0')}-${Math.trunc(intento)}`
 }
 
 /** Session params returned by the server route to the client. */

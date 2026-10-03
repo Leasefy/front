@@ -189,10 +189,12 @@ export async function POST(req: Request) {
   }
   const amountInCents = Math.round(info.monthlyRent * 100)
   const currency = 'COP'
+  // Una referencia por intento (`-<epochMs>`, Nico 02-10-2026): ver `buildRentReference`.
   const reference = buildRentReference(
     leaseId,
     info.currentPeriod.year,
-    info.currentPeriod.month
+    info.currentPeriod.month,
+    Date.now()
   )
 
   // --- Integrity hash (server-only; secret never leaves this process) ---

@@ -18,18 +18,23 @@
  * everything else. «Pagar cuota» no pasa por acá: va por la ruta del servidor
  * `/api/inquilino/acuerdos/wompi-session` (`components/tenant/PagarCuota.tsx`).
  *
- * ── Qué está vivo (02-10-2026, «seguimiento 3»: el back hace de puente) ───────
+ * ── Qué está vivo (02-10-2026, «seguimiento 3» y «seguimiento 4») ───────────
  * El back expone `/cartera/payment-plans/*` con el alcance del inquilino
  * autenticado y se lo pide al micro por S2S (`back/src/acuerdos-de-pago/`):
  *   - `GET /mine` — VIVO. El deudor es el documento del inquilino dentro de cada
- *     inmobiliaria suya; sin deudor que calce la lista llega vacía (200 `[]`).
+ *     inmobiliaria suya (exacto, o por dígitos si ninguno tiene letras); sin
+ *     deudor que calce la lista llega vacía (200 `[]`).
  *   - `GET /:planId` — VIVO (lo usa `wompi-session` del lado del servidor).
- *   - `POST /:planId/accept` y `POST /request` — el back responde 404 con su
- *     `code` (`ACEPTAR_ACUERDO_NO_DISPONIBLE` / `SOLICITAR_ACUERDO_NO_DISPONIBLE`):
- *     no hay código de un solo uso para acuerdos ni dónde recibir una solicitud
- *     pre-mora. Acá eso sigue siendo `AcuerdoUnavailableError` → el «pronto»
- *     honesto (DESIGN.md §11), nunca una aceptación o un plan inventados.
- * Any other (non-not-live) error is rethrown.
+ *   - `POST /:planId/otp/send|verify` + `POST /:planId/accept` — VIVOS desde
+ *     «seguimiento 4»: firma + código de un solo uso (`AcuerdoAcceptPanel`).
+ *   - `POST /request` — VIVO desde «seguimiento 4»: la solicitud cae como caso
+ *     nuevo en la Bandeja del Piloto de la inmobiliaria, al día o no.
+ * «Todavía no» (`AcuerdoUnavailableError` → el «pronto» honesto, DESIGN.md §11)
+ * es SÓLO lo que el back dice con su `code`: `ACEPTAR_ACUERDO_NO_DISPONIBLE` /
+ * `SOLICITAR_ACUERDO_NO_DISPONIBLE` (un back sin la migración, o uno de antes).
+ * Cualquier otro error sube tal cual para que la pantalla diga qué pasó con el
+ * traductor: un 404 «no es tuyo», un 409 «te falta el documento», y «conexión»
+ * sólo si no hubo respuesta (antes un 404, un 403 o la red caída decían «pronto»).
  */
 
 import { apiClient, ApiError } from './client';
@@ -54,6 +59,24 @@ function isEndpointUnavailable(err: unknown): boolean {
   return (
     err instanceof ApiError &&
     (err.status === 404 || err.status === 403 || err.status === 0)
+  );
+}
+
+/**
+ * Los `code` con que el back dice «todavía no se puede» (un back sin la
+ * migración responde 503 con estos; uno de antes de «seguimiento 4», 404).
+ */
+export const CODIGOS_DE_TODAVIA_NO = [
+  'ACEPTAR_ACUERDO_NO_DISPONIBLE',
+  'SOLICITAR_ACUERDO_NO_DISPONIBLE',
+] as const;
+
+/** ¿El back dijo «todavía no» con su `code`? Nunca se decide por el status solo. */
+export function esTodaviaNo(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    typeof err.code === 'string' &&
+    (CODIGOS_DE_TODAVIA_NO as readonly string[]).includes(err.code)
   );
 }
 
@@ -115,7 +138,7 @@ async function accept(
       body,
     );
   } catch (err) {
-    if (isEndpointUnavailable(err)) throw new AcuerdoUnavailableError();
+    if (esTodaviaNo(err)) throw new AcuerdoUnavailableError();
     throw err;
   }
 }
@@ -129,14 +152,14 @@ async function accept(
  */
 async function requestPremoraPlan(
   body: PremoraPlanRequestInput,
-): Promise<{ requestId: string }> {
+): Promise<{ requestId: string; yaExistia?: boolean }> {
   try {
-    return await apiClient.post<{ requestId: string }>(
+    return await apiClient.post<{ requestId: string; yaExistia?: boolean }>(
       '/cartera/payment-plans/request',
       body,
     );
   } catch (err) {
-    if (isEndpointUnavailable(err)) throw new AcuerdoUnavailableError();
+    if (esTodaviaNo(err)) throw new AcuerdoUnavailableError();
     throw err;
   }
 }

@@ -17,14 +17,19 @@
  * acuerdo was already aprobado by the agency. Everything off the policy matrix routes
  * through the agent's requiresHumanReview() — never decided in the client.
  *
- * ── Honest degrade (frontend-first) ─────────────────────────────────────────
- * The acuerdo OTP send/verify endpoints and the accept route do not exist yet. The
- * injected adapter maps not-live errors (404/403/0) to an honest "estará disponible
- * pronto" state inside the OTP modal (it NEVER fabricates a verificationToken); and
- * `acuerdosApi.accept` throwing `AcuerdoUnavailableError` surfaces an honest
- * "Próximamente" toast — never a fake "aceptado". The accepted status comes from the
- * AGENT response, so it is NEVER set optimistically. Buttons/labels sentence case
- * (DESIGN §4); es-CO copy via useI18n().
+ * ── Vivo desde «seguimiento 4» (Nico, 02-10-2026) ───────────────────────────
+ * El back expone `POST /cartera/payment-plans/:planId/otp/send|verify` y
+ * `POST …/accept` (`back/src/acuerdos-de-pago/aceptar-acuerdo.service.ts`): el
+ * código es el mismo mecanismo de la firma de contratos (correo, y WhatsApp si
+ * está prendido; 10 min, 5 intentos) y aceptar consume el token y le pide al
+ * micro la transición offered→active con la evidencia (el id de la
+ * verificación y el SHA-256 de la firma). «Todavía no» es SÓLO el `code`
+ * `ACEPTAR_ACUERDO_NO_DISPONIBLE` (un back sin la migración): ahí el modal y el
+ * toast dicen el «pronto» honesto — NUNCA un token o un «aceptado» inventados.
+ * Cualquier otro error (código incorrecto, acuerdo que ya no se puede aceptar,
+ * red caída) sube con su frase por el traductor. The accepted status comes from
+ * the AGENT response, so it is NEVER set optimistically. Buttons/labels sentence
+ * case (DESIGN §4); es-CO copy via useI18n().
  */
 
 import { useMemo, useState } from 'react';
@@ -35,8 +40,9 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { SignaturePad } from '@/components/contract/SignaturePad';
 import { OTPVerification, type OtpAdapter } from '@/components/contract/OTPVerification';
-import { acuerdosApi, AcuerdoUnavailableError } from '@/lib/api/tenant-acuerdos.service';
-import { apiClient, ApiError } from '@/lib/api/client';
+import { acuerdosApi, AcuerdoUnavailableError, esTodaviaNo } from '@/lib/api/tenant-acuerdos.service';
+import { apiClient } from '@/lib/api/client';
+import type { OtpChannelResult } from '@/lib/api/contracts.types';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
@@ -49,12 +55,53 @@ export interface AcuerdoAcceptPanelProps {
 }
 
 /**
- * True when an OTP transport failure means "endpoint not live yet" (404/403/0),
- * mirroring the service's isEndpointUnavailable gate. On this shape the adapter
- * surfaces an honest unavailable message — it NEVER returns a fabricated token.
+ * True when the back says «todavía no» with its `code` (`ACEPTAR_ACUERDO_NO_DISPONIBLE`:
+ * a back without the migration). On this shape the adapter surfaces an honest
+ * unavailable message — it NEVER returns a fabricated token. Anything else (wrong
+ * code, an agreement that can't be accepted anymore, no connection) goes up with
+ * its own phrase.
  */
 function isOtpEndpointUnavailable(err: unknown): boolean {
-  return err instanceof ApiError && (err.status === 404 || err.status === 403 || err.status === 0);
+  return esTodaviaNo(err);
+}
+
+/**
+ * El transporte del código para aceptar ESTE acuerdo (`OTPVerification` con
+ * `adapter`): `POST /cartera/payment-plans/:planId/otp/send|verify` por el back
+ * (apiClient, con el JWT del inquilino). «Todavía no» SÓLO con el `code` del
+ * back (`ACEPTAR_ACUERDO_NO_DISPONIBLE`) → la frase honesta `noDisponible`;
+ * cualquier otro error sube tal cual (el modal lo dice con el traductor). Nunca
+ * fabrica un token.
+ */
+export function adaptadorDelCodigoDelAcuerdo(planId: string, noDisponible: string): OtpAdapter {
+  return {
+    send: async () => {
+      try {
+        const r = await apiClient.post<{
+          sentTo: string;
+          cooldownSeconds?: number;
+          channels?: OtpChannelResult[];
+        }>(`/cartera/payment-plans/${planId}/otp/send`, {});
+        // `channels`: por dónde salió el código (correo, WhatsApp) — el modal lo dice.
+        return { sentTo: r.sentTo, cooldownSeconds: r.cooldownSeconds ?? 60, channels: r.channels };
+      } catch (err) {
+        if (isOtpEndpointUnavailable(err)) throw new Error(noDisponible);
+        throw err;
+      }
+    },
+    verify: async (code: string) => {
+      try {
+        const r = await apiClient.post<{ verificationToken: string }>(
+          `/cartera/payment-plans/${planId}/otp/verify`,
+          { code },
+        );
+        return { verificationToken: r.verificationToken };
+      } catch (err) {
+        if (isOtpEndpointUnavailable(err)) throw new Error(noDisponible);
+        throw err;
+      }
+    },
+  };
 }
 
 export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcceptPanelProps) {
@@ -79,32 +126,7 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
   // The INJECTED acuerdo OTP transport. Reuses the generalized OTPVerification's
   // Ley 527/1999 flow; send/verify go through the BFF (apiClient) with the tenant JWT.
   const otpAdapter = useMemo<OtpAdapter>(
-    () => ({
-      send: async () => {
-        try {
-          const r = await apiClient.post<{ sentTo: string; cooldownSeconds?: number }>(
-            `/cartera/payment-plans/${planId}/otp/send`,
-            {},
-          );
-          return { sentTo: r.sentTo, cooldownSeconds: r.cooldownSeconds ?? 60 };
-        } catch (err) {
-          if (isOtpEndpointUnavailable(err)) throw new Error(otpUnavailableMsg);
-          throw err;
-        }
-      },
-      verify: async (code: string) => {
-        try {
-          const r = await apiClient.post<{ verificationToken: string }>(
-            `/cartera/payment-plans/${planId}/otp/verify`,
-            { code },
-          );
-          return { verificationToken: r.verificationToken };
-        } catch (err) {
-          if (isOtpEndpointUnavailable(err)) throw new Error(otpUnavailableMsg);
-          throw err;
-        }
-      },
-    }),
+    () => adaptadorDelCodigoDelAcuerdo(planId, otpUnavailableMsg),
     [planId, otpUnavailableMsg],
   );
 

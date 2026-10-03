@@ -53,12 +53,17 @@ const realFetch = globalThis.fetch
 const origSecret = process.env.WOMPI_INTEGRITY_SECRET
 const origPublicKey = process.env.WOMPI_PUBLIC_KEY
 
+/** La hora del intento: la referencia la lleva (`-<epochMs>`, Nico 02-10-2026). */
+const INTENTO = 1_759_449_600_123
+
 beforeEach(() => {
   process.env.WOMPI_INTEGRITY_SECRET = SENTINEL_SECRET
   process.env.WOMPI_PUBLIC_KEY = PUBLIC_KEY
+  vi.spyOn(Date, 'now').mockReturnValue(INTENTO)
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   globalThis.fetch = realFetch
   if (origSecret === undefined) delete process.env.WOMPI_INTEGRITY_SECRET
   else process.env.WOMPI_INTEGRITY_SECRET = origSecret
@@ -76,7 +81,7 @@ describe('POST /api/inquilino/pagos/wompi-session — server-resolved amount (an
     expect(res.status).toBe(200)
     // 1_500_000 COP -> 150_000_000 cents, NOT a tampered value.
     expect(json.amountInCents).toBe(150_000_000)
-    expect(json.reference).toBe('rent-lease-1-2026-07')
+    expect(json.reference).toBe('rent-lease-1-2026-07-1759449600123')
     expect(json.currency).toBe('COP')
   })
 
@@ -86,12 +91,24 @@ describe('POST /api/inquilino/pagos/wompi-session — server-resolved amount (an
     const json = await res.json()
 
     const expected = computeWompiIntegrity(
-      'rent-lease-1-2026-07',
+      'rent-lease-1-2026-07-1759449600123',
       150_000_000,
       'COP',
       SENTINEL_SECRET,
     )
     expect(json.integrity).toBe(expected)
+  })
+})
+
+describe('POST /api/inquilino/pagos/wompi-session — una referencia por intento (Nico, 02-10-2026)', () => {
+  it('dos sesiones del mismo período llevan referencias distintas (y cada una su integridad)', async () => {
+    globalThis.fetch = mockPaymentInfoFetch(PAYMENT_INFO)
+    const primera = await (await POST(makeReq({ leaseId: 'lease-1' }))).json()
+    vi.mocked(Date.now).mockReturnValue(INTENTO + 60_000)
+    const segunda = await (await POST(makeReq({ leaseId: 'lease-1' }))).json()
+    expect(primera.reference).toBe('rent-lease-1-2026-07-1759449600123')
+    expect(segunda.reference).toBe('rent-lease-1-2026-07-1759449660123')
+    expect(segunda.integrity).not.toBe(primera.integrity)
   })
 })
 

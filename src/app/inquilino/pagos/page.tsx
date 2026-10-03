@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -35,6 +35,7 @@ import type {
   TenantPaymentRequestStatus,
 } from '@/lib/api/tenant-payment-requests.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 
 interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
@@ -172,23 +173,28 @@ function PagosPageContent() {
     refetchPaymentInfo();
   };
 
-  // Retorno de Wompi (sin éxito prematuro). Wompi puede volver acá con ?id / ?status,
-  // parámetros controlados por el cliente: NUNCA son fuente de verdad ni ramifican la
-  // UI. Solo un toast neutral de "confirmando" + refetch de la fuente real; el estado
-  // pasa a pagado únicamente vía webhook del backend + validación del arrendador.
+  // Retorno de Wompi: verificar al volver (Nico, 02-10-2026, «seguimiento 4»).
+  // Wompi vuelve con `?id=<transacción>` (un parámetro del navegador: NUNCA es la
+  // fuente de verdad). El back consulta ESA transacción en Wompi y la pasa por el
+  // mismo camino que el webhook (idempotente): un pago cuyo webhook nunca llegó
+  // queda registrado igual. Lo que se dice es lo que respondió el back; después se
+  // recargan las solicitudes y el período (que queda «en verificación» mientras
+  // Wompi no termine) y se limpia la URL para que recargar no repita el aviso.
+  const verificacionHecha = useRef(false);
   useEffect(() => {
-    const wompiId = searchParams.get('id');
-    const wompiStatus = searchParams.get('status');
-    if (wompiId && wompiStatus) {
-      toast.info(
-        locale === 'es'
-          ? 'Estamos confirmando tu pago. Vas a ver la confirmación en tu historial cuando termine.'
-          : 'We are confirming your payment. You will see the confirmation in your history when it completes.',
-        { duration: 6000 },
-      );
-      refetchRequests();
-      refetchPaymentInfo();
-    }
+    const transaccion = transaccionDelRetorno(searchParams);
+    if (!transaccion || verificacionHecha.current) return;
+    verificacionHecha.current = true;
+    window.history.replaceState(null, '', window.location.pathname);
+    void avisarDelPagoAlVolver({
+      transaccion,
+      locale,
+      aviso: toast,
+      recargar: () => {
+        refetchRequests();
+        refetchPaymentInfo();
+      },
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Comprobante interno (PAGO-03). Pide una URL firmada por el backend y descarga como

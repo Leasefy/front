@@ -391,3 +391,27 @@ describe('Por revisar — una acción que no sale', () => {
   })
 })
 
+
+/*
+ * ARREGLOS-8 (ARREGLOS-4 Q1 A, 03-10-2026): con el micro caído, la cola le
+ * pasaba a `EstadoDeDatos` sólo el TEXTO del error y la tarjeta decía «Fue un
+ * problema nuestro». Ahora va el error entero (`errorCrudo` del hook).
+ */
+describe('«Por revisar» — con el micro caído', () => {
+  it('🔴 dice que se cayó el asistente', async () => {
+    const { caidaDelAsistente } = await import('@/lib/api/agent-fetch')
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+    const conCrudo = cola as typeof cola & { errorCrudo?: unknown }
+    cola.error = 'Failed to fetch'
+    conCrudo.errorCrudo = caidaDelAsistente(new TypeError('Failed to fetch'))
+    try {
+      await montar()
+      const texto = $('[data-testid="fallo-de-carga"]').textContent ?? ''
+      expect(texto).toMatch(/El asistente de Leasefy no está disponible/)
+      expect(texto).not.toMatch(/problema nuestro/i)
+    } finally {
+      delete conCrudo.errorCrudo
+      vi.restoreAllMocks()
+    }
+  })
+})

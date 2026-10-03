@@ -223,6 +223,7 @@ export function EscalationResolveModal({
           >
             <SelectTrigger
               id="resolve-category"
+              aria-required="true"
               className="w-full"
               aria-invalid={erroresDelServidor.category ? true : undefined}
               aria-describedby={erroresDelServidor.category ? 'resolve-category-error' : undefined}
@@ -279,6 +280,7 @@ export function EscalationResolveModal({
           </label>
           <Textarea
             id="resolve-text"
+            aria-required="true"
             value={text}
             onChange={(e) => {
               setText(e.target.value)

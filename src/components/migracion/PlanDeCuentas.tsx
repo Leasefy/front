@@ -33,9 +33,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   ArrowRight,
-  CaretDown,
   CaretRight,
   CheckCircle,
   FileArrowUp,
@@ -730,11 +730,13 @@ function PendientesDelContador({
         </div>
       </div>
 
-      <ul className="mt-4 space-y-2">
+      {/* Entran escalonadas (ARREGLOS-8, MOV-A6). */}
+      <Stagger as="ul" layout={false} distance="xs" className="mt-4 space-y-2">
         {pendientes.map((p) => {
           const cargada = porCodigo.get(p.codigo);
           return (
-            <li
+            <StaggerItem
+              as="li"
               key={p.codigo}
               className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-surface p-3 shadow-sm"
               data-testid={`puc-pendiente-${p.codigo}`}
@@ -768,10 +770,10 @@ function PendientesDelContador({
                   </Button>
                 </div>
               ) : null}
-            </li>
+            </StaggerItem>
           );
         })}
-      </ul>
+      </Stagger>
       {error ? (
         <p className="mt-2 text-sm text-danger" role="alert">
           {error}
@@ -816,7 +818,12 @@ function Nodo({
             aria-label={estaAbierto ? `Contraer ${nodo.codigo}` : `Expandir ${nodo.codigo}`}
             className="flex h-5 w-5 items-center justify-center rounded text-fg-subtle hover:bg-surface-muted hover:text-fg"
           >
-            {estaAbierto ? <CaretDown className="h-3.5 w-3.5" /> : <CaretRight className="h-3.5 w-3.5" />}
+            {/* Una sola flecha que gira con la curva del colapsable (ARREGLOS-8). */}
+            <CaretRight
+              className={`h-3.5 w-3.5 transition-transform duration-slow ease-emphasis ${
+                estaAbierto ? 'rotate-90' : ''
+              }`}
+            />
           </button>
         ) : (
           <span className="h-5 w-5" aria-hidden />
@@ -877,19 +884,23 @@ function Nodo({
           ) : null}
         </span>
       </div>
-      {tieneHijas && estaAbierto ? (
-        <ul className="divide-y divide-border-faint border-t border-border-faint">
-          {hijas.map((h) => (
-            <Nodo
-              key={h.id}
-              nodo={h}
-              abierto={abierto}
-              onAlternar={onAlternar}
-              onEditar={onEditar}
-              onSubcuenta={onSubcuenta}
-            />
-          ))}
-        </ul>
+      {/* Las subcuentas se abren y se cierran con su altura (ARREGLOS-8, MOV-A6);
+          antes aparecían y desaparecían de golpe. */}
+      {tieneHijas ? (
+        <Collapse open={estaAbierto}>
+          <ul className="divide-y divide-border-faint border-t border-border-faint">
+            {hijas.map((h) => (
+              <Nodo
+                key={h.id}
+                nodo={h}
+                abierto={abierto}
+                onAlternar={onAlternar}
+                onEditar={onEditar}
+                onSubcuenta={onSubcuenta}
+              />
+            ))}
+          </ul>
+        </Collapse>
       ) : null}
     </li>
   );

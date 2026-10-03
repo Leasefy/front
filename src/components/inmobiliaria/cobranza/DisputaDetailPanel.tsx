@@ -280,6 +280,7 @@ export function DisputaDetailPanel({
             >
               <SelectTrigger
                 id="resolver-outcome"
+                aria-required="true"
                 aria-invalid={erroresDelServidor.outcome ? true : undefined}
                 aria-describedby={erroresDelServidor.outcome ? 'resolver-outcome-error' : undefined}
               >
@@ -305,6 +306,7 @@ export function DisputaDetailPanel({
             </label>
             <Textarea
               id="resolver-note"
+              aria-required="true"
               value={note}
               onChange={(e) => {
                 setNote(e.target.value)

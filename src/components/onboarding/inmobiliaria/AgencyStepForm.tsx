@@ -217,6 +217,7 @@ export function AgencyStepForm({
         </label>
         <Input
           id="legalName"
+          aria-required="true"
           type="text"
           autoComplete="organization"
           readOnly={legalNameConfirmed}
@@ -240,6 +241,7 @@ export function AgencyStepForm({
         </label>
         <Input
           id="nit"
+          aria-required="true"
           type="text"
           inputMode="numeric"
           readOnly={nitConfirmed}
@@ -271,6 +273,7 @@ export function AgencyStepForm({
         </label>
         <Input
           id="address.calle"
+          aria-required="true"
           type="text"
           autoComplete="address-line1"
           placeholder={EJEMPLO_DE_DIRECCION}
@@ -380,6 +383,7 @@ export function AgencyStepForm({
         </label>
         <Input
           id="primaryContactEmail"
+          aria-required="true"
           type="email"
           inputMode="email"
           autoComplete="email"
@@ -415,6 +419,7 @@ export function AgencyStepForm({
               // El ref deja que un error del servidor en el teléfono le dé el foco.
               ref={field.ref}
               id="primaryContactPhone"
+              aria-required="true"
               autoComplete="tel"
               inputMode="numeric"
               countryCode={paisDelTelefono}

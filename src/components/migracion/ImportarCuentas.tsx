@@ -37,10 +37,12 @@ import {
 import {
   Table,
   TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/ui/pagination";
 import {
@@ -634,9 +636,11 @@ function TablaDeRevision({
                 <TableHead>Qué pasa</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Las filas entran escalonadas; cada página es una lista nueva
+                (ARREGLOS-8, MOV-A6). */}
+            <TableBodyAnimado key={`${page}|${pageSize}`}>
               {pageItems.map((f) => (
-                <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
+                <TableRowAnimada key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
                   {/* +2: en el archivo la primera fila de datos es la 2. */}
                   <TableCell className="font-mono text-caption tabular-nums text-fg-subtle">
                     {f.indice + 2}
@@ -655,9 +659,9 @@ function TablaDeRevision({
                   <TableCell className="text-caption">
                     <Veredicto fila={f} />
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ))}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
         {shouldPaginate ? (

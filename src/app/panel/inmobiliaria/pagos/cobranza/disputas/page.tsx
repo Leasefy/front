@@ -225,6 +225,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             </label>
             <Textarea
               id="disputa-reason"
+              aria-required="true"
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value)

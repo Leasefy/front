@@ -149,19 +149,7 @@ function camposMarcados(): Campo[] {
 const PENDIENTES: Record<string, string> = {
   // El `DatePicker` de Cadence no deja pasar `aria-*` (sus props son cerradas).
   'src/components/inmobiliaria/agenda/PedirCitaModal.tsx#"cita-fecha"': 'Cadence: DatePicker sin aria-required',
-  // Archivos que otro agente tiene abiertos el 03-10 (no se tocan hasta su commit).
-  'src/app/onboarding/propietario/page.tsx#"displayName"': 'MOV-A7 (onboarding)',
-  'src/app/onboarding/propietario/page.tsx#"propertyCity"': 'MOV-A7 (onboarding)',
-  'src/app/panel/inmobiliaria/pagos/cobranza/disputas/page.tsx#"disputa-reason"': 'MOV-A2 (cobranza)',
-  'src/components/inmobiliaria/cobranza/DisputaDetailPanel.tsx#"resolver-outcome"': 'MOV-A2 (cobranza)',
-  'src/components/inmobiliaria/cobranza/DisputaDetailPanel.tsx#"resolver-note"': 'MOV-A2 (cobranza)',
-  'src/components/inmobiliaria/cobranza/EscalationResolveModal.tsx#"resolve-category"': 'MOV-A2 (cobranza)',
-  'src/components/inmobiliaria/cobranza/EscalationResolveModal.tsx#"resolve-text"': 'MOV-A2 (cobranza)',
-  'src/components/onboarding/inmobiliaria/AgencyStepForm.tsx#"legalName"': 'MOV-A7 (onboarding)',
-  'src/components/onboarding/inmobiliaria/AgencyStepForm.tsx#"nit"': 'MOV-A7 (onboarding)',
-  'src/components/onboarding/inmobiliaria/AgencyStepForm.tsx#"address.calle"': 'MOV-A7 (onboarding)',
-  'src/components/onboarding/inmobiliaria/AgencyStepForm.tsx#"primaryContactEmail"': 'MOV-A7 (onboarding)',
-  'src/components/onboarding/inmobiliaria/AgencyStepForm.tsx#"primaryContactPhone"': 'MOV-A7 (onboarding)',
+  // ARREGLOS-8 (03-10): los 12 de onboarding y cobranza (MOV-A7 y MOV-A2) ya lo dicen.
 }
 
 const llave = (c: Campo) => `${c.archivo}#${c.id}`

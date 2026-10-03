@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, type InputHTMLAttributes, forwardRef } from 'react';
+import { type ReactNode, type InputHTMLAttributes, createContext, forwardRef, useContext } from 'react';
 import { LockSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,20 @@ import {
 // ============================================================================
 // FormField - Container with label and error handling
 // ============================================================================
+
+/**
+ * El `required` del `FormField` que envuelve al control (ARREGLOS-8,
+ * ARREGLOS-4 Q4 A, 03-10-2026). La etiqueta pinta el asterisco rojo, pero el
+ * control vive en `children` y un lector de pantalla no sabía que era
+ * obligatorio. `LightInput` y `LightSelect` lo leen y ponen SÓLO
+ * `aria-required` (nada de texto ni de estilo), como el `FormField` de Cadence.
+ */
+const CampoRequerido = createContext(false);
+
+/** ¿El `FormField` que envuelve a este control es requerido? Para un control propio. */
+export function useCampoRequerido(): boolean {
+  return useContext(CampoRequerido);
+}
 
 interface FormFieldProps {
   label: string;
@@ -45,7 +59,7 @@ export function FormField({
         {label}
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
-      {children}
+      <CampoRequerido.Provider value={Boolean(required)}>{children}</CampoRequerido.Provider>
       {/* El error entra suave y, si hay ayuda, se cruza con ella (Cadence
           `FormError`, 02-10-2026). El control lo nombra con `${htmlFor}-error`
           (ver `LightInput`/`LightSelect`). */}
@@ -97,6 +111,7 @@ interface FieldInputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const LightInput = forwardRef<HTMLInputElement, FieldInputProps>(
   ({ className, icon, hasError, kind, ...props }, ref) => {
+    const requerido = useContext(CampoRequerido);
     return (
       <div className="relative">
         {icon && (
@@ -115,6 +130,7 @@ export const LightInput = forwardRef<HTMLInputElement, FieldInputProps>(
           {...(kind ? KIND_PRESETS[kind] : {})}
           aria-invalid={hasError || undefined}
           aria-describedby={hasError && props.id ? `${props.id}-error` : undefined}
+          aria-required={requerido || undefined}
           {...props}
         />
       </div>
@@ -182,6 +198,7 @@ export function LightSelect({
   id,
   onBlur,
 }: FieldSelectProps) {
+  const requerido = useContext(CampoRequerido);
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
@@ -189,6 +206,7 @@ export function LightSelect({
         onBlur={onBlur}
         aria-invalid={hasError || undefined}
         aria-describedby={hasError && id ? `${id}-error` : undefined}
+        aria-required={requerido || undefined}
         className={cn(
           'relative h-12 w-full',
           icon && 'pl-12',

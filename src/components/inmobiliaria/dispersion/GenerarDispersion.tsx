@@ -485,6 +485,9 @@ export function GenerarDispersion({
                 <h2 className="text-base font-semibold text-fg">
                   ¿A quién le giras este mes?
                 </h2>
+                {/* ARREGLOS-8: sin nadie por liquidar (sólo cuotas tardías que
+                    se suman) no hay «0 de 0» que contar. */}
+                {candidatos.length > 0 && (
                 <span
                   className="font-mono text-sm text-fg-muted tabular-nums"
                   data-testid="cuantos-seleccionados"
@@ -492,6 +495,7 @@ export function GenerarDispersion({
                   <AnimatedNumber value={dentro.length} format={conteo} /> de {candidatos.length}{' '}
                   {candidatos.length === 1 ? 'propietario' : 'propietarios'}
                 </span>
+                )}
               </div>
               <p className="text-sm text-fg-muted">
                 Vienen todos marcados. Destilda a quien quieras dejar para
@@ -515,6 +519,8 @@ export function GenerarDispersion({
                     data-testid="buscar-propietario"
                   />
                 </div>
+                {/* ARREGLOS-8: con 0 propietarios no hay a quién destildar. */}
+                {candidatos.length > 0 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -527,6 +533,7 @@ export function GenerarDispersion({
                     ? 'Destildar todos'
                     : 'Marcar todos'}
                 </Button>
+                )}
               </div>
             </header>
 
@@ -649,9 +656,15 @@ export function GenerarDispersion({
                 data-testid="confirmar"
               >
                 <Check className="h-4 w-4" weight="bold" />
-                {dentro.length === 1
-                  ? 'Generar 1 dispersión'
-                  : `Generar ${dentro.length} dispersiones`}
+                {/* ARREGLOS-8: sin dispersiones nuevas, lo que hace el botón es
+                    sumar las cuotas tardías; decía «Generar 0 dispersiones». */}
+                {dentro.length === 0 && haySumables
+                  ? tardiasQueSeSuman.length === 1
+                    ? 'Sumar a 1 liquidación'
+                    : `Sumar a ${tardiasQueSeSuman.length} liquidaciones`
+                  : dentro.length === 1
+                    ? 'Generar 1 dispersión'
+                    : `Generar ${dentro.length} dispersiones`}
               </Button>
             </div>
           </div>

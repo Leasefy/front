@@ -426,6 +426,7 @@ function OnboardingPropietarioContent() {
                   </label>
                   <Input
                     id="displayName"
+                    aria-required="true"
                     type="text"
                     autoComplete="name"
                     value={data.displayName}
@@ -585,7 +586,7 @@ function OnboardingPropietarioContent() {
                     Ciudad <span className="text-danger">*</span>
                   </label>
                   <Select value={data.propertyCity} onValueChange={(value) => updateData({ propertyCity: value })}>
-                    <SelectTrigger id="propertyCity">
+                    <SelectTrigger id="propertyCity" aria-required="true">
                       <SelectValue placeholder="Selecciona una ciudad" />
                     </SelectTrigger>
                     <SelectContent>

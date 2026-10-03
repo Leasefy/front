@@ -834,6 +834,7 @@ export function ConfigPerfilAgencia({
               <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="perfil-name"
+                aria-required="true"
                 aria-describedby="perfil-name-error"
                 aria-invalid={Boolean(errors.name) || undefined}
                 maxLength={LARGO_MAXIMO_DEL_CAMPO.name}

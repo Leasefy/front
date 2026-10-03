@@ -188,7 +188,7 @@ function ConciliacionCola() {
     [caseFilter],
   )
 
-  const { items, isLoading, error, refetch, confirmMatch, rejectMatch } =
+  const { items, isLoading, error, errorCrudo, refetch, confirmMatch, rejectMatch } =
     useConciliacionQueue(queueFilters)
   const { bulkConfirmByIds } = useConciliacionBulk()
 
@@ -345,7 +345,10 @@ function ConciliacionCola() {
             encabezados de la tabla se sigan viendo. */}
         <EstadoDeDatos
           cargando={isLoading}
-          error={error}
+          /* ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO (con el micro caído
+             dice «El asistente de Leasefy no está disponible», no «Fue un
+             problema nuestro»). */
+          error={errorCrudo ?? error}
           queEs="la cola de conciliación"
           onReintentar={refetch}
           esqueleto={

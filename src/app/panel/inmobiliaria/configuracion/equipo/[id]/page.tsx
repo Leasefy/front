@@ -27,6 +27,31 @@ import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { EditarPerfilDelAsesor } from '@/components/inmobiliaria/EditarPerfilDelAsesor';
 import { AsignarInmuebleAlAsesor } from '@/components/inmobiliaria/AsignarInmuebleAlAsesor';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { esNoExiste } from '@/lib/errores/clasificar';
+
+const RUTA_DEL_EQUIPO = '/panel/inmobiliaria/configuracion/equipo';
+
+/** La forma de la ficha del asesor, sin datos: la miga y las dos columnas. */
+function EsqueletoDelAsesor() {
+  return (
+    <div className="p-4 md:p-6 space-y-6" data-testid="agente-cargando" aria-busy="true">
+      <Skeleton className="h-5 w-64" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-40 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-56 rounded-lg" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Agente Detail Page
@@ -38,7 +63,15 @@ function AgenteDetailContent() {
   const agenteId = params.id as string;
 
   // Fetch data
-  const { agente, refetch: recargarAgente } = useAgente(agenteId);
+  const {
+    agente,
+    // ARREGLOS-8 (MOV-A6): sin el estado de carga, la ficha decía «Agente no
+    // encontrado» mientras el dato venía en camino, y con un 500 o la red
+    // caída afirmaba que el asesor no existía.
+    isLoading: cargandoAgente,
+    errorCrudo: errorDelAgente,
+    refetch: recargarAgente,
+  } = useAgente(agenteId);
   const { consignaciones, refetch: recargarConsignaciones } =
     useAgenteConsignaciones(agenteId);
   const { pipelineItems } = useAgentePipeline(agenteId);
@@ -49,6 +82,33 @@ function AgenteDetailContent() {
      front ya escrito para las dos. Lo que faltaba eran los diálogos. */
   const [editando, setEditando] = useState(false);
   const [asignando, setAsignando] = useState(false);
+
+  // Mientras carga no es «no encontrado»: el esqueleto de la ficha, nunca el vacío.
+  if (!agente && cargandoAgente) {
+    return <EsqueletoDelAsesor />;
+  }
+
+  // Falló la carga ≠ el asesor no existe: `FalloDeCarga` dice lo que pasó y
+  // ofrece reintentar. Un 404 sigue con su «no encontrado» de abajo.
+  if (!agente && errorDelAgente && !esNoExiste(errorDelAgente)) {
+    return (
+      <div className="p-4 md:p-6 space-y-6" data-testid="agente-fallo">
+        <Link
+          href={RUTA_DEL_EQUIPO}
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-primary transition-colors"
+        >
+          <CaretLeft className="w-4 h-4" />
+          {t('inmobiliaria.config.tabs.equipo')}
+        </Link>
+        <FalloDeCarga
+          error={errorDelAgente}
+          queEs="el asesor"
+          onReintentar={recargarAgente}
+          volverA={{ label: t('inmobiliaria.agentes.backToList'), href: RUTA_DEL_EQUIPO }}
+        />
+      </div>
+    );
+  }
 
   // 404 if not found
   if (!agente) {

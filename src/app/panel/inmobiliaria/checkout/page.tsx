@@ -2,6 +2,7 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { Suspense } from 'react';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CreditCard,
@@ -180,13 +181,22 @@ function AgencyCheckoutInner() {
                 )}
               </div>
 
+              {/* El aviso del fallo entra y SALE con su animación (ARREGLOS-8, MOV-A6). */}
+              <Presence show={Boolean(error)} initial={false}>
               {error && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                   <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[13px] text-destructive">{error}</p>
                 </div>
               )}
+              </Presence>
 
+              {/* Pagar → esperando el pago → confirmado: un estado se CRUZA con
+                  el siguiente (ARREGLOS-8, MOV-A6); antes se reemplazaban de golpe. */}
+              <CrossFade
+                swapKey={state === 'success' ? 'exito' : state === 'awaiting' ? 'esperando' : 'pagar'}
+                className="space-y-4"
+              >
               {/* Success */}
               {state === 'success' && (
                 <div className="bg-card rounded-lg border border-border p-5 flex flex-col items-center text-center gap-2">
@@ -279,6 +289,7 @@ function AgencyCheckoutInner() {
                   )}
                 </>
               )}
+              </CrossFade>
             </div>
           </div>
         </div>

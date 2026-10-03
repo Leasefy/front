@@ -37,7 +37,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Presence, SegmentedControl } from '@leasefy/cadence';
+import { Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
@@ -1136,9 +1136,16 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               Volver a subir el mismo archivo con otro nombre duplica a las personas.
             </p>
           </div>
-          <ul className="divide-y divide-border-faint border-t border-border-faint">
+          {/* Las cargas entran escalonadas y la que se descarta SALE
+              (ARREGLOS-8, MOV-A6). */}
+          <Stagger
+            as="ul"
+            layout={false}
+            distance="xs"
+            className="divide-y divide-border-faint border-t border-border-faint"
+          >
             {lotesVisibles.map((l) => (
-              <li key={l.lote} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+              <StaggerItem as="li" key={l.lote} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-fg" title={l.lote}>
                     {l.lote}
@@ -1213,9 +1220,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     </Button>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       ) : null}
 
@@ -2261,9 +2268,18 @@ function ListaDeTrabajo({
           ) : null}
 
           {pendientes.length > 0 ? (
-            <ul className="divide-y divide-border-faint border-t border-border-faint">
+            /* Las filas entran escalonadas y la que se decide SALE (ARREGLOS-8,
+               MOV-A6). Cada página es una lista nueva; sin `layout`: una fila
+               se abre para corregirla y medirlas todas la deformaría. */
+            <Stagger
+              as="ul"
+              key={pagina}
+              layout={false}
+              distance="xs"
+              className="divide-y divide-border-faint border-t border-border-faint"
+            >
               {pendientes.map((fila) => (
-                <li key={fila.id} className="flex items-start gap-3 px-6 py-5">
+                <StaggerItem as="li" key={fila.id} className="flex items-start gap-3 px-6 py-5">
                   {/* Sin texto al lado, así que el nombre va en `aria-label` — y no
                       dice «seleccionar fila» a secas: con doscientas casillas
                       idénticas, eso no le sirve a nadie que navegue por teclado. */}
@@ -2295,9 +2311,9 @@ function ListaDeTrabajo({
                       onCrearIncompleta={() => onCrearIncompleta(fila.id, fila.version)}
                     />
                   </div>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           ) : null}
 
           {/* Pie del design system: dice cuántas filas quedan por decidir y en

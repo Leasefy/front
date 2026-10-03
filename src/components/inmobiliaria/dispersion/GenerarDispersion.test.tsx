@@ -832,3 +832,43 @@ describe('sin nadie por liquidar, sólo cuotas tardías', () => {
     expect(q('confirmacion-tardias')).not.toBeNull();
   });
 });
+
+/*
+ * ARREGLOS-8 (visto por ARREGLOS-7): con 0 propietarios por liquidar y sólo
+ * cuotas tardías que se suman, la tarjeta decía «0 de 0 propietarios», ofrecía
+ * «Destildar todos» (¿a quién?) y el botón decía «Generar 0 dispersiones»
+ * aunque lo que hacía era sumar las tardías a las liquidaciones que ya existen.
+ */
+describe('sin nadie por liquidar: ni «0 de 0», ni «Destildar todos», ni «Generar 0»', () => {
+  const YA = propietario({
+    id: 'p-ya',
+    nombre: 'Jorge Ya Liquidado',
+    yaExiste: true,
+    inmuebles: [{ propertyId: 'inm-ya', titulo: 'Calle 10', canon: 2_000_000, comision: 200_000 }],
+  });
+  const TARDIA = {
+    propietarioId: 'p-ya',
+    propietarioName: 'Jorge Ya Liquidado',
+    dispersionId: 'disp-1',
+    cuotas: 1,
+    netoCop: 1_800_000,
+    seSuman: true,
+    motivo: null,
+  };
+
+  it('🔴 no cuenta «0 de 0», no ofrece «Destildar todos» y el botón dice lo que hace', async () => {
+    preview.mockResolvedValue(previaCon([YA], { tardias: [TARDIA] }));
+    await montar();
+
+    expect(q('cuantos-seleccionados')).toBeNull();
+    expect(host.textContent).not.toContain('0 de 0');
+    expect(q('marcar-todos')).toBeNull();
+    expect(host.textContent).not.toContain('Destildar todos');
+
+    const boton = q('confirmar') as HTMLButtonElement;
+    expect(boton.textContent).not.toContain('Generar 0');
+    expect(boton.textContent).toContain('Sumar a 1 liquidación');
+    // Sigue pudiendo sumar las tardías, como antes.
+    expect(boton.disabled).toBe(false);
+  });
+});

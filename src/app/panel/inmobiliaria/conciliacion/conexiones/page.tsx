@@ -445,6 +445,7 @@ function ConciliacionConexiones() {
     items,
     isLoading,
     error,
+    errorCrudo,
     notAvailable,
     refetch,
     createConnection,
@@ -504,8 +505,11 @@ function ConciliacionConexiones() {
         </div>
       </header>
 
-      {/* Aviso fail-soft: backend no disponible */}
-      {!isLoading && backendUnavailable && (
+      {/* Aviso fail-soft: la ruta todavía no existe en este micro (404/503 del
+          hook). Con el micro CAÍDO (`error`) no se dice «en tu cuenta
+          todavía»: eso lo dice `FalloDeCarga` en la lista, con lo que de verdad
+          pasó (ARREGLOS-8). El registro sigue apagado en los dos casos. */}
+      {!isLoading && notAvailable && (
         <AlertaAccionable
           severidad="warning"
           titulo="Las conexiones bancarias no están disponibles en tu cuenta todavía"
@@ -548,7 +552,9 @@ function ConciliacionConexiones() {
         </div>
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}
-          error={error}
+          /* ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO (con el micro caído
+             dice «El asistente de Leasefy no está disponible»). */
+          error={errorCrudo ?? error}
           queEs="las conexiones"
           onReintentar={refetch}
           esqueleto={

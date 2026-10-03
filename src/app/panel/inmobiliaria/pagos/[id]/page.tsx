@@ -53,7 +53,7 @@ function PagosCaso() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
-  const { data, isLoading, error, errorCrudo, notAvailable } = useWorkItemDetail('pagos', id)
+  const { data, isLoading, error, errorCrudo, notAvailable, refetch } = useWorkItemDetail('pagos', id)
 
   async function handleAction(action: WorkItemAction, body?: Record<string, unknown>) {
     const res = await runWorkItemAction(action, body)
@@ -121,7 +121,15 @@ function PagosCaso() {
             <p className="text-sm text-fg-muted" data-testid="pago-caso-error-motivo">
               {mensajeParaLaPersona(errorCrudo ?? error)}
             </p>
-            <Button variant="outline" hideArrow onClick={() => router.refresh()}>
+            {/* ARREGLOS-8: `router.refresh()` sólo vuelve a pedir lo del
+                servidor; el caso lo pide el cliente, así que no se volvía a
+                pedir nada. Ahora sí: el mismo `refetch` del hook. */}
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => void refetch()}
+              data-testid="pago-caso-reintentar"
+            >
               Reintentar
             </Button>
           </div>

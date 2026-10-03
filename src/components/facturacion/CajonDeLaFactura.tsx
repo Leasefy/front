@@ -25,12 +25,14 @@
 
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import Link from 'next/link'
+import { AnimatedNumber } from '@leasefy/cadence'
 import { DownloadSimple, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { formatCurrency } from '@/lib/format'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { cn } from '@/lib/utils'
 import {
   mesLegible,
@@ -43,6 +45,15 @@ import {
  */
 function etiquetaDelEscenario(codigo: string): string {
   return /^E\d$/.test(codigo) ? `Escenario ${codigo.slice(1)}` : 'Escenario sin definir'
+}
+
+/**
+ * Una cifra de «la plata» del cajón: cuenta desde 0 al abrirlo y desde la
+ * anterior si cambia (ARREGLOS-8, MOV-A6; `AnimatedNumber` de Cadence). Con
+ * movimiento reducido, la cifra final de una.
+ */
+function CifraQueCuenta({ valor }: { valor: number }) {
+  return <AnimatedNumber value={valor} from={0} format={formatCurrency} />
 }
 
 export interface CajonDeLaFacturaProps {
@@ -85,7 +96,7 @@ function Dato({
 }
 
 export function CajonDeLaFactura({
-  factura,
+  factura: facturaAbierta,
   onCerrar,
   onGenerarUna,
   motivoParaNoEmitir,
@@ -93,6 +104,12 @@ export function CajonDeLaFactura({
   onDescargarPdf,
   descargando = null,
 }: CajonDeLaFacturaProps) {
+  /*
+   * ARREGLOS-8: al cerrar, la tabla pasa `null` en el mismo render y el cajón se
+   * vaciaba y salía deslizándose EN BLANCO. Mientras sale, sigue mostrando la
+   * factura que mostraba (`useUltimoPresente`, el mismo de los otros cajones).
+   */
+  const factura = useUltimoPresente(facturaAbierta)
   const emitida = factura?.estado === 'EMITIDA'
   const bloqueada = factura ? !emitida && !factura.emitible : false
   /*
@@ -106,7 +123,7 @@ export function CajonDeLaFactura({
 
   return (
     <Cajon
-      abierto={factura !== null}
+      abierto={facturaAbierta !== null}
       onOpenChange={(v) => {
         if (!v) onCerrar()
       }}
@@ -299,13 +316,22 @@ export function CajonDeLaFactura({
             {/* La plata, con el mismo orden del documento: base, IVA,
                 retenciones, total, y lo que de verdad se paga. */}
             <dl className="space-y-2 rounded-lg border border-border bg-surface-muted p-4">
-              {[
-                ['Base', formatCurrency(factura.baseCop)],
-                ['IVA', factura.ivaCop > 0 ? formatCurrency(factura.ivaCop) : '—'],
-                ...(factura.retencionesCop > 0
-                  ? [['Retenciones', `−${formatCurrency(factura.retencionesCop)}`] as const]
-                  : []),
-              ].map(([rotulo, valor]) => (
+              {(
+                [
+                  ['Base', <CifraQueCuenta key="base" valor={factura.baseCop} />],
+                  ['IVA', factura.ivaCop > 0 ? <CifraQueCuenta key="iva" valor={factura.ivaCop} /> : '—'],
+                  ...(factura.retencionesCop > 0
+                    ? [
+                        [
+                          'Retenciones',
+                          <span key="retenciones">
+                            −<CifraQueCuenta valor={factura.retencionesCop} />
+                          </span>,
+                        ] as const,
+                      ]
+                    : []),
+                ] as ReadonlyArray<readonly [string, React.ReactNode]>
+              ).map(([rotulo, valor]) => (
                 <div key={rotulo} className="flex items-baseline justify-between gap-4">
                   <dt className="text-sm text-fg-muted">{rotulo}</dt>
                   <dd className="font-mono text-sm tabular-nums text-fg-muted">{valor}</dd>
@@ -317,14 +343,14 @@ export function CajonDeLaFactura({
                   className="font-mono text-lg font-semibold tabular-nums text-fg"
                   data-testid="cajon-total"
                 >
-                  {formatCurrency(factura.totalCop)}
+                  <CifraQueCuenta valor={factura.totalCop} />
                 </dd>
               </div>
               {factura.retencionesCop > 0 && (
                 <div className="flex items-baseline justify-between gap-4">
                   <dt className="text-sm text-fg-muted">Lo que se paga</dt>
                   <dd className="font-mono text-sm tabular-nums text-fg-muted">
-                    {formatCurrency(factura.netoCop)}
+                    <CifraQueCuenta valor={factura.netoCop} />
                   </dd>
                 </div>
               )}

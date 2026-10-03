@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEffect, useState, useCallback } from 'react';
 import {
   Sparkle,
@@ -61,6 +61,14 @@ function CreditosContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [selectedPack, setSelectedPack] = useState<AgentCreditPack | null>(null);
+  /*
+   * El modal se CIERRA con su salida (ARREGLOS-8, MOV-A6): el pack elegido se
+   * queda montado y `compraAbierta` lo abre y lo cierra. `vezDeLaCompra` lo
+   * vuelve a montar en cada apertura, así el formulario arranca limpio como
+   * antes. Con `{selectedPack && …}` se desmontaba de golpe al cerrar.
+   */
+  const [compraAbierta, setCompraAbierta] = useState(false);
+  const [vezDeLaCompra, setVezDeLaCompra] = useState(0);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -182,15 +190,21 @@ function CreditosContent() {
               Comprar créditos extra
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Los packs llegan después de cargar: entran escalonados (ARREGLOS-8, MOV-A6). */}
+            <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {packs.map((pack) => (
-                <PackCard
-                  key={pack.packSize}
-                  pack={pack}
-                  onSelect={() => setSelectedPack(pack)}
-                />
+                <StaggerItem key={pack.packSize} className="grid">
+                  <PackCard
+                    pack={pack}
+                    onSelect={() => {
+                      setSelectedPack(pack);
+                      setVezDeLaCompra((n) => n + 1);
+                      setCompraAbierta(true);
+                    }}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           </>
         )}
 
@@ -206,8 +220,10 @@ function CreditosContent() {
       {/* Purchase modal */}
       {selectedPack && (
         <PurchaseModal
+          key={vezDeLaCompra}
+          abierto={compraAbierta}
           pack={selectedPack}
-          onClose={() => setSelectedPack(null)}
+          onClose={() => setCompraAbierta(false)}
           onRedirect={(url) => {
             window.location.assign(url);
           }}
@@ -322,10 +338,12 @@ const ID_DEL_CAMPO: Record<CampoDelPagador, string> = {
 };
 
 function PurchaseModal({
+  abierto,
   pack,
   onClose,
   onRedirect,
 }: {
+  abierto: boolean;
   pack: AgentCreditPack;
   onClose: () => void;
   onRedirect: (url: string) => void;
@@ -425,10 +443,10 @@ function PurchaseModal({
 
   return (
     <Dialog
-      open
-      onOpenChange={(abierto) => {
+      open={abierto}
+      onOpenChange={(sigueAbierto) => {
         // Mientras se inicia el pago no se sale (ni con Esc, ni con el velo, ni con la ✕).
-        if (!abierto && !isSubmitting) onClose();
+        if (!sigueAbierto && !isSubmitting) onClose();
       }}
     >
       <DialogContent size="sm">

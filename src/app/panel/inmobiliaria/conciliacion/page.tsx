@@ -194,6 +194,10 @@ function ConciliacionSala() {
     data: summary,
     isLoading: summaryLoading,
     error: summaryError,
+    // ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO, para que `FalloDeCarga`
+    // diga qué se cayó (con el micro caído, «El asistente de Leasefy no está
+    // disponible», no «Fue un problema nuestro»).
+    errorCrudo: summaryErrorCrudo,
     refetch: refetchSummary,
   } = useConciliacionSummary()
   // Disparo de conciliación on-demand (acción humana, T-323).
@@ -437,7 +441,7 @@ function ConciliacionSala() {
           data-testid="conciliacion-resumen-fallo"
         >
           <FalloDeCarga
-            error={summaryError}
+            error={summaryErrorCrudo ?? summaryError}
             queEs="el resumen de la conciliación"
             onReintentar={refetchSummary}
             enmarcado={false}

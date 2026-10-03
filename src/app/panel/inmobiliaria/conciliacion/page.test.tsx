@@ -418,3 +418,30 @@ describe('/panel/inmobiliaria/conciliacion — pedir la corrida que no sale', ()
   })
 })
 
+
+/*
+ * ARREGLOS-8 (ARREGLOS-4 Q1 A, 03-10-2026): con el micro caído, la Sala le
+ * pasaba a `FalloDeCarga` sólo el TEXTO del error («Failed to fetch») y la
+ * tarjeta decía «Fue un problema nuestro». El hook ya guardaba el error entero
+ * (`errorCrudo`, ARREGLOS-7); ahora la página se lo pasa.
+ */
+describe('/panel/inmobiliaria/conciliacion — con el micro caído', () => {
+  it('🔴 el resumen que no llegó dice que se cayó el asistente', async () => {
+    const { caidaDelAsistente } = await import('@/lib/api/agent-fetch')
+    // `FalloDeCarga` pregunta al back por el estado del servicio: sin red en la prueba.
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+    const conCrudo = resumen as typeof resumen & { errorCrudo?: unknown }
+    resumen.error = 'Failed to fetch'
+    conCrudo.errorCrudo = caidaDelAsistente(new TypeError('Failed to fetch'))
+    try {
+      await montar()
+      await esperar()
+      const texto = $('[data-testid="conciliacion-resumen-fallo"]').textContent ?? ''
+      expect(texto).toMatch(/El asistente de Leasefy no está disponible/)
+      expect(texto).not.toMatch(/problema nuestro/i)
+    } finally {
+      delete conCrudo.errorCrudo
+      vi.restoreAllMocks()
+    }
+  })
+})

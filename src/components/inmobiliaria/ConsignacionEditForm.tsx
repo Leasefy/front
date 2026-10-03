@@ -806,6 +806,7 @@ export function ConsignacionEditForm({
           <Seccion icon={Buildings} titulo={tf('seccionInmueble')} testId="seccion-inmueble">
             <InputWrapper label={tf('propertyTypeLabel')} required>
               <RadioCardGroup
+                aria-required="true"
                 className="grid grid-cols-3 gap-2"
                 value={valores.type}
                 onValueChange={(v) => poner('type', v as PropertyType)}
@@ -830,6 +831,7 @@ export function ConsignacionEditForm({
             <InputWrapper label={tf('propertyTitle')} required error={errores.title} campo="title">
               <Input
                 {...a11y('title')}
+                aria-required="true"
                 name="title"
                 value={valores.title}
                 onChange={campo('title')}
@@ -882,6 +884,7 @@ export function ConsignacionEditForm({
               <InputWrapper label={tf('city')} required error={errores.city} campo="city">
                 <Input
                   {...a11y('city')}
+                  aria-required="true"
                   name="city"
                   list="ciudades-sugeridas"
                   value={valores.city}
@@ -912,6 +915,7 @@ export function ConsignacionEditForm({
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                   <Input
                     {...a11y('address')}
+                    aria-required="true"
                     name="address"
                     value={valores.address}
                     onChange={campo('address')}
@@ -1029,6 +1033,7 @@ export function ConsignacionEditForm({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                       <Input
                         {...a11y('salePrice')}
+                        aria-required="true"
                         type="number"
                         name="salePrice"
                         min={1000}
@@ -1046,6 +1051,7 @@ export function ConsignacionEditForm({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
                       <Input
                         {...a11y('monthlyRent')}
+                        aria-required="true"
                         type="number"
                         name="monthlyRent"
                         min={1000}
@@ -1121,6 +1127,7 @@ export function ConsignacionEditForm({
                     <div className="relative">
                       <Input
                         {...a11y('saleCommissionPercent')}
+                        aria-required="true"
                         type="number"
                         name="saleCommissionPercent"
                         disabled={camposDelMandatoInactivos}
@@ -1146,6 +1153,7 @@ export function ConsignacionEditForm({
                       <div className="relative">
                         <Input
                           {...a11y('commissionPercent')}
+                          aria-required="true"
                           type="number"
                           name="commissionPercent"
                         disabled={camposDelMandatoInactivos}
@@ -1183,6 +1191,7 @@ export function ConsignacionEditForm({
                 <InputWrapper label={tf('contractStartDate')} required error={errores.contractDate} campo="contractDate">
                   <Input
                     {...a11y('contractDate')}
+                    aria-required="true"
                     type="date"
                     name="contractDate"
                     disabled={camposDelMandatoInactivos}

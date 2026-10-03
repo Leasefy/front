@@ -12,6 +12,7 @@ import {
 import {
   FormField,
   LightInput,
+  useCampoRequerido,
 } from '../WizardFormField';
 
 // ============================================================================
@@ -202,6 +203,8 @@ function CurrencyInput({
   hasError,
   icon,
 }: CurrencyInputProps) {
+  // El asterisco del `FormField` también para un lector de pantalla (ARREGLOS-8).
+  const requerido = useCampoRequerido();
   return (
     <div className="relative">
       {icon && (
@@ -217,6 +220,7 @@ function CurrencyInput({
       </span>
       <Input
         id={id}
+        aria-required={requerido || undefined}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}

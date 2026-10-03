@@ -334,7 +334,9 @@ function DroppableColumn({
             description={`${items.length} ${items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}`}
           />
 
-          <SheetBody className="space-y-3 px-4 py-4">
+          {/* Sin `px-4`: las tarjetas van con el padding del cajón, en la línea
+              del título (DESIGN.md §Drawers, «Contenido alineado al padding»). */}
+          <SheetBody className="space-y-3 py-4">
             {items.map((item) => (
               <PipelineCard
                 key={item.id}

@@ -281,7 +281,7 @@ supporting hues (cyan, green, amber, coral, violet, peach) may tile — but neve
 | Sombra | amplia y suave `0 24px 80px -12px rgba(20,19,15,.28)`; en oscuro la separa un borde blanco al 10 % (`ink-border`), nunca el gris café de `border` |
 | Velo | ink al 18 % + `backdrop-blur-[6px]`; en oscuro negro al 55 % |
 | Animación | con los tokens de §8b: entra en `duration-slow` (300 ms) con `ease-emphasis`, deslizándose `--motion-distance-lg` (24 px) desde su lado con escala `--motion-pop-scale` (0,96) y opacidad; sale igual en `duration-fast` (150 ms) con `ease-exit`. En el celular la hoja sube desde el borde de abajo (100 %). Con `prefers-reduced-motion` sólo el fundido, con las duraciones reducidas de `--motion-*` |
-| ✕ | la de todo el producto: círculo con borde fino de 36 px (`ASPA_DE_CIERRE` = `dialogCloseClassName` de Cadence), centrada en la línea del título. `closeLabel` cambia su nombre accesible cuando hay dos cajones a la vista («Cerrar el documento») |
+| ✕ | la de todo el producto: círculo con borde fino de 36 px (`ASPA_DE_CIERRE` = `dialogCloseClassName` de Cadence), centrada en la línea del título y con su borde derecho EN el padding del cajón, a 24 px (`right-6` en el adaptador; Cadence la deja en `right-4`). `SheetHeader` le reserva 72 px (24 + 36 + 12 de aire): un título largo no se mete debajo. Los modales no cambian. `closeLabel` cambia su nombre accesible cuando hay dos cajones a la vista («Cerrar el documento») |
 | Capa | `z-[300]` (§17) |
 | Celular (< 640 px) | el cajón derecho **sube como hoja desde abajo**: radios arriba, asa, hasta el 92 % del alto, pie al alcance del pulgar. Los izquierdos (navegación) siguen laterales y flotantes. `mobile="sheet" \| "side"` lo cambia |
 | Tamaños (`size`) | `sm` 400 · `md` 560 (default) · `lg` 680 · `xl` 880 · `full` |
@@ -345,6 +345,38 @@ y el botón del pie pueda ser `submit`.
 | Sin `useLenis().stop()`, sin `keydown` de Esc, sin `createPortal` | Radix pone el portal, el foco, Esc y el bloqueo del scroll; `SmoothScroll` frena Lenis mientras haya un `[role=dialog][data-state=open]` |
 | El cuerpo es `SheetBody` | Es lo que lleva `data-lenis-prevent` + `overscroll-behavior: contain`; sin eso la rueda mueve la página de atrás |
 | Para animar la salida, el contenido sigue montado | `open` manda; si el dato se va al cerrar, `useUltimoPresente`. Un cajón que el padre monta y desmonta guarda su `abierto` y avisa en `onCloseAutoFocus` (ver `AIActivityDetailPanel`) |
+
+**Contenido alineado al padding** (03-10-2026). Nico, sobre «Invitaciones al portal»: «mira este
+drawer por dentro, cómo está de feo, y no respeta pegando bien el contenido a los paddings». El
+cajón tiene UN padding lateral, 24 px, el mismo en `SheetHeader`, `SheetBody` y `SheetFooter`:
+
+1. **El texto del contenido arranca EXACTAMENTE donde arranca el título** del cajón y termina en su
+   padding derecho. Nada de rellenos laterales extra que corran el contenido: ni `px-*`/`p-*` en
+   `SheetBody`/`CajonCuerpo`/`SheetFooter`, ni envoltorios con `px-*` alrededor de todo el cuerpo.
+   Un cuerpo `p-0` (algo va a sangre: una foto, una lista) devuelve el padding en cada fila con
+   `RELLENO_DEL_CAJON` (`px-6`), nunca con un `px-5` o `p-5` a ojo.
+2. **Una tabla o una lista con cabecera va A SANGRE**: `<SheetTable>` (de `ui/sheet`) alrededor del
+   `<Table>`. La banda de la cabecera, el filete y el hover de las filas tocan los bordes del cajón,
+   y la primera y la última celda llevan exactamente el padding del cajón (las del medio conservan el
+   suyo). Nunca un `rounded border` alrededor de la tabla: esa «caja metida» se lee como otra tarjeta
+   y corre el primer texto 16 px. Referencia: `DetalleDeAsiento`.
+3. **Las tarjetas internas** (`SheetSection`, o una caja con borde) sí tienen su propio relleno
+   (`p-4 sm:p-5`), pero su BORDE exterior queda en el padding del cajón, nunca con otro sangrado. Un
+   «papel» (la vista previa de una plantilla) también lleva ese relleno: el texto no toca el borde.
+4. **El pie siempre se ve entero**, con sus acciones terminando en el padding derecho (los hijos de
+   `SheetFooter`/`CajonPie`); a la izquierda sólo va `start`/`izquierda` (rechazar, volver). Una
+   acción sola debajo de un texto del pie también se alinea a la derecha.
+
+Una fila de la **cabecera debajo del título** (buscador, pestañas) llega hasta el padding derecho con
+`FILA_ANCHA_DE_LA_CABECERA` (`-mr-12`): `SheetHeader` reserva el hueco de la ✕ (72 px) en toda su altura,
+pero la ✕ sólo ocupa la línea del título (sólo en una cabecera sin `actions`; ver `NuevoMensajeDrawer`).
+Un **menú o lista de selección** con resaltado redondeado (`MobileNavSheet`, `ElegirInmuebleDrawer`) puede
+meter el resaltado 12 px (`px-3` en el cuerpo) siempre que el contenido de cada fila quede en la línea
+del título (12 + 12).
+
+Lo cuida `src/components/ui/cajones-alineados.test.ts` (estático: tablas sin `SheetTable`, padding de las
+bandas, excepciones con su motivo). La medición en el navegador de todos los cajones y sus capturas
+quedaron en `memory/archivos/pruebas/cajones/medicion.md`.
 
 **El reparto.** Como `DialogContent`, el `SheetContent` del adaptador **reparte** a sus hijos
 directos leyendo `bandaDeModal`: cabecera y navegación arriba, pie abajo y todo lo demás a un
@@ -1236,7 +1268,7 @@ cajones la heredan.
 | Dónde | Quién la pone |
 |---|---|
 | `DialogContent` (con o sin cabecera) | El Content, como `closeButton` de Cadence: arriba a la derecha, fuera del cuerpo que scrollea; la cabecera le reserva lugar |
-| `SheetContent` | El Content, en `right-4 top-[18px] sm:top-3.5` y `z-20` (`sheetCloseClassName` de Cadence: centrada en la línea del título), después de los hijos; `SheetHeader` le reserva el hueco. `closeLabel` le cambia el nombre («Cerrar el documento») |
+| `SheetContent` | El Content, en `right-6 top-[18px] sm:top-3.5` y `z-20` (`sheetCloseClassName` de Cadence, con `right-6` encima: centrada en la línea del título y con el borde en el padding), después de los hijos; `SheetHeader` le reserva el hueco. `closeLabel` le cambia el nombre («Cerrar el documento») |
 | `AlertDialog` / `confirmar()` | Nadie: se sale por `Cancelar` o por la acción (y Esc), a propósito |
 
 Para apagarla entera: `hideClose` en `DialogContent` (`hideCloseButton` en

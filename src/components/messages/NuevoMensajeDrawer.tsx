@@ -30,7 +30,14 @@ import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
-import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
+import {
+  FILA_ANCHA_DE_LA_CABECERA,
+  RELLENO_DEL_CAJON,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -194,8 +201,10 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
         <SheetHeader title="Nuevo mensaje">
           {/* Buscar sólo tiene sentido del lado de la inmobiliaria: una persona
               tiene una o dos inmobiliarias, no una lista para filtrar. */}
+          {/* Debajo del título no está la ✕: el buscador y las pestañas llegan
+              hasta el padding derecho (DESIGN.md §Drawers). */}
           {esLadoAgencia && (
-            <div className="relative mt-3">
+            <div className={`relative mt-3 ${FILA_ANCHA_DE_LA_CABECERA}`}>
               <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
               <Input
                 value={busqueda}
@@ -211,9 +220,19 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
           {/* Del lado de una persona la lista son sus inmobiliarias: no hay dos
               grupos que separar, así que no hay pestañas. */}
           {hayPestanas && (
-            <div className="mt-3" data-testid="pestanas-destinatarios">
+            /*
+             * Cada pestaña en UNA línea (Nico, 03-10-2026: «Propietarios · N» se
+             * partía en dos). En tercios iguales no cabe; cada una mide lo de su
+             * texto y el sobrante se reparte (`flex-auto`) para llenar la fila
+             * hasta el padding. Con conteos muy grandes la fila se desplaza de
+             * lado en vez de partir el texto (`py-1` le deja sitio al anillo de foco).
+             */
+            <div
+              className={`mt-2 -mb-1 overflow-x-auto py-1 ${FILA_ANCHA_DE_LA_CABECERA}`}
+              data-testid="pestanas-destinatarios"
+            >
               <SegmentedControl<Pestana>
-                fullWidth
+                className="w-max min-w-full [&>button]:flex-auto [&>button]:whitespace-nowrap"
                 size="sm"
                 aria-label="Filtrar destinatarios por rol"
                 value={pestana}
@@ -350,8 +369,9 @@ function VacioDeLaPestana({
   );
 }
 
-const FILA =
-  'flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50';
+// La fila va a sangre (el cuerpo es `p-0`): el hover toca los bordes y el
+// avatar arranca en la línea del título, con el padding del cajón.
+const FILA = `flex w-full items-center gap-3 ${RELLENO_DEL_CAJON} py-3.5 text-left transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50`;
 
 function FilaPersona({
   persona,

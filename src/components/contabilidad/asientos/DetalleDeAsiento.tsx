@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTable, SheetTitle } from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -109,7 +109,10 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
             </SheetHeader>
 
             <SheetBody className="space-y-6">
-              <div className="overflow-x-auto rounded-md border border-border">
+              {/* A sangre (DESIGN.md §Drawers, «Contenido alineado al padding»): la
+                  cabecera y las filas tocan los bordes del cajón y «Cuenta» arranca
+                  en la línea del título. Antes iba en una caja con borde. */}
+              <SheetTable>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -159,7 +162,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                     </TableRow>
                   </TableFooter>
                 </Table>
-              </div>
+              </SheetTable>
 
               {asiento.origenId ? (
                 <p className="font-mono text-caption text-fg-subtle" data-testid="origen-del-asiento">

@@ -106,3 +106,13 @@ export const SheetSection = ({
     {children}
   </section>
 );
+
+/** La tabla a sangre: conserva su marca `data-sheet-table` (DESIGN.md, «Contenido alineado al padding»). */
+export const SheetTable = ({ children, className }: ConHijos & { className?: string }) => (
+  <div data-sheet-table="" className={className}>
+    {children}
+  </div>
+);
+
+export const RELLENO_DEL_CAJON = 'px-6';
+export const FILA_ANCHA_DE_LA_CABECERA = 'group-data-[close=true]/sheet:-mr-12';

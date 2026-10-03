@@ -101,6 +101,13 @@ function aplanar(nodo: React.ReactNode, prefijo = ""): React.ReactNode[] {
   return salida
 }
 
+/**
+ * La ✕ del cajón termina en el padding (24 px), no a 16 px como la deja
+ * Cadence; la cabecera le reserva 24 + 36 (la ✕) + 12 de aire = 72 px.
+ */
+const ASPA_EN_EL_PADDING = "right-6"
+const HUECO_DE_LA_ASPA = "group-data-[close=true]/sheet:pr-[72px]"
+
 const PADDING_CERO = /(^|\s)!?p-0(\s|$)/
 const VELO_TRANSPARENTE = /(^|\s)bg-transparent(\s|$)/
 
@@ -195,7 +202,11 @@ const SheetContent = React.forwardRef<
         <DSSheetClose
           aria-label={closeLabel}
           data-testid="dialog-close"
-          className={cn(ASPA_DE_CIERRE, sheetCloseClassName)}
+          // `right-6` pisa el `right-4` de Cadence: el borde derecho de la ✕ cae
+          // EXACTAMENTE en el padding del cajón (24 px), donde termina el
+          // contenido (Nico, 03-10-2026; DESIGN.md §Drawers, «Contenido
+          // alineado al padding»). Los modales no pasan por acá.
+          className={cn(ASPA_DE_CIERRE, sheetCloseClassName, ASPA_EN_EL_PADDING)}
         >
           <X size={16} weight="bold" aria-hidden="true" />
         </DSSheetClose>
@@ -217,10 +228,13 @@ interface SheetHeaderProps extends DSSheetHeaderProps {
 
 const SheetHeader = Object.assign(
   React.forwardRef<HTMLDivElement, SheetHeaderProps>(function SheetHeader(
-    { hideClose: _hideClose, ...props },
+    { hideClose: _hideClose, className, ...props },
     ref
   ) {
-    return <DSSheetHeader ref={ref} {...props} />
+    // El hueco de la ✕ crece con ella: Cadence reserva `pr-16` (right-4 + la
+    // ✕ + aire); con la ✕ en el padding son 72 px, y el título largo sigue a
+    // 12 px de la ✕ sin meterse debajo.
+    return <DSSheetHeader ref={ref} className={cn(HUECO_DE_LA_ASPA, className)} {...props} />
   }),
   { bandaDeModal: "cabecera" as const, displayName: "SheetHeader" }
 )
@@ -252,6 +266,56 @@ const SheetFooter = Object.assign(
 /** Tarjeta del cuerpo: borde suave, fondo apenas distinto. */
 const SheetSection = DSSheetSection
 
+/*
+ * ── Contenido alineado al padding (Nico, 03-10-2026: «no respeta pegando bien
+ * el contenido a los paddings») ─────────────────────────────────────────────
+ *
+ * El cajón tiene UN padding lateral, el mismo en `SheetHeader`, `SheetBody` y
+ * `SheetFooter` (24 px). El texto del cuerpo arranca donde arranca el título y
+ * termina en ese padding. Estas piezas son la única forma de salirse de él
+ * (DESIGN.md §Drawers, «Contenido alineado al padding»).
+ */
+
+/** El padding lateral del cajón. Para las filas de una lista que ya va a sangre (cuerpo `p-0`). */
+const RELLENO_DEL_CAJON = "px-6"
+
+/**
+ * Una fila de la cabecera DEBAJO del título (buscador, pestañas) llega hasta el
+ * padding derecho: la cabecera reserva a la derecha el hueco de la ✕ en toda
+ * su altura (72 px), pero la ✕ sólo ocupa la línea del título. 72 − 24 = 48 px
+ * (`-mr-12`). Sólo en una cabecera sin `actions`.
+ */
+const FILA_ANCHA_DE_LA_CABECERA = "group-data-[close=true]/sheet:-mr-12"
+
+/**
+ * Una tabla (o una lista con cabecera) A SANGRE dentro de `SheetBody`: la banda
+ * de la cabecera, el filete y el hover de las filas tocan los bordes del cajón,
+ * y la primera y la última celda de cada fila llevan exactamente el padding del
+ * cajón. Así el primer texto arranca en la línea del título y la última acción
+ * termina en el padding derecho. Las celdas del medio conservan el suyo.
+ *
+ * Va sin marco: una tabla envuelta en `rounded border` adentro del cajón es la
+ * «caja metida» que se lee como otra tarjeta y corre el texto 16 px.
+ */
+const SheetTable = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  function SheetTable({ className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        data-sheet-table=""
+        className={cn(
+          "-mx-6",
+          "[&_tr>*:first-child]:pl-6 [&_tr>*:last-child]:pr-6",
+          // El aviso «esta tabla no cabe entera» también arranca en la línea del título.
+          "[&_[data-testid=aviso-de-desborde]]:px-6",
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
+
 const SheetTitle = DSSheetTitle
 
 const SheetDescription = DSSheetDescription
@@ -270,6 +334,9 @@ export {
   SheetBody,
   SheetFooter,
   SheetSection,
+  SheetTable,
   SheetTitle,
   SheetDescription,
+  RELLENO_DEL_CAJON,
+  FILA_ANCHA_DE_LA_CABECERA,
 }

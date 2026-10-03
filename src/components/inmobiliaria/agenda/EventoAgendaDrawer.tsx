@@ -314,8 +314,10 @@ export function EventoAgendaDrawer({
                 ficha. Así que el pie dice eso y ofrece el camino. */}
             {!tieneAcciones(evento) ? (
               <CajonPie>
-                <div className="space-y-2" data-testid="evento-sin-acciones">
-                  <p className="text-sm text-fg-muted">
+                {/* La acción termina en el padding derecho, como en todo pie
+                    (DESIGN.md §Drawers); el texto ocupa el ancho entero. */}
+                <div className="flex flex-col items-end gap-2" data-testid="evento-sin-acciones">
+                  <p className="self-stretch text-sm text-fg-muted">
                     Esto lo pone el sistema solo, a partir{' '}
                     {evento.vinculoTipo === 'contrato' ? 'del contrato' : 'del inmueble'}:
                     no se marca ni se cancela desde la agenda. Desaparece cuando

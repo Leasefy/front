@@ -996,11 +996,13 @@ function DocumentosContent() {
                 trae el HTML de la plantilla con su tinta oscura y sin fondo
                 propio, así que con `bg-surface` (#0a0a0a en oscuro) la vista
                 previa quedaría negro sobre negro. El papel es blanco en los
-                dos temas porque es lo que se va a imprimir. */}
+                dos temas porque es lo que se va a imprimir. El papel lleva el
+                relleno de una tarjeta del cajón (`SheetSection`): sin él, el
+                texto del documento quedaba pegado al borde (DESIGN.md §Drawers). */}
             <iframe
               title={plantillaVisible.name}
               srcDoc={plantillaVisible.content}
-              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
+              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white p-4 sm:p-5"
               sandbox=""
             />
           </CajonCuerpo>

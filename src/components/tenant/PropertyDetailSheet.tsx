@@ -8,6 +8,7 @@ import { useLenis } from '@/components/providers/SmoothScroll';
 import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, ArrowsOut } from '@phosphor-icons/react';
 
 import {
+  RELLENO_DEL_CAJON,
   Sheet,
   SheetBody,
   SheetContent,
@@ -147,8 +148,9 @@ export function PropertyDetailSheet({
               )}
             </div>
 
-            {/* Content */}
-            <div className="p-5 space-y-5">
+            {/* Content — con el padding del cajón: arranca en la línea del título
+                (la foto de arriba sí va a sangre). DESIGN.md §Drawers. */}
+            <div className={`${RELLENO_DEL_CAJON} py-5 space-y-5`}>
               {/* Match Data Section */}
               {matchData && (
                 <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-xl">

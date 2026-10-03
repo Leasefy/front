@@ -149,9 +149,26 @@ describe('la pantalla del acuerdo: firmar sólo un acuerdo ofrecido (02-10-2026)
     );
   });
 
-  it('un acuerdo ofrecido sí ofrece firmar', async () => {
-    await montar({ ...PLAN, status: 'offered', acceptedAt: null } as AcuerdoDetail);
+  it('un acuerdo ofrecido Y aprobado por la inmobiliaria sí ofrece firmar', async () => {
+    await montar({
+      ...PLAN,
+      status: 'offered',
+      acceptedAt: null,
+      operatorApprovedAt: '2026-10-01T15:00:00.000Z',
+    } as AcuerdoDetail);
     expect(container.textContent).toContain('Firmar para aceptar');
+    expect(container.textContent).toContain('Aprobado por tu inmobiliaria');
     expect(container.querySelector('[data-testid="acuerdo-no-aceptable"]')).toBeNull();
+    expect(container.querySelector('[data-testid="acuerdo-por-aprobar"]')).toBeNull();
+  });
+
+  it('🔴 un acuerdo ofrecido que la inmobiliaria NO ha aprobado: no ofrece firmar ni dice «ya fue aprobado» (03-10-2026)', async () => {
+    await montar({ ...PLAN, status: 'offered', acceptedAt: null, operatorApprovedAt: null } as AcuerdoDetail);
+    expect(container.textContent).not.toContain('Firmar para aceptar');
+    expect(container.textContent).not.toContain('ya fue aprobado');
+    expect(container.textContent).not.toContain('Aprobado por tu inmobiliaria');
+    expect(container.querySelector('[data-testid="acuerdo-por-aprobar"]')?.textContent).toContain(
+      'Tu inmobiliaria lo está revisando',
+    );
   });
 });

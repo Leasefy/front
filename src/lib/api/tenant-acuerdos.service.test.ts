@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach , beforeEach } from 'vitest';
 import { setAccessToken } from './client';
-import { acuerdosApi, AcuerdoUnavailableError } from './tenant-acuerdos.service';
+import { acuerdosApi, AcuerdoUnavailableError, estadoDeLaFirma } from './tenant-acuerdos.service';
 import type {
   AcuerdoDetail,
   AcuerdoAcceptResult,
@@ -234,6 +234,23 @@ describe('acuerdosApi.requestPremoraPlan', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ leaseId: 'lease-1' });
   });
 
+  it('🔴 la nota del inquilino viaja con la solicitud, sin espacios a los lados (03-10-2026)', async () => {
+    const f = mockFetch(200, { requestId: 'req-1' });
+    globalThis.fetch = f;
+    await acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1', nota: '  Prefiero WhatsApp en la tarde.  ' });
+    expect(JSON.parse(String(f.mock.calls[0][1]?.body))).toEqual({
+      leaseId: 'lease-1',
+      nota: 'Prefiero WhatsApp en la tarde.',
+    });
+  });
+
+  it('una nota vacía o de puros espacios no viaja', async () => {
+    const f = mockFetch(200, { requestId: 'req-1' });
+    globalThis.fetch = f;
+    await acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1', nota: '   ' });
+    expect(JSON.parse(String(f.mock.calls[0][1]?.body))).toEqual({ leaseId: 'lease-1' });
+  });
+
   it.each([
     [503, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
     [404, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
@@ -273,5 +290,30 @@ describe('acuerdosApi.requestPremoraPlan', () => {
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
     ).rejects.toThrow();
+  });
+});
+
+describe('🔴 estadoDeLaFirma — sólo se firma lo que la inmobiliaria ya aprobó (03-10-2026)', () => {
+  const APROBADO = '2026-07-02T15:00:00.000Z';
+
+  it('ofrecido y aprobado: se firma', () => {
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: APROBADO })).toBe('firmar');
+  });
+
+  it('ofrecido SIN aprobar (o un back que no lo manda): por aprobar, nunca «firmar»', () => {
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: null })).toBe('por-aprobar');
+    expect(estadoDeLaFirma(PLAN)).toBe('por-aprobar');
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: '  ' })).toBe('por-aprobar');
+  });
+
+  it('ya aceptado: aceptado (aunque falte el dato de la aprobación)', () => {
+    expect(estadoDeLaFirma({ ...PLAN, status: 'active', acceptedAt: '2026-07-03T10:00:00.000Z' })).toBe(
+      'aceptado',
+    );
+  });
+
+  it('cancelado o roto sin aceptar: no se acepta', () => {
+    expect(estadoDeLaFirma({ ...PLAN, status: 'cancelled', operatorApprovedAt: APROBADO })).toBe('no-aceptable');
+    expect(estadoDeLaFirma({ ...PLAN, status: 'defaulted' })).toBe('no-aceptable');
   });
 });

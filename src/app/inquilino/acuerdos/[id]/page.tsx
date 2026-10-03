@@ -20,6 +20,11 @@
  *
  * Guardrails: neutral tone (badge capped at `warning`, Ley 1480); accept-only (the
  * panel never approves/sets terms, T-323/A5); es-CO dates; additive route only.
+ *
+ * 03-10-2026 (Nico): se firma SÓLO lo que la inmobiliaria ya aprobó
+ * (`operatorApprovedAt`, `estadoDeLaFirma`). Un acuerdo ofrecido sin aprobar dice
+ * que la inmobiliaria lo está revisando — nunca «ya fue aprobado» — y no ofrece
+ * firmar; el back y el micro también lo exigen (409 `ACUERDO_SIN_APROBAR`).
  */
 
 import { use, useEffect, useState } from 'react';
@@ -38,6 +43,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
+import { estadoDeLaFirma } from '@/lib/api/tenant-acuerdos.service';
 import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail, AcuerdoInstallment } from '@/lib/api/tenant-acuerdos.types';
@@ -132,6 +138,9 @@ function AcuerdoDetailView({
   const badge = TONE_BADGE[acuerdoStatusToTone(plan.status)];
   const ToneIcon = badge.icon;
 
+  // Qué se hace con la firma (03-10-2026): sólo se firma lo que la inmobiliaria aprobó.
+  const firma = estadoDeLaFirma(plan);
+
   // Pay a cuota only once the acuerdo is accepted (active) and one is still owed.
   const nextCuota =
     plan.acceptedAt !== null ? nextPayableCuota(plan.installments) : undefined;
@@ -146,6 +155,15 @@ function AcuerdoDetailView({
       icon: Scroll,
     },
   ];
+  // La aprobación de la inmobiliaria, cuando la hay (03-10-2026): es la que deja firmar.
+  if (plan.operatorApprovedAt) {
+    timelineItems.push({
+      id: `${plan.planId}:approved`,
+      title: es ? 'Aprobado por tu inmobiliaria' : 'Approved by your agency',
+      timestamp: plan.operatorApprovedAt,
+      icon: SealCheck,
+    });
+  }
   if (plan.acceptedAt) {
     timelineItems.push({
       id: `${plan.planId}:accepted`,
@@ -193,14 +211,34 @@ function AcuerdoDetailView({
         <CuotaPlanTable installments={plan.installments} locale={locale} />
       </section>
 
-      {/* Accept-by-signing (ACUE-02) — only while OFFERED and unaccepted; else a factual state.
+      {/* Accept-by-signing (ACUE-02) — only while OFFERED, APPROVED and unaccepted; else a factual state.
           Un acuerdo cancelado (la inmobiliaria lo rechazó) o roto ya no se acepta: el back
-          respondería 409 `ACUERDO_NO_ACEPTABLE`, así que ni se ofrece firmar (02-10-2026). */}
-      {plan.acceptedAt === null && plan.status === 'offered' ? (
+          respondería 409 `ACUERDO_NO_ACEPTABLE`, así que ni se ofrece firmar (02-10-2026).
+          Uno ofrecido que la inmobiliaria todavía no aprobó tampoco (03-10-2026). */}
+      {firma === 'firmar' ? (
         <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>
-      ) : plan.acceptedAt === null ? (
+      ) : firma === 'por-aprobar' ? (
+        <section
+          data-testid="acuerdo-por-aprobar"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6"
+        >
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="font-semibold text-fg dark:text-white">
+                {es ? 'Tu inmobiliaria lo está revisando' : 'Your agency is reviewing it'}
+              </p>
+              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+                {es
+                  ? 'Este acuerdo todavía no está aprobado. Cuando tu inmobiliaria lo apruebe, aquí mismo lo podrás firmar para aceptarlo.'
+                  : 'This agreement is not approved yet. Once your agency approves it, you can sign it here to accept it.'}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : firma === 'no-aceptable' ? (
         <section
           data-testid="acuerdo-no-aceptable"
           className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6"
@@ -223,8 +261,8 @@ function AcuerdoDetailView({
               </p>
               <p className="text-sm text-success">
                 {es
-                  ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt, locale)}.`
-                  : `You accepted this agreement on ${formatLongDate(plan.acceptedAt, locale)}.`}
+                  ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt ?? '', locale)}.`
+                  : `You accepted this agreement on ${formatLongDate(plan.acceptedAt ?? '', locale)}.`}
               </p>
             </div>
           </div>

@@ -19,7 +19,7 @@
  * se sale (ni Esc, ni el velo, ni la ✕). Buttons sentence case (DESIGN §4), inline
  * es-CO copy. Zero new npm packages.
  *
- * Honest-degrade: submit → acuerdosApi.requestPremoraPlan({ leaseId }); success →
+ * Honest-degrade: submit → acuerdosApi.requestPremoraPlan({ leaseId, nota }); success →
  * toast + onRequested?.() + onClose(); AcuerdoUnavailableError → honest "Próximamente"
  * toast with the form left intact (never a fabricated plan/radicado); any other error →
  * a generic retry toast.
@@ -99,9 +99,10 @@ export function SolicitarPlanPagoModal({
 
     setIsSubmitting(true);
     try {
-      // Intent only: the body carries the lease id — never amounts, cuotas, dates,
-      // discounts, or consequences. The agency + the agent compute and approve.
-      await acuerdosApi.requestPremoraPlan({ leaseId: resolvedLeaseId });
+      // Intent only: the body carries the lease id and the optional note — never
+      // amounts, cuotas, dates, discounts, or consequences. The agency + the agent
+      // compute and approve. La nota viaja y se ve en el Piloto (03-10-2026).
+      await acuerdosApi.requestPremoraPlan({ leaseId: resolvedLeaseId, nota });
       toast.success(
         locale === 'es'
           ? 'Enviamos tu solicitud. Tu inmobiliaria la revisará.'
@@ -135,7 +136,7 @@ export function SolicitarPlanPagoModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [resolvedLeaseId, locale, onRequested, onClose]);
+  }, [resolvedLeaseId, nota, locale, onRequested, onClose]);
 
   return (
     <Dialog

@@ -93,6 +93,32 @@ export class AcuerdoUnavailableError extends Error {
 }
 
 // ---------------------------------------------------------------------------
+// ¿Se puede firmar? (03-10-2026)
+// ---------------------------------------------------------------------------
+
+/**
+ * Qué muestra el detalle del acuerdo en vez de (o además de) firmar:
+ *   - `aceptado`     → ya lo aceptó (el estado de verdad, con su fecha);
+ *   - `firmar`       → ofrecido Y aprobado por la inmobiliaria: se firma;
+ *   - `por-aprobar`  → ofrecido pero la inmobiliaria TODAVÍA no lo aprueba:
+ *                      no se firma y no se dice «ya fue aprobado» (Nico,
+ *                      03-10-2026; el back y el micro también lo exigen);
+ *   - `no-aceptable` → cancelado, roto o completado sin aceptar.
+ * Un back anterior que no manda `operatorApprovedAt` cuenta como «por aprobar».
+ */
+export type EstadoDeLaFirma = 'aceptado' | 'firmar' | 'por-aprobar' | 'no-aceptable';
+
+export function estadoDeLaFirma(
+  plan: Pick<AcuerdoDetail, 'status' | 'acceptedAt' | 'operatorApprovedAt'>,
+): EstadoDeLaFirma {
+  if (plan.acceptedAt) return 'aceptado';
+  if (plan.status !== 'offered') return 'no-aceptable';
+  return typeof plan.operatorApprovedAt === 'string' && plan.operatorApprovedAt.trim()
+    ? 'firmar'
+    : 'por-aprobar';
+}
+
+// ---------------------------------------------------------------------------
 // acuerdosApi — the tolerant contract
 // ---------------------------------------------------------------------------
 
@@ -145,7 +171,7 @@ async function accept(
 
 /**
  * POST /cartera/payment-plans/request — PROPOSES a pre-mora plan (intent only,
- * `{ leaseId }`). It feeds the agency approval pipeline; it never sets terms and the
+ * `{ leaseId, nota? }`; la nota viaja sólo si hay texto, sin espacios a los lados). It feeds the agency approval pipeline; it never sets terms and the
  * agent + agency compute and approve. On not-live (404/403/0) throws
  * `AcuerdoUnavailableError` so no fabricated plan is shown. Any other error is
  * rethrown. Provisional path (A3).
@@ -154,9 +180,10 @@ async function requestPremoraPlan(
   body: PremoraPlanRequestInput,
 ): Promise<{ requestId: string; yaExistia?: boolean }> {
   try {
+    const nota = body.nota?.trim();
     return await apiClient.post<{ requestId: string; yaExistia?: boolean }>(
       '/cartera/payment-plans/request',
-      body,
+      { leaseId: body.leaseId, ...(nota ? { nota } : {}) },
     );
   } catch (err) {
     if (esTodaviaNo(err)) throw new AcuerdoUnavailableError();

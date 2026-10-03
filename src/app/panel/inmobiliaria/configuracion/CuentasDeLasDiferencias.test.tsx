@@ -181,6 +181,9 @@ describe('🔴 «Asentarlas» también reprocesa las salidas', () => {
     expect(api.reprocesar).not.toHaveBeenCalled();
     expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('Se asienta 1 diferencia aprobada ($4.000)');
     expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('GMF 4X1000');
+    // 🔴 (03-10-2026) la fecha de cada gasto en palabras, como el resto del panel (no «2026-09-14»).
+    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).not.toContain('2026-09-14');
+    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toMatch(/14 de sept?\.? de 2026/);
     expect($('[data-testid="confirmar-asentarlas"]')?.textContent).toBe('Conciliar y asentar');
     await act(async () => $('[data-testid="confirmar-asentarlas"]')!.click());
     await act(async () => {});

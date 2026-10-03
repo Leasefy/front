@@ -119,6 +119,15 @@ describe('las diferencias conocidas de la conciliación', () => {
     expect(h.toast.success).toHaveBeenCalledWith(expect.stringContaining('reconoce 2 diferencias'));
   });
 
+  it('🔴 con UNA diferencia el aviso va en singular («te la propone», 03-10-2026)', async () => {
+    h.guardar.mockImplementation(async (ds: unknown) => respuesta({ diferencias: ds as never }));
+    await montar();
+    await clic('diferencias-guardar');
+    expect(h.toast.success).toHaveBeenCalledWith(
+      'Guardado: la conciliación reconoce 1 diferencia y te la propone con su regla.',
+    );
+  });
+
   it('un error del back va a SU fila y SU campo', async () => {
     h.guardar.mockRejectedValue(
       new ApiError(400, ['x'], 'DATOS_INVALIDOS', {

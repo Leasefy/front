@@ -106,6 +106,9 @@ describe('planilla de caja', () => {
     await montar(<PlanillaDeCaja puedeConciliar onCambio={onCambio} />);
     expect($('planilla-2026-09-14')?.textContent).toMatch(/Por consignar/);
     expect($('planilla-2026-09-14')?.textContent).toMatch(/Segura/);
+    // 🔴 (03-10-2026) las fechas en palabras, nunca «2026-09-14» en pantalla.
+    expect($('planilla-de-caja')?.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect($('planilla-2026-09-14')?.textContent).toMatch(/14 de sept?\.? de 2026/);
     await act(async () => $('conciliar-planilla-2026-09-14-m1')!.click());
     expect(api.conciliarPlanilla).toHaveBeenCalledWith('2026-09-14', 'm1');
     expect(onCambio).toHaveBeenCalled();
@@ -166,7 +169,9 @@ describe('relación de pagos de una aseguradora', () => {
     expect(api.cargarRelacion).toHaveBeenCalledWith(
       expect.objectContaining({ aseguradoraId: 'as1', mapeo: { siniestro: 'Siniestro', neto: 'Valor pagado' }, filas: [expect.objectContaining({ siniestro: 'SIN-1', netoCop: 965_000 })] }),
     );
-    expect($('relacion-cruzada')?.textContent).toMatch(/1 cruzadas/);
+    // 🔴 (03-10-2026) en singular, y la fecha de la línea en palabras (nunca «1 cruzadas» ni «2026-09-05»).
+    expect($('relacion-cruzada')?.textContent).toMatch(/1 cruzada · 0 para revisar · 0 sin recibo · 0 ya conciliadas/);
+    expect($('relacion-cruzada')?.textContent).not.toMatch(/1 cruzadas|2026-09-05/);
     await act(async () => ($('propuesta-de-la-relacion-m9')!.querySelector('button') as HTMLButtonElement).click());
     expect(conciliacion.conciliarConRecibos).toHaveBeenCalledWith('m9', ['r1']);
   });

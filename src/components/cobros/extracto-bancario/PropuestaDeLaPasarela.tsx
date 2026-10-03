@@ -74,7 +74,7 @@ export function PropuestaDeLaPasarela({ movimiento, propuestas, puedeEditar, ocu
         </p>
         <ul className="space-y-1.5">
           {propuestas.map((p) => (
-            <li key={p.pagoEnLineaId} className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+            <li key={p.pagoEnLineaId} className="flex flex-col gap-1.5">
               <div className="min-w-0 space-y-0.5">
                 <p className="text-body-sm text-fg">
                   <span className="tabular-nums font-medium">{plata(p.valorCop)}</span>
@@ -88,7 +88,7 @@ export function PropuestaDeLaPasarela({ movimiento, propuestas, puedeEditar, ocu
                   size="sm"
                   variant="secondary"
                   hideArrow
-                  className="shrink-0"
+                  className="shrink-0 self-start"
                   disabled={!puedeEditar || ocupado || enviando !== null}
                   isLoading={enviando === p.pagoEnLineaId}
                   onClick={() => void confirmar(p)}

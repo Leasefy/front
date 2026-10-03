@@ -52,7 +52,7 @@ import {
   type MesesDeLaCuenta,
 } from '@/lib/api/cierre-de-conciliacion';
 import { useAparecer } from './cuentas-del-extracto';
-import { exportarElCierreAExcel, exportarElCierreAPdf, pesos, porcentaje } from './cierre-del-mes';
+import { conMayusculaInicial, exportarElCierreAExcel, exportarElCierreAPdf, pesos, porcentaje } from './cierre-del-mes';
 
 const ESTADO: Record<MesDeLaCuenta['estado'], { texto: string; variante: 'success' | 'warning' | 'secondary' }> = {
   CERRADO: { texto: 'Cerrado y firmado', variante: 'success' },
@@ -259,7 +259,7 @@ export function CierreDelMes({ cuentaId, onCambio }: { cuentaId: string; onCambi
                 ) : (
                   <LockSimpleOpen className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
                 )}
-                <span className="text-body-sm font-medium capitalize text-fg">{m.mesEnPalabras}</span>
+                <span className="text-body-sm font-medium text-fg">{conMayusculaInicial(m.mesEnPalabras)}</span>
                 <Badge variant={ESTADO[m.estado].variante}>{ESTADO[m.estado].texto}</Badge>
                 {m.pendientes > 0 && (
                   <span className="text-caption text-fg-muted">
@@ -367,7 +367,7 @@ function DialogoDelCierre({
         tarjetaProfesional: tarjeta.trim() || undefined,
         saldoExtractoCop: sinSaldo && saldoEscrito !== undefined && Number.isFinite(saldoEscrito) ? saldoEscrito : undefined,
       });
-      toast.success(`${abierto.mes.mesEnPalabras} quedó cerrado y firmado. Nada se concilia ni se carga en ese mes de esta cuenta.`);
+      toast.success(`${conMayusculaInicial(abierto.mes.mesEnPalabras)} quedó cerrado y firmado. Nada se concilia ni se carga en ese mes de esta cuenta.`);
       onCambio();
     } catch (e) {
       toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo firmar el cierre.', accion: 'firmar el cierre del mes' }));
@@ -382,7 +382,7 @@ function DialogoDelCierre({
     setErrorDelMotivo(null);
     try {
       await cierreDeConciliacionApi.reabrir(abierto.cierre.id, motivo);
-      toast.success(`${abierto.mes.mesEnPalabras} quedó abierto otra vez. Quedó en la bitácora con tu motivo.`);
+      toast.success(`${conMayusculaInicial(abierto.mes.mesEnPalabras)} quedó abierto otra vez. Quedó en la bitácora con tu motivo.`);
       onCambio();
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
@@ -418,7 +418,7 @@ function DialogoDelCierre({
     <Dialog open onOpenChange={(v) => !v && !enviando && onCerrar()}>
       <DialogContent className="max-w-3xl" icon={abierto.tipo === 'cierre' ? <LockSimple weight="bold" /> : <Signature weight="bold" />}>
         <DialogHeader>
-          <DialogTitle className="capitalize">
+          <DialogTitle>
             {abierto.tipo === 'cierre' ? `Cierre de ${abierto.mes.mesEnPalabras}` : `Borrador del cierre de ${abierto.mes.mesEnPalabras}`}
           </DialogTitle>
           <DialogDescription>

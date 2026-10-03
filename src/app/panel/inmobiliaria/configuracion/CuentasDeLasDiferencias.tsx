@@ -42,6 +42,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto';
+import { diaLegible } from '@/components/cobros/extracto-bancario/formato';
 import {
   cuentasDeLasDiferenciasApi,
   type CuentasDeLasDiferencias as Datos,
@@ -351,7 +352,7 @@ export function CuentasDeLasDiferencias() {
                               {g.descripcion}
                             </span>
                             <span className="block text-caption text-fg-muted">
-                              {g.fecha} · {g.etiqueta}
+                              {diaLegible(g.fecha)} · {g.etiqueta}
                             </span>
                           </span>
                           <span className="shrink-0 tabular-nums text-fg">{plata(g.valorCop)}</span>

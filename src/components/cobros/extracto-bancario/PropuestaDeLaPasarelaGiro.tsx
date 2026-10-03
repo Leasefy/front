@@ -69,7 +69,7 @@ export function PropuestaDeLaPasarelaGiro({ movimiento, propuestas, puedeEditar,
         </p>
         <ul className="space-y-1.5">
           {propuestas.map((p) => (
-            <li key={p.liquidacionId} className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+            <li key={p.liquidacionId} className="flex flex-col gap-1.5">
               <div className="min-w-0 space-y-0.5">
                 <p className="text-body-sm text-fg">
                   Liquidación {p.numero} · {diaLegible(p.fechaDelGiro)} · neto{' '}
@@ -87,7 +87,7 @@ export function PropuestaDeLaPasarelaGiro({ movimiento, propuestas, puedeEditar,
                 size="sm"
                 variant="secondary"
                 hideArrow
-                className="shrink-0"
+                className="shrink-0 self-start"
                 disabled={!puedeEditar || ocupado || enviando !== null}
                 isLoading={enviando === p.liquidacionId}
                 onClick={() => void confirmar(p)}

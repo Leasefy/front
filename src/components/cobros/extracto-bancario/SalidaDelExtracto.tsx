@@ -153,8 +153,8 @@ export function SalidaDelExtracto({ movimiento: m, puedeConciliar, ocupado, onCa
                 key={p.llave}
                 className={
                   p.sePuedeAplicarSola
-                    ? 'flex flex-col gap-1.5 rounded-md border border-primary bg-primary-soft px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between'
-                    : 'flex flex-col gap-1.5 rounded-md border border-border bg-surface-muted px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between'
+                    ? 'flex flex-col gap-1.5 rounded-md border border-primary bg-primary-soft px-2.5 py-1.5'
+                    : 'flex flex-col gap-1.5 rounded-md border border-border bg-surface-muted px-2.5 py-1.5'
                 }
                 data-testid={`propuesta-de-salida-${m.id}-${p.llave}`}
                 data-segura={p.sePuedeAplicarSola}
@@ -178,7 +178,7 @@ export function SalidaDelExtracto({ movimiento: m, puedeConciliar, ocupado, onCa
                   size="sm"
                   variant={p.sePuedeAplicarSola ? 'default' : 'secondary'}
                   hideArrow
-                  className="shrink-0"
+                  className="shrink-0 self-start"
                   disabled={apagado}
                   isLoading={enviando === p.llave}
                   onClick={() => void conciliar(p.llave, { tipo: p.tipo, destinoId: p.destinoId, clase: p.clase })}

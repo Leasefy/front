@@ -29,6 +29,15 @@ export function pesos(n: number | null | undefined): string {
   return n < 0 ? `−${s}` : s;
 }
 
+/**
+ * «septiembre de 2026» → «Septiembre de 2026». 🔴 (03-10-2026) Antes iba con la
+ * clase `capitalize`, que en español sube CADA palabra («Septiembre De 2026»,
+ * «Borrador Del Cierre De…»).
+ */
+export function conMayusculaInicial(texto: string): string {
+  return texto ? texto.charAt(0).toLocaleUpperCase('es-CO') + texto.slice(1) : texto;
+}
+
 export function porcentaje(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
   return `${n.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`;
@@ -141,6 +150,17 @@ export async function exportarElCierreAExcel(c: CierreConFoto): Promise<void> {
   XLSX.writeFile(libro, nombreDelArchivoDelCierre(c, 'xlsx'));
 }
 
+/**
+ * 🔴 (03-10-2026) La letra estándar de jsPDF (Helvetica, WinAnsi) no trae el
+ * «−» tipográfico: lo pintaba como `"` y espaciaba la línea entera letra por
+ * letra («D i f e r e n c i a … " $ 1 . 4 3 2 . 1 7 0»), y una partida larga
+ * se salía de la hoja. En el PDF el menos va con el guion de siempre (como en
+ * `documento-de-la-liquidacion.ts`); el Excel y la pantalla conservan el «−».
+ */
+export function textoParaElPdf(texto: string): string {
+  return texto.replace(/\u2212/g, '-');
+}
+
 /** El PDF: texto plano, paginado, con la huella al pie de cada página. */
 export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
   const { default: JsPdf } = await import('jspdf');
@@ -161,19 +181,21 @@ export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
     }
   };
   doc.setFontSize(16);
-  doc.text(`Cierre de la conciliación — ${c.foto.mesEnPalabras}`, margen, y);
+  doc.text(textoParaElPdf(`Cierre de la conciliación — ${c.foto.mesEnPalabras}`), margen, y);
   y += 22;
   doc.setFontSize(11);
-  doc.text(c.foto.cuenta.nombre, margen, y);
+  doc.text(textoParaElPdf(c.foto.cuenta.nombre), margen, y);
   y += 20;
   for (const s of seccionesDelCierre(c)) {
     salto(30);
     doc.setFontSize(12);
-    doc.text(s.titulo, margen, y);
+    doc.text(textoParaElPdf(s.titulo), margen, y);
     y += 16;
     doc.setFontSize(9);
     for (const fila of s.filas) {
-      const texto = fila.map((x) => (typeof x === 'number' ? pesosSiEsPlata(x) : x)).join('   ·   ');
+      const texto = textoParaElPdf(
+        fila.map((x) => (typeof x === 'number' ? pesosSiEsPlata(x) : x)).join('   ·   '),
+      );
       const lineas = doc.splitTextToSize(texto, ancho - margen * 2) as string[];
       salto(lineas.length * 12);
       doc.text(lineas, margen, y);

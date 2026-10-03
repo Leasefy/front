@@ -131,7 +131,9 @@ export function DiferenciasConocidas() {
       toast.success(
         r.diferencias.length === 0
           ? 'Guardado: la conciliación no reconoce ninguna retención ni comisión.'
-          : `Guardado: la conciliación reconoce ${r.diferencias.length} ${r.diferencias.length === 1 ? 'diferencia' : 'diferencias'} y te las propone con su regla.`,
+          : r.diferencias.length === 1
+            ? 'Guardado: la conciliación reconoce 1 diferencia y te la propone con su regla.'
+            : `Guardado: la conciliación reconoce ${r.diferencias.length} diferencias y te las propone con su regla.`,
       );
     } catch (e) {
       const repartidos = erroresDelServidor(e, filas);

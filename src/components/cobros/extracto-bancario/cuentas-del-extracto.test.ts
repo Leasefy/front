@@ -76,6 +76,39 @@ describe('saldos y período', () => {
 });
 
 describe('el resultado de la carga', () => {
+  it('🔴 las líneas de un mes cerrado no se cuentan como ilegibles (03-10-2026)', () => {
+    const partes = partesDelResultado({
+      nuevas: 1,
+      repetidas: 0,
+      igualesEnElArchivo: 0,
+      salidas: 0,
+      descartadas: 1,
+      descartadasPorValor: 0,
+      descartadasPorMesCerrado: 1,
+      yaPagadasPorPasarela: 0,
+      pendientes: 13,
+      seguras: 0,
+    });
+    expect(partes.join(' · ')).not.toMatch(/ilegible/);
+    expect(partes).toContain('1 no entró: es de un mes cerrado');
+  });
+
+  it('🔴 al volver a subir el mismo extracto no dice que una idéntica «entró» (03-10-2026)', () => {
+    const partes = partesDelResultado({
+      nuevas: 0,
+      repetidas: 5,
+      igualesEnElArchivo: 1,
+      salidas: 0,
+      descartadas: 0,
+      descartadasPorValor: 0,
+      yaPagadasPorPasarela: 0,
+      pendientes: 11,
+      seguras: 1,
+    });
+    expect(partes.join(' · ')).not.toMatch(/entr(ó|aron)/);
+    expect(partes).toContain('1 línea idéntica a otra del archivo cuenta aparte (son movimientos distintos)');
+  });
+
   it('🔴 distingue lo que ya estaba (duplicado de datos) de las idénticas del archivo que entraron', () => {
     const partes = partesDelResultado({
       nuevas: 3,
@@ -92,10 +125,10 @@ describe('el resultado de la carga', () => {
     expect(partes).toEqual([
       '3 nuevas',
       '2 ya estaban',
-      '1 línea idéntica a otra del archivo entró (son movimientos distintos)',
+      '1 línea idéntica a otra del archivo cuenta aparte (son movimientos distintos)',
       '2 de antes tomaron esta cuenta',
       '1 salida de plata',
-      '1 descartadas por ilegibles',
+      '1 descartada por ilegible',
       '1 traía el id de un pago en línea y quedó marcada',
     ]);
   });

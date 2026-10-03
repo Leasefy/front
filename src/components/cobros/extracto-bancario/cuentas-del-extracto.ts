@@ -86,16 +86,29 @@ export function partesDelResultado(r: ResultadoDeCarga): string[] {
   ];
   if ((r.igualesEnElArchivo ?? 0) > 0) {
     partes.push(
-      `${r.igualesEnElArchivo} ${r.igualesEnElArchivo === 1 ? 'línea idéntica a otra del archivo entró' : 'líneas idénticas a otras del archivo entraron'} (son movimientos distintos)`,
+      /*
+       * 🔴 (03-10-2026) El back cuenta las idénticas DEL ARCHIVO, hayan entrado
+       * ahora o en una carga anterior: «entró» mentía al volver a subir el mismo
+       * extracto («0 nuevas · 5 ya estaban · 1 línea idéntica … entró»).
+       */
+      `${r.igualesEnElArchivo} ${r.igualesEnElArchivo === 1 ? 'línea idéntica a otra del archivo cuenta aparte' : 'líneas idénticas a otras del archivo cuentan aparte'} (son movimientos distintos)`,
     );
   }
   if ((r.adoptadas ?? 0) > 0) {
     partes.push(`${r.adoptadas} de antes ${r.adoptadas === 1 ? 'tomó' : 'tomaron'} esta cuenta`);
   }
   partes.push(`${r.salidas} ${r.salidas === 1 ? 'salida' : 'salidas'} de plata`);
-  const ilegibles = r.descartadas - (r.descartadasPorValor ?? 0);
-  if (ilegibles > 0) partes.push(`${ilegibles} descartadas por ilegibles`);
+  /*
+   * 🔴 (03-10-2026) Las de un mes CERRADO no son ilegibles: antes salían como
+   * «1 descartadas por ilegibles». Cada una con su porqué y su número gramatical.
+   */
+  const porMesCerrado = r.descartadasPorMesCerrado ?? 0;
+  const ilegibles = r.descartadas - (r.descartadasPorValor ?? 0) - porMesCerrado;
+  if (ilegibles > 0) partes.push(`${ilegibles} ${ilegibles === 1 ? 'descartada por ilegible' : 'descartadas por ilegibles'}`);
   if ((r.descartadasPorValor ?? 0) > 0) partes.push(`${r.descartadasPorValor} sin cargar por su valor`);
+  if (porMesCerrado > 0) {
+    partes.push(`${porMesCerrado} ${porMesCerrado === 1 ? 'no entró: es de un mes cerrado' : 'no entraron: son de un mes cerrado'}`);
+  }
   if (r.yaPagadasPorPasarela > 0) {
     partes.push(
       `${r.yaPagadasPorPasarela} ${r.yaPagadasPorPasarela === 1 ? 'traía' : 'traían'} el id de un pago en línea y ${r.yaPagadasPorPasarela === 1 ? 'quedó marcada' : 'quedaron marcadas'}`,

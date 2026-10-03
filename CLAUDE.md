@@ -465,6 +465,17 @@ API en `src/lib/api/cierre-de-conciliacion.ts`; lo puro (exportar, leer la relac
 - ⚠ Las rutas nuevas del back (`salidas/seguras`, `egresos/:id/salidas-del-extracto`) no están en `rutas-del-back.json`
   todavía: las llaman archivos que el guardián no barre (no son `*.service.ts`); regenerarlo con el back de esta ola.
 
+## Conciliación, pruebas en el navegador (PRUEBAS-CONCILIACION, 03-10-2026)
+
+- **«Cruce sugerido» mide ~300 px aun en escritorio**: sus tarjetas (candidatos, pasarela, giro de Leasefy, salidas) van
+  APILADAS, nunca en fila por el breakpoint de la ventana (guardián `cruce-sugerido-apilado.test.ts`).
+- **PDF con jsPDF (Helvetica)**: el «−» tipográfico sale como basura y espacia la línea; el cierre pasa todo por
+  `textoParaElPdf` (como `documento-de-la-liquidacion.ts`). El Excel y la pantalla conservan el «−».
+- Nada de la clase `capitalize` en español (sube cada palabra): `conMayusculaInicial`. Las fechas en pantalla con `diaLegible`
+  (planilla, relación, «Asentarlas»), y cada cifra con su número gramatical («Queda 1…», «1 cruzada», «te la propone»).
+- La carga del extracto separa `descartadasPorMesCerrado` de las ilegibles; «idéntica a otra del archivo cuenta aparte» (no
+  «entró»: en una recarga no entra nada). Huecos: «Falta el extracto del …».
+
 ## /admin/recaudo-en-linea: el reporte de Wompi y las liquidaciones de Leasefy (ola E, E2; 03-10-2026)
 
 Nico (C2-AGREGADOR Q3/Q4): Leasefy recauda en SU cuenta de Wompi y le gira a cada inmobiliaria con una liquidación.

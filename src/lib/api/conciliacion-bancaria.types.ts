@@ -237,6 +237,11 @@ export interface ResultadoDeCarga {
    * migración). La frase va en `avisos`. Opcional: un back de antes no lo manda.
    */
   descartadasPorValor?: number;
+  /**
+   * 🔴 (03-10-2026) De las `descartadas`, las de un mes CERRADO de la cuenta
+   * (su frase va en `avisos`). Opcional: un back anterior no lo manda.
+   */
+  descartadasPorMesCerrado?: number;
   /** Líneas nuevas que ya estaban pagadas por la pasarela: quedan ignoradas con su motivo. */
   yaPagadasPorPasarela: number;
   /** Entradas pendientes de conciliar en la agencia, después de esta carga. */

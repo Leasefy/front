@@ -216,7 +216,10 @@ describe('🔴 la conciliación por cuenta (Nico, P3)', () => {
     const ficha = $('[data-testid="ficha-de-la-cuenta"]').textContent ?? '';
     expect(ficha).toContain('80 % por número · 80 % por valor');
     expect($('[data-testid="cuadre-de-la-cuenta"]').textContent).toContain('no cuadra por');
-    expect($('[data-testid="huecos-de-la-cuenta"]').textContent).toContain('Falta el extracto de');
+    const huecos = $('[data-testid="huecos-de-la-cuenta"]').textContent ?? '';
+    expect(huecos).toContain('Falta el extracto del ');
+    // 🔴 (03-10-2026) nunca «Falta el extracto de del …».
+    expect(huecos).not.toContain('de del');
 
     await clic('[data-testid="cuenta-sin-cuenta"]');
     expect(api.listar).toHaveBeenLastCalledWith(expect.objectContaining({ cuenta: 'sin-cuenta' }));

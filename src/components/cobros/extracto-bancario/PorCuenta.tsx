@@ -120,7 +120,8 @@ export function PorCuenta({ datos, filtro, onFiltro }: Props) {
             {elegida && elegida.huecos.length > 0 && (
               <p className="flex items-start gap-1.5 text-caption font-medium text-warning sm:col-span-2 lg:col-span-4" data-testid="huecos-de-la-cuenta">
                 <Warning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                Falta el extracto de{' '}
+                {/* 🔴 (03-10-2026) Antes «Falta el extracto de del 3 de sept…»: la preposición va en cada hueco. */}
+                Falta el extracto{' '}
                 {elegida.huecos
                   .slice(0, 3)
                   .map((h) => (h.desde === h.hasta ? `el ${diaLegible(h.desde)}` : `del ${diaLegible(h.desde)} al ${diaLegible(h.hasta)}`))

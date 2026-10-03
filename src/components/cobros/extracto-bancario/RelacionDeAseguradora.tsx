@@ -35,6 +35,7 @@ import {
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import { useAparecer } from './cuentas-del-extracto';
 import { leerLaRelacion, mapeoSugerido, pesos } from './cierre-del-mes';
+import { diaLegible } from './formato';
 
 const ESTADO_DE_LA_LINEA: Record<EstadoDeLaLinea, { texto: string; variante: 'success' | 'warning' | 'secondary' | 'destructive' }> = {
   CRUZADO: { texto: 'Cruzada', variante: 'success' },
@@ -43,6 +44,16 @@ const ESTADO_DE_LA_LINEA: Record<EstadoDeLaLinea, { texto: string; variante: 'su
   VALOR_DISTINTO: { texto: 'Valor distinto', variante: 'warning' },
   SIN_RECIBO: { texto: 'Sin recibo', variante: 'destructive' },
 };
+
+/** «1 cruzada · 2 para revisar · 0 sin recibo · 1 ya conciliada». */
+export function resumenDeLaRelacion(r: { cruzadas: number; aLaPersona: number; sinRecibo: number; yaConciliadas: number }): string {
+  return [
+    `${r.cruzadas} ${r.cruzadas === 1 ? 'cruzada' : 'cruzadas'}`,
+    `${r.aLaPersona} para revisar`,
+    `${r.sinRecibo} sin recibo`,
+    `${r.yaConciliadas} ya ${r.yaConciliadas === 1 ? 'conciliada' : 'conciliadas'}`,
+  ].join(' · ');
+}
 
 export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConciliar: boolean; onCambio: () => void }) {
   const aparecer = useAparecer();
@@ -245,8 +256,8 @@ export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConci
               {relacion.aseguradora.nombre} · {relacion.nombreArchivo} · neto {pesos(relacion.totalNetoCop)}
             </p>
             <p className="text-caption text-fg-muted">
-              {relacion.resumen.cruzadas} cruzadas · {relacion.resumen.aLaPersona} para revisar · {relacion.resumen.sinRecibo} sin recibo ·{' '}
-              {relacion.resumen.yaConciliadas} ya conciliadas
+              {/* 🔴 (03-10-2026) Antes «1 cruzadas · … · 0 ya conciliadas»: cada cifra con su número gramatical. */}
+              {resumenDeLaRelacion(relacion.resumen)}
               {relacion.retencionConfiguradaPct !== null ? ` · retención configurada ${relacion.retencionConfiguradaPct} %` : ''}
             </p>
             <ul className="max-h-64 space-y-1 overflow-y-auto text-caption">
@@ -265,7 +276,7 @@ export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConci
               <div key={p.movimientoId} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-muted px-3 py-2" data-testid={`propuesta-de-la-relacion-${p.movimientoId}`}>
                 <div className="text-caption">
                   <span className="font-medium text-fg">
-                    {p.fecha} · «{p.descripcion}» · {pesos(p.valorCop)}
+                    {diaLegible(p.fecha)} · «{p.descripcion}» · {pesos(p.valorCop)}
                   </span>
                   {p.segura && (
                     <Badge variant="success" className="ml-2">

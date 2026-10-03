@@ -111,6 +111,17 @@ describe('🔴 cierre del mes', () => {
     expect($('ver-borrador-2026-09')?.textContent).toMatch(/Revisar y firmar/);
   });
 
+  it('🔴 el mes se escribe con mayúscula sólo al principio («Septiembre de 2026», nunca «Septiembre De 2026»)', async () => {
+    await montar();
+    const fila = $('mes-2026-09');
+    expect(fila?.textContent).toMatch(/Septiembre de 2026/);
+    expect(fila?.querySelector('.capitalize')).toBeNull();
+    await clic($('ver-borrador-2026-09'));
+    const titulo = document.querySelector('[role="dialog"] h2');
+    expect(titulo?.textContent).toMatch(/^Borrador del cierre de septiembre de 2026$/);
+    expect(titulo?.classList.contains('capitalize')).toBe(false);
+  });
+
   it('🔴 el contador firma sólo después de confirmar que revisó', async () => {
     await montar();
     await clic($('ver-borrador-2026-09'));
@@ -119,7 +130,7 @@ describe('🔴 cierre del mes', () => {
     await clic($('confirmo-el-cierre'));
     await clic($('confirmar-firma'));
     expect(api.cerrar).toHaveBeenCalledWith(expect.objectContaining({ cuentaId: 'cta', mes: '2026-09', confirmo: true }));
-    expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/cerrado y firmado/));
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/^Septiembre de 2026 quedó cerrado y firmado/));
   });
 
   it('🔴 el administrador no firma (ve el borrador) y reabre con motivo', async () => {

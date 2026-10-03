@@ -118,7 +118,11 @@ export function MovimientoFila({
         {plata(m.valorCop)}
       </TableCell>
 
-      {/* Cruce sugerido: la decisión de la fila */}
+      {/* Cruce sugerido: la decisión de la fila.
+          🔴 (03-10-2026) Esta celda mide ~300 px aun en un escritorio ancho: las
+          tarjetas van APILADAS (texto arriba, botón abajo). Con la fila del breakpoint `sm`
+          —que mira la ventana, no la celda— el botón se comía el ancho y el
+          texto quedaba de una palabra por línea (filas de 1.500 px). */}
       <TableCell className="max-w-[460px]">
         {/* 🔴 Muchos a uno: si el movimiento es la suma de recibos YA emitidos,
             eso va primero. Conciliarlo contra una cuota EMITIRÍA otro recibo
@@ -199,7 +203,7 @@ export function MovimientoFila({
                 <li
                   key={c.contractId}
                   className={cn(
-                    'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between',
+                    'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5',
                     c.seguro ? 'border-primary bg-primary-soft' : 'border-border bg-surface-muted',
                   )}
                   data-testid={`candidato-${m.id}-${c.contractId}`}
@@ -236,7 +240,7 @@ export function MovimientoFila({
                     disabled={!puedeConciliar || ocupado}
                     onClick={() => onConciliar(m, c)}
                     aria-label={`Conciliar con ${c.tenantName ?? c.propertyTitle}`}
-                    className="shrink-0"
+                    className="shrink-0 self-start"
                   >
                     <CheckCircle className="h-4 w-4" aria-hidden="true" />
                     Conciliar

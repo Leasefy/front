@@ -20,6 +20,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cierreDeConciliacionApi, type PlanillasDeCaja } from '@/lib/api/cierre-de-conciliacion';
 import { useAparecer } from './cuentas-del-extracto';
 import { pesos } from './cierre-del-mes';
+import { diaLegible } from './formato';
 
 const ESTADO = {
   CONSIGNADA: { texto: 'Consignada', variante: 'success' as const },
@@ -68,7 +69,8 @@ export function PlanillaDeCaja({ puedeConciliar, version = 0, onCambio }: { pued
         <Coins className="h-5 w-5 text-fg-muted" aria-hidden="true" />
         <h3 className="text-body font-semibold text-fg">Planilla de caja</h3>
         <span className="text-caption text-fg-muted">
-          Del {datos.desde} al {datos.hasta}: los recibos en efectivo de cada día contra su consignación.
+          {/* 🔴 (03-10-2026) Las fechas en palabras, como el resto del extracto (antes «Del 2026-08-04 al 2026-10-03»). */}
+          Del {datos.desde ? diaLegible(datos.desde) : '—'} al {datos.hasta ? diaLegible(datos.hasta) : '—'}: los recibos en efectivo de cada día contra su consignación.
         </span>
       </div>
       {conAlgo.length === 0 ? (
@@ -78,7 +80,7 @@ export function PlanillaDeCaja({ puedeConciliar, version = 0, onCambio }: { pued
           {conAlgo.slice(0, 15).map((p) => (
             <li key={p.fecha} className="space-y-1 py-2" data-testid={`planilla-${p.fecha}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-body-sm font-medium text-fg">{p.fecha}</span>
+                <span className="text-body-sm font-medium text-fg">{diaLegible(p.fecha)}</span>
                 <Badge variant={ESTADO[p.estado].variante}>{ESTADO[p.estado].texto}</Badge>
                 <span className="text-caption text-fg-muted">
                   {p.recibos.length} {p.recibos.length === 1 ? 'recibo' : 'recibos'} · {pesos(p.totalCop)}
@@ -90,7 +92,7 @@ export function PlanillaDeCaja({ puedeConciliar, version = 0, onCambio }: { pued
                 <div key={x.movimientoId} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-muted px-3 py-2">
                   <div className="text-caption text-fg">
                     <span className="font-medium">
-                      {x.fecha} · «{x.descripcion}» · {pesos(x.valorCop)}
+                      {diaLegible(x.fecha)} · «{x.descripcion}» · {pesos(x.valorCop)}
                     </span>
                     {x.segura && (
                       <Badge variant="success" className="ml-2">

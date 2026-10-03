@@ -156,8 +156,21 @@ export function fraseDeLasSegurasAplicadas(r: {
         : `${ya} ya no eran seguras (alguien las tocó o apareció otra respuesta): siguen en la tabla.`,
     );
   }
-  if (r.quedanParaUnaPersona > 0) partes.push(`Quedan ${r.quedanParaUnaPersona} para revisar una por una.`);
+  if (r.quedanParaUnaPersona > 0) partes.push(fraseDeLasQueQuedan(r.quedanParaUnaPersona, 'para revisar'));
   return partes.join(' ');
+}
+
+/**
+ * «Queda 1 …» / «Quedan 3 …». 🔴 (03-10-2026) Antes decía «Quedan 1 sin
+ * respuesta segura: ésas las decides una por una» con una sola.
+ */
+export function fraseDeLasQueQuedan(n: number, que: 'para revisar' | 'sin respuesta segura'): string {
+  if (que === 'para revisar') {
+    return n === 1 ? 'Queda 1 para revisar en la tabla.' : `Quedan ${n} para revisar una por una.`;
+  }
+  return n === 1
+    ? 'Queda 1 sin respuesta segura: ésa la decides en la tabla.'
+    : `Quedan ${n} sin respuesta segura: ésas las decides una por una.`;
 }
 
 /** La tarjeta de las salidas: los avisos y «Conciliar las salidas seguras». */
@@ -334,9 +347,11 @@ export function AvisosDeLasSalidas({
             ) : vista.cantidad === 0 ? (
               <motion.p key="ninguna" {...aparecer} className="text-body-sm text-fg-muted" data-testid="seguras-ninguna">
                 No hay salidas seguras para conciliar.
-                {vista.quedanParaUnaPersona > 0
-                  ? ` Las ${vista.quedanParaUnaPersona} pendientes las decides una por una en la tabla.`
-                  : ''}
+                {vista.quedanParaUnaPersona === 1
+                  ? ' La pendiente la decides en la tabla.'
+                  : vista.quedanParaUnaPersona > 1
+                    ? ` Las ${vista.quedanParaUnaPersona} pendientes las decides una por una en la tabla.`
+                    : ''}
               </motion.p>
             ) : (
               <motion.div key="lista" {...aparecer} className="space-y-2" data-testid="seguras-lista">
@@ -367,7 +382,7 @@ export function AvisosDeLasSalidas({
                 </ul>
                 {vista.quedanParaUnaPersona > 0 && (
                   <p className="text-caption text-fg-muted">
-                    Quedan {vista.quedanParaUnaPersona} sin respuesta segura: ésas las decides una por una.
+                    {fraseDeLasQueQuedan(vista.quedanParaUnaPersona, 'sin respuesta segura')}
                   </p>
                 )}
               </motion.div>

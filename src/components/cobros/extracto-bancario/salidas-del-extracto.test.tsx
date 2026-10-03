@@ -41,7 +41,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({ usePermissions: () => permisos })
 import { Table, TableBody } from '@/components/ui/table';
 import { hayQuePreguntarPorLaLinea } from '@/lib/api/salidas-del-extracto';
 import { MovimientoFila } from './MovimientoFila';
-import { AvisosDeLasSalidas, SalidasDeLaPagina } from './SalidasDelExtracto';
+import { AvisosDeLasSalidas, SalidasDeLaPagina, fraseDeLasQueQuedan } from './SalidasDelExtracto';
 import { plata } from './formato';
 
 function movimiento(sobre: Partial<MovimientoBancario> = {}): MovimientoBancario {
@@ -329,6 +329,22 @@ describe('🔴 «Conciliar las salidas seguras» con confirmación: cuántas, cu
     expect(enElDialogo('[data-testid="segura-c-1"]')!.textContent).toContain('Comisión del banco');
     expect(enElDialogo('[data-testid="confirmar-salidas-seguras"]')!.textContent).toContain('Conciliar 2 salidas');
     expect(document.body.textContent).toContain('Quedan 3 sin respuesta segura');
+  });
+
+  it('🔴 con UNA sin respuesta segura lo dice en singular (nunca «Quedan 1»)', async () => {
+    api.seguras.mockResolvedValue({ ...VISTA, quedanParaUnaPersona: 1 });
+    await abrir();
+    expect(document.body.textContent).toContain('Queda 1 sin respuesta segura: ésa la decides en la tabla.');
+    expect(document.body.textContent).not.toContain('Quedan 1');
+    expect(fraseDeLasQueQuedan(1, 'para revisar')).toBe('Queda 1 para revisar en la tabla.');
+    expect(fraseDeLasQueQuedan(2, 'para revisar')).toBe('Quedan 2 para revisar una por una.');
+  });
+
+  it('🔴 sin seguras y con UNA pendiente: «La pendiente la decides en la tabla» (nunca «Las 1 pendientes»)', async () => {
+    api.seguras.mockResolvedValue({ ...VISTA, cantidad: 0, totalCop: 0, salidas: [], quedanParaUnaPersona: 1 });
+    await abrir();
+    expect(document.body.textContent).toContain('No hay salidas seguras para conciliar. La pendiente la decides en la tabla.');
+    expect(document.body.textContent).not.toContain('Las 1 pendientes');
   });
 
   it('🔴 confirmar manda EXACTAMENTE lo que la persona vio, y el toast dice lo que ya no era seguro', async () => {

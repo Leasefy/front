@@ -216,6 +216,16 @@ function DocumentosContent() {
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
   const [cerrandoSinFirma, setCerrandoSinFirma] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
+  /** «Nueva acta» (el vacío de la pestaña y su botón de la cabecera). */
+  const abrirNuevaActa = () => {
+    if (errorConsignaciones) {
+      toast.error('No se pudieron traer los inmuebles arrendados', {
+        description: 'Sin ellos no se puede levantar un acta. Prueba de nuevo en un momento.',
+      });
+      return;
+    }
+    setNuevaActaAbierta(true);
+  };
 
   /*
    * Los dos cajones se cerraban EN BLANCO. `open` ya estaba bien puesto
@@ -369,6 +379,22 @@ function DocumentosContent() {
           <h1 className="text-h2 text-fg">{t('inmobiliaria.documentos.title')}</h1>
           <p className="text-body text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
         </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+        {/* 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío
+            de la pestaña: con un acta en la lista no había cómo levantar otra.
+            Es acción de SU pestaña (como «Nueva plantilla») y pide su permiso,
+            `portafolio:create`, no el de los documentos: va fuera de ese gate. */}
+        <Presence
+          show={pestana === 'actas' && puedeCrearActas && actas.length > 0}
+          initial={false}
+          direction="right"
+          distance="xs"
+        >
+          <Button variant="outline" hideArrow onClick={abrirNuevaActa} data-testid="acta-nueva">
+            <Plus className="w-4 h-4" weight="bold" />
+            {t('inmobiliaria.documentos.newActa')}
+          </Button>
+        </Presence>
         {/* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
             responde 403 al preparar. El botón no se dibuja si no se puede. */}
         <PermissionGate module="documentos" action="create" fallback={null}>
@@ -400,6 +426,7 @@ function DocumentosContent() {
             </Button>
           </div>
         </PermissionGate>
+        </div>
       </header>
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
@@ -748,19 +775,7 @@ function DocumentosContent() {
                         // entero y recién ahí se comía un 403.
                         crear={
                           puedeCrearActas
-                            ? {
-                                label: t('inmobiliaria.documentos.newActa'),
-                                onClick: () => {
-                                  if (errorConsignaciones) {
-                                    toast.error('No se pudieron traer los inmuebles arrendados', {
-                                      description:
-                                        'Sin ellos no se puede levantar un acta. Prueba de nuevo en un momento.',
-                                    });
-                                    return;
-                                  }
-                                  setNuevaActaAbierta(true);
-                                },
-                              }
+                            ? { label: t('inmobiliaria.documentos.newActa'), onClick: abrirNuevaActa }
                             : undefined
                         }
                       />
@@ -975,24 +990,26 @@ function DocumentosContent() {
       <Cajon abierto={nuevaActaAbierta} onOpenChange={setNuevaActaAbierta} ancho="sm:max-w-2xl">
         <CajonCabecera titulo={t('inmobiliaria.documentos.newActa')} />
         <CajonCuerpo>
-          {arrendados.length === 0 ? (
+          {consignaciones.length === 0 ? (
             <p className="text-body-sm text-fg-muted" data-testid="acta-sin-arrendados">
               {errorConsignaciones
-                ? 'No se pudieron traer los inmuebles arrendados. Prueba de nuevo en un momento.'
-                : 'Ninguno de tus inmuebles está arrendado ahora mismo. Un acta de entrega se levanta sobre un arriendo en curso, así que todavía no hay sobre cuál hacerla.'}
+                ? 'No se pudieron traer los inmuebles. Prueba de nuevo en un momento.'
+                : 'Todavía no tienes inmuebles con mandato vigente: un acta se levanta sobre uno de ellos, así que todavía no hay sobre cuál hacerla.'}
             </p>
           ) : (
             <>
               {noArrendados > 0 && (
                 <p className="mb-4 text-caption text-fg-muted" data-testid="acta-solo-arrendados">
-                  Se listan los {arrendados.length} inmuebles arrendados: un acta de entrega se
+                  Para un acta de entrega se listan los {arrendados.length} inmuebles arrendados: se
                   levanta sobre un arriendo en curso. Los otros {noArrendados} del portafolio no
-                  aparecen por eso, no porque falten.
+                  aparecen por eso, no porque falten. Para una de devolución se listan todos: el
+                  inquilino suele entregar con el arriendo ya terminado.
                 </p>
               )}
               <ActaEntregaForm
                 initialData={{ type: 'entrega' }}
                 consignaciones={arrendados}
+                consignacionesDeDevolucion={consignaciones}
                 onSave={guardarActa}
                 onCancel={() => setNuevaActaAbierta(false)}
               />

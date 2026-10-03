@@ -170,7 +170,11 @@ function buildView(
       discount: Number(plan.discountAppliedPct ?? 0),
       cuotas,
       montoPorCuota: firstInstallment ? Number(firstInstallment.amountCop) : 0,
-      fechaPrimerPago: firstInstallment ? firstInstallment.dueDate : '',
+      // El micro manda la fecha de la cuota como medianoche UTC
+      // («2026-11-03T00:00:00.000Z»); se guarda el DÍA (`AAAA-MM-DD`): es lo
+      // que muestra la tabla y lo que acepta el `<input type="date">` de
+      // «Modificar» (con la hora, el campo quedaba vacío).
+      fechaPrimerPago: firstInstallment ? String(firstInstallment.dueDate).slice(0, 10) : '',
       totalDueCop: Number(plan.totalDueCop ?? 0),
     },
     agency: {

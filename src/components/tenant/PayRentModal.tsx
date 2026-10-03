@@ -197,10 +197,13 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
     }
   }, [paymentInfo, leaseId]);
 
-  const monthName = paymentInfo
+  // «Octubre de 2026»: mayúscula SÓLO en la primera letra. Con la clase
+  // `capitalize` salía «Octubre De 2026» (PRUEBAS-PAGOS, 03-10-2026).
+  const mesEnLetras = paymentInfo
     ? new Date(paymentInfo.currentPeriod.year, paymentInfo.currentPeriod.month - 1, 1)
         .toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { month: 'long', year: 'numeric' })
     : '';
+  const monthName = mesEnLetras ? mesEnLetras.charAt(0).toUpperCase() + mesEnLetras.slice(1) : '';
 
   const blockClose = step === 'redirecting';
 
@@ -248,7 +251,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
               <DialogTitle>
                 {blockedStatus === 'APPROVED' ? 'Pago confirmado' : 'Pago en verificación'}
               </DialogTitle>
-              <DialogDescription className="capitalize">{monthName}</DialogDescription>
+              <DialogDescription>{monthName}</DialogDescription>
             </>
           ) : (
             <>
@@ -294,7 +297,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
             )}
             <div className="rounded-[18px] border border-border bg-surface-hover p-4">
               <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Período</MonoLabel>
-              <p className="text-sm font-medium text-fg capitalize">{monthName}</p>
+              <p className="text-sm font-medium text-fg">{monthName}</p>
               <div className="border-t border-border-faint my-3" />
               <MonoLabel className="block tracking-wider mb-1 text-fg-muted">Monto a pagar</MonoLabel>
               <p className="text-3xl font-bold text-fg font-mono tabular-nums">

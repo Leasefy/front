@@ -251,3 +251,43 @@ describe('actaDelBack', () => {
     expect(acta.deliveryDate).toBe('2026-09-01')
   })
 })
+
+describe('🔴 las firmas del back en el vocabulario del panel (PRUEBAS-PAGOS, 03-10-2026)', () => {
+  it('`signerRole` → `party`: el asesor que firmó se ve firmado (antes, las tres casillas «pendiente»)', () => {
+    const acta = actaDelBack({
+      type: 'DEVOLUCION',
+      status: 'PENDING_SIGNATURES',
+      signatures: [
+        { signerName: 'Prueba PAGOS Asesor', signerEmail: 'a@x.test', signerRole: 'asesor', signedAt: '2026-10-03T11:52:31.214Z' },
+      ],
+    })
+    expect(acta.signatures).toEqual([
+      { party: 'agent', name: 'Prueba PAGOS Asesor', cedula: '', signedAt: '2026-10-03T11:52:31.214Z' },
+    ])
+  })
+
+  it('INQUILINO y PROPIETARIO, sin importar mayúsculas ni espacios', () => {
+    const acta = actaDelBack({
+      signatures: [
+        { signerName: 'Iván', signerEmail: 'i@x.test', signerRole: ' Inquilino ', signedAt: '2026-10-03T12:00:00.000Z' },
+        { signerName: 'Paula', signerEmail: 'p@x.test', signerRole: 'PROPIETARIO', signedAt: '2026-10-03T12:01:00.000Z' },
+      ],
+    })
+    expect(acta.signatures.map((f) => f.party)).toEqual(['tenant', 'owner'])
+  })
+
+  it('un papel que el back no cuenta (testigo, vacío) no se disfraza de una casilla', () => {
+    const acta = actaDelBack({
+      signatures: [
+        { signerName: 'Alguien', signerEmail: 't@x.test', signerRole: 'testigo', signedAt: '2026-10-03T12:00:00.000Z' },
+        { signerName: 'Otro', signerEmail: 'o@x.test', signedAt: '2026-10-03T12:00:00.000Z' },
+      ],
+    })
+    expect(acta.signatures).toEqual([])
+  })
+
+  it('lo que ya viene con `party` pasa tal cual', () => {
+    const firma = { party: 'tenant' as const, name: 'Iván', cedula: '1099', signedAt: '2026-10-03T12:00:00.000Z' }
+    expect(actaDelBack({ signatures: [firma] }).signatures).toEqual([firma])
+  })
+})

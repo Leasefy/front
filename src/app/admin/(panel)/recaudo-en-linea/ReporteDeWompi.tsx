@@ -117,10 +117,14 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
                 ? 'No había nada nuevo: el reporte ya estaba cargado igual.'
                 : `Se ${resultado.importadas === 1 ? 'importó 1 transacción' : `importaron ${resultado.importadas} transacciones`}.`}
               {resultado.cuadresActualizados > 0
-                ? ` ${resultado.cuadresActualizados} ya estaban y se les volvió a revisar el cuadre.`
+                ? resultado.cuadresActualizados === 1
+                  ? ' 1 ya estaba y se le volvió a revisar el cuadre.'
+                  : ` ${resultado.cuadresActualizados} ya estaban y se les volvió a revisar el cuadre.`
                 : ''}
               {resultado.resumen.frenadas > 0
-                ? ` ${resultado.resumen.frenadas} quedaron frenadas y no entraron (corrígelas en el archivo y vuelve a subirlo).`
+                ? resultado.resumen.frenadas === 1
+                  ? ' 1 quedó frenada y no entró (corrígela en el archivo y vuelve a subirlo).'
+                  : ` ${resultado.resumen.frenadas} quedaron frenadas y no entraron (corrígelas en el archivo y vuelve a subirlo).`
                 : ''}
             </p>
           </div>

@@ -7135,6 +7135,7 @@
             "descuento": "Discount",
             "cuotas": "Installments",
             "monto": "Amount/installment",
+            "pagoUnico": "Single payment",
             "fecha": "First payment date"
           },
           "rechazarForm": {

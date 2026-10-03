@@ -53,6 +53,16 @@ interface ActaEntregaFormProps {
   initialData?: Partial<ActaEntrega>;
   consignaciones: Consignacion[];
   /**
+   * 🔴 Los inmuebles que se ofrecen para un acta de DEVOLUCIÓN (PRUEBAS-PAGOS,
+   * 03-10-2026). La devolución se levanta cuando el inquilino entrega, o sea
+   * casi siempre con el arriendo ya terminado: con sólo los arrendados, un
+   * contrato terminado no tenía acta de devolución posible (y su cargo aparte
+   * —la cuota de cierre— nunca nacía). El back resuelve el contrato más
+   * reciente del inmueble (vigente, firmado o vencido). Sin esta lista, la de
+   * siempre.
+   */
+  consignacionesDeDevolucion?: Consignacion[];
+  /**
    * Guardar el acta. Quien guarda DICE cómo le fue —el aviso de éxito y el
    * del fallo, por el traductor— y relanza si falla: el formulario no repite
    * ningún aviso (02-10-2026: eran dos toasts, uno culpando a la conexión).
@@ -94,7 +104,8 @@ const STEP_KEYS = [
  */
 export function ActaEntregaForm({
   initialData,
-  consignaciones,
+  consignaciones: arrendadas,
+  consignacionesDeDevolucion,
   onSave,
   onSaveDraft,
   onCancel,
@@ -131,6 +142,10 @@ export function ActaEntregaForm({
   const updateFormData = useCallback((data: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
+
+  // Los inmuebles que se ofrecen dependen del tipo de acta (ver la prop).
+  const consignaciones =
+    formData.type === 'devolucion' && consignacionesDeDevolucion ? consignacionesDeDevolucion : arrendadas;
 
   // Get selected consignacion
   const selectedConsignacion = useMemo(

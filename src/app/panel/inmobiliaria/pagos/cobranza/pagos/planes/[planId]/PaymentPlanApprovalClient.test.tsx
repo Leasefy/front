@@ -22,7 +22,11 @@ const { approvePlanMock, modifyPlanMock, acceptPlanMock, estado } = vi.hoisted((
   approvePlanMock: vi.fn(),
   modifyPlanMock: vi.fn(),
   acceptPlanMock: vi.fn(),
-  estado: { aprobadoEn: null as string | null, status: 'offered' },
+  estado: {
+    aprobadoEn: null as string | null,
+    status: 'offered',
+    proposed: null as null | Record<string, unknown>,
+  },
 }))
 
 const PLAN = {
@@ -40,7 +44,12 @@ const PLAN = {
 vi.mock('@/lib/hooks/cobranza/use-payment-plan-approval', () => ({
   CODIGO_ACUERDO_SIN_APROBAR: 'ACUERDO_SIN_APROBAR',
   usePaymentPlanApproval: () => ({
-    plan: { ...PLAN, operatorApprovedAt: estado.aprobadoEn, status: estado.status },
+    plan: {
+      ...PLAN,
+      operatorApprovedAt: estado.aprobadoEn,
+      status: estado.status,
+      proposed: estado.proposed ?? PLAN.proposed,
+    },
     isLoading: false,
     error: null,
     isMaxDiscountExceeded: false,
@@ -83,6 +92,7 @@ beforeEach(() => {
   acceptPlanMock.mockReset()
   estado.aprobadoEn = null
   estado.status = 'offered'
+  estado.proposed = null
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -206,5 +216,34 @@ describe('🔴 «El inquilino aceptó» — el panel TAMBIÉN exige la aprobaci�
     await montar()
     expect(contenedor.querySelector('[data-testid="plan-sin-aprobar"]')).toBeNull()
     expect(contenedor.querySelector('[data-testid="plan-registrar-aceptacion"]')).toBeNull()
+  })
+})
+
+describe('Plan de pago — lo que se ve (PRUEBAS-PAGOS, 03-10-2026)', () => {
+  it('sin aprobar NO dice «Plan aprobado» aunque la oferta ya traiga su enlace', async () => {
+    await montar()
+    expect(contenedor.querySelector('[data-testid="plan-sin-aprobar"]')).not.toBeNull()
+    expect(contenedor.textContent).not.toContain('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')
+  })
+
+  it('aprobado, el enlace de pago sí se muestra', async () => {
+    estado.aprobadoEn = '2026-10-02T15:00:00.000Z'
+    await montar()
+    expect(contenedor.textContent).toContain('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')
+  })
+
+  it('la fecha del primer pago se lee como día, no como el ISO crudo', async () => {
+    await montar()
+    expect(contenedor.textContent).toContain('10 de octubre de 2026')
+    expect(contenedor.textContent).not.toContain('2026-10-10')
+  })
+
+  it('un acuerdo de pago único dice «Pago único» y su total, no «0» cuotas de «$ 0»', async () => {
+    estado.proposed = { discount: 0, cuotas: 0, montoPorCuota: 0, fechaPrimerPago: '', totalDueCop: 6_050_000 }
+    await montar()
+    const texto = contenedor.textContent ?? ''
+    expect(texto).toContain('inmobiliaria.ai.cobranza.planes.comparison.pagoUnico')
+    expect(texto.replace(/\s/g, ' ')).toMatch(/6\.050\.000/)
+    expect(texto.replace(/\s/g, ' ')).not.toMatch(/\$ ?0(?![\d.])/)
   })
 })

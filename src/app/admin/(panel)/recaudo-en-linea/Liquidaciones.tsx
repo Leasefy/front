@@ -498,7 +498,7 @@ function MarcarGirada({
       <Presence show={abierto}>
         <div className="card p-4 border-l-4 border-l-brand" data-testid="confirmar-girada">
           <p className="text-sm text-fg">
-            Esto deja dicho que Leasefy ya le transfirió {pesos(l.netoCop)} a {l.inmobiliaria ?? 'la inmobiliaria'}.
+            Esto deja dicho que Leasefy ya le transfirió {pesos(l.netoCop)} a {(l.inmobiliaria ?? 'la inmobiliaria').replace(/\.+$/, '')}.
             ¿Ya salió la plata?
           </p>
           <div className="grid gap-4 sm:grid-cols-2 mt-3">

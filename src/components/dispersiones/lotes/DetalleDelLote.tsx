@@ -785,30 +785,41 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                     </TableCell>
                     {lotePagado ? (
                       <TableCell>
-                        <AccionesDelGiro
-                          dispersionId={item.dispersionId}
-                          nombreTitular={item.nombreTitular}
-                          valorCop={item.valorCop}
-                          giro={giros.porDispersion.get(item.dispersionId)}
-                          puedeEditar={puedeTocarGiros}
-                          disponible={giros.disponible}
-                          onDevolver={() =>
-                            setGiroEnDialogo({
-                              accion: 'devolver',
-                              dispersionId: item.dispersionId,
-                              nombreTitular: item.nombreTitular,
-                              valorCop: item.valorCop,
-                            })
-                          }
-                          onRegirar={() =>
-                            setGiroEnDialogo({
-                              accion: 'regirar',
-                              dispersionId: item.dispersionId,
-                              nombreTitular: item.nombreTitular,
-                              valorCop: item.valorCop,
-                            })
-                          }
-                        />
+                        {/* 🔴 PRUEBAS-PAGOS (03-10-2026): sólo lo que ENTRÓ al
+                            archivo salió del banco y puede volver. A un pago
+                            excluido (sin cuenta, o que se cierra en $0) se le
+                            ofrecía «Marcar devuelto» y el back respondía 409
+                            GIRO_NO_SALIO. */}
+                        {item.motivoDeExclusion !== null ? (
+                          <span className="text-fg-subtle" data-testid={`sin-giro-${item.dispersionId}`}>
+                            —
+                          </span>
+                        ) : (
+                          <AccionesDelGiro
+                            dispersionId={item.dispersionId}
+                            nombreTitular={item.nombreTitular}
+                            valorCop={item.valorCop}
+                            giro={giros.porDispersion.get(item.dispersionId)}
+                            puedeEditar={puedeTocarGiros}
+                            disponible={giros.disponible}
+                            onDevolver={() =>
+                              setGiroEnDialogo({
+                                accion: 'devolver',
+                                dispersionId: item.dispersionId,
+                                nombreTitular: item.nombreTitular,
+                                valorCop: item.valorCop,
+                              })
+                            }
+                            onRegirar={() =>
+                              setGiroEnDialogo({
+                                accion: 'regirar',
+                                dispersionId: item.dispersionId,
+                                nombreTitular: item.nombreTitular,
+                                valorCop: item.valorCop,
+                              })
+                            }
+                          />
+                        )}
                       </TableCell>
                     ) : null}
                   </TableRow>

@@ -126,6 +126,17 @@ describe('<PayRentModal> — loading and pre-flight', () => {
     expect(document.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
   })
 
+  it('el período se lee «Julio de 2026», no «Julio De 2026» (PRUEBAS-PAGOS, 03-10-2026)', async () => {
+    getPaymentInfoMock.mockResolvedValue(NONE_INFO)
+    render()
+    await flush()
+
+    const texto = dialogo().textContent ?? ''
+    expect(texto).toContain('Julio de 2026')
+    // La clase `capitalize` subía la «d» de «de».
+    expect(dialogo().querySelector('.capitalize')).toBeNull()
+  })
+
   it('blocks with a period-blocked panel when currentPeriodStatus is APPROVED', async () => {
     getPaymentInfoMock.mockResolvedValue({ ...NONE_INFO, currentPeriodStatus: 'APPROVED' })
     render()

@@ -525,7 +525,8 @@ describe('RecaudoEnLineaAdminPage', () => {
     await clic(q('importar-reporte')!)
     expect(importarElReporte).toHaveBeenCalledWith({ archivo: 'wompi.csv', contenido: 'id,estado,monto\ntx-1,APPROVED,1200000' })
     expect(q('resultado-del-reporte')!.textContent).toContain('importaron 2 transacciones')
-    expect(q('resultado-del-reporte')!.textContent).toContain('1 quedaron frenadas')
+    // PRUEBAS-PAGOS (03-10-2026): una sola en singular («1 quedaron frenadas» no se dice).
+    expect(q('resultado-del-reporte')!.textContent).toContain('1 quedó frenada y no entró')
   })
 
   it('un reporte de más de 10 MB se frena aquí, sin mandarlo', async () => {

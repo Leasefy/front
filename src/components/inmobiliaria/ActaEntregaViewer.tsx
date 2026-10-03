@@ -633,15 +633,21 @@ export function ActaEntregaViewer({
                       {partyLabels[party]}
                     </p>
                     <p className="text-sm text-warning">{partyNames[party]}</p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      hideArrow
-                      onClick={() => onRequestSignature?.(party)}
-                      className="mt-3 bg-warning-soft text-warning hover:bg-warning-soft/80"
-                    >
-                      {t('inmobiliaria.acta.requestSignature')}
-                    </Button>
+                    {/* 🔴 Sin quien la pida, «Solicitar firma» era un botón muerto
+                        (PRUEBAS-PAGOS, 03-10-2026): la pantalla de documentos no
+                        pasa `onRequestSignature` y no hay ruta del panel para
+                        firmar un acta. Se muestra sólo cuando hace algo. */}
+                    {onRequestSignature && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
+                        onClick={() => onRequestSignature(party)}
+                        className="mt-3 bg-warning-soft text-warning hover:bg-warning-soft/80"
+                      >
+                        {t('inmobiliaria.acta.requestSignature')}
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -650,15 +656,17 @@ export function ActaEntregaViewer({
                       {partyLabels[party]}
                     </p>
                     <p className="text-sm text-fg-muted">{t('inmobiliaria.acta.pending')}</p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      hideArrow
-                      onClick={() => onRequestSignature?.(party)}
-                      className="mt-3"
-                    >
-                      {t('inmobiliaria.acta.requestSignature')}
-                    </Button>
+                    {onRequestSignature && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
+                        onClick={() => onRequestSignature(party)}
+                        className="mt-3"
+                      >
+                        {t('inmobiliaria.acta.requestSignature')}
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

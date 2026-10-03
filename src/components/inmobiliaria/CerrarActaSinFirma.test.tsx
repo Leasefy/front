@@ -37,6 +37,7 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
 }))
 
 import { ApiError } from '@/lib/api/client'
+import { actaDelBack } from '@/lib/actas/acta-del-back'
 import {
   CerrarActaSinFirma,
   condicionesDelCierre,
@@ -167,9 +168,34 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     })
   })
 
+  it('🔴 A2c — la firma del asesor COMO LA GUARDA EL BACK (`signerRole`) cuenta (PRUEBAS-PAGOS, 03-10-2026)', () => {
+    // Antes el botón no aparecía nunca: el back no manda `party`.
+    const delBack = actaDelBack({
+      id: 'a-1',
+      type: 'DEVOLUCION',
+      status: 'PENDING_SIGNATURES',
+      signatures: [
+        { signerName: 'Luis', signerEmail: 'l@x.test', signerRole: 'asesor', signedAt: '2026-10-03T11:52:31.214Z' },
+      ],
+    })
+    expect(condicionesDelCierre(delBack)[1].cumple).toBe(true)
+    expect(sePuedeCerrarSinFirma(delBack)).toBe(true)
+  })
+
   it('A5 — sin el campo de fotos NO se bloquea: decide el back', () => {
     const vieja = acta({ fotosPorEspacio: undefined } as Partial<ActaEntrega>)
     expect(sePuedeCerrarSinFirma(vieja)).toBe(true)
+    // …y no afirma lo que no sabe.
+    expect(condicionesDelCierre(vieja)[2].texto).not.toBe('Hay fotos por espacio.')
+  })
+
+  it('🔴 A5b — `null` (la columna está y el acta no tiene fotos) es «faltan», no «hay» (PRUEBAS-PAGOS, 03-10-2026)', () => {
+    const sinFotos = acta({ fotosPorEspacio: null } as unknown as Partial<ActaEntrega>)
+    expect(condicionesDelCierre(sinFotos)[2]).toEqual({
+      cumple: false,
+      texto: 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
+    })
+    expect(sePuedeCerrarSinFirma(sinFotos)).toBe(false)
   })
 
   it('dice los 5 días para objetar, antes y después', async () => {

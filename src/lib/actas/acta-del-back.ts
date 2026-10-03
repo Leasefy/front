@@ -32,6 +32,7 @@
 
 import type {
   ActaEntrega,
+  ActaSignature,
   ActaType,
   Consignacion,
   ItemCondition,
@@ -237,6 +238,52 @@ const CONDICION_DEL_BACK: Record<CondicionDelBack, ItemCondition> = {
 }
 
 /**
+ * 🔴 LAS FIRMAS, EN EL VOCABULARIO DEL PANEL (PRUEBAS-PAGOS, 03-10-2026,
+ * hallado en el navegador del laboratorio).
+ *
+ * El back guarda cada firma como `{ signerName, signerEmail, signerRole,
+ * signedAt }` y decide con `signerRole` (`INQUILINO`, `ASESOR`, `PROPIETARIO`,
+ * sin importar mayúsculas: `como-se-cierra-un-acta.ts`). El panel busca por
+ * `party` (`tenant`, `agent`, `owner`), que el back nunca manda: el acta
+ * firmada por el asesor seguía diciendo «pendiente» en las tres casillas y
+ * «Cerrar sin la firma del inquilino» no aparecía nunca (pedía `party ===
+ * 'agent'`).
+ *
+ * Se traduce SÓLO lo que el back cuenta para cerrar: un papel que no conoce
+ * (p. ej. «testigo») no se disfraza de una de las tres casillas.
+ */
+const PAPEL_DEL_BACK: Record<string, ActaSignature['party']> = {
+  INQUILINO: 'tenant',
+  ASESOR: 'agent',
+  PROPIETARIO: 'owner',
+}
+
+export function firmasDelBack(crudas: unknown): ActaSignature[] {
+  if (!Array.isArray(crudas)) return []
+  const firmas: ActaSignature[] = []
+  for (const cruda of crudas) {
+    const f = (cruda ?? {}) as Partial<ActaSignature> & {
+      signerName?: unknown
+      signerRole?: unknown
+    }
+    if (f.party === 'tenant' || f.party === 'agent' || f.party === 'owner') {
+      firmas.push(f as ActaSignature) // ya viene en el vocabulario del panel
+      continue
+    }
+    const papel = typeof f.signerRole === 'string' ? f.signerRole.trim().toUpperCase() : ''
+    const party = PAPEL_DEL_BACK[papel]
+    if (!party) continue
+    firmas.push({
+      party,
+      name: typeof f.signerName === 'string' ? f.signerName : '',
+      cedula: '',
+      signedAt: typeof f.signedAt === 'string' ? f.signedAt : undefined,
+    })
+  }
+  return firmas
+}
+
+/**
  * La fila del back en el vocabulario del panel. Lo que ya viene en el
  * vocabulario del panel (o no se reconoce) pasa tal cual: nunca se inventa.
  */
@@ -266,7 +313,7 @@ export function actaDelBack(fila: unknown): ActaEntrega {
     items: Array.isArray(a.items) ? a.items : [],
     meterReadings: Array.isArray(a.meterReadings) ? a.meterReadings : [],
     keysDelivered: Array.isArray(a.keysDelivered) ? a.keysDelivered : [],
-    signatures: Array.isArray(a.signatures) ? a.signatures : [],
+    signatures: firmasDelBack(a.signatures),
     deductions: Array.isArray(a.deductions) ? a.deductions : undefined,
     depositAmount: typeof a.depositAmount === 'number' ? a.depositAmount : undefined,
     depositToReturn: typeof a.depositToReturn === 'number' ? a.depositToReturn : undefined,

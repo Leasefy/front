@@ -7169,6 +7169,7 @@
             "descuento": "Descuento",
             "cuotas": "Cuotas",
             "monto": "Monto/cuota",
+            "pagoUnico": "Pago único",
             "fecha": "Fecha primer pago"
           },
           "rechazarForm": {

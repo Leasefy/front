@@ -96,9 +96,14 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
                   {formatCurrency(p.totalDueCop)}
                 </span>
                 {' · '}
-                {locale === 'es'
-                  ? `${nCuotas} ${nCuotas === 1 ? 'cuota' : 'cuotas'}`
-                  : `${nCuotas} ${nCuotas === 1 ? 'installment' : 'installments'}`}
+                {/* Sin cuotas es un pago único (el compromiso de pagar todo), no «0 cuotas». */}
+                {nCuotas === 0
+                  ? locale === 'es'
+                    ? 'pago único'
+                    : 'single payment'
+                  : locale === 'es'
+                    ? `${nCuotas} ${nCuotas === 1 ? 'cuota' : 'cuotas'}`
+                    : `${nCuotas} ${nCuotas === 1 ? 'installment' : 'installments'}`}
               </p>
             </div>
 

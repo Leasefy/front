@@ -42,6 +42,24 @@ function formatCuotaDate(iso: string, locale: string): string {
 }
 
 /**
+ * El DÍA en que vence una cuota (PRUEBAS-PAGOS, 03-10-2026). El micro manda
+ * `dueDate` como medianoche UTC («2026-11-03T00:00:00.000Z») y, pintado en la
+ * hora de Colombia, decía «Vence el 2 de noviembre» de una cuota que vence el
+ * 3. Se toma el `AAAA-MM-DD` y se formatea en UTC: un día sin hora no cambia
+ * con el huso. `paidAt` sí es un instante y sigue con `formatCuotaDate`.
+ */
+export function formatDiaDeLaCuota(iso: string, locale: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  if (!m) return formatCuotaDate(iso, locale);
+  return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))));
+}
+
+/**
  * Etiqueta factual del estado de la cuota (neutral, sin alarma ni copy de urgencia).
  * Un estado desconocido cae al string crudo — nunca se inventa un color de alarma.
  */
@@ -94,7 +112,7 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
               {es ? 'Vence el ' : 'Due '}
-              {formatCuotaDate(cuota.dueDate, loc)}
+              {formatDiaDeLaCuota(cuota.dueDate, loc)}
               {cuota.paidAt && (
                 <>
                   {' · '}

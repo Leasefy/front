@@ -63,13 +63,18 @@ export function condicionesDelCierre(acta: ActaEntrega): CondicionDelCierre[] {
   const firmas = acta.signatures ?? [];
   const inquilinoFirmo = firmas.some((f) => f.party === 'tenant' && f.signedAt);
   const asesorFirmo = firmas.some((f) => f.party === 'agent' && f.signedAt);
-  // `fotosPorEspacio` lo agregó la migración del 18-09 y puede no viajar en
-  // actas viejas: `undefined` NO es «no hay fotos», es «no lo sé». Se deja pasar
-  // y que el back —que sí sabe— responda con su motivo.
+  // `fotosPorEspacio` lo agregó la migración del 18-09: sin la columna el back
+  // ni la manda (`undefined`), y eso NO es «no hay fotos», es «no lo sé». Se
+  // deja pasar y que el back —que sí sabe— responda con su motivo.
+  // 🔴 `null` SÍ es «no hay» (PRUEBAS-PAGOS, 03-10-2026): con la columna, el
+  // back manda `null` para el acta sin fotos y su cierre responde
+  // `ACTA_SIN_FOTOS_POR_ESPACIO`. Antes se leía como «no lo sé» y el diálogo
+  // decía «Hay fotos por espacio» encima del error «Faltan las fotos».
   const fotos = (acta as { fotosPorEspacio?: unknown }).fotosPorEspacio;
-  const hayFotos = fotos === undefined || fotos === null
+  const noSeSabe = fotos === undefined;
+  const hayFotos = noSeSabe
     ? true
-    : Object.keys(fotos as Record<string, unknown>).length > 0;
+    : fotos !== null && Object.keys(fotos as Record<string, unknown>).length > 0;
 
   return [
     {
@@ -86,9 +91,11 @@ export function condicionesDelCierre(acta: ActaEntrega): CondicionDelCierre[] {
     },
     {
       cumple: hayFotos,
-      texto: hayFotos
-        ? 'Hay fotos por espacio.'
-        : 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
+      texto: noSeSabe
+        ? 'Las fotos por espacio se revisan al cerrar.'
+        : hayFotos
+          ? 'Hay fotos por espacio.'
+          : 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
     },
   ];
 }

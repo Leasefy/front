@@ -78,8 +78,31 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
+/** Hoy en Bogotá (`AAAA-MM-DD`): con `toISOString`, desde las 7 p. m. ya era mañana. */
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
+const fechaDelDia = new Intl.DateTimeFormat('es-CO', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+/**
+ * «3 de noviembre de 2026» de un `AAAA-MM-DD` (la cuota vence ese DÍA, sin
+ * hora). Antes la tabla mostraba el ISO crudo «2026-11-03T00:00:00.000Z».
+ */
+export function diaParaMostrar(dia: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dia)
+  if (!m) return dia || '—'
+  return fechaDelDia.format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))))
 }
 
 interface Props {
@@ -170,6 +193,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   const maxDiscount = plan.agency.maxDiscount
   const isPending = plan.status === 'offered' || plan.status === 'pending'
+  const esPagoUnico = plan.proposed.cuotas === 0 && plan.proposed.totalDueCop > 0
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -386,7 +410,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.cuotas')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {plan.proposed.cuotas}
+                {/* Un acuerdo de pago único no trae cuotas: «0 cuotas · $0 por
+                    cuota» parecía un acuerdo vacío (PRUEBAS-PAGOS, 03-10-2026). */}
+                {esPagoUnico ? t('inmobiliaria.ai.cobranza.planes.comparison.pagoUnico') : plan.proposed.cuotas}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -395,7 +421,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.monto')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {formatCop(plan.proposed.montoPorCuota)}
+                {formatCop(esPagoUnico ? plan.proposed.totalDueCop : plan.proposed.montoPorCuota)}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -404,7 +430,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.fecha')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {plan.proposed.fechaPrimerPago || '—'}
+                {plan.proposed.fechaPrimerPago ? diaParaMostrar(plan.proposed.fechaPrimerPago) : '—'}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -545,8 +571,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         </div>
       )}
 
-      {/* Wompi link panel — populated after approve success */}
-      {wompiLink && (
+      {/* Wompi link panel — populated after approve success.
+          🔴 PRUEBAS-PAGOS (03-10-2026): sólo con el plan APROBADO. La oferta
+          ya trae su enlace antes de aprobar, y la tarjeta verde «Plan
+          aprobado» salía debajo de «Primero apruébalo» en un plan sin aprobar. */}
+      {wompiLink && estaAprobado && (
         <section className="rounded-md border border-success/30 bg-success-soft p-4">
           <div className="text-sm font-medium text-success">
             {t('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')}

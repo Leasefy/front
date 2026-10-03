@@ -15,7 +15,7 @@ void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
-const api = vi.hoisted(() => ({ liquidacion: vi.fn(), devolver: vi.fn() }));
+const api = vi.hoisted(() => ({ liquidacion: vi.fn(), devolver: vi.fn(), revisado: vi.fn() }));
 vi.mock('@/lib/api/saldo-a-favor', async (original) => ({
   ...(await original<typeof import('@/lib/api/saldo-a-favor')>()),
   saldoAFavorApi: api,
@@ -55,6 +55,7 @@ beforeEach(() => {
   root = createRoot(host);
   api.liquidacion.mockReset();
   api.devolver.mockReset();
+  api.revisado.mockReset();
   permisos.puede = true;
 });
 
@@ -208,3 +209,106 @@ describe('<SaldoAFavorAlTerminarSeccion>', () => {
     expect(claveDelEstadoDeLaDevolucion('PENDIENTE', null)).toBe('estadoPendiente');
   });
 });
+
+/**
+ * 🔴 ARREGLOS-3 (03-10-2026, Nico, la recomendada «a» de PRUEBAS-PAGOS): la deuda
+ * que llega DESPUÉS de registrar la devolución (la cuota de cierre del acta)
+ * dejaba el egreso por el valor viejo. Ahora se avisa, no se gira, y «Revisado»
+ * la recalcula.
+ */
+describe('<SaldoAFavorAlTerminarSeccion> — la devolución EN REVISIÓN', () => {
+  const REGISTRADA = {
+    egresoId: 'e-1',
+    numero: null,
+    estado: 'PENDIENTE',
+    valorCop: 500_000,
+    registradaEl: '2026-10-03',
+    pagadaEl: null,
+  };
+  const EN_REVISION: LiquidacionDelSaldoAFavor = {
+    ...TERMINADO,
+    sePuedeDevolver: false,
+    devolucion: REGISTRADA,
+    revision: {
+      egresoId: 'e-1',
+      contractId: 'ct-1',
+      debeCop: 500_000,
+      valorDelEgresoCop: 500_000,
+      motivo:
+        'Después de registrar la devolución llegó deuda nueva: el inquilino debe $500.000. El egreso sigue por $500.000, así que no se gira hasta que alguien lo revise.',
+    },
+  };
+
+  it('🔴 avisa que está en revisión, con el porqué y las cifras, y ofrece «Revisado»', async () => {
+    api.liquidacion.mockResolvedValue(EN_REVISION);
+    await montar();
+    const aviso = porTestId('devolucion-en-revision')?.textContent ?? '';
+    expect(aviso).toContain('En revisión: esta devolución no se gira');
+    expect(aviso).toContain('llegó deuda nueva');
+    expect(aviso).toContain('500.000');
+    expect(porTestId('marcar-revisada')).not.toBeNull();
+  });
+
+  it('🔴 «Revisado» recalcula, vuelve a leer y dice cómo quedó', async () => {
+    api.liquidacion.mockResolvedValueOnce(EN_REVISION).mockResolvedValueOnce({
+      ...TERMINADO,
+      sePuedeDevolver: false,
+      devolucion: null,
+      revision: null,
+      aFavor: { ...TERMINADO.aFavor, totalCop: 0 },
+    });
+    api.revisado.mockResolvedValue({
+      anterior: { egresoId: 'e-1', valorCop: 500_000 },
+      aplicadoCop: 500_000,
+      recibos: 1,
+      aDevolverCop: 0,
+      egreso: null,
+    });
+    await montar();
+    await clic(porTestId('marcar-revisada'));
+    expect(api.revisado).toHaveBeenCalledWith('ct-1');
+    expect(api.liquidacion).toHaveBeenCalledTimes(2);
+    // Aunque ya no quede nada a favor, dice lo que pasó (antes la sección desaparecía con su aviso).
+    expect(porTestId('devolucion-revisada')?.textContent).toContain('no quedó nada que devolver');
+    expect(porTestId('devolucion-en-revision')).toBeNull();
+  });
+
+  it('si el back no deja (está en un lote), dice SU frase y el botón vuelve', async () => {
+    api.liquidacion.mockResolvedValue(EN_REVISION);
+    const { ApiError } = await import('@/lib/api/client');
+    api.revisado.mockRejectedValue(
+      new ApiError(
+        409,
+        'La devolución está dentro de un lote de egresos: anula ese lote (vuelve a quedar pendiente) y después márcala como revisada.',
+        'DEVOLUCION_EN_UN_LOTE',
+        {
+          statusCode: 409,
+          code: 'DEVOLUCION_EN_UN_LOTE',
+          message:
+            'La devolución está dentro de un lote de egresos: anula ese lote (vuelve a quedar pendiente) y después márcala como revisada.',
+        },
+      ),
+    );
+    await montar();
+    await clic(porTestId('marcar-revisada'));
+    expect(porTestId('revision-error')?.textContent).toContain('anula ese lote');
+    expect((porTestId('marcar-revisada') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('sin permiso de cobros no ofrece «Revisado»: dice a quién pedírselo', async () => {
+    permisos.puede = false;
+    api.liquidacion.mockResolvedValue(EN_REVISION);
+    await montar();
+    expect(porTestId('marcar-revisada')).toBeNull();
+    expect(porTestId('devolucion-en-revision')?.textContent).toContain('permiso de cobros');
+  });
+
+  it('un back anterior (sin `revision`) se ve como antes', async () => {
+    const { revision: _sin, ...viejo } = EN_REVISION;
+    api.liquidacion.mockResolvedValue(viejo);
+    await montar();
+    expect(porTestId('devolucion-en-revision')).toBeNull();
+    expect(porTestId('estado-de-la-devolucion')).not.toBeNull();
+  });
+});
+

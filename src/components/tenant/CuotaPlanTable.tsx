@@ -60,6 +60,17 @@ export function formatDiaDeLaCuota(iso: string, locale: string): string {
 }
 
 /**
+ * El nombre de una cuota. La número 0 es la INICIAL del acuerdo (ARREGLOS-3,
+ * 03-10-2026, Nico: «mostrarla como la cuota 0, pagable igual que las demás»):
+ * el micro la lista adelante, con su vencimiento y su estado.
+ */
+export function nombreDeLaCuota(numero: number, locale: string): string {
+  const es = locale === 'es';
+  if (numero === 0) return es ? 'Cuota 0 · inicial' : 'Installment 0 · down payment';
+  return es ? `Cuota ${numero}` : `Installment ${numero}`;
+}
+
+/**
  * Etiqueta factual del estado de la cuota (neutral, sin alarma ni copy de urgencia).
  * Un estado desconocido cae al string crudo — nunca se inventa un color de alarma.
  */
@@ -108,7 +119,7 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
         >
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg dark:text-white">
-              {es ? `Cuota ${cuota.number}` : `Installment ${cuota.number}`}
+              {nombreDeLaCuota(cuota.number, loc)}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
               {es ? 'Vence el ' : 'Due '}

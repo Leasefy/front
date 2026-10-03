@@ -70,7 +70,9 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   const { formatCurrency } = useI18n();
   const badge = TONE_BADGE[acuerdoStatusToTone(p.status)];
   const ToneIcon = badge.icon;
-  const nCuotas = p.installments.length;
+  // La inicial viaja como la «cuota 0» (ARREGLOS-3): el conteo dice las cuotas
+  // del plan (1, 2, 3…); la tabla las muestra todas, la inicial primero.
+  const nCuotas = p.installments.filter((c) => c.number >= 1).length;
 
   return (
     <div>
@@ -111,7 +113,7 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
           </div>
 
           {/* Cuota plan — rendered VERBATIM from the record (no saldo math) */}
-          {nCuotas > 0 && (
+          {p.installments.length > 0 && (
             <div className="mt-4 pt-4 border-t border-border dark:border-border-strong">
               <CuotaPlanTable installments={p.installments} locale={locale} />
             </div>

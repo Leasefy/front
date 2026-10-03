@@ -85,6 +85,15 @@ describe('BotonAnularRecibo', () => {
     expect(host!.querySelector('[data-testid="anular-recibo-de-la-fila"]')).toBeNull();
   });
 
+  it('🔴 en la cuota ANULADA al terminar (su plata pasó al saldo a favor) no se ofrece: el back lo rechazaría siempre (ARREGLOS-3)', async () => {
+    await montar(
+      <ProveedorDeAnularRecibo habilitado onAnulado={() => {}}>
+        <BotonAnularRecibo fila={{ ...PAGADA, estado: 'ANULADA' }} />
+      </ProveedorDeAnularRecibo>,
+    );
+    expect(host!.querySelector('[data-testid="anular-recibo-de-la-fila"]')).toBeNull();
+  });
+
   it('con el proveedor pero sin ser administrador, tampoco', async () => {
     await montar(
       <ProveedorDeAnularRecibo habilitado={false} onAnulado={() => {}}>

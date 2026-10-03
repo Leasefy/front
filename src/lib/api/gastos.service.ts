@@ -463,6 +463,13 @@ export interface Egreso {
   /** El movimiento del extracto con el que quedó conciliado. */
   movimientoBancarioId: string | null;
   motivoDeLaAnulacion: string | null;
+  /**
+   * 🔴 ARREGLOS-3 (03-10-2026): la DEVOLUCIÓN del saldo a favor que quedó por
+   * un valor viejo (llegó deuda después de registrarla). No se gira hasta que
+   * alguien la marque como revisada en el estado de cuenta del contrato. `null`
+   * = no; un back anterior no lo manda.
+   */
+  revision?: { motivo: string; debeCop: number; contractId: string } | null;
 }
 
 export interface ListaDeEgresos {

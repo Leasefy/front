@@ -315,6 +315,45 @@ describe('<Egresos>', () => {
   });
 });
 
+/**
+ * 🔴 ARREGLOS-3 (03-10-2026, Nico, la recomendada «a» de PRUEBAS-PAGOS): la
+ * devolución del saldo a favor que quedó por un valor viejo (llegó deuda
+ * después) dice que está EN REVISIÓN y no se puede meter a un lote.
+ */
+describe('🔴 la devolución del saldo a favor EN REVISIÓN', () => {
+  it('dice que está en revisión, con el porqué, y no se puede marcar para el lote', async () => {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [
+        egreso({
+          beneficiarioTipo: 'INQUILINO' as Egreso['beneficiarioTipo'],
+          beneficiarioNombre: 'Pedro Prueba',
+          concepto: 'Devolución del saldo a favor — contrato 9',
+          revision: {
+            motivo: 'Después de registrar la devolución llegó deuda nueva: el inquilino debe $500.000.',
+            debeCop: 500_000,
+            contractId: 'ct-9',
+          },
+        }),
+      ],
+    });
+    await pintar();
+    const aviso = q('en-revision-e1')!;
+    expect(aviso.textContent).toContain('En revisión');
+    expect(aviso.textContent).toContain('estado de cuenta del contrato');
+    expect(aviso.getAttribute('title')).toContain('debe $500.000');
+    expect((q('marcar-e1') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('sin revisión (o un back anterior) la fila sigue como siempre', async () => {
+    await pintar();
+    expect(q('en-revision-e1')).toBeNull();
+    expect((q('marcar-e1') as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
 describe('🔴 la doble firma del lote', () => {
   it('a quien armó el lote se le apaga el botón, con el motivo', async () => {
     gastos.lotes.listar.mockResolvedValue({

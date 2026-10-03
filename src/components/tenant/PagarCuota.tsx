@@ -37,6 +37,7 @@ import { getAccessToken, type ApiError } from '@/lib/api/client';
 import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import { buildWompiCheckoutUrl, type WompiRentSession } from '@/lib/payments/wompi-rent-session';
 import type { AcuerdoInstallment } from '@/lib/api/tenant-acuerdos.types';
+import { nombreDeLaCuota } from '@/components/tenant/CuotaPlanTable';
 
 /** La ruta que firma la sesión de pago de una cuota. */
 export const RUTA_DE_LA_SESION_DE_LA_CUOTA = '/api/inquilino/acuerdos/wompi-session';
@@ -138,8 +139,8 @@ export function PagarCuota({
           </h2>
           <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
             {es
-              ? `Próxima cuota por pagar: cuota ${cuota.number}`
-              : `Next installment due: installment ${cuota.number}`}
+              ? `Próxima cuota por pagar: ${nombreDeLaCuota(cuota.number, locale).toLowerCase()}`
+              : `Next installment due: ${nombreDeLaCuota(cuota.number, locale).toLowerCase()}`}
           </p>
         </div>
       </div>
@@ -150,8 +151,12 @@ export function PagarCuota({
             ? 'Preparando el pago…'
             : 'Preparing the payment…'
           : es
-            ? `Pagar cuota ${cuota.number}`
-            : `Pay installment ${cuota.number}`}
+            ? cuota.number === 0
+              ? 'Pagar la cuota inicial'
+              : `Pagar cuota ${cuota.number}`
+            : cuota.number === 0
+              ? 'Pay the down payment'
+              : `Pay installment ${cuota.number}`}
       </Button>
 
       <Presence

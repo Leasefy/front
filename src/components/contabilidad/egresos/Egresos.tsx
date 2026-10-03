@@ -509,7 +509,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               <Checkbox
                                 checked={elegidos.has(e.id)}
                                 onCheckedChange={() => alternar(e.id)}
-                                disabled={!escritura.puede}
+                                // ARREGLOS-3: una devolución en revisión no entra a un lote.
+                                disabled={!escritura.puede || Boolean(e.revision)}
                                 aria-label={`Meter ${e.beneficiarioNombre} en el lote`}
                                 data-testid={`marcar-${e.id}`}
                               />
@@ -529,6 +530,16 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                                 data-testid={`falta-${e.id}`}
                               >
                                 Falta {falta.join(', ')} para girarle.
+                              </p>
+                            ) : null}
+                            {e.revision ? (
+                              <p
+                                className="text-caption text-warning"
+                                data-testid={`en-revision-${e.id}`}
+                                title={e.revision.motivo}
+                              >
+                                En revisión: llegó deuda nueva del inquilino después de registrar la devolución.
+                                No se gira hasta marcarla como revisada en el estado de cuenta del contrato.
                               </p>
                             ) : null}
                           </TableCell>

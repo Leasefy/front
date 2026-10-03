@@ -15,7 +15,11 @@
  *     inquilino es opcional: se completa en el egreso antes de pagarlo) y deja
  *     la CUENTA POR PAGAR: un egreso pendiente a su nombre, que sale por el lote
  *     de egresos y numera su comprobante al pagarse;
- *   · con la devolución registrada, dice en qué va.
+ *   · con la devolución registrada, dice en qué va;
+ *   · 🔴 ARREGLOS-3 (03-10-2026): si después de registrarla llegó deuda nueva
+ *     (la cuota de cierre del acta, una reparación…), la devolución queda EN
+ *     REVISIÓN: se avisa con el porqué, el lote de egresos no la deja salir, y
+ *     «Revisado» la recalcula (descuenta lo que debe y deja el egreso nuevo).
  *
  * Si la lectura falla, lo dice (callarse haría creer que no tiene nada a favor).
  */
@@ -34,6 +38,7 @@ import {
   numeroDeCuentaValido,
   saldoAFavorApi,
   type DevolucionRegistrada,
+  type DevolucionRevisada,
   type LiquidacionDelSaldoAFavor,
 } from '@/lib/api/saldo-a-favor';
 import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto';
@@ -78,6 +83,10 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
   const [enviando, setEnviando] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [registrada, setRegistrada] = React.useState<DevolucionRegistrada | null>(null);
+  // ARREGLOS-3: «Revisado» (la devolución en revisión se recalcula).
+  const [revisando, setRevisando] = React.useState(false);
+  const [errorDeLaRevision, setErrorDeLaRevision] = React.useState<string | null>(null);
+  const [revisada, setRevisada] = React.useState<DevolucionRevisada | null>(null);
 
   // La lectura que llega tarde (otro contrato, o la sección ya se fue) no pinta.
   const vigente = React.useRef(0);
@@ -108,7 +117,10 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
     );
   }
   const l = lectura.liquidacion;
-  if (!haySaldoAFavorQueMostrar(l)) return null;
+  // 🔴 ARREGLOS-3: lo que acaba de pasar se dice aunque ya no quede nada a favor
+  // («Revisado» aplicó todo el saldo a la deuda): si no, la sección desaparecía
+  // con su aviso y la persona no sabía qué había pasado.
+  if (!haySaldoAFavorQueMostrar(l) && !revisada && !registrada) return null;
 
   const numeroMalo = numero.trim() !== '' && !numeroDeCuentaValido(numero);
 
@@ -137,6 +149,28 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
       setEnviando(false);
     }
   }
+
+  async function marcarRevisada() {
+    setRevisando(true);
+    setErrorDeLaRevision(null);
+    try {
+      const r = await saldoAFavorApi.revisado(contractId);
+      setRevisada(r);
+      setRegistrada(null);
+      await leer();
+    } catch (e) {
+      setErrorDeLaRevision(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos recalcular la devolución.',
+          accion: 'recalcular la devolución',
+        }),
+      );
+    } finally {
+      setRevisando(false);
+    }
+  }
+
+  const revision = l.revision ?? null;
 
   return (
     <section
@@ -188,6 +222,75 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
           </div>
         )}
       </dl>
+
+      <AnimatePresence initial={false}>
+        {revision && (
+          <motion.div
+            key="en-revision"
+            {...aparecer}
+            role="alert"
+            className="space-y-2 rounded-md border border-warning/40 bg-warning-soft px-3 py-2"
+            data-testid="devolucion-en-revision"
+          >
+            <p className="text-sm font-semibold text-fg">{t(k('enRevisionTitulo'))}</p>
+            <p className="text-sm text-fg-muted">{revision.motivo}</p>
+            <p className="text-caption text-fg-muted">
+              {t(k('enRevisionValores'), {
+                debe: formatCurrency(revision.debeCop),
+                valor: formatCurrency(revision.valorDelEgresoCop),
+              })}
+            </p>
+            {puedeRegistrar ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                hideArrow
+                isLoading={revisando}
+                disabled={revisando}
+                onClick={() => void marcarRevisada()}
+                data-testid="marcar-revisada"
+              >
+                {t(k('revisar'))}
+              </Button>
+            ) : (
+              <p className="text-caption text-fg-subtle">{t(k('revisarSinPermiso'))}</p>
+            )}
+            <AnimatePresence initial={false}>
+              {errorDeLaRevision && (
+                <motion.p
+                  key="error-de-la-revision"
+                  {...aparecer}
+                  role="alert"
+                  className="text-sm text-danger"
+                  data-testid="revision-error"
+                >
+                  {errorDeLaRevision}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence initial={false}>
+        {revisada && !revision && (
+          <motion.p
+            key="revisada"
+            {...aparecer}
+            role="status"
+            className="text-sm text-success"
+            data-testid="devolucion-revisada"
+          >
+            {revisada.egreso
+              ? t(k('revisadoListo'), {
+                  anterior: formatCurrency(revisada.anterior.valorCop),
+                  valor: formatCurrency(revisada.aDevolverCop),
+                })
+              : t(k('revisadoSinNada'), { anterior: formatCurrency(revisada.anterior.valorCop) })}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence initial={false}>
         {registrada && (

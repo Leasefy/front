@@ -61,6 +61,10 @@ export function mismoNumero(a: string | number, b: string | number): boolean {
 /** ¿Esta fila se pagó con un recibo de caja que se puede anular desde acá? */
 export function filaConReciboAnulable(fila: FilaDelEstadoDeCuenta): boolean {
   const doc = fila.documentoDePago;
+  // 🔴 ARREGLOS-3: la cuota anulada al terminar el contrato ya pasó su plata al
+  // saldo a favor; el back no deja anular su recibo por aquí (409
+  // `CUOTA_ANULADA_AL_TERMINAR`), así que no se ofrece un botón que siempre falla.
+  if (fila.estado === 'ANULADA') return false;
   return Boolean(doc && doc.tipo === 'INGRESO' && !doc.pagador && doc.numero);
 }
 

@@ -117,6 +117,34 @@ describe('POST /api/inquilino/acuerdos/wompi-session — server-resolved amount 
   })
 })
 
+/**
+ * 🔴 ARREGLOS-3 (03-10-2026, Nico, la recomendada «a» de PRUEBAS-PAGOS): «la
+ * inicial del acuerdo no se ve ni se puede pagar en el portal: mostrarla como la
+ * cuota 0, pagable igual que las demás». El micro la lista como la cuota 0.
+ */
+describe('POST /api/inquilino/acuerdos/wompi-session — la inicial, la «cuota 0»', () => {
+  it('🔴 la cuota 0 se paga por SU valor del registro, con la referencia `-c0`', async () => {
+    globalThis.fetch = mockPlanFetch({
+      ...PLAN,
+      installments: [
+        { number: 0, dueDate: '2026-07-02T14:00:00.000Z', amountCop: 300_000, status: 'pending', paidAt: null },
+        ...PLAN.installments,
+      ],
+    })
+    const res = await POST(makeReq({ planId: 'plan-1', cuotaNumber: 0 }))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.reference).toBe('acuerdo-plan-1-c0')
+    expect(json.amountInCents).toBe(30_000_000)
+  })
+
+  it('un plan sin inicial (sin cuota 0 en el registro): 502, sin inventar un valor', async () => {
+    globalThis.fetch = mockPlanFetch(PLAN)
+    const res = await POST(makeReq({ planId: 'plan-1', cuotaNumber: 0 }))
+    expect(res.status).toBe(502)
+  })
+})
+
 describe('POST /api/inquilino/acuerdos/wompi-session — no secret leak', () => {
   it('NEVER returns the integrity secret in the response body', async () => {
     globalThis.fetch = mockPlanFetch(PLAN)
@@ -194,7 +222,7 @@ describe('POST /api/inquilino/acuerdos/wompi-session — auth / config / validat
     [{ planId: '../../leases/x/payment-info?' }],
     [{ planId: 'plan-1/../../x' }],
     [{ planId: 'plan-1', cuotaNumber: 1.5 }],
-    [{ planId: 'plan-1', cuotaNumber: 0 }],
+    [{ planId: 'plan-1', cuotaNumber: -1 }],
   ])('rejects %j without calling the backend', async (body) => {
     const f = vi.fn()
     globalThis.fetch = f
@@ -262,7 +290,7 @@ describe('POST /api/inquilino/acuerdos/wompi-session — el sobre de error', () 
 
   it('una cuota que no es un número de cuota: 400 con `campos` de `cuotaNumber`', async () => {
     globalThis.fetch = mockPlanFetch(PLAN)
-    const json = await (await POST(makeReq({ planId: 'plan-1', cuotaNumber: 0 }))).json()
+    const json = await (await POST(makeReq({ planId: 'plan-1', cuotaNumber: -1 }))).json()
     expect(json.code).toBe('DATOS_INVALIDOS')
     expect(json.campos).toEqual([
       {

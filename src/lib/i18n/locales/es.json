@@ -12361,7 +12361,13 @@
       "estadoPagado": "Devuelta · comprobante de egreso N.º {{numero}}",
       "estadoPagadoSinNumero": "Devuelta",
       "estadoAnulado": "Anulada: el saldo volvió a ser del inquilino",
-      "errorAlLeer": "No pudimos leer el saldo a favor de este contrato."
+      "errorAlLeer": "No pudimos leer el saldo a favor de este contrato.",
+      "enRevisionTitulo": "En revisión: esta devolución no se gira",
+      "enRevisionValores": "Hoy debe {{debe}} · el egreso sigue por {{valor}}",
+      "revisar": "Revisado: descontar lo que debe y recalcular",
+      "revisadoListo": "Listo: se anuló el egreso de {{anterior}} y la devolución quedó en {{valor}}.",
+      "revisadoSinNada": "Listo: se anuló el egreso de {{anterior}} y el saldo se aplicó a lo que debía; no quedó nada que devolver.",
+      "revisarSinPermiso": "Pídele a alguien con permiso de cobros que la marque como revisada."
     }
   },
   "inquilinos": {

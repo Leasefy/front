@@ -531,6 +531,20 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - Un `route.ts` sólo exporta verbos y configuración del segmento (`src/app/rutas-solo-exportan-lo-de-next.test.ts`).
 - «Completa tu perfil» de la barra del propietario y la tarjeta del perfil leen `lib/perfil/pasos-del-perfil-del-propietario.ts`.
 
+## ARREGLOS-3 (03-10-2026, modo autónomo; Nico, PRUEBAS-PAGOS Q1–Q8 a)
+
+- **Fotos y firmas del acta** (`FotosYFirmasDelActa.tsx`, montado en Documentos bajo `ActaEntregaViewer sinFirmas`; API
+  `lib/api/firma-del-acta.service.ts`): fotos por espacio (subir/borrar, se vuelve a leer el detalle tras cada cambio), «Firmar
+  como asesor» con `SignaturePad` y el enlace del inquilino (copiar; el correo sale del back). La página pública
+  `/firmar/acta/[token]` (sin sesión) muestra el acta con sus fotos y firma con código al correo; 503
+  `FIRMA_DEL_ACTA_NO_DISPONIBLE` = falta la migración del back.
+- **Saldo a favor «en revisión»** (`SaldoAFavorAlTerminar.tsx`, `Egresos.tsx`): el egreso frenado no se marca para el lote y la
+  devolución ofrece «Revisado» (`saldoAFavorApi.revisado`). La cuota `ANULADA` al terminar no ofrece «Anular recibo».
+- **Portal: la inicial del acuerdo es la «Cuota 0 · inicial»** (`CuotaPlanTable`, «Pagar la cuota inicial» en `PagarCuota`; la
+  ruta `wompi-session` acepta `cuotaNumber` 0 y firma `acuerdo-<plan>-c0`). El conteo de cuotas del listado no la cuenta.
+- **Venta en un mandato de arriendo**: `sinComisionDeVentaPactada(vista)` (`lib/captacion/venta-del-inmueble.ts`) dice que hace
+  falta un mandato de VENTA y cómo crearlo (`data-testid="venta-sin-comision"`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

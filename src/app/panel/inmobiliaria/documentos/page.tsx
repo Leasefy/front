@@ -71,6 +71,7 @@ import {
 } from '@/components/ui/select';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
+import { FotosYFirmasDelActa } from '@/components/inmobiliaria/FotosYFirmasDelActa';
 import {
   CerrarActaSinFirma,
   sePuedeCerrarSinFirma,
@@ -237,6 +238,16 @@ function DocumentosContent() {
    */
   const plantillaVisible = useUltimoPresente(plantillaAbierta);
   const actaVisible = useUltimoPresente(actaAbierta);
+  /** ARREGLOS-3: después de una firma, el acta del cajón y la lista se vuelven a leer. */
+  const refrescarElActa = async (id: string) => {
+    void recargarActas();
+    try {
+      const nueva = await actasApi.getById(id);
+      setActaAbierta((abierta) => (abierta && abierta.id === id ? nueva : abierta));
+    } catch {
+      // El cajón se queda con lo que tenía; la lista ya se pidió de nuevo.
+    }
+  };
 
   /* Las que escribió la inmobiliaria: `codigo === null`. Las del sistema se
      generan por su código y no se editan (el back responde 400), así que la
@@ -1036,7 +1047,19 @@ function DocumentosContent() {
         <CajonCuerpo>
           {actaVisible && (
             <>
-              <ActaEntregaViewer acta={actaVisible} />
+              <ActaEntregaViewer acta={actaVisible} sinFirmas />
+              {/*
+                🔴 ARREGLOS-3 (03-10-2026): las fotos por espacio, la firma del
+                asesor (dibujada) y el enlace para que el inquilino firme. Con
+                las dos firmas el acta se cierra (y en una devolución, la cuota
+                de cierre): se vuelve a leer para que el cajón y la lista lo digan.
+              */}
+              <div className="mt-6 border-t border-border pt-6">
+                <FotosYFirmasDelActa
+                  acta={actaVisible}
+                  onCambio={() => void refrescarElActa(actaVisible.id)}
+                />
+              </div>
               {/*
                 🔴 I-03: el inquilino no firma y el acta queda abierta para
                 siempre. El botón sólo aparece cuando de verdad se puede —si el

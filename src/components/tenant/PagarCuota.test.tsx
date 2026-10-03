@@ -120,6 +120,21 @@ describe('«Pagar cuota» por la sesión de pago', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('🔴 la inicial (cuota 0) se paga igual: «Pagar la cuota inicial» y la sesión con cuotaNumber 0 (ARREGLOS-3)', async () => {
+    fetchMock.mockResolvedValue(respuesta(200, { ...SESION, reference: 'acuerdo-plan-1-c0' }));
+    await act(async () => {
+      root.render(
+        <PagarCuota planId="plan-1" cuota={{ ...CUOTA, number: 0, amountCop: 300_000 }} locale="es" />,
+      );
+    });
+    expect(container.textContent).toContain('Próxima cuota por pagar: cuota 0 · inicial');
+    expect(boton().textContent).toContain('Pagar la cuota inicial');
+    await pagar();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ planId: 'plan-1', cuotaNumber: 0 });
+    expect(window.location.href).toContain('reference=acuerdo-plan-1-c0');
+  });
+
   it('🔴 pide la sesión SÓLO con { planId, cuotaNumber } y el token, y redirige a Wompi', async () => {
     fetchMock.mockResolvedValue(respuesta(200, SESION));
     await montar();

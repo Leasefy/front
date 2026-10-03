@@ -254,9 +254,46 @@ describe('«Registrar la venta»: previsualizar y registrar', () => {
     await escribir(precio(), '850000000')
     await clic(boton(dialogo()!, 'Ver qué pasa'))
     await esperar(() => expect(dialogo()!.querySelector('[data-testid="venta-revisar"]')).not.toBeNull())
-    expect(dialogo()!.textContent).toContain('no pactó comisión de venta')
+    // ARREGLOS-3: sin la frase del back (uno anterior), la de arriendo.
+    expect(dialogo()!.querySelector('[data-testid="venta-sin-comision"]')?.textContent).toContain(
+      'mandato de VENTA',
+    )
     expect(dialogo()!.querySelector('[data-testid="venta-sin-contrato"]')).not.toBeNull()
     expect(boton(dialogo()!, 'Registrar la comisión')?.disabled).toBe(true)
+  })
+
+  it('🔴 en un mandato de ARRIENDO no dice «Ponla en el mandato» (un callejón): dice que hace falta un mandato de VENTA y cómo crearlo (ARREGLOS-3)', async () => {
+    h.api.previsualizarVenta.mockResolvedValue({
+      ...VISTA,
+      comision: { precioDeVentaCop: 850_000_000, porcentaje: 0, comisionCop: 0, pactada: false },
+      tipoDeMandato: 'RENT',
+      sinComision:
+        'Este es un mandato de ARRIENDO: la comisión de venta no se pacta aquí sino en un mandato de VENTA, así que desde este mandato no hay comisión que registrar. Para cobrarla, crea el inmueble en venta con su mandato y su porcentaje de comisión (Inmuebles → «Nuevo inmueble», tipo de negocio «Venta») y registra la venta desde ese mandato.',
+    })
+    await abrir()
+    await escribir(fecha(), '2026-10-15')
+    await escribir(precio(), '850000000')
+    await clic(boton(dialogo()!, 'Ver qué pasa'))
+    await esperar(() => expect(dialogo()!.querySelector('[data-testid="venta-sin-comision"]')).not.toBeNull())
+    const frase = dialogo()!.querySelector('[data-testid="venta-sin-comision"]')!.textContent ?? ''
+    expect(frase).not.toContain('Ponla en el mandato')
+    expect(frase).toContain('mandato de ARRIENDO')
+    expect(frase).toContain('«Nuevo inmueble», tipo de negocio «Venta»')
+    expect(boton(dialogo()!, 'Registrar la comisión')?.disabled).toBe(true)
+  })
+
+  it('en un mandato de VENTA sin porcentaje: que se edite ese mandato', async () => {
+    h.api.previsualizarVenta.mockResolvedValue({
+      ...VISTA,
+      comision: { precioDeVentaCop: 850_000_000, porcentaje: 0, comisionCop: 0, pactada: false },
+      tipoDeMandato: 'SALE',
+    })
+    await abrir()
+    await escribir(fecha(), '2026-10-15')
+    await escribir(precio(), '850000000')
+    await clic(boton(dialogo()!, 'Ver qué pasa'))
+    await esperar(() => expect(dialogo()!.querySelector('[data-testid="venta-sin-comision"]')).not.toBeNull())
+    expect(dialogo()!.querySelector('[data-testid="venta-sin-comision"]')!.textContent).toContain('Edita el mandato')
   })
 
   it('🔴 sin la tabla, la previsualización lo dice y el botón no deja registrar', async () => {

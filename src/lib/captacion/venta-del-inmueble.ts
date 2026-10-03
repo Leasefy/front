@@ -44,7 +44,30 @@ export const MENSAJES_DE_LA_VENTA = {
    */
   sinMigracion:
     'Todavía no se puede registrar la comisión de venta: a la plataforma le falta una actualización. Cuando esté, la registras desde aquí.',
+  /**
+   * 🔴 ARREGLOS-3 (03-10-2026, Nico, la recomendada «a» de PRUEBAS-PAGOS): sin
+   * comisión de venta pactada. La de antes («Ponla en el mandato si
+   * corresponde») era un callejón en un mandato de ARRIENDO, donde la comisión
+   * de venta no se puede poner: se pacta en un mandato de VENTA. El back manda
+   * la frase según el tipo de mandato (`sinComision`); éstas son las mismas,
+   * por si un back anterior no la manda.
+   */
+  sinComisionEnArriendo:
+    'Este es un mandato de ARRIENDO: la comisión de venta no se pacta aquí sino en un mandato de VENTA, así que desde este mandato no hay comisión que registrar. Para cobrarla, crea el inmueble en venta con su mandato y su porcentaje de comisión (Inmuebles → «Nuevo inmueble», tipo de negocio «Venta») y registra la venta desde ese mandato.',
+  sinComisionEnVenta:
+    'Este mandato de venta no tiene el porcentaje de la comisión de venta. Edita el mandato, ponle la comisión de venta y vuelve a registrar la venta.',
 } as const
+
+/** La frase de «sin comisión de venta pactada», según el tipo de mandato. */
+export function sinComisionDeVentaPactada(vista: {
+  tipoDeMandato?: 'RENT' | 'SALE' | string | null
+  sinComision?: string | null
+}): string {
+  if (vista.sinComision) return vista.sinComision
+  return vista.tipoDeMandato === 'SALE'
+    ? MENSAJES_DE_LA_VENTA.sinComisionEnVenta
+    : MENSAJES_DE_LA_VENTA.sinComisionEnArriendo
+}
 
 /** El error de la fecha de la escritura, o `null` si está bien. */
 export function errorDeLaFechaDeLaEscritura(valor: string): string | null {

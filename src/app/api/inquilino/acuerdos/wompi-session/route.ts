@@ -13,7 +13,8 @@
  *   - The tenant JWT is forwarded to the BFF (auth + ownership: a plan not owned by the
  *     caller is rejected upstream and the status is propagated).
  *
- * The cuota amount originates in `installments[cuotaNumber].amountCop` (or the plan-level
+ * The cuota amount originates in `installments[cuotaNumber].amountCop` — cuota 0 is the
+ * plan's INICIAL, which the agent lists as installment number 0 (ARREGLOS-3) — (or the plan-level
  * `totalDueCop` when no cuota is given). Nothing is recomputed here beyond peso→centavos.
  *
  * ── Los errores salen en el sobre (Nico, 02-10-2026) ─────────────────────────
@@ -188,7 +189,8 @@ export async function POST(req: Request) {
   if (!esIdentificadorSeguro(planId)) {
     return campoDelPedido('planId', 'formato', MENSAJES_DE_LA_SESION_DE_PAGO.acuerdoInvalido)
   }
-  if (cuotaNumber !== undefined && !(Number.isInteger(cuotaNumber) && cuotaNumber >= 1)) {
+  // 0 = la inicial del acuerdo, la «cuota 0» (ARREGLOS-3, 03-10-2026): se paga igual que las demás.
+  if (cuotaNumber !== undefined && !(Number.isInteger(cuotaNumber) && cuotaNumber >= 0)) {
     return campoDelPedido('cuotaNumber', 'formato', MENSAJES_DE_LA_SESION_DE_PAGO.cuotaInvalida)
   }
 

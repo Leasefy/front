@@ -12327,7 +12327,13 @@
       "estadoPagado": "Refunded · disbursement voucher No. {{numero}}",
       "estadoPagadoSinNumero": "Refunded",
       "estadoAnulado": "Voided: the balance belongs to the tenant again",
-      "errorAlLeer": "We could not read the credit balance of this contract."
+      "errorAlLeer": "We could not read the credit balance of this contract.",
+      "enRevisionTitulo": "Under review: this refund is not paid out",
+      "enRevisionValores": "Owes today {{debe}} · the disbursement is still {{valor}}",
+      "revisar": "Reviewed: deduct what they owe and recalculate",
+      "revisadoListo": "Done: the {{anterior}} disbursement was voided and the refund is now {{valor}}.",
+      "revisadoSinNada": "Done: the {{anterior}} disbursement was voided and the balance went to what they owed; nothing left to refund.",
+      "revisarSinPermiso": "Ask someone with collections permission to mark it as reviewed."
     }
   },
   "inquilinos": {

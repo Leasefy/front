@@ -6,6 +6,8 @@
  *   · `GET  /inmobiliaria/recibos-de-caja/saldo-a-favor/contratos/:contractId`
  *     — lo que tiene a favor, lo que debe, lo que se le devolvería y la
  *     devolución ya registrada (permiso `cobros:view`);
+ *   · `POST …/saldo-a-favor/contratos/:contractId/revisado` — ARREGLOS-3: la
+ *     devolución EN REVISIÓN (llegó deuda después) se recalcula;
  *   · `POST …/saldo-a-favor/contratos/:contractId/devolver` — lo aplica a lo que
  *     debe y deja lo que sobra como egreso PENDIENTE a su nombre (permiso
  *     `cobros:create`). 409 `CONTRATO_NO_TERMINADO`,
@@ -42,8 +44,30 @@ export interface LiquidacionDelSaldoAFavor {
   debeCop: number;
   aDevolverCop: number;
   devolucion: DevolucionDelSaldoAFavor | null;
+  /**
+   * 🔴 ARREGLOS-3 (03-10-2026): la devolución registrada que quedó por un valor
+   * VIEJO (llegó deuda después: la cuota de cierre, una reparación…). No se
+   * gira hasta que alguien la revise. `null` = no hay; un back anterior no lo
+   * manda (`undefined`).
+   */
+  revision?: RevisionDeLaDevolucion | null;
   sePuedeDevolver: boolean;
   porQueNo: string | null;
+}
+
+export interface RevisionDeLaDevolucion {
+  egresoId: string;
+  contractId: string;
+  /** Lo que el inquilino debe hoy. */
+  debeCop: number;
+  /** El valor del egreso registrado (el viejo). */
+  valorDelEgresoCop: number;
+  motivo: string;
+}
+
+/** Lo que responde «Revisado»: el egreso anulado y la devolución recalculada. */
+export interface DevolucionRevisada extends DevolucionRegistrada {
+  anterior: { egresoId: string; valorCop: number };
 }
 
 export interface DatosDeLaDevolucion {
@@ -71,6 +95,15 @@ export const saldoAFavorApi = {
       `${BASE}/${encodeURIComponent(contractId)}/devolver`,
       datos,
     ),
+
+  /**
+   * ARREGLOS-3: «Revisado» — la devolución EN REVISIÓN se recalcula (el egreso
+   * viejo sin girar se anula, el saldo va a lo que debe ahora y lo que sobra
+   * queda como cuenta por pagar nueva). 409 `DEVOLUCION_NO_ESTA_EN_REVISION`,
+   * `DEVOLUCION_EN_UN_LOTE`, `DEVOLUCION_CAMBIO`.
+   */
+  revisado: (contractId: string) =>
+    apiClient.post<DevolucionRevisada>(`${BASE}/${encodeURIComponent(contractId)}/revisado`, {}),
 };
 
 /** El número de cuenta: sólo dígitos, entre 4 y 30 (el mismo tope del back). */

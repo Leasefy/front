@@ -57,6 +57,7 @@ import {
   errorDelPrecioDeLaEscritura,
   esComisionSinMigracion,
   porcentajeLegible,
+  sinComisionDeVentaPactada,
 } from '@/lib/captacion/venta-del-inmueble'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -389,9 +390,8 @@ export function RegistrarLaVenta({
                     vez. Es de la inmobiliaria y la paga el propietario; no entra a las cuotas del inquilino.
                   </p>
                 ) : (
-                  <p className="text-danger">
-                    Este mandato no pactó comisión de venta: no hay nada que registrar. Ponla en el mandato si
-                    corresponde.
+                  <p className="text-danger" data-testid="venta-sin-comision">
+                    {sinComisionDeVentaPactada(vista)}
                   </p>
                 )}
                 {vista.contrato ? (

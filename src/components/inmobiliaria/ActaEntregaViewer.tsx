@@ -57,6 +57,12 @@ interface ActaEntregaViewerProps {
   onDownloadPDF?: () => void;
   onPrint?: () => void;
   onRequestSignature?: (party: 'tenant' | 'owner' | 'agent') => void;
+  /**
+   * ARREGLOS-3 (03-10-2026): las firmas las pinta (y las pide) quien firma
+   * (`FotosYFirmasDelActa`, en el cajón del panel). Con esto el visor no
+   * repite la sección de firmas.
+   */
+  sinFirmas?: boolean;
 }
 
 // ============================================================================
@@ -163,6 +169,7 @@ export function ActaEntregaViewer({
   onDownloadPDF,
   onPrint,
   onRequestSignature,
+  sinFirmas = false,
 }: ActaEntregaViewerProps) {
   const { t, locale, formatDate: fmtDate } = useI18n();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -585,6 +592,7 @@ export function ActaEntregaViewer({
       )}
 
       {/* Signatures Section */}
+      {!sinFirmas && (
       <Section title={t('inmobiliaria.acta.signatures')} icon={<Signature className="w-4 h-4" />}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {(['tenant', 'owner', 'agent'] as const).map((party) => {
@@ -684,6 +692,7 @@ export function ActaEntregaViewer({
           </div>
         )}
       </Section>
+      )}
 
       {/* Metadata */}
       <div className="text-xs text-fg-muted text-center space-y-1">

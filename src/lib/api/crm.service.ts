@@ -817,6 +817,10 @@ export const captacionApi = {
        * tiene contrato y la comisión no se puede registrar.
        */
       contrato: { id: string; codigo: number | null; inquilino: string | null } | null
+      /** ARREGLOS-3: de qué es el mandato (un back anterior no lo manda). */
+      tipoDeMandato?: 'RENT' | 'SALE'
+      /** ARREGLOS-3: sin comisión de venta pactada, qué hacer (`null` = sí está pactada). */
+      sinComision?: string | null
     }>(
       `${BASE}/captacion/mandatos/${consignacionId}/venta/previsualizar`,
       body,

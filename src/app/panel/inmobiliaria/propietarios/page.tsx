@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -38,6 +38,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { Spinner } from '@/components/ui/spinner';
 import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
@@ -64,13 +66,15 @@ import {
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
+import { laListaOcultaLaPlata } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
 /**
- * La cáscara de los cuatro diálogos de la lista: nuevo, crear con IA, editar
- * y eliminar.
+ * La cáscara del diálogo de «Eliminar» (una confirmación, no un formulario).
+ * Nuevo, Crear con IA y Editar van en el cajón (`CajonDelFormulario`, Nico,
+ * 03-10: «la experiencia de nuevo propietario debería ser en un drawer»).
  *
  * Era un portal hecho a mano (capa `fixed inset-0`, ✕ propia, `lenis.stop()`
  * y un bloqueo del scroll que fijaba el body con `position: fixed` y lo
@@ -142,6 +146,81 @@ function AvisoEnElDialogo({ children }: { children: React.ReactNode }) {
     >
       {children}
     </p>
+  );
+}
+
+/**
+ * El cajón del formulario del propietario: Nuevo y Editar (Nico, 03-10). La
+ * misma experiencia que «Nuevo inquilino»: cabecera, cuerpo que se desplaza y
+ * pie FIJO, así «Cancelar / Crear propietario» se ven siempre enteros (P-12).
+ * El formulario va en el cuerpo sin su fila de botones (`accionesAfuera`) y el
+ * botón del pie lo manda con `form=`. Lo que el back dijo sin campo va arriba
+ * del cuerpo; lo que es de un campo, bajo ese campo (y ahí va el foco, P-11).
+ */
+function CajonDelFormulario({
+  abierto,
+  onCerrar,
+  titulo,
+  descripcion,
+  aviso,
+  idDelFormulario,
+  textoDelBoton,
+  guardando,
+  children,
+}: {
+  abierto: boolean;
+  onCerrar: () => void;
+  titulo: string;
+  descripcion?: React.ReactNode;
+  aviso?: string | null;
+  idDelFormulario: string;
+  textoDelBoton: string;
+  guardando: boolean;
+  children: React.ReactNode;
+}) {
+  const { t } = useI18n();
+  return (
+    <Cajon
+      abierto={abierto}
+      onOpenChange={(sigue) => {
+        if (!sigue) onCerrar();
+      }}
+      tamano="lg"
+      data-testid="cajon-del-propietario"
+    >
+      <CajonCabecera titulo={titulo} descripcion={descripcion} />
+      <CajonCuerpo>
+        {aviso ? (
+          <div className="mb-4">
+            <AvisoEnElDialogo>{aviso}</AvisoEnElDialogo>
+          </div>
+        ) : null}
+        {children}
+      </CajonCuerpo>
+      <CajonPie>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onCerrar} disabled={guardando}>
+          {t('inmobiliaria.propietario.form.cancel')}
+        </Button>
+        <Button
+          type="submit"
+          form={idDelFormulario}
+          size="sm"
+          hideArrow
+          disabled={guardando}
+          className="gap-2"
+          data-testid="guardar-propietario"
+        >
+          {guardando ? (
+            <>
+              <Spinner size="sm" variant="current" />
+              {t('inmobiliaria.propietario.form.saving')}
+            </>
+          ) : (
+            textoDelBoton
+          )}
+        </Button>
+      </CajonPie>
+    </Cajon>
   );
 }
 
@@ -224,6 +303,11 @@ function PropietariosContent() {
   const propietarioQueSeEdita = useUltimoPresente(editingPropietario);
   const propietarioQueSeBorra = useUltimoPresente(deletingPropietario);
   const [isDeleting, setIsDeleting] = useState(false);
+  /** El pie del cajón vive afuera del formulario: sabe que se está guardando por acá. */
+  const [guardandoAlta, setGuardandoAlta] = useState(false);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const idDelAlta = `propietario-nuevo-${useId().replace(/:/g, '')}`;
+  const idDeLaEdicion = `propietario-editar-${useId().replace(/:/g, '')}`;
 
   /*
    * 🔴 Lo que el back explica se queda en el diálogo.
@@ -432,6 +516,7 @@ function PropietariosContent() {
 
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     setErrorAlCrear(null);
+    setGuardandoAlta(true);
     try {
       const created = await propietariosApi.create(data);
       // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
@@ -446,6 +531,8 @@ function PropietariosContent() {
       setErrorAlCrear(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
+    } finally {
+      setGuardandoAlta(false);
     }
   };
 
@@ -453,6 +540,7 @@ function PropietariosContent() {
     if (!editingPropietario) return;
 
     setErrorAlEditar(null);
+    setGuardandoEdicion(true);
     try {
       await propietariosApi.update(editingPropietario.id, data);
       // Se actualiza sola.
@@ -462,6 +550,8 @@ function PropietariosContent() {
       setErrorAlEditar(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -504,6 +594,20 @@ function PropietariosContent() {
    * igual que el texto (mismo arreglo que Pipeline e Inquilinos).
    */
   const kpiSinDato = cargandoPropietarios || Boolean(errorPropietarios);
+  /*
+   * 🔴 P-21 (QA de Propietarios, 03-10): al asesor el back le oculta la plata
+   * (`plataOculta`, montos en `null` que `normalizePropietario` vuelve 0). Los
+   * tiles de plata decían «Canon mensual $0» y «Sin pendientes · Al día»: no
+   * los mostramos como cero, decimos que no tiene acceso.
+   */
+  const plataOculta = !kpiSinDato && laListaOcultaLaPlata(propietarios);
+  const sinAccesoALaPlata = t('inmobiliaria.propietario.table.sinAccesoALaPlata');
+  const tileSinPlata = (
+    // El porqué lo dice el subtítulo del tile (visible y leído una sola vez).
+    <span className="text-fg-subtle" data-testid="kpi-valor" data-estado="oculto" title={sinAccesoALaPlata}>
+      <span aria-hidden="true">—</span>
+    </span>
+  ) as unknown as string;
   const valorDeTile = (valor: string) =>
     (
       <KpiValor cargando={cargandoPropietarios} fallo={errorPropietarios}>
@@ -548,13 +652,16 @@ function PropietariosContent() {
           </p>
         </div>
 
+        {/* P-22: a 390 px los dos no caben en una línea («Nuevo propietario»
+            se salía del borde y la página medía 416 px): se acomodan en dos,
+            cada uno a lo ancho. */}
         {puedeCrear && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)}>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)} className="flex-1 sm:flex-none">
               <Sparkle className="w-5 h-5 text-primary" weight="fill" />
               {t('inmobiliaria.propietarios.addOwnerIA')}
             </Button>
-            <Button hideArrow onClick={() => setShowAddModal(true)}>
+            <Button hideArrow onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none">
               <UserPlus className="w-5 h-5" />
               {t('inmobiliaria.propietarios.addOwner')}
             </Button>
@@ -582,8 +689,11 @@ function PropietariosContent() {
         </div>
       </Presence>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
+          cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
+          columna en el celular, dos en tableta y cuatro desde `xl`, donde la
+          cifra cabe con el menú abierto. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label={t('inmobiliaria.propietarios.title')}
           value={valorDeTile(String(stats.totalPropietarios))}
@@ -596,24 +706,31 @@ function PropietariosContent() {
         />
         <KpiCard
           label={t('inmobiliaria.propietarios.monthlyRevenue')}
-          value={valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+          value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
           icon={<CurrencyDollar />}
         />
         {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
-            pintarse en verde: es la misma afirmación que el «$0». */}
+            pintarse en verde: es la misma afirmación que el «$0». Sin acceso
+            a la plata (P-21), tampoco. */}
         <KpiCard
           label={
-            kpiSinDato
+            kpiSinDato || plataOculta
               ? 'Saldo pendiente'
               : stats.pendingCount > 0
                 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
                 : t('inmobiliaria.propietarios.noPending')
           }
-          value={valorDeTile(
-            stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
-          )}
-          icon={!kpiSinDato && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
-          deltaDirection={kpiSinDato ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
+          value={
+            plataOculta
+              ? tileSinPlata
+              : valorDeTile(
+                  stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+                )
+          }
+          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
+          icon={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
+          deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
         />
       </div>
 
@@ -653,7 +770,10 @@ function PropietariosContent() {
           {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
-              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} /> {t('inmobiliaria.propietarios.title').toLowerCase()}
+              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} />{' '}
+              {paginationData.totalItems === 1
+                ? t('inmobiliaria.propietarios.propietarioUno')
+                : t('inmobiliaria.propietarios.title').toLowerCase()}
             </span>
           )}
         </div>
@@ -721,6 +841,7 @@ function PropietariosContent() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onExport={handleExport}
+                plataOculta={plataOculta}
               />
             ) : paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
@@ -772,62 +893,80 @@ function PropietariosContent() {
         )}
       </div>
 
-      {/* Add Modal — el permiso también cierra el `?nuevo=true`: sin él, el
-          enlace no abre un formulario que el back va a rechazar. */}
-      <Modal
-        open={showAddModal && puedeCrear}
-        onClose={cerrarAlta}
-        title={t('inmobiliaria.propietarios.addOwner')}
-        size="lg"
+      {/* Nuevo propietario — en el CAJÓN (Nico, 03-10). El permiso también
+          cierra el `?nuevo=true`: sin él, el enlace no abre un formulario que
+          el back va a rechazar. */}
+      <CajonDelFormulario
+        abierto={showAddModal && puedeCrear}
+        onCerrar={cerrarAlta}
+        titulo={t('inmobiliaria.propietarios.addOwner')}
+        descripcion="Regístralo para consignar sus inmuebles y girarle lo que le corresponde. La cuenta bancaria la puedes cargar después."
+        aviso={errorAlCrear?.general}
+        idDelFormulario={idDelAlta}
+        textoDelBoton={t('inmobiliaria.propietario.form.createOwner')}
+        guardando={guardandoAlta}
       >
-        {errorAlCrear?.general && <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo>}
         <PropietarioForm
           onSubmit={handleCreateSubmit}
           onCancel={cerrarAlta}
           mode="create"
           serverError={errorAlCrear?.campo ?? null}
           serverErrors={errorAlCrear?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDelAlta}
         />
-      </Modal>
+      </CajonDelFormulario>
 
-      {/* AI Capture Modal (v6-07 — additive; reuses the create handler).
-          Su formulario vive dentro de `TerceroIACapture`: el error por campo
-          va a SU campo (02-10-2026) y arriba sólo lo que no tiene campo. */}
-      <Modal
-        open={showIACapture && puedeCrear}
-        onClose={cerrarCapturaIA}
-        title={t('inmobiliaria.propietarios.addOwnerIA')}
-        size="lg"
+      {/* Crear con IA (v6-07; reusa el alta) — también en el cajón (Nico,
+          03-10: «el de crear con IA sigue en modal»): subir → leer → revisar y
+          guardar, todo adentro. `TerceroIACapture` pone su cuerpo y su pie; el
+          error por campo va a SU campo (02-10-2026) y arriba sólo lo que no
+          tiene campo. */}
+      <Cajon
+        abierto={showIACapture && puedeCrear}
+        onOpenChange={(sigue) => {
+          if (!sigue) cerrarCapturaIA();
+        }}
+        tamano="lg"
+        data-testid="cajon-crear-con-ia"
       >
-        {errorAlCrear?.general && <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo>}
+        <CajonCabecera
+          titulo={t('inmobiliaria.propietarios.addOwnerIA')}
+          descripcion="Sube sus documentos, revisa lo que leímos y guárdalo."
+        />
         <TerceroIACapture
           onCreated={handleCreateSubmit}
           onClose={cerrarCapturaIA}
           errorDelServidor={errorAlCrear}
+          aviso={errorAlCrear?.general ? <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo> : null}
         />
-      </Modal>
+      </Cajon>
 
-      {/* Edit Modal */}
-      <Modal
-        open={!!editingPropietario && puedeEditar}
-        onClose={cerrarEdicion}
-        title={t('inmobiliaria.propietarios.editOwner')}
-        size="lg"
+      {/* Editar — el MISMO formulario en el mismo cajón que «Nuevo» (una sola
+          experiencia; decisión anotada para Nico). */}
+      <CajonDelFormulario
+        abierto={!!editingPropietario && puedeEditar}
+        onCerrar={cerrarEdicion}
+        titulo={t('inmobiliaria.propietarios.editOwner')}
+        descripcion={propietarioQueSeEdita?.name}
+        aviso={errorAlEditar?.general}
+        idDelFormulario={idDeLaEdicion}
+        textoDelBoton={t('inmobiliaria.propietario.form.saveChanges')}
+        guardando={guardandoEdicion}
       >
         {propietarioQueSeEdita && (
-          <>
-            {errorAlEditar?.general && <AvisoEnElDialogo>{errorAlEditar.general}</AvisoEnElDialogo>}
-            <PropietarioForm
-              initialData={propietarioQueSeEdita}
-              onSubmit={handleEditSubmit}
-              onCancel={cerrarEdicion}
-              mode="edit"
-              serverError={errorAlEditar?.campo ?? null}
-              serverErrors={errorAlEditar?.porCampo ?? null}
-            />
-          </>
+          <PropietarioForm
+            initialData={propietarioQueSeEdita}
+            onSubmit={handleEditSubmit}
+            onCancel={cerrarEdicion}
+            mode="edit"
+            serverError={errorAlEditar?.campo ?? null}
+            serverErrors={errorAlEditar?.porCampo ?? null}
+            accionesAfuera
+            idDelFormulario={idDeLaEdicion}
+          />
         )}
-      </Modal>
+      </CajonDelFormulario>
 
       {/* Delete Confirmation Modal — destructiva: dice qué se borra (la ficha
           entera; el back hace un `delete`, no la archiva) y, si algo lo
@@ -876,11 +1015,16 @@ function PropietariosContent() {
           <AlertaAccionable
             severidad="danger"
             titulo={
+              /* P-26: «1 inmueble consignado» / «3 inmuebles consignados», no «inmueble(s)». */
               inmueblesDelBorrado > 0
-                ? t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: inmueblesDelBorrado })
-                : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', {
-                    count: copropiedadesDelBorrado,
-                  })
+                ? inmueblesDelBorrado === 1
+                  ? t('inmobiliaria.propietarios.deleteBloqueado.tituloUno')
+                  : t('inmobiliaria.propietarios.deleteBloqueado.tituloN', { count: inmueblesDelBorrado })
+                : copropiedadesDelBorrado === 1
+                  ? t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioUno')
+                  : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioN', {
+                      count: copropiedadesDelBorrado,
+                    })
             }
             accion={{
               label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),

@@ -639,3 +639,48 @@ describe('<DeduccionesDelPropietario> — lo que le debe a la inmobiliaria', () 
     expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
   });
 });
+
+/**
+ * 🔴 P-27 (QA-PROP, 03-10): el soporte usaba el selector NATIVO del navegador
+ * («Choose File», en el idioma del navegador) y, al enviar con errores, el foco
+ * se quedaba en el botón. Ahora es la tarjeta de archivo de la casa y el foco
+ * va al primer campo con error.
+ */
+describe('<RegistrarDescuentoDialog> — la tarjeta de archivo y el foco (P-27)', () => {
+  async function abrirVacio(inmuebles: { consignacionId: string; titulo: string }[] = []) {
+    await montar(<RegistrarDescuentoDialog abierto onOpenChange={() => {}} inmuebles={inmuebles} onGuardar={vi.fn()} />);
+  }
+
+  it('🔴 el soporte es la tarjeta de la casa en español, con el input de verdad escondido', async () => {
+    await abrirVacio();
+    const selector = porTestId('descuento-soporte-selector');
+    expect(selector.textContent).toContain('Elegir archivo');
+    const input = porTestId<HTMLInputElement>('descuento-soporte');
+    expect(input.type).toBe('file');
+    expect(input.className).toContain('sr-only');
+    expect(input.getAttribute('aria-describedby')).toBe('descuento-soporte-error');
+    expect(input.getAttribute('aria-required')).toBe('true');
+  });
+
+  it('elegido el archivo, la tarjeta lo nombra y deja quitarlo', async () => {
+    await abrirVacio();
+    await adjuntar(new File(['%PDF'], 'predial.pdf', { type: 'application/pdf' }));
+    expect(porTestId('descuento-soporte-selector').textContent).toContain('predial.pdf');
+  });
+
+  it('🔴 al enviar vacío, el foco va al PRIMER campo con error (el motivo), no se queda en el botón', async () => {
+    await abrirVacio();
+    await clic(porTestId('descuento-guardar'));
+    expect(document.activeElement).toBe(document.body.querySelector('#descuento-motivo'));
+  });
+
+  it('si lo único que falta es el soporte, el foco va a «Elegir archivo»', async () => {
+    await abrirVacio();
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!, 'Predial 2026');
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-valor')!, '350000');
+    await clic(porTestId('descuento-guardar'));
+    const boton = porTestId('descuento-soporte-selector').querySelector('button');
+    expect(document.activeElement).toBe(boton);
+    expect(porTestId<HTMLInputElement>('descuento-soporte').getAttribute('aria-invalid')).toBe('true');
+  });
+});

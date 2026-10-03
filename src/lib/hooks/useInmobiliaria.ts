@@ -353,11 +353,15 @@ export function useAgentePipeline(id: string | undefined) {
 // Consignaciones (Portafolio)
 // ============================================================================
 
-export function useConsignaciones(params?: Parameters<typeof consignacionesApi.getAll>[0]) {
+export function useConsignaciones(
+  params?: Parameters<typeof consignacionesApi.getAll>[0],
+  /** `skip`: no pedir (p. ej. quien no tiene `portafolio:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => consignacionesApi.getAll(params),
     [params?.status, params?.agenteId, params?.propietarioId],
-    false,
+    options?.skip ?? false,
     0,
     ['consignaciones'],
   );
@@ -486,11 +490,15 @@ export function useAgencyAvaluos(
 // Dispersiones
 // ============================================================================
 
-export function useDispersiones(params?: Parameters<typeof dispersionesApi.getAll>[0]) {
+export function useDispersiones(
+  params?: Parameters<typeof dispersionesApi.getAll>[0],
+  /** `skip`: no pedir (p. ej. quien no tiene `dispersiones:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => dispersionesApi.getAll(params),
     [params?.month, params?.status, params?.propietarioId],
-    false,
+    options?.skip ?? false,
     0,
     ['dispersiones'],
   );

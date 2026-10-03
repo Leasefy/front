@@ -25,7 +25,7 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 
-import { InvitarAlPortal } from './InvitarAlPortal';
+import { InvitarAlPortal, porQueNoSalioLaInvitacion } from './InvitarAlPortal';
 
 let container: HTMLDivElement;
 let root: Root | null = null;
@@ -173,5 +173,70 @@ describe('<InvitarAlPortal>', () => {
 
     expect((q('invitar-propietario') as HTMLButtonElement).disabled).toBe(true);
     expect(q('propietario-sin-cuenta')?.textContent).toContain('Agrega su correo');
+  });
+});
+
+/**
+ * 🔴 P-24 (QA-PROP, 03-10): el back responde `{ enviada: false, motivo:
+ * "DOMINIO_NO_ENTREGABLE" }` y la cuenta queda creada; la ficha dejaba de
+ * montar el bloque y la pantalla no decía nada que durara. El bloque se queda
+ * en «Invitación sin entregar», con el motivo en palabras y «Reintentar».
+ */
+describe('<InvitarAlPortal> — la invitación que no salió (P-24)', () => {
+  /** Como la ficha: guarda `sinEntregar` y se lo devuelve al bloque. */
+  function ConLaFicha({ correo }: { correo: string }) {
+    const [sinEntregar, setSinEntregar] = React.useState<{ motivo?: string } | null>(null);
+    return (
+      <InvitarAlPortal
+        propietarioId="p-1"
+        correo={correo}
+        onInvitado={() => {}}
+        sinEntregar={sinEntregar}
+        onSinEntregar={setSinEntregar}
+      />
+    );
+  }
+
+  async function pintarConLaFicha(correo = 'ruben.mejia@example.test') {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<ConLaFicha correo={correo} />);
+    });
+  }
+
+  it('🔴 si no salió, el bloque dice «Invitación sin entregar», por qué en palabras (nunca el código) y ofrece reintentar', async () => {
+    invitarAlPortal.mockResolvedValue({ cuentaDePortalId: 'u-1', enviada: false, motivo: 'DOMINIO_NO_ENTREGABLE' });
+    await pintarConLaFicha();
+    await invitar();
+
+    const bloque = q('invitacion-sin-entregar');
+    expect(bloque).not.toBeNull();
+    expect(bloque!.textContent).toContain('Invitación sin entregar');
+    expect(q('motivo-de-la-invitacion')!.textContent).toContain('ruben.mejia@example.test');
+    expect(q('motivo-de-la-invitacion')!.textContent).toContain('Corrígelo con «Editar»');
+    expect(bloque!.textContent).not.toContain('DOMINIO_NO_ENTREGABLE');
+    expect(q('invitar-propietario')!.textContent).toContain('Reintentar');
+  });
+
+  it('reintentar y que salga: el bloque deja de decir «sin entregar»', async () => {
+    invitarAlPortal.mockResolvedValueOnce({ cuentaDePortalId: 'u-1', enviada: false, motivo: 'ENVIO_FALLIDO' });
+    await pintarConLaFicha('ana@correo.co');
+    await invitar();
+    expect(q('invitacion-sin-entregar')).not.toBeNull();
+
+    invitarAlPortal.mockResolvedValueOnce({ cuentaDePortalId: 'u-1', enviada: true });
+    await invitar();
+    expect(q('invitacion-sin-entregar')).toBeNull();
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  it('cada motivo se dice en palabras; uno desconocido, lo general', () => {
+    for (const motivo of ['DOMINIO_NO_ENTREGABLE', 'RECIEN_ENVIADA', 'CORREO_NO_CONFIGURADO', 'ENVIO_FALLIDO', 'ERROR', 'OTRO']) {
+      const frase = porQueNoSalioLaInvitacion(motivo, 'a@b.test');
+      expect(frase).not.toContain(motivo);
+      expect(frase.length).toBeGreaterThan(20);
+    }
   });
 });

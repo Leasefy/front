@@ -4,6 +4,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { Suspense, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -82,7 +83,7 @@ import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { formatCurrency, formatParticipacion } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
@@ -148,9 +149,26 @@ function Modal({
 
 /**
  * Property Card Component
+ *
+ * 🔴 P-18 (QA-PROP, 03-10): era un `div` con cursor de mano y sin `onClick`:
+ * no llevaba a ningún lado y con el teclado no se llegaba. Ahora es un enlace a
+ * la ficha del inmueble. El subtítulo repetía el título (casi siempre el título
+ * ES la dirección): sale sólo si dice otra cosa. Y en copropiedad dice qué
+ * parte es suya — «Copropiedad · 50 %» —, que antes no se veía.
+ *
+ * 🔴 P-22: a 390 px cortaba la dirección y el inquilino («David…»): el título
+ * se parte en renglones y las cifras bajan de renglón cuando no caben.
  */
-function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
+function PropertyCard({ consignacion, propietarioId }: { consignacion: Consignacion; propietarioId: string }) {
   const { t } = useI18n();
+  const direccionDistinta =
+    !!consignacion.propertyAddress &&
+    consignacion.propertyAddress.trim().toLowerCase() !== (consignacion.propertyTitle ?? '').trim().toLowerCase();
+  // Con un solo dueño no se dice nada: el 100 % es lo normal.
+  const suParte =
+    (consignacion.copropietarios?.length ?? 0) > 1
+      ? consignacion.copropietarios.find((c) => c.propietarioId === propietarioId)?.participacionBps ?? null
+      : null;
 
   const statusColors = {
     available: 'bg-success-soft text-success',
@@ -167,13 +185,18 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   };
 
   return (
-    <Pressable
-      press="none"
-      className="p-4 rounded-lg border border-border bg-card cursor-pointer"
+    <Link
+      href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      data-testid={`inmueble-del-propietario-${consignacion.id}`}
     >
-      <div className="flex items-start gap-4">
+    <Pressable
+      press="sm"
+      className="p-4 rounded-lg border border-border bg-card"
+    >
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Thumbnail */}
-        <div className="w-20 h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -188,20 +211,30 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <h4 className="text-base font-semibold text-foreground line-clamp-1">
+            <div className="min-w-0">
+              <h4 className="text-base font-semibold text-foreground break-words">
                 {consignacion.propertyTitle}
               </h4>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {consignacion.propertyAddress}
-              </p>
+              {direccionDistinta && (
+                <p className="text-sm text-muted-foreground break-words" data-testid="direccion-del-inmueble">
+                  {consignacion.propertyAddress}
+                </p>
+              )}
+              {suParte != null && (
+                <span
+                  className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                  data-testid="copropiedad-del-inmueble"
+                >
+                  {t('inmobiliaria.propietarios.detail.copropiedadPct', { pct: formatParticipacion(suParte) })}
+                </span>
+              )}
             </div>
             <span className={cn('px-2 py-1 rounded-full text-xs font-medium shrink-0', statusColors[consignacion.availability])}>
               {statusLabels[consignacion.availability]}
             </span>
           </div>
 
-          <div className="flex items-center gap-4 mt-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
             {/* contract-addendum-2.md §A.2/§A.10 — a SALE mandate has no
                 canon (`monthlyRent: null`) and `commissionPercent: 0`; the
                 agreed figure lives in `saleCommissionPercent` instead. */}
@@ -222,7 +255,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
                 </div>
-                <div className="h-8 w-px bg-border" />
+                <div className="hidden h-8 w-px bg-border sm:block" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     {textoDeLaComision(consignacion)}
@@ -233,9 +266,9 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
             )}
             {consignacion.currentTenantName && (
               <>
-                <div className="h-8 w-px bg-border" />
-                <div>
-                  <p className="text-sm font-medium text-foreground line-clamp-1">
+                <div className="hidden h-8 w-px bg-border sm:block" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground break-words">
                     {consignacion.currentTenantName}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.tenant')}</p>
@@ -246,6 +279,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
         </div>
       </div>
     </Pressable>
+    </Link>
   );
 }
 
@@ -293,7 +327,13 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
             {monthLabel}
           </p>
           <p className="text-sm text-muted-foreground">
-            {dispersion.items.length} {t('inmobiliaria.propietarios.detail.propertiesCount')}
+            {/* P-26: «1 propiedad», «3 propiedades»; no «propiedad(es)». */}
+            {dispersion.items.length}{' '}
+            {t(
+              dispersion.items.length === 1
+                ? 'inmobiliaria.propietarios.detail.propertiesCountUno'
+                : 'inmobiliaria.propietarios.detail.propertiesCount',
+            )}
           </p>
         </div>
       </div>
@@ -396,6 +436,15 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
   const [errorAlEditar, setErrorAlEditar] = useState<ErrorAlGuardarPropietario | null>(null);
+  /*
+   * 🔴 P-24 (QA-PROP, 03-10): la invitación que NO salió. El back crea la cuenta
+   * igual (y devuelve su id), así que el bloque «Invitar» desaparecía como si el
+   * correo hubiera llegado. Mientras esto tenga algo, el bloque se queda en
+   * «Invitación sin entregar» con «Reintentar».
+   */
+  const [invitacionSinEntregar, setInvitacionSinEntregar] = useState<{ motivo?: string } | null>(null);
+  // Sube cuando el lápiz de la cuenta pide abrir «Cambiar cuenta».
+  const [pedirCambioDeCuenta, setPedirCambioDeCuenta] = useState(0);
 
   /*
    * 🔴 Las llaves con que el back protege cada acción de esta ficha
@@ -403,7 +452,7 @@ function PropietarioDetailContent() {
    * delete). Un CONTADOR o un VIEWER tienen sólo `view`: veían Editar,
    * Eliminar y las notas, y el clic terminaba en 403.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, isLoading: cargandoPermisos } = usePermissions();
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
   /*
@@ -413,6 +462,19 @@ function PropietarioDetailContent() {
    * ficha no le ofrece lo que el back le va a negar.
    */
   const veLaPlata = canAccess('dispersiones', 'view');
+  /*
+   * 🔴 PR-11 (QA-PROP, 03-10): los inmuebles salen de `GET /consignaciones`,
+   * que el back protege con `portafolio:view`. El contador y el auxiliar no lo
+   * tienen: la pestaña terminaba en un 403 pintado como «no pudimos leer». Sin
+   * el permiso no se pide y la pestaña dice por qué.
+   */
+  const vePortafolio = canAccess('portafolio', 'view');
+  /*
+   * El perfil tributario decide el IVA del canon y las retenciones de los
+   * giros: lo cambian un administrador o el contador, nunca el asesor (Nico,
+   * 03-10, P-20). Es la llave de mover la plata del propietario.
+   */
+  const puedeEditarPerfil = canAccess('dispersiones', 'edit');
 
   // Fetch propietario and keep local state for updates
   const {
@@ -448,13 +510,13 @@ function PropietarioDetailContent() {
     isLoading: cargandoConsignaciones,
     errorCrudo: errorConsignaciones,
     refetch: recargarConsignaciones,
-  } = useConsignaciones({ propietarioId: id });
+  } = useConsignaciones({ propietarioId: id }, { skip: cargandoPermisos || !vePortafolio });
   const {
     dispersiones,
     isLoading: cargandoDispersiones,
     errorCrudo: errorDispersiones,
     refetch: recargarDispersiones,
-  } = useDispersiones({ propietarioId: id });
+  } = useDispersiones({ propietarioId: id }, { skip: cargandoPermisos || !veLaPlata });
 
   // Mientras carga no es «no encontrado»: ese cartel salía un instante en
   // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
@@ -601,6 +663,17 @@ function PropietarioDetailContent() {
      * como si el propietario no tuviera inmuebles. Un archivo incompleto es
      * peor que ningún archivo, porque sobrevive al error que lo causó.
      */
+    /*
+     * PR-11: sin permiso para el portafolio o la plata, esas hojas no se
+     * pudieron leer por una razón que reintentar no arregla. Se dice ESA razón
+     * y no «no pudimos leer…».
+     */
+    if (!vePortafolio || !veLaPlata) {
+      toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
+        description: t('inmobiliaria.propietarios.detail.exportSinPermiso'),
+      });
+      return;
+    }
     if (errorConsignaciones || errorDispersiones) {
       toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
         description: t('inmobiliaria.propietarios.detail.exportIncompleto'),
@@ -755,11 +828,14 @@ function PropietarioDetailContent() {
           inmobiliaria le ha girado y lo que le falta por girar. Se pinta solo
           si hay contratos; si la llamada falla, no se pinta nada, porque un
           «$0» sobre datos que no llegaron se lee «no le debemos nada». */}
-      <ResumenEnLaFicha
-        tipo="propietario"
-        id={propietario.id}
-        volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-      />
+      {/* Sin `dispersiones:view` el back niega el resumen (403): no se pide. */}
+      {veLaPlata && (
+        <ResumenEnLaFicha
+          tipo="propietario"
+          id={propietario.id}
+          volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+        />
+      )}
 
       {/* Stats */}
       <PropietarioStats
@@ -827,10 +903,12 @@ function PropietarioDetailContent() {
              * Detrás de `propietarios:edit`, que es con lo que el back protege
              * `POST :id/invitar-al-portal`.
              */}
-            {!propietario.cuentaDePortalId && puedeEditar && (
+            {(!propietario.cuentaDePortalId || invitacionSinEntregar) && puedeEditar && (
               <InvitarAlPortal
                 propietarioId={propietario.id}
                 correo={propietario.email}
+                sinEntregar={invitacionSinEntregar}
+                onSinEntregar={setInvitacionSinEntregar}
                 onInvitado={(cuenta) =>
                   setPropietario((p) => (p ? { ...p, cuentaDePortalId: cuenta } : p))
                 }
@@ -838,24 +916,36 @@ function PropietarioDetailContent() {
             )}
           </section>
 
+          {/* P-20: el perfil dice él mismo qué cambió, con «Deshacer», en UN
+              aviso que se reemplaza (antes se apilaban «Propietario
+              actualizado»). */}
           <PerfilTributarioDelPropietario
             propietario={propietario}
-            onActualizado={(p) => {
-              setPropietario(p);
-              toast.success(t('inmobiliaria.propietarios.toasts.updated'));
-            }}
+            puedeEditar={puedeEditarPerfil}
+            onActualizado={setPropietario}
           />
 
-          {veLaPlata ? (
+          {/* P-21: con la cuenta oculta por rol (`datosBancariosOcultos`) no se
+              dibuja «sin cuenta bancaria»: se dice que no la puede ver. */}
+          {veLaPlata && !propietario.datosBancariosOcultos ? (
             <>
               {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
               <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
 
               {/* Bank Info */}
+              {/* El lápiz: con cuenta, «Cambiar cuenta» (certificación,
+                  confirmación y aprobación: el back no deja cambiarla desde
+                  «Editar», P-14); sin cuenta, «Editar» para cargar la primera. */}
               <PropietarioBankInfo
                 bankAccount={propietario.bankAccount}
                 propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
-                onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
+                onEdit={
+                  puedeEditar
+                    ? propietario.bankAccount?.accountNumber
+                      ? () => setPedirCambioDeCuenta((n) => n + 1)
+                      : () => setShowEditModal(true)
+                    : undefined
+                }
               />
 
               {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
@@ -867,6 +957,7 @@ function PropietarioDetailContent() {
                 propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
                 puedeEditar={puedeEditar}
                 onCuentaCambiada={() => void refetch()}
+                pedirCambio={pedirCambioDeCuenta}
               />
             </>
           ) : (
@@ -882,7 +973,9 @@ function PropietarioDetailContent() {
 
         {/* Right Column - Properties & Payments */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Tabs */}
+          {/* Tabs — P-22: a 390 px las cuatro no caben (la página medía 406);
+              se corren dentro de su riel en vez de correr la página. */}
+          <div className="max-w-full overflow-x-auto overscroll-x-contain" data-lenis-prevent data-testid="pestanas-del-propietario">
           <SegmentedControl<typeof activeTab>
             value={activeTab}
             onChange={setTab}
@@ -896,7 +989,7 @@ function PropietarioDetailContent() {
                 label: (
                   <span className="flex items-center gap-2">
                     {t('inmobiliaria.propietarios.detail.properties')}
-                    {!cargandoConsignaciones && !errorConsignaciones && (
+                    {vePortafolio && !cargandoConsignaciones && !errorConsignaciones && (
                       <span className="tabular-nums text-fg-muted">{consignaciones.length}</span>
                     )}
                   </span>
@@ -928,6 +1021,7 @@ function PropietarioDetailContent() {
               },
             ]}
           />
+          </div>
 
           {/* Tab Content — el contenido de la pestaña se cruza con el de la
               nueva (`CrossFade`: sale en 150 ms y el nuevo sube 4 px). */}
@@ -939,9 +1033,17 @@ function PropietarioDetailContent() {
                 lugar. Antes el vacío se evaluaba primero y «este
                 propietario no tiene inmuebles consignados» salía tanto
                 mientras cargaba como cuando la petición se caía. */}
-            {activeTab === 'properties' && (
+            {activeTab === 'properties' && !vePortafolio && !cargandoPermisos && (
+              <div
+                className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+                data-testid="propietario-portafolio-oculto"
+              >
+                {t('inmobiliaria.propietarios.detail.portafolioOculto')}
+              </div>
+            )}
+            {activeTab === 'properties' && (vePortafolio || cargandoPermisos) && (
               <EstadoDeDatos
-                cargando={cargandoConsignaciones}
+                cargando={cargandoConsignaciones || cargandoPermisos}
                 error={errorConsignaciones}
                 queEs="los inmuebles de este propietario"
                 onReintentar={recargarConsignaciones}
@@ -964,7 +1066,7 @@ function PropietarioDetailContent() {
                 <Stagger className="space-y-4">
                   {consignaciones.map((consignacion) => (
                     <StaggerItem key={consignacion.id}>
-                      <PropertyCard consignacion={consignacion} />
+                      <PropertyCard consignacion={consignacion} propietarioId={propietario.id} />
                     </StaggerItem>
                   ))}
                 </Stagger>
@@ -1109,7 +1211,11 @@ function PropietarioDetailContent() {
         {propietario.propertyCount > 0 && (
           <AlertaAccionable
             severidad="danger"
-            titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: propietario.propertyCount })}
+            titulo={
+              propietario.propertyCount === 1
+                ? t('inmobiliaria.propietarios.deleteBloqueado.tituloUno')
+                : t('inmobiliaria.propietarios.deleteBloqueado.tituloN', { count: propietario.propertyCount })
+            }
             accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
             data-testid="borrar-bloqueado"
           >
@@ -1121,7 +1227,11 @@ function PropietarioDetailContent() {
         {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
           <AlertaAccionable
             severidad="danger"
-            titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount ?? 0 })}
+            titulo={
+              propietario.copropiedadesCount === 1
+                ? t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioUno')
+                : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioN', { count: propietario.copropiedadesCount ?? 0 })
+            }
             accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
             data-testid="borrar-bloqueado-copropietario"
           >

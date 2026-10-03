@@ -86,6 +86,13 @@ export interface Propietario {
    * El formulario no muestra ni exige el bloque bancario y guardar no lo toca.
    */
   datosBancariosOcultos?: boolean;
+  /**
+   * 🔴 P-21 (QA-PROP, 03-10): `true` cuando quien mira no ve la PLATA del
+   * propietario (el asesor comercial). El back manda los montos en `null`
+   * (`sinLaPlataDelPropietario`) y `normalizePropietario` los deja en 0: con
+   * esto la ficha dice «—» y no «$0» ni «Al día».
+   */
+  plataOculta?: boolean;
   /** Mandatos donde es el propietario PRINCIPAL (el de mayor participación). */
   propertyCount: number;
   /**

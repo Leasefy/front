@@ -54,7 +54,32 @@ interface ExtractoPropietarioProps {
   onPrint?: () => void;
   /** Manda el extracto al correo del propietario. Sin esto el botón no se muestra. */
   onEmail?: () => void | Promise<void>;
+  /**
+   * `'afuera'`: el pie de acciones (Imprimir / Enviar / PDF) no se pinta acá
+   * porque quien lo hospeda lo pone en su propio pie fijo con
+   * `<AccionesDelExtracto>` (el diálogo de la ficha, P-23: el pie quedaba
+   * abajo del todo, detrás del scroll). Por defecto, adentro, como siempre.
+   */
+  acciones?: 'adentro' | 'afuera';
   className?: string;
+}
+
+/**
+ * 🔴 P-23 (QA-PROP, 03-10): en pantalla el número de cuenta va enmascarado,
+ * como en la ficha (`PropietarioBankInfo`): `****8912`. El PDF que se le manda
+ * al propietario es otro documento (lo arma el back).
+ */
+export function cuentaEnmascarada(numero: string): string {
+  const limpio = numero.trim();
+  if (limpio.startsWith('****') || limpio.length <= 4) return limpio;
+  return `****${limpio.slice(-4)}`;
+}
+
+/** El título suele SER la dirección: el subtítulo sólo sale si dice otra cosa. */
+function direccionSiEsOtra(titulo: string | null | undefined, direccion: string | null | undefined): string | null {
+  const d = (direccion ?? '').trim();
+  if (!d) return null;
+  return d.toLowerCase() === (titulo ?? '').trim().toLowerCase() ? null : d;
 }
 
 // Status label keys for i18n
@@ -272,6 +297,7 @@ export function ExtractoPropietario({
   onDownloadPDF,
   onPrint,
   onEmail,
+  acciones = 'adentro',
   className,
 }: ExtractoPropietarioProps) {
   const { t, locale } = useI18n();
@@ -287,9 +313,6 @@ export function ExtractoPropietario({
     },
     [desborde.ref],
   );
-  const [isDownloading, setIsDownloading] = React.useState(false);
-  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
-
   // Get propietario details for bank info
   const { propietarios } = usePropietarios();
   // Con qué regla sale el canon: rotula la columna, el resumen y la nota de terceros.
@@ -321,56 +344,6 @@ export function ExtractoPropietario({
   } = useTablePagination(extracto.lineItems, {
     resetKey: `${extracto.propietarioId}|${extracto.month}`,
   });
-
-  // Handle PDF download — se espera al handler: el «PDF descargado» se dice
-  // cuando bajó, no cuando se apretó el botón.
-  const handleDownloadPDF = async () => {
-    if (!onDownloadPDF) return;
-    setIsDownloading(true);
-    try {
-      await onDownloadPDF();
-      toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
-        description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
-      });
-    } catch (error) {
-      // Con la regla de oro: un 5xx «de nuestro lado» con la referencia, la
-      // red con la conexión; nunca el `message` crudo de un `Error`.
-      toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
-        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'armar el PDF' }) || undefined,
-      });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // Handle print
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-    } else {
-      window.print();
-    }
-  };
-
-  // Handle email — antes esperaba un segundo de mentira y decía «enviado»
-  // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
-  const handleEmail = async () => {
-    if (!onEmail) return;
-    setIsSendingEmail(true);
-    try {
-      await onEmail();
-      toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
-        description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
-      });
-    } catch (error) {
-      toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
-        description:
-          mensajeParaLaPersona(error, { porDefecto: '', accion: 'mandar el extracto por correo' }) || undefined,
-      });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
 
   return (
     <div
@@ -469,7 +442,8 @@ export function ExtractoPropietario({
                 <>
                   <p className="text-foreground font-medium">{extracto.bankInfo.bankName ?? '—'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {extracto.bankInfo.bankAccountType ?? ''}{extracto.bankInfo.bankAccountType ? ': ' : ''}{extracto.bankInfo.bankAccountNumber}
+                    {extracto.bankInfo.bankAccountType ?? ''}{extracto.bankInfo.bankAccountType ? ': ' : ''}
+                    <span className="font-mono tabular-nums">{cuentaEnmascarada(extracto.bankInfo.bankAccountNumber)}</span>
                   </p>
                   {extracto.bankInfo.bankAccountHolder && (
                     <p className="text-sm text-muted-foreground">{extracto.bankInfo.bankAccountHolder}</p>
@@ -495,7 +469,10 @@ export function ExtractoPropietario({
             (su propio contenedor): las columnas fijas se pegan a ése. */}
         <div className="rounded-md border border-border">
           <div data-lenis-prevent data-testid="extracto-tabla">
-            <Table ref={refDeLaTabla} sombrasDeBorde={false}>
+            {/* P-23: celdas con 12 px de aire a los lados (no 16): con la
+                columna de IVA y la de conceptos la tabla pasaba 30 px del
+                diálogo. */}
+            <Table ref={refDeLaTabla} sombrasDeBorde={false} className="[&_td]:px-3 [&_th]:px-3">
               <TableHeader>
                 <TableRow className="hover:bg-transparent bg-muted/50">
                   <TableHead className={cn(ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
@@ -507,7 +484,8 @@ export function ExtractoPropietario({
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
                   <TableHead className="text-right" data-testid="extracto-columna-canon">{t(COLUMNA_DEL_CANON[base])}</TableHead>
                   <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
-                  <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
+                  {/* P-23: el % va debajo de la comisión (una columna menos: la
+                      tabla no cabía en el diálogo y Neto, fija, tapaba esto). */}
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
                   <TableHead className="text-right">Conceptos</TableHead>
                   <TableHead className={cn('text-right', celdaFija('derecha', 'cabecera-o-pie'))}>
@@ -528,7 +506,7 @@ export function ExtractoPropietario({
                 */}
                 {extracto.lineItems.length === 0 && extracto.sinMovimiento && (
                   <TableRowAnimada key="sin-movimiento">
-                    <TableCell colSpan={10} className="py-10 text-center text-fg-muted">
+                    <TableCell colSpan={9} className="py-10 text-center text-fg-muted">
                       {extracto.sinMovimiento.mensaje}
                     </TableCell>
                   </TableRowAnimada>
@@ -547,9 +525,11 @@ export function ExtractoPropietario({
                           <span className="text-foreground text-sm truncate max-w-[180px]">
                             {prop.propertyTitle}
                           </span>
-                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                            {prop.propertyAddress}
-                          </span>
+                          {direccionSiEsOtra(prop.propertyTitle, prop.propertyAddress) && (
+                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {prop.propertyAddress}
+                            </span>
+                          )}
                           {/* Con varios dueños la plata de la fila es SU parte:
                               se dice cuánto, como en el PDF (2026-09-13). */}
                           {prop.participacionLabel ? (
@@ -595,13 +575,11 @@ export function ExtractoPropietario({
                           {t(STATUS_LABEL_KEYS[estado])}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {prop.commissionPercent}%
-                        </span>
-                      </TableCell>
                       <TableCell className="text-right text-sm text-primary">
                         {formatCurrency(prop.commissionAmount)}
+                        <span className="block text-xs text-muted-foreground" data-testid="extracto-comision-pct">
+                          {prop.commissionPercent} %
+                        </span>
                       </TableCell>
                       <TableCell className="text-right text-sm">
                         {/* El IVA de la comisión va con lo que se le cobra y
@@ -642,7 +620,6 @@ export function ExtractoPropietario({
                         extracto.totals.totalConceptosAFavor,
                     )}
                   </TableCell>
-                  <TableCell />
                   <TableCell />
                   <TableCell className="text-right text-primary">
                     {formatCurrency(extracto.totals.totalCommission)}
@@ -797,8 +774,102 @@ export function ExtractoPropietario({
       )}
 
       {/* Actions Footer - Hide on print */}
-      <div className="p-6 bg-muted/30 print:hidden">
-        <div className="flex flex-wrap gap-3 justify-end">
+      {acciones === 'adentro' && (
+        <div className="p-6 bg-muted/30 print:hidden">
+          <AccionesDelExtracto
+            extracto={extracto}
+            onDownloadPDF={onDownloadPDF}
+            onPrint={onPrint}
+            onEmail={onEmail}
+          />
+        </div>
+      )}
+
+      {/* Print Footer */}
+      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
+        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
+        <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
+        <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Imprimir · Enviar por email · Descargar PDF.
+ *
+ * Aparte del documento (P-23) para que el diálogo de la ficha lo ponga en su
+ * pie FIJO: dentro del documento quedaba al final, detrás del scroll. Cada
+ * acción espera a su handler y dice lo que de verdad pasó.
+ */
+export function AccionesDelExtracto({
+  extracto,
+  onDownloadPDF,
+  onPrint,
+  onEmail,
+  className,
+}: Pick<ExtractoPropietarioProps, 'extracto' | 'onDownloadPDF' | 'onPrint' | 'onEmail' | 'className'>) {
+  const { t, locale } = useI18n();
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+  const { propietarios } = usePropietarios();
+  const propietario = React.useMemo(
+    () => propietarios.find((p) => p.id === extracto.propietarioId),
+    [extracto.propietarioId, propietarios],
+  );
+
+  // Handle PDF download — se espera al handler: el «PDF descargado» se dice
+  // cuando bajó, no cuando se apretó el botón.
+  const handleDownloadPDF = async () => {
+    if (!onDownloadPDF) return;
+    setIsDownloading(true);
+    try {
+      await onDownloadPDF();
+      toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
+        description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
+      });
+    } catch (error) {
+      // Con la regla de oro: un 5xx «de nuestro lado» con la referencia, la
+      // red con la conexión; nunca el `message` crudo de un `Error`.
+      toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'armar el PDF' }) || undefined,
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Handle print
+  const handlePrint = () => {
+    if (onPrint) {
+      onPrint();
+    } else {
+      window.print();
+    }
+  };
+
+  // Handle email — antes esperaba un segundo de mentira y decía «enviado»
+  // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
+  const handleEmail = async () => {
+    if (!onEmail) return;
+    setIsSendingEmail(true);
+    try {
+      await onEmail();
+      toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
+        description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
+        description:
+          mensajeParaLaPersona(error, { porDefecto: '', accion: 'mandar el extracto por correo' }) || undefined,
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  return (
+        <div className={cn('flex flex-wrap gap-3 justify-end print:hidden', className)}>
           <Button
             variant="outline"
             onClick={handlePrint}
@@ -850,15 +921,6 @@ export function ExtractoPropietario({
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Print Footer */}
-      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
-        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
-        <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
-        <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
-      </div>
-    </div>
   );
 }
 

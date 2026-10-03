@@ -379,6 +379,22 @@ export function pintaDelEstado(
   return base;
 }
 
+/**
+ * El documento del cliente con su TIPO: «CC 52123456», «NIT 901222333».
+ *
+ * 🔴 P-19 (QA-PROP, 03-10): decía «NIT/CC 52123456» siempre. Con el tipo
+ * (`cliente.tipoDocumento`) se dice el real; sin él —un back que todavía no lo
+ * manda— queda como antes.
+ */
+export function documentoDelCliente(cliente: {
+  documento: string | null;
+  tipoDocumento?: string | null;
+}): string | null {
+  if (!cliente.documento) return null;
+  const tipo = cliente.tipoDocumento?.trim();
+  return `${tipo || 'NIT/CC'} ${cliente.documento}`;
+}
+
 /** Con qué sombrero entra el cliente al documento. */
 export function comoSeLlamaElRol(rol: RolEnElContrato): string {
   return rol === 'PROPIETARIO' ? 'Propietario' : 'Inquilino';

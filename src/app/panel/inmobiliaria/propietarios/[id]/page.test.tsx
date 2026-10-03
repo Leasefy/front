@@ -58,17 +58,34 @@ vi.mock('@/components/inmobiliaria/InvitarAlPortal', () => ({
     propietarioId,
     correo,
     onInvitado,
+    sinEntregar,
+    onSinEntregar,
   }: {
     propietarioId: string;
     correo?: string | null;
     onInvitado: (cuenta: string) => void;
+    sinEntregar?: { motivo?: string } | null;
+    onSinEntregar?: (s: { motivo?: string } | null) => void;
   }) =>
-    React.createElement('button', {
-      'data-testid': 'invitar-al-portal',
-      'data-propietario': propietarioId,
-      'data-correo': correo ?? '',
-      onClick: () => onInvitado('user-nuevo'),
-    }),
+    React.createElement(
+      React.Fragment,
+      null,
+      React.createElement('button', {
+        'data-testid': 'invitar-al-portal',
+        'data-propietario': propietarioId,
+        'data-correo': correo ?? '',
+        'data-sin-entregar': sinEntregar?.motivo ?? '',
+        onClick: () => onInvitado('user-nuevo'),
+      }),
+      // P-24: el back crea la cuenta pero el correo no sale.
+      React.createElement('button', {
+        'data-testid': 'invitar-sin-entregar',
+        onClick: () => {
+          onInvitado('user-nuevo');
+          onSinEntregar?.({ motivo: 'DOMINIO_NO_ENTREGABLE' });
+        },
+      }),
+    ),
 }));
 vi.mock('@/components/messages/BotonEnviarMensaje', () => ({
   BotonEnviarMensaje: ({ counterpartId }: { counterpartId: string }) =>
@@ -284,6 +301,21 @@ async function render() {
   });
 }
 
+/*
+ * «Editar» se abre con su botón. Estas pruebas lo abrían con el lápiz de la
+ * cuenta, que desde P-14/QA-PROP (03-10) abre «Cambiar cuenta» cuando ya hay
+ * cuenta (ver «el lápiz de la cuenta» abajo).
+ */
+function abrirEditar() {
+  const boton = Array.from(container.querySelectorAll('button')).find(
+    (b) => b.textContent === 'inmobiliaria.propietarios.edit',
+  );
+  if (!boton) throw new Error('no está el botón Editar');
+  return act(async () => {
+    boton.click();
+  });
+}
+
 // Los modales se montan con un portal en `document.body`: se busca en el documento.
 function click(testId: string) {
   const el = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
@@ -374,7 +406,7 @@ describe('Menú de acciones', () => {
 describe('Editar, notas y eliminar — contra el back, no contra un setTimeout', () => {
   it('Editar guarda por la API y vuelve a leer la ficha', async () => {
     await render();
-    await click('editar-banco');
+    await abrirEditar();
     await click('form-guardar');
     expect(api.update).toHaveBeenCalledWith('p1', expect.objectContaining({ name: 'Nuevo nombre' }));
     expect(refetch).toHaveBeenCalled();
@@ -386,7 +418,7 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
       new ApiError(409, 'Ya existe un propietario con el documento 9 en esta agencia'),
     );
     await render();
-    await click('editar-banco');
+    await abrirEditar();
     await click('form-guardar');
 
     const form = document.querySelector('[data-testid="form-guardar"]')!;
@@ -402,7 +434,7 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
       new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
     );
     await render();
-    await click('editar-banco');
+    await abrirEditar();
     await click('form-guardar');
     const aviso = document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent ?? '';
     expect(aviso).toContain('No pudimos guardar el propietario: algo falló de nuestro lado');
@@ -421,7 +453,7 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
       }),
     );
     await render();
-    await click('editar-banco');
+    await abrirEditar();
     await click('form-guardar');
     const form = document.querySelector('[data-testid="form-guardar"]')!;
     expect(form.getAttribute('data-error-campo')).toBe('email');
@@ -435,7 +467,7 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
   it('sin respuesta (la red), el aviso habla de la conexión', async () => {
     api.update.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     await render();
-    await click('editar-banco');
+    await abrirEditar();
     await click('form-guardar');
     expect(document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent).toMatch(/conexión/);
   });
@@ -646,5 +678,134 @@ describe('encabezado y contacto (QA 23-09)', () => {
     expect(botones).toContain('inmobiliaria.propietarios.detail.copiarCorreo');
     expect(botones).toContain('inmobiliaria.propietarios.detail.copiarTelefono');
     expect(botones).not.toContain('inmobiliaria.propietarios.detail.copied');
+  });
+});
+
+
+/**
+ * 🔴 QA de Propietarios (03-10): P-18 (la tarjeta del inmueble), P-21 (la cuenta
+ * oculta por rol), P-24 (la invitación sin entregar), P-26 (plurales), P-20
+ * (quién cambia el perfil tributario), PR-11 (sin `portafolio:view`) y el lápiz
+ * de la cuenta (P-14).
+ */
+describe('QA de Propietarios — la ficha', () => {
+  const MANDATO = {
+    id: 'c7',
+    propietarioId: 'p1',
+    copropietarios: [
+      { propietarioId: 'p1', participacionBps: 5000 },
+      { propietarioId: 'p2', participacionBps: 5000 },
+    ],
+    propertyTitle: 'Calle 7 # 39-215 Apto 1502',
+    propertyAddress: 'Calle 7 # 39-215 Apto 1502',
+    listingType: 'rent',
+    availability: 'rented',
+    monthlyRent: 2_650_000,
+    commissionPercent: 10,
+    currentTenantName: 'María José Ñáñez Úsuga',
+  };
+
+  it('🔴 P-18: la tarjeta es un enlace a la ficha del inmueble, no repite la dirección y dice su parte', async () => {
+    datos.consignaciones = [MANDATO];
+    await render();
+    const tarjeta = container.querySelector<HTMLAnchorElement>('[data-testid="inmueble-del-propietario-c7"]')!;
+    expect(tarjeta.tagName).toBe('A');
+    expect(tarjeta.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/c7');
+    expect(tarjeta.querySelector('[data-testid="direccion-del-inmueble"]')).toBeNull();
+    expect(tarjeta.querySelector('[data-testid="copropiedad-del-inmueble"]')!.textContent).toBe(
+      'inmobiliaria.propietarios.detail.copropiedadPct(50 %)',
+    );
+  });
+
+  it('con un solo dueño no dice «copropiedad»; con otra dirección, la muestra', async () => {
+    datos.consignaciones = [
+      { ...MANDATO, id: 'c8', copropietarios: [{ propietarioId: 'p1', participacionBps: 10000 }], propertyTitle: 'Apto 502 Torre B', propertyAddress: 'Carrera 80 # 33-15' },
+    ];
+    await render();
+    const tarjeta = container.querySelector('[data-testid="inmueble-del-propietario-c8"]')!;
+    expect(tarjeta.querySelector('[data-testid="copropiedad-del-inmueble"]')).toBeNull();
+    expect(tarjeta.querySelector('[data-testid="direccion-del-inmueble"]')!.textContent).toBe('Carrera 80 # 33-15');
+  });
+
+  it('🔴 P-21: con la cuenta oculta por rol no se dibuja la tarjeta de la cuenta (que diría «sin cuenta»): se dice que no la puede ver', async () => {
+    datos.propietario = { ...PROPIETARIO, datosBancariosOcultos: true, bankAccount: { bank: '', accountType: 'savings', accountNumber: '', accountHolder: '' } as unknown as Propietario['bankAccount'] };
+    await render();
+    expect(container.querySelector('[data-testid="editar-banco"]')).toBeNull();
+    expect(container.querySelector('[data-testid="propietario-plata-oculta"]')).not.toBeNull();
+  });
+
+  it('🔴 P-24: si la invitación no salió, el bloque se QUEDA (sin entregar) aunque la cuenta ya exista', async () => {
+    datos.propietario = { ...PROPIETARIO, cuentaDePortalId: null };
+    await render();
+    await click('invitar-sin-entregar');
+    expect(document.querySelector('[data-testid="invitar-al-portal"]')!.getAttribute('data-sin-entregar')).toBe('DOMINIO_NO_ENTREGABLE');
+    // La cuenta quedó creada: el mensaje ya se ofrece.
+    expect(document.querySelector('[data-testid="enviar-mensaje"]')!.getAttribute('data-para')).toBe('user-nuevo');
+  });
+
+  it('🔴 P-26: un giro de un inmueble dice «1 propiedad», no «propiedad(es)»', async () => {
+    datos.dispersiones = [
+      { id: 'd1', month: '2026-09', status: 'completed', netToPropietario: 1_000_000, items: [{}] },
+      { id: 'd2', month: '2026-08', status: 'completed', netToPropietario: 2_000_000, items: [{}, {}] },
+    ];
+    await render();
+    await click('tab-payments');
+    expect(container.textContent).toContain('1 inmobiliaria.propietarios.detail.propertiesCountUno');
+    expect(container.textContent).toContain('2 inmobiliaria.propietarios.detail.propertiesCount');
+  });
+
+  it('🔴 P-26: borrar bloqueado con un inmueble, en singular', async () => {
+    datos.propietario = { ...PROPIETARIO, propertyCount: 1 };
+    await render();
+    await click('accion-eliminar');
+    expect(document.querySelector('[data-testid="borrar-bloqueado"]')!.textContent).toContain(
+      'inmobiliaria.propietarios.deleteBloqueado.tituloUno',
+    );
+  });
+
+  it('🔴 P-20: sin `dispersiones:edit` (el asesor) el perfil tributario es de sólo lectura', async () => {
+    permisos.negadas.add('dispersiones:edit');
+    await render();
+    const perfil = container.querySelector('[data-testid="perfil-tributario"]')!;
+    expect(perfil.querySelectorAll('button')).toHaveLength(0);
+    expect(perfil.querySelector('[data-testid="perfil-tributario-solo-lectura"]')).not.toBeNull();
+  });
+
+  it('con `dispersiones:edit` (administrador o contador) el perfil se puede cambiar', async () => {
+    await render();
+    const perfil = container.querySelector('[data-testid="perfil-tributario"]')!;
+    expect(perfil.querySelector('button[data-testid="chip-iva"]')).not.toBeNull();
+  });
+
+  it('🔴 PR-11: sin `portafolio:view` no se piden los inmuebles y la pestaña dice por qué (no un fallo)', async () => {
+    permisos.negadas.add('portafolio:view');
+    await render();
+    expect(container.querySelector('[data-testid="propietario-portafolio-oculto"]')!.textContent).toBe(
+      'inmobiliaria.propietarios.detail.portafolioOculto',
+    );
+    expect(container.querySelector('[data-testid^="fallo:"]')).toBeNull();
+  });
+
+  it('PR-11: sin `portafolio:view`, «Exportar datos» dice que es un permiso, no «no pudimos leer»', async () => {
+    permisos.negadas.add('portafolio:view');
+    await render();
+    await click('accion-exportar');
+    expect(exportar).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.detail.exportError', {
+      description: 'inmobiliaria.propietarios.detail.exportSinPermiso',
+    });
+  });
+
+  it('🔴 el lápiz de la cuenta, con cuenta, ya no abre «Editar» (el back no deja cambiarla desde ahí)', async () => {
+    await render();
+    await click('editar-banco');
+    expect(document.querySelector('[data-testid="form-guardar"]')).toBeNull();
+  });
+
+  it('el lápiz, sin cuenta, abre «Editar» para cargar la primera', async () => {
+    datos.propietario = { ...PROPIETARIO, bankAccount: { bank: '', accountType: 'savings', accountNumber: '', accountHolder: '' } as unknown as Propietario['bankAccount'] };
+    await render();
+    await click('editar-banco');
+    expect(document.querySelector('[data-testid="form-guardar"]')).not.toBeNull();
   });
 });

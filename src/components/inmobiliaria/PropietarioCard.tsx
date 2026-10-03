@@ -9,6 +9,7 @@ import { IconButton, Pressable, motionSpring } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
+import { plataOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 
 interface PropietarioCardProps {
@@ -29,7 +30,9 @@ export function PropietarioCard({
   variant = 'default',
 }: PropietarioCardProps) {
   const { t } = useI18n();
-  const hasPendingBalance = propietario.pendingBalance > 0;
+  /* P-21: sin acceso a la plata, ni «$0» ni la marca de «Pendiente». */
+  const sinPlata = plataOculta(propietario);
+  const hasPendingBalance = !sinPlata && propietario.pendingBalance > 0;
   const isCompany = propietario.documentType === 'NIT';
 
   if (variant === 'compact') {
@@ -108,7 +111,8 @@ export function PropietarioCard({
               {propietario.name}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {propietario.documentType ?? 'Documento'}: {documentoParaMostrar(propietario.documentNumber)}
+              {/* P-08: «Pasaporte: AB998877», no «PASSPORT: AB998877». */}
+              {tipoDeDocumentoEnPalabras(t, propietario.documentType) ?? 'Documento'}: {documentoParaMostrar(propietario.documentNumber)}
             </p>
             <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-1 flex" />
           </div>
@@ -132,7 +136,10 @@ export function PropietarioCard({
             {propietario.propertyCount}
           </p>
           <p className="text-xs text-muted-foreground">
-            {propietario.activeLeases} {t('inmobiliaria.propietarios.card.rented')}
+            {propietario.activeLeases}{' '}
+            {propietario.activeLeases === 1
+              ? t('inmobiliaria.propietarios.card.rentedOne')
+              : t('inmobiliaria.propietarios.card.rented')}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50">
@@ -140,9 +147,16 @@ export function PropietarioCard({
             <CurrencyDollar className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>
           </div>
-          <p className="text-lg font-semibold text-foreground">
-            {formatCurrency(propietario.totalMonthlyRent)}
-          </p>
+          {sinPlata ? (
+            <p className="text-lg font-semibold text-fg-subtle" title={t('inmobiliaria.propietario.table.sinAccesoALaPlata')}>
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">{t('inmobiliaria.propietario.table.sinAccesoALaPlata')}</span>
+            </p>
+          ) : (
+            <p className="text-lg font-semibold text-foreground">
+              {formatCurrency(propietario.totalMonthlyRent)}
+            </p>
+          )}
           {hasPendingBalance && (
             <p className="text-xs text-warning">
               {formatCurrency(propietario.pendingBalance)} {t('inmobiliaria.propietarios.card.pendingAbbr')}

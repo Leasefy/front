@@ -76,7 +76,7 @@ import {
   type ColumnaDeImpuesto,
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
-import { useTextoDelEstado } from './textos';
+import { claveDelLado, useTextoDelEstado } from './textos';
 import { InteresesDelContratoSeccion } from './InteresesDelContrato';
 import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
 import { SaldoAFavorAlTerminarSeccion } from './SaldoAFavorAlTerminar';
@@ -377,6 +377,18 @@ function SeccionDeFilas({
   testid,
 }: SeccionProps) {
   const t = useTextoDelEstado();
+  /*
+   * 🔴 P-19 (QA-PROP, 03-10): el estado de cuenta del PROPIETARIO no cabía ni a
+   * 1440 px —«Esta tabla no cabe entera: se corre a los lados» en todos los
+   * contratos— porque lleva, además de las del inquilino, la comisión y sus
+   * impuestos: hasta cinco columnas de impuestos (1.464 px en una caja de
+   * 1.052). Del lado del propietario esas columnas se pliegan en UNA,
+   * «Comisión e impuestos», con cada valor que no es cero en su renglón; el
+   * vencimiento atrasado baja a su propia línea y Concepto y Pago se angostan.
+   * Los montos no se parten. El lado del inquilino queda igual.
+   */
+  const compacta = rol === 'PROPIETARIO';
+  const columnasVisibles = compacta ? (columnas.length > 0 ? 1 : 0) : columnas.length;
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, {
       initialPageSize: FILAS_POR_PAGINA,
@@ -442,7 +454,7 @@ function SeccionDeFilas({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[220px]">
+                  <TableHead className={compacta ? 'min-w-[200px]' : 'min-w-[220px]'}>
                     {t('estadoDeCuenta.colConcepto')}
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
@@ -454,15 +466,21 @@ function SeccionDeFilas({
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colBruto')}
                   </TableHead>
-                  {columnas.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap text-right">
-                      {ETIQUETA_DE_COLUMNA[c]}
-                    </TableHead>
-                  ))}
+                  {compacta
+                    ? columnasVisibles > 0 && (
+                        <TableHead className="whitespace-nowrap text-right" data-testid="col-impuestos-plegados">
+                          {t('estadoDeCuenta.delPropietario.colImpuestos')}
+                        </TableHead>
+                      )
+                    : columnas.map((c) => (
+                        <TableHead key={c} className="whitespace-nowrap text-right">
+                          {ETIQUETA_DE_COLUMNA[c]}
+                        </TableHead>
+                      ))}
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colNeto')}
                   </TableHead>
-                  <TableHead className="min-w-[150px]">
+                  <TableHead className={compacta ? 'min-w-[120px]' : 'min-w-[150px]'}>
                     {t('estadoDeCuenta.colPago')}
                   </TableHead>
                 </TableRow>
@@ -471,7 +489,7 @@ function SeccionDeFilas({
                 {renglones.map((r) =>
                   r.tipo === 'corte' ? (
                     <TableRow key={r.clave} className="hover:bg-transparent">
-                      <TableCell colSpan={6 + columnas.length} className="py-2">
+                      <TableCell colSpan={6 + columnasVisibles} className="py-2">
                         <LineaDeQuiebre corte={r.corte} />
                       </TableCell>
                     </TableRow>
@@ -482,6 +500,7 @@ function SeccionDeFilas({
                       columnas={columnas}
                       hoy={hoy}
                       rol={rol}
+                      compacta={compacta}
                     />
                   ),
                 )}
@@ -606,9 +625,34 @@ function Pildora({
   );
 }
 
-function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
+function Vence({
+  fila,
+  hoy,
+  rol,
+}: {
+  fila: FilaDelEstadoDeCuenta;
+  hoy: string;
+  rol?: RolEnElContrato;
+}) {
   const t = useTextoDelEstado();
   const vencida = estaVencida(fila, hoy);
+  /*
+   * P-19 / P-16: del lado del propietario lo vencido es un GIRO ATRASADO de la
+   * inmobiliaria, no una deuda suya: «atrasado» en ámbar y en su propia línea
+   * (en el mismo renglón ensanchaba la columna 70 px). El inquilino, igual.
+   */
+  if (rol === 'PROPIETARIO') {
+    return (
+      <span className="whitespace-nowrap font-mono text-caption tabular-nums">
+        {fechaLegible(fila.fechaVencimiento)}
+        {vencida && (
+          <span className="block font-sans text-warning" data-testid="vence-atrasado">
+            {t(claveDelLado('estadoDeCuenta.vencida', rol))}
+          </span>
+        )}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
@@ -666,11 +710,14 @@ function FilaDeLaTabla({
   columnas,
   hoy,
   rol,
+  compacta = false,
 }: {
   fila: FilaDelEstadoDeCuenta;
   columnas: ColumnaDeImpuesto[];
   hoy: string;
   rol: RolEnElContrato;
+  /** Lado del propietario: los impuestos van plegados en una columna (P-19). */
+  compacta?: boolean;
 }) {
   const apagada = fila.estado === 'ANULADA' || fila.estado === 'ANTERIOR';
   return (
@@ -679,7 +726,7 @@ function FilaDeLaTabla({
         <Concepto fila={fila} />
       </TableCell>
       <TableCell className="align-top">
-        <Vence fila={fila} hoy={hoy} />
+        <Vence fila={fila} hoy={hoy} rol={rol} />
       </TableCell>
       <TableCell className="align-top">
         <Pildora fila={fila} rol={rol} />
@@ -687,14 +734,22 @@ function FilaDeLaTabla({
       <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
         {formatCurrency(fila.valorBruto)}
       </TableCell>
-      {columnas.map((c) => (
-        <TableCell
-          key={c}
-          className="whitespace-nowrap text-right align-top font-mono text-caption tabular-nums text-fg-muted"
-        >
-          {formatCurrency(fila[c] ?? 0)}
-        </TableCell>
-      ))}
+      {compacta ? (
+        columnas.length > 0 && (
+          <TableCell className="align-top">
+            <ImpuestosPlegados fila={fila} columnas={columnas} />
+          </TableCell>
+        )
+      ) : (
+        columnas.map((c) => (
+          <TableCell
+            key={c}
+            className="whitespace-nowrap text-right align-top font-mono text-caption tabular-nums text-fg-muted"
+          >
+            {formatCurrency(fila[c] ?? 0)}
+          </TableCell>
+        ))
+      )}
       <TableCell className="whitespace-nowrap text-right align-top font-mono font-medium tabular-nums">
         {formatCurrency(fila.valorNeto)}
       </TableCell>
@@ -702,6 +757,36 @@ function FilaDeLaTabla({
         <Pago fila={fila} />
       </TableCell>
     </TableRow>
+  );
+}
+
+/**
+ * Las columnas de impuestos de una fila, plegadas en una (lado del propietario,
+ * P-19): un renglón por valor que no es cero, «Comisión  $ 225.000», con el
+ * monto entero (sin partir) y alineado a la derecha como el resto de la plata.
+ */
+function ImpuestosPlegados({
+  fila,
+  columnas,
+}: {
+  fila: FilaDelEstadoDeCuenta;
+  columnas: ColumnaDeImpuesto[];
+}) {
+  const conValor = columnas.filter((c) => (fila[c] ?? 0) !== 0);
+  if (conValor.length === 0) {
+    return <span className="block text-right text-caption text-fg-subtle">—</span>;
+  }
+  return (
+    <dl className="ml-auto grid w-max grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-caption" data-testid="impuestos-plegados">
+      {conValor.map((c) => (
+        <React.Fragment key={c}>
+          <dt className="whitespace-nowrap text-fg-subtle">{ETIQUETA_DE_COLUMNA[c]}</dt>
+          <dd className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
+            {formatCurrency(fila[c] ?? 0)}
+          </dd>
+        </React.Fragment>
+      ))}
+    </dl>
   );
 }
 
@@ -737,7 +822,7 @@ function TarjetaDeFila({
 
       <dl className="mt-2 space-y-0.5 border-t border-border-faint pt-2 text-caption">
         <Dato etiqueta={t('estadoDeCuenta.colVence')}>
-          <Vence fila={fila} hoy={hoy} />
+          <Vence fila={fila} hoy={hoy} rol={rol} />
         </Dato>
         <Dato etiqueta={t('estadoDeCuenta.colBruto')}>
           <span className="font-mono tabular-nums">{formatCurrency(fila.valorBruto)}</span>

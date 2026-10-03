@@ -316,7 +316,8 @@ describe('O5 — «Eliminar» no se ofrece activo sobre lo que no se puede borra
     await clic($('eliminar-p1'));
     const confirmar = $('confirmar-eliminar') as HTMLButtonElement;
     expect(confirmar.disabled).toBe(true);
-    expect($('borrar-bloqueado')?.textContent).toContain('inmobiliaria.propietarios.deleteBloqueado.titulo(3)');
+    // P-26: «3 inmuebles consignados» (la clave con el número bien dicho), no «inmueble(s)».
+    expect($('borrar-bloqueado')?.textContent).toContain('inmobiliaria.propietarios.deleteBloqueado.tituloN(3)');
 
     await clic(confirmar);
     expect(api.delete).not.toHaveBeenCalled();

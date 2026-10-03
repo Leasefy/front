@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { CrossFade } from '@leasefy/cadence';
 import {
   Sparkle,
@@ -19,6 +19,7 @@ import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
+import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { PropietarioForm } from './PropietarioForm';
 import {
   extractTerceroFromFiles,
@@ -52,6 +53,12 @@ interface TerceroIACaptureProps {
    * Lo que no tiene campo lo pinta la pantalla que monta esto.
    */
   errorDelServidor?: ErrorAlGuardarPropietario | null;
+  /**
+   * Lo que el back dijo sin campo (`errorDelServidor.general`), ya pintado por
+   * quien monta esto. Va ARRIBA del cuerpo del cajón: fuera de él quedaría
+   * entre la cabecera y el cuerpo, sin desplazarse con nada.
+   */
+  aviso?: React.ReactNode;
 }
 
 type Step = 'upload' | 'extracting' | 'review' | 'error';
@@ -101,7 +108,7 @@ function IconoDeArchivo({ file }: { file: File }) {
  * es cada uno y lo devuelve (`documentos`), y una pista de un solo documento
  * era más un obstáculo («¿y si subo los dos?») que una ayuda.
  */
-export function TerceroIACapture({ onCreated, onClose, errorDelServidor }: TerceroIACaptureProps) {
+export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }: TerceroIACaptureProps) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.terceroIA.${s}`;
 
@@ -210,9 +217,18 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor }: Terce
     setFormKey((n) => n + 1);
   };
 
+  /** El pie del cajón manda el formulario de revisión desde afuera (`form=`). */
+  const idDelFormulario = `tercero-ia-${useId().replace(/:/g, '')}`;
+  const [guardando, setGuardando] = useState(false);
+
   const handleSave = async (data: PropietarioFormData) => {
-    await onCreated(data);
-    onClose();
+    setGuardando(true);
+    try {
+      await onCreated(data);
+      onClose();
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const prefill: Propietario | undefined = useMemo(
@@ -221,138 +237,172 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor }: Terce
   );
   const confidencePct = Math.round(confidence * 100);
 
-  // Cada paso (subir → leyendo → revisar, o el fallo) devuelve el MISMO
-  // `CrossFade` en la raíz: React lo conserva y el cambio de `step` cruza un
-  // paso con el otro. `popLayout`: el nuevo entra YA (sus campos quedan listos
-  // al instante) y el viejo se va por encima.
+  /*
+   * Nico (03-10): «el de crear con IA sigue en modal» → todo el recorrido va en
+   * el CAJÓN: subir → leer → revisar y guardar, sin abrir nada encima. Cada paso
+   * pone su cuerpo (lo único que se desplaza) y su pie (siempre visible entero).
+   * El cuerpo es el MISMO elemento en los cuatro pasos y adentro un `CrossFade`
+   * cruza un paso con el otro (`popLayout`: el nuevo entra YA y el viejo se va
+   * por encima).
+   */
+  let cuerpo: React.ReactNode;
+  let pie: React.ReactNode;
 
-  // ── Review step: prefilled (or blank) PropietarioForm ──────────────────────
   if (step === 'review') {
+    // ── Revisar: el formulario prellenado (o en blanco) ──────────────────────
     const detectadosLegibles = detectados
       .map((d) => TIPO_DETECTADO[d.tipo] ?? d.tipo)
       .filter((v, i, arr) => arr.indexOf(v) === i);
-    return (
-      <CrossFade swapKey={step} mode="popLayout">
-        <div className="space-y-4">
-          {extracted ? (
-            <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
-              <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
-                <p className="text-xs text-warning/90 mt-0.5">
-                  {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
+    cuerpo = (
+      <div className="space-y-4">
+        {extracted ? (
+          <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+            <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
+              <p className="text-xs text-warning/90 mt-0.5">
+                {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
+              </p>
+              {detectadosLegibles.length > 0 ? (
+                <p className="text-xs text-warning/90 mt-0.5" data-testid="documentos-detectados">
+                  {t(k('detectados'))}: {detectadosLegibles.join(' · ')}
                 </p>
-                {detectadosLegibles.length > 0 ? (
-                  <p className="text-xs text-warning/90 mt-0.5" data-testid="documentos-detectados">
-                    {t(k('detectados'))}: {detectadosLegibles.join(' · ')}
-                  </p>
-                ) : null}
-                {extracted.bancoNombre && !extracted.banco ? (
-                  <p className="text-xs text-warning/90 mt-0.5" data-testid="banco-fuera-de-lista">
-                    {t(k('bancoFueraDeLista'), { banco: extracted.bancoNombre })}
-                  </p>
-                ) : null}
+              ) : null}
+              {extracted.bancoNombre && !extracted.banco ? (
+                <p className="text-xs text-warning/90 mt-0.5" data-testid="banco-fuera-de-lista">
+                  {t(k('bancoFueraDeLista'), { banco: extracted.bancoNombre })}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">{t(k('manualNote'))}</p>
+        )}
+
+        {extracted && conflictos.length > 0 ? (
+          <div
+            className="rounded-lg border border-danger/30 bg-danger-soft p-3 space-y-2"
+            data-testid="conflictos"
+          >
+            <div className="flex items-start gap-2.5">
+              <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
+              <div>
+                <p className="text-xs font-semibold text-danger">{t(k('conflictosTitle'))}</p>
+                <p className="text-xs text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
               </div>
             </div>
+            <ul className="space-y-1.5 pl-7">
+              {conflictos.map((c) => (
+                <li key={c.campo} className="text-xs" data-testid={`conflicto-${c.campo}`}>
+                  <span className="font-medium text-foreground">{t(k(`campos.${c.campo}`))}:</span>
+                  <span className="mt-1 flex flex-wrap gap-1.5">
+                    {c.valores.map((v) => (
+                      <button
+                        key={`${v.documento}:${v.valor}`}
+                        type="button"
+                        onClick={() => usarValor(c.campo, v.valor)}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
+                        title={t(k('usarValorDe'), { documento: v.documento })}
+                        data-testid={`usar-${c.campo}`}
+                      >
+                        <span className="font-medium">{v.valor}</span>
+                        <span className="text-muted-foreground">· {v.documento}</span>
+                      </button>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <PropietarioForm
+          key={formKey}
+          initialData={prefill}
+          onSubmit={handleSave}
+          onCancel={onClose}
+          mode="create"
+          serverError={errorDelServidor?.campo ?? null}
+          serverErrors={errorDelServidor?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDelFormulario}
+        />
+      </div>
+    );
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose} disabled={guardando}>
+          {t('inmobiliaria.propietario.form.cancel')}
+        </Button>
+        <Button
+          type="submit"
+          form={idDelFormulario}
+          size="sm"
+          hideArrow
+          disabled={guardando}
+          className="gap-2"
+          data-testid="tercero-ia-guardar"
+        >
+          {guardando ? (
+            <>
+              <Spinner size="sm" variant="current" />
+              {t('inmobiliaria.propietario.form.saving')}
+            </>
           ) : (
-            <p className="text-xs text-muted-foreground">{t(k('manualNote'))}</p>
+            t('inmobiliaria.propietario.form.createOwner')
           )}
-
-          {extracted && conflictos.length > 0 ? (
-            <div
-              className="rounded-lg border border-danger/30 bg-danger-soft p-3 space-y-2"
-              data-testid="conflictos"
-            >
-              <div className="flex items-start gap-2.5">
-                <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
-                <div>
-                  <p className="text-xs font-semibold text-danger">{t(k('conflictosTitle'))}</p>
-                  <p className="text-xs text-danger/90 mt-0.5">{t(k('conflictosDesc'))}</p>
-                </div>
-              </div>
-              <ul className="space-y-1.5 pl-7">
-                {conflictos.map((c) => (
-                  <li key={c.campo} className="text-xs" data-testid={`conflicto-${c.campo}`}>
-                    <span className="font-medium text-foreground">{t(k(`campos.${c.campo}`))}:</span>
-                    <span className="mt-1 flex flex-wrap gap-1.5">
-                      {c.valores.map((v) => (
-                        <button
-                          key={`${v.documento}:${v.valor}`}
-                          type="button"
-                          onClick={() => usarValor(c.campo, v.valor)}
-                          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
-                          title={t(k('usarValorDe'), { documento: v.documento })}
-                          data-testid={`usar-${c.campo}`}
-                        >
-                          <span className="font-medium">{v.valor}</span>
-                          <span className="text-muted-foreground">· {v.documento}</span>
-                        </button>
-                      ))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          <PropietarioForm
-            key={formKey}
-            initialData={prefill}
-            onSubmit={handleSave}
-            onCancel={onClose}
-            mode="create"
-            serverError={errorDelServidor?.campo ?? null}
-            serverErrors={errorDelServidor?.porCampo ?? null}
-          />
-        </div>
-      </CrossFade>
+        </Button>
+      </>
     );
-  }
-
-  // ── Extracting step ────────────────────────────────────────────────────────
-  if (step === 'extracting') {
-    return (
-      <CrossFade swapKey={step} mode="popLayout">
-        <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
-          <Spinner size="md" variant="muted" />
-          <p className="text-sm text-muted-foreground">
-            {t(k('extractingN'), { n: String(files.length) })}
-          </p>
-        </div>
-      </CrossFade>
+  } else if (step === 'extracting') {
+    // ── Leyendo ──────────────────────────────────────────────────────────────
+    cuerpo = (
+      <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+        <Spinner size="md" variant="muted" />
+        <p className="text-sm text-muted-foreground">
+          {files.length === 1 ? t(k('extractingUno')) : t(k('extractingN'), { n: String(files.length) })}
+        </p>
+      </div>
     );
-  }
-
-  // ── Error step ─────────────────────────────────────────────────────────────
-  if (step === 'error') {
-    return (
-      <CrossFade swapKey={step} mode="popLayout">
-        <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
-          <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
-            <WarningCircle className="w-7 h-7 text-danger" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
-            <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <Button variant="secondary" size="sm" hideArrow onClick={resetToUpload}>
-              <ArrowClockwise className="w-4 h-4" />
-              {t(k('retry'))}
-            </Button>
-            <Button size="sm" hideArrow onClick={fillManually}>
-              <PencilSimple className="w-4 h-4" weight="bold" />
-              {t(k('fillManual'))}
-            </Button>
-          </div>
-        </div>
-      </CrossFade>
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose}>
+          {t(k('cancel'))}
+        </Button>
+        <Button type="button" size="sm" hideArrow disabled data-testid="tercero-ia-extraer">
+          <Spinner size="sm" variant="current" />
+          {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
+        </Button>
+      </>
     );
-  }
-
-  // ── Upload step (default) ────────────────────────────────────────────────────
-  return (
-    <CrossFade swapKey={step} mode="popLayout">
+  } else if (step === 'error') {
+    // ── No se pudo leer ──────────────────────────────────────────────────────
+    cuerpo = (
+      <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+        <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
+          <WarningCircle className="w-7 h-7 text-danger" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
+          <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
+        </div>
+      </div>
+    );
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={resetToUpload}>
+          <ArrowClockwise className="w-4 h-4" />
+          {t(k('retry'))}
+        </Button>
+        <Button type="button" size="sm" hideArrow onClick={fillManually}>
+          <PencilSimple className="w-4 h-4" weight="bold" />
+          {t(k('fillManual'))}
+        </Button>
+      </>
+    );
+  } else {
+    // ── Subir (el primer paso) ───────────────────────────────────────────────
+    cuerpo = (
       <div className="space-y-5">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
@@ -438,17 +488,37 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor }: Terce
             </li>
           </ul>
         ) : null}
-
-        <div className="flex items-center justify-end gap-2 pt-1">
-          <Button variant="secondary" hideArrow onClick={onClose}>
-            {t(k('cancel'))}
-          </Button>
-          <Button hideArrow onClick={handleExtract} disabled={files.length === 0} data-testid="tercero-ia-extraer">
-            <Sparkle className="w-4 h-4" weight="fill" />
-            {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
-          </Button>
-        </div>
       </div>
-    </CrossFade>
+    );
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose}>
+          {t(k('cancel'))}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          onClick={handleExtract}
+          disabled={files.length === 0}
+          data-testid="tercero-ia-extraer"
+        >
+          <Sparkle className="w-4 h-4" weight="fill" />
+          {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <CajonCuerpo>
+        {aviso ? <div className="mb-4">{aviso}</div> : null}
+        <CrossFade swapKey={step} mode="popLayout">
+          {cuerpo}
+        </CrossFade>
+      </CajonCuerpo>
+      <CajonPie>{pie}</CajonPie>
+    </>
   );
 }

@@ -114,6 +114,23 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCard
 }
 
 /**
+ * Las líneas de cada celda de la franja según la rejilla (P-22). El `Stat` de
+ * Cadence trae `border-l` (menos la primera) y el aire de una FILA; en una
+ * columna (celular) las celdas se separan con una línea arriba, y en dos
+ * (tableta) la de la izquierda no lleva línea a su izquierda. Desde `xl`,
+ * como siempre.
+ */
+function celdaDeLaFranja(i: number): string {
+  return cn(
+    'max-xl:min-w-0 max-xl:px-1 max-xl:py-3',
+    i > 0 && 'max-sm:border-l-0 max-sm:border-t',
+    i % 2 === 0 && 'sm:max-xl:border-l-0',
+    i % 2 === 1 && 'sm:max-xl:pl-4',
+    i >= 2 && 'sm:max-xl:border-t',
+  );
+}
+
+/**
  * PropietarioStats - KPI stats display for a property owner
  * Shows key metrics like property count, monthly rent, pending balances
  */
@@ -125,7 +142,17 @@ export function PropietarioStats({
   onCargarCuenta,
 }: PropietarioStatsProps) {
   const { t, locale } = useI18n();
-  const hasPendingBalance = propietario.pendingBalance > 0;
+  /*
+   * 🔴 P-21 (QA-PROP, 03-10): quien no ve la plata del propietario (el asesor)
+   * recibe los montos en `null` y la cuenta en blanco, con `plataOculta` /
+   * `datosBancariosOcultos` diciendo por qué. Leídos como cero, la ficha le
+   * decía «Canon $0», «Neto $0», «Al día» y «No tiene cuenta bancaria» a una
+   * propietaria que SÍ la tiene. Con la plata oculta no hay cifra ni aviso de
+   * plata: «—» y «Sin acceso a la plata».
+   */
+  const plataOculta = propietario.plataOculta === true;
+  const cuentaOculta = plataOculta || propietario.datosBancariosOcultos === true;
+  const hasPendingBalance = !plataOculta && propietario.pendingBalance > 0;
   const occupancyRate = propietario.propertyCount > 0
     ? Math.round((propietario.activeLeases / propietario.propertyCount) * 100)
     : 0;
@@ -139,7 +166,7 @@ export function PropietarioStats({
   const sinArrendar = (consignaciones ?? []).filter(
     (c) => c.listingType !== 'sale' && c.availability === 'available',
   );
-  const sinCuenta = !propietario.bankAccount?.accountNumber;
+  const sinCuenta = !cuentaOculta && !propietario.bankAccount?.accountNumber;
 
   if (variant === 'mini') {
     return (
@@ -216,10 +243,19 @@ export function PropietarioStats({
   const ultimoGiro = propietario.lastPaymentDate
     ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' })
     : null;
+  const sinAcceso = t('inmobiliaria.propietario.stats.sinAccesoALaPlata');
   return (
     <div className={cn('space-y-4', className)}>
-      <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-propietario">
+      {/* 🔴 P-22 (QA-PROP, 03-10): a 390 px la franja de cuatro medía 690 px y
+          corría la página entera de lado. Debajo de `xl` va en rejilla (una
+          columna en el celular, dos en tableta) y desde `xl` en fila, como
+          antes. Las líneas entre celdas siguen la rejilla (`celdaDeLaFranja`). */}
+      <StatStrip
+        className="grid grid-cols-1 rounded-lg border border-border bg-card px-4 sm:grid-cols-2 xl:flex"
+        data-testid="resumen-del-propietario"
+      >
         <Stat
+          className={celdaDeLaFranja(0)}
           label={t('inmobiliaria.propietario.stats.properties')}
           value={String(propietario.propertyCount)}
           delta={
@@ -238,28 +274,47 @@ export function PropietarioStats({
                 ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
                 : t('inmobiliaria.propietario.stats.sinPropiedades')
           }
-          deltaDirection={
-            propietario.propertyCount > 0 && propietario.activeLeases < propietario.propertyCount ? 'down' : 'neutral'
+          /* 🔴 P-17: «7 de 8 arrendados» y «Último giro» no son una tendencia:
+             van en texto neutro, sin flecha ni rojo (antes `down`/`up`). */
+          compact
+        />
+        <Stat
+          className={celdaDeLaFranja(1)}
+          label={t('inmobiliaria.propietario.stats.monthlyRent')}
+          value={plataOculta ? '—' : formatCurrency(propietario.totalMonthlyRent)}
+          delta={
+            plataOculta
+              ? sinAcceso
+              : comisionReal != null
+                ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}`
+                : undefined
           }
           compact
         />
         <Stat
-          label={t('inmobiliaria.propietario.stats.monthlyRent')}
-          value={formatCurrency(propietario.totalMonthlyRent)}
-          delta={comisionReal != null ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}` : undefined}
-          compact
-        />
-        <Stat
+          className={celdaDeLaFranja(2)}
           label={t('inmobiliaria.propietario.stats.netToOwner')}
-          value={formatCurrency(neto)}
-          delta={t('inmobiliaria.propietario.stats.netToOwnerHint')}
+          value={plataOculta ? '—' : formatCurrency(neto)}
+          delta={plataOculta ? sinAcceso : t('inmobiliaria.propietario.stats.netToOwnerHint')}
           compact
         />
         <Stat
+          className={celdaDeLaFranja(3)}
           label={t('inmobiliaria.propietario.stats.pendingBalance')}
-          value={hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
-          delta={ultimoGiro ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}` : undefined}
-          deltaDirection={hasPendingBalance ? 'down' : 'up'}
+          value={
+            plataOculta
+              ? '—'
+              : hasPendingBalance
+                ? formatCurrency(propietario.pendingBalance)
+                : t('inmobiliaria.propietario.stats.upToDate')
+          }
+          delta={
+            plataOculta
+              ? sinAcceso
+              : ultimoGiro
+                ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}`
+                : undefined
+          }
           compact
         />
       </StatStrip>
@@ -272,7 +327,9 @@ export function PropietarioStats({
           accion={onCargarCuenta ? { label: t('inmobiliaria.propietario.alertas.sinCuenta.accion'), onClick: onCargarCuenta } : undefined}
           data-testid="alerta-sin-cuenta"
         >
-          {t('inmobiliaria.propietario.alertas.sinCuenta.detalle', { n: propietario.activeLeases })}
+          {propietario.activeLeases === 1
+            ? t('inmobiliaria.propietario.alertas.sinCuenta.detalleUno')
+            : t('inmobiliaria.propietario.alertas.sinCuenta.detalle', { n: propietario.activeLeases })}
         </AlertaAccionable>
       )}
 

@@ -78,7 +78,10 @@ async function pintarConError(e: unknown) {
     root.render(
       <PropietarioForm
         initialData={JORGE}
-        mode="edit"
+        // P-14 (QA de Propietarios, 03-10): en «Editar» la cuenta que ya existe
+        // es de sólo lectura y no viaja, así que un 400 sobre la cuenta sólo
+        // puede volver al CREAR (con los datos prellenados, como «Crear con IA»).
+        mode="create"
         onSubmit={async () => {}}
         onCancel={() => {}}
         serverError={error.campo}

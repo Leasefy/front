@@ -56,6 +56,7 @@ import {
   columnasDeImpuestos,
   columnasOmitidas,
   comoSeLlamaElRol,
+  documentoDelCliente,
   conceptoLimpio,
   estaVencida,
   ETIQUETA_DE_COLUMNA,
@@ -564,7 +565,7 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
           <Text style={estilos.cliente}>{paraElPapel(doc.cliente.nombre)}</Text>
           <Text style={estilos.clienteDatos}>
             {[
-              doc.cliente.documento ? `NIT/CC ${doc.cliente.documento}` : null,
+              documentoDelCliente(doc.cliente),
               comoSeLlamaElRol(doc.cliente.tipo),
               cuantos,
             ]

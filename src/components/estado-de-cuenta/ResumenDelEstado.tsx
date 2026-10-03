@@ -22,7 +22,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
-import { comoSeLlamaElRol, fechaLegible } from './filas';
+import { comoSeLlamaElRol, documentoDelCliente, fechaLegible } from './filas';
 import {
   amortizacionDe,
   resumirElCliente,
@@ -59,7 +59,7 @@ export function ResumenDelEstado({
         <h2 className="text-h2 text-fg">{doc.cliente.nombre}</h2>
         <p className="font-mono text-caption tabular-nums text-fg-muted">
           {[
-            doc.cliente.documento ? `NIT/CC ${doc.cliente.documento}` : null,
+            documentoDelCliente(doc.cliente),
             comoSeLlamaElRol(doc.cliente.tipo),
             doc.contratos.length === 1
               ? '1 contrato'

@@ -39,7 +39,7 @@ import {
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { fechaLegible, hoyLocal, sumarTotales } from './filas';
 import { resumirElCliente } from './resumen';
-import { useTextoDelEstado } from './textos';
+import { claveDelLado, useTextoDelEstado } from './textos';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 /** Lo que pinta la tarjeta, venga del resumen barato o del documento entero. */
@@ -109,7 +109,17 @@ export function ResumenEnLaFicha({
   volverA,
   className,
 }: ResumenEnLaFichaProps) {
-  const t = useTextoDelEstado();
+  const texto = useTextoDelEstado();
+  /*
+   * 🔴 P-16 (QA-PROP, 03-10): la ficha del PROPIETARIO decía «Resta por pagar ·
+   * Próxima cuota · En mora · 64 días» —las palabras del inquilino— mientras su
+   * estado de cuenta decía «Por girar · Giro atrasado». Para el propietario el
+   * número es lo que la inmobiliaria le tiene que GIRAR: se usan los rótulos de
+   * su lado (`claveDelLado`), los mismos del documento completo.
+   */
+  const esPropietario = tipo === 'propietario';
+  const t: typeof texto = (clave, params) =>
+    texto(claveDelLado(clave, esPropietario ? 'PROPIETARIO' : 'INQUILINO'), params);
   const hoy = hoyLocal();
   const [numeros, setNumeros] = React.useState<NumerosDeLaFicha | null>(null);
   const [cargando, setCargando] = React.useState(true);
@@ -204,8 +214,9 @@ export function ResumenEnLaFicha({
             >
               <AnimatedNumber value={numeros.restaPorPagar} from={0} format={formatCurrency} />
             </p>
-            {/* Capital arriba; el interés de mora, aparte y debajo. */}
-            {(numeros.interesDeMora ?? 0) > 0 && (
+            {/* Capital arriba; el interés de mora, aparte y debajo. Nunca del
+                lado del propietario: el interés de mora es de la inmobiliaria. */}
+            {!esPropietario && (numeros.interesDeMora ?? 0) > 0 && (
               <p
                 data-testid="ficha-intereses"
                 className="mt-1 font-mono text-caption tabular-nums text-danger"
@@ -246,7 +257,10 @@ export function ResumenEnLaFicha({
                 className={cn(
                   'inline-block rounded-full px-2.5 py-0.5 text-body-sm',
                   numeros.enMora
-                    ? 'bg-danger-soft text-danger'
+                    ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
+                      esPropietario
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-danger-soft text-danger'
                     : numeros.enPlazo
                       ? 'bg-warning-soft text-warning'
                       : 'bg-success-soft text-success',

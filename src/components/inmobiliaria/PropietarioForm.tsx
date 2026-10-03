@@ -985,7 +985,9 @@ function CuentaRegistrada({
   const ultimos4 = cuenta.ultimos4 || cuenta.accountNumber.replace(/\D/g, '').slice(-4);
   const banco = COLOMBIAN_BANKS.find((b) => b.code === cuenta.bank)?.name ?? cuenta.bankName ?? null;
   const titular = cuenta.accountHolder?.trim();
-  const tipo = cuenta.accountType ? t(ACCOUNT_TYPE_LABEL_KEYS[cuenta.accountType]) : null;
+  // Un tipo que no está en el catálogo (un dato viejo, «SAVINGS») no se nombra: no se inventa.
+  const claveDelTipo = ACCOUNT_TYPE_LABEL_KEYS[cuenta.accountType as AccountType] as string | undefined;
+  const tipo = claveDelTipo ? t(claveDelTipo) : null;
   const href = `/panel/inmobiliaria/propietarios/${propietario.id}?cambiarCuenta=1`;
   return (
     <div

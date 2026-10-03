@@ -9,7 +9,7 @@
  * yo le debo pagar mes a mes hasta completar el contrato.»
  */
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -36,27 +36,42 @@ function Contenido() {
    * pierde es el ítem de WhatsApp, y el menú ya lo dice.
    */
   const [cuentaDePortalId, setCuentaDePortalId] = useState<string | null>(null);
+  /*
+   * Una sola lectura de la ficha: la cuenta del portal (WhatsApp) y el TIPO de
+   * documento, que el estado de cuenta todavía no trae (P-19, QA-PROP 03-10:
+   * el encabezado decía «NIT/CC 52123456» a una persona con cédula). Si falla,
+   * el documento sale igual con lo de siempre.
+   */
+  const fichaDelPropietario = useMemo(
+    () => propietariosApi.getById(id).catch(() => null),
+    [id],
+  );
   useEffect(() => {
     let vivo = true;
-    void propietariosApi
-      .getById(id)
-      .then((p) => {
-        if (vivo) setCuentaDePortalId(p.cuentaDePortalId ?? null);
-      })
-      .catch(() => {
-        /* sin cuenta conocida: el ítem de WhatsApp queda apagado */
-      });
+    void fichaDelPropietario.then((p) => {
+      /* sin cuenta conocida: el ítem de WhatsApp queda apagado */
+      if (vivo) setCuentaDePortalId(p?.cuentaDePortalId ?? null);
+    });
     return () => {
       vivo = false;
     };
-  }, [id]);
+  }, [fichaDelPropietario]);
 
   return (
     <PantallaDelEstadoDeCuenta
       /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
          el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
          quien abre el enlace compartido. */
-      cargar={(filtro) => estadoDeCuentaApi.propietario(id, filtro)}
+      cargar={async (filtro) => {
+        const [doc, ficha] = await Promise.all([
+          estadoDeCuentaApi.propietario(id, filtro),
+          fichaDelPropietario,
+        ]);
+        // Lo que mande el back gana; la ficha sólo llena el hueco.
+        return doc.cliente.tipoDocumento || !ficha?.documentType
+          ? doc
+          : { ...doc, cliente: { ...doc.cliente, tipoDocumento: ficha.documentType } };
+      }}
       volverA={{ href: volver }}
       acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta

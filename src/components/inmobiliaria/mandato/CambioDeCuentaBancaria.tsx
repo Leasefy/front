@@ -16,7 +16,7 @@
  * sale y la pantalla lo dice.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chip, CrossFade, RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import {
   Bank,
@@ -348,7 +348,14 @@ export function CambioDeCuentaBancaria({
   puedeEditar,
   onCuentaCambiada,
   propietario,
+  pedirCambio = 0,
 }: {
+  /**
+   * Sube cada vez que alguien de afuera pide «Cambiar cuenta» (el lápiz de la
+   * tarjeta de la cuenta, P-14/QA-PROP 03-10). Abre el pedido si se puede; si
+   * ya hay un cambio en curso, lleva la vista a esta sección, que lo dice.
+   */
+  pedirCambio?: number;
   propietarioId: string;
   /**
    * Nombre y documento del propietario (22-09): para decir si la cuenta es suya
@@ -371,6 +378,22 @@ export function CambioDeCuentaBancaria({
   const [enlaceDePrueba, setEnlaceDePrueba] = useState<string | null>(null);
 
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
+  const seccion = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!pedirCambio) return;
+    const ultimoCambio = datos?.cambios[0] ?? null;
+    const enCurso =
+      ultimoCambio && (ultimoCambio.estado === 'PENDIENTE_CONFIRMACION' || ultimoCambio.estado === 'CONFIRMADO');
+    if (puedeEditar && datos?.disponible && tieneCuenta && !enCurso) {
+      setPidiendo(true);
+      return;
+    }
+    seccion.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    seccion.current?.focus({ preventScroll: true });
+    // Sólo cuando llega un pedido nuevo: `datos` cambia solo con cada lectura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedirCambio]);
 
   const cargar = useCallback(async () => {
     try {
@@ -428,7 +451,12 @@ export function CambioDeCuentaBancaria({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="cambio-de-cuenta">
+    <section
+      ref={seccion}
+      tabIndex={-1}
+      className="rounded-lg border border-border bg-card p-5 space-y-3 focus:outline-none"
+      data-testid="cambio-de-cuenta"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Bank className="w-4 h-4 text-muted-foreground" aria-hidden="true" />

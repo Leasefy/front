@@ -12,23 +12,22 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CrossFade } from '@leasefy/cadence';
-import { CalendarBlank } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
-import { Input, Label } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ExtractoPropietario as ExtractoDelMes } from '@/lib/types/inmobiliaria';
 import { descargar } from '@/lib/propietarios/exportar-datos';
-import { nombreDelMes } from '@/lib/utils/mes';
-import { ExtractoPropietario } from './ExtractoPropietario';
+import { AccionesDelExtracto, ExtractoPropietario } from './ExtractoPropietario';
 
 interface ExtractoDelPropietarioDialogProps {
   propietarioId: string;
@@ -45,11 +44,6 @@ const FORMA_DE_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
 export function mesDeHoy(hoy: Date = new Date()): string {
   const mm = String(hoy.getMonth() + 1).padStart(2, '0');
   return `${hoy.getFullYear()}-${mm}`;
-}
-
-/** «septiembre de 2026» → «Septiembre de 2026». Con `capitalize` de CSS salía «Septiembre De 2026». */
-function conInicialMayuscula(texto: string): string {
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 export function ExtractoDelPropietarioDialog({
@@ -114,33 +108,30 @@ export function ExtractoDelPropietarioDialog({
           propietario recibe— quedaban detrás del scroll lateral; a 1024, el
           ancho de antes, se ven casi ocho. Se le devuelve ese ancho. El scroll
           (y su `data-lenis-prevent`) lo pone el cuerpo del Dialog. */}
-      <DialogContent size="xl" className="max-w-5xl" data-testid="extracto-del-propietario">
+      {/* P-23 (QA-PROP, 03-10): a 1440 px la tabla (~1.030 px) seguía sin caber
+          en 1024 y Neto, fija, tapaba Comisión y Conceptos al correrla. Con
+          «Com. %» plegado en Comisión y el diálogo en 1152 (`max-w-6xl`) cabe
+          entera; en una pantalla más angosta se corre como antes. */}
+      <DialogContent size="xl" className="max-w-6xl" data-testid="extracto-del-propietario">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.propietario.extracto.ownerStatement')}</DialogTitle>
           <DialogDescription>{propietarioName}</DialogDescription>
         </DialogHeader>
 
         <div className="min-w-0 space-y-4">
-          <div className="flex items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="mes-del-extracto" className="text-xs">
-                {t('inmobiliaria.propietario.extracto.elegirMes')}
-              </Label>
-              <Input
-                id="mes-del-extracto"
-                type="month"
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-                className="h-10 w-44 font-mono"
-                data-testid="extracto-mes"
-              />
-            </div>
-            {mesValido && (
-              <p className="flex items-center gap-1.5 pb-2.5 text-sm text-fg-muted">
-                <CalendarBlank className="h-4 w-4" />
-                <span>{conInicialMayuscula(nombreDelMes(mes))}</span>
-              </p>
-            )}
+          {/* 🔴 P-23 (QA-PROP, 03-10): el `<input type="month">` del navegador
+              decía «October 2026» en un panel en español. Es el selector de
+              mes de la casa (‹ Octubre de 2026 ›), el de las pantallas de
+              finanzas: en español y sin meses futuros. */}
+          <div
+            role="group"
+            aria-labelledby="mes-del-extracto-etiqueta"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1"
+          >
+            <span id="mes-del-extracto-etiqueta" className="text-xs font-medium text-fg">
+              {t('inmobiliaria.propietario.extracto.elegirMes')}
+            </span>
+            <SelectorDeMes mes={mes} onCambiar={setMes} testId="extracto-mes" />
           </div>
 
           {/* Cargando → el extracto del mes (o el fallo): se cruzan. */}
@@ -172,10 +163,25 @@ export function ExtractoDelPropietarioDialog({
                 extracto={extracto}
                 onDownloadPDF={descargarPdf}
                 onEmail={enviarPorCorreo}
+                acciones="afuera"
               />
             )}
           </CrossFade>
         </div>
+
+        {/* P-23: Imprimir / Enviar / Descargar en el pie FIJO del diálogo
+            (hijo directo de `DialogContent`): antes iban al final del
+            documento, detrás del scroll. */}
+        {!cargando && !error && extracto && (
+          <DialogFooter>
+            <AccionesDelExtracto
+              extracto={extracto}
+              onDownloadPDF={descargarPdf}
+              onEmail={enviarPorCorreo}
+              className="w-full"
+            />
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

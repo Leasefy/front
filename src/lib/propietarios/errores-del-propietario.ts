@@ -59,6 +59,8 @@ function conUnCampo(
 
 export const DOCUMENTO_YA_CARGADO = 'Ese documento ya está cargado';
 export const CORREO_YA_CARGADO = 'Ese correo ya está cargado';
+/** PR-02: la política «correo obligatorio» de la inmobiliaria, dicha bajo Correo. */
+export const FALTA_EL_CORREO = 'Escribe su correo: tu inmobiliaria lo pide para cada propietario.';
 export const SIN_PERMISO_PARA_GUARDAR =
   'No tienes permiso para guardar propietarios. Pídeselo al administrador de tu inmobiliaria.';
 export const SIN_PERMISO_PARA_ELIMINAR =
@@ -183,6 +185,18 @@ export function errorAlGuardarPropietario(err: unknown): ErrorAlGuardarPropietar
     return soloGeneral(mensajeParaLaPersona(err, { porDefecto: NO_PUDIMOS_GUARDAR, accion: ACCION_GUARDAR }));
   }
   if (err.status === 403) return soloGeneral(SIN_PERMISO_PARA_GUARDAR);
+  /*
+   * PR-02 (QA de Propietarios, 03-10): con la política «correo obligatorio»
+   * prendida, el back rechaza al tercero sin correo. Es del campo Correo, y
+   * antes de mirar el 409: «correo» en el texto lo hacía pasar por un correo
+   * REPETIDO («Ese correo ya está cargado»).
+   */
+  if (err.code === 'FALTA_CORREO_DEL_TERCERO') {
+    return conUnCampo({
+      field: 'email',
+      message: mensajeParaLaPersona(err, { porDefecto: FALTA_EL_CORREO, accion: ACCION_GUARDAR }) || FALTA_EL_CORREO,
+    });
+  }
   if (err.status === 409) return duplicadoDe(err);
 
   if (err.status === 400 || err.status === 422) {

@@ -229,6 +229,9 @@ export function descargar(blob: Blob, nombre: string): void {
  * filtró por empresa y exporta, el archivo tiene que traer empresas.
  * ──────────────────────────────────────────────────────────────────────────── */
 
+/** Lo que va en una celda de plata que quien exporta no puede ver. */
+export const SIN_ACCESO_A_LA_PLATA = 'Sin acceso';
+
 /** Una fila por propietario, con las columnas de la tabla más la cuenta de giro. */
 export function armarHojaDeLaLista(
   propietarios: readonly Propietario[],
@@ -260,6 +263,9 @@ export function armarHojaDeLaLista(
       const ultimos4 =
         cuenta?.ultimos4 ?? (cuenta?.accountNumber ? cuenta.accountNumber.replace(/\s+/g, '').slice(-4) : null);
       const tieneCuenta = Boolean(ultimos4);
+      // P-21 (QA de Propietarios, 03-10): a quien no ve la plata el back se la
+      // manda en null y la lista la lee 0. El archivo no puede decir «$0».
+      const sinPlata = p.plataOculta === true;
       return [
         p.name,
         p.documentType ?? 'Sin registrar',
@@ -269,8 +275,8 @@ export function armarHojaDeLaLista(
         p.city ?? '',
         p.propertyCount,
         p.activeLeases,
-        p.totalMonthlyRent,
-        p.pendingBalance,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : p.totalMonthlyRent,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : p.pendingBalance,
         tieneCuenta ? nombreDelBanco(cuenta) : '',
         tieneCuenta ? (cuenta.accountType === 'savings' ? 'Ahorros' : 'Corriente') : '',
         tieneCuenta ? `•••• ${ultimos4}` : '',

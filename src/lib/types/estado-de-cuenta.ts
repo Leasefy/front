@@ -271,6 +271,11 @@ export interface TotalesDeInteres {
 export interface ClienteDelEstadoDeCuenta {
   nombre: string;
   documento: string | null;
+  /**
+   * El tipo del documento («CC», «NIT», «CE»…), para no decir «NIT/CC» (P-19,
+   * QA-PROP 03-10). Ausente = un back que todavía no lo manda.
+   */
+  tipoDocumento?: string | null;
   /** Con qué sombrero entra a este documento. La palabra la pone el front. */
   tipo: RolEnElContrato;
 }

@@ -2149,6 +2149,10 @@
       "deleteBloqueado": {
         "titulo": "Cannot delete: {{count}} consigned unit(s)",
         "tituloCopropietario": "Cannot delete: co-owner of {{count}} unit(s)",
+        "tituloUno": "Cannot delete: 1 consigned unit",
+        "tituloN": "Cannot delete: {{count}} consigned units",
+        "tituloCopropietarioUno": "Cannot delete: co-owner of 1 unit",
+        "tituloCopropietarioN": "Cannot delete: co-owner of {{count}} units",
         "detalleCopropietario": "Remove them from those mandates' split on the unit page first; then the record can be deleted.",
         "detalle": "Withdraw or reassign those mandates from the portfolio first; then the record can be deleted.",
         "accion": "Go to the portfolio"
@@ -2178,12 +2182,14 @@
       "viewCards": "Cards",
       "showing": "Showing",
       "ofTotal": "of {{total}} owners",
+      "propietarioUno": "owner",
       "card": {
         "property": "property",
         "properties": "properties",
         "pendingBadge": "Pending",
         "propertiesLabel": "Properties",
         "rented": "rented",
+        "rentedOne": "rented",
         "monthlyRent": "Monthly rent",
         "pendingAbbr": "pend.",
         "sendEmail": "Send email",
@@ -2252,6 +2258,38 @@
         "noRetieneIca": "No ICA withholding",
         "reteicaSinDefinir": "ICA withholding undefined",
         "perfilTributarioAyuda": "Decides VAT on rent and the withholdings of each payout. Anything undefined is billed with the default profile for the person type.",
+        "nombreIva": "VAT on rent",
+        "nombreRetefuente": "Income tax withholding",
+        "nombreReteiva": "VAT withholding",
+        "nombreReteica": "ICA withholding",
+        "perfil": {
+          "opcion": {
+            "si": "Yes",
+            "no": "No",
+            "vacio": "Undefined"
+          },
+          "efecto": {
+            "ivaSi": "rent on commercial units is billed with VAT",
+            "ivaNo": "rent is billed without VAT",
+            "retefuenteSi": "the owner withholds income tax on the commission",
+            "retefuenteNo": "the owner does not withhold income tax on the commission",
+            "reteivaSi": "the owner withholds VAT on the commission",
+            "reteivaNo": "the owner does not withhold VAT on the commission",
+            "reteicaSi": "the owner withholds ICA on the commission",
+            "reteicaNo": "the owner does not withhold ICA on the commission"
+          },
+          "proximaLiquidacion": "On the next statement, {{efecto}}.",
+          "proximaLiquidacionPorDefecto": "On the next statement the {{tipo}} profile applies: {{efecto}}.",
+          "comoPersonaNatural": "individual",
+          "comoEmpresa": "company",
+          "cambio": "{{campo}}: {{valor}}",
+          "cambiar": "Change {{campo}} (now: {{valor}})",
+          "deshacer": "Undo",
+          "deshecho": "Change undone",
+          "soloLectura": "An administrator or the accountant can change it."
+        },
+        "portafolioOculto": "This owner's units are in the portfolio, which is not part of your role. If you need them, ask an administrator for portfolio access.",
+        "exportSinPermiso": "The file includes this owner's units and payouts, and your role cannot see all of them. Ask an administrator for it.",
         "completarPerfil": "Complete profile",
         "desde": "With Leasefy since {{fecha}}",
         "refExterna": "Ref. in previous system",
@@ -2283,7 +2321,9 @@
         "statusInProcess": "In process",
         "tenant": "Tenant",
         "saleCommission": "Sale commission",
-        "propertiesCount": "property(ies)",
+        "propertiesCount": "properties",
+        "propertiesCountUno": "property",
+        "copropiedadPct": "Co-ownership · {{pct}}",
         "copiarCorreo": "Copy the email",
         "copiarTelefono": "Copy the phone"
       }
@@ -5179,6 +5219,13 @@
         "bankDataTitle": "Bank details for disbursements",
         "bankDataInfo": "This information will be used to transfer the monthly rent to the owner, after deducting the management commission.",
         "bankDataHidden": "Your role cannot see owners’ bank accounts. Saving here leaves the account untouched; someone with access to payouts registers or corrects it.",
+        "bankOptional": "If the bank certificate has not arrived yet, save without an account: it shows «Pending data: bank account» and no payouts go out until it is registered. If you fill the account, bank, type and number go together.",
+        "bankFirstTime": "No account yet: the first one is registered here. After that, a change needs the certificate and the owner’s confirmation.",
+        "cuentaRegistrada": "Registered account",
+        "cuentaSoloLectura": "It is not changed here: a change needs the bank certificate and the owner’s confirmation, and payouts are held meanwhile.",
+        "cambiarCuenta": "Change account",
+        "aNombreDelPropietario": "In the owner’s name",
+        "aNombreDe": "In the name of {{nombre}}",
         "bank": "Bank",
         "selectBank": "Select bank...",
         "accountType": "Account type",
@@ -5258,12 +5305,14 @@
         "sinPropiedades": "no properties",
         "lastPayment": "Last payout",
         "unaPropiedad": "1 property",
-        "nPropiedades": "{{n}} properties"
+        "nPropiedades": "{{n}} properties",
+        "sinAccesoALaPlata": "No access to money figures"
       },
       "alertas": {
         "sinCuenta": {
           "titulo": "No bank account: payouts cannot be made",
-          "detalle": "{{n}} rented unit(s) and the payouts have nowhere to go. Add bank, type, number and holder.",
+          "detalle": "{{n}} rented units and the payouts have nowhere to go. Add bank, type, number and holder.",
+          "detalleUno": "1 rented unit and the payouts have nowhere to go. Add bank, type, number and holder.",
           "accion": "Add bank account"
         },
         "pendienteDeGiro": {
@@ -5294,9 +5343,12 @@
         "pending": "Pending",
         "lastPayment": "Last payment",
         "rented": "rented",
+        "rentedOne": "rented",
         "upToDate": "Up to date",
         "viewDetail": "View detail",
         "copropiedades": "+{{n}} as co-owner",
+        "sinAccesoALaPlata": "No access to the money",
+        "plataOculta": "Your role cannot see the owners’ money: rent, pending and last payment show «—».",
         "edit": "Edit",
         "sendEmail": "Send email",
         "call": "Call",
@@ -9975,7 +10027,8 @@
       "extractN": "Extract data from {{n}} files",
       "cancel": "Cancel",
       "extracting": "Reading the document…",
-      "extractingN": "Reading {{n}} document(s)…",
+      "extractingN": "Reading {{n}} documents…",
+      "extractingUno": "Reading 1 document…",
       "reviewBannerTitle": "Review and correct",
       "reviewBannerDesc": "AI prefilled the data (confidence {{confidence}}%). Verify it and complete anything missing before saving.",
       "detectados": "Read",
@@ -12733,7 +12786,11 @@
       "vencidoEnPlazo": "To be paid out, within grace period",
       "cuotasVencidas": "{{n}} late payouts",
       "unaCuotaVencida": "1 late payout",
-      "pagadasDe": "Paid out {{pagadas}} of {{total}} installments"
+      "pagadasDe": "Paid out {{pagadas}} of {{total}} installments",
+      "proximaCuota": "Next payout",
+      "sinProxima": "No payouts left to fall due",
+      "vencida": "late",
+      "colImpuestos": "Commission and taxes"
     },
     "cancelado": "Paid",
     "pendiente": "Pending",

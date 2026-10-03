@@ -140,9 +140,12 @@ function requeridos(archivo: string) {
 describe('🔴 los InputWrapper requeridos: su control lleva aria-required', () => {
   it.each([
     ['src/components/inmobiliaria/ConsignacionEditForm.tsx', 9],
-    // 8 requeridos; el tipo de cuenta es un grupo de chips (role="group"),
-    // donde aria-required no aplica: no tiene control que lo lleve.
-    ['src/components/inmobiliaria/PropietarioForm.tsx', 7],
+    // QA-PROP (03-10, PR-02/P-13): siempre requeridos sólo tipo, número de
+    // documento y nombre. El correo (política de la inmobiliaria) y la cuenta
+    // (banco, tipo y número, apenas se empieza) son requeridos A VECES
+    // (`required={…}`), con su `aria-required` igual de condicional: eso lo
+    // prueba `PropietarioForm.qa-prop.test.tsx`. El teléfono ya no lo es.
+    ['src/components/inmobiliaria/PropietarioForm.tsx', 3],
     ['src/components/inmobiliaria/ConfigPerfilAgencia.tsx', 1],
   ] as const)('%s', (archivo, cuantos) => {
     const campos = requeridos(archivo).filter((c) => c.control !== null)

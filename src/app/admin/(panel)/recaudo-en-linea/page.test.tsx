@@ -6,7 +6,8 @@
  *
  * 🔴 1. «Frecuencia del giro: por definir» se ve en la pantalla (no se inventa una).
  * 🔴 2. Marcar «girada» pide confirmación propia, no acepta una fecha futura y
- *       manda el día y el comprobante.
+ *       manda el día y el comprobante. Desmarcarla (ola E, E6) exige el motivo
+ *       (10 a 500) y deja ver la historia del giro.
  * 🔴 3. Generar a mano: vista previa por inmobiliaria con lo que queda FUERA y su
  *       frase; confirmación; un descuento de Leasefy obliga a actualizar la vista
  *       previa antes de generar, y viaja tal como se escribió.
@@ -37,6 +38,7 @@ const resumenDelRecaudo = vi.fn()
 const listarLiquidaciones = vi.fn()
 const verLiquidacion = vi.fn()
 const marcarGirada = vi.fn()
+const desmarcarGirada = vi.fn()
 const vistaPreviaDeLiquidaciones = vi.fn()
 const generarLiquidaciones = vi.fn()
 const vistaPreviaDelReporte = vi.fn()
@@ -51,6 +53,7 @@ vi.mock('@/lib/admin/recaudo-en-linea', async (original) => ({
   listarLiquidaciones: (...a: unknown[]) => listarLiquidaciones(...a),
   verLiquidacion: (...a: unknown[]) => verLiquidacion(...a),
   marcarGirada: (...a: unknown[]) => marcarGirada(...a),
+  desmarcarGirada: (...a: unknown[]) => desmarcarGirada(...a),
   vistaPreviaDeLiquidaciones: (...a: unknown[]) => vistaPreviaDeLiquidaciones(...a),
   generarLiquidaciones: (...a: unknown[]) => generarLiquidaciones(...a),
   vistaPreviaDelReporte: (...a: unknown[]) => vistaPreviaDelReporte(...a),
@@ -272,8 +275,13 @@ async function clic(el: HTMLElement) {
 }
 
 async function escribir(testid: string, valor: string) {
-  const el = q(testid) as HTMLInputElement | HTMLSelectElement
-  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+  const el = q(testid) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  const proto =
+    el instanceof HTMLSelectElement
+      ? HTMLSelectElement.prototype
+      : el instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype
   await act(async () => {
     Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, valor)
     el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
@@ -299,6 +307,7 @@ beforeEach(() => {
   listarLiquidaciones.mockReset().mockResolvedValue(lista())
   verLiquidacion.mockReset().mockResolvedValue(detalle())
   marcarGirada.mockReset().mockResolvedValue(detalle({ estado: 'girada', giradaEl: '2026-10-01' }))
+  desmarcarGirada.mockReset().mockResolvedValue(detalle({ desmarcarDisponible: true }))
   vistaPreviaDeLiquidaciones.mockReset().mockResolvedValue(vistaPrevia())
   generarLiquidaciones.mockReset().mockResolvedValue({
     desde: '2026-10-01',
@@ -384,6 +393,64 @@ describe('RecaudoEnLineaAdminPage', () => {
     // Se vuelve a leer la lista y el detalle.
     expect(listarLiquidaciones.mock.calls.length).toBeGreaterThanOrEqual(2)
     expect(verLiquidacion.mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('🔴 desmarcar girada (ola E): exige el motivo, manda el motivo y deja ver la historia del giro', async () => {
+    const girada = liquidacion({
+      estado: 'girada',
+      giradaAt: '2026-10-02T15:00:00.000Z',
+      giradaEl: '2026-10-02',
+      giradaPor: 'equipo@leasefy.co',
+      referenciaBancariaDelGiro: 'TRF-9',
+    })
+    listarLiquidaciones.mockResolvedValue(lista({ data: [girada] }))
+    verLiquidacion.mockResolvedValue(
+      detalle({
+        ...girada,
+        desmarcarDisponible: true,
+        historiaDelGiro: [
+          {
+            accion: 'marcada',
+            giradaEl: '2026-10-02',
+            referenciaBancaria: 'TRF-9',
+            fechaDelGiroAntes: '2026-10-06',
+            fechaDelGiroDespues: '2026-10-02',
+            motivo: null,
+            por: 'equipo@leasefy.co',
+            at: '2026-10-02T15:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await clic(q('abrir-LQ261015-0A1B2C-9F3A01')!)
+    expect(q('marcar-girada')).toBeNull()
+    expect(q('historia-del-giro')!.textContent).toContain('Marcada como girada el 2026-10-02')
+    expect(q('historia-del-giro')!.textContent).toContain('fecha del giro 2026-10-06 → 2026-10-02')
+
+    await clic(q('desmarcar-girada')!)
+    expect(desmarcarGirada).not.toHaveBeenCalled()
+    expect(q('confirmar-desmarcar')!.textContent).toContain('$2.601.700')
+    expect((q('confirmar-desmarcar-si') as HTMLButtonElement).disabled).toBe(true)
+    await escribir('motivo-de-desmarcar', 'corto')
+    expect((q('confirmar-desmarcar-si') as HTMLButtonElement).disabled).toBe(true)
+    expect(q('confirmar-desmarcar')!.textContent).toContain('al menos 10 caracteres')
+
+    await escribir('motivo-de-desmarcar', 'El banco rechazó la transferencia.')
+    await clic(q('confirmar-desmarcar-si')!)
+    expect(desmarcarGirada).toHaveBeenCalledWith(ID, 'El banco rechazó la transferencia.')
+    expect(listarLiquidaciones.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(verLiquidacion.mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('desmarcar sin la migración de la bitácora: no se ofrece y lo dice', async () => {
+    const girada = liquidacion({ estado: 'girada', giradaAt: '2026-10-02T15:00:00.000Z', giradaEl: '2026-10-02', giradaPor: 'x' })
+    listarLiquidaciones.mockResolvedValue(lista({ data: [girada] }))
+    verLiquidacion.mockResolvedValue(detalle({ ...girada, desmarcarDisponible: false }))
+    await pintar()
+    await clic(q('abrir-LQ261015-0A1B2C-9F3A01')!)
+    expect(q('desmarcar-girada')).toBeNull()
+    expect(q('desmarcar-sin-migracion')).not.toBeNull()
   })
 
   it('sin la migración del giro no ofrece marcar girada y lo dice', async () => {

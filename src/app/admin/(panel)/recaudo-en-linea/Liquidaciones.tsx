@@ -4,7 +4,9 @@
  * Las liquidaciones de Leasefy a cada inmobiliaria: por inmobiliaria, por
  * fecha del giro y por estado (generada → girada → conciliada en el banco de
  * la inmobiliaria). Cada una se abre con sus pagos, se descarga en Excel o PDF
- * y se marca «girada» cuando Leasefy transfirió.
+ * y se marca «girada» cuando Leasefy transfirió. Desde la ola E (E6, Nico E2
+ * Q2 a) una girada se puede DESMARCAR, con motivo obligatorio, y la historia
+ * del giro queda a la vista.
  *
  * 🔴 Lo descontado se muestra TAL COMO VINO (reporte de Wompi o Leasefy):
  * esta pantalla no calcula ninguna tarifa.
@@ -26,8 +28,11 @@ import {
   pesos,
 } from '@/lib/admin/documento-de-la-liquidacion'
 import {
+  desmarcarGirada,
   listarLiquidaciones,
   marcarGirada,
+  MOTIVO_MAXIMO_PARA_DESMARCAR,
+  MOTIVO_MINIMO_PARA_DESMARCAR,
   NOMBRE_DE_QUIEN_CONCILIO,
   NOMBRE_DEL_ESTADO,
   TONO_DEL_ESTADO,
@@ -37,6 +42,7 @@ import {
   type FiltrosDeLiquidaciones,
   type InmobiliariaDelRecaudo,
   type LiquidacionDelRecaudo,
+  type MovimientoDelGiro,
 } from '@/lib/admin/recaudo-en-linea'
 import { Cifra, ErrorDeLaAccion, Etiqueta } from './partes'
 import { GenerarLiquidaciones } from './GenerarLiquidaciones'
@@ -356,6 +362,20 @@ function DetalleDeLiquidacion({
         />
       ) : null}
 
+      {l.estado === 'girada' ? (
+        <DesmarcarGirada
+          liquidacion={l}
+          alDesmarcar={() => {
+            setTick((t) => t + 1)
+            alCambiar()
+          }}
+        />
+      ) : null}
+
+      {l.historiaDelGiro && l.historiaDelGiro.length > 0 ? (
+        <HistoriaDelGiro historia={l.historiaDelGiro} />
+      ) : null}
+
       <ErrorDeLaAccion mensaje={errorDeAccion} testId="error-del-detalle" />
 
       <div className="mt-5">
@@ -526,6 +546,153 @@ function MarcarGirada({
           <ErrorDeLaAccion mensaje={error} testId="error-de-girada" />
         </div>
       </Presence>
+    </div>
+  )
+}
+
+/**
+ * 🔴 Desmarcar «girada» (ola E, E6 · Nico E2 Q2 a): sólo el equipo de Leasefy
+ * llega a este panel; el motivo es OBLIGATORIO (10 a 500 caracteres) y queda en
+ * la bitácora del giro. La liquidación vuelve a «generada».
+ */
+function DesmarcarGirada({
+  liquidacion: l,
+  alDesmarcar,
+}: {
+  liquidacion: DetalleDeLaLiquidacion
+  alDesmarcar: () => void
+}) {
+  const [abierto, setAbierto] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const largo = motivo.trim().length
+  const problema =
+    largo < MOTIVO_MINIMO_PARA_DESMARCAR
+      ? `Escribe por qué se desmarca (al menos ${MOTIVO_MINIMO_PARA_DESMARCAR} caracteres).`
+      : largo > MOTIVO_MAXIMO_PARA_DESMARCAR
+        ? `El motivo va en ${MOTIVO_MAXIMO_PARA_DESMARCAR} caracteres como máximo.`
+        : null
+
+  // Un back anterior no dice si se puede: no se ofrece.
+  if (l.desmarcarDisponible === undefined) return null
+  if (!l.desmarcarDisponible) {
+    return (
+      <p className="text-[13px] text-fg-muted mt-4" data-testid="desmarcar-sin-migracion">
+        Desmarcar «girada» todavía no está habilitado en esta base (falta la migración de la bitácora del giro,
+        que aplica Víctor).
+      </p>
+    )
+  }
+
+  async function confirmar() {
+    if (problema) return
+    setEnviando(true)
+    setError(null)
+    try {
+      await desmarcarGirada(l.id, motivo)
+      setAbierto(false)
+      setMotivo('')
+      alDesmarcar()
+    } catch (err) {
+      setError(
+        mensajeDelAdmin(err, {
+          accion: 'desmarcar la liquidación como girada',
+          porDefecto: 'No se pudo desmarcar la liquidación.',
+        }),
+      )
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      {!abierto ? (
+        <button type="button" className="btn" onClick={() => setAbierto(true)} data-testid="desmarcar-girada">
+          Desmarcar como girada
+        </button>
+      ) : null}
+      <Presence show={abierto}>
+        <div className="card p-4 border-l-4 border-l-warn" data-testid="confirmar-desmarcar">
+          <p className="text-sm text-fg">
+            La liquidación {l.numero} vuelve a «generada»: deja de decir que Leasefy le giró {pesos(l.netoCop)} a{' '}
+            {l.inmobiliaria ?? 'la inmobiliaria'} el {l.giradaEl ?? '—'}. Queda escrito en la bitácora del giro con tu
+            motivo.
+          </p>
+          <label className="block mt-3">
+            <Etiqueta>¿por qué se desmarca?</Etiqueta>
+            <textarea
+              className="input mt-1 min-h-[5rem]"
+              value={motivo}
+              maxLength={MOTIVO_MAXIMO_PARA_DESMARCAR}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Por ejemplo: el banco rechazó la transferencia"
+              data-testid="motivo-de-desmarcar"
+            />
+          </label>
+          <p className="text-[13px] text-fg-muted mt-1 tabular-nums">
+            {largo} de {MOTIVO_MAXIMO_PARA_DESMARCAR}
+          </p>
+          {problema && largo > 0 ? <p className="text-[13px] text-bad mt-1">{problema}</p> : null}
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={enviando || problema !== null}
+              onClick={() => void confirmar()}
+              data-testid="confirmar-desmarcar-si"
+            >
+              {enviando ? 'Guardando…' : 'Sí, desmarcar'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={enviando}
+              onClick={() => {
+                setAbierto(false)
+                setError(null)
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+          <ErrorDeLaAccion mensaje={error} testId="error-de-desmarcar" />
+        </div>
+      </Presence>
+    </div>
+  )
+}
+
+/** La bitácora del giro (ola E, E6): cada vez que se marcó o se desmarcó, la más reciente primero. */
+function HistoriaDelGiro({ historia }: { historia: MovimientoDelGiro[] }) {
+  return (
+    <div className="mt-5" data-testid="historia-del-giro">
+      <Etiqueta>historia del giro</Etiqueta>
+      <ul className="mt-2 space-y-1.5 text-[13px]">
+        {historia.map((h, i) => (
+          <li key={`${h.accion}-${h.at ?? i}`} className="text-fg">
+            {h.accion === 'marcada' ? (
+              <>
+                Marcada como girada el {h.giradaEl ?? '—'}
+                {h.referenciaBancaria ? ` (comprobante ${h.referenciaBancaria})` : ''}
+              </>
+            ) : (
+              <>
+                Desmarcada: <span className="text-fg-muted">«{h.motivo ?? ''}»</span>
+              </>
+            )}
+            <span className="text-fg-muted">
+              {' '}
+              · {h.por}
+              {h.at ? `, ${fmtDateTime(h.at)}` : ''}
+              {h.fechaDelGiroAntes && h.fechaDelGiroDespues && h.fechaDelGiroAntes !== h.fechaDelGiroDespues
+                ? ` · fecha del giro ${h.fechaDelGiroAntes} → ${h.fechaDelGiroDespues}`
+                : ''}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

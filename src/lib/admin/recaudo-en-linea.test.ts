@@ -14,6 +14,7 @@ vi.mock('./api', () => ({ adminApi: vi.fn() }))
 import { adminApi } from './api'
 import {
   cuadreDelRecaudo,
+  desmarcarGirada,
   generarLiquidaciones,
   importarElReporte,
   listarLiquidaciones,
@@ -60,6 +61,14 @@ describe('cliente del recaudo en línea', () => {
     expect(adminApiMock).toHaveBeenLastCalledWith('/recaudo-en-linea/liquidaciones/L1/girada', {
       method: 'POST',
       body: { fecha: '2026-10-01', referenciaBancaria: 'TRF-1' },
+    })
+  })
+
+  it('🔴 desmarcar girada (ola E): sólo el motivo, recortado, y el id escapado', async () => {
+    await desmarcarGirada('a/b', '  La transferencia la rechazó el banco.  ')
+    expect(adminApiMock).toHaveBeenLastCalledWith('/recaudo-en-linea/liquidaciones/a%2Fb/desmarcar-girada', {
+      method: 'POST',
+      body: { motivo: 'La transferencia la rechazó el banco.' },
     })
   })
 

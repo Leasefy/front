@@ -481,6 +481,11 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   «Importar N» manda sólo lo legible (idempotente).
 - **Cuadre Wompi → Leasefy**: totales, tabla por desembolso y diferencias marcadas.
 - Sin la migración del agregador lo dice y no pide nada más; sin la del giro, todo menos «girada».
+- **Desmarcar «girada»** (ola E, E6 · Nico E2 Q2 a; `DesmarcarGirada` en `Liquidaciones.tsx`, `desmarcarGirada(id, motivo)`):
+  sólo en una girada, con el motivo OBLIGATORIO (10 a 500, contador y botón apagado hasta entonces) y `Presence`; la
+  liquidación vuelve a «generada». El detalle muestra la **historia del giro** (`historiaDelGiro`: marcada/desmarcada, quién,
+  cuándo, el motivo y la fecha del giro antes → después). Sin la migración de la bitácora (`desmarcarDisponible: false`) lo
+  dice; un back anterior (sin el campo) no lo ofrece.
 
 ## Agente de proyecto y skills
 

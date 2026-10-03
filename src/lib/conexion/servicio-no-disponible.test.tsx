@@ -51,6 +51,10 @@ describe('el clasificador', () => {
       ),
     ).toBe(false)
     expect(esServicioNoDisponible(new ApiError(503, 'falta', 'FALTA_UNA_MIGRACION'))).toBe(false)
+    // Desde la ola E el micro lo manda CON `servicio: 'base'`: sigue sin ser una caída.
+    expect(
+      esServicioNoDisponible(new ApiError(503, 'falta', 'FALTA_UNA_MIGRACION', { servicio: 'base' } as never)),
+    ).toBe(false)
     expect(esServicioNoDisponible(new ApiError(503, 'Error 503'))).toBe(false)
   })
 

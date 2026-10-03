@@ -18,8 +18,13 @@
  * Los proxies de avalúos y del cotizador mandan ese mismo cuerpo con 502, y
  * un 5xx con otro `code` puede traer `servicio` cuando fue una caída
  * (`WOMPI_NO_RESPONDIO`) — ver `esServicioNoDisponible`. Un 503 con OTRO
- * `code` y sin `servicio` (`FALTA_UNA_MIGRACION`,
- * `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída y no se trata como tal.
+ * `code` y sin `servicio` (`CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída
+ * y no se trata como tal. `FALTA_UNA_MIGRACION` tampoco es una caída, pero
+ * 🔴 desde la ola E (03-10-2026, Nico D-ERRORES 2 a / E4 Q2 a) el micro lo
+ * manda CON `servicio: 'base'` (y `referencia`), igual que /admin/recaudo-en-
+ * linea del back; el filtro global del back lo sigue mandando sin `servicio`.
+ * Por eso `esServicioNoDisponible` (y con ella `esCaidaDeLaBase`) excluye ese
+ * `code` antes de mirar `servicio` (ola E, E6 Q1 a).
  * Y la base caída (`servicio: 'base'`) no es «una parte»: sin Postgres no
  * funciona nada, así que va por la capa 1 (la franja global).
  *
@@ -87,8 +92,10 @@ export function nombreDelServicio(servicio: string | null | undefined): string |
  *     `WOMPI_NO_RESPONDIO` de dispersiones lo trae sólo cuando fue una caída
  *     de Wompi, y no un «no» suyo.
  *
- * Un 503 con OTRO code y sin `servicio` (`FALTA_UNA_MIGRACION`,
- * `CENTRO_DE_PROCESOS_SIN_MIGRACION`) no es una caída.
+ * Un 503 con OTRO code y sin `servicio` (`CENTRO_DE_PROCESOS_SIN_MIGRACION`,
+ * el `FALTA_UNA_MIGRACION` del filtro global del back) no es una caída. Desde
+ * la ola E el `FALTA_UNA_MIGRACION` del micro llega CON `servicio: 'base'`
+ * (ver el encabezado: esta función no mira el `code`).
  *
  * Ojo: la base caída también cumple, pero no se dice como «una parte» — ver
  * `esCaidaDeLaBase`, que quien decide el texto mira ANTES.
@@ -96,6 +103,8 @@ export function nombreDelServicio(servicio: string | null | undefined): string |
 export function esServicioNoDisponible(error: unknown): boolean {
   const { status, code, servicio } = leerElError(error)
   if ((status === 502 || status === 503) && code === CODIGO_SERVICIO_NO_DISPONIBLE) return true
+  // Una migración pendiente no es una caída aunque traiga `servicio: 'base'` (ola E, Nico: la recomendada).
+  if (code === 'FALTA_UNA_MIGRACION') return false
   return esCincoCientos(status) && typeof servicio === 'string' && servicio.length > 0
 }
 

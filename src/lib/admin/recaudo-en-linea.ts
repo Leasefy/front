@@ -13,6 +13,7 @@
  *   POST /recaudo-en-linea/liquidaciones/vista-previa     → lo que se liquidaría para un rango
  *   POST /recaudo-en-linea/liquidaciones/generar          → una por inmobiliaria; repetir no duplica
  *   POST /recaudo-en-linea/liquidaciones/:id/girada       → «Leasefy ya la transfirió»
+ *   POST /recaudo-en-linea/liquidaciones/:id/desmarcar-girada → deshace «girada» con motivo y bitácora (ola E, E6)
  *   GET  /recaudo-en-linea/cuadre?desde&hasta             → reportado vs liquidado, diferencias marcadas
  *
  * 🔴 Las tarifas son modelo de negocio: aquí nada se calcula. Los descuentos
@@ -39,9 +40,14 @@ export interface ResumenDelRecaudo {
   disponible: boolean
   /** `false` = falta la migración del giro: no se puede marcar «girada». */
   giroDisponible: boolean
+  /**
+   * Ola E (E6): `false` = falta la migración de la bitácora del giro: no se
+   * puede DESMARCAR «girada». Opcional: un back anterior no lo manda.
+   */
+  desmarcarDisponible?: boolean
   /** Nico (C2-AGREGADOR Q3): «POR DEFINIR». */
   frecuenciaDelGiro: { definida: boolean; texto: string }
-  migraciones: { agregador: string; giro: string }
+  migraciones: { agregador: string; giro: string; bitacoraDelGiro?: string }
   inmobiliarias: InmobiliariaDelRecaudo[]
   ultimoReporte: { archivo: string; subidoPor: string; at: string | null; transacciones: number } | null
 }
@@ -190,9 +196,26 @@ export interface PagoDeLaLiquidacion {
   netoCop: number
 }
 
+/** Una fila de la bitácora del giro (ola E, E6): cada vez que se marcó o se desmarcó «girada». */
+export interface MovimientoDelGiro {
+  accion: 'marcada' | 'desmarcada'
+  giradaEl: string | null
+  referenciaBancaria: string | null
+  fechaDelGiroAntes: string | null
+  fechaDelGiroDespues: string | null
+  /** Obligatorio al desmarcar; `null` al marcar. */
+  motivo: string | null
+  por: string
+  at: string | null
+}
+
 export interface DetalleDeLaLiquidacion extends LiquidacionDelRecaudo {
   nit: string | null
   giroDisponible: boolean
+  /** Ola E (E6): se puede desmarcar «girada» (está la bitácora). Un back anterior no lo manda. */
+  desmarcarDisponible?: boolean
+  /** Ola E (E6): la historia del giro, la más reciente primero. */
+  historiaDelGiro?: MovimientoDelGiro[]
   pagos: PagoDeLaLiquidacion[]
 }
 
@@ -248,6 +271,23 @@ export function marcarGirada(id: string, g: GiroDeLaLiquidacion): Promise<Detall
   return adminApi<DetalleDeLaLiquidacion>(
     `${PATH}/liquidaciones/${encodeURIComponent(id)}/girada`,
     { method: 'POST', body },
+  )
+}
+
+/** El motivo de desmarcar: 10 a 500 caracteres (lo exige el back y la base). */
+export const MOTIVO_MINIMO_PARA_DESMARCAR = 10
+export const MOTIVO_MAXIMO_PARA_DESMARCAR = 500
+
+/**
+ * 🔴 Desmarcar «girada» (ola E, E6 · Nico E2 Q2 a): sólo el equipo de Leasefy
+ * (este panel), con motivo OBLIGATORIO y bitácora. La liquidación vuelve a
+ * «generada». 409 si no está girada o si su giro ya está conciliado en el
+ * banco de la inmobiliaria.
+ */
+export function desmarcarGirada(id: string, motivo: string): Promise<DetalleDeLaLiquidacion> {
+  return adminApi<DetalleDeLaLiquidacion>(
+    `${PATH}/liquidaciones/${encodeURIComponent(id)}/desmarcar-girada`,
+    { method: 'POST', body: { motivo: motivo.trim() } },
   )
 }
 

@@ -24,6 +24,7 @@ import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
 import { SeccionMandato } from './SeccionMandato';
 import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
+import { DiferenciasConocidas } from './DiferenciasConocidas';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
 import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
 import { SeccionSedes } from './SeccionSedes';
@@ -51,7 +52,15 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     case 'medios-de-recibo':
       return <SeccionMediosDeRecibo />;
     case 'costos-de-la-plata':
-      return <SeccionCostosDeLaPlata />;
+      // 02-10-2026 (S2-D): las diferencias conocidas de la conciliación (la
+      // retención, la comisión) son de la misma familia: lo que cuesta mover
+      // la plata. Misma puerta (sólo el administrador).
+      return (
+        <div className="space-y-6">
+          <SeccionCostosDeLaPlata />
+          <DiferenciasConocidas />
+        </div>
+      );
     case 'sedes':
       return <SeccionSedes />;
     case 'mandato':

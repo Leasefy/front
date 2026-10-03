@@ -151,6 +151,13 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
    * exacto se vuelve a leer (al cargar, el back lo arma solo).
    */
   const [versionDelLote, setVersionDelLote] = useState(0);
+  /*
+   * 🔴 (02-10-2026) Muchos a uno: si el back dice que falta la tabla de
+   * vínculos (503 `FALTA_UNA_MIGRACION` o `sePuedeAplicar: false`), lo sabe
+   * la tabla entera: ninguna fila ofrece «Aprobar» hasta que se aplique.
+   */
+  const [sinTablaDeVinculos, setSinTablaDeVinculos] = useState(false);
+  const marcarSinTabla = useCallback(() => setSinTablaDeVinculos(true), []);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -420,6 +427,10 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                       setErrorDelMotivo(null);
                     }}
                     onReabrir={(mov) => void reabrir(mov)}
+                    sinTablaDeVinculos={sinTablaDeVinculos}
+                    onSinTablaDeVinculos={marcarSinTabla}
+                    // Como al conciliar una fila: vuelve a leer la lista y los números.
+                    onCambio={() => void cargar()}
                   />
                 ))
               )}

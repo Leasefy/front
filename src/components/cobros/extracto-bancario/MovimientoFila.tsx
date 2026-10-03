@@ -27,6 +27,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conciliacion-bancaria.types';
 import { diaLegible, mesesLegibles, plata } from './formato';
+import { MuchosAUno } from './MuchosAUno';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -38,6 +39,14 @@ interface Props {
   onConciliarConCliente: (movimiento: MovimientoBancario) => void;
   onIgnorar: (movimiento: MovimientoBancario) => void;
   onReabrir: (movimiento: MovimientoBancario) => void;
+  /**
+   * Muchos a uno (02-10-2026): ¿ya se sabe que falta la tabla de vínculos?
+   * Lo descubre una fila y lo saben todas: «Aprobar» se apaga en la tabla entera.
+   */
+  sinTablaDeVinculos?: boolean;
+  onSinTablaDeVinculos?: () => void;
+  /** Conciliar contra recibos cambió la cola: la pantalla vuelve a leer lista y resumen. */
+  onCambio?: () => void;
 }
 
 export function MovimientoFila({
@@ -49,6 +58,9 @@ export function MovimientoFila({
   onConciliarConCliente,
   onIgnorar,
   onReabrir,
+  sinTablaDeVinculos = false,
+  onSinTablaDeVinculos = () => {},
+  onCambio = () => {},
 }: Props) {
   const esSalida = m.valorCop < 0;
   const esPendiente = m.estado === 'PENDIENTE';
@@ -93,6 +105,19 @@ export function MovimientoFila({
 
       {/* Cruce sugerido: la decisión de la fila */}
       <TableCell className="max-w-[460px]">
+        {/* 🔴 Muchos a uno: si el movimiento es la suma de recibos YA emitidos,
+            eso va primero. Conciliarlo contra una cuota EMITIRÍA otro recibo
+            por la misma plata. */}
+        {esPendiente && !esSalida && m.muchosAUno && (
+          <MuchosAUno
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            sinTabla={sinTablaDeVinculos}
+            onSinTabla={onSinTablaDeVinculos}
+            onCambio={onCambio}
+          />
+        )}
         {esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
             /*

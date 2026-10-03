@@ -11,6 +11,8 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   DestinoDeConciliacion,
+  DiferenciaConfigurada,
+  DiferenciasConocidasDeLaInmobiliaria,
   FilaDeExtracto,
   FiltrosDeMovimientos,
   LoteActual,
@@ -19,7 +21,9 @@ import type {
   PaginaDeMovimientos,
   ResultadoDeCarga,
   ResultadoDeConciliar,
+  ResultadoDeConciliarConRecibos,
   ResultadoDeSeguros,
+  RespuestaRecibosQueSuman,
   ResumenDeConciliacion,
 } from './conciliacion-bancaria.types';
 
@@ -32,6 +36,17 @@ function conQuery(path: string, params: Record<string, string | number | undefin
   }
   const s = q.toString();
   return s ? `${path}?${s}` : path;
+}
+
+/**
+ * Una diferencia configurada, con las claves EXACTAS del DTO: la retención va
+ * con `porcentaje` y la comisión con `valorCop`, nunca las dos (el back
+ * responde 400 `DIFERENCIA_MAL_ARMADA`). El nombre va sin espacios de sobra.
+ */
+export function diferenciaParaElBack(d: DiferenciaConfigurada): Record<string, unknown> {
+  return d.tipo === 'RETENCION'
+    ? { nombre: d.nombre.trim(), tipo: d.tipo, porcentaje: d.porcentaje, aQuien: d.aQuien }
+    : { nombre: d.nombre.trim(), tipo: d.tipo, valorCop: d.valorCop, aQuien: d.aQuien };
 }
 
 /** Sólo las claves del DTO, sin `undefined`: `referencia` vacía no viaja. */
@@ -104,6 +119,47 @@ export const conciliacionBancariaApi = {
     );
     invalidar('cobros');
     return res;
+  },
+
+  // ── Muchos a uno: un movimiento = la suma de VARIOS recibos (02-10-2026) ──
+
+  /** Las combinaciones de recibos ya emitidos que suman este movimiento (máx. 3). */
+  async recibosQueSuman(movimientoId: string): Promise<RespuestaRecibosQueSuman> {
+    return apiClient.get<RespuestaRecibosQueSuman>(
+      `${BASE}/movimientos/${movimientoId}/recibos-que-suman`,
+    );
+  },
+
+  /**
+   * VINCULA el movimiento con esos recibos y lo deja conciliado. No emite
+   * recibos (ya existen). El back re-verifica todo: que la suma calce (o la
+   * explique una regla conocida) y que ningún recibo ya esté respaldado.
+   * El cuerpo lleva sólo `reciboIds` (`forbidNonWhitelisted`).
+   */
+  async conciliarConRecibos(
+    movimientoId: string,
+    reciboIds: string[],
+  ): Promise<ResultadoDeConciliarConRecibos> {
+    const res = await apiClient.post<ResultadoDeConciliarConRecibos>(
+      `${BASE}/movimientos/${movimientoId}/conciliar-con-recibos`,
+      { reciboIds: [...reciboIds] },
+    );
+    invalidar('cobros');
+    return res;
+  },
+
+  /** Las retenciones y comisiones que reconoce la inmobiliaria, y el 4×1000 de ley. */
+  async diferenciasConocidas(): Promise<DiferenciasConocidasDeLaInmobiliaria> {
+    return apiClient.get<DiferenciasConocidasDeLaInmobiliaria>(`${BASE}/diferencias-conocidas`);
+  },
+
+  /** Reemplaza TODAS las diferencias configuradas (0..`maximo`). */
+  async guardarDiferenciasConocidas(
+    diferencias: DiferenciaConfigurada[],
+  ): Promise<DiferenciasConocidasDeLaInmobiliaria> {
+    return apiClient.put<DiferenciasConocidasDeLaInmobiliaria>(`${BASE}/diferencias-conocidas`, {
+      diferencias: diferencias.map(diferenciaParaElBack),
+    });
   },
 
   async ignorar(movimientoId: string, motivo: string): Promise<MovimientoBancario> {

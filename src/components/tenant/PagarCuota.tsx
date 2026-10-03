@@ -78,10 +78,17 @@ export function PagarCuota({
   planId,
   cuota,
   locale,
+  pagoPendienteDeRevision = false,
 }: {
   planId: string;
   cuota: AcuerdoInstallment;
   locale: string;
+  /**
+   * 🔴 ARREGLOS-6 (Nico, ARREGLOS-3 Q2 a): hay un pago del acuerdo COMPLETO que
+   * una persona de la inmobiliaria todavía no revisa. Mientras tanto no se
+   * ofrece «Pagar»: la plata ya entró y otra cuota sería cobrar dos veces.
+   */
+  pagoPendienteDeRevision?: boolean;
 }) {
   const es = locale === 'es';
   const [preparando, setPreparando] = useState(false);
@@ -145,19 +152,34 @@ export function PagarCuota({
         </div>
       </div>
 
-      <Button type="button" onClick={pagar} isLoading={preparando} disabled={preparando} hideArrow>
-        {preparando
-          ? es
-            ? 'Preparando el pago…'
-            : 'Preparing the payment…'
-          : es
-            ? cuota.number === 0
-              ? 'Pagar la cuota inicial'
-              : `Pagar cuota ${cuota.number}`
-            : cuota.number === 0
-              ? 'Pay the down payment'
-              : `Pay installment ${cuota.number}`}
-      </Button>
+      {pagoPendienteDeRevision ? (
+        <Presence
+          show
+          as="p"
+          distance="xs"
+          role="status"
+          data-testid="pagar-cuota-en-revision"
+          className="text-sm text-fg dark:text-white"
+        >
+          {es
+            ? 'Recibimos un pago por el acuerdo completo y tu inmobiliaria lo está revisando. Mientras tanto no tienes que pagar ninguna cuota.'
+            : 'We received a payment for the whole agreement and your agency is reviewing it. In the meantime you do not need to pay any installment.'}
+        </Presence>
+      ) : (
+        <Button type="button" onClick={pagar} isLoading={preparando} disabled={preparando} hideArrow>
+          {preparando
+            ? es
+              ? 'Preparando el pago…'
+              : 'Preparing the payment…'
+            : es
+              ? cuota.number === 0
+                ? 'Pagar la cuota inicial'
+                : `Pagar cuota ${cuota.number}`
+              : cuota.number === 0
+                ? 'Pay the down payment'
+                : `Pay installment ${cuota.number}`}
+        </Button>
+      )}
 
       <Presence
         show={motivo !== null}

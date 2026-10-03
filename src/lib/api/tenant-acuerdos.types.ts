@@ -31,6 +31,12 @@ export type AcuerdoDetail = components['schemas']['CarteraPaymentPlanDetailRespo
    * generado del micro (la vista de la inmobiliaria) no lo trae.
    */
   operatorApprovedAt?: string | null;
+  /**
+   * 🔴 ARREGLOS-6 (Nico, ARREGLOS-3 Q2 a): un pago del acuerdo COMPLETO espera a
+   * que una persona de la inmobiliaria lo revise. Mientras sea `true` el portal
+   * no ofrece «Pagar» en este acuerdo. Ausente (un micro anterior) = `false`.
+   */
+  pagoPendienteDeRevision?: boolean;
 };
 
 /**

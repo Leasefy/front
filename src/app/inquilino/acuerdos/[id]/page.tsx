@@ -274,7 +274,14 @@ function AcuerdoDetailView({
       )}
 
       {/* Pagar cuota (ACUE-03) — por la sesión de pago de la ruta; sólo con el plan aceptado */}
-      {nextCuota && <PagarCuota planId={plan.planId} cuota={nextCuota} locale={locale} />}
+      {nextCuota && (
+        <PagarCuota
+          planId={plan.planId}
+          cuota={nextCuota}
+          locale={locale}
+          pagoPendienteDeRevision={plan.pagoPendienteDeRevision === true}
+        />
+      )}
 
       {/* State timeline — source-timestamp-only events */}
       <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">

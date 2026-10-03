@@ -12,6 +12,11 @@
  * aprobada NO se asienta (nunca a una cuenta adivinada) y queda «por
  * asentar»: el botón la asienta cuando ya hay cuenta.
  *
+ * 🔴 ARREGLOS-6b (Nico, ARREGLOS-5 Q2 a): una cuarta, el ANTICIPO DE IMPUESTOS
+ * (la semilla propone 135515), para las retenciones que la pasarela le practica
+ * a la inmobiliaria en el giro de Leasefy. Necesita su propia migración del
+ * back: sin ella, esa fila se ve pero no se guarda (`disponible: false`).
+ *
  * 🔴 Seguimiento 6 («"Asentarlas" no reprocesaba las salidas»): «por asentar»
  * cuenta también el 4×1000 y las comisiones conciliados como salida, y los
  * gastos del banco del extracto que las reglas de las salidas reconocen
@@ -190,7 +195,8 @@ export function CuentasDeLasDiferencias() {
         <p className="text-body-sm text-fg-muted">
           Cuando apruebas una conciliación con una diferencia, se asienta sola: el 4×1000 y la comisión van a gasto
           bancario; la retención que practicó el inquilino queda a nombre del propietario (art. 394 del Estatuto
-          Tributario), se le descuenta en su liquidación y entra a su certificado.
+          Tributario), se le descuenta en su liquidación y entra a su certificado. Las retenciones que te practica la
+          pasarela en el giro de Leasefy van al anticipo de impuestos.
         </p>
       </header>
 
@@ -229,11 +235,19 @@ export function CuentasDeLasDiferencias() {
                       value={e.cuenta?.id ?? ''}
                       onChange={(id) => void elegir(e.evento, id || null)}
                       soloImputables
-                      disabled={!datos.disponible || guardando === e.evento || !escritura.puede}
+                      disabled={
+                        !datos.disponible || e.disponible === false || guardando === e.evento || !escritura.puede
+                      }
                       placeholder="Sin cuenta: no se asienta"
                       className="w-full"
                     />
-                    {!e.cuenta && e.propuesta && datos.disponible && (
+                    {/* ARREGLOS-6b: la cuenta del anticipo sin su migración del back: se ve, no se guarda. */}
+                    {datos.disponible && e.disponible === false && e.motivo && (
+                      <p className="text-caption text-fg-muted" data-testid={`sin-guardar-${e.evento}`}>
+                        {e.motivo}
+                      </p>
+                    )}
+                    {!e.cuenta && e.propuesta && datos.disponible && e.disponible !== false && (
                       <Button
                         size="sm"
                         variant="ghost"

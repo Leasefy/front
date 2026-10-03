@@ -18,7 +18,9 @@ const BASE = '/inmobiliaria/contabilidad/diferencias';
 export type EventoDeDiferencia =
   | 'GASTO_BANCARIO_GMF'
   | 'GASTO_BANCARIO_COMISION'
-  | 'RETENCION_DEL_INQUILINO';
+  | 'RETENCION_DEL_INQUILINO'
+  /** ARREGLOS-6b: las retenciones que practica la pasarela (anticipo de impuestos). */
+  | 'ANTICIPO_DE_IMPUESTOS';
 
 export interface CuentaResumida {
   id: string;
@@ -37,6 +39,13 @@ export interface CuentasDeLasDiferencias {
     codigoPropuesto: string;
     cuenta: CuentaResumida | null;
     propuesta: CuentaResumida | null;
+    /**
+     * ARREGLOS-6b: `false` = esta cuenta todavía no se puede guardar (la del
+     * anticipo necesita su propia migración del back); `motivo` dice por qué.
+     * Un back anterior no lo manda: se toma como sí.
+     */
+    disponible?: boolean;
+    motivo?: string | null;
   }[];
   /** De dónde sale lo que no llegó: la cuenta del mapeo «Entró plata al banco». */
   cuentaDelBanco: CuentaResumida | null;

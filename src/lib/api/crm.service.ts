@@ -816,7 +816,18 @@ export const captacionApi = {
        * inmueble o, si ya terminó, el más reciente). `null` = el inmueble no
        * tiene contrato y la comisión no se puede registrar.
        */
-      contrato: { id: string; codigo: number | null; inquilino: string | null } | null
+      contrato: {
+        id: string
+        codigo: number | null
+        inquilino: string | null
+        /**
+         * ARREGLOS-6b: el inmueble no tiene contrato de arriendo y la comisión va
+         * sobre el de OTRO inmueble del mismo propietario (un back anterior no lo manda).
+         */
+        delMismoPropietario?: true
+        /** La dirección de ese otro inmueble. */
+        direccion?: string | null
+      } | null
       /** ARREGLOS-3: de qué es el mandato (un back anterior no lo manda). */
       tipoDeMandato?: 'RENT' | 'SALE'
       /** ARREGLOS-3: sin comisión de venta pactada, qué hacer (`null` = sí está pactada). */

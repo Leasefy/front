@@ -447,6 +447,14 @@ export interface MuchosAUnoDelMovimiento {
   ambigua: boolean;
   total: number;
   parcial: PropuestaParcial | null;
+  /**
+   * 🔴 ARREGLOS-6b (Nico, Q1 a): los recibos YA EMITIDOS que respaldan esta
+   * línea con la regla del back (de la misma persona del 1:1, o que la línea
+   * misma nombra): la fila no ofrece el 1:1. `deLaPropuesta: false` = no son
+   * una propuesta de muchos a uno y la fila ofrece conciliar con ellos.
+   * `null` = el 1:1 de siempre. Un back anterior no lo manda.
+   */
+  recibosYaEmitidos?: { deLaPropuesta: boolean; reciboIds: string[]; numeros: number[] } | null;
 }
 
 /** `GET …/movimientos/:id/recibos-que-suman`. */

@@ -399,7 +399,12 @@ export function RegistrarLaVenta({
                 {vista.contrato ? (
                   <p className="text-muted-foreground" data-testid="venta-contrato">
                     Sobre el contrato{vista.contrato.codigo !== null ? ` N.º ${vista.contrato.codigo}` : ''}
-                    {vista.contrato.inquilino ? ` de ${vista.contrato.inquilino}` : ''}.
+                    {vista.contrato.inquilino ? ` de ${vista.contrato.inquilino}` : ''}
+                    {/* ARREGLOS-6b: el inmueble no tiene contrato de arriendo; va sobre otro del mismo propietario. */}
+                    {vista.contrato.delMismoPropietario
+                      ? `, de otro inmueble del mismo propietario${vista.contrato.direccion ? ` (${vista.contrato.direccion})` : ''}: este inmueble no tiene contrato de arriendo`
+                      : ''}
+                    .
                   </p>
                 ) : (
                   <p className="text-danger" data-testid="venta-sin-contrato">

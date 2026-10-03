@@ -29,6 +29,7 @@ import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conc
 import { diaLegible, mesesLegibles, plata } from './formato';
 import { MuchosAUno } from './MuchosAUno';
 import { yaLaRespaldanRecibosEmitidos } from './muchos-a-uno';
+import { RecibosYaEmitidos } from './RecibosYaEmitidos';
 import { PropuestaDeLaPasarela } from './PropuestaDeLaPasarela';
 import { PropuestaDeLaPasarelaGiro } from './PropuestaDeLaPasarelaGiro';
 import { nombreDeLaCuenta } from './cuentas-del-extracto';
@@ -75,6 +76,8 @@ export function MovimientoFila({
   const esPendiente = m.estado === 'PENDIENTE';
   // 🔴 ARREGLOS-5 (Nico Q4 a): recibos ya emitidos suman exacto esta línea: nada de 1:1 (otro recibo por la misma plata).
   const yaTieneSusRecibos = esPendiente && !esSalida && yaLaRespaldanRecibosEmitidos(m);
+  // 🔴 ARREGLOS-6b (Nico, ARREGLOS-5 Q4 a): la línea que es el giro de Leasefy no se concilia contra una cuota ni un cliente.
+  const esElGiroDeLeasefy = esPendiente && !esSalida && (m.giroDeLeasefy?.propuestas.length ?? 0) > 0;
 
   return (
     <TableRow
@@ -173,11 +176,14 @@ export function MovimientoFila({
             onCambio={onCambio}
           />
         )}
-        {yaTieneSusRecibos ? (
+        {esElGiroDeLeasefy ? (
           <p className="text-caption text-fg-muted" data-testid={`sin-uno-a-uno-${m.id}`}>
-            Los recibos de arriba ya están emitidos y suman exacto este movimiento: apruébalos, o usa «Corregir» si son
-            otros. Conciliarlo contra una cuota o un cliente emitiría otro recibo por la misma plata.
+            Si es el giro de Leasefy, confírmalo arriba: sus recibos ya se emitieron con cada pago en línea. Conciliarlo
+            contra una cuota o un cliente emitiría otro recibo por la misma plata.
           </p>
+        ) : yaTieneSusRecibos ? (
+          // ARREGLOS-6b (Q1 a): cuáles recibos, con la regla del back; si no son una propuesta, conciliar con ellos.
+          <RecibosYaEmitidos movimiento={m} puedeConciliar={puedeConciliar} ocupado={ocupado} onCambio={onCambio} />
         ) : esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
             /*

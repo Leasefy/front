@@ -557,6 +557,18 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - **Venta en un mandato de arriendo**: `sinComisionDeVentaPactada(vista)` (`lib/captacion/venta-del-inmueble.ts`) dice que hace
   falta un mandato de VENTA y cómo crearlo (`data-testid="venta-sin-comision"`).
 
+## ARREGLOS-6b (03-10-2026, modo autónomo; Nico, la recomendada)
+
+- **La fila del extracto con la regla del back** (Q1 a): `yaLaRespaldanRecibosEmitidos` usa `muchosAUno.recibosYaEmitidos` cuando el
+  back lo manda (recibos de la MISMA persona del 1:1 o que la línea misma nombra); un recibo de otra persona que sólo empata en el
+  valor ya no quita las cuotas. `RecibosYaEmitidos.tsx` dice cuáles («Los recibos N.º 51 y 52…») y, si no son una propuesta de muchos
+  a uno, ofrece «Conciliar con esos recibos» (`conciliarConRecibos`). Un back anterior: el criterio de antes.
+- **La línea del giro de Leasefy** no ofrece cuotas ni «Conciliar con un cliente» (`MovimientoFila`, `sin-uno-a-uno-<id>`).
+- **Anticipo de impuestos**: `CuentasDeLasDiferencias` muestra la cuarta cuenta (`ANTICIPO_DE_IMPUESTOS`, semilla 135515); con
+  `disponible: false` (falta la migración del back) se ve apagada con su `motivo` (`sin-guardar-<evento>`).
+- **Comisión de venta de un inmueble sin contrato**: la revisión dice «…, de otro inmueble del mismo propietario (dirección): este
+  inmueble no tiene contrato de arriendo» (`contrato.delMismoPropietario`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

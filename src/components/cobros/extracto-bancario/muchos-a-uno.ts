@@ -122,10 +122,25 @@ export function medioLegible(medio: string | null | undefined): string | null {
  */
 export function yaLaRespaldanRecibosEmitidos(m: {
   valorCop: number;
-  muchosAUno?: { mejor: { sumaCop: number; diferencia: unknown | null } | null } | null;
+  muchosAUno?: {
+    mejor: { sumaCop: number; diferencia: unknown | null } | null;
+    recibosYaEmitidos?: { deLaPropuesta: boolean; numeros: number[] } | null;
+  } | null;
 }): boolean {
+  // 🔴 ARREGLOS-6b (Nico, Q1 a): con el back nuevo manda SU regla (la misma de lo automático):
+  // un recibo de OTRA persona que sólo empata en el valor no quita el 1:1.
+  if (m.muchosAUno && 'recibosYaEmitidos' in m.muchosAUno) return Boolean(m.muchosAUno.recibosYaEmitidos);
   const mejor = m.muchosAUno?.mejor;
   return Boolean(mejor) && !mejor!.diferencia && mejor!.sumaCop === m.valorCop && m.valorCop > 0;
+}
+
+/** ARREGLOS-6b: «el recibo N.º 41» / «los recibos N.º 51 y 52» / «los recibos N.º 1, 2 y 3». */
+export function losRecibosNumero(numeros: readonly number[]): string {
+  const ordenados = [...numeros].sort((a, b) => a - b).map(String);
+  if (ordenados.length === 1) return `el recibo N.º ${ordenados[0]}`;
+  const lista =
+    ordenados.length > 1 ? `${ordenados.slice(0, -1).join(', ')} y ${ordenados[ordenados.length - 1]}` : '';
+  return `los recibos N.º ${lista}`;
 }
 
 // ── El conjunto que arma la persona ─────────────────────────────────────────

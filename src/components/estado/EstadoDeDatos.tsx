@@ -16,13 +16,24 @@
  *
  * Excepción deliberada — el refresco de fondo: si YA se mostró contenido, un
  * fallo posterior no debe borrarlo. Pasa `conservarContenido` para eso.
+ *
+ * Movimiento (02-10-2026, «cada interacción con su animación»): cuando el
+ * estado CAMBIA después de montarse (cargando → contenido, contenido → falló,
+ * vacío → contenido…), lo nuevo entra con el sistema de Cadence (fundido y
+ * 4 px de subida; con movimiento reducido, sólo el fundido). Lo que ya estaba
+ * al montarse no se anima: la página ya entra con el `PageTransition` del
+ * `template.tsx`, y dos entradas encadenadas se ven como un tropezón. Por eso
+ * una pantalla que usa `EstadoDeDatos` NO lo envuelve en otro `CrossFade`.
+ * Cómo entra sin agregar nodos: `entrada-del-estado.tsx`.
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { usePrefersReducedMotion } from '@leasefy/cadence'
 import { Spinner } from '@/components/ui'
 import { FalloDeCarga } from './FalloDeCarga'
 import { clasificarFallo } from '@/lib/errores/clasificar'
 import { useAccesoDeLaPantalla } from '@/components/auth/acceso-de-la-pantalla'
+import { conEntrada } from './entrada-del-estado'
 
 export interface EstadoDeDatosProps {
   cargando: boolean
@@ -60,6 +71,29 @@ export interface EstadoDeDatosProps {
    */
   principal?: boolean
   children: ReactNode
+}
+
+/**
+ * Cuál de los cuatro estados se pinta. El ORDEN de los `if` es la regla de
+ * arriba (cargando → falló → vacío → datos); `cuatro-estados.test.ts` lo vigila.
+ */
+function estadoQueToca({
+  cargando,
+  error,
+  vacio,
+  hayVacio,
+  conservar,
+}: {
+  cargando: boolean
+  error: unknown
+  vacio: boolean
+  hayVacio: boolean
+  conservar: boolean
+}): 'cargando' | 'fallo' | 'vacio' | 'contenido' {
+  if (cargando) return 'cargando'
+  if (error && !conservar) return 'fallo'
+  if (vacio && hayVacio) return 'vacio'
+  return 'contenido'
 }
 
 export function EstadoDeDatos({
@@ -100,13 +134,34 @@ export function EstadoDeDatos({
     }
   }, [principal, error, denegar, yaDenegado, queEs])
 
-  if (cargando) {
+  /*
+   * El estado que se va a pintar, y si cambió desde que se montó: sólo lo que
+   * llega DESPUÉS entra animado. `yaCambio` no vuelve a `false`: de ahí en
+   * adelante todo cambio de estado se anima.
+   */
+  const reducido = usePrefersReducedMotion()
+  const estado = estadoQueToca({
+    cargando,
+    error,
+    vacio,
+    hayVacio: Boolean(cuandoVacio),
+    conservar: conservarContenido && yaHuboContenido.current,
+  })
+  const primerEstado = useRef(estado)
+  const yaCambio = useRef(false)
+  if (estado !== primerEstado.current) yaCambio.current = true
+  const entrada = { estado, animar: yaCambio.current, reducido }
+
+  if (estado === 'cargando') {
     return (
       <>
-        {esqueleto ?? (
-          <div className="flex items-center justify-center py-24">
-            <Spinner size="md" variant="muted" />
-          </div>
+        {conEntrada(
+          esqueleto ?? (
+            <div className="flex items-center justify-center py-24">
+              <Spinner size="md" variant="muted" />
+            </div>
+          ),
+          entrada,
         )}
       </>
     )
@@ -122,8 +177,8 @@ export function EstadoDeDatos({
   //
   // Son 20 pantallas con la bandera puesta, así que el arreglo va acá y no en
   // cada una.
-  if (error && !(conservarContenido && yaHuboContenido.current)) {
-    return (
+  if (estado === 'fallo') {
+    return conEntrada(
       // Sin marco: esto NO es la pantalla, es el hueco de contenido que la
       // página ya envolvió —las tres pantallas que lo usan lo ponen dentro de
       // `rounded-lg border bg-card`—. Enmarcado quedaba un borde redondeado
@@ -135,13 +190,14 @@ export function EstadoDeDatos({
         onReintentar={onReintentar}
         volverA={volverA}
         enmarcado={false}
-      />
+      />,
+      entrada,
     )
   }
 
-  if (vacio && cuandoVacio) return <>{cuandoVacio}</>
+  if (estado === 'vacio') return <>{conEntrada(cuandoVacio, entrada)}</>
 
   // Desde acá sí hubo contenido: el próximo fallo de refresco puede conservarlo.
   yaHuboContenido.current = true
-  return <>{children}</>
+  return <>{conEntrada(children, entrada)}</>
 }

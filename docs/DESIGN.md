@@ -611,6 +611,27 @@ sin verse juntos — Cadence v1.1.1; `ErrorDelCampo` de `components/estado/` es 
 español) · `Skeleton` (deja de brillar con movimiento reducido). `Dialog`, `AlertDialog`, `Sheet`
 y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
 
+**La base del panel (03-10-2026)** — también se hereda sin hacer nada:
+
+- `EstadoDeDatos`: cuando el estado CAMBIA después de montarse (cargando → contenido, → falló,
+  → vacío), lo nuevo entra con fundido y 4 px (`motionDistance.xs`). Lo que ya estaba al montarse
+  no se anima (la página ya entra con su `template.tsx`). Casi no agrega nodos: un hijo que es
+  etiqueta se pinta como `motion.<etiqueta>` con sus mismas props; un componente que es TODO el
+  contenido va en una `motion.div` (`empty:hidden` si no pinta nada); un componente entre varios
+  hijos queda quieto (una caja le cambiaría el padre). **Una pantalla que
+  usa `EstadoDeDatos` NO lo envuelve en otro `CrossFade`.** (`components/estado/entrada-del-estado.tsx`)
+- `KpiValor`: la cifra que llega después de cargar entra con fundido y, si es un número, cuenta
+  desde 0 (`AnimatedNumber`, `reveal`); si después cambia, cuenta desde la anterior.
+- `BarraDePestanas` y `RielDePestanas`: la marca de la activa (card o subrayado) es un
+  `MotionIndicator` que **se desliza** a la nueva.
+- `BarraDeAccionesMasivas`: sube 8 px al aparecer con algo marcado y el «N marcadas» cuenta. Para
+  que también SALGA animada, la pantalla la monta dentro de un `Presence` (o `AnimatePresence`).
+- `EmptyState` (`ui/empty-state`, y `data-display/EmptyState` que delega) y `SinDatos`: entran
+  con `Appear` (8 px), salvo dentro de un `EstadoDeDatos` que ya los anima.
+- Tablas cuyas filas entran y salen (marcar, aprobar, borrar, filtrar): `TableBodyAnimado` +
+  `TableRowAnimada` de `ui/table` (escalonado con techo de 320 ms, salida «sync», sin `layout`),
+  con `key` = el id del dato.
+
 ### Páginas
 
 - `MotionProvider` (Cadence) envuelve toda la app en `src/app/layout.tsx`: `reducedMotion="user"`.

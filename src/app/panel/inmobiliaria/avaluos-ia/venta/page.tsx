@@ -40,7 +40,7 @@ import { BrandContour, Eyebrow, StatusBadge, MonoLabel, IconButton } from '@leas
 import { Button, Card } from '@/components/ui'
 
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, var(--ink) 56%, var(--ink-2) 140%)'
 const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
 /** Compact COP for big sale prices: $620 M. */

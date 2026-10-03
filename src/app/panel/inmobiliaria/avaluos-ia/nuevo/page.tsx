@@ -34,7 +34,7 @@ import { Button, Card, Input, Label, Spinner } from '@/components/ui'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, var(--ink) 56%, var(--ink-2) 140%)'
 
 type Phase = 'tipo' | 'inmueble' | 'datos' | 'procesando'
 type Tipo = 'arriendo' | 'venta' | 'mixto'

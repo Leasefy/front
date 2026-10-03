@@ -19,7 +19,7 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-[#0e0e10]` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
+ * dark:bg-bg` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
@@ -78,9 +78,9 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
       transition={{ delay: index * 0.05 }}
     >
       <Link href={`/inquilino/acuerdos/${encodeURIComponent(p.planId)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-4 sm:p-5 hover:border-primary/40 transition-colors">
+        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 hover:border-primary/40 transition-colors">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
               <Scroll className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
 
@@ -135,7 +135,7 @@ export default function AcuerdosPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -145,7 +145,7 @@ export default function AcuerdosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -157,7 +157,7 @@ export default function AcuerdosPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -171,7 +171,7 @@ export default function AcuerdosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}

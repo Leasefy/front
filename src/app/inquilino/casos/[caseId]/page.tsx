@@ -111,7 +111,7 @@ function formatRelative(iso: string, locale: string): string {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
     </div>
   );
@@ -171,7 +171,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
     >
       {/* Header — title + neutral status badge */}
       <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <TypeIcon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
@@ -188,7 +188,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
       </header>
 
       {/* Summary card — role responsable + relative updatedAt + source out-link */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6 space-y-4">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex items-center gap-2.5">
             <User className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
@@ -277,7 +277,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
       )}
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
@@ -306,7 +306,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   // Loading gate — never flash a fake not-found while any source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>

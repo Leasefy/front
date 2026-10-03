@@ -48,6 +48,9 @@ import {
   SidebarSearch,
   SidebarInviteCard,
   SidebarUpgradeButton,
+  motionScale,
+  motionSpring,
+  motionTransition,
 } from '@leasefy/cadence';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -275,18 +278,21 @@ interface NavItemComponentProps {
  * dos temas. El `surface-muted` del DS en oscuro (#24221c) era MÁS claro que
  * cualquier activa y la competía.
  */
-// ── Movimiento — PROVISIONAL ─────────────────────────────────────────────────
-// Valores propios (150–250 ms, ease-out) hasta que exista el sistema de
-// movimiento de Cadence; al llegar, se cambian por sus tokens.
+// ── Movimiento — los tokens de Cadence (03-10-2026) ──────────────────────────
+// Antes eran valores propios «hasta que exista el sistema de movimiento».
 
-/** El resaltado de la activa: resorte de 220 ms SIN rebote (con rebote temblaba). */
-const RESORTE_DEL_MENU = { type: 'spring', visualDuration: 0.22, bounce: 0 } as const;
+/**
+ * El resaltado de la activa: el resorte ágil del sistema (`motionSpring.snappy`,
+ * 250 ms) pero SIN su 10 % de rebote: con rebote la mancha se pasaba de la fila
+ * y volvía, y se leía como un temblor.
+ */
+const RESORTE_DEL_MENU = { ...motionSpring.snappy, bounce: 0 } as const;
 
-/** Lo que aparece al plegar o desplegar la barra (cabecera, navegación): 200 ms. */
-const FUNDIDO_DE_LA_BARRA = { duration: 0.2, ease: [0.22, 1, 0.36, 1] } as const;
+/** Lo que aparece al plegar o desplegar la barra (cabecera, navegación): entrar, 200 ms. */
+const FUNDIDO_DE_LA_BARRA = motionTransition.enter;
 
-/** La presión del botón de plegar. */
-const PRESION_DEL_BOTON = { scale: 0.94 } as const;
+/** La presión del botón de plegar (`motionScale.press`, 97 %). */
+const PRESION_DEL_BOTON = { scale: motionScale.press } as const;
 
 /**
  * `false` en el primer render —también el del servidor— y `true` después. Lo

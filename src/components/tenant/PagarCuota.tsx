@@ -127,9 +127,9 @@ export function PagarCuota({
   }, [planId, cuota.number]);
 
   return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
         </div>
         <div>

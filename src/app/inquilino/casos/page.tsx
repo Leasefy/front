@@ -117,8 +117,8 @@ function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: s
       transition={{ delay: index * 0.05 }}
     >
       <Link href={c.detailLink} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
             <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
 
@@ -161,7 +161,7 @@ export default function CasosPage() {
   // Loading gate — never flash a fake-empty while any source is in flight.
   if (isOnboardingLoading || isCasesLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -171,7 +171,7 @@ export default function CasosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -183,7 +183,7 @@ export default function CasosPage() {
   // this only fires on a hard aggregate failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -197,7 +197,7 @@ export default function CasosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -221,9 +221,9 @@ export default function CasosPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+          className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 flex flex-col sm:flex-row sm:items-center gap-4"
         >
-          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
             <Bell className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
@@ -300,7 +300,7 @@ export default function CasosPage() {
             {/* Real entry point — PQRS + mantenimiento now flow through /inquilino/solicitudes */}
             <Link
               href="/inquilino/solicitudes"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
@@ -326,7 +326,7 @@ export default function CasosPage() {
             {/* Real entry point — approved acuerdos now flow through /inquilino/acuerdos */}
             <Link
               href="/inquilino/acuerdos"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">

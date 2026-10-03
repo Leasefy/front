@@ -208,7 +208,7 @@ export default function InquilinoPage() {
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
@@ -227,7 +227,7 @@ export default function InquilinoPage() {
    */
   if (errorPostulaciones || errorArriendos) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
           <FalloDeCarga
             error={errorPostulaciones ?? errorArriendos}
@@ -261,7 +261,7 @@ export default function InquilinoPage() {
   const hayCasos = !isNewUser && openCasesCount > 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
@@ -341,8 +341,8 @@ export default function InquilinoPage() {
           <>
           {/* Active Leases */}
           <Link href="/inquilino/arriendo" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                 <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
@@ -357,8 +357,8 @@ export default function InquilinoPage() {
 
           {/* Applications */}
           <Link href="/inquilino/aplicaciones" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                 <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
@@ -373,8 +373,8 @@ export default function InquilinoPage() {
               Sólo cuando hay casos: "Casos 0" no resume nada (misma regla del grid). */}
           {hayCasos && (
             <Link href="/inquilino/casos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Casos' : 'Cases'}</p>
@@ -391,8 +391,8 @@ export default function InquilinoPage() {
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
             <Link href="/inquilino/pagos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
@@ -403,8 +403,8 @@ export default function InquilinoPage() {
             </Link>
           ) : (
             <Link href="/inquilino/explorar" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-primary font-medium mb-1">
@@ -466,7 +466,7 @@ export default function InquilinoPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 + index * 0.05 }}
-                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong transition-colors duration-300 text-left w-full"
+                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong transition-colors duration-300 text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <PortadaDelInmueble
@@ -590,7 +590,7 @@ export default function InquilinoPage() {
                   </Link>
                 </div>
 
-                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618]">
+                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted">
                   {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
                       Y el CTA va a su catálogo, que es lo siguiente que haría. */}
                   <EmptyState
@@ -619,7 +619,7 @@ export default function InquilinoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5"
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
             >
               <h3 className="font-semibold text-fg dark:text-white mb-4">
                 {t('dashboard.quickActions')}
@@ -652,8 +652,8 @@ export default function InquilinoPage() {
                   },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-[#222224] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -675,10 +675,10 @@ export default function InquilinoPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5"
+                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center flex-shrink-0">
                     <Lightbulb className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                   </div>
                   <div>
@@ -700,7 +700,7 @@ export default function InquilinoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="rounded-xl bg-surface dark:bg-[#1a1a1c] border border-border dark:border-border-strong p-5"
+              className="rounded-xl bg-surface dark:bg-surface-muted border border-border dark:border-border-strong p-5"
             >
               <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}

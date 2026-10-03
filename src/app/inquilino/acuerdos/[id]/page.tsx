@@ -102,7 +102,7 @@ function nextPayableCuota(installments: AcuerdoInstallment[]): AcuerdoInstallmen
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
     </div>
   );
@@ -177,7 +177,7 @@ function AcuerdoDetailView({
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header — title + neutral status badge */}
       <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <Scroll className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
@@ -194,7 +194,7 @@ function AcuerdoDetailView({
       </header>
 
       {/* Total — rendered VERBATIM from the record (no saldo/total math) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
         <p className="text-xs text-fg-subtle dark:text-fg-muted">
           {es ? 'Total del acuerdo' : 'Agreement total'}
         </p>
@@ -204,7 +204,7 @@ function AcuerdoDetailView({
       </section>
 
       {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {es ? 'Plan de cuotas' : 'Installment plan'}
         </h2>
@@ -216,13 +216,13 @@ function AcuerdoDetailView({
           respondería 409 `ACUERDO_NO_ACEPTABLE`, así que ni se ofrece firmar (02-10-2026).
           Uno ofrecido que la inmobiliaria todavía no aprobó tampoco (03-10-2026). */}
       {firma === 'firmar' ? (
-        <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+        <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>
       ) : firma === 'por-aprobar' ? (
         <section
           data-testid="acuerdo-por-aprobar"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
         >
           <div className="flex items-start gap-3">
             <Clock className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -241,7 +241,7 @@ function AcuerdoDetailView({
       ) : firma === 'no-aceptable' ? (
         <section
           data-testid="acuerdo-no-aceptable"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
         >
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {es
@@ -273,7 +273,7 @@ function AcuerdoDetailView({
       {nextCuota && <PagarCuota planId={plan.planId} cuota={nextCuota} locale={locale} />}
 
       {/* State timeline — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {es ? 'Historial' : 'Timeline'}
         </h2>
@@ -313,7 +313,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   // Loading gate — never flash a fake not-found while the source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>

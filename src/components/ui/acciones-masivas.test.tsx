@@ -71,7 +71,7 @@ describe('BarraDeAccionesMasivas', () => {
     expect(q('[data-testid="barra-quitar"]')).toBeNull()
   })
 
-  it('🔴 no dice «ninguna» ni un participio: no hay género que equivocar', () => {
+  it('🔴 no dice «ninguna» ni un participio: no hay género que equivocar', async () => {
     montar({ marcadas: 0 })
     expect(resumen()).toBe('Todavía no has marcado nada.')
 
@@ -81,6 +81,12 @@ describe('BarraDeAccionesMasivas', () => {
     expect(resumen()).not.toMatch(/marcad[oa]s?\b/)
 
     montar({ marcadas: 3 })
+    // La cifra CUENTA de 1 a 3 (`AnimatedNumber` de Cadence): aun con las
+    // animaciones terminadas al instante, framer escribe el valor en el
+    // cuadro siguiente.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
     expect(resumen()).toContain('3 cruces')
   })
 

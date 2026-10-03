@@ -34,7 +34,7 @@ import type { Icon } from '@phosphor-icons/react'
 import { BrandContour, Eyebrow, StatusBadge } from '@leasefy/cadence'
 
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, var(--ink) 56%, var(--ink-2) 140%)'
 
 type ConTipo = 'auto' | 'click'
 

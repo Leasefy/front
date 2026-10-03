@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { motionTransition } from '@leasefy/cadence';
 import { ENTRAR, REACOMODAR, SALIR, coreografia } from './movimiento';
 
 /**
@@ -24,7 +25,13 @@ describe('movimiento — la coreografía del modal', () => {
   it('entrar dura 200 ms y desacelera; salir, 150 ms y acelera; reacomodar, 250 ms', () => {
     expect(ENTRAR).toMatchObject({ duration: 0.2, ease: [0.22, 1, 0.36, 1] });
     expect(SALIR).toMatchObject({ duration: 0.15, ease: [0.4, 0, 1, 1] });
-    expect(REACOMODAR).toMatchObject({ duration: 0.25 });
+    expect(REACOMODAR).toMatchObject({ visualDuration: 0.25 });
+  });
+
+  it('son los tokens de Cadence, no números escritos acá', () => {
+    expect(ENTRAR).toBe(motionTransition.enter);
+    expect(SALIR).toBe(motionTransition.exit);
+    expect(REACOMODAR).toBe(motionTransition.layout);
   });
 
   it('las distancias son chicas: 8 px lo que llega, 4 px lo que cambia en su lugar', () => {

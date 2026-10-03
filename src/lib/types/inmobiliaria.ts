@@ -3912,9 +3912,9 @@ export function formatPercentageChange(percentage: number): string {
 
 export function getCategoryColor(category: AdvancedKPI['category']): string {
   const colors = {
-    financial: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
-    operational: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
-    performance: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
+    financial: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
+    operational: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
+    performance: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
   };
   return colors[category];
 }

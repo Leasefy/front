@@ -504,13 +504,22 @@
     --primary:             var(--indigo-300);
     --primary-foreground:  var(--indigo-950);
 
+    /* Grises NEUTROS en oscuro — la paleta del chat que eligió Nico (02-10),
+       para toda la plataforma. Antes: azulados (240 6% …) acá y cálidos
+       (#24221c, #b3aea5…) en el bloque de Cadence de más abajo; sobre el negro
+       se leían amarillentos. Cada token toma el valor de la paleta que cumple
+       su MISMO papel en claro: `secondary`/`muted` = `surface-muted` (en claro
+       los dos son neutral-100 = #f4f2ef); `border`/`input` = `--border`;
+       `muted-foreground` = `fg-subtle` (#8a8a8a: la misma luz que tenía,
+       55 %, sin el tinte; 5,73:1 sobre el fondo y 5,04:1 sobre surface-muted). */
+
     /* Secondary */
-    --secondary:           240 6% 14%;
+    --secondary:           0 0% 10%;         /* #1a1a1a = surface-muted */
     --secondary-foreground: 0 0% 80%;
 
     /* Muted */
-    --muted:               240 6% 14%;
-    --muted-foreground:    240 5% 55%;
+    --muted:               0 0% 10%;         /* #1a1a1a = surface-muted */
+    --muted-foreground:    0 0% 54%;         /* #8a8a8a = fg-subtle */
 
     /* Accent */
     --accent:              238 40% 20%;
@@ -525,9 +534,9 @@
     --destructive:         var(--error-500);
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders */
-    --border:              240 6% 20%;
-    --input:               240 6% 20%;
+    /* Borders — `border-border` es `hsl(var(--border))`: va en canales HSL. */
+    --border:              0 0% 15%;         /* #262626 */
+    --input:               0 0% 15%;         /* = border, como en claro */
     --ring:                var(--indigo-300);
 
     /* Focus ring */
@@ -542,10 +551,10 @@
     /* PLan CRM Namespace */
     --plan-page-bg: #0a0a0a;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #0a0a0a;
-    --plan-border: #2E2E33;
+    --plan-border: #262626;          /* = border (era #2E2E33, azulado) */
     --plan-text-primary: #F2F2F2;
-    --plan-text-secondary: #A1A1AA;
-    --plan-text-muted: #71717A;
+    --plan-text-secondary: #a6a6a6;  /* = fg-muted (era zinc #A1A1AA) */
+    --plan-text-muted: #8a8a8a;      /* = fg-subtle (era zinc #71717A, 4,1:1) */
 
     /* PLan Status Colors (keep vibrant, darken backgrounds) */
     --plan-status-green-bg: #0F2A1A;
@@ -555,11 +564,24 @@
     --plan-status-blue-bg: #0F1A2A;
 
     /* Neutral overrides for dark — los dos que hacen de fondo van al mismo
-       onyx; 100/200 siguen siendo los grises de las superficies hundidas. */
+       onyx; 100/200 siguen siendo los grises de las superficies hundidas.
+       La escala `neutral-*` era CÁLIDA (tono 38–42) también en oscuro: los
+       `dark:bg-neutral-800`, `dark:text-neutral-400`… salían amarillentos.
+       En oscuro pierde el tinte: 100 y 200 toman el valor de la paleta de su
+       papel en claro (surface-muted y border); 400 y 800 caen a 2 puntos de
+       fg-muted y border y toman ese valor exacto; el resto conserva su luz,
+       sin tinte. En claro no cambia nada. */
     --neutral-0:   0 0% 4%;
     --neutral-50:  0 0% 4%;
-    --neutral-100: 40 8% 14%;
-    --neutral-200: 40 8% 18%;
+    --neutral-100: 0 0% 10%;   /* #1a1a1a = surface-muted */
+    --neutral-200: 0 0% 15%;   /* #262626 = border */
+    --neutral-300: 0 0% 81%;
+    --neutral-400: 0 0% 65%;   /* #a6a6a6 = fg-muted */
+    --neutral-500: 0 0% 42%;
+    --neutral-600: 0 0% 33%;
+    --neutral-700: 0 0% 27%;
+    --neutral-800: 0 0% 15%;   /* #262626 = border */
+    --neutral-900: 0 0% 7%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -1633,17 +1655,19 @@ select:-webkit-autofill:active {
   background: rgba(156, 163, 175, 0.7);
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar — grises neutros de la paleta (antes gray-600 de
+   Tailwind, azulado): el pulgar es `border-strong` y, al pasar, el gris del
+   placeholder. */
 .dark .scrollbar-thin {
-  scrollbar-color: rgba(75, 85, 99, 0.6) transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.6);
+  background: var(--border-strong);
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.8);
+  background: var(--fg-placeholder);
 }
 
 /* Hide scrollbar but keep functionality */
@@ -1741,29 +1765,33 @@ select:-webkit-autofill:active {
 .dark {
   /* Onyx Black en los fondos (ver el bloque .dark de arriba). `--ink` va acá
      a propósito: en oscuro `dark:bg-ink` es un fondo más, y antes heredaba el
-     #14130f de :root — el mismo café. Los grises (surface-muted, bordes,
-     textos) no se tocan. */
+     #14130f de :root — el mismo café. `--ink-2` (el otro extremo del
+     degradado de tinta de KpiCard, Banner, las tarjetas de Cadence y los
+     héroes del panel) también: antes heredaba el #2a2824 cálido de :root;
+     ahora es el de Cadence en oscuro, sin tinte.
+     Los GRISES son la paleta NEUTRA del chat que eligió Nico (02-10) para
+     toda la plataforma: los cálidos de antes (#24221c, #26241e, #403c33,
+     #b3aea5, #8d8980, #66625a) sobre el negro se leían amarillentos.
+     Contraste medido (WCAG): fg-muted 8,13:1 sobre el fondo y 7,15:1 sobre
+     surface-muted; fg-subtle 5,73:1 y 5,04:1 — los dos pasan AA (4,5:1) en
+     texto chico, también en las cabeceras de tabla del DS (`TableHead` trae
+     horneado `text-label text-fg-subtle`, 11px). El placeholder queda a
+     propósito por debajo de cualquier texto real: 3,10:1 sobre el negro de
+     los campos y 2,73:1 sobre surface-muted; el valor escrito va a 19:1. */
   --bg: #0a0a0a;
   --surface: #0a0a0a;
   --ink: #0a0a0a;
-  --surface-muted: #24221c;
+  --ink-2: #1a1a1a;
+  --surface-muted: #1a1a1a;
   --surface-hover: rgba(255, 255, 255, 0.05);
   --surface-pressed: rgba(255, 255, 255, 0.08);
   --surface-selected: rgba(255, 255, 255, 0.07);
-  --border-faint: #26241e;
-  --border-strong: #403c33;
+  --border-faint: #1f1f1f;
+  --border-strong: #3a3a3a;
   --fg: #fbfaf9;
-  --fg-muted: #b3aea5;
-  /* Era #7e7a72 → 3.72:1 sobre la superficie de tabla (#24221c, medido).
-     WCAG AA pide 4.5:1 para texto de menos de 18px, y este token viste las
-     cabeceras de tabla del DS — `TableHead` de @leasefy/cadence trae horneado
-     `text-label text-fg-subtle`, o sea 74 archivos del panel a 11px con
-     contraste insuficiente. #8d8980 es el MISMO matiz aclarado hasta el
-     mínimo que cumple: 4.54:1. En claro el token ya cumplía; esto era un
-     defecto sólo del tema oscuro. */
-  --fg-subtle: #8d8980;
-  /* 3.26:1 sobre el negro de los campos; el valor escrito va a 19:1. */
-  --fg-placeholder: #66625a;
+  --fg-muted: #a6a6a6;
+  --fg-subtle: #8a8a8a;
+  --fg-placeholder: #5f5f5f;
   --primary-hover: #3b5bff;
   /* Dark primary = light periwinkle fill → text must be dark ink (not white).
      Was missing here, so it inherited :root's #fff → white text on periwinkle. */

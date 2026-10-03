@@ -53,7 +53,14 @@
  *   nada» no concuerdan con nada, así que no se pueden equivocar.
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
+import {
+  AnimatedNumber,
+  enterTransition,
+  motionDistance,
+  usePrefersReducedMotion,
+} from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -120,11 +127,29 @@ export function BarraDeAccionesMasivas({
   className,
 }: BarraDeAccionesMasivasProps) {
   const [singular, plural] = queSon
-  const cuantas = marcadas.toLocaleString('es-CO')
   const nombre = marcadas === 1 ? singular : plural
+  /*
+   * Movimiento (sistema de Cadence): la barra SUBE desde abajo (8 px, fundido)
+   * cuando aparece con algo marcado —la pantalla la monta al marcar la
+   * primera fila—; si ya estaba al cargar la pantalla con cero marcadas, no
+   * entra animada. El «N marcadas» cuenta de la cifra vieja a la nueva. Con
+   * movimiento reducido, sólo el fundido y la cifra salta.
+   */
+  const reducido = usePrefersReducedMotion()
+  const [entraAnimada] = useState(() => marcadas > 0)
+  const cuantas = (
+    <AnimatedNumber
+      value={marcadas}
+      format={(n) => Math.round(n).toLocaleString('es-CO')}
+      data-testid={`${testid}-cuantas`}
+    />
+  )
 
   return (
-    <div
+    <motion.div
+      initial={entraAnimada ? { opacity: 0, y: motionDistance.sm } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={enterTransition(reducido)}
       data-testid={testid}
       className={cn(
         // Pegada al borde de abajo mientras se recorren las filas. El `z-30`
@@ -155,7 +180,7 @@ export function BarraDeAccionesMasivas({
           ) : (
             <>
               <span className="font-medium">Marcaste</span>{' '}
-              <span className="tabular-nums">{cuantas}</span> {nombre}
+              {cuantas} {nombre}
               {/* El monto no se parte: «$» en una línea y la cifra en otra se lee
                   como dos datos (Facturación, 23-09). */}
               {monto ? <span className="whitespace-nowrap tabular-nums"> · {monto}</span> : null}
@@ -187,6 +212,6 @@ export function BarraDeAccionesMasivas({
         )}
         {children}
       </div>
-    </div>
+    </motion.div>
   )
 }

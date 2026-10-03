@@ -87,7 +87,16 @@ import {
 
 import { AspaDeCierre, Dialog, DialogBody, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { IconButton, Kbd } from '@leasefy/cadence';
+import {
+  IconButton,
+  Kbd,
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionSpring,
+  motionStagger,
+  motionTransition,
+} from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -138,40 +147,41 @@ interface GrupoDeFilas {
 // Movimiento — PROVISIONAL
 // ──────────────────────────────────────────────────────────────────────────────
 
-/** ease-out suave (quint): arranca rápido y se posa. */
-const SALIDA_SUAVE = [0.22, 1, 0.36, 1] as const;
-
 /**
- * Los tiempos del buscador. Valores propios (150–250 ms, ease-out) mientras el
- * sistema de movimiento de Cadence no exista; al llegar, se cambian por sus
- * tokens (entrar ≈ `base`, salir ≈ `rapido`, filas ≈ `rapido` + escalón).
+ * Los tiempos del buscador: los tokens del sistema de movimiento de Cadence
+ * (03-10-2026; antes eran valores propios de 150–250 ms «hasta que el sistema
+ * exista»). Entrar ≈ `base`, salir = `exit`, filas = `fast` + el escalón del
+ * sistema (40 ms, con techo de 320 ms para la última).
  */
 const MOVIMIENTO = {
-  /** La caja al abrir: 220 ms. */
-  cajaEntra: { duration: 0.22, ease: SALIDA_SUAVE },
-  /** La caja al cerrar: 150 ms, más rápida que la entrada. */
-  cajaSale: { duration: 0.15, ease: SALIDA_SUAVE },
-  /** El velo, al abrir y al cerrar. */
-  velo: { duration: 0.2, ease: 'easeOut' },
-  /** Una fila, un grupo o un estado que aparece: 180 ms. */
-  aparece: { duration: 0.18, ease: SALIDA_SUAVE },
-  /** Cuánto espera cada fila a la anterior (20 ms; tope en la fila 8). */
-  escalon: 0.02,
-  escalonMaximo: 8,
+  /** La caja al abrir: entrar, 200 ms. */
+  cajaEntra: motionTransition.enter,
+  /** La caja al cerrar: salir, 150 ms y acelerando. */
+  cajaSale: motionTransition.exit,
+  /** El velo, al abrir y al cerrar: 200 ms, curva estándar. */
+  velo: { duration: motionDuration.base, ease: motionEase.standard },
+  /** Una fila, un grupo o un estado que aparece: 150 ms, desacelera. */
+  aparece: { duration: motionDuration.fast, ease: motionEase.enter },
+  /** Cuánto espera cada fila a la anterior; la última nunca más del techo. */
+  escalon: motionStagger.step,
+  escalonMaximo: motionStagger.max,
   /** Fundidos chicos: lupa ↔ cargando, la ✕ de limpiar, el ↵. */
-  cambio: { duration: 0.15, ease: 'easeOut' },
+  cambio: { duration: motionDuration.fast, ease: motionEase.standard },
   /**
-   * El resaltado de la fila activa: un resorte corto y SIN rebote. Con rebote
-   * la mancha se pasaba de la fila y volvía — se leía como un temblor.
+   * El resaltado de la fila activa: el resorte ágil del sistema SIN su rebote.
+   * Con rebote la mancha se pasaba de la fila y volvía — se leía como un temblor.
    */
-  resalte: { type: 'spring', visualDuration: 0.2, bounce: 0 },
+  resalte: { ...motionSpring.snappy, bounce: 0 },
 } as const;
 
 /** Lo que entra a la lista: 4 px de subida y fundido. */
-const ENTRA_A_LA_LISTA = { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 } } as const;
+const ENTRA_A_LA_LISTA = {
+  initial: { opacity: 0, y: motionDistance.xs },
+  animate: { opacity: 1, y: 0 },
+} as const;
 
 function retardoDeFila(posicion: number): number {
-  return Math.min(Math.max(posicion, 0), MOVIMIENTO.escalonMaximo) * MOVIMIENTO.escalon;
+  return Math.min(Math.max(posicion, 0) * MOVIMIENTO.escalon, MOVIMIENTO.escalonMaximo);
 }
 
 /**

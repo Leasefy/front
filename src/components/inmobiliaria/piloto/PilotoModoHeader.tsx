@@ -69,6 +69,14 @@ import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'rea
 import Link from 'next/link'
 import { AnimatePresence, MotionConfig, motion, type Transition } from 'framer-motion'
 import {
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionSpring,
+  motionStagger,
+  motionTransition,
+} from '@leasefy/cadence'
+import {
   AirTrafficControl,
   Bank,
   CaretDown,
@@ -127,29 +135,27 @@ const TECLAS_DE_FOCO: Record<string, (i: number, n: number) => number> = {
 }
 
 /**
- * El movimiento del desplegable. Son los números del sistema de movimiento de
- * Cadence (`motionTransition.enter/exit`, `motionSpring.snappy/bouncy`,
- * `motionStagger`, `motionDistance`), escritos acá para no atar este
- * componente a una versión de Cadence que todavía no está publicada. Cuando
- * lo esté, se cambian por los tokens sin tocar el resultado.
+ * El movimiento del desplegable: los tokens del sistema de movimiento de
+ * Cadence (03-10-2026; antes eran sus mismos números escritos acá). Los
+ * nombres cortos quedan para que el resto del archivo no cambie.
  */
 const MOV = {
   /** Entrar: 200 ms, desacelera (easeOutQuint). */
-  entra: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } satisfies Transition,
+  entra: motionTransition.enter satisfies Transition,
   /** Salir: 150 ms, acelera. Nadie espera a que algo termine de irse. */
-  sale: { duration: 0.15, ease: [0.4, 0, 1, 1] } satisfies Transition,
+  sale: motionTransition.exit satisfies Transition,
   /** Fundido en el lugar (la línea de ayuda): 150 ms, curva estándar. */
-  funde: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } satisfies Transition,
+  funde: { duration: motionDuration.fast, ease: motionEase.standard } satisfies Transition,
   /** El marco del modo elegido que se desliza: resorte ágil de 250 ms, casi sin rebote. */
-  desliza: { type: 'spring', visualDuration: 0.25, bounce: 0.1 } satisfies Transition,
+  desliza: motionSpring.snappy satisfies Transition,
   /** El ✓ que llega: resorte de 300 ms con rebote leve. */
-  llega: { type: 'spring', visualDuration: 0.3, bounce: 0.2 } satisfies Transition,
+  llega: motionSpring.bouncy satisfies Transition,
   /** Escalonado: 40 ms entre ítems; el último nunca espera más de 320 ms. */
-  paso: 0.04,
-  techo: 0.32,
+  paso: motionStagger.step,
+  techo: motionStagger.max,
   /** Cuánto viaja lo que entra: 8 px las tarjetas, 4 px lo chico. */
-  lejos: 8,
-  cerca: 4,
+  lejos: motionDistance.sm,
+  cerca: motionDistance.xs,
 } as const
 
 /** Cuándo empieza a entrar el ítem `i` de `n` si la lista arranca en `desde` segundos. */

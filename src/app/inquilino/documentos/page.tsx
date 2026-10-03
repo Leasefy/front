@@ -83,7 +83,7 @@ const PAYMENT_REQUEST_STATUS: Record<TenantPaymentRequestStatus, { es: string; e
   APPROVED: { es: 'Aprobado', en: 'Approved', className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]' },
   REJECTED: { es: 'Rechazado', en: 'Rejected', className: 'bg-[#FBEAEA] text-[#B4322E] dark:bg-[#B4322E]/15 dark:text-[#E06B67]' },
   DISPUTED: { es: 'En disputa', en: 'Disputed', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
-  CANCELLED: { es: 'Cancelado', en: 'Cancelled', className: 'bg-surface-muted text-fg-muted dark:bg-[#2a2a2c] dark:text-fg-subtle' },
+  CANCELLED: { es: 'Cancelado', en: 'Cancelled', className: 'bg-surface-muted text-fg-muted dark:bg-border dark:text-fg-subtle' },
 };
 
 /**
@@ -425,9 +425,9 @@ export default function DocumentosPage() {
                       return (
                         <div
                           key={c.id}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c]"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted"
                         >
-                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
                             <ContratoIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -471,9 +471,9 @@ export default function DocumentosPage() {
                       return (
                         <div
                           key={r.id}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c]"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted"
                         >
-                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
                             <ReciboIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -503,8 +503,8 @@ export default function DocumentosPage() {
               )}
             </div>
           ) : (
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-10 text-center">
-              <div className="w-14 h-14 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+            <div className="rounded-xl bg-surface-muted p-10 text-center">
+              <div className="w-14 h-14 rounded-full bg-surface dark:bg-border flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-7 h-7 text-fg-subtle" />
               </div>
               <h3 className="font-semibold text-fg dark:text-white mb-2">
@@ -630,13 +630,13 @@ export default function DocumentosPage() {
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
-              className="w-full pl-12 pr-4 rounded-full bg-surface dark:bg-[#1a1a1c]"
+              className="w-full pl-12 pr-4 rounded-full bg-surface dark:bg-surface-muted"
             />
           </div>
 
           {/* Type Filter Pills */}
           {filterCategories.length > 1 && (
-            <div className="flex items-center gap-1 p-1 bg-surface-muted dark:bg-[#1a1a1c] rounded-full w-fit overflow-x-auto">
+            <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit overflow-x-auto">
               {filterCategories.map((cat) => {
                 const IconComponent = cat.icon;
                 return (
@@ -646,7 +646,7 @@ export default function DocumentosPage() {
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
                       selectedType === cat.value
-                        ? 'bg-surface dark:bg-[#2a2a2c] text-fg dark:text-white'
+                        ? 'bg-surface dark:bg-border text-fg dark:text-white'
                         : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
                     )}
                   >
@@ -670,9 +670,9 @@ export default function DocumentosPage() {
             transition={{ delay: 0.25 }}
             className="mb-6"
           >
-            <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6">
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <div>
@@ -791,12 +791,12 @@ export default function DocumentosPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden"
                       >
                         {/* Document Header */}
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center">
                               <Icon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" />
                             </div>
                             {(() => {
@@ -860,23 +860,23 @@ export default function DocumentosPage() {
                             onClick={() => handleView(doc)}
                             disabled={!canAccessDocs}
                             title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para ver' : 'Accept consent to view') : undefined}
-                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border hover:text-[#1A40FF] dark:hover:text-[#1A40FF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Eye className="w-4 h-4" />
                             {t('documents.view')}
                           </Button>
-                          <div className="w-px h-8 bg-surface-muted dark:bg-surface-muted" />
+                          <div className="w-px h-8 bg-surface-muted" />
                           <button
                             type="button"
                             onClick={() => handleDownload(doc)}
                             disabled={!canAccessDocs}
                             title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para descargar' : 'Accept consent to download') : undefined}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Download className="w-4 h-4" />
                             {t('documents.download')}
                           </button>
-                          <div className="w-px h-8 bg-surface-muted dark:bg-surface-muted" />
+                          <div className="w-px h-8 bg-surface-muted" />
                           <button
                             type="button"
                             onClick={() => { setDeletingDocument(doc); setDeleteConfirmText(''); }}
@@ -903,7 +903,7 @@ export default function DocumentosPage() {
                       'p-2 rounded-full',
                       currentPage === 1
                         ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
                     )}
                     aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
                     icon={<CaretLeft className="w-5 h-5" />}
@@ -919,7 +919,7 @@ export default function DocumentosPage() {
                         'w-10 h-10 rounded-full p-0 text-sm font-medium',
                         currentPage === page
                           ? 'bg-ink dark:bg-surface text-white dark:text-fg'
-                          : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                          : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
                       )}
                     >
                       {page}
@@ -933,7 +933,7 @@ export default function DocumentosPage() {
                       'p-2 rounded-full',
                       currentPage === totalPages
                         ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-border'
                     )}
                     aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
                     icon={<CaretRight className="w-5 h-5" />}
@@ -942,8 +942,8 @@ export default function DocumentosPage() {
               )}
             </>
           ) : (
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+            <div className="rounded-xl bg-surface-muted p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-surface dark:bg-border flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-fg-subtle" />
               </div>
               <h3 className="font-semibold text-fg dark:text-white mb-2">

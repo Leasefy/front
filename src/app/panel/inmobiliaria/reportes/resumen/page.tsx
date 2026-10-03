@@ -66,7 +66,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
       <Link
         href={href ?? '#'}
         className="group relative h-full rounded-lg p-5 flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+        style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
         <div className="absolute -inset-x-1 top-[34%] h-[44%] text-ink-fg/[0.14] pointer-events-none">

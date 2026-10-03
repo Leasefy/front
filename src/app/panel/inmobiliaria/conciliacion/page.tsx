@@ -78,6 +78,8 @@ import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
 import type { ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types'
+// D-CONCILIACION (ola 3): la alerta de partidas pendientes (P10).
+import { AlertaDePartidas } from '@/components/cobros/extracto-bancario/AlertaDePartidas'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
   ConciliacionResumen,
@@ -366,6 +368,9 @@ function ConciliacionSala() {
         <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
         <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
       </header>
+
+      {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
+      <AlertaDePartidas />
 
       {/* 1. La acción que desbloquea todo lo demás: subir el extracto. */}
       <section

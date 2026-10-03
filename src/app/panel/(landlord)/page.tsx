@@ -288,7 +288,7 @@ export default function PanelPage() {
           {/* Monthly Income - Featured Card (ink brand hero) */}
           <div
             className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-lg p-6"
-            style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+            style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
           >
             {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
             <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">

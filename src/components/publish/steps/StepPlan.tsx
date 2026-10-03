@@ -104,7 +104,7 @@ export function StepPlan() {
                   'relative p-4 rounded-xl border text-left transition-all duration-200',
                   isSelected
                     ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c]',
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-border',
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -172,7 +172,7 @@ export function StepPlan() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="relative w-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#2a2a2c]"
+                      className="relative w-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-border"
                     >
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-800">
@@ -222,7 +222,7 @@ export function StepPlan() {
                         'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
                       !plan.highlighted &&
                         !isSelected &&
-                        'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:',
+                        'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-border hover:',
                     )}
                   >
                     {/* Badge */}

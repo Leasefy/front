@@ -105,7 +105,7 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="rounded-full bg-surface-muted dark:bg-[#2a2a2c] px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
+            <span className="rounded-full bg-surface-muted dark:bg-border px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
               {cuotaEstadoLabel(cuota.status, loc)}
             </span>
             <span className="text-sm font-mono tabular-nums text-fg dark:text-white whitespace-nowrap">

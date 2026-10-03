@@ -30,7 +30,14 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { useDesbordeHorizontal } from "@/components/ui/use-desborde-horizontal"
-import { THead, TFoot } from "@leasefy/cadence"
+import {
+  THead,
+  TFoot,
+  Stagger,
+  StaggerItem,
+  type StaggerProps,
+  type StaggerItemProps,
+} from "@leasefy/cadence"
 
 export interface TableProps
   extends React.TableHTMLAttributes<HTMLTableElement> {
@@ -160,6 +167,57 @@ const TableFooter = React.forwardRef<
 ))
 TableFooter.displayName = "TableFooter"
 
+/**
+ * Movimiento, opt-in (sistema de Cadence): un cuerpo de tabla cuyas filas
+ * entran escalonadas la primera vez (techo de 320 ms aunque sean 200 filas) y
+ * que deja entrar y salir filas con su animación cuando la lista cambia
+ * (marcar, aprobar, borrar, filtrar).
+ *
+ * ```tsx
+ * <TableBodyAnimado>
+ *   {filas.map((f) => <TableRowAnimada key={f.id}>…</TableRowAnimada>)}
+ * </TableBodyAnimado>
+ * ```
+ *
+ * - Cada fila es una `TableRowAnimada` con `key` = el id del dato, NUNCA el
+ *   índice (con el índice, borrar la fila 2 anima la salida de la última).
+ * - Sin `layout`: en una tabla, medir cada fila en cada cambio cuesta y una
+ *   fila no puede quedar en `position: absolute`; por eso la salida es «sync»
+ *   (la fila se va en su lugar, 150 ms, y las de abajo suben al terminar).
+ * - Con movimiento reducido, sólo fundidos.
+ * - Una pantalla que ya usa `EstadoDeDatos` NO necesita esto para la carga:
+ *   esto es para los CAMBIOS de la lista ya cargada.
+ */
+const TableBodyAnimado = React.forwardRef<
+  HTMLDivElement,
+  Omit<StaggerProps, "as" | "layout" | "presenceMode">
+>((props, ref) => <Stagger ref={ref} as="tbody" layout={false} presenceMode="sync" {...props} />)
+TableBodyAnimado.displayName = "TableBodyAnimado"
+
+export interface TableRowAnimadaProps extends Omit<StaggerItemProps, "as" | "layout"> {
+  /** Fila seleccionada (mismo dibujo que `TableRow selected`). */
+  selected?: boolean
+}
+
+/** La fila de un `TableBodyAnimado`: las mismas clases que `TableRow`. */
+const TableRowAnimada = React.forwardRef<HTMLDivElement, TableRowAnimadaProps>(
+  ({ className, selected = false, ...props }, ref) => (
+    <StaggerItem
+      ref={ref}
+      as="tr"
+      layout={false}
+      data-selected={selected || undefined}
+      className={cn(
+        "border-b border-border-faint last:border-b-0 transition-colors",
+        selected ? "bg-primary-soft" : "hover:bg-surface-muted",
+        className
+      )}
+      {...props}
+    />
+  )
+)
+TableRowAnimada.displayName = "TableRowAnimada"
+
 export {
   TBody as TableBody,
   TH as TableHead,
@@ -169,4 +227,4 @@ export {
 
 export type { THProps as TableHeadProps, TDProps as TableCellProps } from "@leasefy/cadence"
 
-export { Table, TableHeader, TableFooter }
+export { Table, TableHeader, TableFooter, TableBodyAnimado, TableRowAnimada }

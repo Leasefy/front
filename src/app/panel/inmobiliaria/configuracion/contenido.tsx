@@ -26,6 +26,8 @@ import { SeccionMandato } from './SeccionMandato';
 import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { DiferenciasConocidas } from './DiferenciasConocidas';
 import { CuentasDeLasDiferencias } from './CuentasDeLasDiferencias';
+// D-CONCILIACION (ola 3): la alerta de partidas, el efectivo y la cuenta contable de cada cuenta bancaria.
+import { ConciliacionCierreYEfectivo } from './ConciliacionCierreYEfectivo';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
 import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
 import { SeccionSedes } from './SeccionSedes';
@@ -62,6 +64,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
           <DiferenciasConocidas />
           {/* C2-DESHACER (Nico, P1): las cuentas del asiento automático de las diferencias. */}
           <CuentasDeLasDiferencias />
+          {/* D-CONCILIACION (Nico, P9/P10/P12): alerta a los 30 días, efectivo y cuenta contable por cuenta bancaria. */}
+          <ConciliacionCierreYEfectivo />
         </div>
       );
     case 'sedes':

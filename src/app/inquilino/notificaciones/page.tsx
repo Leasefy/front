@@ -114,19 +114,19 @@ type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'message' | 'do
 // Loading skeleton component
 function NotificationSkeleton() {
   return (
-    <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] overflow-hidden divide-y divide-border dark:divide-white/5">
+    <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 p-5 animate-pulse">
           {/* Icon skeleton */}
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-surface-muted flex-shrink-0" />
+          <div className="w-11 h-11 rounded-xl bg-surface-muted flex-shrink-0" />
 
           {/* Content skeleton */}
           <div className="flex-1 min-w-0 space-y-2">
-            <div className="h-4 bg-surface-muted dark:bg-surface-muted rounded-md w-3/4" />
+            <div className="h-4 bg-surface-muted rounded-md w-3/4" />
             <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-1/2" />
             <div className="flex items-center gap-2 mt-2">
               <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-16" />
-              <div className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
+              <div className="w-1 h-1 rounded-full bg-surface-muted" />
               <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-20" />
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function NotificacionesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -328,11 +328,11 @@ export default function NotificacionesPage() {
                       ? 'Cuando haya actividad en tus postulaciones o arriendos, te notificaremos aquí.'
                       : 'When there is activity on your applications or leases, we will notify you here.'
                   }
-                  className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c]"
+                  className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-surface-muted"
                 />
               </motion.div>
             ) : (
-              <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] overflow-hidden divide-y divide-border dark:divide-white/5">
+              <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
                 {filteredNotifications.map((notification, index) => {
                   const IconComponent = getNotificationIcon(notification.type);
                   const categoryConfig = getCategoryConfig(notification.category);
@@ -390,7 +390,7 @@ export default function NotificacionesPage() {
                           <span className="text-xs text-fg-subtle dark:text-fg-muted">
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
-                          <span className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
+                          <span className="w-1 h-1 rounded-full bg-surface-muted" />
                           <span
                             className={cn('text-xs font-medium', categoryConfig.color)}
                           >
@@ -398,7 +398,7 @@ export default function NotificacionesPage() {
                           </span>
                           {!notification.read && (
                             <>
-                              <span className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
+                              <span className="w-1 h-1 rounded-full bg-surface-muted" />
                               <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                                 {locale === 'es' ? 'Nueva' : 'New'}
                               </span>

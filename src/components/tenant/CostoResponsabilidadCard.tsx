@@ -116,7 +116,7 @@ export function CostoResponsabilidadCard({
   }
 
   return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6 space-y-4">
+    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Scales className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-fg dark:text-white">

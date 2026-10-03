@@ -258,10 +258,10 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
   return (
     <section
       data-testid="autopago"
-      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4"
+      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <ArrowsClockwise className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div>
@@ -464,7 +464,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
               </label>
             </div>
 
-            <p className="flex items-start gap-2 rounded-lg bg-surface-muted dark:bg-[#2a2a2c] px-4 py-3 text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="flex items-start gap-2 rounded-lg bg-surface-muted dark:bg-border px-4 py-3 text-xs text-fg-muted dark:text-fg-subtle">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Los datos de tu tarjeta viajan directo a la pasarela de pagos. No pasan por

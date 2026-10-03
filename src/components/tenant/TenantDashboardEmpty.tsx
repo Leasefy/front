@@ -132,7 +132,7 @@ export function TenantDashboardEmpty() {
   if (!isLoaded) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
         <motion.header
@@ -163,7 +163,7 @@ export function TenantDashboardEmpty() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Progress Card - Clean Style */}
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6 md:p-8">
+            <div className="rounded-xl bg-surface-muted p-6 md:p-8">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-surface-muted flex items-center justify-center">
@@ -193,7 +193,7 @@ export function TenantDashboardEmpty() {
 
               {/* Progress bar */}
               <div className="relative">
-                <div className="h-2 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
+                <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
@@ -224,7 +224,7 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Setup Steps List */}
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl bg-surface-muted p-6">
               <h3 className="text-base font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Pasos para completar' : 'Steps to complete'}
               </h3>
@@ -242,8 +242,8 @@ export function TenantDashboardEmpty() {
                         step.completed
                           ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
-                          ? 'bg-surface dark:bg-[#222224] border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong'
-                          : 'bg-surface/50 dark:bg-[#1f1f21] border border-border-faint dark:border-border-strong opacity-60 hover:opacity-100'
+                          ? 'bg-surface dark:bg-border-faint border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong'
+                          : 'bg-surface/50 dark:bg-surface-muted border border-border-faint dark:border-border-strong opacity-60 hover:opacity-100'
                       )}
                     >
                       <div className={cn(
@@ -325,7 +325,7 @@ export function TenantDashboardEmpty() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5"
+                  className="rounded-xl bg-surface-muted p-5"
                 >
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center mb-3">
                     <benefit.icon weight="duotone" className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
@@ -349,7 +349,7 @@ export function TenantDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Actions */}
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-surface-muted p-5">
               <h3 className="text-base font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
               </h3>
@@ -358,7 +358,7 @@ export function TenantDashboardEmpty() {
                   <Link
                     key={action.labelEs}
                     href={action.href}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-surface dark:bg-[#222224] hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors group border border-border-faint dark:border-border-strong"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-surface dark:bg-border-faint hover:bg-surface-muted dark:hover:bg-border transition-colors group border border-border-faint dark:border-border-strong"
                   >
                     <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center group-hover:bg-surface-muted dark:group-hover:bg-surface-muted transition-colors">
                       <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle group-hover:text-fg dark:group-hover:text-white transition-colors" />
@@ -373,7 +373,7 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Tip Card */}
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-surface-muted p-5">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
                   <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
@@ -392,7 +392,7 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Help Card */}
-            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-surface-muted p-5">
               <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
               </h4>

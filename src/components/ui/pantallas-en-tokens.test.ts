@@ -150,8 +150,6 @@ const COBERTURA: string[] = [
   'components/messages/PendientesDelHiloPopover.tsx',
   'components/messages/PlantillasDeMensajePopover.tsx',
   'components/messages/SelectorDeEmojis.tsx',
-  // — reportes / exportación ——————————————————————————————————
-  'components/inmobiliaria/ExportButton.tsx',
   // — mantenimiento ————————————————————————————————————————————
   'components/inmobiliaria/mantenimiento/TicketCard.tsx',
   'components/inmobiliaria/mantenimiento/InboxFilters.tsx',
@@ -196,7 +194,6 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/PropietarioBankInfo.tsx',
   'components/inmobiliaria/SelectorDePropietarios.tsx',
   'components/inmobiliaria/RenovacionesTable.tsx',
-  'components/inmobiliaria/AgenteTable.tsx',
   'components/inmobiliaria/CandidateDrawer.tsx',
   'components/inmobiliaria/VisitasDelInmueble.tsx',
   'components/inmobiliaria/ReporteCard.tsx',
@@ -267,9 +264,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
     'Degradé `from-black/60` y píldora «Subiendo» sobre la foto; y ' +
     '`bg-danger … text-white` en «No se subió» — `text-danger-fg` es el rojo mismo, ' +
     'así que sería rojo sobre rojo.',
-  'components/inmobiliaria/ExportButton.tsx':
-    '`text-white` sobre los rellenos `bg-danger` (PDF) y `bg-success` (Excel): ' +
-    'mismo motivo, `danger-fg`/`success-fg` son alias del propio color.',
   'components/inmobiliaria/ActaEntregaView.tsx':
     'Scrim del lightbox de fotos del acta (`bg-black/80`, `bg-black/50 text-white`). ' +
     'Un scrim tiene que quedarse oscuro en LOS DOS temas: `bg-fg/80` se volvería ' +
@@ -346,11 +340,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
   'components/messages/SelectorDeEmojis.tsx':
     'Disparador del popover con estado seleccionado, y la grilla de emojis: cada ' +
     'emoji es una celda de 32px, no un CTA.',
-  'components/inmobiliaria/ExportButton.tsx':
-    'CTA con marca por formato (rojo PDF / verde Excel) y cambio de ícono con ' +
-    '`AnimatePresence`: el `Button` del DS no tiene variante de éxito y su prop ' +
-    '`isLoading` no modela el swap éxito→ícono. Ya estaba anotado en el archivo ' +
-    'como «allowlist (Cadence GAP)».',
   'app/panel/inmobiliaria/contratos/[id]/editar/page.tsx':
     '`<input type="file" className="sr-only">` detrás de un `<label htmlFor>`: no ' +
     'tiene apariencia, y el adapter `<Input>` le inyectaría `h-11 px-4` peleando ' +
@@ -380,7 +369,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Paso del stepper: la celda entera es el control.',
   'components/inmobiliaria/CobroTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/PropietarioTable.tsx': 'Disparador de orden en `<TableHead>`.',
-  'components/inmobiliaria/AgenteTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/RenovacionesTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/DispersionCard.tsx':
     'Cabecera desplegable de la tarjeta: el bloque entero abre y cierra.',

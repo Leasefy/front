@@ -426,6 +426,26 @@ bancarias y devoluciones». API en `src/lib/api/salidas-del-extracto.ts` (`/inmo
   semilla, avisa sin migración y «Asentarlas» para lo aprobado sin asiento. La retención configurada lleva su clase
   (en la fuente / ICA / IVA) para el certificado del propietario.
 
+## Conciliación, ola 3: cierre del mes, alerta, efectivo y aseguradoras (03-10-2026)
+
+API en `src/lib/api/cierre-de-conciliacion.ts`; lo puro (exportar, leer la relación) en
+`components/cobros/extracto-bancario/cierre-del-mes.ts`.
+
+- **Cierre del mes** (`CierreDelMes.tsx`, debajo de «Por cuenta» con una cuenta elegida): Nico (P9) «por cuenta y mes, con la
+  firma del contador; el mes queda BLOQUEADO; reabrirlo exige un administrador con motivo». Meses con su estado; el borrador
+  (`VistaDeLaFoto`) se ve siempre; «Firmar y cerrar» sólo para CONTADOR y con la casilla de «revisé»; «Reabrir el mes» sólo
+  ADMIN con motivo 10–500. Excel y PDF (`xlsx` y `jspdf`, import perezoso) salen de la FOTO guardada con su huella, nunca
+  recalculada. Un 409 `MES_CERRADO` de cualquier acción ya llega con su frase (el traductor la muestra).
+- **Alerta de partidas** (`AlertaDePartidas.tsx`, arriba del extracto y en la Sala `/conciliacion`): P10, a los 30 días por
+  defecto, rangos 0–30/31–60/más de 60; sin nada viejo no se pinta. Sin correos.
+- **Planilla de caja** (`PlanillaDeCaja.tsx`): sólo con el efectivo PRENDIDO (apagado por defecto, «sólo transferencia y
+  pasarela»); «Conciliar» manda el día y la línea.
+- **Pagos de aseguradoras** (`RelacionDeAseguradora.tsx`): el archivo se lee aquí (`parseSpreadsheetFile`), la persona elige qué
+  columna es cada campo (sugerido por nombre, recordado por aseguradora), `leerLaRelacion` aparta las filas malas (todo o
+  nada) y el cruce trae la línea del banco propuesta; «Conciliar con N recibos» = `conciliarConRecibos`.
+- **Configuración → Costos de la plata** (`ConciliacionCierreYEfectivo.tsx`): días de la alerta, el interruptor del efectivo y
+  la cuenta contable (grupo 11) de cada cuenta bancaria.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

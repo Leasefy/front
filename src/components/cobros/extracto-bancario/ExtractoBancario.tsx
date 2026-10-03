@@ -72,6 +72,11 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { CargarExtracto } from './CargarExtracto';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
+// D-CONCILIACION (ola 3, Nico P9/P10/P12/P6): cierre del mes, alerta, planilla de caja y aseguradoras.
+import { AlertaDePartidas } from './AlertaDePartidas';
+import { CierreDelMes } from './CierreDelMes';
+import { PlanillaDeCaja } from './PlanillaDeCaja';
+import { RelacionDeAseguradora } from './RelacionDeAseguradora';
 import { LiquidacionesDeLeasefy } from './LiquidacionesDeLeasefy';
 // C2-SALIDAS (Nico, P5): las salidas del extracto se concilian y se avisan.
 import { AvisosDeLasSalidas, SalidasDeLaPagina } from './SalidasDelExtracto';
@@ -341,6 +346,9 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
   return (
     <div className="space-y-6">
+      {/* D-CONCILIACION (Nico, P10): partidas que pasan de los días de la alerta (30 por defecto). */}
+      <AlertaDePartidas version={versionDelLote} />
+
       {/* 🔴 (02-10-2026) Por cuenta: filtra la tabla y los números de abajo. */}
       {porCuenta && (
         <PorCuenta
@@ -351,6 +359,11 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             setPagina(1);
           }}
         />
+      )}
+
+      {/* D-CONCILIACION (Nico, P9): el cierre del mes de la cuenta elegida. */}
+      {porCuenta?.disponible && filtroDeCuenta && porCuenta.cuentas.some((c) => c.id === filtroDeCuenta) && (
+        <CierreDelMes key={filtroDeCuenta} cuentaId={filtroDeCuenta} onCambio={() => void cargar()} />
       )}
 
       {/* Los cuatro números, en la tarjeta KPI del panel. */}
@@ -385,6 +398,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
       {/* C2-AGREGADOR: los giros de Leasefy por los pagos en línea (sólo si hay). */}
       <LiquidacionesDeLeasefy version={versionDelLote} />
+
+      {/* D-CONCILIACION (Nico, P12): sólo si la inmobiliaria recibe efectivo (apagado por defecto). */}
+      <PlanillaDeCaja puedeConciliar={puedeConciliar} version={versionDelLote} onCambio={() => void cargar()} />
+
+      {/* D-CONCILIACION (Nico, P6): la relación de pagos de una aseguradora. */}
+      <RelacionDeAseguradora puedeConciliar={puedeConciliar} onCambio={() => void cargar()} />
 
       {/* C2-SALIDAS: el giro que no salió o salió dos veces, y lo seguro de un golpe. */}
       <AvisosDeLasSalidas

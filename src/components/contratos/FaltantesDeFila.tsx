@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { Presence } from "@leasefy/cadence";
 import { Buildings, Envelope, User, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
@@ -442,11 +443,9 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
 
       {/* Lo que no es de un campo de acá: un 409, un 5xx con su referencia,
           la red. Es el aviso de la fila, no el error de un campo. */}
-      {error ? (
-        <p className="text-sm text-destructive" role="alert" data-testid="error-de-faltantes">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-destructive" role="alert" data-testid="error-de-faltantes">
+        {error}
+      </Presence>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Warning } from '@phosphor-icons/react'
@@ -9,12 +10,13 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { CrossFade, Presence } from '@leasefy/cadence'
+
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useRetencionBandeja } from '@/lib/hooks/retencion/use-retencion'
@@ -183,95 +185,103 @@ export default function BandejaClient() {
       </div>
 
       {/* Table */}
-      {isLoading && !data ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-lg bg-surface-muted animate-pulse" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={Warning}
-          title="No hay casos en este filtro."
-          description="Prueba con otra pestaña o cambia lo que escribiste en la búsqueda."
-        />
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Score</TableHead>
-                <TableHead>Propietario</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Causa raíz</TableHead>
-                <TableHead className="hidden md:table-cell">Inmuebles</TableHead>
-                <TableHead className="hidden lg:table-cell">Responsable</TableHead>
-                <TableHead numeric>Comisión en riesgo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageItems.map((c) => (
-                <TableRow
-                  key={c.caseId}
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => goToCase(c.caseId)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') goToCase(c.caseId)
-                  }}
-                  className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <TableCell>
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-danger-soft text-xs font-semibold text-danger">
-                      {c.score}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium text-fg whitespace-nowrap">{c.ownerName}</p>
-                    <p className="text-xs text-fg-subtle">{c.city ?? '—'} · {c.ownerType}</p>
-                  </TableCell>
-                  <TableCell>
-                    <span className={'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + stateBadgeClasses(c.state)}>
-                      {STATE_LABEL[c.state]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-fg-muted">
-                    {c.rootCause.label} <span className="text-fg-subtle">({c.rootCause.pct}%)</span>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-fg-muted">{c.propertyCount}</TableCell>
-                  <TableCell muted className="hidden lg:table-cell">
-                    {c.responsible.name ?? c.responsible.role}
-                  </TableCell>
-                  <TableCell numeric className="font-semibold text-fg whitespace-nowrap">
-                    {formatCop(c.expectedCommissionLoss)}
-                  </TableCell>
+      {/* Cargando → la tabla (o el vacío del filtro): se cruzan (fundido; el
+          vacío trae su propia subida). */}
+      <CrossFade swapKey={isLoading && !data ? 'cargando' : rows.length === 0 ? 'vacio' : 'tabla'} direction="none">
+        {isLoading && !data ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-12 rounded-lg bg-surface-muted animate-pulse" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={Warning}
+            title="No hay casos en este filtro."
+            description="Prueba con otra pestaña o cambia lo que escribiste en la búsqueda."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Propietario</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Causa raíz</TableHead>
+                  <TableHead className="hidden md:table-cell">Inmuebles</TableHead>
+                  <TableHead className="hidden lg:table-cell">Responsable</TableHead>
+                  <TableHead numeric>Comisión en riesgo</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              {/* Al cambiar de pestaña o buscar, las filas que no van salen y
+                  las que llegan entran (`key` = el caso). */}
+              <CuerpoQueAnima>
+                {pageItems.map((c) => (
+                  <FilaQueAnima
+                    key={c.caseId}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => goToCase(c.caseId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') goToCase(c.caseId)
+                    }}
+                    className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <TableCell>
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-danger-soft text-xs font-semibold text-danger">
+                        {c.score}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium text-fg whitespace-nowrap">{c.ownerName}</p>
+                      <p className="text-xs text-fg-subtle">{c.city ?? '—'} · {c.ownerType}</p>
+                    </TableCell>
+                    <TableCell>
+                      <span className={'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + stateBadgeClasses(c.state)}>
+                        {STATE_LABEL[c.state]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-fg-muted">
+                      {c.rootCause.label} <span className="text-fg-subtle">({c.rootCause.pct}%)</span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-fg-muted">{c.propertyCount}</TableCell>
+                    <TableCell muted className="hidden lg:table-cell">
+                      {c.responsible.name ?? c.responsible.role}
+                    </TableCell>
+                    <TableCell numeric className="font-semibold text-fg whitespace-nowrap">
+                      {formatCop(c.expectedCommissionLoss)}
+                    </TableCell>
+                  </FilaQueAnima>
+                ))}
+              </CuerpoQueAnima>
+            </Table>
 
-          {/* Pie de tabla del design system: cuántos casos hay, cuáles se
-              muestran y cuántas filas por página. */}
-          {shouldPaginate && (
-            <div className="border-t border-border px-4 py-3">
-              <TablePagination
-                total={total}
-                page={page}
-                pageSize={pageSize}
-                pageSizeOptions={PAGE_SIZE_OPTIONS}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-              />
-            </div>
-          )}
-        </div>
-      )}
+            {/* Pie de tabla del design system: cuántos casos hay, cuáles se
+                muestran y cuántas filas por página. */}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </CrossFade>
 
-      {error && !isLoading ? (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-          No pude cargar la bandeja: {error}
-        </div>
-      ) : null}
+      <Presence
+        show={Boolean(error) && !isLoading}
+        initial={false}
+        className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+      >
+        No pude cargar la bandeja: {error}
+      </Presence>
     </div>
   )
 }

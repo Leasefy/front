@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Question, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -154,11 +155,9 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
         </p>
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-danger" data-testid="error-verificacion" role="alert">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" data-testid="error-verificacion" role="alert">
+        {error}
+      </Presence>
 
       {corriendo && progreso ? (
         <p className="text-sm text-muted-foreground" data-testid="progreso-verificacion">

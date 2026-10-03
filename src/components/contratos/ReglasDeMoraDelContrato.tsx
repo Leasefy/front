@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Gavel, ArrowCounterClockwise, ArrowSquareOut } from '@phosphor-icons/react'
@@ -169,11 +170,9 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
               onAjustar={(ajuste) => void ajustar(r.regla.id, ajuste)}
             />
           ))}
-          {error ? (
-            <p role="alert" className="text-sm text-destructive" data-testid="reglas-de-mora-error">
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="reglas-de-mora-error">
+            {error}
+          </Presence>
         </div>
       )}
     </section>

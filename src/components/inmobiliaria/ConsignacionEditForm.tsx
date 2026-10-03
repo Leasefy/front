@@ -73,7 +73,7 @@ import {
   Warehouse,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { RadioCard, RadioCardGroup, Presence } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
@@ -370,7 +370,7 @@ function SelectorDeAmenidades({
             data-testid={`amenidad-${a.value}`}
             data-activa={activa ? 'si' : 'no'}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm cursor-pointer transition-colors duration-150',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm cursor-pointer transition-colors duration-fast',
               disabled && 'opacity-50 cursor-not-allowed',
               activa
                 ? 'border border-primary bg-primary-soft text-fg font-medium'
@@ -793,13 +793,14 @@ export function ConsignacionEditForm({
             <Aviso tono="warning" titulo={tf('mandatoTerminado')} testId="aviso-mandato-terminado" />
           )}
           {!tieneInmueble && <Aviso tono="info" titulo={tf('sinInmueble')} testId="aviso-sin-inmueble" />}
-          {tieneInmueble && !property && (
+          {/* Se va con su salida cuando el inmueble llega. */}
+          <Presence show={tieneInmueble && !property} initial={false}>
             <Aviso
               tono={cargandoProperty ? 'info' : 'warning'}
               titulo={cargandoProperty ? tf('inmuebleCargando') : tf('inmuebleNoCargo')}
               testId="aviso-inmueble-no-cargo"
             />
-          )}
+          </Presence>
 
           {/* ── Inmueble ─────────────────────────────────────────────────── */}
           <Seccion icon={Buildings} titulo={tf('seccionInmueble')} testId="seccion-inmueble">
@@ -1279,9 +1280,12 @@ export function ConsignacionEditForm({
             </Seccion>
           )}
 
-          {conflicto && (
-            <Aviso tono="danger" titulo={conflicto.titulo} detalle={conflicto.detalle} testId="editar-conflicto" />
-          )}
+          {/* El aviso del envío que no pasó entra y sale (no salta). */}
+          <Presence show={Boolean(conflicto)} initial={false}>
+            {conflicto && (
+              <Aviso tono="danger" titulo={conflicto.titulo} detalle={conflicto.detalle} testId="editar-conflicto" />
+            )}
+          </Presence>
         </form>
         </SheetBody>
 

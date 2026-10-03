@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { EnvelopeSimple, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -35,12 +36,13 @@ import {
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CrossFade } from '@leasefy/cadence';
+
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -228,65 +230,71 @@ export function InvitacionesPendientes() {
         />
 
         <CajonCuerpo>
-          {cargando ? (
-            <EsqueletoTabla columnas={3} filas={6} />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Persona</TableHead>
-                  <TableHead>Cuenta creada</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {personas.length === 0 ? (
+          {/* Cargando → la lista: se cruzan (`popLayout`: la tabla entra YA y
+              el esqueleto se va por encima). */}
+          <CrossFade swapKey={cargando ? 'cargando' : 'lista'} mode="popLayout">
+            {cargando ? (
+              <EsqueletoTabla columnas={3} filas={6} />
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-sm text-fg-muted">
-                      No queda ninguna pendiente.
-                    </TableCell>
+                    <TableHead>Persona</TableHead>
+                    <TableHead>Cuenta creada</TableHead>
+                    <TableHead />
                   </TableRow>
-                ) : (
-                  personas.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <span className="block text-sm font-medium text-fg">
-                          {p.nombre ?? p.correo}
-                        </span>
-                        {p.nombre ? (
-                          <span className="block text-xs text-fg-muted">{p.correo}</span>
-                        ) : null}
+                </TableHeader>
+                {/* La que ya salió y deja de estar pendiente se va con su
+                    salida (`key` = el id). */}
+                <CuerpoQueAnima>
+                  {personas.length === 0 ? (
+                    <FilaQueAnima key="ninguna">
+                      <TableCell colSpan={3} className="py-8 text-center text-sm text-fg-muted">
+                        No queda ninguna pendiente.
                       </TableCell>
-                      <TableCell className="text-sm text-fg-muted">
-                        {comoFecha(p.creada)}
-                        {/* Que ya haya salido una y siga pendiente significa
-                            que esa no llegó: decirlo evita que alguien crea
-                            que el botón no hizo nada. */}
-                        {p.ultimoEnvio ? (
-                          <span className="block text-xs">
-                            Se intentó el {comoFecha(p.ultimoEnvio)}
+                    </FilaQueAnima>
+                  ) : (
+                    personas.map((p) => (
+                      <FilaQueAnima key={p.id}>
+                        <TableCell>
+                          <span className="block text-sm font-medium text-fg">
+                            {p.nombre ?? p.correo}
                           </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          hideArrow
-                          variant="ghost"
-                          size="sm"
-                          className="gap-1.5"
-                          disabled={reenviando === p.id || mandando}
-                          onClick={() => void reenviarUna(p)}
-                        >
-                          <PaperPlaneTilt className="h-4 w-4" aria-hidden="true" />
-                          {reenviando === p.id ? 'Enviando…' : 'Enviar'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+                          {p.nombre ? (
+                            <span className="block text-xs text-fg-muted">{p.correo}</span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-sm text-fg-muted">
+                          {comoFecha(p.creada)}
+                          {/* Que ya haya salido una y siga pendiente significa
+                              que esa no llegó: decirlo evita que alguien crea
+                              que el botón no hizo nada. */}
+                          {p.ultimoEnvio ? (
+                            <span className="block text-xs">
+                              Se intentó el {comoFecha(p.ultimoEnvio)}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            hideArrow
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5"
+                            disabled={reenviando === p.id || mandando}
+                            onClick={() => void reenviarUna(p)}
+                          >
+                            <PaperPlaneTilt className="h-4 w-4" aria-hidden="true" />
+                            {reenviando === p.id ? 'Enviando…' : 'Enviar'}
+                          </Button>
+                        </TableCell>
+                      </FilaQueAnima>
+                    ))
+                  )}
+                </CuerpoQueAnima>
+              </Table>
+            )}
+          </CrossFade>
 
           {total > personas.length ? (
             <p className="mt-3 text-xs text-fg-muted">

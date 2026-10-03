@@ -24,6 +24,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Appear } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -368,8 +369,11 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
         </div>
 
         {/* 🔴 Lo que impide guardar, dicho acá y no escondido. */}
+        {/* Lo que dice el validador mientras se escribe llega con su entrada
+            (`Appear`); se va de una cuando deja de aplicar. */}
         {desconocidas.length > 0 && (
-          <div
+          <Appear
+            distance="xs"
             className="rounded-lg border border-danger/40 bg-danger-soft p-3 text-body-sm"
             data-testid="variables-desconocidas"
           >
@@ -411,20 +415,20 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
               Saldría impresa con las llaves adentro en un documento que alguien firma, así
               que no se puede guardar así.
             </p>
-          </div>
+          </Appear>
         )}
 
         {usadas.length > 0 && desconocidas.length === 0 && (
-          <p className="text-caption text-fg-muted" data-testid="variables-ok">
+          <Appear as="p" distance="xs" className="text-caption text-fg-muted" data-testid="variables-ok">
             {usadas.length === 1
               ? 'Usa 1 dato del contrato. Se reemplaza al generar el documento.'
               : `Usa ${usadas.length} datos del contrato. Se reemplazan al generar el documento.`}
-          </p>
+          </Appear>
         )}
 
         {/* Cómo se va a ver. Con las variables sin reemplazar, y dicho. */}
         {contenido.trim() !== '' && (
-          <div className="space-y-1.5">
+          <Appear className="space-y-1.5">
             <p className="text-body-sm font-medium text-fg">Cómo se va a ver</p>
             {/* `sandbox=""` y fondo blanco: es el PAPEL, no una superficie del
                 panel, y el HTML lo escribe una persona — sin sandbox un
@@ -441,7 +445,7 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
               Las variables se ven con sus llaves porque todavía no hay contrato: al
               generar el documento se reemplazan por los datos reales.
             </p>
-          </div>
+          </Appear>
         )}
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">

@@ -28,6 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Appear, Presence } from '@leasefy/cadence';
 import { Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -689,8 +690,9 @@ export function GenerarDocumentoDialog({
             </div>
           )}
 
+          {/* Lo que el servidor preparó llega con su entrada (el spinner se va). */}
           {preparacion && !preparando && (
-            <div className="space-y-4">
+            <Appear className="space-y-4">
               <div className="rounded-[14px] border border-border px-4 py-3">
                 <p className="text-body-sm text-fg">{preparacion.nombreSugerido}</p>
                 <p className="text-caption text-fg-muted">
@@ -842,7 +844,7 @@ export function GenerarDocumentoDialog({
                   })}
                 </div>
               )}
-            </div>
+            </Appear>
           )}
 
         </div>
@@ -858,15 +860,9 @@ export function GenerarDocumentoDialog({
          * pasó nada». Acá, pegados al pie, aparecen justo encima del botón que
          * los produjo. `role="alert"` para que un lector de pantalla los cante.
          */}
-        {error && (
-          <p
-            data-testid="doc-error"
-            role="alert"
-            className="mx-1 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
-          >
-            {error}
-          </p>
-        )}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" data-testid="doc-error" role="alert" className="mx-1 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger">
+          {error}
+        </Presence>
 
         {faltantes.length > 0 && preparacion && (
           <p data-testid="doc-faltantes" className="px-1 text-caption text-fg-muted">

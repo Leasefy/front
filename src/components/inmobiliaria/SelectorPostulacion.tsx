@@ -25,6 +25,8 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima'
+import { CrossFade } from '@leasefy/cadence'
 import { useRouter } from 'next/navigation'
 import { Plus, MagnifyingGlass, User, House } from '@phosphor-icons/react'
 
@@ -144,81 +146,90 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
           </DialogDescription>
         </DialogHeader>
 
-        {cargando ? (
-          <div className="flex items-center justify-center py-12">
-            <Spinner size="md" variant="muted" />
-          </div>
-        ) : error ? (
-          <FalloDeCarga
-            error={error}
-            queEs="las postulaciones"
-            onReintentar={cargar}
-            enmarcado={false}
-          />
-        ) : !hayAlgunaElegible ? (
-          <EmptyState
-            icon={User}
-            title="No hay postulaciones aprobadas esperando contrato"
-            description="Cuando apruebes a un candidato, aparece acá para armarle el contrato."
-            action={{ label: 'Ver postulaciones', href: '/panel/inmobiliaria/postulaciones' }}
-          />
-        ) : (
-          <div className="space-y-3">
-            {/* Mismo patrón de buscador que /postulaciones. */}
-            <div className="relative">
-              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-fg-muted" />
-              <Input
-                type="text"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre o propiedad..."
-                className="pl-9"
-                aria-label="Buscar postulación"
-              />
+        {/* Cargando → las postulaciones (o el fallo, o el vacío): se cruzan.
+            `popLayout`: lo nuevo entra YA y lo viejo se va por encima. */}
+        <CrossFade
+          swapKey={cargando ? 'cargando' : error ? 'fallo' : !hayAlgunaElegible ? 'vacio' : 'lista'}
+          mode="popLayout"
+          direction="none"
+        >
+          {cargando ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner size="md" variant="muted" />
             </div>
+          ) : error ? (
+            <FalloDeCarga
+              error={error}
+              queEs="las postulaciones"
+              onReintentar={cargar}
+              enmarcado={false}
+            />
+          ) : !hayAlgunaElegible ? (
+            <EmptyState
+              icon={User}
+              title="No hay postulaciones aprobadas esperando contrato"
+              description="Cuando apruebes a un candidato, aparece acá para armarle el contrato."
+              action={{ label: 'Ver postulaciones', href: '/panel/inmobiliaria/postulaciones' }}
+            />
+          ) : (
+            <div className="space-y-3">
+              {/* Mismo patrón de buscador que /postulaciones. */}
+              <div className="relative">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-fg-muted" />
+                <Input
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar por nombre o propiedad..."
+                  className="pl-9"
+                  aria-label="Buscar postulación"
+                />
+              </div>
 
-            {elegibles.length === 0 ? (
-              <p className="py-8 text-center text-sm text-fg-muted">
-                Ninguna postulación coincide con «{busqueda}».
-              </p>
-            ) : (
-              // Sin scroll propio: el cuerpo del modal es lo único que scrollea
-              // (y ya trae `data-lenis-prevent`, DESIGN.md §17).
-              <ul className="space-y-1">
-                {elegibles.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenChange(false)
-                        router.push(
-                          `/panel/inmobiliaria/contratos/nuevo?applicationId=${encodeURIComponent(c.id)}`,
-                        )
-                      }}
-                      className={cn(
-                        'flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left',
-                        'hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      )}
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-hover">
-                        <User className="h-4 w-4 text-fg-muted" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-fg">
-                          {c.tenantName}
+              {elegibles.length === 0 ? (
+                <p className="py-8 text-center text-sm text-fg-muted">
+                  Ninguna postulación coincide con «{busqueda}».
+                </p>
+              ) : (
+                // Sin scroll propio: el cuerpo del modal es lo único que scrollea
+                // (y ya trae `data-lenis-prevent`, DESIGN.md §17).
+                // Al buscar, las que no coinciden salen y las que vuelven entran.
+                <ListaQueAnima as="ul" className="space-y-1">
+                  {elegibles.map((c) => (
+                    <ElementoQueAnima as="li" key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenChange(false)
+                          router.push(
+                            `/panel/inmobiliaria/contratos/nuevo?applicationId=${encodeURIComponent(c.id)}`,
+                          )
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left',
+                          'hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        )}
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-hover">
+                          <User className="h-4 w-4 text-fg-muted" />
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-fg-muted">
-                          <House className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{c.propertyTitle}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-fg">
+                            {c.tenantName}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-fg-muted">
+                            <House className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{c.propertyTitle}</span>
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+                      </button>
+                    </ElementoQueAnima>
+                  ))}
+                </ListaQueAnima>
+              )}
+            </div>
+          )}
+        </CrossFade>
 
         {/* La otra salida va en el pie fijo: con muchas postulaciones no se
             pierde abajo del listado. */}

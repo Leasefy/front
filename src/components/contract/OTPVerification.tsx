@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractOtpRole, OtpChannelResult } from '@/lib/api/contracts.types';
 import { describirCanales } from '@/lib/contratos/otp-channels';
@@ -332,65 +333,76 @@ export function OTPVerification({
             </ul>
           )}
 
-          {/* Error de envío (antes de poder ingresar código) */}
-          {sendError && (
-            <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
-              <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>{sendError}</span>
-            </div>
-          )}
+          {/* Enviando → los seis dígitos (o el error del envío): uno se cruza
+              con el otro. `popLayout`: los dígitos se montan YA (el foco al
+              primero llega a los 100 ms) y lo viejo se va por encima. */}
+          <CrossFade swapKey={sendError ? 'error' : sentTo ? 'codigo' : 'enviando'} mode="popLayout">
+            {/* Error de envío (antes de poder ingresar código) */}
+            {sendError && (
+              <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
+                <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span>{sendError}</span>
+              </div>
+            )}
 
-          {/* OTP inputs — solo si ya se envió */}
-          {sentTo && !sendError && (
-            <div className="flex justify-center gap-2" onPaste={handlePaste}>
-              {digits.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => { inputRefs.current[index] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  aria-label={`Dígito ${index + 1} de ${OTP_LENGTH}`}
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  disabled={status === 'verifying' || status === 'verified'}
-                  className={cn(
-                    'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-all',
-                    'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
-                    digit ? 'border-[1.5px] border-fg' : 'border border-border',
-                    status === 'error' && 'border-danger bg-danger-soft animate-shake',
-                    status === 'verified' && 'border-success bg-success-soft',
-                    (status === 'verifying' || status === 'verified') && 'opacity-70'
-                  )}
-                />
-              ))}
-            </div>
-          )}
+            {/* OTP inputs — solo si ya se envió */}
+            {sentTo && !sendError && (
+              <div className="flex justify-center gap-2" onPaste={handlePaste}>
+                {digits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { inputRefs.current[index] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    aria-label={`Dígito ${index + 1} de ${OTP_LENGTH}`}
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={status === 'verifying' || status === 'verified'}
+                    className={cn(
+                      'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-[color,background-color,border-color,box-shadow,opacity]',
+                      'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
+                      digit ? 'border-[1.5px] border-fg' : 'border border-border',
+                      status === 'error' && 'border-danger bg-danger-soft animate-shake',
+                      status === 'verified' && 'border-success bg-success-soft',
+                      (status === 'verifying' || status === 'verified') && 'opacity-70'
+                    )}
+                  />
+                ))}
+              </div>
+            )}
 
-          {/* Loader inicial */}
-          {!sentTo && !sendError && (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Enviando código a tu correo...
-            </div>
-          )}
+            {/* Loader inicial */}
+            {!sentTo && !sendError && (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
+                <Spinner size="sm" variant="current" />
+                Enviando código a tu correo...
+              </div>
+            )}
+          </CrossFade>
 
           {/* Estado en vivo */}
-          {status === 'verifying' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Verificando...
-            </div>
-          )}
+          <Presence
+            show={status === 'verifying'}
+            initial={false}
+            distance="xs"
+            className="flex items-center justify-center gap-2 text-sm text-fg-muted"
+          >
+            <Spinner size="sm" variant="current" />
+            Verificando...
+          </Presence>
 
-          {error && (
-            <div className="flex items-center justify-center gap-2 text-sm text-danger">
-              <WarningCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
+          <Presence
+            show={Boolean(error)}
+            initial={false}
+            distance="xs"
+            className="flex items-center justify-center gap-2 text-sm text-danger"
+          >
+            <WarningCircle className="h-4 w-4" />
+            {error}
+          </Presence>
 
           {/* Reenviar */}
           {status !== 'verified' && sentTo && (

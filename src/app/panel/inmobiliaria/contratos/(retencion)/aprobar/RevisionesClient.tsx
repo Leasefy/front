@@ -1,6 +1,7 @@
 'use client'
 
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -31,7 +32,6 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Input } from '@/components/ui/input'
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
@@ -361,14 +361,16 @@ export default function RevisionesClient() {
                 <TableHead numeric>Acciones</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* La decisión que se revisa o se filtra sale y las demás suben
+                (`key` = el id); las que llegan entran escalonadas. */}
+            <CuerpoQueAnima>
               {pageItems.map((d) => {
                 const meta = decisionMeta(d.decisionType)
                 const DecisionIcon = meta.icon
                 const reviewed = d.reviewedBy !== null
                 const canReview = d.reviewable && !reviewed
                 return (
-                  <TableRow key={d.id}>
+                  <FilaQueAnima key={d.id}>
                     <TableCell>
                       <span
                         className={
@@ -443,10 +445,10 @@ export default function RevisionesClient() {
                         <span className="flex justify-end text-xs text-fg-subtle">—</span>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </FilaQueAnima>
                 )
               })}
-            </TableBody>
+            </CuerpoQueAnima>
           </Table>
 
           {/* Pie de tabla del design system: cuántas decisiones hay, cuántas

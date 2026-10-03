@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import { enCristiano } from '@/lib/errores/en-cristiano';
 import { HandCoins, WarningCircle } from '@phosphor-icons/react';
 
@@ -338,11 +338,9 @@ function EditarModalidad({
 
         {/* Aviso de BLOQUE, no de un campo: un 409, un 5xx o la red. El error
             del porcentaje va debajo de su campo. */}
-        {error ? (
-          <p className="text-sm text-danger" role="alert" data-testid="modalidad-error">
-            {error}
-          </p>
-        ) : null}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert" data-testid="modalidad-error">
+          {error}
+        </Presence>
 
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>

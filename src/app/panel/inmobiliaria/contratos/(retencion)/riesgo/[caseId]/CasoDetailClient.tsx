@@ -1,7 +1,8 @@
 'use client'
 
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { CrossFade, MotionIndicator } from '@leasefy/cadence'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { Button } from '@/components/ui/button'
 import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
@@ -32,6 +33,8 @@ const TABS: { key: TabKey; label: string; icon: Icon }[] = [
 export default function CasoDetailClient({ caseId }: { caseId: string }) {
   const { data, isLoading, error, usingMock } = useRetencionCaso(caseId)
   const [tab, setTab] = useState<TabKey>('perfil')
+  // El subrayado de la pestaña activa es UNO que se desliza a la nueva.
+  const subrayado = `${useId()}-pestana`
 
   if (isLoading && !data) {
     return (
@@ -97,20 +100,24 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
                 aria-selected={tab === key}
                 onClick={() => setTab(key)}
                 className={
-                  'inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ' +
-                  (tab === key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-fg-muted hover:text-fg')
+                  'relative inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 border-transparent -mb-px transition-colors ' +
+                  (tab === key ? 'text-primary' : 'text-fg-muted hover:text-fg')
                 }
               >
                 <Icon size={15} weight="duotone" /> {label}
+                {tab === key && (
+                  <MotionIndicator layoutId={subrayado} className="inset-x-0 -bottom-0.5 h-0.5 bg-primary" />
+                )}
               </button>
             ))}
           </nav>
 
-          {tab === 'perfil' && <PerfilTab bundle={data} />}
-          {tab === 'plan' && <PlanTab bundle={data} />}
-          {tab === 'mensaje' && <MensajeTab bundle={data} />}
+          {/* El contenido de la pestaña se cruza con el de la nueva. */}
+          <CrossFade swapKey={tab}>
+            {tab === 'perfil' && <PerfilTab bundle={data} />}
+            {tab === 'plan' && <PlanTab bundle={data} />}
+            {tab === 'mensaje' && <MensajeTab bundle={data} />}
+          </CrossFade>
         </section>
 
         {/* Sidebar */}

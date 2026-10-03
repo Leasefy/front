@@ -1,7 +1,7 @@
 'use client';
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CaretLeft,
@@ -51,7 +51,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton, MotionIndicator, Presence } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { RespaldoDelArriendo } from '@/components/inmobiliaria/RespaldoDelArriendo';
@@ -361,6 +361,8 @@ function NuevoContratoContent() {
   ]);
 
   const armadoPorElSistema = form.mode === 'template' || form.mode === 'generate';
+  // La marca de la forma elegida se desliza de una tarjeta a otra.
+  const marcaDelModo = `${useId()}-modo`;
   // Con el PDF propio se prepara UNA vez, para saber si la tarjeta de IA se
   // puede prender. Sólo dentro del panel se vuelve a preguntar en cada cambio.
   const plantilla = useContratoDesdePlantilla(borrador, { activo: armadoPorElSistema });
@@ -731,6 +733,7 @@ function NuevoContratoContent() {
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
+              marca={marcaDelModo}
               active={form.mode === 'upload'}
               onClick={() => updateForm('mode', 'upload')}
               title="Subir PDF propio"
@@ -738,6 +741,7 @@ function NuevoContratoContent() {
               icon={UploadSimple}
             />
             <ModeOption
+              marca={marcaDelModo}
               active={form.mode === 'template'}
               onClick={() => updateForm('mode', 'template')}
               title="Usar plantilla"
@@ -749,6 +753,7 @@ function NuevoContratoContent() {
                 cuando dice que no, la tarjeta explica por qué — no promete un
                 «próximamente» que nadie va a cumplir. */}
             <ModeOption
+              marca={marcaDelModo}
               active={form.mode === 'generate'}
               disabled={plantilla.iaDisponible !== true}
               onClick={() => updateForm('mode', 'generate')}
@@ -792,78 +797,86 @@ function NuevoContratoContent() {
           )}
         </section>
 
-        {armadoPorElSistema && (
-          <ArmarContratoDesdePlantilla
-            modo={form.mode === 'generate' ? 'generate' : 'template'}
-            estado={plantilla}
-          />
-        )}
-
-        {/* 2) PDF upload */}
-        {form.mode === 'upload' && (
-          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
-            {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
-                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(form.pdfFile.size / 1024).toFixed(0)} KB
-                  </p>
-                </div>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => updateForm('pdfFile', null)}
-                  aria-label="Quitar"
-                  title="Quitar"
-                  className="text-muted-foreground hover:text-danger"
-                  icon={<X className="w-4 h-4" />}
-                />
-              </div>
-            ) : (
-              <label
-                htmlFor="pdf-upload"
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={onDrop}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                  isDragging
-                    ? 'border-primary/40 bg-primary-soft/40'
-                    : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                )}
-              >
-                <UploadSimple className="w-8 h-8 text-muted-foreground" />
-                <p className="text-sm text-foreground">
-                  <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
-                </p>
-                <p className="text-xs text-muted-foreground">Máx 10 MB</p>
-                <input
-                  id="pdf-upload"
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
-                  className="sr-only"
-                />
-              </label>
-            )}
-            <ErrorDelCampo
-              id={`${idDelCampoDelContrato('pdfFile')}-error`}
-              mensaje={errorDe('pdfFile')}
-              className="mt-0"
+        {/* Cambiar de forma cruza lo de una con lo de la otra. `popLayout`:
+            lo nuevo entra YA en su lugar y lo viejo se va por encima. */}
+        <CrossFade
+          swapKey={armadoPorElSistema ? 'armar' : form.mode === 'upload' ? 'subir' : 'ninguno'}
+          mode="popLayout"
+          className="empty:hidden"
+        >
+          {armadoPorElSistema && (
+            <ArmarContratoDesdePlantilla
+              modo={form.mode === 'generate' ? 'generate' : 'template'}
+              estado={plantilla}
             />
+          )}
 
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
-              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>
-                El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
-                de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
-              </p>
-            </div>
-          </section>
-        )}
+          {/* 2) PDF upload */}
+          {form.mode === 'upload' && (
+            <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
+              {form.pdfFile ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(form.pdfFile.size / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateForm('pdfFile', null)}
+                    aria-label="Quitar"
+                    title="Quitar"
+                    className="text-muted-foreground hover:text-danger"
+                    icon={<X className="w-4 h-4" />}
+                  />
+                </div>
+              ) : (
+                <label
+                  htmlFor="pdf-upload"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                    isDragging
+                      ? 'border-primary/40 bg-primary-soft/40'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                  )}
+                >
+                  <UploadSimple className="w-8 h-8 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
+                  </p>
+                  <p className="text-xs text-muted-foreground">Máx 10 MB</p>
+                  <input
+                    id="pdf-upload"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
+                    className="sr-only"
+                  />
+                </label>
+              )}
+              <ErrorDelCampo
+                id={`${idDelCampoDelContrato('pdfFile')}-error`}
+                mensaje={errorDe('pdfFile')}
+                className="mt-0"
+              />
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
+                  de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
+                </p>
+              </div>
+            </section>
+          )}
+        </CrossFade>
 
         {/* 3) Dates + amounts */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
@@ -986,39 +999,48 @@ function NuevoContratoContent() {
         </section>
 
         {/* Errors + submit */}
-        {errorDeInmueble && (
-          <div
-            role="alert"
-            className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
-          >
-            <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="text-fg">{errorDeInmueble.mensaje}</p>
-              {errorDeInmueble.contratoId && (
-                <Link
-                  href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
-                  className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
-                >
-                  Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-        {errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar) ? (
-          <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
-            <AvisoInmuebleSinCanon
-              error={errorSinCanon}
-              inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
-            />
-          </div>
-        ) : null}
-        {submitError && (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
-            <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-danger">{submitError}</p>
-          </div>
-        )}
+        {/* Los avisos del envío entran y salen (no saltan). */}
+        <Presence
+          show={Boolean(errorDeInmueble)}
+          initial={false}
+          role="alert"
+          className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+        >
+          {errorDeInmueble && (
+            <>
+              <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-fg">{errorDeInmueble.mensaje}</p>
+                {errorDeInmueble.contratoId && (
+                  <Link
+                    href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
+                    className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
+                  >
+                    Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
+        </Presence>
+        <Presence
+          show={errorSinCanon !== null || Boolean(inmuebleManualSinCanon) || (!esManual && Boolean(property?.canonPorConfirmar))}
+          initial={false}
+          className="rounded-lg border border-warning/40 bg-warning/5 p-4"
+        >
+          <AvisoInmuebleSinCanon
+            error={errorSinCanon}
+            inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
+          />
+        </Presence>
+        <Presence
+          show={Boolean(submitError)}
+          initial={false}
+          className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
+        >
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-danger">{submitError}</p>
+        </Presence>
 
         {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
@@ -1059,6 +1081,7 @@ function NuevoContratoContent() {
 // ─── Subcomponents ───────────────────────────────────────────────────────────
 
 function ModeOption({
+  marca,
   active,
   disabled,
   onClick,
@@ -1067,6 +1090,8 @@ function ModeOption({
   icon: Icon,
   badge,
 }: {
+  /** `layoutId` de la marca de la elegida: la misma en las tres tarjetas. */
+  marca: string;
   active: boolean;
   disabled?: boolean;
   onClick?: () => void;
@@ -1082,12 +1107,20 @@ function ModeOption({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'relative text-left p-4 rounded-lg border transition-colors',
-        active && 'border-primary/40 bg-primary-soft/40',
+        'relative isolate text-left p-4 rounded-lg border transition-colors',
+        active && 'border-transparent',
         !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'
       )}
     >
+      {/* El borde y el fondo de la elegida son UNA marca que se desliza a la
+          nueva (`MotionIndicator`), no un color que se prende y se apaga. */}
+      {active && (
+        <MotionIndicator
+          layoutId={marca}
+          className="-inset-px -z-10 rounded-lg border border-primary/40 bg-primary-soft/40"
+        />
+      )}
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-muted-foreground')} />
         <p className="text-sm font-semibold text-foreground">{title}</p>

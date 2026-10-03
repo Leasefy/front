@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   MagnifyingGlass,
   Funnel,
@@ -19,13 +18,13 @@ import {
   Export,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableHead,
   TableRow,
   TableCell,
@@ -37,7 +36,8 @@ import {
   DropdownListItem,
   DropdownListSeparator,
 } from '@/components/ui/dropdown-menu';
-import { IconButton, Chip, SegmentedControl } from '@leasefy/cadence';
+import { IconButton, Chip, SegmentedControl, AnimatedNumber, Presence } from '@leasefy/cadence';
+
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -276,7 +276,7 @@ export function PropietarioTable({
 
           {/* Results Count */}
           <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-            {totalFiltrado} {t('inmobiliaria.propietario.table.of')} {total}
+            <AnimatedNumber value={totalFiltrado} format={(n) => String(Math.round(n))} /> {t('inmobiliaria.propietario.table.of')} {total}
           </span>
         </div>
       </div>
@@ -294,17 +294,16 @@ export function PropietarioTable({
               <TableHead className="w-12 p-4" />
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredPropietarios.map((propietario, index) => {
+          {/* Las filas entran escalonadas (techo de 320 ms) y, al filtrar o
+              buscar, la que se va sale en su lugar: `key` = el id. */}
+          <CuerpoQueAnima>
+            {filteredPropietarios.map((propietario) => {
               const isCompany = propietario.documentType === 'NIT';
               const hasPending = propietario.pendingBalance > 0;
 
               return (
-                <motion.tr
+                <FilaQueAnima
                   key={propietario.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
                   onClick={() => onView(propietario)}
                   className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
                 >
@@ -451,29 +450,27 @@ export function PropietarioTable({
                       </DropdownListContent>
                     </DropdownList>
                   </TableCell>
-                </motion.tr>
+                </FilaQueAnima>
               );
             })}
-          </TableBody>
+          </CuerpoQueAnima>
         </Table>
 
         {/* Empty State — se mira el total con filtros, no las filas de ESTA
             página: son cosas distintas en cuanto hay paginación. */}
-        {totalFiltrado === 0 && (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <User className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">
-              {t('inmobiliaria.propietario.table.noResults')}
-            </h3>
-            <p className="text-muted-foreground">
-              {searchQuery
-                ? t('inmobiliaria.propietario.table.tryOtherTerms')
-                : t('inmobiliaria.propietario.table.addFirstOwner')}
-            </p>
+        <Presence show={totalFiltrado === 0} initial={false} className="p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <User className="w-8 h-8 text-muted-foreground" />
           </div>
-        )}
+          <h3 className="text-lg font-semibold text-foreground mb-1">
+            {t('inmobiliaria.propietario.table.noResults')}
+          </h3>
+          <p className="text-muted-foreground">
+            {searchQuery
+              ? t('inmobiliaria.propietario.table.tryOtherTerms')
+              : t('inmobiliaria.propietario.table.addFirstOwner')}
+          </p>
+        </Presence>
       </div>
     </div>
   );

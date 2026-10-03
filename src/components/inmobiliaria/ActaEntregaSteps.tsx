@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import {
   Lightning,
   Signature,
@@ -27,7 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
 import { liquidarElDeposito } from '@/lib/actas/devolucion-del-deposito';
-import { IconButton, Chip, RadioCardGroup, RadioCard, Presence } from '@leasefy/cadence';
+import { IconButton, Chip, RadioCardGroup, RadioCard, Presence, Collapse } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   ActaInventoryItem,
@@ -159,8 +159,8 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
       </div>
 
       {/* Selected Property Info */}
-      {selectedConsignacion && (
-        <div className="p-4 rounded-lg bg-surface-muted border border-border">
+      <Presence show={Boolean(selectedConsignacion)} initial={false} className="p-4 rounded-lg bg-surface-muted border border-border">
+        {selectedConsignacion && (
           <div className="flex items-start gap-4">
             {selectedConsignacion.propertyThumbnail && (
               <img
@@ -184,8 +184,8 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Presence>
 
       {/* Date and Time */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -425,14 +425,13 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
       {/* Items List */}
       {activeRoom && (
         <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {activeRoomItems.map((item, index) => (
-              <motion.div
+          {/* Los ítems del espacio entran escalonados (techo de 320 ms); el
+              que se borra sale y los de abajo suben (`key` = el id). Al
+              cambiar de espacio la lista se monta de nuevo. */}
+          <ListaQueAnima key={activeRoom} className="space-y-3">
+            {activeRoomItems.map((item) => (
+              <ElementoQueAnima
                 key={item.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ delay: index * 0.02 }}
                 className="p-4 rounded-lg bg-surface-muted border border-border"
               >
                 <div className="flex items-start gap-3">
@@ -461,7 +460,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                     </div>
 
                     {/* Defect Description */}
-                    {item.hasDefects && (
+                    <Collapse open={Boolean(item.hasDefects)}>
                       <Input
                         type="text"
                         placeholder={t('inmobiliaria.acta.defectPlaceholder')}
@@ -469,7 +468,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                         onChange={(e) => updateItemDefect(item.id, e.target.value)}
                         className="w-full h-9 px-3 text-sm border-warning/40 bg-warning-soft/40"
                       />
-                    )}
+                    </Collapse>
                   </div>
 
                   {/* Actions */}
@@ -492,9 +491,9 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                     />
                   </div>
                 </div>
-              </motion.div>
+              </ElementoQueAnima>
             ))}
-          </AnimatePresence>
+          </ListaQueAnima>
 
           {/* Add Item Button */}
           <Button
@@ -690,14 +689,16 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
             </div>
           ))}
 
-          {formData.keysDelivered.length === 0 && (
-            <div className="p-6 rounded-lg bg-surface-muted border border-dashed border-border text-center">
-              <Key className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
-              <p className="text-fg-muted text-sm">
-                {t('inmobiliaria.acta.noKeysRegistered')}
-              </p>
-            </div>
-          )}
+          <Presence
+            show={formData.keysDelivered.length === 0}
+            initial={false}
+            className="p-6 rounded-lg bg-surface-muted border border-dashed border-border text-center"
+          >
+            <Key className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
+            <p className="text-fg-muted text-sm">
+              {t('inmobiliaria.acta.noKeysRegistered')}
+            </p>
+          </Presence>
         </div>
       </div>
     </div>

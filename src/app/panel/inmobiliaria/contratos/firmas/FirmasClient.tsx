@@ -24,9 +24,11 @@
  */
 
 import { useState } from 'react'
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -131,11 +133,9 @@ export function FirmasClient() {
         ))}
       </section>
 
-      {resultado ? (
-        <p className="text-sm" data-testid="resultado-cancelacion">
-          {resultado}
-        </p>
-      ) : null}
+      <Presence show={Boolean(resultado)} initial={false} distance="xs" as="p" className="text-sm" data-testid="resultado-cancelacion">
+        {resultado}
+      </Presence>
 
       {barrido.noHabilitado ? (
         <Card>
@@ -174,9 +174,11 @@ export function FirmasClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="divide-y">
+                  {/* La que se cancela sale y las de abajo suben (`key` = el contrato). */}
+                  <ListaQueAnima as="ul" className="divide-y">
                     {vencidas.map((v) => (
-                      <li
+                      <ElementoQueAnima
+                        as="li"
                         key={v.contractId}
                         className="space-y-2 py-3"
                         data-testid={`vencida-${v.contractId}`}
@@ -191,58 +193,65 @@ export function FirmasClient() {
                         </p>
 
                         {puedeEditar ? (
-                          cancelando === v.contractId ? (
-                            <div className="space-y-2">
-                              <Input
-                                value={motivo}
-                                onChange={(e) => setMotivo(e.target.value)}
-                                placeholder="Por qué se cancela"
-                                data-testid={`motivo-${v.contractId}`}
-                              />
-                              <label className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                  checked={liberar}
-                                  onCheckedChange={(c) => setLiberar(c === true)}
-                                  data-testid={`liberar-${v.contractId}`}
+                          /* «Cancelar» se cruza con el motivo. `popLayout`: el
+                             campo se monta YA y el botón se va por encima. */
+                          <CrossFade
+                            swapKey={cancelando === v.contractId ? 'motivo' : 'boton'}
+                            mode="popLayout"
+                          >
+                            {cancelando === v.contractId ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={motivo}
+                                  onChange={(e) => setMotivo(e.target.value)}
+                                  placeholder="Por qué se cancela"
+                                  data-testid={`motivo-${v.contractId}`}
                                 />
-                                Liberar el inmueble (vuelve a estar disponible)
-                              </label>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  disabled={motivo.trim().length < 5}
-                                  onClick={() => void cancelar(v.contractId)}
-                                  data-testid={`confirmar-cancelar-${v.contractId}`}
-                                >
-                                  Cancelar la invitación
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setCancelando(null)}
-                                >
-                                  Volver
-                                </Button>
+                                <label className="flex items-center gap-2 text-sm">
+                                  <Checkbox
+                                    checked={liberar}
+                                    onCheckedChange={(c) => setLiberar(c === true)}
+                                    data-testid={`liberar-${v.contractId}`}
+                                  />
+                                  Liberar el inmueble (vuelve a estar disponible)
+                                </label>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    disabled={motivo.trim().length < 5}
+                                    onClick={() => void cancelar(v.contractId)}
+                                    data-testid={`confirmar-cancelar-${v.contractId}`}
+                                  >
+                                    Cancelar la invitación
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setCancelando(null)}
+                                  >
+                                    Volver
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setCancelando(v.contractId)
-                                setMotivo('')
-                                setLiberar(false)
-                              }}
-                              data-testid={`cancelar-${v.contractId}`}
-                            >
-                              Cancelar la invitación
-                            </Button>
-                          )
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setCancelando(v.contractId)
+                                  setMotivo('')
+                                  setLiberar(false)
+                                }}
+                                data-testid={`cancelar-${v.contractId}`}
+                              >
+                                Cancelar la invitación
+                              </Button>
+                            )}
+                          </CrossFade>
                         ) : null}
-                      </li>
+                      </ElementoQueAnima>
                     ))}
-                  </ul>
+                  </ListaQueAnima>
                 </CardContent>
               </Card>
             ) : null}
@@ -265,17 +274,18 @@ export function FirmasClient() {
                     te espera en la Bandeja del Piloto con un clic y en Manual te
                     lo propone. El inmueble sigue reservado.
                   </p>
-                  <ul className="divide-y">
+                  <ListaQueAnima as="ul" className="divide-y">
                     {porVencer.map((p) => (
-                      <li
+                      <ElementoQueAnima
+                        as="li"
                         key={p.invitacionId}
                         className="py-3 text-sm"
                         data-testid={`por-vencer-${p.contractId}`}
                       >
                         {p.tenantName ?? 'Contrato sin nombre del inquilino'}
-                      </li>
+                      </ElementoQueAnima>
                     ))}
-                  </ul>
+                  </ListaQueAnima>
                 </CardContent>
               </Card>
             ) : null}
@@ -291,9 +301,10 @@ export function FirmasClient() {
                   <p className="text-muted-foreground mb-3 text-sm">
                     Esta pantalla no envía: arma el texto y deja la constancia.
                   </p>
-                  <ul className="divide-y">
+                  <ListaQueAnima as="ul" className="divide-y">
                     {recordatorios.map((r) => (
-                      <li
+                      <ElementoQueAnima
+                        as="li"
                         key={r.contractId}
                         className="space-y-1 py-3"
                         data-testid={`recordatorio-${r.contractId}`}
@@ -303,9 +314,9 @@ export function FirmasClient() {
                           Recordatorio {r.numero} de {r.de} ·{' '}
                           {r.correo ?? 'sin correo'}
                         </p>
-                      </li>
+                      </ElementoQueAnima>
                     ))}
-                  </ul>
+                  </ListaQueAnima>
                 </CardContent>
               </Card>
             ) : null}

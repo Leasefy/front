@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import { EnvelopeSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -74,53 +75,60 @@ export function ExtractosEnviadosDelPropietario({ propietarioId, version = 0 }: 
         </h3>
       </div>
 
-      {cargando && (
-        <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-          {t('inmobiliaria.propietarios.detail.extractos.cargando')}
-        </p>
-      )}
+      {/* Cargando → la lista (o el fallo, o el vacío): se cruzan. `popLayout`:
+          lo nuevo entra YA y lo viejo se va por encima. */}
+      <CrossFade
+        swapKey={cargando ? 'cargando' : error ? 'fallo' : huellas && huellas.length > 0 ? 'lista' : 'vacio'}
+        mode="popLayout"
+      >
+        {cargando && (
+          <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+            {t('inmobiliaria.propietarios.detail.extractos.cargando')}
+          </p>
+        )}
 
-      {!cargando && error && (
-        <p className="text-sm text-danger" role="alert" data-testid="extractos-enviados-error">
-          {error.mensaje ?? t('inmobiliaria.propietarios.detail.extractos.error')}
-        </p>
-      )}
+        {!cargando && error && (
+          <p className="text-sm text-danger" role="alert" data-testid="extractos-enviados-error">
+            {error.mensaje ?? t('inmobiliaria.propietarios.detail.extractos.error')}
+          </p>
+        )}
 
-      {!cargando && !error && huellas && huellas.length === 0 && (
-        <p className="text-sm text-muted-foreground" data-testid="extractos-enviados-vacio">
-          {t('inmobiliaria.propietarios.detail.extractos.vacio')}
-        </p>
-      )}
+        {!cargando && !error && huellas && huellas.length === 0 && (
+          <p className="text-sm text-muted-foreground" data-testid="extractos-enviados-vacio">
+            {t('inmobiliaria.propietarios.detail.extractos.vacio')}
+          </p>
+        )}
 
-      {!cargando && !error && huellas && huellas.length > 0 && (
-        <ul className="divide-y divide-border" data-testid="extractos-enviados-lista">
-          {huellas.map((h) => (
-            <li key={h.id} className="flex items-start justify-between gap-3 py-2" data-estado={h.estado}>
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {mesEnTitulo(h.month, locale)}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {t(`inmobiliaria.propietarios.detail.extractos.${h.origen}`)}
-                  </span>
-                </p>
-                <p className={cn('text-xs', h.estado === 'FALLIDO' ? 'text-danger' : 'text-muted-foreground')}>
-                  {h.estado === 'ENVIADO'
-                    ? [
-                        h.enviadoAt ? formatDate(h.enviadoAt, locale) : null,
-                        h.destinatario ? t('inmobiliaria.propietarios.detail.extractos.a', { correo: h.destinatario }) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')
-                    : h.motivo ?? ''}
-                </p>
-              </div>
-              <Badge variant={VARIANTE_POR_ESTADO[h.estado]} className="shrink-0">
-                {t(`inmobiliaria.propietarios.detail.extractos.estado.${h.estado}`)}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      )}
+        {!cargando && !error && huellas && huellas.length > 0 && (
+          <ul className="divide-y divide-border" data-testid="extractos-enviados-lista">
+            {huellas.map((h) => (
+              <li key={h.id} className="flex items-start justify-between gap-3 py-2" data-estado={h.estado}>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-sm font-medium text-foreground">
+                    {mesEnTitulo(h.month, locale)}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      {t(`inmobiliaria.propietarios.detail.extractos.${h.origen}`)}
+                    </span>
+                  </p>
+                  <p className={cn('text-xs', h.estado === 'FALLIDO' ? 'text-danger' : 'text-muted-foreground')}>
+                    {h.estado === 'ENVIADO'
+                      ? [
+                          h.enviadoAt ? formatDate(h.enviadoAt, locale) : null,
+                          h.destinatario ? t('inmobiliaria.propietarios.detail.extractos.a', { correo: h.destinatario }) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : h.motivo ?? ''}
+                  </p>
+                </div>
+                <Badge variant={VARIANTE_POR_ESTADO[h.estado]} className="shrink-0">
+                  {t(`inmobiliaria.propietarios.detail.extractos.estado.${h.estado}`)}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CrossFade>
     </section>
   );
 }

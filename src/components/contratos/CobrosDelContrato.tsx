@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowSquareOut,
-  CaretDown,
   CaretRight,
   Printer,
   Receipt,
@@ -47,6 +46,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
+import { Collapse } from '@leasefy/cadence'
 import type { Contract } from '@/lib/types/contract'
 
 /** Donde finanzas emite y lista los cobros: la pestaña «Cobros emitidos» de Cartera. */
@@ -295,34 +295,45 @@ function FilaDeCobro({
           <Badge variant={estado.variante}>{estado.etiqueta}</Badge>
         </TableCell>
         <TableCell muted>
-          {abierto ? <CaretDown className="h-4 w-4" /> : <CaretRight className="h-4 w-4" />}
+          {/* El chevron gira con la misma curva con la que se abre el detalle. */}
+          <CaretRight
+            className={cn(
+              'h-4 w-4 transition-transform duration-slow ease-emphasis',
+              abierto && 'rotate-90',
+            )}
+          />
         </TableCell>
       </TableRow>
       {abierto ? (
         <TableRow className="bg-surface-muted hover:bg-surface-muted">
-          <TableCell colSpan={7} className="px-4 py-4">
-            {/* `width: 0; min-width: 100%`: el detalle ocupa el ancho de la
-                tabla sin ENSANCHARLA — si no, el desglose y los recibos
-                empujan las columnas y la tabla se sale de la tarjeta. */}
-            <div style={{ width: 0, minWidth: '100%' }}>
-              <div className="grid gap-5 xl:grid-cols-2">
-                <DesgloseAdeudado
-                  cobro={cobro}
-                  conceptos={cobro.conceptos ?? []}
-                  sinEstadoDePago
-                  className="min-w-0"
-                />
-                <RecibosDeCajaHistorial recibos={cobro.recibosDeCaja ?? []} className="min-w-0" />
+          <TableCell colSpan={7} className="p-0">
+            {/* El detalle se abre con su altura (`Collapse`; el relleno va
+                adentro para que la altura arranque en 0). Al cerrar se va de
+                una, como antes. */}
+            <Collapse open initial className="px-4 py-4">
+              {/* `width: 0; min-width: 100%`: el detalle ocupa el ancho de la
+                  tabla sin ENSANCHARLA — si no, el desglose y los recibos
+                  empujan las columnas y la tabla se sale de la tarjeta. */}
+              <div style={{ width: 0, minWidth: '100%' }}>
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <DesgloseAdeudado
+                    cobro={cobro}
+                    conceptos={cobro.conceptos ?? []}
+                    sinEstadoDePago
+                    className="min-w-0"
+                  />
+                  <RecibosDeCajaHistorial recibos={cobro.recibosDeCaja ?? []} className="min-w-0" />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button asChild variant="secondary" size="sm" hideArrow>
+                    <Link href={cuentaDeCobro} data-testid={`cuenta-de-cobro-${cobro.month}`}>
+                      <Printer className="mr-1 h-3.5 w-3.5" />
+                      Cuenta de cobro
+                    </Link>
+                  </Button>
+                </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button asChild variant="secondary" size="sm" hideArrow>
-                  <Link href={cuentaDeCobro} data-testid={`cuenta-de-cobro-${cobro.month}`}>
-                    <Printer className="mr-1 h-3.5 w-3.5" />
-                    Cuenta de cobro
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Collapse>
           </TableCell>
         </TableRow>
       ) : null}

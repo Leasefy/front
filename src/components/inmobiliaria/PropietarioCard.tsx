@@ -5,7 +5,7 @@ import { User, Buildings, CurrencyDollar, Warning, CaretRight, Phone, Envelope }
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Pressable, motionSpring } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
@@ -34,12 +34,13 @@ export function PropietarioCard({
 
   if (variant === 'compact') {
     return (
-      <motion.button
+      <Pressable
+        as="button"
+        hover="scale"
+        press="sm"
         onClick={onClick}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-base text-left',
           selected
             ? 'border-primary/30 bg-primary-soft'
             : 'border-border bg-card hover:border-primary/30'
@@ -66,6 +67,7 @@ export function PropietarioCard({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3 text-primary-fg"
               fill="none"
               viewBox="0 0 24 24"
@@ -75,16 +77,16 @@ export function PropietarioCard({
             </motion.svg>
           </div>
         )}
-      </motion.button>
+      </Pressable>
     );
   }
 
   return (
-    <motion.button
+    <Pressable
+      as="button"
       onClick={onClick}
-      whileHover={{ y: -2 }}
       className={cn(
-        'w-full p-5 rounded-lg border bg-card text-left transition-all duration-200 group',
+        'w-full p-5 rounded-lg border bg-card text-left transition-colors duration-base group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/20'
           : 'border-border hover:border-primary/30'
@@ -197,7 +199,7 @@ export function PropietarioCard({
           )}
         </div>
       )}
-    </motion.button>
+    </Pressable>
   );
 }
 

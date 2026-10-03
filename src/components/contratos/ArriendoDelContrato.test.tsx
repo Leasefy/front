@@ -366,8 +366,9 @@ describe('ArriendoDelContrato — la barra y el movimiento', () => {
     })
 
     const tramos = container.querySelectorAll('[role="progressbar"] > div > div')
-    expect((tramos[0] as HTMLElement).style.width).toBe('100%')
-    expect((tramos[23] as HTMLElement).style.width).toBe('0%')
+    // Llena con `scaleX` (transform), no con `width` (03-10-2026).
+    expect((tramos[0] as HTMLElement).style.transform).toBe('scaleX(1)')
+    expect((tramos[23] as HTMLElement).style.transform).toBe('scaleX(0)')
     // La transición sólo existe bajo `motion-safe:`.
     expect((tramos[0] as HTMLElement).className).not.toMatch(/(^|\s)transition-/)
   })

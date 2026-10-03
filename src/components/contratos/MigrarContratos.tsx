@@ -2121,11 +2121,12 @@ function ListaDeTrabajo({
               consignamos su inmueble. Sin consignación no hay cobros, así que
               esto es lo que hace que la cartera exista.
             </p>
+            {/* La barra crece con `scaleX` (transform), no con `width`. */}
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
               <div
-                className="h-full rounded-full bg-primary transition-all"
+                className="h-full w-full origin-left rounded-full bg-primary transition-transform duration-slow ease-emphasis"
                 style={{
-                  width: `${Math.round((asociando.hechas / Math.max(asociando.total, 1)) * 100)}%`,
+                  transform: `scaleX(${asociando.hechas / Math.max(asociando.total, 1)})`,
                 }}
               />
             </div>

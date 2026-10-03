@@ -72,6 +72,15 @@ function escribir(texto: string) {
   });
 }
 
+/**
+ * Las filas que salen al filtrar o buscar se van con su animación
+ * (`TableBodyAnimado`, 03-10-2026): con `skipAnimations` la salida termina al
+ * instante, pero el nodo se quita cuando la animación avisa que terminó.
+ */
+async function esperarLasSalidas() {
+  for (let i = 0; i < 5; i++) await act(async () => {});
+}
+
 function chip(texto: string) {
   return Array.from(container.querySelectorAll('button')).find((b) =>
     b.textContent?.startsWith(texto),
@@ -131,7 +140,7 @@ describe('<RenovacionesTable>', () => {
     expect(fila.textContent).toContain('—');
   });
 
-  it('los conteos de los cajones se cuentan sobre la lista real', () => {
+  it('los conteos de los cajones se cuentan sobre la lista real', async () => {
     render({
       data: [
         renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
@@ -146,6 +155,7 @@ describe('<RenovacionesTable>', () => {
     expect(chip('Próximas').textContent).toBe('Próximas1');
 
     act(() => chip('Próximas').click());
+    await esperarLasSalidas();
     expect(container.querySelectorAll('tbody tr').length).toBe(1);
     expect(container.querySelector('[data-testid="renovacion-c"]')).not.toBeNull();
   });
@@ -175,7 +185,7 @@ describe('<RenovacionesTable>', () => {
     );
   });
 
-  it('🔴 y ese cajón se puede mirar solo', () => {
+  it('🔴 y ese cajón se puede mirar solo', async () => {
     render({
       data: [
         renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
@@ -183,6 +193,7 @@ describe('<RenovacionesTable>', () => {
       ],
     });
     act(() => chip('Más de 90 días').click());
+    await esperarLasSalidas();
     expect(container.querySelectorAll('tbody tr').length).toBe(1);
     expect(container.querySelector('[data-testid="renovacion-d"]')).not.toBeNull();
   });
@@ -228,7 +239,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     expect(container.querySelector('[data-testid="abrir-r-1"]')).not.toBeNull();
   });
 
-  it('🔴 se puede buscar, y por el NÚMERO DE CONTRATO', () => {
+  it('🔴 se puede buscar, y por el NÚMERO DE CONTRATO', async () => {
     // 183 renovaciones en la agencia migrada. Sin buscador, llegar a una es
     // pasar páginas — y el número del contrato, que es como la inmobiliaria
     // nombra las cosas, ni siquiera se mostraba.
@@ -240,6 +251,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     });
     expect(container.querySelectorAll('[data-testid^="renovacion-r-"]')).toHaveLength(2);
     escribir('1686');
+    await esperarLasSalidas();
     expect(container.querySelector('[data-testid="renovacion-r-1"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="renovacion-r-2"]')).toBeNull();
     // Y el número se VE en la fila, no sólo se busca.
@@ -248,7 +260,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     );
   });
 
-  it('busca por inquilino y propietario, sin tildes', () => {
+  it('busca por inquilino y propietario, sin tildes', async () => {
     render({
       data: [
         renovacion({ id: 'r-1', tenantName: 'Ana Gómez' }),
@@ -256,6 +268,7 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
       ],
     });
     escribir('gomez');
+    await esperarLasSalidas();
     expect(container.querySelector('[data-testid="renovacion-r-1"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="renovacion-r-2"]')).toBeNull();
   });

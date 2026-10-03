@@ -31,6 +31,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { Presence } from '@leasefy/cadence';
 
 import {
   Dialog,
@@ -203,11 +204,9 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
                 mensaje={seleccion.length === 0 ? problema : null}
               />
             </div>
-            {error ? (
-              <p role="alert" className="text-sm text-danger" data-testid="editar-propietarios-error">
-                {error}
-              </p>
-            ) : null}
+            <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-danger" data-testid="editar-propietarios-error">
+              {error}
+            </Presence>
           </div>
         )}
 

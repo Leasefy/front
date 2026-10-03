@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Avatar, Callout, KeyValueList } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, Callout, KeyValueList } from '@leasefy/cadence';
 import {
   CheckCircle,
   Clock,
@@ -293,7 +293,10 @@ export function PasoPropuesta({
               ) : (
                 <p className="text-fg-muted">
                   Con IPC de {formatearPct(ipcRate, locale)} el canon queda en{' '}
-                  <strong className="font-semibold text-fg">{formatCurrency(tope)}</strong>, el tope
+                  {/* Al cambiar el IPC, el tope cuenta hasta el nuevo. */}
+                  <strong className="font-semibold text-fg">
+                    <AnimatedNumber value={tope} format={(n) => formatCurrency(Math.round(n))} />
+                  </strong>, el tope
                   legal en vivienda.
                 </p>
               )}

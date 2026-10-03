@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import { FileText, Prohibit, Receipt, WarningCircle } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,13 @@ export function PagareSection({ contractId, puedeEditar }: PagareSectionProps) {
         </div>
         <h3 className="font-semibold text-fg">Pagaré y carta de instrucciones</h3>
       </div>
-      <div className="p-5">
+      {/* Cargando → el pagaré (o el fallo): se cruzan. `popLayout`: lo nuevo
+          entra YA y lo viejo se va por encima. */}
+      <CrossFade
+        swapKey={cargando ? 'cargando' : error ? 'fallo' : !disponible ? 'no-disponible' : 'pagare'}
+        mode="popLayout"
+        className="p-5"
+      >
         {cargando ? (
           <div className="flex items-center justify-center py-6">
             <Spinner size="sm" variant="muted" />
@@ -82,7 +89,7 @@ export function PagareSection({ contractId, puedeEditar }: PagareSectionProps) {
         ) : (
           <Contenido contractId={contractId} pagare={pagare} puedeEditar={puedeEditar} onCambio={cargar} />
         )}
-      </div>
+      </CrossFade>
     </div>
   );
 }

@@ -19,7 +19,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { IconButton, SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, IconButton, Presence, SegmentedControl } from '@leasefy/cadence';
 import { CONTRACT_STATUS_LABELS, type ContractStatus } from '@/lib/types/contract';
 import {
   FILTROS_INICIALES,
@@ -201,7 +201,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
           </SelectContent>
         </Select>
 
-        {conFiltros && (
+        <Presence show={conFiltros} initial={false} direction="left" distance="xs">
           <Button
             variant="link"
             size="sm"
@@ -218,7 +218,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
             {tx('Limpiar', 'Clear')}
             <X className="w-3.5 h-3.5" />
           </Button>
-        )}
+        </Presence>
 
         {/* «N de M»: el total con filtros contra el total real, no las filas
             de esta página — son cosas distintas en cuanto hay paginación. */}
@@ -226,7 +226,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
           className="ml-auto text-sm text-muted-foreground tabular-nums"
           data-testid="conteo-filtrado"
         >
-          {totalFiltrado} {tx('de', 'of')} {total}
+          <AnimatedNumber value={totalFiltrado} format={(n) => String(Math.round(n))} /> {tx('de', 'of')} {total}
         </span>
       </div>
     </div>

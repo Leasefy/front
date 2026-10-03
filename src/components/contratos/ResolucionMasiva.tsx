@@ -22,6 +22,7 @@
  */
 
 import { useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { Users, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -338,11 +339,9 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
         </p>
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-destructive" data-testid="error-masivo" role="alert">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-destructive" data-testid="error-masivo" role="alert">
+        {error}
+      </Presence>
 
       {resultado ? (
         <div className="space-y-2 rounded-lg border border-border p-3" data-testid="resultado-masivo">

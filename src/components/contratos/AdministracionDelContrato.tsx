@@ -14,6 +14,7 @@
  */
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
+import { Presence } from '@leasefy/cadence'
 import { useRef, useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
@@ -682,11 +683,9 @@ export function AdministracionDelContrato({
             </fieldset>
           </div>
 
-          {error ? (
-            <p role="alert" className="text-sm text-destructive" data-testid="administracion-error">
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="administracion-error">
+            {error}
+          </Presence>
 
           <DialogFooter>
             <Button

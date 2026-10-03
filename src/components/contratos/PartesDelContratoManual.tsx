@@ -21,7 +21,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { House, User, UserPlus } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/cadence'
+import { SegmentedControl, Presence } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
@@ -184,11 +184,9 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             data-testid="inmueble-combobox"
           />
         )}
-        {errorInmuebles && (
-          <p role="alert" className="text-caption text-danger" data-testid="error-de-los-inmuebles">
-            {errorInmuebles}
-          </p>
-        )}
+        <Presence show={Boolean(errorInmuebles)} initial={false} distance="xs" as="p" role="alert" className="text-caption text-danger" data-testid="error-de-los-inmuebles">
+          {errorInmuebles}
+        </Presence>
         <ErrorDelCampo id="inmueble-del-contrato-error" mensaje={errores.propertyId} className="mt-0" />
       </div>
 

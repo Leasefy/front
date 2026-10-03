@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
@@ -142,31 +143,38 @@ export function ExtractoDelPropietarioDialog({
             )}
           </div>
 
-          {cargando && (
-            <div
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
-              role="status"
-              aria-live="polite"
-              data-testid="extracto-cargando"
-            >
-              <Spinner size="sm" />
-              {t('inmobiliaria.propietario.extracto.cargando')}
-            </div>
-          )}
+          {/* Cargando → el extracto del mes (o el fallo): se cruzan. */}
+          <CrossFade
+            swapKey={cargando ? 'cargando' : error ? 'fallo' : extracto ? 'extracto' : 'nada'}
+            mode="popLayout"
+            className="empty:hidden"
+          >
+            {cargando && (
+              <div
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
+                role="status"
+                aria-live="polite"
+                data-testid="extracto-cargando"
+              >
+                <Spinner size="sm" />
+                {t('inmobiliaria.propietario.extracto.cargando')}
+              </div>
+            )}
 
-          {!cargando && error && (
-            <p className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
-              {error}
-            </p>
-          )}
+            {!cargando && error && (
+              <p className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
+                {error}
+              </p>
+            )}
 
-          {!cargando && !error && extracto && (
-            <ExtractoPropietario
-              extracto={extracto}
-              onDownloadPDF={descargarPdf}
-              onEmail={enviarPorCorreo}
-            />
-          )}
+            {!cargando && !error && extracto && (
+              <ExtractoPropietario
+                extracto={extracto}
+                onDownloadPDF={descargarPdf}
+                onEmail={enviarPorCorreo}
+              />
+            )}
+          </CrossFade>
         </div>
       </DialogContent>
     </Dialog>

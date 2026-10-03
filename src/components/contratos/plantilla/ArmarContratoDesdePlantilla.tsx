@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { Appear, Collapse } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
 import {
@@ -107,14 +108,16 @@ export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
       )}
 
       {errorDePreparacion && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-error-preparacion"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
         >
           <Warning weight="fill" aria-hidden="true" className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{errorDePreparacion}</span>
-        </p>
+        </Appear>
       )}
 
       {preparando && !preparacion && (
@@ -646,8 +649,10 @@ function ContratoListo({
 
   return (
     <div className="space-y-3">
+      {/* «Quedó armado» y «quedó viejo» llegan con su entrada (`Appear`);
+          uno reemplaza al otro sin esperar a que el anterior se vaya. */}
       {generado && !quedoViejo && (
-        <div
+        <Appear
           data-testid="plantilla-contrato-listo"
           className="rounded-lg border border-success/30 bg-success-soft p-4"
         >
@@ -682,23 +687,25 @@ function ContratoListo({
                   {verDetalle ? 'Ocultar las cláusulas' : 'Ver qué cláusulas quedaron'}
                 </Button>
               )}
-              {verDetalle && (
+              <Collapse open={verDetalle}>
                 <ul className="mt-1 list-disc pl-4 text-caption text-fg-muted">
                   {generado.clausulas.map((c) => (
                     <li key={c}>{c}</li>
                   ))}
                 </ul>
-              )}
+              </Collapse>
             </div>
           </div>
-        </div>
+        </Appear>
       )}
 
       {/* 🔴 Cambió algo que va IMPRESO después de generar. Sin este aviso se
           crea el contrato con el canon nuevo en la base y el viejo en el PDF
           que firman las partes. */}
       {quedoViejo && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-quedo-viejo"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-warning-soft px-4 py-3 text-body-sm text-warning"
@@ -708,7 +715,7 @@ function ContratoListo({
             Cambiaste algo después de armar el contrato. Vuelve a generarlo para que el
             PDF diga lo mismo que el formulario.
           </span>
-        </p>
+        </Appear>
       )}
 
       <div className="flex flex-wrap items-center justify-end gap-2">

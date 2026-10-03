@@ -35,6 +35,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 
 import { Card } from "@/components/ui/card";
@@ -368,11 +369,9 @@ export function FilaDeRevision({
 
       {/* El aviso de la fila (no es el error de un campo): lo que el back
           no señaló en el propietario ni en la comisión. */}
-      {error ? (
-        <p className="text-caption text-destructive" data-testid="error-de-fila" role="alert">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-caption text-destructive" data-testid="error-de-fila" role="alert">
+        {error}
+      </Presence>
 
       {editable && otrosFaltantes.length > 0 ? (
         <FaltantesDeFila

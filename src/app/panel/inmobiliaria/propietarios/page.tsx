@@ -1,10 +1,10 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   UserPlus,
@@ -65,7 +65,7 @@ import {
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
-import { SegmentedControl, KpiCard } from '@leasefy/cadence';
+import { SegmentedControl, KpiCard, AnimatedNumber, Presence } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
@@ -565,24 +565,23 @@ function PropietariosContent() {
 
       {/* El clic que vino de otra pantalla y no llegó a ningún lado. Se dice:
           una lista que se queda igual parece un botón roto. */}
-      {personaNoEncontrada && (
-        <div
-          data-testid="persona-no-encontrada"
-          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
-        >
-          <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">
-              No encontramos a esa persona en el directorio
-            </p>
-            <p className="mt-0.5 text-sm text-fg-muted">
-              La ficha del propietario se cruza con su cuenta del portal por
-              correo: si el de la ficha no es el mismo con el que entra a
-              Leasefy, no hay forma de enlazarlos. Abajo está la lista completa.
-            </p>
-          </div>
+      <Presence
+        show={Boolean(personaNoEncontrada)}
+        data-testid="persona-no-encontrada"
+        className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+      >
+        <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">
+            No encontramos a esa persona en el directorio
+          </p>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            La ficha del propietario se cruza con su cuenta del portal por
+            correo: si el de la ficha no es el mismo con el que entra a
+            Leasefy, no hay forma de enlazarlos. Abajo está la lista completa.
+          </p>
         </div>
-      )}
+      </Presence>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -619,13 +618,10 @@ function PropietariosContent() {
         />
       </div>
 
-      {/* Unified Data Card - View Toggle + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      {/* Unified Data Card - View Toggle + Content + Pagination.
+          Sin entrada propia: la página ya entra con el `template.tsx`; lo que
+          se anima adentro son los cambios (filas, tarjetas, la cifra). */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl<ViewMode>
@@ -658,7 +654,7 @@ function PropietariosContent() {
           {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
-              {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
+              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} /> {t('inmobiliaria.propietarios.title').toLowerCase()}
             </span>
           )}
         </div>
@@ -742,15 +738,19 @@ function PropietariosContent() {
                 }}
               />
             ) : (
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              /* Las tarjetas entran escalonadas (techo de 320 ms) y, al cambiar
+                 de página, las que se van salen: `key` = el id. Sin `layout`:
+                 una página entera cambia de una vez, no se reacomoda. */
+              <ListaQueAnima layout={false} className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paginationData.paginatedItems.map((propietario) => (
-                  <PropietarioCard
-                    key={propietario.id}
-                    propietario={propietario}
-                    onClick={() => handleView(propietario)}
-                  />
+                  <ElementoQueAnima key={propietario.id}>
+                    <PropietarioCard
+                      propietario={propietario}
+                      onClick={() => handleView(propietario)}
+                    />
+                  </ElementoQueAnima>
                 ))}
-              </div>
+              </ListaQueAnima>
             )}
           </EstadoDeDatos>
         </div>
@@ -771,7 +771,7 @@ function PropietariosContent() {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Add Modal — el permiso también cierra el `?nuevo=true`: sin él, el
           enlace no abre un formulario que el back va a rechazar. */}

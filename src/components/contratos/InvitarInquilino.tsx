@@ -15,6 +15,7 @@
  */
 
 import { useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { PaperPlaneTilt } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 
@@ -91,11 +92,9 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
           Invitar al inquilino
         </Button>
       ) : null}
-      {error ? (
-        <p role="alert" className="text-sm text-destructive" data-testid="invitar-inquilino-error">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="invitar-inquilino-error">
+        {error}
+      </Presence>
     </div>
   )
 }

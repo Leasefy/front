@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Banner, Presence, Stepper } from '@leasefy/cadence';
+import { Banner, CrossFade, Presence, Stepper } from '@leasefy/cadence';
 import {
   ArrowLeft,
   ArrowRight,
@@ -186,6 +186,15 @@ export function CuerpoDeRenovacion({
   const terminada = renovacion.status === 'terminated';
   const completada = renovacion.status === 'completed';
   const [paso, setPaso] = useState(() => Math.max(0, pasoDelEstado(renovacion.status)));
+  // Hacia dónde va el paso nuevo (entra por la derecha si avanza). Se ajusta
+  // en el render en que el paso cambia, no después: la salida del viejo usa
+  // la misma dirección aunque haya otro render mientras se va.
+  const [pasoVisto, setPasoVisto] = useState(paso);
+  const [direccionDelPaso, setDireccionDelPaso] = useState<'forward' | 'backward'>('forward');
+  if (paso !== pasoVisto) {
+    setPasoVisto(paso);
+    setDireccionDelPaso(paso > pasoVisto ? 'forward' : 'backward');
+  }
 
   // La inmobiliaria pone los números. Arrancan en lo negociado o propuesto,
   // y si no hay nada, en el canon actual: nunca en un IPC inventado.
@@ -543,7 +552,15 @@ export function CuerpoDeRenovacion({
       {/* Cuerpo: el paso a la izquierda, el contrato y la actividad a la derecha. */}
       <SheetBody>
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:gap-8">
-          <div className="min-w-0">
+          {/* El paso nuevo entra por el lado al que se va y el viejo sale al
+              contrario. `popLayout`: el nuevo se monta YA (sus campos están
+              listos al instante) y el viejo se va por encima. */}
+          <CrossFade
+            swapKey={terminada ? 'no-renovada' : paso}
+            direction={direccionDelPaso}
+            mode="popLayout"
+            className="min-w-0"
+          >
             {terminada ? (
               <PasoNoRenovada renovacion={renovacion} motivo={motivoDeCierre} />
             ) : paso === 0 ? (
@@ -609,7 +626,7 @@ export function CuerpoDeRenovacion({
             ) : (
               <PasoCompletada renovacion={renovacion} onAbrirDocumento={abrirDocumento} />
             )}
-          </div>
+          </CrossFade>
           <div className="mt-8 lg:mt-0">
             <RielDeActividad
               renovacion={renovacion}

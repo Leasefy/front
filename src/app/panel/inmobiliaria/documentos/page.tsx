@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { useSearchParams } from 'next/navigation';
 import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -44,12 +45,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { SearchInput } from '@leasefy/cadence';
+import { Presence, SearchInput } from '@leasefy/cadence';
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableRow,
   TableHead,
   TableCell,
@@ -374,7 +375,7 @@ function DocumentosContent() {
             {/* Escribir una plantilla es una acción de SU pestaña: en la de
                 documentos sería un botón que no tiene nada que ver con lo que
                 se está mirando. */}
-            {pestana === 'plantillas' && (
+            <Presence show={pestana === 'plantillas'} initial={false} direction="right" distance="xs">
               <Button
                 variant="outline"
                 hideArrow
@@ -387,7 +388,7 @@ function DocumentosContent() {
                 <Plus className="w-4 h-4" weight="bold" />
                 Nueva plantilla
               </Button>
-            )}
+            </Presence>
             <Button
               onClick={() => setGenerarAbierto(true)}
               hideArrow
@@ -434,55 +435,58 @@ function DocumentosContent() {
             </TabsList>
           </Tabs>
 
-          {pestana === 'documentos' && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <SearchInput
-                value={filtros.texto}
-                onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
-                onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
-                placeholder={t(k('buscar'))}
-                inputSize="md"
-                className="w-full sm:w-64"
-                data-testid="documentos-buscar"
-              />
-              <Select
-                value={filtros.categoria}
-                onValueChange={(v) =>
-                  setFiltros((f) => ({ ...f, categoria: v as FiltrosDeDocumentos['categoria'] }))
-                }
-              >
-                <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-tipo">
-                  <SelectValue placeholder={t(k('tipo'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">{t(k('todosLosTipos'))}</SelectItem>
-                  {CATEGORIAS.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {CATEGORIA_LABEL[c]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filtros.estado}
-                onValueChange={(v) =>
-                  setFiltros((f) => ({ ...f, estado: v as FiltrosDeDocumentos['estado'] }))
-                }
-              >
-                <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-estado">
-                  <SelectValue placeholder={t(k('estado'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">{t(k('todosLosEstados'))}</SelectItem>
-                  {ESTADOS.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {ESTADO_LABEL[e]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <Presence
+            show={pestana === 'documentos'}
+            initial={false}
+            direction="none"
+            className="flex flex-col gap-2 sm:flex-row sm:items-center"
+          >
+            <SearchInput
+              value={filtros.texto}
+              onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
+              onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
+              placeholder={t(k('buscar'))}
+              inputSize="md"
+              className="w-full sm:w-64"
+              data-testid="documentos-buscar"
+            />
+            <Select
+              value={filtros.categoria}
+              onValueChange={(v) =>
+                setFiltros((f) => ({ ...f, categoria: v as FiltrosDeDocumentos['categoria'] }))
+              }
+            >
+              <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-tipo">
+                <SelectValue placeholder={t(k('tipo'))} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">{t(k('todosLosTipos'))}</SelectItem>
+                {CATEGORIAS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {CATEGORIA_LABEL[c]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filtros.estado}
+              onValueChange={(v) =>
+                setFiltros((f) => ({ ...f, estado: v as FiltrosDeDocumentos['estado'] }))
+              }
+            >
+              <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-estado">
+                <SelectValue placeholder={t(k('estado'))} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">{t(k('todosLosEstados'))}</SelectItem>
+                {ESTADOS.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {ESTADO_LABEL[e]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Presence>
         </div>
 
         <EstadoDeDatos
@@ -508,11 +512,15 @@ function DocumentosContent() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Filas que entran escalonadas (techo de 320 ms) y salen al buscar
+                o filtrar (`key` = el id). Al cambiar de pestaña el cuerpo se
+                monta de nuevo: las de la pestaña nueva entran, sin esperar a
+                que se vayan las de la vieja. */}
+            <CuerpoQueAnima key={pestana}>
               {/* ── Documentos ─────────────────────────────────────────── */}
               {pestana === 'documentos' &&
                 (visibles.length === 0 ? (
-                  <TableRow>
+                  <FilaQueAnima key="vacio-documentos">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="documentos"
@@ -532,10 +540,10 @@ function DocumentosContent() {
                         onLimpiarFiltros={() => setFiltros(FILTROS_VACIOS)}
                       />
                     </TableCell>
-                  </TableRow>
+                  </FilaQueAnima>
                 ) : (
                   paginaDocumentos.pageItems.map((doc) => (
-                    <TableRow
+                    <FilaQueAnima
                       key={doc.id}
                       data-testid="documento-fila"
                       onClick={() => setDocumentoAbierto(doc)}
@@ -609,14 +617,14 @@ function DocumentosContent() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </FilaQueAnima>
                   ))
                 ))}
 
               {/* ── Plantillas ─────────────────────────────────────────── */}
               {pestana === 'plantillas' &&
                 (plantillas.length === 0 ? (
-                  <TableRow>
+                  <FilaQueAnima key="vacio-plantillas">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="plantillas"
@@ -625,10 +633,10 @@ function DocumentosContent() {
                         descripcion={t(k('vacioPlantillasDesc'))}
                       />
                     </TableCell>
-                  </TableRow>
+                  </FilaQueAnima>
                 ) : (
                   paginaPlantillas.pageItems.map((p) => (
-                    <TableRow
+                    <FilaQueAnima
                       key={p.id}
                       data-testid="plantilla-fila"
                       // La fila hace lo mismo que «Ver plantilla» (el molde, regla 5).
@@ -719,14 +727,14 @@ function DocumentosContent() {
                           )}
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </FilaQueAnima>
                   ))
                 ))}
 
               {/* ── Actas ──────────────────────────────────────────────── */}
               {pestana === 'actas' &&
                 (actas.length === 0 ? (
-                  <TableRow>
+                  <FilaQueAnima key="vacio-actas">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="actas"
@@ -756,10 +764,10 @@ function DocumentosContent() {
                         }
                       />
                     </TableCell>
-                  </TableRow>
+                  </FilaQueAnima>
                 ) : (
                   paginaActas.pageItems.map((acta) => (
-                    <TableRow
+                    <FilaQueAnima
                       key={acta.id}
                       className="cursor-pointer"
                       data-testid="acta-fila"
@@ -798,10 +806,10 @@ function DocumentosContent() {
                           {ACTA_ESTADO_LABEL[acta.status]}
                         </span>
                       </TableCell>
-                    </TableRow>
+                    </FilaQueAnima>
                   ))
                 ))}
-            </TableBody>
+            </CuerpoQueAnima>
           </Table>
 
           {pestana === 'documentos' && paginaDocumentos.shouldPaginate && (

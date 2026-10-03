@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Chip, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { Chip, CrossFade, RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import {
   Bank,
   CheckCircle,
@@ -969,121 +969,125 @@ function PedirCambioDeCuenta({
             ) : null}
           </div>
 
-          {modo === 'VARIAS' ? (
-            <RepartoDeCuentasCampos
-              cuentas={cuentas}
-              onCambiar={cambiarCuentas}
-              errores={cuentas.map((c, i) =>
-                fusionarErrores(rechazosDelReparto[c.llave], loEscritoQueEstaMal(erroresDelReparto[i], c)),
-              )}
+          {/* Una cuenta o varias: los campos de una se cruzan con los de la otra
+              (`popLayout`: lo nuevo entra YA y lo viejo se va por encima). */}
+          <CrossFade swapKey={modo} mode="popLayout" className="space-y-3">
+            {modo === 'VARIAS' ? (
+              <RepartoDeCuentasCampos
+                cuentas={cuentas}
+                onCambiar={cambiarCuentas}
+                errores={cuentas.map((c, i) =>
+                  fusionarErrores(rechazosDelReparto[c.llave], loEscritoQueEstaMal(erroresDelReparto[i], c)),
+                )}
+                nombreDelPropietario={propietario?.nombre ?? ''}
+                pieDeCuenta={(c, i) => {
+                  const opcional = requisito(c) === 'OPCIONAL';
+                  const idDelArchivo = idDelCampoDeLaCuenta(i, 'certificacion');
+                  const errorDelArchivo = rechazosDelReparto[c.llave]?.certificacion;
+                  return (
+                    <div className="space-y-1.5">
+                      {opcional ? (
+                        <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
+                          <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                          {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
+                        </p>
+                      ) : null}
+                      <Label htmlFor={idDelArchivo}>
+                        {opcional
+                          ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
+                          : c.titular.titular === 'TERCERO'
+                            ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
+                            : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
+                      </Label>
+                      <SelectorDeArchivo
+                        id={idDelArchivo}
+                        accept={ARCHIVOS_DE_CERTIFICACION}
+                        archivo={certificaciones[c.llave] ?? null}
+                        invalido={Boolean(errorDelArchivo)}
+                        onElegir={(elegido) => {
+                          setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
+                          limpiarCertificacionDelServidor(c.llave);
+                        }}
+                        testid={`certificacion-cuenta-${i}`}
+                      />
+                      <ErrorDelCampo id={`${idDelArchivo}-error`} mensaje={errorDelArchivo} className="mt-0" />
+                    </div>
+                  );
+                }}
+              />
+            ) : (
+            <>
+            {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
+            <TitularDeLaCuentaCampos
+              valor={titular}
+              onCambiar={setTitular}
+              errores={loEscritoQueEstaMal({ titular: erroresTitular }, { titular }).titular}
               nombreDelPropietario={propietario?.nombre ?? ''}
-              pieDeCuenta={(c, i) => {
-                const opcional = requisito(c) === 'OPCIONAL';
-                const idDelArchivo = idDelCampoDeLaCuenta(i, 'certificacion');
-                const errorDelArchivo = rechazosDelReparto[c.llave]?.certificacion;
-                return (
-                  <div className="space-y-1.5">
-                    {opcional ? (
-                      <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
-                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                        {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
-                      </p>
-                    ) : null}
-                    <Label htmlFor={idDelArchivo}>
-                      {opcional
-                        ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
-                        : c.titular.titular === 'TERCERO'
-                          ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
-                          : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
-                    </Label>
-                    <SelectorDeArchivo
-                      id={idDelArchivo}
-                      accept={ARCHIVOS_DE_CERTIFICACION}
-                      archivo={certificaciones[c.llave] ?? null}
-                      invalido={Boolean(errorDelArchivo)}
-                      onElegir={(elegido) => {
-                        setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
-                        limpiarCertificacionDelServidor(c.llave);
-                      }}
-                      testid={`certificacion-cuenta-${i}`}
-                    />
-                    <ErrorDelCampo id={`${idDelArchivo}-error`} mensaje={errorDelArchivo} className="mt-0" />
-                  </div>
-                );
-              }}
             />
-          ) : (
-          <>
-          {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
-          <TitularDeLaCuentaCampos
-            valor={titular}
-            onCambiar={setTitular}
-            errores={loEscritoQueEstaMal({ titular: erroresTitular }, { titular }).titular}
-            nombreDelPropietario={propietario?.nombre ?? ''}
-          />
-          <div className="space-y-1.5">
-            <Label htmlFor="banco-nuevo">Banco</Label>
-            <select
-              id="banco-nuevo"
-              className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-              value={banco}
-              aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
-              aria-describedby="banco-nuevo-error"
-              onChange={(e) => {
-                setBanco(e.target.value as BankCode);
-                limpiarDelServidor('banco');
-              }}
-            >
-              <option value="">Escoge el banco</option>
-              {COLOMBIAN_BANKS.map((b) => (
-                <option key={b.code} value={b.code}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-            <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
-          </div>
-          <RadioGroup
-            className="flex gap-x-5 gap-y-2"
-            value={tipo}
-            onValueChange={(v) => {
-              setTipo(v as typeof tipo);
-              limpiarDelServidor('tipo');
-            }}
-            id="tipo-nuevo"
-            aria-describedby="tipo-nuevo-error"
-          >
-            {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
-              <label
-                key={t}
-                className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            <div className="space-y-1.5">
+              <Label htmlFor="banco-nuevo">Banco</Label>
+              <select
+                id="banco-nuevo"
+                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                value={banco}
+                aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
+                aria-describedby="banco-nuevo-error"
+                onChange={(e) => {
+                  setBanco(e.target.value as BankCode);
+                  limpiarDelServidor('banco');
+                }}
               >
-                <RadioGroupItem value={t} />
-                <span>{t === 'AHORROS' ? 'Ahorros' : 'Corriente'}</span>
-              </label>
-            ))}
-          </RadioGroup>
-          <ErrorDelCampo id="tipo-nuevo-error" mensaje={erroresDelServidor.tipo} className="mt-0" />
-          <div className="space-y-1.5">
-            <Label htmlFor="numero-nuevo">Número de cuenta</Label>
-            <Input
-              id="numero-nuevo"
-              inputMode="numeric"
-              className="font-mono"
-              // El mismo tope que el DTO del back (`bankAccountNumber`, 40).
-              maxLength={MAX_LARGO_DEL_NUMERO_DE_CUENTA}
-              value={numero}
-              aria-invalid={Boolean(erroresDelServidor.numero) || undefined}
-              aria-describedby="numero-nuevo-error"
-              onChange={(e) => {
-                setNumero(e.target.value.replace(/[^0-9]/g, ''));
-                limpiarDelServidor('numero');
+                <option value="">Escoge el banco</option>
+                {COLOMBIAN_BANKS.map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
+            </div>
+            <RadioGroup
+              className="flex gap-x-5 gap-y-2"
+              value={tipo}
+              onValueChange={(v) => {
+                setTipo(v as typeof tipo);
+                limpiarDelServidor('tipo');
               }}
-            />
-            <ErrorDelCampo id="numero-nuevo-error" mensaje={erroresDelServidor.numero} className="mt-0" />
-          </div>
-          </>
-          )}
+              id="tipo-nuevo"
+              aria-describedby="tipo-nuevo-error"
+            >
+              {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
+                <label
+                  key={t}
+                  className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+                >
+                  <RadioGroupItem value={t} />
+                  <span>{t === 'AHORROS' ? 'Ahorros' : 'Corriente'}</span>
+                </label>
+              ))}
+            </RadioGroup>
+            <ErrorDelCampo id="tipo-nuevo-error" mensaje={erroresDelServidor.tipo} className="mt-0" />
+            <div className="space-y-1.5">
+              <Label htmlFor="numero-nuevo">Número de cuenta</Label>
+              <Input
+                id="numero-nuevo"
+                inputMode="numeric"
+                className="font-mono"
+                // El mismo tope que el DTO del back (`bankAccountNumber`, 40).
+                maxLength={MAX_LARGO_DEL_NUMERO_DE_CUENTA}
+                value={numero}
+                aria-invalid={Boolean(erroresDelServidor.numero) || undefined}
+                aria-describedby="numero-nuevo-error"
+                onChange={(e) => {
+                  setNumero(e.target.value.replace(/[^0-9]/g, ''));
+                  limpiarDelServidor('numero');
+                }}
+              />
+              <ErrorDelCampo id="numero-nuevo-error" mensaje={erroresDelServidor.numero} className="mt-0" />
+            </div>
+            </>
+            )}
+          </CrossFade>
           {modo === 'UNA' ? (
             <div className="space-y-1.5">
               <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
@@ -1120,12 +1124,10 @@ function PedirCambioDeCuenta({
                   })}
             </p>
           ) : null}
-          {error ? (
-            <p className="text-sm text-danger flex gap-2" role="alert">
-              <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger flex gap-2" role="alert">
+            <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {error}
+          </Presence>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
@@ -1222,11 +1224,9 @@ function AprobarCambio({
             Sin soporte, la bitácora anexa la certificación sobre la que se aprobó.
           </p>
         </div>
-        {error ? (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert">
+          {error}
+        </Presence>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
             Cancelar
@@ -1311,11 +1311,9 @@ function CerrarCambio({
           />
           <ErrorDelCampo id="motivo-de-cierre-error" mensaje={errorDelMotivo} className="mt-0" />
         </div>
-        {error ? (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert">
+          {error}
+        </Presence>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
             Cancelar

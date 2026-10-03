@@ -70,6 +70,7 @@
  */
 
 import { useMemo } from 'react';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -83,7 +84,7 @@ import {
   Receipt,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
@@ -361,25 +362,29 @@ export function CuerpoDelCajon({
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
-            {cargandoArriendos ? (
-              <div className="flex items-center justify-center gap-2 py-16 text-sm text-fg-muted">
-                <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
-              </div>
-            ) : (
-              /* El vacío de esta persona es el caso común en una agencia recién
-                 migrada, así que dice lo que falta y ofrece la salida en vez de
-                 dejar tres ceros y un cartel gris. */
-              <EmptyState
-                icon={FileText}
-                title={t(`${NS}.sinArriendosTitulo`)}
-                description={t(`${NS}.sinContratos`)}
-                action={{
-                  label: t('inquilinos.crearSuContrato'),
-                  href: RUTA_DEL_CONTRATO_MANUAL,
-                }}
-                className="py-14"
-              />
-            )}
+            {/* Cargando → el vacío: se cruzan (fundido; el vacío trae su
+                propia subida). */}
+            <CrossFade swapKey={cargandoArriendos ? 'cargando' : 'vacio'} direction="none">
+              {cargandoArriendos ? (
+                <div className="flex items-center justify-center gap-2 py-16 text-sm text-fg-muted">
+                  <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
+                </div>
+              ) : (
+                /* El vacío de esta persona es el caso común en una agencia recién
+                   migrada, así que dice lo que falta y ofrece la salida en vez de
+                   dejar tres ceros y un cartel gris. */
+                <EmptyState
+                  icon={FileText}
+                  title={t(`${NS}.sinArriendosTitulo`)}
+                  description={t(`${NS}.sinContratos`)}
+                  action={{
+                    label: t('inquilinos.crearSuContrato'),
+                    href: RUTA_DEL_CONTRATO_MANUAL,
+                  }}
+                  className="py-14"
+                />
+              )}
+            </CrossFade>
           </div>
         ) : (
           <div className="space-y-7">
@@ -480,9 +485,9 @@ export function CuerpoDelCajon({
 
               {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
 
-              <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+              <ListaQueAnima as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                 {persona.arriendos.map((a) => (
-                  <li key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
+                  <ElementoQueAnima as="li" key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
@@ -491,9 +496,9 @@ export function CuerpoDelCajon({
                       {t(`${NS}.verContrato`)}
                       <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
                     </Link>
-                  </li>
+                  </ElementoQueAnima>
                 ))}
-              </ul>
+              </ListaQueAnima>
             </Seccion>
 
             <div data-testid="inquilino-cajon-pagos">
@@ -520,67 +525,74 @@ export function CuerpoDelCajon({
                   </div>
                 }
               >
-                {cargandoPagos ? (
-                  <div className="flex items-center gap-2 py-6 text-sm text-fg-muted">
-                    <Spinner size="sm" /> {t(`${NS}.cargandoPagos`)}
-                  </div>
-                ) : errorPagos ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
-                    <p className="text-sm text-danger" role="alert">
-                      {t(`${NS}.errorPagos`)}
-                    </p>
-                    <Button variant="outline" size="sm" hideArrow onClick={reintentar}>
-                      {t(`${NS}.reintentar`)}
-                    </Button>
-                  </div>
-                ) : cobros.length === 0 ? (
-                  /* 🔴 Sin cobros NO quiere decir sin deuda: el cobro es el
-                     documento con que se reclama, y la deuda ya está en la
-                     franja de arriba. El vacío lo dice y lleva al estado de
-                     cuenta, no a esperar un cobro. */
-                  <EmptyState
-                    icon={Receipt}
-                    title={t(`${NS}.sinCobrosTitulo`)}
-                    description={t(`${NS}.sinCobros`)}
-                    action={
-                      enlaceAlEstadoDeCuenta
-                        ? { label: t(`${NS}.verEstadoDeCuenta`), href: enlaceAlEstadoDeCuenta }
-                        : contratoPrincipal
-                          ? {
-                              label: t(`${NS}.verContrato`),
-                              href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
-                            }
-                          : undefined
-                    }
-                    className="rounded-lg bg-surface-muted/40 py-10"
-                  />
-                ) : (
-                  <>
-                    <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
-                    {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
-                    <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
-                      {visibles.map((c) => (
-                        <li key={c.id}>
-                          <FilaDePago cobro={c} />
-                        </li>
-                      ))}
-                    </ul>
-                    {cobros.length > visibles.length ? (
-                      <p className="text-xs text-fg-muted">
-                        {t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
+                {/* Cargando → los cobros (o el fallo, o el vacío): se cruzan. */}
+                <CrossFade
+                  swapKey={cargandoPagos ? 'cargando' : errorPagos ? 'fallo' : cobros.length === 0 ? 'vacio' : 'lista'}
+                  direction="none"
+                  className="space-y-2.5"
+                >
+                  {cargandoPagos ? (
+                    <div className="flex items-center gap-2 py-6 text-sm text-fg-muted">
+                      <Spinner size="sm" /> {t(`${NS}.cargandoPagos`)}
+                    </div>
+                  ) : errorPagos ? (
+                    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
+                      <p className="text-sm text-danger" role="alert">
+                        {t(`${NS}.errorPagos`)}
                       </p>
-                    ) : null}
-                    {contratoPrincipal ? (
-                      <Link
-                        href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        {t(`${NS}.verCobrosDelContrato`)}
-                        <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
-                      </Link>
-                    ) : null}
-                  </>
-                )}
+                      <Button variant="outline" size="sm" hideArrow onClick={reintentar}>
+                        {t(`${NS}.reintentar`)}
+                      </Button>
+                    </div>
+                  ) : cobros.length === 0 ? (
+                    /* 🔴 Sin cobros NO quiere decir sin deuda: el cobro es el
+                       documento con que se reclama, y la deuda ya está en la
+                       franja de arriba. El vacío lo dice y lleva al estado de
+                       cuenta, no a esperar un cobro. */
+                    <EmptyState
+                      icon={Receipt}
+                      title={t(`${NS}.sinCobrosTitulo`)}
+                      description={t(`${NS}.sinCobros`)}
+                      action={
+                        enlaceAlEstadoDeCuenta
+                          ? { label: t(`${NS}.verEstadoDeCuenta`), href: enlaceAlEstadoDeCuenta }
+                          : contratoPrincipal
+                            ? {
+                                label: t(`${NS}.verContrato`),
+                                href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
+                              }
+                            : undefined
+                      }
+                      className="rounded-lg bg-surface-muted/40 py-10"
+                    />
+                  ) : (
+                    <>
+                      <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
+                      {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
+                      <ListaQueAnima as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+                        {visibles.map((c) => (
+                          <ElementoQueAnima as="li" key={c.id}>
+                            <FilaDePago cobro={c} />
+                          </ElementoQueAnima>
+                        ))}
+                      </ListaQueAnima>
+                      {cobros.length > visibles.length ? (
+                        <p className="text-xs text-fg-muted">
+                          {t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
+                        </p>
+                      ) : null}
+                      {contratoPrincipal ? (
+                        <Link
+                          href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          {t(`${NS}.verCobrosDelContrato`)}
+                          <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
+                        </Link>
+                      ) : null}
+                    </>
+                  )}
+                </CrossFade>
               </Seccion>
             </div>
           </div>

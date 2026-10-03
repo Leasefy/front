@@ -38,6 +38,7 @@
  */
 
 import { useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import Link from 'next/link'
 import { PencilSimple, Plus, Trash, UserMinus, Warning } from '@phosphor-icons/react'
 
@@ -399,11 +400,9 @@ function AgregarInquilino({
               maxLength={40}
               error={errores.telefono}
             />
-            {error ? (
-              <p role="alert" className="text-sm text-destructive" data-testid="agregar-inquilino-error">
-                {error}
-              </p>
-            ) : null}
+            <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="agregar-inquilino-error">
+              {error}
+            </Presence>
           </div>
 
           <DialogFooter>

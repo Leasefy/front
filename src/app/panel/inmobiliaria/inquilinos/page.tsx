@@ -74,7 +74,7 @@ import {
   UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import { KpiCard, Eyebrow } from '@leasefy/cadence';
+import { KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -318,23 +318,22 @@ function ContenidoDeInquilinos() {
       {/* El clic que llegó de otra pantalla y no encontró a nadie. Se cuenta,
           no se traga: es la diferencia entre «la app no anda» y «esa persona no
           está acá». */}
-      {personaNoEncontrada && (
-        <div
-          data-testid="persona-no-encontrada"
-          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
-        >
-          <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">
-              No encontramos a esa persona en el directorio
-            </p>
-            <p className="mt-0.5 text-sm text-fg-muted">
-              Puede que no sea inquilino de tu inmobiliaria o que su cuenta esté
-              registrada con otro correo. Abajo está la lista completa.
-            </p>
-          </div>
+      <Presence
+        show={Boolean(personaNoEncontrada)}
+        data-testid="persona-no-encontrada"
+        className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+      >
+        <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">
+            No encontramos a esa persona en el directorio
+          </p>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            Puede que no sea inquilino de tu inmobiliaria o que su cuenta esté
+            registrada con otro correo. Abajo está la lista completa.
+          </p>
         </div>
-      )}
+      </Presence>
 
       {/* Una cuenta creada no es una persona adentro. Este aviso es lo único
           que separa «tiene portal» de «tiene cuenta y no puede entrar»: sin él,

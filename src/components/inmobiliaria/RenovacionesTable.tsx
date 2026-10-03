@@ -45,6 +45,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import {
   SortAscending,
   SortDescending,
@@ -76,7 +77,8 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Chip } from '@leasefy/cadence';
+import { Chip, Presence } from '@leasefy/cadence';
+
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
   formatCurrency,
@@ -422,23 +424,25 @@ export function RenovacionesTable({
 
       {/* El alcance, sólo cuando hay algo puesto: la lista de arriba dice 183
           y la tabla 12, y los dos números tienen que poder conciliarse. */}
-      {hayFiltros && (
-        <p
-          className="border-b border-border px-5 py-2 text-xs text-fg-muted"
-          data-testid="alcance-de-renovaciones"
+      <Presence
+        show={hayFiltros}
+        initial={false}
+        distance="xs"
+        as="p"
+        className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+        data-testid="alcance-de-renovaciones"
+      >
+        {filtradas.length} de {data.length}{' '}
+        {data.length === 1 ? 'renovación' : 'renovaciones'}.{' '}
+        <button
+          type="button"
+          onClick={limpiarFiltros}
+          className="font-medium text-primary underline-offset-4 hover:underline"
+          data-testid="limpiar-filtros-renovaciones"
         >
-          {filtradas.length} de {data.length}{' '}
-          {data.length === 1 ? 'renovación' : 'renovaciones'}.{' '}
-          <button
-            type="button"
-            onClick={limpiarFiltros}
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="limpiar-filtros-renovaciones"
-          >
-            Quitar los filtros
-          </button>
-        </p>
-      )}
+          Quitar los filtros
+        </button>
+      </Presence>
 
       <Table>
         <TableHeader>
@@ -483,6 +487,11 @@ export function RenovacionesTable({
             </TableRow>
           )}
 
+        </TableBody>
+        {/* Las filas de datos en su propio cuerpo animado: entran escalonadas
+            (techo de 320 ms) y, al filtrar o buscar, las que se van salen en
+            su lugar (`key` = el id). */}
+        <CuerpoQueAnima>
           {pageItems.map((item) => {
             const esCritica = item.urgencyBucket === '0-30';
             const propuesto = item.negotiatedRent || item.proposedRent;
@@ -492,7 +501,7 @@ export function RenovacionesTable({
                 : null;
 
             return (
-              <TableRow
+              <FilaQueAnima
                 key={item.id}
                 onClick={() => onAbrir?.(item)}
                 className={cn(
@@ -584,10 +593,10 @@ export function RenovacionesTable({
                     data-testid={`abrir-${item.id}`}
                   />
                 </TableCell>
-              </TableRow>
+              </FilaQueAnima>
             );
           })}
-        </TableBody>
+        </CuerpoQueAnima>
       </Table>
 
       {/* Pie: sólo si hay más de una página. */}

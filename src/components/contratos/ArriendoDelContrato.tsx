@@ -73,6 +73,7 @@ import {
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
+import { motionStagger } from '@leasefy/cadence';
 
 const POR_FIRMAR: ContractStatus[] = [
   'draft',
@@ -420,6 +421,9 @@ function Barra({
   crecida: boolean;
 }) {
   const tramos = totalDeMeses <= MESES_CON_TRAMOS ? totalDeMeses : 1;
+  // El paso de la ola (18 ms) se achica con muchos tramos: el último nunca
+  // espera más que el techo del escalonado de Cadence (320 ms).
+  const pasoDeLaOla = tramos > 1 ? Math.min(18, (motionStagger.max * 1000) / (tramos - 1)) : 0;
   const porcentaje = Math.round(fraccion * 1000) / 10;
   // La etiqueta no se sale del bloque en los bordes. Con la fecha al lado es
   // más ancha que antes, así que el margen para centrarla se abre.
@@ -462,14 +466,16 @@ function Barra({
               key={i}
               className="h-full flex-1 overflow-hidden bg-surface-muted first:rounded-l-full last:rounded-r-full"
             >
+              {/* Cada tramo se llena con `scaleX` (transform), no con `width`,
+                  y la ola de tramos nunca pasa del techo del escalonado. */}
               <div
                 className={cn(
-                  'h-full motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out',
+                  'h-full w-full origin-left motion-safe:transition-transform motion-safe:duration-reveal motion-safe:ease-enter',
                   relleno,
                 )}
                 style={{
-                  width: `${(crecida ? lleno : 0) * 100}%`,
-                  transitionDelay: crecida ? `${Math.min(i, 24) * 18}ms` : undefined,
+                  transform: `scaleX(${crecida ? lleno : 0})`,
+                  transitionDelay: crecida ? `${Math.round(i * pasoDeLaOla)}ms` : undefined,
                 }}
               />
             </div>

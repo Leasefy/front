@@ -7,6 +7,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
+import { Collapse } from '@leasefy/cadence';
 import { PencilSimple, Plus, TrashSimple, UserPlus, Users } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -130,9 +132,10 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
             {codeudores.length === 0 && !formularioAbierto ? (
               <p className="text-sm text-fg-muted">Este contrato no tiene codeudores.</p>
             ) : (
-              <ul className="space-y-2" data-testid="codeudores-lista">
+              /* El codeudor que se agrega entra y el que se elimina sale (`key` = el id). */
+              <ListaQueAnima as="ul" className="space-y-2" data-testid="codeudores-lista">
                 {codeudores.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
+                  <ElementoQueAnima as="li" key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-fg truncate">{c.nombre}</p>
                       <p className="text-xs text-fg-muted">
@@ -168,19 +171,20 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
                         </>
                       )}
                     </div>
-                  </li>
+                  </ElementoQueAnima>
                 ))}
-              </ul>
+              </ListaQueAnima>
             )}
 
-            {formularioAbierto && (
+            {/* El formulario se abre y se cierra con su altura. */}
+            <Collapse open={formularioAbierto}>
               <FormularioDeCodeudor
                 contractId={contractId}
                 inicial={editando}
                 onGuardado={() => { cerrarFormulario(); void cargar(); }}
                 onCancelar={cerrarFormulario}
               />
-            )}
+            </Collapse>
           </>
         )}
       </div>

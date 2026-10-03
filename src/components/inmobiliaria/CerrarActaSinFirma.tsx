@@ -22,6 +22,7 @@
 
 import { useRef, useState } from 'react';
 import { WarningCircle, CheckCircle } from '@phosphor-icons/react';
+import { Presence } from '@leasefy/cadence';
 
 import { Button, Input } from '@/components/ui';
 import {
@@ -237,14 +238,17 @@ export function CerrarActaSinFirma({
             </div>
           </fieldset>
 
-          {falla && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
-            >
-              {falla}
-            </div>
-          )}
+          {/* Lo que el servidor rechazó sin campo: entra suave y sale al
+              volver a intentar. */}
+          <Presence
+            show={Boolean(falla)}
+            initial={false}
+            distance="xs"
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
+          >
+            {falla}
+          </Presence>
         </form>
 
         <DialogFooter>

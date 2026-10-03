@@ -16,7 +16,6 @@ import {
   CheckCircle,
   Warning,
   CaretDown,
-  CaretUp,
   Package,
   ClipboardText,
   Receipt,
@@ -38,7 +37,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Collapse, motionDuration, motionEase, motionScale } from '@leasefy/cadence';
 import type { ActaEntrega, RoomType, ItemCondition } from '@/lib/types/inmobiliaria';
 import {
   getRoomLabel,
@@ -77,8 +76,8 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       {/* allowlist: collapsible-section disclosure toggle (icon-tile + title + caret) that drives a
-          framer-motion height animation — Cadence Accordion would replace the bespoke animation and
-          can't host the rich header; kept native with aria-expanded */}
+          Cadence `Collapse` (altura + fundido) — Cadence Accordion can't host the rich header; kept
+          native with aria-expanded */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -91,24 +90,17 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
           </div>
           <span className="font-medium text-fg">{title}</span>
         </div>
-        {isOpen ? (
-          <CaretUp className="w-4 h-4 text-fg-muted" />
-        ) : (
-          <CaretDown className="w-4 h-4 text-fg-muted" />
-        )}
+        {/* El chevron gira con la misma curva con la que se abre la sección. */}
+        <CaretDown
+          className={cn(
+            'w-4 h-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            isOpen && 'rotate-180',
+          )}
+        />
       </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="p-5 bg-card">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Collapse open={isOpen} className="p-5 bg-card">
+        {children}
+      </Collapse>
     </div>
   );
 }
@@ -613,7 +605,7 @@ export function ActaEntregaViewer({
               <div
                 key={party}
                 className={cn(
-                  'p-4 rounded-lg border-2 text-center transition-all',
+                  'p-4 rounded-lg border-2 text-center transition-colors',
                   status === 'signed'
                     ? 'border-success/30 bg-success-soft'
                     : status === 'pending'
@@ -696,17 +688,21 @@ export function ActaEntregaViewer({
       {/* Image Modal */}
       <AnimatePresence>
         {selectedImage && (
+          /* La foto en grande: el velo se funde y la foto crece desde 96 %
+             (tokens de Cadence); sale más rápido de lo que entró. */
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+            transition={{ duration: motionDuration.base, ease: motionEase.enter }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: motionScale.pop, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              exit={{ scale: motionScale.pop, opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+              transition={{ duration: motionDuration.base, ease: motionEase.emphasis }}
               className="relative max-w-3xl max-h-[80vh] rounded-lg overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >

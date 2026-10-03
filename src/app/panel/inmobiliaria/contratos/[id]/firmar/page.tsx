@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info, FileText, HourglassMedium } from '@phosphor-icons/react';
-import { Appear } from '@leasefy/cadence';
+import { Appear, CrossFade } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
@@ -283,44 +283,59 @@ function FirmarContratoContent() {
             </div>
           )}
 
-          {hasTenantSignature && (isLoadingSignedPdf || signedPdfUrl) ? (
-            isLoadingSignedPdf ? (
+          {/* Cargando → el documento: se cruzan (`popLayout`: el documento
+              entra YA y el spinner se va por encima). */}
+          <CrossFade
+            swapKey={
+              hasTenantSignature && (isLoadingSignedPdf || signedPdfUrl)
+                ? isLoadingSignedPdf
+                  ? 'pdf-cargando'
+                  : 'pdf-firmado'
+                : isLoadingPreview
+                  ? 'cargando'
+                  : (preview?.origin ?? 'vacio')
+            }
+            mode="popLayout"
+          >
+            {hasTenantSignature && (isLoadingSignedPdf || signedPdfUrl) ? (
+              isLoadingSignedPdf ? (
+                <div className="py-20 flex items-center justify-center">
+                  <Spinner size="default" variant="muted" />
+                </div>
+              ) : (
+                <iframe
+                  src={signedPdfUrl!}
+                  className="w-full h-[600px] rounded-md border border-border bg-surface"
+                  title="Contrato"
+                />
+              )
+            ) : isLoadingPreview ? (
               <div className="py-20 flex items-center justify-center">
-                <Spinner size="default" variant="muted" />
+                <Spinner size="sm" variant="muted" />
               </div>
-            ) : (
+            ) : preview?.origin === 'UPLOADED_PDF' ? (
               <iframe
-                src={signedPdfUrl!}
+                src={preview.pdfUrl}
                 className="w-full h-[600px] rounded-md border border-border bg-surface"
                 title="Contrato"
               />
-            )
-          ) : isLoadingPreview ? (
-            <div className="py-20 flex items-center justify-center">
-              <Spinner size="sm" variant="muted" />
-            </div>
-          ) : preview?.origin === 'UPLOADED_PDF' ? (
-            <iframe
-              src={preview.pdfUrl}
-              className="w-full h-[600px] rounded-md border border-border bg-surface"
-              title="Contrato"
-            />
-          ) : preview?.origin === 'GENERATED' ? (
-            <div
-              className="prose prose-sm max-w-none dark:prose-invert"
-              {...sanitizeContractHtml(preview.html)}
-            />
-          ) : preview?.origin === 'SIN_DOCUMENTO' ? (
-            <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
-              Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
-            </p>
-          ) : (
-            <EmptyState
-              icon={FileText}
-              title="No hay vista previa disponible"
-              description="Todavía no se puede mostrar el documento de este contrato."
-            />
-          )}
+            ) : preview?.origin === 'GENERATED' ? (
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert"
+                {...sanitizeContractHtml(preview.html)}
+              />
+            ) : preview?.origin === 'SIN_DOCUMENTO' ? (
+              <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
+                Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
+              </p>
+            ) : (
+              <EmptyState
+                icon={FileText}
+                title="No hay vista previa disponible"
+                description="Todavía no se puede mostrar el documento de este contrato."
+              />
+            )}
+          </CrossFade>
         </div>
       </section>
 

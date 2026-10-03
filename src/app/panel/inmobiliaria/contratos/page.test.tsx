@@ -112,6 +112,19 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // Movimiento (03-10-2026): la cifra que cuenta y el «Limpiar» que entra y
+  // sale. Acá se pintan en su valor final, sin animar.
+  AnimatedNumber: ({ value, format }: { value: number; format?: (n: number) => string }) =>
+    React.createElement('span', null, format ? format(value) : String(value)),
+  Presence: ({
+    show,
+    children,
+    initial: _i,
+    direction: _d,
+    distance: _di,
+    ...rest
+  }: Record<string, unknown> & { show: boolean; children?: React.ReactNode }) =>
+    show ? React.createElement('div', rest, children) : null,
   // El buscador de la tabla (2026-09-12): acá sólo hace falta que exista.
   Input: (props: Record<string, unknown>) => React.createElement('input', props),
   IconButton: ({ icon, ...props }: Record<string, unknown> & { icon?: React.ReactNode }) =>
@@ -206,6 +219,18 @@ vi.mock('@/components/ui/table', () => {
     TableHead: el('th'),
     TableCell: el('td'),
   }
+})
+
+// Las filas que entran y salen (03-10-2026) van con el mismo reemplazo plano
+// que la tabla: acá importa QUÉ se pinta, no cómo entra.
+vi.mock('@/components/contratos/lista-que-anima', () => {
+  const el = (tag: string) => {
+    const MockEl = ({ children, ...props }: { children?: React.ReactNode }) =>
+      React.createElement(tag, props, children)
+    MockEl.displayName = `MockLista_${tag}`
+    return MockEl
+  }
+  return { CuerpoQueAnima: el('tbody'), FilaQueAnima: el('tr') }
 })
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────

@@ -29,6 +29,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Collapse } from '@leasefy/cadence';
 import Link from 'next/link';
 import { EnvelopeSimple, WarningCircle } from '@phosphor-icons/react';
 
@@ -310,24 +311,23 @@ export function Fila({
       )}
       {editable && carta.estado !== 'ENVIADA' && (
         <div className="space-y-2">
-          {abierta && (
-            <>
-              <Textarea
-                id={idDelTexto}
-                value={texto}
-                maxLength={10_000}
-                onChange={(e) => {
-                  setTexto(e.target.value);
-                  setErrorDelTexto(undefined);
-                }}
-                rows={7}
-                aria-label="Texto de la carta"
-                aria-invalid={errorDelTexto ? true : undefined}
-                aria-describedby={`${idDelTexto}-error`}
-              />
-              <ErrorDelCampo id={`${idDelTexto}-error`} mensaje={errorDelTexto} className="mt-0" />
-            </>
-          )}
+          {/* La carta se abre y se cierra con su altura. */}
+          <Collapse open={abierta} className="space-y-2">
+            <Textarea
+              id={idDelTexto}
+              value={texto}
+              maxLength={10_000}
+              onChange={(e) => {
+                setTexto(e.target.value);
+                setErrorDelTexto(undefined);
+              }}
+              rows={7}
+              aria-label="Texto de la carta"
+              aria-invalid={errorDelTexto ? true : undefined}
+              aria-describedby={`${idDelTexto}-error`}
+            />
+            <ErrorDelCampo id={`${idDelTexto}-error`} mensaje={errorDelTexto} className="mt-0" />
+          </Collapse>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"

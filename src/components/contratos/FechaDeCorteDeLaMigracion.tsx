@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Presence } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -217,11 +218,9 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
       <ErrorDelCampo id={`${idDelCampo}-error`} mensaje={errorDeLaFecha} />
 
       {/* Lo que no es de la fecha: un aviso del bloque, no de un campo. */}
-      {error ? (
-        <p className="text-sm text-danger" role="alert" data-testid="fecha-de-corte-error">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert" data-testid="fecha-de-corte-error">
+        {error}
+      </Presence>
     </div>
   );
 }

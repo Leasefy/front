@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import { ArrowSquareOut, DownloadSimple, FileText, SignOut, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -310,11 +310,9 @@ export function RetiroDeLaAdministracionDialog({
 
           {/* Aviso de BLOQUE: un 409, un 5xx o la red. Los de un campo van
               debajo de su campo. */}
-          {error ? (
-            <p className="text-sm text-danger" role="alert" data-testid="retiro-error">
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert" data-testid="retiro-error">
+            {error}
+          </Presence>
         </div>
 
         <DialogFooter>

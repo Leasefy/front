@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { AnimatedNumber, CrossFade, Presence, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   HouseLine,
   ClipboardText,
@@ -101,6 +102,8 @@ export function ActaEntregaForm({
 }: ActaEntregaFormProps) {
   const { t, locale, formatCurrency } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
+  /** Hacia dónde va el paso nuevo: entra por la derecha si avanza. */
+  const [direccion, setDireccion] = useState<'forward' | 'backward'>('forward');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -168,21 +171,24 @@ export function ActaEntregaForm({
   // Navigation
   const goToNextStep = useCallback(() => {
     if (currentStep < 6 && isStepValid) {
+      setDireccion('forward');
       setCurrentStep((prev) => prev + 1);
     }
   }, [currentStep, isStepValid]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
+      setDireccion('backward');
       setCurrentStep((prev) => prev - 1);
     }
   }, [currentStep]);
 
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= 6) {
+      setDireccion(step >= currentStep ? 'forward' : 'backward');
       setCurrentStep(step);
     }
-  }, []);
+  }, [currentStep]);
 
   // Save draft handler
   const handleSaveDraft = useCallback(() => {
@@ -295,13 +301,13 @@ export function ActaEntregaForm({
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
                   className={cn(
-                    'flex flex-col items-center gap-2 transition-all',
+                    'flex flex-col items-center gap-2 transition-colors',
                     status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                      'w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-base',
                       status === 'completed'
                         ? 'bg-success text-white'
                         : status === 'current'
@@ -333,7 +339,7 @@ export function ActaEntregaForm({
                 {index < STEP_KEYS.length - 1 && (
                   <div
                     className={cn(
-                      'flex-1 h-0.5 mx-2',
+                      'flex-1 h-0.5 mx-2 transition-colors duration-base',
                       step.id < currentStep
                         ? 'bg-success'
                         : 'bg-border'
@@ -352,15 +358,19 @@ export function ActaEntregaForm({
               {t('inmobiliaria.acta.stepProgress', { current: currentStep, total: 6 })}: {t(STEP_KEYS[currentStep - 1]?.labelKey)}
             </span>
             <span className="text-sm text-fg-muted">
-              {Math.round((currentStep / 6) * 100)}%
+              <AnimatedNumber
+                value={Math.round((currentStep / 6) * 100)}
+                format={(n) => `${Math.round(n)}%`}
+              />
             </span>
           </div>
+          {/* La barra crece con `scaleX` (transform), no con `width`. */}
           <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full bg-primary origin-left"
               initial={false}
-              animate={{ width: `${(currentStep / 6) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ scaleX: currentStep / 6 }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.emphasis }}
             />
           </div>
         </div>
@@ -369,24 +379,18 @@ export function ActaEntregaForm({
       {/* Step Content */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderStepContent()}
-            </motion.div>
-          </AnimatePresence>
+          {/* El paso nuevo entra por el lado al que se va (adelante, por la
+              derecha; atrás, por la izquierda) y el viejo sale al contrario. */}
+          <CrossFade swapKey={currentStep} direction={direccion}>
+            {renderStepContent()}
+          </CrossFade>
         </div>
 
         {/* Footer Navigation */}
         <div className="px-6 py-4 border-t border-border bg-surface-muted/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {currentStep > 1 && (
+              <Presence show={currentStep > 1} initial={false} direction="left" distance="xs">
                 <Button
                   type="button"
                   variant="ghost"
@@ -397,7 +401,7 @@ export function ActaEntregaForm({
                   <CaretLeft className="w-4 h-4" />
                   {t('inmobiliaria.acta.previous')}
                 </Button>
-              )}
+              </Presence>
               {onCancel && (
                 <Button
                   type="button"

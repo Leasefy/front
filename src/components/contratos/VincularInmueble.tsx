@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { Buildings, LinkSimple } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -178,11 +179,9 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
                 />
               </div>
             )}
-            {error ? (
-              <p role="alert" className="text-sm text-danger" data-testid="vincular-inmueble-error">
-                {error}
-              </p>
-            ) : null}
+            <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-danger" data-testid="vincular-inmueble-error">
+              {error}
+            </Presence>
           </div>
 
           <DialogFooter>

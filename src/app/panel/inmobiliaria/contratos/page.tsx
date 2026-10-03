@@ -13,7 +13,8 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
 import {
@@ -48,10 +49,18 @@ import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { Eyebrow } from '@leasefy/cadence';
+import { AnimatedNumber, Eyebrow } from '@leasefy/cadence';
+
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -98,13 +107,27 @@ function CifraDeLaTabla({
   /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
   sub?: string;
 }) {
+  // La cifra que llega DESPUÉS de cargar (montó con la raya) cuenta desde 0;
+  // la que ya estaba al montarse no se anima, y si después cambia cuenta desde
+  // la anterior. El texto final es el de siempre (sin separador de miles).
+  const llegaDespues = useRef(typeof value !== 'number');
   return (
     <div className="px-5 py-4" data-testid="contratos-kpi">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
       </div>
-      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">{value}</p>
+      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">
+        {typeof value === 'number' ? (
+          <AnimatedNumber
+            value={value}
+            from={llegaDespues.current ? 0 : undefined}
+            format={(n) => String(Math.round(n))}
+          />
+        ) : (
+          value
+        )}
+      </p>
       {sub ? <p className="mt-0.5 text-caption text-muted-foreground">{sub}</p> : null}
     </div>
   );
@@ -550,89 +573,93 @@ function ContratosContent() {
                 </TableCell>
               </TableRow>
             )}
-
-            {pageItems.map((c) => (
-                <TableRow
-                  key={c.id}
-                  onClick={() => openContract(c)}
-                  className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
-                >
-                  <TableCell className="px-5 py-4">
-                    <CeldaDeNumero contrato={c} />
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
-                        <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 max-w-[220px]">
-                    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                      <House className="w-3.5 h-3.5 flex-shrink-0" />
-                      {c.propertyId === null ? (
-                        <span className="truncate" title="Sin inmueble">
-                          Sin inmueble
-                        </span>
-                      ) : (
-                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                          {c.propertyAddress}
-                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
-                    {fmtCop(c.monthlyRent)}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
-                    {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    {/*
-                      🔴 El chip lo decide la VIGENCIA, no el estado crudo
-                      (auditoría 2026-09-13, N2). Un contrato `active` cuya
-                      fecha de fin ya pasó decía «Activo» en verde para
-                      siempre, mientras se le seguían generando cobros.
-                    */}
-                    {(() => {
-                      const v = vigenciaDelContrato({
-                        status: c.status,
-                        endDate: c.endDate,
-                        terminadoEn: c.terminadoEn ?? null,
-                        startDate: c.startDate ?? null,
-                        fechaDeCartera: c.fechaDeCartera ?? null,
-                      });
-                      return (
-                        <span
-                          className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                            colorDeVigencia(
-                              v,
-                              CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
-                            ),
-                          )}
-                          title={v.leyenda}
-                          data-testid={v.vencidoSinRenovar ? 'contrato-vencido' : undefined}
-                        >
-                          {etiquetaDeVigencia(
-                            v,
-                            CONTRACT_STATUS_LABELS[c.status] ?? c.status,
-                          )}
-                        </span>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-right">
-                    <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
-                  </TableCell>
-                </TableRow>
-              ))}
           </TableBody>
+          {/* Las filas de datos van en su propio cuerpo animado: entran
+              escalonadas (techo de 320 ms) y, al buscar, filtrar o cambiar de
+              página, las que se van salen en su lugar (`key` = el id). */}
+          <CuerpoQueAnima>
+            {pageItems.map((c) => (
+              <FilaQueAnima
+                key={c.id}
+                onClick={() => openContract(c)}
+                className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+              >
+                <TableCell className="px-5 py-4">
+                  <CeldaDeNumero contrato={c} />
+                </TableCell>
+                <TableCell className="px-5 py-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
+                      <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="px-5 py-4 max-w-[220px]">
+                  <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                    <House className="w-3.5 h-3.5 flex-shrink-0" />
+                    {c.propertyId === null ? (
+                      <span className="truncate" title="Sin inmueble">
+                        Sin inmueble
+                      </span>
+                    ) : (
+                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                        {c.propertyAddress}
+                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
+                  {fmtCop(c.monthlyRent)}
+                </TableCell>
+                <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
+                  {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
+                </TableCell>
+                <TableCell className="px-5 py-4">
+                  {/*
+                    🔴 El chip lo decide la VIGENCIA, no el estado crudo
+                    (auditoría 2026-09-13, N2). Un contrato `active` cuya
+                    fecha de fin ya pasó decía «Activo» en verde para
+                    siempre, mientras se le seguían generando cobros.
+                  */}
+                  {(() => {
+                    const v = vigenciaDelContrato({
+                      status: c.status,
+                      endDate: c.endDate,
+                      terminadoEn: c.terminadoEn ?? null,
+                      startDate: c.startDate ?? null,
+                      fechaDeCartera: c.fechaDeCartera ?? null,
+                    });
+                    return (
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                          colorDeVigencia(
+                            v,
+                            CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
+                          ),
+                        )}
+                        title={v.leyenda}
+                        data-testid={v.vencidoSinRenovar ? 'contrato-vencido' : undefined}
+                      >
+                        {etiquetaDeVigencia(
+                          v,
+                          CONTRACT_STATUS_LABELS[c.status] ?? c.status,
+                        )}
+                      </span>
+                    );
+                  })()}
+                </TableCell>
+                <TableCell className="px-5 py-4 text-right">
+                  <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
+                </TableCell>
+              </FilaQueAnima>
+            ))}
+          </CuerpoQueAnima>
         </Table>
 
         {/* Pie: sólo si hay más de una página. */}

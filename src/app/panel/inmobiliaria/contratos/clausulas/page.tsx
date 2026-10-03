@@ -22,6 +22,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { Scroll, Plus, WarningCircle, CheckCircle } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -179,17 +181,27 @@ function ContenidoDeClausulas() {
             </EmptyState>
           }
         >
-          <ul className="space-y-3">
+          {/* La cláusula nueva entra y las demás se acomodan (`key` = el id).
+              «No se ofrece» baja la opacidad con transición, sin saltar. */}
+          <ListaQueAnima as="ul" className="space-y-3">
             {(clausulas ?? []).map((c) => (
-              <li
+              <ElementoQueAnima
+                as="li"
                 key={c.id}
                 data-testid="clausula"
                 className={cn(
                   'rounded-lg border bg-card p-4',
-                  c.activa ? 'border-border' : 'border-dashed border-border opacity-70',
+                  c.activa ? 'border-border' : 'border-dashed border-border',
                 )}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                {/* La opacidad de «no se ofrece» va adentro: la entrada de la
+                    fila deja `opacity: 1` en línea y le ganaría a la clase. */}
+                <div
+                  className={cn(
+                    'flex flex-wrap items-start justify-between gap-3 transition-opacity duration-base',
+                    !c.activa && 'opacity-70',
+                  )}
+                >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-fg">{c.titulo}</p>
@@ -213,9 +225,9 @@ function ContenidoDeClausulas() {
                     </div>
                   )}
                 </div>
-              </li>
+              </ElementoQueAnima>
             ))}
-          </ul>
+          </ListaQueAnima>
         </EstadoDeDatos>
       </div>
 
@@ -451,42 +463,51 @@ function EditorDeClausula({
 
           {/* El veredicto del validador, con su norma. */}
           <div aria-live="polite" data-testid="veredicto">
-            {revisando && (
-              <p className="text-xs text-fg-muted">Revisando contra la ley…</p>
-            )}
-            {!revisando && motivos !== null && !rechazada && (
-              <p className="flex items-center gap-1.5 text-xs text-success">
-                <CheckCircle className="h-4 w-4" weight="fill" />
-                El validador no encontró nada que la ley prohíba.
-              </p>
-            )}
-            {!revisando && rechazada && (
-              <ul className="space-y-2" data-testid="motivos">
-                {motivos!.map((m) => (
-                  <li
-                    key={m.codigo + m.donde}
-                    className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2"
-                  >
-                    <p className="flex items-start gap-1.5 text-xs text-danger">
-                      <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
-                      <span>{m.mensaje}</span>
-                    </p>
-                    {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
-                    <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {/* Revisando → lo que dijo el validador: se cruzan (`popLayout`:
+                el veredicto entra YA y «Revisando…» se va por encima). */}
+            <CrossFade
+              swapKey={revisando ? 'revisando' : rechazada ? 'rechazada' : motivos !== null ? 'limpia' : 'nada'}
+              mode="popLayout"
+              className="empty:hidden"
+            >
+              {revisando && (
+                <p className="text-xs text-fg-muted">Revisando contra la ley…</p>
+              )}
+              {!revisando && motivos !== null && !rechazada && (
+                <p className="flex items-center gap-1.5 text-xs text-success">
+                  <CheckCircle className="h-4 w-4" weight="fill" />
+                  El validador no encontró nada que la ley prohíba.
+                </p>
+              )}
+              {!revisando && rechazada && (
+                <ul className="space-y-2" data-testid="motivos">
+                  {motivos!.map((m) => (
+                    <li
+                      key={m.codigo + m.donde}
+                      className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2"
+                    >
+                      <p className="flex items-start gap-1.5 text-xs text-danger">
+                        <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
+                        <span>{m.mensaje}</span>
+                      </p>
+                      {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
+                      <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CrossFade>
           </div>
 
-          {falla && !rechazada && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
-            >
-              {falla}
-            </div>
-          )}
+          <Presence
+            show={Boolean(falla) && !rechazada}
+            initial={false}
+            distance="xs"
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+          >
+            {falla}
+          </Presence>
         </form>
 
         <DialogFooter>

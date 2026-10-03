@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/format';
 import { Check, Shield, ShieldCheck, ShieldSlash, Wrench, Scales, Clock, Sparkle } from '@phosphor-icons/react';
 import { INSURANCE_POLICIES } from '@/lib/constants/insurance-policies';
 import type { SelectedInsurance } from '@/lib/types/insurance';
+import { CrossFade, Presence } from '@leasefy/cadence';
 
 // ============================================================================
 // TextTs
@@ -121,7 +122,7 @@ export function InsuranceSelector({
                 })
               }
               className={cn(
-                'relative w-full rounded-lg border text-left transition-all overflow-hidden',
+                'relative w-full rounded-lg border text-left transition-[background-color,border-color,box-shadow] overflow-hidden',
                 isSelected
                   ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-bg`
                   : 'border-border hover:border-border-strong bg-surface',
@@ -192,7 +193,7 @@ export function InsuranceSelector({
                   </div>
                   <div
                     className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 border-2',
+                      'w-6 h-6 rounded-full flex items-center justify-center transition-colors shrink-0 border-2',
                       isSelected
                         ? policy.tier === 'basic'
                           ? 'bg-primary border-primary/30'
@@ -202,7 +203,9 @@ export function InsuranceSelector({
                         : 'border-border dark:border-border-strong'
                     )}
                   >
-                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                    <Presence show={isSelected} initial={false} direction="none" as="span" className="inline-flex">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </Presence>
                   </div>
                 </div>
               </div>
@@ -296,50 +299,53 @@ export function InsuranceSelector({
         })}
       </div>
 
-      {/* Selected Benefits Detail */}
-      {selected.tier !== 'none' && (
-        <div className={cn(
-          'rounded-lg border p-4',
-          selected.tier === 'basic'
-            ? 'border-primary/30 bg-primary-soft'
-            : 'border-success/30 bg-success-soft'
-        )}>
-          <div className="flex items-center gap-2 mb-3">
-            <Check className={cn(
-              'w-4 h-4',
-              selected.tier === 'basic'
-                ? 'text-primary'
-                : 'text-success'
-            )} />
-            <p className={cn(
-              'text-xs font-semibold uppercase tracking-wider',
-              selected.tier === 'basic'
-                ? 'text-primary'
-                : 'text-success'
-            )}>
-              Tu póliza incluye
-            </p>
+      {/* Selected Benefits Detail — al cambiar de póliza, el detalle de la
+          anterior sale y entra el de la nueva (vacío con «sin seguro»). */}
+      <CrossFade swapKey={selected.tier} className="empty:hidden">
+        {selected.tier !== 'none' && (
+          <div className={cn(
+            'rounded-lg border p-4',
+            selected.tier === 'basic'
+              ? 'border-primary/30 bg-primary-soft'
+              : 'border-success/30 bg-success-soft'
+          )}>
+            <div className="flex items-center gap-2 mb-3">
+              <Check className={cn(
+                'w-4 h-4',
+                selected.tier === 'basic'
+                  ? 'text-primary'
+                  : 'text-success'
+              )} />
+              <p className={cn(
+                'text-xs font-semibold uppercase tracking-wider',
+                selected.tier === 'basic'
+                  ? 'text-primary'
+                  : 'text-success'
+              )}>
+                Tu póliza incluye
+              </p>
+            </div>
+            <ul className="space-y-2">
+              {INSURANCE_POLICIES.find((p) => p.tier === selected.tier)?.features.map(
+                (feature, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-sm text-fg"
+                  >
+                    <Check className={cn(
+                      'w-4 h-4 mt-0.5 shrink-0',
+                      selected.tier === 'basic'
+                        ? 'text-primary'
+                        : 'text-success'
+                    )} />
+                    <span>{feature}</span>
+                  </li>
+                )
+              )}
+            </ul>
           </div>
-          <ul className="space-y-2">
-            {INSURANCE_POLICIES.find((p) => p.tier === selected.tier)?.features.map(
-              (feature, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-sm text-fg"
-                >
-                  <Check className={cn(
-                    'w-4 h-4 mt-0.5 shrink-0',
-                    selected.tier === 'basic'
-                      ? 'text-primary'
-                      : 'text-success'
-                  )} />
-                  <span>{feature}</span>
-                </li>
-              )
-            )}
-          </ul>
-        </div>
-      )}
+        )}
+      </CrossFade>
     </div>
   );
 }

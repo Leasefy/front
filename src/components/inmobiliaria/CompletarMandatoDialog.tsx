@@ -32,6 +32,7 @@ import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './Coprop
 import { AgenteSelector } from './AgenteSelector';
 import { AvisoInmuebleSinCanon } from './CanonPorConfirmar';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { Presence } from '@leasefy/cadence';
 import { esSinRespuesta, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { errorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
@@ -708,11 +709,17 @@ function CuerpoDelMandato({
             />
           </div>
 
-          {formError && (
-            <p role="alert" className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-              {formError}
-            </p>
-          )}
+          {/* El error del envío entra suave y sale al volver a intentar. */}
+          <Presence
+            show={Boolean(formError)}
+            initial={false}
+            distance="xs"
+            as="p"
+            role="alert"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {formError}
+          </Presence>
         </div>
 
         <DialogFooter>

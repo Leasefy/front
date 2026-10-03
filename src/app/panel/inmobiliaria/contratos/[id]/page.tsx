@@ -64,6 +64,7 @@ import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
@@ -399,6 +400,22 @@ function ContratoDetalleContent() {
   const chatHref = isManager && contract.applicationId
     ? `/panel/inmobiliaria/mensajes?applicationId=${contract.applicationId}`
     : null;
+  // Qué muestra el bloque del documento: cargando → el documento (o el aviso)
+  // se cruzan en vez de saltar (`CrossFade`).
+  const ramaDelDocumento =
+    hasAnySignature && (isLoadingSignedPdf || signedPdfUrl)
+      ? 'firmado'
+      : isLoadingPreview
+        ? 'cargando'
+        : preview?.origin === 'UPLOADED_PDF'
+          ? 'pdf'
+          : preview?.origin === 'GENERATED'
+            ? 'html'
+            : sinDocumento
+              ? 'sin-documento'
+              : falloDelDocumento
+                ? 'fallo'
+                : 'vacio';
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -556,17 +573,24 @@ function ContratoDetalleContent() {
 
       {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
-      {errorSinCanon !== null && (
-        <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
+      {/* Lo que una acción no pudo hacer entra y sale (no salta). */}
+      <Presence
+        show={errorSinCanon !== null}
+        initial={false}
+        className="rounded-lg border border-warning/40 bg-warning/5 p-4"
+      >
+        {errorSinCanon !== null && (
           <AvisoInmuebleSinCanon error={errorSinCanon} inmuebleId={contract?.propertyId} />
-        </div>
-      )}
-      {actionError && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-danger">{actionError}</p>
-        </div>
-      )}
+        )}
+      </Presence>
+      <Presence
+        show={Boolean(actionError)}
+        initial={false}
+        className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
+      >
+        <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-danger">{actionError}</p>
+      </Presence>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -749,7 +773,7 @@ function ContratoDetalleContent() {
               <FileText className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">Documento</h3>
             </div>
-            <div className="p-5">
+            <CrossFade swapKey={ramaDelDocumento} className="p-5">
               {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
                   Si está cargando o no hay firmas, cae al /preview (HTML o PDF original). */}
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
@@ -771,17 +795,19 @@ function ContratoDetalleContent() {
                       </p>
                     </div>
                   )}
-                  {isLoadingSignedPdf ? (
-                    <div className="py-20 flex items-center justify-center">
-                      <Spinner size="default" variant="muted" />
-                    </div>
-                  ) : (
-                    <iframe
-                      src={signedPdfUrl!}
-                      className="w-full h-[720px] rounded-md border border-border bg-surface"
-                      title="Contrato"
-                    />
-                  )}
+                  <CrossFade swapKey={isLoadingSignedPdf ? 'cargando' : 'listo'}>
+                    {isLoadingSignedPdf ? (
+                      <div className="py-20 flex items-center justify-center">
+                        <Spinner size="default" variant="muted" />
+                      </div>
+                    ) : (
+                      <iframe
+                        src={signedPdfUrl!}
+                        className="w-full h-[720px] rounded-md border border-border bg-surface"
+                        title="Contrato"
+                      />
+                    )}
+                  </CrossFade>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" />
                     Enlace válido por tiempo limitado. Si caduca, recarga la página.
@@ -842,7 +868,7 @@ function ContratoDetalleContent() {
                   Todavía no hay documento para este contrato.
                 </p>
               )}
-            </div>
+            </CrossFade>
           </section>
 
           {esPreFirma && (

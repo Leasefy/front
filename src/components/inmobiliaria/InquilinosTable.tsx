@@ -42,6 +42,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import {
   CaretDown,
@@ -52,12 +53,12 @@ import {
   Warning,
 } from '@phosphor-icons/react';
 import { IconButton, SearchInput, SegmentedControl } from '@leasefy/cadence';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableHead,
   TableRow,
   TableCell,
@@ -333,7 +334,9 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.vigencia')}</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Las filas entran escalonadas (techo de 320 ms) y, al cambiar el
+            filtro o la búsqueda, las que se van salen (`key` = la persona). */}
+        <CuerpoQueAnima>
           {ordenados.map((persona) => (
             <FilaDeInquilino
               key={persona.tenantId}
@@ -343,7 +346,7 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
               onAbrir={() => onAbrir(persona)}
             />
           ))}
-        </TableBody>
+        </CuerpoQueAnima>
       </Table>
     </div>
   );
@@ -375,7 +378,7 @@ function FilaDeInquilino({
 
   return (
     <>
-      <TableRow
+      <FilaQueAnima
         className="group cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
         onClick={onAbrir}
         data-testid="inquilino-fila"
@@ -540,10 +543,12 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-      </TableRow>
+      </FilaQueAnima>
 
+      {/* El despliegue de los arriendos entra bajando su fila (la misma
+          entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
-        <TableRow data-testid="inquilino-arriendos">
+        <FilaQueAnima data-testid="inquilino-arriendos">
           <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
@@ -556,7 +561,7 @@ function FilaDeInquilino({
               ))}
             </ul>
           </TableCell>
-        </TableRow>
+        </FilaQueAnima>
       )}
     </>
   );

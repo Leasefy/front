@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { Buildings, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -194,12 +195,10 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
             <ErrorDelCampo id={`${ID_DE_LA_CIUDAD}-error`} mensaje={errorDeLaCiudad} />
           </div>
           {/* El aviso de la acción (no es de un campo): un 409, un 5xx, la red. */}
-          {error ? (
-            <p className="flex items-center gap-1.5 text-sm text-destructive" role="alert">
-              <WarningCircle className="h-4 w-4" />
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="flex items-center gap-1.5 text-sm text-destructive" role="alert">
+            <WarningCircle className="h-4 w-4" />
+            {error}
+          </Presence>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={corriendo}>Cancelar</AlertDialogCancel>
             <AlertDialogAction

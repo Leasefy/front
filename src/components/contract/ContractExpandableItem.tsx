@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPlaneTilt, Phone, Envelope } from '@phosphor-icons/react';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { getContractTypeLabel } from '@/lib/types/contract';
+import { Collapse } from '@leasefy/cadence';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -196,144 +197,142 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
           {/* Expand indicator */}
           <CaretDown
             className={cn(
-              'w-5 h-5 text-fg-muted transition-transform flex-shrink-0',
+              'w-5 h-5 text-fg-muted transition-transform duration-slow ease-emphasis flex-shrink-0',
               isExpanded && 'rotate-180'
             )}
           />
         </div>
       </button>
 
-      {/* Expanded content */}
-      {isExpanded && (
-        <div className="px-6 pb-6">
-          <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Card 1: Contract Details */}
-            <div className="bg-surface border border-border rounded-lg p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
-                Detalles del contrato
-              </p>
-              <div className="space-y-3.5">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-fg-muted">Tipo</span>
-                  <span className="text-sm text-fg font-medium">
-                    {getContractTypeLabel(contract)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-fg-muted">Vigencia</span>
-                  <span className="text-sm text-fg">
-                    {formatVigencia(contract.startDate, contract.endDate)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-fg-muted">Administración</span>
-                  <span className="text-sm text-fg font-medium">
-                    {formatCurrency(contract.adminFee)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-fg-muted">Garantía</span>
-                  <span className="text-sm text-fg capitalize">{contract.guaranteeType}</span>
-                </div>
+      {/* Expanded content — se abre y se cierra con su altura (`Collapse`). */}
+      <Collapse open={isExpanded} className="px-6 pb-6">
+        <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Card 1: Contract Details */}
+          <div className="bg-surface border border-border rounded-lg p-5">
+            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              Detalles del contrato
+            </p>
+            <div className="space-y-3.5">
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-fg-muted">Tipo</span>
+                <span className="text-sm text-fg font-medium">
+                  {getContractTypeLabel(contract)}
+                </span>
               </div>
-            </div>
-
-            {/* Card 2: Signatures */}
-            <div className="bg-surface border border-border rounded-lg p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
-                Estado de firmas
-              </p>
-              <div className="space-y-4">
-                <SignatureIndicator
-                  label="Arrendador"
-                  isSigned={!!contract.landlordSignature}
-                  signedAt={contract.landlordSignature?.signedAt}
-                />
-                <SignatureIndicator
-                  label="Arrendatario"
-                  isSigned={!!contract.tenantSignature}
-                  signedAt={contract.tenantSignature?.signedAt}
-                />
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-fg-muted">Vigencia</span>
+                <span className="text-sm text-fg">
+                  {formatVigencia(contract.startDate, contract.endDate)}
+                </span>
               </div>
-            </div>
-
-            {/* Card 3: Contact & Actions */}
-            <div className="bg-surface border border-border rounded-lg p-5">
-              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
-                Contacto arrendatario
-              </p>
-              <div className="space-y-2.5 mb-5">
-                <a
-                  href={`tel:${contract.tenantPhone}`}
-                  className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
-                >
-                  <Phone className="w-4 h-4" />
-                  {contract.tenantPhone}
-                </a>
-                <a
-                  href={`mailto:${contract.tenantEmail}`}
-                  className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
-                >
-                  <Envelope className="w-4 h-4" />
-                  {contract.tenantEmail}
-                </a>
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-fg-muted">Administración</span>
+                <span className="text-sm text-fg font-medium">
+                  {formatCurrency(contract.adminFee)}
+                </span>
               </div>
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-border-faint dark:border-border-strong">
-                {needsLandlordAction && (
-                  <Link href={contractUrl} className="flex-1">
-                    <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
-                      <PencilLine className="w-4 h-4" />
-                      Firmar
-                    </Button>
-                  </Link>
-                )}
-                {needsTenantAction && (
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2 rounded-lg border-border"
-                    disabled={recordatorio !== 'listo'}
-                    aria-busy={recordatorio === 'enviando'}
-                    onClick={handleRecordar}
-                    data-testid="recordar-firma"
-                  >
-                    <PaperPlaneTilt className={cn('w-4 h-4', recordatorio === 'enviando' && 'animate-pulse')} />
-                    {recordatorio === 'enviando' ? 'Enviando…' : recordatorio === 'enviado' ? 'Enviado' : 'Recordar'}
-                  </Button>
-                )}
-                <Link href={contractUrl} className={needsLandlordAction || needsTenantAction ? '' : 'flex-1'}>
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2 rounded-lg border-border"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Ver contrato
-                  </Button>
-                </Link>
-                {isActive && (
-                  <Button
-                    variant="outline"
-                    className="gap-2 rounded-lg border-border"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        const { url } = await contractsApi.getSignedPdfUrl(contract.id);
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      } catch {
-                        toast.error('No se pudo obtener el PDF del contrato');
-                      }
-                    }}
-                  >
-                    <Download className="w-4 h-4" />
-                    PDF
-                  </Button>
-                )}
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-fg-muted">Garantía</span>
+                <span className="text-sm text-fg capitalize">{contract.guaranteeType}</span>
               </div>
             </div>
           </div>
+
+          {/* Card 2: Signatures */}
+          <div className="bg-surface border border-border rounded-lg p-5">
+            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              Estado de firmas
+            </p>
+            <div className="space-y-4">
+              <SignatureIndicator
+                label="Arrendador"
+                isSigned={!!contract.landlordSignature}
+                signedAt={contract.landlordSignature?.signedAt}
+              />
+              <SignatureIndicator
+                label="Arrendatario"
+                isSigned={!!contract.tenantSignature}
+                signedAt={contract.tenantSignature?.signedAt}
+              />
+            </div>
+          </div>
+
+          {/* Card 3: Contact & Actions */}
+          <div className="bg-surface border border-border rounded-lg p-5">
+            <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
+              Contacto arrendatario
+            </p>
+            <div className="space-y-2.5 mb-5">
+              <a
+                href={`tel:${contract.tenantPhone}`}
+                className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                {contract.tenantPhone}
+              </a>
+              <a
+                href={`mailto:${contract.tenantEmail}`}
+                className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
+              >
+                <Envelope className="w-4 h-4" />
+                {contract.tenantEmail}
+              </a>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-border-faint dark:border-border-strong">
+              {needsLandlordAction && (
+                <Link href={contractUrl} className="flex-1">
+                  <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
+                    <PencilLine className="w-4 h-4" />
+                    Firmar
+                  </Button>
+                </Link>
+              )}
+              {needsTenantAction && (
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2 rounded-lg border-border"
+                  disabled={recordatorio !== 'listo'}
+                  aria-busy={recordatorio === 'enviando'}
+                  onClick={handleRecordar}
+                  data-testid="recordar-firma"
+                >
+                  <PaperPlaneTilt className={cn('w-4 h-4', recordatorio === 'enviando' && 'animate-pulse')} />
+                  {recordatorio === 'enviando' ? 'Enviando…' : recordatorio === 'enviado' ? 'Enviado' : 'Recordar'}
+                </Button>
+              )}
+              <Link href={contractUrl} className={needsLandlordAction || needsTenantAction ? '' : 'flex-1'}>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 rounded-lg border-border"
+                >
+                  <FileText className="w-4 h-4" />
+                  Ver contrato
+                </Button>
+              </Link>
+              {isActive && (
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-lg border-border"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { url } = await contractsApi.getSignedPdfUrl(contract.id);
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    } catch {
+                      toast.error('No se pudo obtener el PDF del contrato');
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                  PDF
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </Collapse>
     </div>
   );
 }

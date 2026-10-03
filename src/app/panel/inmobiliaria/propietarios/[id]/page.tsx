@@ -1,12 +1,12 @@
 'use client';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { Suspense, useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretLeft,
   User,
@@ -45,7 +45,7 @@ import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { SegmentedControl, IconButton } from '@leasefy/cadence';
+import { SegmentedControl, IconButton, CrossFade, Pressable } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -168,9 +168,9 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="p-4 rounded-lg border border-border bg-card transition-all cursor-pointer"
+    <Pressable
+      press="none"
+      className="p-4 rounded-lg border border-border bg-card cursor-pointer"
     >
       <div className="flex items-start gap-4">
         {/* Thumbnail */}
@@ -246,7 +246,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 
@@ -930,141 +930,123 @@ function PropietarioDetailContent() {
             ]}
           />
 
-          {/* Tab Content */}
-          <AnimatePresence mode="wait">
+          {/* Tab Content — el contenido de la pestaña se cruza con el de la
+              nueva (`CrossFade`: sale en 150 ms y el nuevo sube 4 px). */}
+          <CrossFade
+            swapKey={activeTab}
+            className={activeTab === 'properties' || activeTab === 'payments' ? 'space-y-4' : undefined}
+          >
+            {/* Carga → fallo → vacío → datos, en ese orden y en un solo
+                lugar. Antes el vacío se evaluaba primero y «este
+                propietario no tiene inmuebles consignados» salía tanto
+                mientras cargaba como cuando la petición se caía. */}
             {activeTab === 'properties' && (
-              <motion.div
-                key="properties"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
-              >
-                {/* Carga → fallo → vacío → datos, en ese orden y en un solo
-                    lugar. Antes el vacío se evaluaba primero y «este
-                    propietario no tiene inmuebles consignados» salía tanto
-                    mientras cargaba como cuando la petición se caía. */}
-                <EstadoDeDatos
-                  cargando={cargandoConsignaciones}
-                  error={errorConsignaciones}
-                  queEs="los inmuebles de este propietario"
-                  onReintentar={recargarConsignaciones}
-                  vacio={consignaciones.length === 0}
-                  cuandoVacio={
-                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                        <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                        {t('inmobiliaria.propietarios.detail.noProperties')}
-                      </p>
-                      <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
-                        <Plus className="w-4 h-4" />
-                        {t('inmobiliaria.propietarios.detail.newConsignment')}
-                      </Button>
+              <EstadoDeDatos
+                cargando={cargandoConsignaciones}
+                error={errorConsignaciones}
+                queEs="los inmuebles de este propietario"
+                onReintentar={recargarConsignaciones}
+                vacio={consignaciones.length === 0}
+                cuandoVacio={
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                      <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
-                  }
-                >
+                    <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                      {t('inmobiliaria.propietarios.detail.noProperties')}
+                    </p>
+                    <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
+                      <Plus className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.detail.newConsignment')}
+                    </Button>
+                  </div>
+                }
+              >
+                <ListaQueAnima className="space-y-4">
                   {consignaciones.map((consignacion) => (
-                    <PropertyCard key={consignacion.id} consignacion={consignacion} />
+                    <ElementoQueAnima key={consignacion.id}>
+                      <PropertyCard consignacion={consignacion} />
+                    </ElementoQueAnima>
                   ))}
-                </EstadoDeDatos>
-              </motion.div>
+                </ListaQueAnima>
+              </EstadoDeDatos>
             )}
 
+            {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
+                sobre una lectura caída se lee como «no le hemos pagado». */}
             {veLaPlata && activeTab === 'payments' && (
-              <motion.div
-                key="payments"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
-              >
-                {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
-                    sobre una lectura caída se lee como «no le hemos pagado». */}
-                <EstadoDeDatos
-                  cargando={cargandoDispersiones}
-                  error={errorDispersiones}
-                  queEs="los giros a este propietario"
-                  onReintentar={recargarDispersiones}
-                  vacio={dispersiones.length === 0}
-                  cuandoVacio={
-                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                        <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                      </div>
-                      <p className="text-sm text-muted-foreground max-w-sm">
-                        {t('inmobiliaria.propietarios.detail.noPayments')}
-                      </p>
+              <EstadoDeDatos
+                cargando={cargandoDispersiones}
+                error={errorDispersiones}
+                queEs="los giros a este propietario"
+                onReintentar={recargarDispersiones}
+                vacio={dispersiones.length === 0}
+                cuandoVacio={
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                      <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
-                  }
-                >
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t('inmobiliaria.propietarios.detail.noPayments')}
+                    </p>
+                  </div>
+                }
+              >
+                <ListaQueAnima className="space-y-4">
                   {dispersiones.map((dispersion) => (
-                    <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
+                    <ElementoQueAnima key={dispersion.id}>
+                      <PaymentHistoryItem dispersion={dispersion} />
+                    </ElementoQueAnima>
                   ))}
-                </EstadoDeDatos>
-              </motion.div>
+                </ListaQueAnima>
+              </EstadoDeDatos>
             )}
 
+            {/* Los inmuebles salen de las consignaciones ya leídas: el
+                descuento puede quedar atado a uno o a ninguno. */}
             {veLaPlata && activeTab === 'deducciones' && (
-              <motion.div
-                key="deducciones"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                {/* Los inmuebles salen de las consignaciones ya leídas: el
-                    descuento puede quedar atado a uno o a ninguno. */}
-                <DeduccionesDelPropietario
-                  propietarioId={propietario.id}
-                  inmuebles={consignaciones.map((c) => ({
-                    consignacionId: c.id,
-                    titulo: c.propertyTitle,
-                  }))}
-                />
-              </motion.div>
+              <DeduccionesDelPropietario
+                propietarioId={propietario.id}
+                inmuebles={consignaciones.map((c) => ({
+                  consignacionId: c.id,
+                  titulo: c.propertyTitle,
+                }))}
+              />
             )}
 
             {activeTab === 'notes' && (
-              <motion.div
-                key="notes"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                <div className="p-5 rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Note className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="text-base font-semibold text-foreground">
-                      {t('inmobiliaria.propietarios.detail.internalNotes')}
-                    </h3>
-                  </div>
-
-                  {propietario.notes ? (
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {propietario.notes}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
-                  )}
-
-                  {puedeEditar && (
-                    <Button
-                      variant="link"
-                      hideArrow
-                      className="mt-4 h-auto p-0"
-                      onClick={() => {
-                        setNotesValue(propietario.notes || '');
-                        setShowNotesModal(true);
-                      }}
-                    >
-                      {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
-                    </Button>
-                  )}
+              <div className="p-5 rounded-lg border border-border bg-card">
+                <div className="flex items-center gap-2 mb-4">
+                  <Note className="w-5 h-5 text-muted-foreground" />
+                  <h3 className="text-base font-semibold text-foreground">
+                    {t('inmobiliaria.propietarios.detail.internalNotes')}
+                  </h3>
                 </div>
-              </motion.div>
+
+                {propietario.notes ? (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {propietario.notes}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
+                )}
+
+                {puedeEditar && (
+                  <Button
+                    variant="link"
+                    hideArrow
+                    className="mt-4 h-auto p-0"
+                    onClick={() => {
+                      setNotesValue(propietario.notes || '');
+                      setShowNotesModal(true);
+                    }}
+                  >
+                    {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
+                  </Button>
+                )}
+              </div>
             )}
-          </AnimatePresence>
+          </CrossFade>
         </div>
       </div>
 

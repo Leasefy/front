@@ -23,6 +23,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { Plus, Receipt, Trash, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -370,11 +371,9 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         </div>
       ) : null}
 
-      {error ? (
-        <p role="alert" className="text-sm text-destructive" data-testid="error-de-los-conceptos">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="error-de-los-conceptos">
+        {error}
+      </Presence>
 
       <AlertDialog
         open={aQuitar !== null}

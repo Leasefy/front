@@ -220,3 +220,25 @@ describe('el archivo de Bancolombia tal como lo entrega el banco', () => {
     expect(detectarFilaDeEncabezado([['fecha'], ['01/09/2026']])).toBeNull();
   });
 });
+
+describe('🔴 la columna «Saldo» (Fase 1 de la conciliación, 02-10-2026)', () => {
+  it('se reconoce por su nombre y no se confunde con el valor', () => {
+    const mapeo = mapearColumnasDeExtracto(['Fecha', 'Descripción', 'Valor', 'Saldo disponible']);
+    expect(mapeo.saldo).toBe('Saldo disponible');
+    expect(mapeo.valor).toBe('Valor');
+  });
+
+  it('cada línea lleva su saldo; si no se lee (o tiene ceros de más), la línea entra igual sin él', () => {
+    const mapeo = mapearColumnasDeExtracto(['Fecha', 'Descripción', 'Valor', 'Saldo']);
+    const { filas, descartadas } = armarFilasDeExtracto(
+      [
+        { Fecha: '03/09/2026', Descripción: 'PAGO', Valor: '$ 1.800.000', Saldo: '$ 11.800.000' },
+        { Fecha: '04/09/2026', Descripción: 'CUOTA', Valor: '-45.000', Saldo: '' },
+        { Fecha: '05/09/2026', Descripción: 'OTRA', Valor: '1.000', Saldo: '18.000.000.000.000' },
+      ],
+      mapeo,
+    );
+    expect(descartadas).toEqual([]);
+    expect(filas.map((f) => f.saldoCop)).toEqual([11_800_000, undefined, undefined]);
+  });
+});

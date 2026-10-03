@@ -374,6 +374,28 @@ La «Revisión con IA» (espera inventada de 2 s) se eliminó.
 - `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
 - `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
 
+## Conciliación, Fase 1: la cuenta, los saldos y la pasarela (02-10-2026)
+
+Nico (P3): «la cuenta es OBLIGATORIA al cargar el extracto; la conciliación, el saldo y el cierre van por
+cuenta». (P4): la pasarela sólo se ignora sola con el id de la transacción; si no, se propone. Todo en
+`src/components/cobros/extracto-bancario/` (lógica pura en `cuentas-del-extracto.ts`, con sus pruebas).
+
+- **Cargar** (`CargarExtracto`): la cuenta sale de `conciliacionBancariaApi.cuentas()` (los medios de pago de
+  la inmobiliaria con número; sin ninguna, el aviso lleva a Configuración → Medios de pago). Con una sola
+  activa se preselecciona; sin elegir, «Cargar» no se aprieta. Bloque «Saldos y período»: la columna
+  «Saldo» del archivo (nueva en `COLUMNAS_DE_EXTRACTO`, viaja como `filas[].saldoCop`), saldo inicial y
+  final escritos (`leerSaldoEscrito`, espejo del tope del back) con el cuadre EN VIVO, y el período (sólo
+  viaja si la persona lo cambió). El 409 `EXTRACTO_DE_OTRA_CUENTA` abre una confirmación y reenvía con
+  `aceptarIgualesDeOtraCuenta`. `tesoreriaApi.cuentasDeclaradas` se retiró (sin llamadores).
+- **Por cuenta** (`PorCuenta`): pastillas Todas / cada cuenta / «Sin cuenta» (lo cargado antes) /
+  «Pasarela»; filtran `listar` y `resumen` (`cuenta`). La ficha: % conciliado por número y valor, saldo del
+  banco frente al de los movimientos, última carga y días sin extracto. Sin la migración del back
+  (`disponible: false`) se dice por qué y no hay filtro; un back sin la ruta, la pantalla queda como antes.
+- **Pasarela en la fila** (`PropuestaDeLaPasarela`, ARRIBA de los cruces): «Es este pago en línea» →
+  `esDeLaPasarela` (no emite nada); con otro valor no se ofrece. El pago en línea que no calzó con el canon
+  se ve en la cola («Pago en línea») con lo que hay que hacer.
+- Todo bloque nuevo entra con `useAparecer` (tokens de Cadence; con movimiento reducido, en el lugar).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

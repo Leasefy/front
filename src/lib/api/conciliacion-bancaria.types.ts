@@ -12,6 +12,150 @@ export interface FilaDeExtracto {
   valorCop: number;
   descripcion: string;
   referencia?: string;
+  /**
+   * 🔴 (02-10-2026, Fase 1) El saldo que el banco dice que quedó después de la
+   * línea (la columna «Saldo» del archivo), si viene. Con él el back lee el
+   * saldo inicial y final y revisa que la cadena no tenga huecos.
+   */
+  saldoCop?: number;
+}
+
+// ── Fase 1 de la conciliación: la cuenta, los saldos, la pasarela (02-10-2026) ──
+
+/** Por dónde entra la plata de una cuenta (el convenio de recaudo). */
+export type ViaDeLaCuenta = 'ARCHIVO' | 'EXTRACTO' | 'SIN_DEFINIR';
+
+/**
+ * Una cuenta de la inmobiliaria (su medio de pago de transferencia, Nequi o
+ * Daviplata). Nico (P3): la cuenta es OBLIGATORIA al cargar el extracto; la
+ * conciliación, el saldo y el cierre van por cuenta. El número nunca viaja
+ * entero: `•••• 6789`.
+ */
+export interface CuentaDelExtracto {
+  id: string;
+  nombre: string;
+  tipo: 'TRANSFERENCIA' | 'NEQUI' | 'DAVIPLATA';
+  banco: string | null;
+  tipoDeCuenta: string | null;
+  numeroEnmascarado: string | null;
+  /** Inactiva = no se le cargan extractos nuevos; lo cargado se sigue viendo. */
+  activa: boolean;
+  via: ViaDeLaCuenta;
+  convenio: string | null;
+}
+
+export interface IndicadoresDeLaCuenta {
+  pendientes: number;
+  conciliados: number;
+  ignorados: number;
+  salidasPendientes: number;
+  pendienteCop: number;
+  conciliadoCop: number;
+  /** Entradas conciliadas / (pendientes + conciliadas), en %. `null` si no hay. */
+  porcentajePorNumero: number | null;
+  porcentajePorValor: number | null;
+}
+
+export interface CargaDeLaCuenta {
+  id: string;
+  nombreArchivo: string;
+  desde: string;
+  hasta: string;
+  saldoInicialCop: number | null;
+  saldoFinalCop: number | null;
+  saldosDe: 'ARCHIVO' | 'PERSONA' | null;
+  cuadra: boolean | null;
+  diferenciaCop: number | null;
+  lineas: number;
+  nuevas: number;
+  cargadaAt: string;
+}
+
+/** El saldo del banco frente al de los movimientos cargados de la cuenta. */
+export interface CuadreDeLaCuenta {
+  saldoSegunElBancoCop: number | null;
+  saldoSegunLosMovimientosCop: number | null;
+  diferenciaCop: number | null;
+  cuadra: boolean | null;
+  desde: string | null;
+  hasta: string | null;
+}
+
+/** Días hábiles de la cuenta sin ningún extracto cargado. */
+export interface HuecoEntreCargas {
+  desde: string;
+  hasta: string;
+  diasHabiles: number;
+}
+
+export interface ResumenDeUnaCuenta extends CuentaDelExtracto {
+  indicadores: IndicadoresDeLaCuenta;
+  ultimaCarga: CargaDeLaCuenta | null;
+  cuadre: CuadreDeLaCuenta;
+  huecos: HuecoEntreCargas[];
+}
+
+/** `GET …/cuentas`. */
+export interface CuentasDeLaConciliacion {
+  /** `false` = falta la migración del back: no hay filtro por cuenta todavía. */
+  disponible: boolean;
+  motivo: string | null;
+  cuentas: ResumenDeUnaCuenta[];
+  /** Lo cargado antes de que la cuenta fuera obligatoria. */
+  sinCuenta: IndicadoresDeLaCuenta | null;
+  /** Los pagos en línea (y los que no calzaron con el canon). */
+  pasarela: IndicadoresDeLaCuenta | null;
+}
+
+/** Qué cuenta se mira: una cuenta, lo de antes sin cuenta, o la pasarela. */
+export type FiltroDeCuenta = string | 'sin-cuenta' | 'pasarela';
+
+/** La revisión de los saldos de una carga. */
+export interface SaldosDeLaCarga {
+  fuente: 'ARCHIVO' | 'PERSONA' | null;
+  inicialCop: number | null;
+  finalCop: number | null;
+  sumaCop: number;
+  entradasCop: number;
+  salidasCop: number;
+  diferenciaCop: number | null;
+  cuadra: boolean | null;
+  orden: 'ASCENDENTE' | 'DESCENDENTE' | null;
+  saltos: { entreLaLinea: number; yLaLinea: number; fecha: string; faltanCop: number }[];
+  totalDeSaltos: number;
+}
+
+/**
+ * «Puede ser el pago en línea de…» (Nico, P4): la pasarela sólo se ignora sola
+ * con el id de la transacción; con el mismo valor y sin el id, se PROPONE.
+ */
+export interface PropuestaDePasarela {
+  /** El movimiento de la pasarela (el pago en línea). */
+  pagoEnLineaId: string;
+  reciboId: string | null;
+  reciboNumero: number | null;
+  /** `YYYY-MM-DD`. */
+  fecha: string;
+  valorCop: number;
+  referencia: string | null;
+  tenantName: string | null;
+  conElId: boolean;
+  /** Valor de la línea − valor del pago en línea. 0 = el mismo. */
+  diferenciaCop: number;
+  porQue: string[];
+}
+
+/** Lo que va además de las líneas al cargar el extracto. */
+export interface OpcionesDeLaCarga {
+  /** OBLIGATORIA: la cuenta de la inmobiliaria. */
+  cuentaId: string;
+  saldoInicialCop?: number;
+  saldoFinalCop?: number;
+  /** `YYYY-MM-DD`: sólo si la persona cambió el período que salió de las líneas. */
+  desde?: string;
+  hasta?: string;
+  /** Tras el 409 `EXTRACTO_DE_OTRA_CUENTA`, la persona confirma que es de esta cuenta. */
+  aceptarIgualesDeOtraCuenta?: boolean;
 }
 
 export interface ResultadoDeCarga {
@@ -46,6 +190,22 @@ export interface ResultadoDeCarga {
   avisos?: string[];
   /** Por dónde entra esa cuenta. `SIN_DEFINIR` = como hoy, por extracto. */
   viaDeEntrada?: 'ARCHIVO' | 'EXTRACTO' | 'SIN_DEFINIR';
+  // ── Fase 1 (02-10-2026). Opcionales: un back de antes no los manda. ──
+  /** Duplicado OPERATIVO: la 2.ª, 3.ª… línea idéntica del archivo, que entra. */
+  igualesEnElArchivo?: number;
+  /** Líneas viejas, cargadas sin cuenta, que tomaron la cuenta de este extracto. */
+  adoptadas?: number;
+  /** Líneas idénticas a una de OTRA cuenta (entraron; se avisa). */
+  igualesDeOtraCuenta?: number;
+  cuenta?: { id: string; nombre: string; numeroEnmascarado: string | null };
+  /** `false` = al back le falta la migración: la cuenta no quedó en cada línea. */
+  seGuardoLaCuenta?: boolean;
+  cargaId?: string | null;
+  periodo?: { desde: string; hasta: string; declarado: boolean } | null;
+  saldos?: SaldosDeLaCarga;
+  huecos?: HuecoEntreCargas[];
+  /** Entradas con el mismo valor que un pago en línea, sin el id: pendientes, a una persona. */
+  conPropuestaDeLaPasarela?: number;
 }
 
 /**
@@ -101,6 +261,16 @@ export interface MovimientoBancario {
    * de antes no lo manda, y entonces la fila se ve como siempre.
    */
   muchosAUno?: MuchosAUnoDelMovimiento | null;
+  /**
+   * 🔴 (02-10-2026, Fase 1) La cuenta de la línea; `null` en lo cargado antes de
+   * que fuera obligatoria y en los pagos en línea (`deLaPasarela`).
+   */
+  cuenta?: { id: string; nombre: string; numeroEnmascarado: string | null } | null;
+  deLaPasarela?: boolean;
+  /** El saldo que el banco dijo después de la línea, si el archivo lo traía. */
+  saldoCop?: number | null;
+  /** «Puede ser el pago en línea de…»: sólo en entradas PENDIENTES del banco. */
+  pasarela?: { propuestas: PropuestaDePasarela[] } | null;
 }
 
 // ── Muchos a uno: un movimiento = la suma de VARIOS recibos (02-10-2026) ────
@@ -283,6 +453,8 @@ export interface PaginaDeMovimientos {
 
 export interface FiltrosDeMovimientos {
   estado?: EstadoDelMovimientoBancario;
+  /** (02-10-2026) La cuenta: su id, `sin-cuenta` o `pasarela`. */
+  cuenta?: FiltroDeCuenta;
   desde?: string;
   hasta?: string;
   limite?: number;

@@ -23,7 +23,8 @@ export type CampoDeExtracto =
   | 'referencia'
   | 'documento'
   | 'referencia2'
-  | 'canal';
+  | 'canal'
+  | 'saldo';
 
 export interface ColumnaDeExtracto {
   campo: CampoDeExtracto;
@@ -136,6 +137,14 @@ export const COLUMNAS_DE_EXTRACTO: readonly ColumnaDeExtracto[] = [
     titulo: 'Sucursal / canal',
     ayuda: 'Por dónde entró (PSE, app, oficina). Sólo informativo.',
     sinonimos: ['sucursal canal', 'sucursal / canal', 'canal', 'sucursal', 'oficina'],
+  },
+  {
+    // 🔴 (02-10-2026, Fase 1) Con el saldo de cada línea el sistema lee el
+    // saldo inicial y el final del extracto y avisa si falta una línea.
+    campo: 'saldo',
+    titulo: 'Saldo',
+    ayuda: 'El saldo después de cada movimiento, si el banco lo trae. Sirve para comprobar que el extracto llegó completo.',
+    sinonimos: ['saldo', 'saldo disponible', 'saldo total', 'saldo final', 'saldo actual', 'saldo contable', 'balance'],
   },
 ];
 
@@ -375,11 +384,14 @@ export function armarFilasDeExtracto(
       return;
     }
 
+    // El saldo es un dato de control: si no se lee, la línea entra igual sin él.
+    const saldo = mapeo.saldo ? parsearValorCop(cruda[mapeo.saldo]) : null;
     filas.push({
       fecha,
       valorCop: valor,
       descripcion,
       ...(referencia ? { referencia } : {}),
+      ...(saldo !== null && errorDelValorDelMovimiento(saldo) === null ? { saldoCop: saldo } : {}),
     });
   });
 

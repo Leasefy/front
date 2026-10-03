@@ -28,25 +28,46 @@ import { MENSAJES_DEL_EXTRACTO } from '@/lib/cobros/limites-del-extracto';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const { api, toastMock, archivo } = vi.hoisted(() => ({
-  api: { cargarExtracto: vi.fn() },
+  api: { cargarExtracto: vi.fn(), cuentas: vi.fn() },
   toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
   archivo: {
+    encabezados: ['Fecha', 'Descripción', 'Valor'] as string[],
     filas: [] as Record<string, unknown>[],
   },
 }));
 
 vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancariaApi: api }));
-vi.mock('@/lib/api/tesoreria.service', () => ({
-  tesoreriaApi: { cuentasDeclaradas: vi.fn().mockResolvedValue([]) },
-}));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
-  leerPrimerasFilas: vi.fn(async () => [['Fecha', 'Descripción', 'Valor']]),
+  leerPrimerasFilas: vi.fn(async () => [archivo.encabezados]),
   parseSpreadsheetFile: vi.fn(async () => ({
-    headers: ['Fecha', 'Descripción', 'Valor'],
+    headers: archivo.encabezados,
     rows: archivo.filas,
   })),
 }));
+
+/** Una cuenta de la inmobiliaria (su medio de pago), como la manda `GET …/cuentas`. */
+function cuentaDe(id: string, nombre: string, sobre: Record<string, unknown> = {}) {
+  return {
+    id,
+    nombre,
+    tipo: 'TRANSFERENCIA',
+    banco: 'Bancolombia',
+    tipoDeCuenta: 'AHORROS',
+    numeroEnmascarado: '•••• 6789',
+    activa: true,
+    via: 'SIN_DEFINIR',
+    convenio: null,
+    indicadores: {},
+    ultimaCarga: null,
+    cuadre: {},
+    huecos: [],
+    ...sobre,
+  };
+}
+const CUENTA = cuentaDe('cta-1', 'Ahorros Bancolombia');
+const conCuentas = (...cuentas: unknown[]) =>
+  api.cuentas.mockResolvedValue({ disponible: true, motivo: null, cuentas, sinCuenta: null, pasarela: null });
 
 import { CargarExtracto } from './CargarExtracto';
 
@@ -105,6 +126,9 @@ const fila = (valor: string, detalle = 'TRANSFERENCIA PEREZ GOMEZ') => ({
 
 beforeEach(() => {
   api.cargarExtracto.mockReset();
+  api.cuentas.mockReset();
+  conCuentas(CUENTA);
+  archivo.encabezados = ['Fecha', 'Descripción', 'Valor'];
   toastMock.success.mockReset();
   toastMock.error.mockReset();
   toastMock.info.mockReset();
@@ -245,5 +269,129 @@ describe('CargarExtracto — los errores del back en palabras', () => {
     await elegirArchivo();
     await cargar();
     expect(String(toastMock.error.mock.calls[0]![0])).toMatch(/conexión/);
+  });
+});
+
+describe('🔴 CargarExtracto — la cuenta OBLIGATORIA (Nico, P3, 02-10-2026)', () => {
+  const ok = {
+    nuevas: 2,
+    repetidas: 0,
+    salidas: 1,
+    descartadas: 0,
+    yaPagadasPorPasarela: 0,
+    pendientes: 1,
+    seguras: 0,
+    avisos: [],
+  };
+
+  it('con UNA cuenta se elige sola y viaja su id', async () => {
+    api.cargarExtracto.mockResolvedValue(ok);
+    await montar();
+    await elegirArchivo();
+    expect(($('[data-testid="elegir-cuenta-del-extracto"]') as HTMLSelectElement).value).toBe('cta-1');
+    await cargar();
+    expect(api.cargarExtracto.mock.calls[0]![2]).toEqual(expect.objectContaining({ cuentaId: 'cta-1' }));
+  });
+
+  it('con varias, nada se elige solo: el botón no se aprieta hasta elegir', async () => {
+    conCuentas(CUENTA, cuentaDe('cta-2', 'Corriente Davivienda'));
+    await montar();
+    await elegirArchivo();
+    expect(($('[data-testid="cargar"]') as HTMLButtonElement).disabled).toBe(true);
+    expect($('[data-testid="falta-la-cuenta"]').textContent).toContain('Elige arriba la cuenta');
+  });
+
+  it('sin ninguna cuenta registrada: dice dónde registrarla y no deja cargar', async () => {
+    conCuentas();
+    await montar();
+    await elegirArchivo();
+    const aviso = $('[data-testid="sin-cuentas"]');
+    expect(aviso.textContent).toContain('Configuración → Medios de pago');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/configuracion/medios-de-pago');
+    expect(($('[data-testid="cargar"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('🔴 el archivo parece de OTRA cuenta (409): se pregunta, y al confirmar se reenvía con la confirmación', async () => {
+    const mensaje = '2 de las 2 líneas de este archivo ya están cargadas en Corriente Davivienda •••• 1234. ¿Elegiste bien la cuenta?';
+    api.cargarExtracto
+      .mockRejectedValueOnce(
+        new ApiError(409, mensaje, 'EXTRACTO_DE_OTRA_CUENTA', { statusCode: 409, code: 'EXTRACTO_DE_OTRA_CUENTA', message: mensaje }),
+      )
+      .mockResolvedValueOnce(ok);
+    await montar();
+    await elegirArchivo();
+    await cargar();
+    expect(toastMock.error).not.toHaveBeenCalled();
+    expect($('[data-testid="de-otra-cuenta"]').textContent).toContain('ya están cargadas en Corriente Davivienda');
+    await act(async () => {
+      $('[data-testid="confirmar-de-esta-cuenta"]').click();
+    });
+    await esperar();
+    await esperar();
+    expect(api.cargarExtracto).toHaveBeenCalledTimes(2);
+    expect(api.cargarExtracto.mock.calls[1]![2]).toEqual(
+      expect.objectContaining({ cuentaId: 'cta-1', aceptarIgualesDeOtraCuenta: true }),
+    );
+  });
+});
+
+describe('🔴 CargarExtracto — los saldos y el período (Fase 1)', () => {
+  async function escribir(testid: string, valor: string) {
+    const el = $(`[data-testid="${testid}"]`) as HTMLInputElement;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      set.call(el, valor);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('con los dos saldos escritos dice EN VIVO si cuadra, y los manda', async () => {
+    api.cargarExtracto.mockResolvedValue({
+      nuevas: 2,
+      repetidas: 0,
+      salidas: 1,
+      descartadas: 0,
+      yaPagadasPorPasarela: 0,
+      pendientes: 1,
+      seguras: 0,
+      avisos: [],
+    });
+    await montar();
+    await elegirArchivo();
+    await escribir('saldo-inicial', '$ 10.000.000');
+    await escribir('saldo-final', '11.755.000');
+    expect($('[data-testid="cuadre-en-vivo"]').textContent).toContain('Cuadra');
+    await escribir('saldo-final', '12.000.000');
+    expect($('[data-testid="cuadre-en-vivo"]').textContent).toContain('No cuadra por');
+    await cargar();
+    expect(api.cargarExtracto.mock.calls[0]![2]).toEqual(
+      expect.objectContaining({ saldoInicialCop: 10_000_000, saldoFinalCop: 12_000_000 }),
+    );
+    // El período que salió de las líneas no viaja: el back lo saca de las mismas líneas.
+    expect(api.cargarExtracto.mock.calls[0]![2]).not.toHaveProperty('desde', expect.any(String));
+  });
+
+  it('la columna «Saldo» del archivo se lee y viaja con cada línea', async () => {
+    archivo.encabezados = ['Fecha', 'Descripción', 'Valor', 'Saldo'];
+    archivo.filas = [
+      { ...fila('$ 1.800.000'), Saldo: '$ 11.800.000' },
+      { ...fila('-45.000', 'CUOTA DE MANEJO'), Saldo: '11.755.000' },
+    ];
+    api.cargarExtracto.mockResolvedValue({
+      nuevas: 2,
+      repetidas: 0,
+      salidas: 1,
+      descartadas: 0,
+      yaPagadasPorPasarela: 0,
+      pendientes: 1,
+      seguras: 0,
+      avisos: [],
+    });
+    await montar();
+    await elegirArchivo();
+    expect($('[data-testid="ayuda-de-los-saldos"]').textContent).toContain('columna «Saldo»');
+    await cargar();
+    const filas = api.cargarExtracto.mock.calls[0]![1] as { saldoCop?: number }[];
+    expect(filas.map((f) => f.saldoCop)).toEqual([11_800_000, 11_755_000]);
   });
 });

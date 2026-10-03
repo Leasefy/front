@@ -10,7 +10,10 @@
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
+  CuentasDeLaConciliacion,
   DestinoDeConciliacion,
+  FiltroDeCuenta,
+  OpcionesDeLaCarga,
   DiferenciaConfigurada,
   DiferenciasConocidasDeLaInmobiliaria,
   FilaDeExtracto,
@@ -57,27 +60,58 @@ export function filaParaElBack(fila: FilaDeExtracto): Record<string, unknown> {
     descripcion: fila.descripcion,
   };
   if (fila.referencia) cuerpo.referencia = fila.referencia;
+  if (typeof fila.saldoCop === 'number') cuerpo.saldoCop = fila.saldoCop;
+  return cuerpo;
+}
+
+/** Las opciones de la carga con las claves EXACTAS del DTO, sin `undefined`. */
+export function opcionesParaElBack(o: OpcionesDeLaCarga): Record<string, unknown> {
+  const cuerpo: Record<string, unknown> = { cuentaId: o.cuentaId };
+  if (typeof o.saldoInicialCop === 'number') cuerpo.saldoInicialCop = o.saldoInicialCop;
+  if (typeof o.saldoFinalCop === 'number') cuerpo.saldoFinalCop = o.saldoFinalCop;
+  if (o.desde) cuerpo.desde = o.desde;
+  if (o.hasta) cuerpo.hasta = o.hasta;
+  if (o.aceptarIgualesDeOtraCuenta) cuerpo.aceptarIgualesDeOtraCuenta = true;
   return cuerpo;
 }
 
 export const conciliacionBancariaApi = {
   /**
-   * 🔴 `cuentaBancaria` (18-09-2026) es lo que le permite al back impedir que el
-   * mismo pago entre por el extracto Y por el archivo de recaudo del convenio.
-   * Va sólo si se sabe: sin ella el extracto entra como siempre y la respuesta
-   * avisa que no se pudo proteger.
+   * 🔴 (02-10-2026, Nico P3) La CUENTA es obligatoria: el id de la cuenta de la
+   * inmobiliaria (`GET …/cuentas`). Con ella el back decide además el camino de
+   * entrada (409 `LA_CUENTA_ENTRA_POR_ARCHIVO`) y avisa si el archivo parece de
+   * otra cuenta (409 `EXTRACTO_DE_OTRA_CUENTA`: se reenvía con
+   * `aceptarIgualesDeOtraCuenta` si la persona confirma).
    */
   async cargarExtracto(
     nombreArchivo: string,
     filas: FilaDeExtracto[],
-    cuentaBancaria?: string,
+    opciones: OpcionesDeLaCarga,
   ): Promise<ResultadoDeCarga> {
     const cuerpo: Record<string, unknown> = {
       nombreArchivo,
+      ...opcionesParaElBack(opciones),
       filas: filas.map(filaParaElBack),
     };
-    if (cuentaBancaria) cuerpo.cuentaBancaria = cuentaBancaria;
     const res = await apiClient.post<ResultadoDeCarga>(`${BASE}/extracto`, cuerpo);
+    invalidar('cobros');
+    return res;
+  },
+
+  /** Las cuentas de la inmobiliaria con sus indicadores, saldo, cuadre y huecos. */
+  async cuentas(): Promise<CuentasDeLaConciliacion> {
+    return apiClient.get<CuentasDeLaConciliacion>(`${BASE}/cuentas`);
+  },
+
+  /**
+   * 🔴 (Nico, P4) «Esta línea del banco ES el pago en línea»: queda ignorada con
+   * el recibo de ese pago. No emite nada. Lleva sólo `pagoEnLineaId`.
+   */
+  async esDeLaPasarela(movimientoId: string, pagoEnLineaId: string): Promise<MovimientoBancario> {
+    const res = await apiClient.post<MovimientoBancario>(
+      `${BASE}/movimientos/${movimientoId}/es-de-la-pasarela`,
+      { pagoEnLineaId },
+    );
     invalidar('cobros');
     return res;
   },
@@ -86,6 +120,7 @@ export const conciliacionBancariaApi = {
     return apiClient.get<PaginaDeMovimientos>(
       conQuery(`${BASE}/movimientos`, {
         estado: filtros.estado,
+        cuenta: filtros.cuenta,
         desde: filtros.desde,
         hasta: filtros.hasta,
         limite: filtros.limite,
@@ -94,8 +129,9 @@ export const conciliacionBancariaApi = {
     );
   },
 
-  async resumen(): Promise<ResumenDeConciliacion> {
-    return apiClient.get<ResumenDeConciliacion>(`${BASE}/resumen`);
+  /** Los números de la pestaña; de una cuenta, con `cuenta`. */
+  async resumen(cuenta?: FiltroDeCuenta): Promise<ResumenDeConciliacion> {
+    return apiClient.get<ResumenDeConciliacion>(conQuery(`${BASE}/resumen`, { cuenta }));
   },
 
   /**

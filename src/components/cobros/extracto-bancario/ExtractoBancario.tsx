@@ -61,7 +61,9 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type {
   CandidatoDeConciliacion,
+  CuentasDeLaConciliacion,
   EstadoDelMovimientoBancario,
+  FiltroDeCuenta,
   MovimientoBancario,
   ResumenDeConciliacion,
 } from '@/lib/api/conciliacion-bancaria.types';
@@ -71,6 +73,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { CargarExtracto } from './CargarExtracto';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
 import { MovimientoFila } from './MovimientoFila';
+import { PorCuenta } from './PorCuenta';
 import { diaLegible, plata } from './formato';
 
 /**
@@ -158,28 +161,41 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
    */
   const [sinTablaDeVinculos, setSinTablaDeVinculos] = useState(false);
   const marcarSinTabla = useCallback(() => setSinTablaDeVinculos(true), []);
+  /*
+   * 🔴 (02-10-2026, Nico P3) La conciliación va por cuenta: las cuentas de la
+   * inmobiliaria con sus indicadores, y cuál se está mirando (`null` = todas).
+   * Si el back no las puede dar (un back viejo), la pantalla sigue como antes.
+   */
+  const [porCuenta, setPorCuenta] = useState<CuentasDeLaConciliacion | null>(null);
+  const [filtroDeCuenta, setFiltroDeCuenta] = useState<FiltroDeCuenta | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setErrorDeCarga(null);
+    const cuenta = porCuenta?.disponible ? (filtroDeCuenta ?? undefined) : undefined;
     try {
-      const [r, pag] = await Promise.all([
-        conciliacionBancariaApi.resumen(),
+      const [r, pag, cuentas] = await Promise.all([
+        conciliacionBancariaApi.resumen(cuenta),
         conciliacionBancariaApi.listar({
           estado: pestana,
+          cuenta,
           limite: porPagina,
           desplazamiento: (pagina - 1) * porPagina,
         }),
+        leerLasCuentas(),
       ]);
       setResumen(r);
       setMovimientos(pag.data);
       setTotal(pag.total);
+      if (cuentas) setPorCuenta(cuentas);
     } catch (error) {
       setErrorDeCarga(error);
     } finally {
       setCargando(false);
     }
-  }, [pestana, pagina, porPagina]);
+    // `porCuenta` sólo decide si se puede filtrar: no vuelve a leer al llegar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pestana, pagina, porPagina, filtroDeCuenta]);
 
   useEffect(() => {
     void cargar();
@@ -322,6 +338,18 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
   return (
     <div className="space-y-6">
+      {/* 🔴 (02-10-2026) Por cuenta: filtra la tabla y los números de abajo. */}
+      {porCuenta && (
+        <PorCuenta
+          datos={porCuenta}
+          filtro={filtroDeCuenta}
+          onFiltro={(f) => {
+            setFiltroDeCuenta(f);
+            setPagina(1);
+          }}
+        />
+      )}
+
       {/* Los cuatro números, en la tarjeta KPI del panel. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen">
         <Cifra etiqueta="Pendientes de conciliar" valor={resumen ? String(resumen.pendientes) : '—'} />
@@ -560,6 +588,18 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
     </div>
   );
+}
+
+/**
+ * Las cuentas de la inmobiliaria, o `null` si el back no las puede dar (uno de
+ * antes de la Fase 1, o una falla): la pantalla sigue como antes, sin filtro.
+ */
+async function leerLasCuentas(): Promise<CuentasDeLaConciliacion | null> {
+  try {
+    return await conciliacionBancariaApi.cuentas();
+  } catch {
+    return null;
+  }
 }
 
 /** La tarjeta KPI del panel: etiqueta chica arriba, número grande abajo. */

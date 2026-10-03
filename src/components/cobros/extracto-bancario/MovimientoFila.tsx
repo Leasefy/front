@@ -28,6 +28,8 @@ import { cn } from '@/lib/utils';
 import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conciliacion-bancaria.types';
 import { diaLegible, mesesLegibles, plata } from './formato';
 import { MuchosAUno } from './MuchosAUno';
+import { PropuestaDeLaPasarela } from './PropuestaDeLaPasarela';
+import { nombreDeLaCuenta } from './cuentas-del-extracto';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -86,6 +88,13 @@ export function MovimientoFila({
             <span className="font-mono text-caption text-fg-muted">Ref. {m.referencia}</span>
           )}
           {esSalida && <Badge variant="secondary">Salida</Badge>}
+          {/* (02-10-2026, Fase 1) De qué cuenta es la línea; los pagos en línea no son de una cuenta. */}
+          {m.cuenta && (
+            <span className="text-caption text-fg-muted" data-testid={`cuenta-de-${m.id}`}>
+              {nombreDeLaCuenta(m.cuenta)}
+            </span>
+          )}
+          {m.deLaPasarela && <Badge variant="outline">Pago en línea</Badge>}
           {m.estado === 'CONCILIADO' && m.recibo && (
             <Badge variant={m.recibo.anuladoAt ? 'destructive' : 'success'}>
               Recibo N.º {m.recibo.numero}
@@ -108,6 +117,24 @@ export function MovimientoFila({
         {/* 🔴 Muchos a uno: si el movimiento es la suma de recibos YA emitidos,
             eso va primero. Conciliarlo contra una cuota EMITIRÍA otro recibo
             por la misma plata. */}
+        {/* 🔴 (Nico, P4) Puede ser un pago en línea: va primero. Si es esa
+            plata, conciliarla contra una cuota emitiría un segundo recibo. */}
+        {esPendiente && !esSalida && m.pasarela && m.pasarela.propuestas.length > 0 && (
+          <PropuestaDeLaPasarela
+            movimiento={m}
+            propuestas={m.pasarela.propuestas}
+            puedeEditar={puedeEditar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+          />
+        )}
+        {/* El pago en línea que no calzó con el canon: lo resuelve la inmobiliaria. */}
+        {esPendiente && m.deLaPasarela && (
+          <p className="mb-2 text-caption text-fg-muted" data-testid={`no-calzo-${m.id}`}>
+            Pago en línea que no calzó con el canon: concílialo contra el cliente (la plata va a su deuda más
+            vieja) o ignóralo con su motivo si se devolvió. Nunca se concilia solo.
+          </p>
+        )}
         {esPendiente && !esSalida && m.muchosAUno && (
           <MuchosAUno
             movimiento={m}

@@ -20,6 +20,7 @@ import {
   conciliacionBancariaApi,
   diferenciaParaElBack,
   filaParaElBack,
+  opcionesParaElBack,
 } from './conciliacion-bancaria.service';
 
 const BASE = '/inmobiliaria/conciliacion-bancaria';
@@ -35,15 +36,20 @@ beforeEach(() => {
 });
 
 describe('conciliacionBancariaApi — el contrato con el back', () => {
-  it('cargarExtracto manda nombre y filas con las claves exactas; la referencia vacía no viaja', async () => {
-    await conciliacionBancariaApi.cargarExtracto('sep.csv', [
-      { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12' },
-      { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA', referencia: '' },
-    ]);
+  it('cargarExtracto manda nombre, la cuenta (obligatoria) y filas con las claves exactas; lo vacío no viaja', async () => {
+    await conciliacionBancariaApi.cargarExtracto(
+      'sep.csv',
+      [
+        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12', saldoCop: 11800000 },
+        { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA', referencia: '' },
+      ],
+      { cuentaId: 'cta-1' },
+    );
     expect(postMock).toHaveBeenCalledWith(`${BASE}/extracto`, {
       nombreArchivo: 'sep.csv',
+      cuentaId: 'cta-1',
       filas: [
-        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12' },
+        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12', saldoCop: 11800000 },
         { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA' },
       ],
     });
@@ -52,6 +58,32 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
       'valorCop',
       'descripcion',
     ]);
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+  });
+
+  it('🔴 (02-10-2026) los saldos, el período y la confirmación de otra cuenta viajan sólo si vienen', async () => {
+    expect(
+      opcionesParaElBack({
+        cuentaId: 'cta-1',
+        saldoInicialCop: 0,
+        saldoFinalCop: -5,
+        desde: '2026-09-01',
+        hasta: '',
+        aceptarIgualesDeOtraCuenta: true,
+      }),
+    ).toEqual({ cuentaId: 'cta-1', saldoInicialCop: 0, saldoFinalCop: -5, desde: '2026-09-01', aceptarIgualesDeOtraCuenta: true });
+    expect(opcionesParaElBack({ cuentaId: 'cta-1', aceptarIgualesDeOtraCuenta: false })).toEqual({ cuentaId: 'cta-1' });
+  });
+
+  it('las cuentas, el filtro por cuenta y «es de la pasarela» pegan a sus rutas', async () => {
+    await conciliacionBancariaApi.cuentas();
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/cuentas`);
+    await conciliacionBancariaApi.listar({ cuenta: 'sin-cuenta' });
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/movimientos?cuenta=sin-cuenta`);
+    await conciliacionBancariaApi.resumen('pasarela');
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/resumen?cuenta=pasarela`);
+    await conciliacionBancariaApi.esDeLaPasarela('m-1', 'p-1');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/movimientos/m-1/es-de-la-pasarela`, { pagoEnLineaId: 'p-1' });
     expect(invalidarMock).toHaveBeenCalledWith('cobros');
   });
 

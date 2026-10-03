@@ -16,7 +16,6 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   CalendarioDelAnio,
-  CuentaDeclarada,
   ConfiguracionDeTesoreria,
   DetalleDelArchivo,
   GuardarConvenio,
@@ -209,15 +208,12 @@ export const tesoreriaApi = {
     return r;
   },
 
-  /**
-   * 🔴 Las cuentas con camino de entrada declarado. La pantalla del extracto las
-   * ofrece en vez de pedir que alguien teclee un número: si una cuenta recauda
-   * por ARCHIVO, cargar su extracto responde 409, y eso no se puede descubrir
-   * apretando el botón.
+  /*
+   * (02-10-2026) `cuentasDeclaradas` (`GET /inmobiliaria/tesoreria/cuentas`) se
+   * retiró del cliente: la carga del extracto elige ahora entre las cuentas de
+   * la inmobiliaria (`conciliacionBancariaApi.cuentas`), que ya dicen su vía de
+   * entrada. La ruta del back sigue viva.
    */
-  cuentasDeclaradas(): Promise<CuentaDeclarada[]> {
-    return apiClient.get<CuentaDeclarada[]>(`${BASE}/cuentas`);
-  },
 
   // ── El portal del propietario ─────────────────────────────────────────────
 

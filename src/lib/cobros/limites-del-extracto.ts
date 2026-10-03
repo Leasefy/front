@@ -20,6 +20,11 @@
 
 export const VALOR_MAXIMO_DEL_MOVIMIENTO_COP = 1_000_000_000_000;
 export const MAX_FILAS_DEL_EXTRACTO = 20_000;
+/**
+ * 🔴 (02-10-2026, Fase 1) El tope de un SALDO del extracto (la columna «Saldo»,
+ * el saldo inicial y el final): ±$1.000.000.000.000, el mismo del back.
+ */
+export const SALDO_MAXIMO_DEL_EXTRACTO_COP = 1_000_000_000_000;
 
 export const MENSAJES_DEL_EXTRACTO = {
   valorMaximo:
@@ -28,7 +33,26 @@ export const MENSAJES_DEL_EXTRACTO = {
     'Una salida de plata no puede pasar de $1.000.000.000.000. Revisa que no sobren ceros.',
   filasMaximas:
     'Puedes cargar hasta 20.000 movimientos a la vez. Divide el extracto (por ejemplo, por mes).',
+  saldoEntero: 'El saldo debe ser un número entero de pesos, sin decimales.',
+  saldoFueraDeRango:
+    'Un saldo no puede pasar de $1.000.000.000.000 (ni bajar de −$1.000.000.000.000). Revisa que no sobren ceros.',
 } as const;
+
+/**
+ * Lo que la persona escribe en «Saldo inicial» / «Saldo final»: `undefined` si
+ * lo dejó vacío, el número si se lee, o la frase del error. Acepta «$ 1.230.000»,
+ * «-45.000» y «(45.000)», como el archivo.
+ */
+export function leerSaldoEscrito(
+  texto: string,
+  parsear: (t: string) => number | null,
+): { valor?: number; error?: string } {
+  if (!texto.trim()) return {};
+  const n = parsear(texto);
+  if (n === null) return { error: MENSAJES_DEL_EXTRACTO.saldoEntero };
+  if (Math.abs(n) > SALDO_MAXIMO_DEL_EXTRACTO_COP) return { error: MENSAJES_DEL_EXTRACTO.saldoFueraDeRango };
+  return { valor: n };
+}
 
 /** La frase del tope si el valor de la línea no cabe; `null` si cabe. */
 export function errorDelValorDelMovimiento(valorCop: number): string | null {

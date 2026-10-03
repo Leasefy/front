@@ -278,22 +278,38 @@ export function actaDelBack(fila: unknown): ActaEntrega {
 /**
  * Lo que el back responde al CERRAR un acta de devolución (Nico, 02-10-2026):
  * qué pasó con lo que los descuentos pasan del depósito. `CREADO` = entró al
- * estado de cuenta del inquilino; cualquier otro = quedó sólo mostrado, y
- * `mensaje` dice por qué (va tal cual a la persona).
+ * estado de cuenta del inquilino en una cuota sin pagar; `CUOTA_DE_CIERRE` =
+ * el contrato ya no tenía cuotas sin pagar y entró en una CUOTA DE CIERRE que
+ * vence 5 días después del cierre (`vence`); cualquier otro = quedó sólo
+ * mostrado. `mensaje` dice qué pasó (va tal cual a la persona).
  */
 export interface CargoAparteDelCierre {
-  estado: 'CREADO' | 'SIN_MIGRACION' | 'SIN_CONTRATO' | 'SIN_CUOTA_SIN_PAGAR' | 'FUERA_DE_RANGO'
+  estado:
+    | 'CREADO'
+    | 'CUOTA_DE_CIERRE'
+    | 'SIN_MIGRACION'
+    | 'SIN_CONTRATO'
+    | 'SIN_CUOTA_SIN_PAGAR'
+    | 'FUERA_DE_RANGO'
   valorCop: number
   mensaje: string
+  /** `AAAA-MM-DD`: cuándo vence la cuota de cierre. Sólo en `CUOTA_DE_CIERRE`. */
+  vence: string | null
 }
 
 const ESTADOS_DEL_CARGO = new Set<string>([
   'CREADO',
+  'CUOTA_DE_CIERRE',
   'SIN_MIGRACION',
   'SIN_CONTRATO',
   'SIN_CUOTA_SIN_PAGAR',
   'FUERA_DE_RANGO',
 ])
+
+/** ¿El cargo ENTRÓ al estado de cuenta del inquilino? Es el aviso verde. */
+export function elCargoEntro(cargo: CargoAparteDelCierre): boolean {
+  return cargo.estado === 'CREADO' || cargo.estado === 'CUOTA_DE_CIERRE'
+}
 
 /** El cargo aparte que trae la respuesta del cierre, o `null` (no había nada que cargar). */
 export function cargoAparteDelCierre(respuesta: unknown): CargoAparteDelCierre | null {
@@ -304,5 +320,9 @@ export function cargoAparteDelCierre(respuesta: unknown): CargoAparteDelCierre |
   if (!c || typeof c !== 'object') return null
   if (typeof c.estado !== 'string' || !ESTADOS_DEL_CARGO.has(c.estado)) return null
   if (typeof c.valorCop !== 'number' || typeof c.mensaje !== 'string' || !c.mensaje.trim()) return null
-  return { estado: c.estado, valorCop: c.valorCop, mensaje: c.mensaje }
+  const vence =
+    c.estado === 'CUOTA_DE_CIERRE' && typeof c.vence === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.vence)
+      ? c.vence
+      : null
+  return { estado: c.estado, valorCop: c.valorCop, mensaje: c.mensaje, vence }
 }

@@ -175,7 +175,6 @@ const DECLARADOS: readonly string[] = [
   'captacionApi.anularFirma',
   'captacionApi.consultarListas',
   'captacionApi.guardarDatos',
-  'captacionApi.previsualizarVenta',
   'captacionApi.revisarBaja',
   'captacionApi.urlDelDocumento',
   'cobrosApi.generateOne',

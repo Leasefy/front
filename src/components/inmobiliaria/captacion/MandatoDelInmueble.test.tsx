@@ -49,9 +49,16 @@ vi.mock('@/lib/api/crm.service', async () => {
       firmas: () => api.firmas(),
       pedirFirmaElectronica: api.pedirFirma,
       mandatoFirmado: api.mandatoFirmado,
+      // La venta del inmueble (02-10-2026) vive en la misma tarjeta; tiene su
+      // propia prueba (`VentaDelInmueble.test.tsx`).
+      comisionesDeVenta: async () => ({ disponible: true, motivo: null, viva: null, anuladas: [] }),
     },
   }
 })
+
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}))
 
 vi.mock('@/components/ui/toast', () => ({
   toast: { error: toastError, success: vi.fn(), info: vi.fn(), warning: vi.fn() },

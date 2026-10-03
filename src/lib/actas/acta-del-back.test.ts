@@ -12,6 +12,7 @@ import type { Consignacion } from '@/lib/types/inmobiliaria'
 import {
   actaDelBack,
   cargoAparteDelCierre,
+  elCargoEntro,
   cuandoFueLaEntrega,
   cuerpoParaCrearElActa,
   hoyEnBogota,
@@ -171,7 +172,33 @@ describe('🔴 el cargo aparte al cerrar el acta (Nico, 02-10-2026)', () => {
         id: 'a-1',
         cargoAparte: { estado: 'CREADO', valorCop: 500_000, mensaje: 'Se le cargaron $500.000', cargoId: 'c-1', mes: '2026-10' },
       }),
-    ).toEqual({ estado: 'CREADO', valorCop: 500_000, mensaje: 'Se le cargaron $500.000' })
+    ).toEqual({ estado: 'CREADO', valorCop: 500_000, mensaje: 'Se le cargaron $500.000', vence: null })
+  })
+
+  it('🔴 la CUOTA DE CIERRE trae cuándo vence, y cuenta como un cargo que entró', () => {
+    const cargo = cargoAparteDelCierre({
+      cargoAparte: {
+        estado: 'CUOTA_DE_CIERRE',
+        valorCop: 500_000,
+        mensaje: 'Se le cargaron $500.000 en una cuota de cierre que vence el 15 de octubre de 2026.',
+        cargoId: 'c-1',
+        mes: '2026-11',
+        vence: '2026-10-15',
+      },
+    })
+    expect(cargo).toMatchObject({ estado: 'CUOTA_DE_CIERRE', vence: '2026-10-15' })
+    expect(elCargoEntro(cargo!)).toBe(true)
+  })
+
+  it('sólo CREADO y CUOTA_DE_CIERRE son «entró»; un `vence` raro no se inventa', () => {
+    const conEstado = (estado: string, vence: unknown = null) =>
+      cargoAparteDelCierre({ cargoAparte: { estado, valorCop: 1, mensaje: 'x', vence } })!
+    expect(elCargoEntro(conEstado('CREADO'))).toBe(true)
+    for (const estado of ['SIN_MIGRACION', 'SIN_CONTRATO', 'SIN_CUOTA_SIN_PAGAR', 'FUERA_DE_RANGO']) {
+      expect(elCargoEntro(conEstado(estado))).toBe(false)
+    }
+    expect(conEstado('CUOTA_DE_CIERRE', '15/10/2026').vence).toBeNull()
+    expect(conEstado('CREADO', '2026-10-15').vence).toBeNull()
   })
 
   it('sin cargo, o con uno que no se entiende, `null` (nunca se inventa un aviso)', () => {

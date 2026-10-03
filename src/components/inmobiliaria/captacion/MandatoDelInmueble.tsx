@@ -24,6 +24,9 @@
  *
  * Va en la columna derecha de la ficha, al lado del inventario: es el mismo
  * tipo de dato (lo que el mandato necesita para poder operar).
+ *
+ * Abajo, la venta del inmueble (C-10, 02-10-2026): «Registrar la venta» y la
+ * comisión de venta, viva o anulada (`VentaDelInmueble`).
  */
 
 import { useState } from 'react'
@@ -36,6 +39,8 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/compo
 import { captacionApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
+
+import { VentaDelInmueble } from './VentaDelInmueble'
 
 interface Props {
   consignacionId: string
@@ -335,6 +340,10 @@ export function MandatoDelInmueble({
             ) : null}
           </div>
         ) : null}
+
+        {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de
+            venta del mandato, viva o anulada con su motivo. */}
+        <VentaDelInmueble consignacionId={consignacionId} />
       </CardContent>
     </Card>
   )

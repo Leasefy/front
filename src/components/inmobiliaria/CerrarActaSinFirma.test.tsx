@@ -275,6 +275,36 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     expect(h.toast.warning).not.toHaveBeenCalled()
   })
 
+  it('🔴 02-10 · sin cuotas sin pagar entra como CUOTA DE CIERRE: el MISMO aviso verde dice que entró así y cuándo vence', async () => {
+    // El mensaje literal del back (`cargoEnCuotaDeCierre`).
+    const mensaje =
+      'Se le cargaron $500.000 aparte al inquilino en una cuota de cierre del contrato, que vence el 15 de octubre de 2026: es lo que los descuentos pasan del depósito, y entra a la cobranza como cualquier cuota.'
+    await cerrarConCargo({
+      estado: 'CUOTA_DE_CIERRE',
+      valorCop: 500_000,
+      mensaje,
+      cargoId: 'c-1',
+      mes: '2026-11',
+      vence: '2026-10-15',
+    })
+    expect(h.toast.warning).not.toHaveBeenCalled()
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    const [titulo, opciones] = h.toast.success.mock.calls[0] as [string, { description: string }]
+    expect(titulo).toContain('5 días para objetar')
+    expect(opciones.description).toContain('cuota de cierre')
+    expect(opciones.description).toContain('vence el 15 de octubre de 2026')
+  })
+
+  it('🔴 02-10 · sin la migración de la cuota de cierre: el aviso amarillo de siempre (hay que cargarlo a mano)', async () => {
+    const mensaje =
+      'El inquilino debe $500.000 más que el depósito, pero su contrato no tiene ninguna cuota sin pagar desde 2026-10: el cargo no tiene dónde entrar. Queda sólo mostrado en el acta: cárgalo a mano en su estado de cuenta.'
+    await cerrarConCargo({ estado: 'SIN_CUOTA_SIN_PAGAR', valorCop: 500_000, mensaje, cargoId: null, mes: null, vence: null })
+    expect(h.toast.success).not.toHaveBeenCalled()
+    expect(h.toast.warning).toHaveBeenCalledWith(expect.stringContaining('Acta cerrada'), {
+      description: mensaje,
+    })
+  })
+
   it('🔴 02-10 · si el cargo NO entró (falta la migración), el aviso es de advertencia y dice por qué', async () => {
     const mensaje = 'El inquilino debe $500.000 más que el depósito, pero esta base todavía no puede crear el cargo.'
     await cerrarConCargo({ estado: 'SIN_MIGRACION', valorCop: 500_000, mensaje, cargoId: null, mes: null })

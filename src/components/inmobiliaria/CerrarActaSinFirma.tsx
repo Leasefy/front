@@ -42,7 +42,7 @@ import {
   MIN_LARGO_NOMBRE_DEL_TESTIGO,
 } from '@/lib/actas/limites-del-acta';
 import { actasApi } from '@/lib/api/inmobiliaria.service';
-import { cargoAparteDelCierre } from '@/lib/actas/acta-del-back';
+import { cargoAparteDelCierre, elCargoEntro } from '@/lib/actas/acta-del-back';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 
 /** Una condición del back, leída acá antes de que alguien intente. */
@@ -133,11 +133,13 @@ export function CerrarActaSinFirma({
       const cerrada =
         'Acta cerrada. Se le manda copia al inquilino: tiene 5 días para objetar.';
       // 02-10-2026: lo que los descuentos pasan del depósito. Un solo aviso: el
-      // del cierre, con lo que pasó con el cargo abajo (y en advertencia si NO
-      // entró a su estado de cuenta: hay que cargarlo a mano).
+      // del cierre, con lo que pasó con el cargo abajo. En verde si entró a su
+      // estado de cuenta —en una cuota sin pagar o, si el contrato ya no tenía,
+      // en la CUOTA DE CIERRE, y el back dice cuándo vence—; en advertencia si
+      // NO entró: hay que cargarlo a mano.
       const cargo = cargoAparteDelCierre(actualizada);
       if (!cargo) toast.success(cerrada);
-      else if (cargo.estado === 'CREADO') toast.success(cerrada, { description: cargo.mensaje });
+      else if (elCargoEntro(cargo)) toast.success(cerrada, { description: cargo.mensaje });
       else toast.warning(cerrada, { description: cargo.mensaje });
       onCerrada(actualizada);
     } catch (err) {

@@ -662,6 +662,38 @@ export interface ConsultaDeListas {
   createdAt: string
 }
 
+/** Quién registró o anuló una comisión de venta. */
+export interface PersonaDeLaComision {
+  userId: string
+  nombre: string | null
+}
+
+/** La comisión de venta de un mandato (C-10), en su tabla. */
+export interface ComisionDeVenta {
+  id: string
+  consignacionId: string
+  contractId: string
+  /** `AAAA-MM-DD`. */
+  fechaDeLaEscritura: string
+  precioDeVentaCop: number
+  porcentaje: number
+  comisionCop: number
+  createdAt: string
+  estado: 'VIVA' | 'ANULADA'
+  registradoPor: PersonaDeLaComision | null
+  anulacion: { anuladaEl: string; por: PersonaDeLaComision | null; motivo: string } | null
+}
+
+/** Lo que muestra el mandato: la viva, o las anuladas con su motivo, quién y cuándo. */
+export interface ComisionesDeVentaDelMandato {
+  /** `false` = la base todavía no tiene la tabla: no se puede registrar. */
+  disponible: boolean
+  motivo: string | null
+  viva: ComisionDeVenta | null
+  /** La anulada más reciente primero. */
+  anuladas: ComisionDeVenta[]
+}
+
 export const captacionApi = {
   documentos: (consignacionId: string) =>
     apiClient.get<DocumentosDelMandato>(
@@ -779,9 +811,43 @@ export const captacionApi = {
       } | null
       falta: { code: string; message: string } | null
       sePuedeRegistrarLaComision: boolean
+      /**
+       * El contrato sobre el que se registraría la comisión (el vigente del
+       * inmueble o, si ya terminó, el más reciente). `null` = el inmueble no
+       * tiene contrato y la comisión no se puede registrar.
+       */
+      contrato: { id: string; codigo: number | null; inquilino: string | null } | null
     }>(
       `${BASE}/captacion/mandatos/${consignacionId}/venta/previsualizar`,
       body,
+    ),
+
+  /** La comisión de venta del mandato: la viva y las anuladas (Nico, 02-10-2026). */
+  comisionesDeVenta: (consignacionId: string) =>
+    apiClient.get<ComisionesDeVentaDelMandato>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision`,
+    ),
+
+  /**
+   * Registra la comisión de venta. Sin `contractId` el back toma el contrato
+   * del inmueble (el mismo de la previsualización). 503
+   * `COMISION_DE_VENTA_SIN_MIGRACION` sin la tabla; 409
+   * `COMISION_DE_VENTA_YA_REGISTRADA` si ya hay una viva.
+   */
+  registrarComisionDeVenta: (
+    consignacionId: string,
+    body: { contractId?: string; fechaDeLaEscritura: string; precioDeVentaCop: number },
+  ) =>
+    apiClient.post<ComisionDeVenta>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision`,
+      body,
+    ),
+
+  /** Anula la comisión de venta, SIEMPRE con motivo: queda quién y cuándo. */
+  anularComisionDeVenta: (consignacionId: string, comisionId: string, motivo: string) =>
+    apiClient.post<ComisionDeVenta>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision/${comisionId}/anular`,
+      { motivo },
     ),
 
   consultarListas: (body: {

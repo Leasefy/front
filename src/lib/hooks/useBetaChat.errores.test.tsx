@@ -55,7 +55,13 @@ const json = (status: number, cuerpo?: unknown) =>
   cuerpo === undefined
     ? new Response(null, { status })
     : new Response(JSON.stringify(cuerpo), { status, headers: { 'content-type': 'application/json' } });
-const sinRed: Contesta = () => Promise.reject(new TypeError('Failed to fetch'));
+// 🔴 ARREGLOS-4: «la conexión» es SÓLO sin internet en el navegador; con el navegador en línea y el back
+// sano, el `fetch` al micro que no sale es «el asistente de Leasefy no está disponible» (`agentFetch`).
+const sinRed: Contesta = () => {
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+  return Promise.reject(new TypeError('Failed to fetch'));
+};
+const microCaido: Contesta = () => Promise.reject(new TypeError('Failed to fetch'));
 
 function sse(eventos: Array<[string, unknown]>): Response {
   const texto = eventos.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join('');
@@ -107,6 +113,7 @@ beforeEach(() => {
 afterEach(() => {
   __olvidarSenalesParaPruebas();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   setAccessToken(null);
 });
 
@@ -169,6 +176,7 @@ describe('1 · enviar un mensaje: la burbuja dice el fallo por el traductor', ()
     ['un 403 del sobre', () => json(403, SOBRE_403), /no incluye el asistente/],
     ['un 403 del cuerpo viejo', () => json(403, VIEJO_403), /no incluye el asistente/],
     ['la red caída', sinRed, /conexi[oó]n/],
+    ['el micro caído con el back sano', microCaido, /asistente de Leasefy/],
   ])('%s → nunca crudo', async (_caso, falla, esperado) => {
     micro.stream = falla;
     micro.post = falla;

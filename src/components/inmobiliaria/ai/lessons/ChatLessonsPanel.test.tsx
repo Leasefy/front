@@ -144,10 +144,22 @@ describe('certificar una lección: el fallo por el traductor', () => {
     expect(elToast()).not.toMatch(CRUDO);
   });
 
-  it('la red caída es «la conexión»', async () => {
+  it('sin internet en el navegador, la red caída es «la conexión»', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      certificar = () => Promise.reject(new TypeError('Failed to fetch'));
+      await tocar('Certificar');
+      expect(elToast()).toMatch(/conexi[oó]n/);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · el micro caído con el back sano dice que el asistente no está disponible', async () => {
     certificar = () => Promise.reject(new TypeError('Failed to fetch'));
     await tocar('Certificar');
-    expect(elToast()).toMatch(/conexi[oó]n/);
+    expect(elToast()).toMatch(/asistente de Leasefy/);
+    expect(elToast()).not.toMatch(CRUDO);
   });
 
   it('la cerca (200 con `applied: false`) dice su motivo en español', async () => {

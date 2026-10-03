@@ -286,8 +286,19 @@ describe('cuando la decisión no se guarda', () => {
     expect(texto).toBe('beta.cerebro.errorGuardar');
   });
 
-  it('la red caída es «la conexión»', async () => {
+  it('sin internet en el navegador, la red caída es «la conexión»', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const texto = await decidirCon(() => Promise.reject(new TypeError('Failed to fetch')));
+      expect(texto).toMatch(/conexi[oó]n/);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · el micro caído con el back sano dice que el asistente no está disponible', async () => {
     const texto = await decidirCon(() => Promise.reject(new TypeError('Failed to fetch')));
-    expect(texto).toMatch(/conexi[oó]n/);
+    expect(texto).toMatch(/asistente de Leasefy/);
+    expect(texto).not.toMatch(CRUDO);
   });
 });

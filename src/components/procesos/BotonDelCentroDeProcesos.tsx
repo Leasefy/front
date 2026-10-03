@@ -27,6 +27,7 @@ import { toast } from '@/components/ui/toast'
 import { alEventoDelCentro } from '@/lib/api/procesos.service'
 import type { ListaDeProcesos } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
+import { AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { FilaDeProceso } from './FilaDeProceso'
 import { DetalleDelProceso } from './DetalleDelProceso'
 import type { Proceso } from '@/lib/api/procesos.types'
@@ -188,8 +189,9 @@ export function BotonDelCentroDeProcesos() {
           className="relative ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
         >
           <Queue className={cn('h-5 w-5', activos > 0 && 'text-primary')} aria-hidden="true" />
-          {activos > 0 && (
-            <>
+          {/* El anillo y el contador aparecen con un fundido al lanzar el
+              primero y se van al terminar el último; el número cuenta. */}
+          <Presence as="span" show={activos > 0} direction="none" className="pointer-events-none absolute inset-0">
               <svg
                 viewBox="0 0 36 36"
                 className={cn('pointer-events-none absolute inset-0 h-full w-full', avance == null && 'motion-safe:animate-spin')}
@@ -203,7 +205,7 @@ export function BotonDelCentroDeProcesos() {
                   fill="none"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="stroke-primary transition-[stroke-dashoffset] duration-500"
+                  className="stroke-primary transition-[stroke-dashoffset] duration-reveal ease-enter"
                   strokeDasharray={CIRCUNFERENCIA}
                   strokeDashoffset={CIRCUNFERENCIA * (1 - (avance ?? 28) / 100)}
                   transform="rotate(-90 18 18)"
@@ -213,10 +215,9 @@ export function BotonDelCentroDeProcesos() {
                 className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[10px] font-semibold tabular-nums text-primary-fg"
                 data-testid="centro-de-procesos-cuantos"
               >
-                {activos}
+                <AnimatedNumber value={activos} format={(n) => String(Math.round(n))} />
               </span>
-            </>
-          )}
+          </Presence>
         </button>
       </PopoverTrigger>
 
@@ -259,14 +260,16 @@ export function BotonDelCentroDeProcesos() {
           {data?.disponible && vivos.length > 0 && (
             <Seccion titulo="En curso">
               {vivos.map((p) => (
-                <FilaDeProceso
-                  key={p.id}
-                  proceso={p}
-                  compacta
-                  resaltado={p.id === idResaltado}
-                  onCambio={() => void centro.refetch()}
-                  onVerDetalle={verDetalle}
-                />
+                <StaggerItem as="li" key={p.id}>
+                  <FilaDeProceso
+                    as="div"
+                    proceso={p}
+                    compacta
+                    resaltado={p.id === idResaltado}
+                    onCambio={() => void centro.refetch()}
+                    onVerDetalle={verDetalle}
+                  />
+                </StaggerItem>
               ))}
             </Seccion>
           )}
@@ -274,14 +277,16 @@ export function BotonDelCentroDeProcesos() {
           {data?.disponible && recientes.length > 0 && (
             <Seccion titulo={vivos.length > 0 ? 'Recientes' : 'Lo último'}>
               {recientes.map((p) => (
-                <FilaDeProceso
-                  key={p.id}
-                  proceso={p}
-                  compacta
-                  resaltado={p.id === idResaltado}
-                  onCambio={() => void centro.refetch()}
-                  onVerDetalle={verDetalle}
-                />
+                <StaggerItem as="li" key={p.id}>
+                  <FilaDeProceso
+                    as="div"
+                    proceso={p}
+                    compacta
+                    resaltado={p.id === idResaltado}
+                    onCambio={() => void centro.refetch()}
+                    onVerDetalle={verDetalle}
+                  />
+                </StaggerItem>
               ))}
             </Seccion>
           )}
@@ -317,7 +322,10 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   return (
     <section>
       <p className="px-4 pb-1 pt-3 text-label uppercase text-fg-subtle">{titulo}</p>
-      <ul className="divide-y divide-border-faint">{children}</ul>
+      {/* Un proceso que termina SALE de «En curso» y ENTRA en «Recientes». */}
+      <Stagger as="ul" layout={false} className="divide-y divide-border-faint">
+        {children}
+      </Stagger>
     </section>
   )
 }

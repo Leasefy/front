@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import { useRouter } from 'next/navigation';
 import {
   FileText,
@@ -148,6 +148,17 @@ function EsperandoElReporte({
   );
 }
 
+/**
+ * Esperando → el reporte. Las DOS salidas de cada vista (la espera y el
+ * reporte) pasan por acá con su clave: React ve el mismo componente y el
+ * `CrossFade` cruza el esqueleto (o el fallo) con el reporte que llegó. Lo que
+ * ya estaba en caché al abrir el cajón no se anima (`CrossFade` no anima el
+ * primer contenido).
+ */
+function LlegaElReporte({ listo, children }: { listo: boolean; children: React.ReactNode }) {
+  return <CrossFade swapKey={listo ? 'listo' : 'esperando'}>{children}</CrossFade>;
+}
+
 /** Un bloque del cajón con su título: la vista se lee por partes, no como una pila. */
 function SeccionDelReporte({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -170,10 +181,15 @@ function SeccionDelReporte({ titulo, children }: { titulo: string; children: Rea
 function ComisionesAgentePreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useComisionesReport(mesEnCurso());
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="las comisiones" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="las comisiones" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
@@ -227,6 +243,7 @@ function ComisionesAgentePreview({ t }: { t: Traductor }) {
         </p>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -240,9 +257,17 @@ function VistaDeOcupacion() {
   const { report, isLoading, errorCrudo, refetch } = useOcupacionReport();
   const datos = React.useMemo(() => adaptOccupancy(report), [report]);
   if (!datos) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la ocupación" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la ocupación" />
+      </LlegaElReporte>
+    );
   }
-  return <OccupancyReport data={datos} />;
+  return (
+    <LlegaElReporte listo>
+      <OccupancyReport data={datos} />
+    </LlegaElReporte>
+  );
 }
 
 /** Cartera por edades: los tramos y, debajo, el recaudo y la mora del período. */
@@ -274,18 +299,24 @@ function VistaDeRendimiento() {
   );
   if (!datos) {
     return (
-      <EsperandoElReporte
-        cargando={rendimiento.isLoading || comisiones.isLoading}
-        error={rendimiento.errorCrudo ?? comisiones.errorCrudo}
-        onReintentar={() => {
-          void rendimiento.refetch();
-          void comisiones.refetch();
-        }}
-        queEs="el desempeño de los agentes"
-      />
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte
+          cargando={rendimiento.isLoading || comisiones.isLoading}
+          error={rendimiento.errorCrudo ?? comisiones.errorCrudo}
+          onReintentar={() => {
+            void rendimiento.refetch();
+            void comisiones.refetch();
+          }}
+          queEs="el desempeño de los agentes"
+        />
+      </LlegaElReporte>
     );
   }
-  return <AgentPerformanceReport data={datos} />;
+  return (
+    <LlegaElReporte listo>
+      <AgentPerformanceReport data={datos} />
+    </LlegaElReporte>
+  );
 }
 
 /** Flujo de caja: los meses y, debajo, el resumen ejecutivo que sale de ellos. */
@@ -321,7 +352,11 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
   const { desde, hasta } = parametrosDelPeriodo('rentabilidad-inmueble', periodo).params;
   const { report, isLoading, errorCrudo, refetch } = useRentabilidadReport(desde, hasta);
   if (!report) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la rentabilidad" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la rentabilidad" />
+      </LlegaElReporte>
+    );
   }
   const { totales } = report;
   const cifras = [
@@ -331,6 +366,7 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
     { rotulo: 'Neto al propietario', valor: formatCurrency(totales.netoPropietarioCop) },
   ];
   return (
+    <LlegaElReporte listo>
     <div className="space-y-8">
       <SeccionDelReporte titulo={`De ${report.desde} a ${report.hasta} · ${totales.inmuebles} inmuebles`}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -357,6 +393,7 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -394,7 +431,11 @@ function VistaDeExtractos({ reportId }: { reportId: ReportId }) {
 function VencimientosPreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useVencimientosReport();
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="los vencimientos" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="los vencimientos" />
+      </LlegaElReporte>
+    );
   }
 
   const bucketColors = {
@@ -405,6 +446,7 @@ function VencimientosPreview({ t }: { t: Traductor }) {
   };
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
@@ -468,6 +510,7 @@ function VencimientosPreview({ t }: { t: Traductor }) {
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -477,10 +520,15 @@ function VencimientosPreview({ t }: { t: Traductor }) {
 function FlujoCajaPreview({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) => string }) {
   const { report: data, isLoading, errorCrudo, refetch } = useFlujoCajaReport('semester');
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="el flujo de caja" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="el flujo de caja" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
@@ -535,6 +583,7 @@ function FlujoCajaPreview({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) =
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -576,10 +625,15 @@ const TONO_DEL_TRAMO: Record<ReturnType<typeof tramosDelInformeDeEdades>[number]
 export function CarteraEdadesPreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useCarteraReport();
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la cartera" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la cartera" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards.
 
@@ -651,6 +705,7 @@ export function CarteraEdadesPreview({ t }: { t: Traductor }) {
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -775,13 +830,12 @@ export function ReporteViewer({
 
         {/* Preview Content */}
         <CajonCuerpo>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-          >
-            <PreviewContent />
-          </motion.div>
+          {/* Sin entrada propia: el cajón ya entra con su coreografía. Si
+              cambia el reporte con el cajón abierto, se cruzan. Se llama
+              como función (no `<PreviewContent />`): definida dentro del
+              render, como componente se volvía a montar en cada render y
+              cortaba la entrada de «esperando → reporte». */}
+          <CrossFade swapKey={report.id}>{PreviewContent()}</CrossFade>
         </CajonCuerpo>
 
         {/* Actions Footer */}

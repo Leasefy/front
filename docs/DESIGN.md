@@ -667,6 +667,21 @@ y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
 su valor final, así que ya no hace falta mockear `framer-motion` para que un `AnimatePresence`
 monte el contenido nuevo.
 
+- `AnimatedNumber` (Cadence, 03-10-2026): con las animaciones apagadas (`skipAnimations` o movimiento
+  reducido) escribe la cifra final DE UNA, antes de pintar. No hace falta esperar un cuadro para leerla.
+- Lo que SALE (un `Presence`, una fila de `Stagger`, un `Collapse`) se desmonta después de su salida,
+  también con `skipAnimations`: para ver que ya no está, espera un momento
+  (`await act(async () => { await new Promise((r) => setTimeout(r, 50)) })`). Para ver que SALE animado
+  (sigue montado mientras se va), apaga el atajo en esa prueba: `MotionGlobalConfig.skipAnimations = false`.
+- Un `CrossFade` en modo `wait` monta lo nuevo DESPUÉS de la salida (150 ms): si la pantalla enfoca un
+  campo del contenido nuevo apenas cambia (un asistente que vuelve al paso con error), usa
+  `mode="popLayout"`, que lo monta ya.
+- `Stagger`/`StaggerItem` (y `TableBodyAnimado`/`TableRowAnimada`) en el modo estricto de React (`next dev`):
+  cada ítem se anima SOLO, con su retraso por turno; no hay orquestación del contenedor que el doble montaje
+  pueda perder (03-10-2026: así se veían vacías las tablas de Contratos y Propietarios). Dentro de algo que no
+  anima su primer contenido (`CrossFade`, `Collapse` abierto) la lista de ese primer pintado se ve quieta.
+  Lo fija `components/ui/table.movimiento.test.tsx`, con animaciones reales y `<StrictMode>`.
+
 ### El pensamiento en vivo del chat (02-10-2026)
 
 `src/components/beta/PensamientoDelTurno.tsx`, con los pasos que manda el micro (evento SSE

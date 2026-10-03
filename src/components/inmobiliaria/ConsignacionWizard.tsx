@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Collapse, CrossFade, motionDuration, motionEase } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   User,
   HouseLine,
@@ -912,20 +914,34 @@ export function ConsignacionWizard({
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);
 
+  // Hacia dónde va el paso: adelante entra por la derecha; atrás, por la
+  // izquierda. Se compara con el último paso pintado.
+  const pasoPintado = useRef(currentStep);
+  const direccionDelPaso = currentStep >= pasoPintado.current ? 'forward' : 'backward';
+  useEffect(() => {
+    pasoPintado.current = currentStep;
+  }, [currentStep]);
+
+  // El aviso del borrador sale con su altura (no de golpe) al continuar o
+  // descartar: mientras se va, sigue pintando el borrador que había.
+  const borradorEncontrado = useUltimoPresente(borrador.encontrado);
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* W4 — lo que quedó de la última vez. Se OFRECE, no se aplica solo. */}
-      {borrador.decisionPendiente && borrador.encontrado && (
-        <AvisoDeBorradorDePublicacion
-          actualizadoEn={borrador.encontrado.actualizadoEn}
-          paso={Math.min(Math.max(borrador.encontrado.paso, 1), 6)}
-          totalDePasos={6}
-          fotos={borrador.encontrado.fotos.length}
-          fotosNoGuardadas={borrador.encontrado.fotosNoGuardadas}
-          onContinuar={continuarBorrador}
-          onDescartar={() => void borrador.descartar()}
-        />
-      )}
+      <Collapse open={Boolean(borrador.decisionPendiente && borrador.encontrado)}>
+        {borradorEncontrado && (
+          <AvisoDeBorradorDePublicacion
+            actualizadoEn={borradorEncontrado.actualizadoEn}
+            paso={Math.min(Math.max(borradorEncontrado.paso, 1), 6)}
+            totalDePasos={6}
+            fotos={borradorEncontrado.fotos.length}
+            fotosNoGuardadas={borradorEncontrado.fotosNoGuardadas}
+            onContinuar={continuarBorrador}
+            onDescartar={() => void borrador.descartar()}
+          />
+        )}
+      </Collapse>
 
       {/* Step Indicator */}
       <div className="mb-8">
@@ -943,12 +959,12 @@ export function ConsignacionWizard({
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
                   className={cn(
-                    'flex flex-col items-center gap-2 transition-all',
+                    'flex flex-col items-center gap-2 transition-colors',
                     status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                    'w-12 h-12 rounded-full flex items-center justify-center transition-[background-color,color,box-shadow] duration-base',
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
@@ -1002,11 +1018,12 @@ export function ConsignacionWizard({
             </span>
           </div>
           <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+            {/* La barra crece con `scaleX` (transform), no con `width`. */}
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full origin-left bg-primary"
               initial={false}
-              animate={{ width: `${((currentVisibleIndex + 1) / totalVisible) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ scaleX: (currentVisibleIndex + 1) / totalVisible }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
             />
           </div>
         </div>
@@ -1014,18 +1031,14 @@ export function ConsignacionWizard({
 
       {/* Step Content */}
       <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong overflow-hidden">
-        <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderStepContent()}
-            </motion.div>
-          </AnimatePresence>
+        <div className="relative p-6">
+          {/* Pasos: el nuevo entra YA por el lado al que se avanza y el viejo
+              se va rápido, encima, por el contrario (`popLayout`). Que el
+              nuevo esté montado de una es lo que deja enfocar el campo con
+              error al volver a un paso (ver `enfocar`). */}
+          <CrossFade swapKey={currentStep} direction={direccionDelPaso} mode="popLayout">
+            {renderStepContent()}
+          </CrossFade>
         </div>
 
         {/* Footer Navigation */}

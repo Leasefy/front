@@ -137,7 +137,15 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
   ),
 }))
 
-vi.mock('@leasefy/cadence', () => ({
+vi.mock('@leasefy/cadence', async (importOriginal) => ({
+  // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
+  // (`vitest.setup.ts`) muestran el estado final de una.
+  ...(({ AnimatedNumber, CrossFade, MotionIndicator, Presence }) => ({
+    AnimatedNumber,
+    CrossFade,
+    MotionIndicator,
+    Presence,
+  }))(await importOriginal<typeof import('@leasefy/cadence')>()),
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.
   Button: ({ children, ...props }: { children?: React.ReactNode }) =>
@@ -193,7 +201,9 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    TableBodyAnimado: el('tbody'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }

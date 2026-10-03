@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Pressable, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   ChartLine,
   ChartBar,
@@ -108,9 +109,10 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
     : null;
 
   return (
-    <motion.div
-      whileHover={{ y: -1 }}
-      className="p-4 rounded-lg border border-border bg-card transition-all hover:border-foreground/15"
+    <Pressable
+      hover="lift"
+      press="none"
+      className="p-4 rounded-lg border border-border bg-card transition-colors duration-base hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm text-fg-muted dark:text-fg-subtle">{kpi.label}</p>
@@ -152,7 +154,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
           />
         </div>
       )}
-    </motion.div>
+    </Pressable>
   );
 }
 
@@ -211,9 +213,14 @@ function BarChart({ chart }: { chart: AnalyticsChart }) {
           </div>
           <div className="flex gap-1">
             {chart.datasets.map((dataset, dIdx) => (
-              <div
+              // La barra CRECE desde la izquierda al aparecer (`scaleX`, sólo
+              // transform); el ancho es el dato y ya no se anima.
+              <motion.div
                 key={dataset.label}
-                className="h-2.5 rounded-full transition-all duration-300"
+                className="h-2.5 rounded-full origin-left"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                 style={{
                   width: `${(dataset.data[idx] / maxValue) * 100}%`,
                   backgroundColor: dataset.color,
@@ -394,9 +401,10 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   const ChartIcon = CHART_TYPE_ICONS[chart.type];
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="p-5 rounded-lg border border-border bg-card transition-all hover:border-foreground/15"
+    <Pressable
+      hover="lift"
+      press="none"
+      className="p-5 rounded-lg border border-border bg-card transition-colors duration-base hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -419,7 +427,7 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
         {(chart.type === 'area' || chart.type === 'line') && <AreaLineChart chart={chart} />}
         {(chart.type === 'donut' || chart.type === 'pie') && <DonutChartViz chart={chart} />}
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Chip, SegmentedControl, IconButton } from '@leasefy/cadence';
+import { Chip, SegmentedControl, IconButton, Presence } from '@leasefy/cadence';
 import type { ReportCategory } from '@/lib/types/inmobiliaria';
 
 export interface ReporteFiltersState {
@@ -196,7 +196,7 @@ export function ReporteFilters({
           onChange={(e) => setSearchInput(e.target.value)}
           className="w-full pl-10 pr-4"
         />
-        {searchInput && (
+        <Presence show={Boolean(searchInput)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
           <IconButton
             variant="ghost"
             size="sm"
@@ -205,10 +205,10 @@ export function ReporteFilters({
               updateFilter('search', '');
             }}
             aria-label="Limpiar búsqueda"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="text-muted-foreground"
             icon={<X className="w-4 h-4" />}
           />
-        )}
+        </Presence>
       </div>
 
       {/* Row 2: All Filters */}
@@ -284,7 +284,8 @@ export function ReporteFilters({
         </Chip>
 
         {/* Clear Filters */}
-        {activeFiltersCount > 0 && (
+        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
+        <Presence show={activeFiltersCount > 0} direction="none">
           <Button
             variant="ghost"
             size="sm"
@@ -296,7 +297,7 @@ export function ReporteFilters({
             {t('inmobiliaria.reporte.clear')}
             <X className="w-3.5 h-3.5" />
           </Button>
-        )}
+        </Presence>
       </div>
     </div>
   );

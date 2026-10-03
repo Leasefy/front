@@ -2,7 +2,6 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Funnel,
   Users,
@@ -296,7 +295,11 @@ function PipelineContent() {
    * `KpiCard` tipa `value` como string pero lo pinta como hijo
    * (`children: value` en @leasefy/cadence): el nodo se ve igual que el texto.
    */
-  const valorDeTile = (valor: string) =>
+  //
+  // Las cifras van como NÚMERO: `KpiValor` las cuenta (`AnimatedNumber`) al
+  // llegar y cuando cambian (mover un lead, filtrar). El texto final es el
+  // mismo que con `String(…)`.
+  const valorDeTile = (valor: string | number) =>
     (
       <KpiValor cargando={cargandoPorPrimeraVez} fallo={falloSinDatos}>
         {valor}
@@ -315,26 +318,21 @@ function PipelineContent() {
         </p>
       </div>
 
-      {/* Stats Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
+      {/* Stats Row — sin entrada propia: la página entra con su template. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.totalLeads')}
-          value={valorDeTile(String(stats.total))}
+          value={valorDeTile(stats.total)}
           icon={<Users />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.inProcess')}
-          value={valorDeTile(String(stats.inProcess))}
+          value={valorDeTile(stats.inProcess)}
           icon={<Funnel />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.closedThisMonth')}
-          value={valorDeTile(String(stats.completedThisMonth))}
+          value={valorDeTile(stats.completedThisMonth)}
           icon={<CheckCircle />}
         />
         <KpiCard
@@ -342,15 +340,10 @@ function PipelineContent() {
           value={valorDeTile(textoDeTasa(stats.conversionRate, 0))}
           icon={<ChartLineUp />}
         />
-      </motion.div>
+      </div>
 
       {/* Unified Data Card - Filters + Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Header with count */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-muted/20">
           <span className="text-sm font-medium text-foreground">
@@ -419,7 +412,7 @@ function PipelineContent() {
             />
           </div>
         </EstadoDeDatos>
-      </motion.div>
+      </div>
 
       {/* Detail Modal */}
       <PipelineDetail

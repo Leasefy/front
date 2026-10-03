@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SectionLabel } from '@/components/ui/section-label';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -292,9 +292,11 @@ function AgendaContent() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Cambiar de página, aceptar o rechazar una cita: las filas entran
+                escalonadas y las que se van, salen. */}
+            <TableBodyAnimado>
               {total === 0 ? (
-                <TableRow>
+                <TableRowAnimada key="vacio">
                   <TableCell colSpan={COLUMNS.length} className="p-0">
                     {/* Sin filtros en esta pantalla: un vacío acá es «no hay
                         nada agendado», y lo útil es poder agendar desde acá.
@@ -311,10 +313,10 @@ function AgendaContent() {
                       }
                     />
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ) : (
                 eventos.map((e: EventoAgenda) => (
-                  <TableRow
+                  <TableRowAnimada
                     key={e.id}
                     onClick={() => setSeleccionado(e)}
                     className="cursor-pointer"
@@ -400,10 +402,10 @@ function AgendaContent() {
                         )}
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 ))
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {/* Pie: sólo si hay más de una página. */}

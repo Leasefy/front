@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { ArrowSquareOut, Envelope, Phone, VideoCamera, MapPin } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CrossFade } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -210,14 +211,17 @@ export function EventoAgendaDrawer({
                 eso el título va como hijo y no como `title`. */}
             <SheetHeader>
               <div className="mb-1 flex items-center gap-2">
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
-                    ESTADO_BADGE[evento.estado],
-                  )}
-                >
-                  {t(k(`estado_${evento.estado}`))}
-                </span>
+                {/* Al marcar, aceptar o cancelar, el estado cambia con un fundido. */}
+                <CrossFade as="span" swapKey={evento.estado} mode="popLayout" className="inline-flex">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                      ESTADO_BADGE[evento.estado],
+                    )}
+                  >
+                    {t(k(`estado_${evento.estado}`))}
+                  </span>
+                </CrossFade>
                 <span className="text-caption text-fg-muted">{t(k(`rowTipo_${evento.tipo}`))}</span>
               </div>
               <SheetTitle>{evento.titulo}</SheetTitle>

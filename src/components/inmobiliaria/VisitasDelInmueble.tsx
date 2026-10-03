@@ -24,7 +24,7 @@
  * preguntándose por qué guardó una cosa y el portal muestra otra.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import {
   CalendarCheck,
@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { Collapse, CrossFade, MotionIndicator, Presence } from '@leasefy/cadence';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -145,6 +146,8 @@ function ModalidadCard({
 type Estado = 'cargando' | 'listo' | 'error';
 
 export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
+  // La pestaña de horarios elegida lleva su píldora, que se DESLIZA a la otra.
+  const indicadorDeLaModalidad = `${useId()}-modalidad`;
   const [estado, setEstado] = useState<Estado>('cargando');
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   // Una agenda por modalidad. Son distintas a propósito.
@@ -313,7 +316,12 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         )}
       </header>
 
-      <div className="px-5 py-4">
+      {/* Cargando → apagadas → prendidas (o → fallo): al usar el interruptor
+          el contenido se cruza con un fundido en vez de saltar. */}
+      <CrossFade
+        className="px-5 py-4"
+        swapKey={estado === 'listo' ? (prendido ? 'prendidas' : 'apagadas') : estado}
+      >
         {estado === 'cargando' && (
           <div className="flex justify-center py-6">
             <Spinner />
@@ -367,19 +375,23 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                   testId="modalidad-virtual"
                 />
               </div>
-              {modalidades.length === 0 && (
-                <p className="mt-2 flex items-center gap-1.5 text-caption text-warning">
+              <Presence
+                as="p"
+                show={modalidades.length === 0}
+                distance="xs"
+                className="mt-2 flex items-center gap-1.5 text-caption text-warning"
+              >
                   <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden />
                   Sin ninguna marcada nadie puede reservar, aunque haya horarios.
-                </p>
-              )}
+              </Presence>
             </div>
 
             {/* Los horarios son POR modalidad. Con las dos ofrecidas hay que
                 poder verlas y editarlas por separado — antes lo que se cargaba
                 valía para las dos, que es falso: una videollamada se atiende a
                 una hora en que nadie va a abrir el inmueble. */}
-            {modalidades.length > 1 && (
+            {/* Las pestañas aparecen (con su altura) al ofrecer las dos. */}
+            <Collapse open={modalidades.length > 1}>
               <div
                 role="tablist"
                 aria-label="Modalidad de los horarios"
@@ -394,18 +406,27 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                     onClick={() => setModalidadActiva(tipo)}
                     data-testid={`horarios-de-${tipo}`}
                     className={cn(
-                      'rounded-full px-3.5 py-1.5 text-body-sm transition-colors',
+                      'relative isolate rounded-full px-3.5 py-1.5 text-body-sm transition-colors',
                       modalidadActiva === tipo
-                        ? 'bg-surface font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.06)]'
+                        ? 'font-medium text-fg'
                         : 'text-fg-muted hover:text-fg',
                     )}
                   >
+                    {/* La píldora blanca de la activa (la misma de antes), que viaja. */}
+                    {modalidadActiva === tipo && (
+                      <MotionIndicator
+                        layoutId={indicadorDeLaModalidad}
+                        className="inset-0 -z-10 rounded-full bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.06)]"
+                      />
+                    )}
                     Horario {tipo === 'IN_PERSON' ? 'presencial' : 'virtual'}
                   </button>
                 ))}
               </div>
-            )}
+            </Collapse>
 
+            {/* Cambiar de pestaña cruza un horario con el otro. */}
+            <CrossFade swapKey={`${modalidadActiva}-${scheduleActivo ? 'con' : 'sin'}`}>
             {scheduleActivo ? (
               <AvailabilityScheduleEditor
                 key={modalidadActiva}
@@ -434,6 +455,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                 </Button>
               </div>
             )}
+            </CrossFade>
             <div className="flex items-start gap-2.5 rounded-lg bg-surface-muted/60 p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
               <p className="text-caption text-fg-muted">
@@ -443,7 +465,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             </div>
           </div>
         )}
-      </div>
+      </CrossFade>
     </section>
   );
 }

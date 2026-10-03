@@ -23,7 +23,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { EnvelopeSimple, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -40,6 +39,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { CrossFade } from '@leasefy/cadence';
 
@@ -246,16 +247,16 @@ export function InvitacionesPendientes() {
                 </TableHeader>
                 {/* La que ya salió y deja de estar pendiente se va con su
                     salida (`key` = el id). */}
-                <CuerpoQueAnima>
+                <TableBodyAnimado>
                   {personas.length === 0 ? (
-                    <FilaQueAnima key="ninguna">
+                    <TableRowAnimada key="ninguna">
                       <TableCell colSpan={3} className="py-8 text-center text-sm text-fg-muted">
                         No queda ninguna pendiente.
                       </TableCell>
-                    </FilaQueAnima>
+                    </TableRowAnimada>
                   ) : (
                     personas.map((p) => (
-                      <FilaQueAnima key={p.id}>
+                      <TableRowAnimada key={p.id}>
                         <TableCell>
                           <span className="block text-sm font-medium text-fg">
                             {p.nombre ?? p.correo}
@@ -288,10 +289,10 @@ export function InvitacionesPendientes() {
                             {reenviando === p.id ? 'Enviando…' : 'Enviar'}
                           </Button>
                         </TableCell>
-                      </FilaQueAnima>
+                      </TableRowAnimada>
                     ))
                   )}
-                </CuerpoQueAnima>
+                </TableBodyAnimado>
               </Table>
             )}
           </CrossFade>

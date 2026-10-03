@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   User,
   Buildings,
@@ -892,13 +892,12 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         </div>
 
         {inventoryItems.length > 0 ? (
-          <div className="space-y-3">
+          // Agregar o quitar un ítem: entra bajando apenas y el que se quita
+          // sale; los de abajo se corren a su lugar.
+          <Stagger className="space-y-3" direction="down" distance="xs">
             {inventoryItems.map((item, index) => (
-              <motion.div
+              <StaggerItem
                 key={item.id}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 <div className="flex items-start gap-3">
@@ -967,9 +966,9 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                     className="shrink-0 text-danger hover:bg-danger-soft hover:text-danger"
                   />
                 </div>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         ) : (
           <div className="p-8 text-center rounded-lg border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
             <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />

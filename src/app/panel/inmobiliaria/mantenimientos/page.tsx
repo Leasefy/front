@@ -1,8 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -17,7 +16,7 @@ import { Wrench, Plus, CurrencyDollar, SquaresFour, Kanban } from '@phosphor-ico
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
@@ -112,7 +111,12 @@ interface StatCardProps {
   subValueColor?: 'warning' | 'info' | 'default';
   bgColor: string;
   iconColor: string;
+  /** La cifra llegó después de cargar: cuenta desde 0 (como `KpiValor`). */
+  contarDesdeCero?: boolean;
 }
+
+/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 
 function StatCard({
   icon: Icon,
@@ -122,6 +126,7 @@ function StatCard({
   subValueColor = 'default',
   bgColor,
   iconColor,
+  contarDesdeCero = false,
 }: StatCardProps) {
   const subValueColors = {
     warning: 'text-warning font-medium',
@@ -136,7 +141,14 @@ function StatCard({
           <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {/* La cifra cuenta al llegar y cuando cambia (aprobar, cerrar). */}
+            {typeof value === 'number' ? (
+              <AnimatedNumber value={value} from={contarDesdeCero ? 0 : undefined} format={enteroTalCual} />
+            ) : (
+              value
+            )}
+          </p>
           <p className="text-xs text-muted-foreground">{label}</p>
           {subValue && (
             <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
@@ -588,6 +600,10 @@ function MantenimientosContent() {
 
   // Show loading state
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
+  // ¿Se vio la carga? Entonces las cifras que llegan cuentan desde 0; las que
+  // ya estaban al montarse (caché) no se animan.
+  const huboCarga = useRef(false);
+  if (isLoading) huboCarga.current = true;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -631,7 +647,8 @@ function MantenimientosContent() {
           cuenta donde vive —en la lista, con su «Reintentar»— y los números
           que no se pudieron traer no se inventan. */}
 
-      {/* Quick Stats - Informational Only */}
+      {/* Quick Stats - Informational Only. Esqueleto → cifras con un fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[...Array(2)].map((_, i) => (
@@ -647,11 +664,7 @@ function MantenimientosContent() {
           ))}
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Un cero que en realidad es «no lo pudimos traer» afirma algo
               falso, y encima tranquiliza: «no tienes nada pendiente». Cuando
               la consulta falló va una raya. */}
@@ -669,6 +682,7 @@ function MantenimientosContent() {
             subValueColor={stats.quoted > 0 && !mantenimientosError ? 'info' : 'default'}
             bgColor="bg-primary-soft"
             iconColor="text-primary"
+            contarDesdeCero={huboCarga.current}
           />
           <StatCard
             icon={CurrencyDollar}
@@ -677,9 +691,11 @@ function MantenimientosContent() {
             subValue={mantenimientosError ? 'No se pudo traer' : undefined}
             bgColor="bg-neutral-100 dark:bg-neutral-800"
             iconColor="text-neutral-600 dark:text-neutral-300"
+            contarDesdeCero={huboCarga.current}
           />
-        </motion.div>
+        </div>
       )}
+      </CrossFade>
 
       {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
       <BandejaDeAprobacionesDelPropietario
@@ -692,12 +708,7 @@ function MantenimientosContent() {
 
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card"
-      >
+      <div className="rounded-lg border border-border bg-card">
         {/* View Toggle */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center gap-3">
@@ -709,9 +720,11 @@ function MantenimientosContent() {
                 <span className="text-fg-muted">Solicitudes sin cargar</span>
               ) : (
                 <>
-                  <span className="font-medium text-foreground">
-                    {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
-                  </span>
+                  <AnimatedNumber
+                    className="font-medium text-foreground"
+                    value={mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
+                    format={enteroTalCual}
+                  />
                   {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
                   {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
                     <span className="ml-2 text-primary">
@@ -761,15 +774,10 @@ function MantenimientosContent() {
           onReintentar={reintentar}
           esqueleto={<EsqueletoTabla columnas={4} filas={4} />}
         >
-          <AnimatePresence mode="wait">
+          {/* Tablero ⇄ lista: una vista se va (rápido) y la otra entra. */}
+          <CrossFade swapKey={mantenimientoView} direction="none">
             {mantenimientoView === 'kanban' ? (
-              <motion.div
-                key="kanban"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-5"
-              >
+              <div className="p-5">
                 {/* M6: el tablero vacío eran cinco columnas en cero y ninguna
                     salida. Ahora ofrece lo mismo que la lista hermana. */}
                 <MantenimientoKanban
@@ -778,14 +786,9 @@ function MantenimientosContent() {
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                 />
-              </motion.div>
+              </div>
             ) : (
-              <motion.div
-                key="cards"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <div>
                 {/* `onAddQuote` faltaba, y la entrada «Agregar cotización» de
                     los tres puntos de cada tarjeta sólo se dibuja si alguien la
                     atiende: estaba escrita en `MantenimientoList` y no aparecía
@@ -799,11 +802,11 @@ function MantenimientosContent() {
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                   minimal
                 />
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </CrossFade>
         </EstadoDeDatos>
-      </motion.div>
+      </div>
 
       {/* Mantenimiento Viewer Sheet
           Sin `onAddNote`: no hay endpoint de notas para mantenimientos, así que

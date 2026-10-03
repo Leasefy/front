@@ -14,7 +14,6 @@
  */
 
 import { useState, useMemo, useRef } from 'react';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
 import {
@@ -60,6 +59,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
@@ -577,9 +578,9 @@ function ContratosContent() {
           {/* Las filas de datos van en su propio cuerpo animado: entran
               escalonadas (techo de 320 ms) y, al buscar, filtrar o cambiar de
               página, las que se van salen en su lugar (`key` = el id). */}
-          <CuerpoQueAnima>
+          <TableBodyAnimado>
             {pageItems.map((c) => (
-              <FilaQueAnima
+              <TableRowAnimada
                 key={c.id}
                 onClick={() => openContract(c)}
                 className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
@@ -657,9 +658,9 @@ function ContratosContent() {
                 <TableCell className="px-5 py-4 text-right">
                   <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
                 </TableCell>
-              </FilaQueAnima>
+              </TableRowAnimada>
             ))}
-          </CuerpoQueAnima>
+          </TableBodyAnimado>
         </Table>
 
         {/* Pie: sólo si hay más de una página. */}

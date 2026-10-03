@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import {
   Lightning,
   Signature,
@@ -27,7 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
 import { liquidarElDeposito } from '@/lib/actas/devolucion-del-deposito';
-import { IconButton, Chip, RadioCardGroup, RadioCard, Presence, Collapse } from '@leasefy/cadence';
+import { IconButton, Chip, RadioCardGroup, RadioCard, Presence, Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   ActaInventoryItem,
@@ -428,9 +427,9 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
           {/* Los ítems del espacio entran escalonados (techo de 320 ms); el
               que se borra sale y los de abajo suben (`key` = el id). Al
               cambiar de espacio la lista se monta de nuevo. */}
-          <ListaQueAnima key={activeRoom} className="space-y-3">
+          <Stagger key={activeRoom} className="space-y-3">
             {activeRoomItems.map((item) => (
-              <ElementoQueAnima
+              <StaggerItem
                 key={item.id}
                 className="p-4 rounded-lg bg-surface-muted border border-border"
               >
@@ -491,9 +490,9 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                     />
                   </div>
                 </div>
-              </ElementoQueAnima>
+              </StaggerItem>
             ))}
-          </ListaQueAnima>
+          </Stagger>
 
           {/* Add Item Button */}
           <Button

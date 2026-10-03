@@ -31,6 +31,7 @@ import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ChatCircleDots, Eye, ShieldWarning, Clock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { toast } from '@/components/ui/toast'
 import {
@@ -270,12 +271,15 @@ export function ReclamosClient() {
                 />
               }
             >
-              <ul className="divide-y" data-testid="lista-de-reclamos">
+              {/* Filtrar por estado: los reclamos entran escalonados y los que
+                  sobran salen; al abrir la respuesta, los de abajo se corren. */}
+              <Stagger as="ul" className="divide-y" data-testid="lista-de-reclamos">
                 {visibles.map((r) => {
                   const rotulo = ROTULO[r.estado]
                   const pendiente = r.estado !== 'RESUELTO'
                   return (
-                    <li
+                    <StaggerItem
+                      as="li"
                       key={r.id}
                       className={cn(
                         '-mx-4 space-y-2 px-4 py-4',
@@ -305,6 +309,22 @@ export function ReclamosClient() {
 
                       <p className="text-sm text-fg">{r.mensaje}</p>
 
+                      {/* Responder abre el campo con un fundido (y lo cierra);
+                          `popLayout`: lo nuevo está YA, lo viejo se va encima. */}
+                      <CrossFade
+                        mode="popLayout"
+                        swapKey={
+                          r.respuesta
+                            ? 'respondido'
+                            : puedeResponder
+                              ? abierto === r.id
+                                ? 'respondiendo'
+                                : 'acciones'
+                              : pendiente
+                                ? 'pendiente'
+                                : 'nada'
+                        }
+                      >
                       {r.respuesta ? (
                         <div className="border-l-2 border-border pl-3">
                           <p className="text-xs text-fg-subtle">
@@ -384,10 +404,11 @@ export function ReclamosClient() {
                           contestarle.
                         </p>
                       ) : null}
-                    </li>
+                      </CrossFade>
+                    </StaggerItem>
                   )
                 })}
-              </ul>
+              </Stagger>
             </EstadoDeDatos>
           )}
         </CardContent>

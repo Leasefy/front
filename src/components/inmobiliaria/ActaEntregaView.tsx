@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CuerpoQueAnima, FilaQueAnima, ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
@@ -29,13 +28,15 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination';
-import { IconButton, motionDuration, motionEase, motionScale } from '@leasefy/cadence';
+import { IconButton, motionDuration, motionEase, motionScale, Stagger, StaggerItem } from '@leasefy/cadence';
 import Link from 'next/link';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -290,12 +291,12 @@ export function ActaEntregaView({
                 </TableHeader>
                 {/* Filas que entran escalonadas (techo de 320 ms) y salen al
                     buscar, filtrar o cambiar de página: `key` = el id. */}
-                <CuerpoQueAnima>
+                <TableBodyAnimado>
                   {pageItems.map((item) => {
                     const style = CONDITION_STYLES[item.condition];
                     const Icon = style.icon;
                     return (
-                      <FilaQueAnima
+                      <TableRowAnimada
                         key={item.id}
                         className="border-b border-border/60 last:border-0"
                       >
@@ -386,22 +387,22 @@ export function ActaEntregaView({
                             </div>
                           </TableCell>
                         )}
-                      </FilaQueAnima>
+                      </TableRowAnimada>
                     );
                   })}
-                </CuerpoQueAnima>
+                </TableBodyAnimado>
               </Table>
             </div>
 
             {/* Mobile Cards — la misma página que la tabla de escritorio: si
                 cada uno recortara distinto, el pie contaría otra cosa según el
                 ancho de la ventana. */}
-            <ListaQueAnima layout={false} className="md:hidden space-y-3">
+            <Stagger layout={false} className="md:hidden space-y-3">
               {pageItems.map((item) => {
                 const style = CONDITION_STYLES[item.condition];
                 const Icon = style.icon;
                 return (
-                  <ElementoQueAnima
+                  <StaggerItem
                     key={item.id}
                     className="p-4 rounded-lg bg-surface-muted"
                   >
@@ -465,10 +466,10 @@ export function ActaEntregaView({
                         />
                       </button>
                     )}
-                  </ElementoQueAnima>
+                  </StaggerItem>
                 );
               })}
-            </ListaQueAnima>
+            </Stagger>
 
             {/* Pie: sólo si hay más de una página. */}
             {shouldPaginate && (

@@ -46,6 +46,7 @@ import { ArrowRight, Copy, MagicWand, Users, House } from '@phosphor-icons/react
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -283,9 +284,10 @@ export function CalceClient() {
                         description="Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá."
                       />
                     ) : (
-                      <ul className="divide-border-faint divide-y" data-testid="opciones">
+                      /* Otro interesado: los inmuebles que le calzan entran escalonados. */
+                      <Stagger as="ul" className="divide-border-faint divide-y" data-testid="opciones">
                         {opciones.map((o) => (
-                          <li
+                          <StaggerItem as="li"
                             key={o.propertyId}
                             className="flex flex-wrap items-start justify-between gap-3 py-3"
                             data-testid={`opcion-${o.propertyId}`}
@@ -333,9 +335,9 @@ export function CalceClient() {
                                 Copiar el mensaje
                               </Button>
                             </div>
-                          </li>
+                          </StaggerItem>
                         ))}
-                      </ul>
+                      </Stagger>
                     )}
                   </div>
                 ) : null}
@@ -404,9 +406,10 @@ export function CalceClient() {
                       description="Ninguno de los interesados abiertos pasa los requisitos para este inmueble."
                     />
                   ) : (
-                    <ul className="divide-border-faint divide-y" data-testid="leads-que-calzan">
+                    /* Otro inmueble: los leads que le calzan entran escalonados. */
+                    <Stagger as="ul" className="divide-border-faint divide-y" data-testid="leads-que-calzan">
                       {leads.map((l) => (
-                        <li
+                        <StaggerItem as="li"
                           key={l.pipelineItemId}
                           className="flex flex-wrap items-start justify-between gap-3 py-3"
                           data-testid={`lead-${l.pipelineItemId}`}
@@ -440,9 +443,9 @@ export function CalceClient() {
                               <ArrowRight className="h-4 w-4" />
                             </Button>
                           </div>
-                        </li>
+                        </StaggerItem>
                       ))}
-                    </ul>
+                    </Stagger>
                   )
                 ) : null}
               </EstadoDeDatos>

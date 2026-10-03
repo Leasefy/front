@@ -45,7 +45,6 @@
  */
 
 import { useMemo, useState } from 'react';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import {
   SortAscending,
   SortDescending,
@@ -73,6 +72,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
@@ -491,7 +492,7 @@ export function RenovacionesTable({
         {/* Las filas de datos en su propio cuerpo animado: entran escalonadas
             (techo de 320 ms) y, al filtrar o buscar, las que se van salen en
             su lugar (`key` = el id). */}
-        <CuerpoQueAnima>
+        <TableBodyAnimado>
           {pageItems.map((item) => {
             const esCritica = item.urgencyBucket === '0-30';
             const propuesto = item.negotiatedRent || item.proposedRent;
@@ -501,7 +502,7 @@ export function RenovacionesTable({
                 : null;
 
             return (
-              <FilaQueAnima
+              <TableRowAnimada
                 key={item.id}
                 onClick={() => onAbrir?.(item)}
                 className={cn(
@@ -593,10 +594,10 @@ export function RenovacionesTable({
                     data-testid={`abrir-${item.id}`}
                   />
                 </TableCell>
-              </FilaQueAnima>
+              </TableRowAnimada>
             );
           })}
-        </CuerpoQueAnima>
+        </TableBodyAnimado>
       </Table>
 
       {/* Pie: sólo si hay más de una página. */}

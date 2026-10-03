@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   Buildings,
   House,
@@ -34,9 +33,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import {
@@ -340,8 +340,10 @@ export function ConsignacionTable({
             <TableHead className="w-12 p-4"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sortedConsignaciones.map((row, index) => {
+        {/* Al filtrar, ordenar, paginar o retirar un inmueble, las filas
+            entran escalonadas (techo de 320 ms) y la que se va, sale. */}
+        <TableBodyAnimado>
+          {sortedConsignaciones.map((row) => {
             const rowKey = portafolioRowKey(row);
             const PropertyIcon = getPropertyIcon(row.propertyType);
             const availability =
@@ -374,13 +376,10 @@ export function ConsignacionTable({
             const propertyCode = row.kind === 'sinMandato' ? row.code : (row.propertyCode ?? undefined);
 
             return (
-              <motion.tr
+              <TableRowAnimada
                 key={rowKey}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
-                className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
+                className="border-b last:border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Code (T-0038 §3.2.5) */}
                 <TableCell className="p-4">
@@ -694,10 +693,10 @@ export function ConsignacionTable({
                   </DropdownList>
                   )}
                 </TableCell>
-              </motion.tr>
+              </TableRowAnimada>
             );
           })}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {/* Empty State */}

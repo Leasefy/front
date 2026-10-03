@@ -3,7 +3,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Buildings,
   SquaresFour,
@@ -29,7 +28,7 @@ import {
   PAGE_SIZE_OPTIONS,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/hooks/use-table-pagination';
-import { SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   useConsignaciones,
   useInmueblesSinConsignacion,
@@ -530,13 +529,10 @@ function PortafolioContent() {
         </div>
       )}
 
-      {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      {/* Unified Data Card - View Toggle + Filters + Content + Pagination.
+          Sin entrada propia: la página ya entra con el `template.tsx`. Lo que
+          se anima acá adentro son los CAMBIOS (vista, filtros, páginas). */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl<ViewMode>
@@ -597,16 +593,15 @@ function PortafolioContent() {
             queEs="los inmuebles"
             onReintentar={recargarConsignaciones}
           >
-          <AnimatePresence mode="wait">
+          {/* Tabla ⇄ tarjetas: una vista se va (rápido) y la otra entra. */}
+          <CrossFade swapKey={viewMode}>
             {viewMode === 'grid' ? (
-              <motion.div
-                key="grid"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
+              <>
                 {paginatedConsignaciones.length > 0 ? (
-                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  // Al filtrar o cambiar de página, las tarjetas entran
+                  // escalonadas (techo de 320 ms) y las que se van, salen.
+                  // Paginada: sin `layout` (no mide la grilla en cada cambio).
+                  <Stagger layout={false} className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {/*
                       C10, closed for the grid (T-0038 WU-6): this used to
                       filter `kind === 'sinMandato'` out entirely — imported
@@ -619,29 +614,30 @@ function PortafolioContent() {
                       `Consignacion`-typed; the two shapes share no
                       commission/availability/tenant fields to unify).
                     */}
-                    {paginatedConsignaciones.map((row) =>
-                      row.kind === 'consignacion' ? (
-                        <ConsignacionCard
-                          key={row.id}
-                          consignacion={row}
-                          propietarioName={propietariosMap[row.propietarioId]}
-                          agenteName={agentesMap[row.agenteId]?.name}
-                          agenteAvatar={agentesMap[row.agenteId]?.avatar}
-                          onClick={() => handleView(row)}
-                          onView={() => handleView(row)}
-                          onEdit={() => handleEdit(row)}
-                          onAgendarCita={() => handleAgendarCita(row)}
-                        />
-                      ) : (
-                        <InmuebleSinMandatoCard
-                          key={portafolioRowKey(row)}
-                          inmueble={row}
-                          onClick={() => setMandatoFor(row)}
-                          onCompletarMandato={setMandatoFor}
-                        />
-                      ),
-                    )}
-                  </div>
+                    {paginatedConsignaciones.map((row) => (
+                      // `flex`: la tarjeta sigue llenando el alto de su fila.
+                      <StaggerItem key={portafolioRowKey(row)} className="flex">
+                        {row.kind === 'consignacion' ? (
+                          <ConsignacionCard
+                            consignacion={row}
+                            propietarioName={propietariosMap[row.propietarioId]}
+                            agenteName={agentesMap[row.agenteId]?.name}
+                            agenteAvatar={agentesMap[row.agenteId]?.avatar}
+                            onClick={() => handleView(row)}
+                            onView={() => handleView(row)}
+                            onEdit={() => handleEdit(row)}
+                            onAgendarCita={() => handleAgendarCita(row)}
+                          />
+                        ) : (
+                          <InmuebleSinMandatoCard
+                            inmueble={row}
+                            onClick={() => setMandatoFor(row)}
+                            onCompletarMandato={setMandatoFor}
+                          />
+                        )}
+                      </StaggerItem>
+                    ))}
+                  </Stagger>
                 ) : (
                   <SinDatos
                     hayFiltros={elVacioEsPorLosFiltros}
@@ -653,14 +649,9 @@ function PortafolioContent() {
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
-              </motion.div>
+              </>
             ) : (
-              <motion.div
-                key="table"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
+              <>
                 {paginatedConsignaciones.length > 0 ? (
                   <ConsignacionTable
                     consignaciones={paginatedConsignaciones}
@@ -686,9 +677,9 @@ function PortafolioContent() {
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
-              </motion.div>
+              </>
             )}
-          </AnimatePresence>
+          </CrossFade>
           </EstadoDeDatos>
         </div>
 
@@ -711,7 +702,7 @@ function PortafolioContent() {
             onPageSizeChange={setPageSize}
           />
         )}
-      </motion.div>
+      </div>
 
       <AlertDialog
         open={Boolean(porEliminar)}
@@ -731,14 +722,14 @@ function PortafolioContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {motivoDelRechazo && (
-            <p
-              role="alert"
-              className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-            >
-              {motivoDelRechazo}
-            </p>
-          )}
+          <Presence
+            as="p"
+            show={Boolean(motivoDelRechazo)}
+            role="alert"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {motivoDelRechazo}
+          </Presence>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={eliminando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction

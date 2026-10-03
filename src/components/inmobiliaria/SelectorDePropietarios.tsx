@@ -17,9 +17,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import { MagnifyingGlass, Plus, X, User, Check } from '@phosphor-icons/react';
-import { IconButton, Collapse, Presence } from '@leasefy/cadence';
+import { IconButton, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -161,9 +160,9 @@ export function SelectorDePropietarios({
             /* Al buscar, las tarjetas que no calzan salen y las que vuelven
                entran (`key` = el id). Sin `layout`: la grilla vive en su
                propio scroll y puede tener cientos de dueños. */
-            <ListaQueAnima as="ul" layout={false} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Stagger as="ul" layout={false} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {pendiente && (
-                <ElementoQueAnima key="pendiente" as="li">
+                <StaggerItem key="pendiente" as="li">
                   <div
                     className="flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-primary-soft p-3 text-left"
                     data-testid="propietario-pendiente"
@@ -188,19 +187,19 @@ export function SelectorDePropietarios({
                       icon={<X className="h-4 w-4" />}
                     />
                   </div>
-                </ElementoQueAnima>
+                </StaggerItem>
               )}
               {filtrados.map((p) => (
-                <ElementoQueAnima key={p.id} as="li">
+                <StaggerItem key={p.id} as="li">
                   <PropietarioCard
                     propietario={p}
                     variant="compact"
                     selected={seleccion.includes(p.id)}
                     onClick={() => alternar(p.id)}
                   />
-                </ElementoQueAnima>
+                </StaggerItem>
               ))}
-            </ListaQueAnima>
+            </Stagger>
           ) : (
             <div className="rounded-lg border border-border bg-surface-muted p-8 text-center">
               <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">

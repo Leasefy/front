@@ -70,7 +70,6 @@
  */
 
 import { useMemo } from 'react';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -84,7 +83,7 @@ import {
   Receipt,
   Warning,
 } from '@phosphor-icons/react';
-import { CrossFade, IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
@@ -485,9 +484,9 @@ export function CuerpoDelCajon({
 
               {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
 
-              <ListaQueAnima as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+              <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                 {persona.arriendos.map((a) => (
-                  <ElementoQueAnima as="li" key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
+                  <StaggerItem as="li" key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
@@ -496,9 +495,9 @@ export function CuerpoDelCajon({
                       {t(`${NS}.verContrato`)}
                       <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
                     </Link>
-                  </ElementoQueAnima>
+                  </StaggerItem>
                 ))}
-              </ListaQueAnima>
+              </Stagger>
             </Seccion>
 
             <div data-testid="inquilino-cajon-pagos">
@@ -569,13 +568,13 @@ export function CuerpoDelCajon({
                     <>
                       <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
                       {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
-                      <ListaQueAnima as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+                      <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                         {visibles.map((c) => (
-                          <ElementoQueAnima as="li" key={c.id}>
+                          <StaggerItem as="li" key={c.id}>
                             <FilaDePago cobro={c} />
-                          </ElementoQueAnima>
+                          </StaggerItem>
                         ))}
-                      </ListaQueAnima>
+                      </Stagger>
                       {cobros.length > visibles.length ? (
                         <p className="text-xs text-fg-muted">
                           {t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}

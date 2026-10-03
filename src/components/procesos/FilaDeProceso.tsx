@@ -299,9 +299,10 @@ export function FilaDeProceso({
               {...(p.porcentaje != null ? { 'aria-valuenow': p.porcentaje } : {})}
             >
               {p.porcentaje != null && p.porcentaje > 0 ? (
+                // El avance crece con `scaleX` (transform), no con `width`.
                 <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-500"
-                  style={{ width: `${Math.max(3, p.porcentaje)}%` }}
+                  className="h-full w-full origin-left rounded-full bg-primary transition-transform duration-reveal ease-enter"
+                  style={{ transform: `scaleX(${Math.max(3, p.porcentaje) / 100})` }}
                 />
               ) : (
                 <div className="h-full w-1/4 rounded-full bg-primary motion-safe:animate-indeterminate" />

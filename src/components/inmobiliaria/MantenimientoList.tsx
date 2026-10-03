@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Wrench,
   Lightning,
@@ -347,12 +347,8 @@ function MantenimientoCard({
   const daysSince = getDaysSinceCreated(solicitud.createdAt);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-all"
-    >
+    // La entrada y la salida las pone el `StaggerItem` de la grilla.
+    <div className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-colors duration-base">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
@@ -494,7 +490,7 @@ function MantenimientoCard({
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -661,11 +657,12 @@ export function MantenimientoList({
 
       {/* Cards Grid */}
       {filteredData.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout">
+        // Filtrar, paginar, cerrar o cancelar: las tarjetas entran escalonadas
+        // (techo de 320 ms) y la que se va, sale. Paginada: sin `layout`.
+        <Stagger layout={false} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {pageItems.map((solicitud) => (
+              <StaggerItem key={solicitud.id} className="flex [&>*]:w-full">
               <MantenimientoCard
-                key={solicitud.id}
                 solicitud={solicitud}
                 onViewDetails={() => onViewDetails?.(solicitud)}
                 // Sólo se pasa lo que el padre atiende. Envolver siempre en una
@@ -679,9 +676,9 @@ export function MantenimientoList({
                 t={t}
                 fmtDate={fmtDate}
               />
+              </StaggerItem>
             ))}
-          </AnimatePresence>
-        </div>
+        </Stagger>
       ) : (
         // Los dos vacíos: nunca hubo solicitudes (ofrece crear) o hay pero el
         // filtro no deja ver ninguna (ofrece quitarlo). `queSon` es «arreglos»

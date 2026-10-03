@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { motionSpring } from '@leasefy/cadence';
 import {
   HouseLine,
   User,
@@ -67,14 +68,16 @@ export function PipelineCard({
   return (
     <motion.div
       layoutId={`pipeline-card-${item.id}`}
-      whileHover={!isDragging ? { y: -2, boxShadow: '0 8px 25px -5px rgba(0, 0, 0, 0.1)' } : undefined}
-      animate={isDragging ? { scale: 1.02, boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.2)' } : { scale: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      // Sólo `transform`: sube 2px al pasar y crece un poco al arrastrarla. La
+      // sombra la pone el CSS (`hover:shadow-md`, `shadow-lg` arrastrando).
+      whileHover={!isDragging ? { y: -2 } : undefined}
+      animate={isDragging ? { scale: 1.02 } : { scale: 1 }}
+      transition={motionSpring.snappy}
       className={cn(
-        'w-full rounded-lg border bg-card overflow-hidden transition-all duration-200 cursor-pointer group',
+        'w-full rounded-lg border bg-card overflow-hidden transition-[border-color,box-shadow] duration-base cursor-pointer group',
         isDragging
-          ? 'border-primary/30 ring-2 ring-primary/20'
-          : 'border-border hover:border-primary/30',
+          ? 'border-primary/30 ring-2 ring-primary/20 shadow-lg'
+          : 'border-border hover:border-primary/30 hover:shadow-md',
       )}
       onClick={() => onClick?.(item)}
       {...dragHandleProps}

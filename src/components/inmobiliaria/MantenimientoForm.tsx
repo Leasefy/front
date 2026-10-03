@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench,
   Lightning,
@@ -21,9 +20,10 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Textarea } from '@/components/ui';
-import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   MAX_LARGO_TITULO_DEL_MANTENIMIENTO,
   MENSAJES_DEL_MANTENIMIENTO,
@@ -289,14 +289,13 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
             />
           </div>
 
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
-              >
+          {/* Los resultados bajan apenas desde el buscador y se van rápido. */}
+          <Presence
+            show={isOpen}
+            direction="down"
+            distance="xs"
+            className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
+          >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
                     // allowlist: search-result list-row (property thumbnail + 2-line text as ONE
@@ -337,9 +336,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                     {t('inmobiliaria.mantenimiento.noPropertiesFound')}
                   </div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </Presence>
         </div>
       )}
     </div>
@@ -512,6 +509,11 @@ export function MantenimientoForm({
     fotos: [],
     paidBy: 'owner',
   });
+  // El aviso de prioridad alta se cierra con su altura: mientras se va, sigue
+  // diciendo lo que decía (no salta al texto de la otra prioridad).
+  const prioridadAlta = useUltimoPresente(
+    formData.priority === 'high' || formData.priority === 'emergency' ? formData.priority : null,
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -689,23 +691,21 @@ export function MantenimientoForm({
         </div>
 
         {/* Emergency explanation */}
-        {(formData.priority === 'high' || formData.priority === 'emergency') && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-lg bg-warning-soft border border-warning/30"
-          >
+        {/* Se abre con su altura (y ahora también se CIERRA así: antes
+            desaparecía de golpe al bajar la prioridad). */}
+        <Collapse
+          open={formData.priority === 'high' || formData.priority === 'emergency'}
+          className="p-4 rounded-lg bg-warning-soft border border-warning/30"
+        >
             <div className="flex gap-3">
               <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
               <p className="text-sm text-warning">
-                {formData.priority === 'emergency'
+                {prioridadAlta === 'emergency'
                   ? t('inmobiliaria.mantenimiento.emergencyWarning')
                   : t('inmobiliaria.mantenimiento.highPriorityWarning')}
               </p>
             </div>
-          </motion.div>
-        )}
+        </Collapse>
 
         {/* Title */}
         <div className="space-y-2" data-campo="title">

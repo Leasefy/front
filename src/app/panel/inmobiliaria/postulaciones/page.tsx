@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   ClipboardText,
   Hourglass,
@@ -18,10 +18,20 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
-import { IconButton, SegmentedControl } from '@leasefy/cadence'
+import {
+  AnimatedNumber,
+  CrossFade,
+  IconButton,
+  MotionIndicator,
+  Presence,
+  SegmentedControl,
+} from '@leasefy/cadence'
+
+/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n))
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
@@ -94,6 +104,7 @@ function StatTile({
   icon: Icon,
   active,
   onClick,
+  indicador,
 }: {
   value: number;
   label: string;
@@ -101,6 +112,8 @@ function StatTile({
   icon: typeof ClipboardText;
   active: boolean;
   onClick: () => void;
+  /** `layoutId` compartido por las seis: el marco del filtro activo se DESLIZA de una a otra. */
+  indicador: string;
 }) {
   return (
     <button
@@ -108,17 +121,26 @@ function StatTile({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-3 p-4 rounded-lg border bg-card text-left transition-colors',
-        active
-          ? 'border-primary ring-1 ring-primary'
-          : 'border-border hover:bg-surface-muted',
+        'relative flex items-center gap-3 p-4 rounded-lg border border-border bg-card text-left transition-colors',
+        !active && 'hover:bg-surface-muted',
       )}
     >
+      {/* El marco cobalto del filtro activo (el mismo `border-primary ring-1`
+          de antes), ahora como `MotionIndicator`: viaja a la tarjeta elegida. */}
+      {active && (
+        <MotionIndicator
+          layoutId={indicador}
+          className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
+        />
+      )}
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
         <Icon className="w-5 h-5" weight="duotone" />
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
+        {/* Cuenta cuando cambia (se aprueba, rechaza o llega una nueva). */}
+        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
+          <AnimatedNumber value={value} format={enteroTalCual} />
+        </p>
         <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
       </div>
     </button>
@@ -140,6 +162,7 @@ function initials(name: string): string {
 }
 
 function PostulacionesContenido() {
+  const indicadorDelFiltro = `${useId()}-filtro`
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
@@ -274,12 +297,12 @@ function PostulacionesContenido() {
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
           dice, en vez de borrarla o de dejarla envejecer en silencio. */}
-      {error && cargoAlgunaVez ? (
-        <div
-          role="status"
-          data-testid="refresco-fallido"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
-        >
+      <Presence
+        show={Boolean(error && cargoAlgunaVez)}
+        role="status"
+        data-testid="refresco-fallido"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
+      >
           <span>No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.</span>
           <button
             type="button"
@@ -288,9 +311,13 @@ function PostulacionesContenido() {
           >
             Reintentar
           </button>
-        </div>
-      ) : null}
+      </Presence>
 
+      {/* Esqueleto → fallo → vacío → lista: lo nuevo entra con un fundido. */}
+      <CrossFade
+        swapKey={isLoading ? 'cargando' : error && !cargoAlgunaVez ? 'fallo' : items.length === 0 ? 'vacio' : 'lista'}
+        className="space-y-6"
+      >
       {isLoading ? (
         /* Esqueleto con las 5 columnas reales de la tabla, no un spinner: la
            forma de lo que viene ya se conoce, así que la pantalla no tiene que
@@ -348,6 +375,7 @@ function PostulacionesContenido() {
                 icon={f.icon}
                 active={filter === f.key}
                 onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
+                indicador={indicadorDelFiltro}
               />
             ))}
           </div>
@@ -409,11 +437,13 @@ function PostulacionesContenido() {
                     <TableHead>Fecha</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                {/* Filtrar, buscar, paginar o decidir: las filas entran
+                    escalonadas y las que sobran salen. */}
+                <TableBodyAnimado>
                   {pageItems.map((c) => {
                     const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
                     return (
-                      <TableRow
+                      <TableRowAnimada
                         key={c.id}
                         className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                         // `?candidato=` abre el cajón de ESA persona al llegar.
@@ -470,10 +500,10 @@ function PostulacionesContenido() {
                           )}
                         </TableCell>
                         <TableCell className="text-fg-muted">{formatDate(c.submittedAt)}</TableCell>
-                      </TableRow>
+                      </TableRowAnimada>
                     )
                   })}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             )}
 
@@ -510,6 +540,7 @@ function PostulacionesContenido() {
           </div>
         </>
       )}
+      </CrossFade>
 
       {/* El detalle, en esta misma pantalla. */}
       <CandidateDrawer

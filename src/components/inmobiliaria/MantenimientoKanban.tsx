@@ -15,7 +15,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { Collapse, CrossFade, StaggerItem } from '@leasefy/cadence';
 import {
   Wrench,
   Lightning,
@@ -201,7 +202,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         'w-full text-left p-3 rounded-md border-l-4 bg-surface',
         'border border-border dark:border-border-strong',
         'hover:border-border dark:hover:border-border-strong',
-        'transition-all group',
+        'transition-[border-color,box-shadow] duration-base group',
         onClick && 'cursor-pointer',
         arrastrable && 'cursor-grab active:cursor-grabbing',
         arrastrando && 'shadow-md',
@@ -326,7 +327,7 @@ function TarjetaArrastrable({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn('transition-opacity duration-200', isDragging && 'opacity-40')}
+      className={cn('transition-opacity duration-base', isDragging && 'opacity-40')}
       {...attributes}
       {...listeners}
     >
@@ -393,7 +394,7 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-all duration-200',
+          'relative flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-[border-color,box-shadow] duration-base',
           'bg-surface-muted',
           'min-h-[200px] max-h-[calc(100vh-400px)]',
           encima
@@ -401,33 +402,43 @@ function KanbanColumnComponent({
             : 'border-border dark:border-border-strong'
         )}
       >
-        {/* Sin `AnimatePresence mode="popLayout"` alrededor de las tarjetas:
+        {/* Sin `AnimatePresence mode="popLayout"` DIRECTO sobre las tarjetas:
             ese modo mide a cada hijo con un `ref`, y una tarjeta arrastrable es
             un componente de función que no reenvía refs — React lo avisa en
-            consola en cada render. `PipelineBoard`, que hace exactamente esto
-            desde hace meses, tampoco lo usa. */}
+            consola en cada render.
+            Movimiento (03-10): cada tarjeta va en un `StaggerItem` (un
+            `motion.div` con su `ref`, así que no hay aviso de refs). La que
+            LLEGA a la columna (al soltarla o al cambiar de estado) entra con
+            un fundido; la que se va, sale, y las de abajo suben a su lugar.
+            `initial={false}`: las que ya estaban al montarse no se animan.
+            Vacía ⇄ con tarjetas se cruza con `popLayout` (lo nuevo ya). */}
+        <CrossFade
+          swapKey={items.length > 0 ? 'con-tarjetas' : 'vacia'}
+          mode="popLayout"
+          className="space-y-2"
+        >
         {items.length > 0 ? (
-          items.map((item) =>
-            arrastrable ? (
-              <TarjetaArrastrable
-                key={item.id}
-                solicitud={item}
-                onClick={() => onViewDetails?.(item)}
-                t={t}
-              />
-            ) : (
-              <KanbanCard
-                key={item.id}
-                solicitud={item}
-                onClick={() => onViewDetails?.(item)}
-                t={t}
-              />
-            )
-          )
+          <AnimatePresence initial={false}>
+            {items.map((item) => (
+              <StaggerItem key={item.id}>
+                {arrastrable ? (
+                  <TarjetaArrastrable
+                    solicitud={item}
+                    onClick={() => onViewDetails?.(item)}
+                    t={t}
+                  />
+                ) : (
+                  <KanbanCard
+                    solicitud={item}
+                    onClick={() => onViewDetails?.(item)}
+                    t={t}
+                  />
+                )}
+              </StaggerItem>
+            ))}
+          </AnimatePresence>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+          <div
             className={cn(
               'flex flex-col items-center justify-center h-full py-8 text-fg-subtle',
               encima && 'rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50'
@@ -438,19 +449,18 @@ function KanbanColumnComponent({
             {arrastrable && (
               <p className="text-[10px] mt-1 opacity-70">{t('inmobiliaria.pipeline.dragHere')}</p>
             )}
-          </motion.div>
+          </div>
         )}
+        </CrossFade>
 
-        {/* Zona de soltar al final, cuando la columna ya tiene tarjetas */}
-        {items.length > 0 && encima && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
-          >
-            <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
-          </motion.div>
-        )}
+        {/* Zona de soltar al final, cuando la columna ya tiene tarjetas: abre
+            su lugar con la altura y se cierra al soltar o salir. */}
+        <Collapse
+          open={items.length > 0 && encima}
+          className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
+        >
+          <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
+        </Collapse>
       </div>
     </div>
   );

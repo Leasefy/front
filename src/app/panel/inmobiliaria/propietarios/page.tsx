@@ -1,6 +1,5 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -65,7 +64,7 @@ import {
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
-import { SegmentedControl, KpiCard, AnimatedNumber, Presence } from '@leasefy/cadence';
+import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
@@ -741,16 +740,16 @@ function PropietariosContent() {
               /* Las tarjetas entran escalonadas (techo de 320 ms) y, al cambiar
                  de página, las que se van salen: `key` = el id. Sin `layout`:
                  una página entera cambia de una vez, no se reacomoda. */
-              <ListaQueAnima layout={false} className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <Stagger layout={false} className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paginationData.paginatedItems.map((propietario) => (
-                  <ElementoQueAnima key={propietario.id}>
+                  <StaggerItem key={propietario.id}>
                     <PropietarioCard
                       propietario={propietario}
                       onClick={() => handleView(propietario)}
                     />
-                  </ElementoQueAnima>
+                  </StaggerItem>
                 ))}
-              </ListaQueAnima>
+              </Stagger>
             )}
           </EstadoDeDatos>
         </div>

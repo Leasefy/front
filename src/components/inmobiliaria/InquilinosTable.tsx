@@ -42,7 +42,6 @@
  */
 
 import { useMemo, useState } from 'react';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import Link from 'next/link';
 import {
   CaretDown,
@@ -62,6 +61,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
@@ -336,7 +337,7 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
         </TableHeader>
         {/* Las filas entran escalonadas (techo de 320 ms) y, al cambiar el
             filtro o la búsqueda, las que se van salen (`key` = la persona). */}
-        <CuerpoQueAnima>
+        <TableBodyAnimado>
           {ordenados.map((persona) => (
             <FilaDeInquilino
               key={persona.tenantId}
@@ -346,7 +347,7 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
               onAbrir={() => onAbrir(persona)}
             />
           ))}
-        </CuerpoQueAnima>
+        </TableBodyAnimado>
       </Table>
     </div>
   );
@@ -378,7 +379,7 @@ function FilaDeInquilino({
 
   return (
     <>
-      <FilaQueAnima
+      <TableRowAnimada
         className="group cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
         onClick={onAbrir}
         data-testid="inquilino-fila"
@@ -543,12 +544,12 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-      </FilaQueAnima>
+      </TableRowAnimada>
 
       {/* El despliegue de los arriendos entra bajando su fila (la misma
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
-        <FilaQueAnima data-testid="inquilino-arriendos">
+        <TableRowAnimada data-testid="inquilino-arriendos">
           <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
@@ -561,7 +562,7 @@ function FilaDeInquilino({
               ))}
             </ul>
           </TableCell>
-        </FilaQueAnima>
+        </TableRowAnimada>
       )}
     </>
   );

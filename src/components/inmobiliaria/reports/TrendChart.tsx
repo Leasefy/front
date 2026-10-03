@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { BarraQueCrece } from './barra-que-crece';
 
 // ============================================================================
 // TrendChart - CSS-only line/sparkline chart
@@ -72,7 +73,7 @@ export function TrendChart({
                   {/* Stem */}
                   <div
                     className={cn(
-                      'w-1 rounded-b transition-all duration-500 opacity-40 group-hover:opacity-70',
+                      'w-1 rounded-b transition-opacity duration-base opacity-40 group-hover:opacity-70',
                       color
                     )}
                     style={{ height: `${normalized}%` }}
@@ -124,7 +125,7 @@ interface BarChartProps {
 /**
  * BarChart renders vertical or horizontal CSS bars proportionally.
  * If secondaryValue is provided, shows side-by-side bars (e.g., expected vs collected).
- * No SVG or canvas - pure div widths/heights with transitions.
+ * No SVG or canvas - pure div widths/heights; the bars grow in with `scaleX`/`scaleY`.
  */
 export function BarChart({
   data,
@@ -168,9 +169,9 @@ export function BarChart({
               </div>
               <div className="space-y-1">
                 <div className="h-2.5 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
-                  <div
+                  <BarraQueCrece eje="x"
                     className={cn(
-                      'h-full rounded-full transition-all duration-500',
+                      'h-full rounded-full',
                       color
                     )}
                     style={{ width: `${primaryWidth}%` }}
@@ -178,9 +179,9 @@ export function BarChart({
                 </div>
                 {hasSecondary && point.secondaryValue != null && (
                   <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
-                    <div
+                    <BarraQueCrece eje="x"
                       className={cn(
-                        'h-full rounded-full transition-all duration-500',
+                        'h-full rounded-full',
                         secondaryColor
                       )}
                       style={{ width: `${secondaryWidth}%` }}
@@ -222,9 +223,9 @@ export function BarChart({
                 <span className="absolute -top-5 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap z-10">
                   {point.value}
                 </span>
-                <div
+                <BarraQueCrece
                   className={cn(
-                    'w-full rounded-t transition-all duration-500 group-hover:opacity-80',
+                    'w-full rounded-t transition-opacity duration-base group-hover:opacity-80',
                     color
                   )}
                   style={{ height: `${primaryHeight}%` }}
@@ -237,9 +238,9 @@ export function BarChart({
                   <span className="absolute -top-5 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap z-10">
                     {point.secondaryValue}
                   </span>
-                  <div
+                  <BarraQueCrece
                     className={cn(
-                      'w-full rounded-t transition-all duration-500 group-hover:opacity-80',
+                      'w-full rounded-t transition-opacity duration-base group-hover:opacity-80',
                       secondaryColor
                     )}
                     style={{ height: `${secondaryHeight}%` }}

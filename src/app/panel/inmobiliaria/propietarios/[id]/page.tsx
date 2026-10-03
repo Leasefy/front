@@ -1,6 +1,5 @@
 'use client';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
@@ -45,7 +44,7 @@ import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { SegmentedControl, IconButton, CrossFade, Pressable } from '@leasefy/cadence';
+import { SegmentedControl, IconButton, CrossFade, Pressable, Stagger, StaggerItem } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -962,13 +961,13 @@ function PropietarioDetailContent() {
                   </div>
                 }
               >
-                <ListaQueAnima className="space-y-4">
+                <Stagger className="space-y-4">
                   {consignaciones.map((consignacion) => (
-                    <ElementoQueAnima key={consignacion.id}>
+                    <StaggerItem key={consignacion.id}>
                       <PropertyCard consignacion={consignacion} />
-                    </ElementoQueAnima>
+                    </StaggerItem>
                   ))}
-                </ListaQueAnima>
+                </Stagger>
               </EstadoDeDatos>
             )}
 
@@ -992,13 +991,13 @@ function PropietarioDetailContent() {
                   </div>
                 }
               >
-                <ListaQueAnima className="space-y-4">
+                <Stagger className="space-y-4">
                   {dispersiones.map((dispersion) => (
-                    <ElementoQueAnima key={dispersion.id}>
+                    <StaggerItem key={dispersion.id}>
                       <PaymentHistoryItem dispersion={dispersion} />
-                    </ElementoQueAnima>
+                    </StaggerItem>
                   ))}
-                </ListaQueAnima>
+                </Stagger>
               </EstadoDeDatos>
             )}
 

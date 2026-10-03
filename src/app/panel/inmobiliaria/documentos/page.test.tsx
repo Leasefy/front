@@ -245,7 +245,10 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    // Las filas que entran y salen (movimiento ola 2): la etiqueta tal cual.
+    TableBodyAnimado: el('tbody'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }

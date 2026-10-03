@@ -187,6 +187,12 @@ TableFooter.displayName = "TableFooter"
  * - Con movimiento reducido, sólo fundidos.
  * - Una pantalla que ya usa `EstadoDeDatos` NO necesita esto para la carga:
  *   esto es para los CAMBIOS de la lista ya cargada.
+ * - Funciona en el modo estricto de React (`next dev`): cada fila se anima
+ *   sola con su retraso por turno (Cadence, 03-10-2026). Antes el cuerpo
+ *   orquestaba a las filas con variantes y el doble montaje las dejaba en
+ *   `opacity: 0` (tablas vacías). Lo fija `table.movimiento.test.tsx`.
+ * - Dentro de algo que no anima su primer contenido (un `CrossFade`, un
+ *   `Collapse` abierto), las filas de ese primer pintado se ven quietas.
  */
 const TableBodyAnimado = React.forwardRef<
   HTMLDivElement,

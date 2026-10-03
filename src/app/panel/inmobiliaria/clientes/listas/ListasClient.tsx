@@ -30,6 +30,8 @@
  */
 
 import { useMemo, useState } from 'react'
+import { Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { MagnifyingGlass, ShieldWarning, UploadSimple, Warning } from '@phosphor-icons/react'
 
@@ -95,6 +97,10 @@ export function ListasClient() {
 
   const consultas = bandeja.datos?.consultas ?? []
   const sinVerificar = bandeja.datos?.sinVerificar ?? 0
+  // La bandeja se pliega con su altura al quedar en cero; mientras se va,
+  // sigue diciendo cuántos había.
+  const sinVerificarQueSeVe = useUltimoPresente(sinVerificar > 0 ? sinVerificar : null) ?? 0
+  const resultadoQueSeVe = useUltimoPresente(resultado)
   const hayListaCargada = bandeja.datos?.hayListaCargada ?? false
   const listas = cargadas.datos?.listas ?? []
 
@@ -229,7 +235,7 @@ export function ListasClient() {
 
       {/* 🔴 La bandeja, arriba y con número: es una deuda, no una lista. Cada
           fila es un tercero que está operando sin que nadie lo haya comprobado. */}
-      {!bandeja.noHabilitado && sinVerificar > 0 ? (
+      <Collapse open={!bandeja.noHabilitado && sinVerificar > 0}>
         <section
           className="rounded-lg border border-warning/30 bg-warning-soft p-4"
           data-testid="bandeja-sin-verificar"
@@ -239,7 +245,7 @@ export function ListasClient() {
               <Warning className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="fill" />
               <div className="space-y-0.5">
                 <p className="text-body font-medium text-fg">
-                  {sinVerificar} tercero{sinVerificar === 1 ? '' : 's'} sin verificar
+                  {sinVerificarQueSeVe} tercero{sinVerificarQueSeVe === 1 ? '' : 's'} sin verificar
                 </p>
                 <p className="text-caption text-fg-muted">
                   {hayListaCargada
@@ -259,13 +265,11 @@ export function ListasClient() {
               </Button>
             ) : null}
           </div>
-          {resultado ? (
-            <p className="mt-3 text-sm text-fg" data-testid="resultado-revision">
-              {resultado}
-            </p>
-          ) : null}
+          <Presence as="p" show={Boolean(resultado)} className="mt-3 text-sm text-fg" data-testid="resultado-revision">
+            {resultadoQueSeVe}
+          </Presence>
         </section>
-      ) : null}
+      </Collapse>
 
       {/* 🔴 UNA tarjeta: pestañas, buscador y tabla (regla 2 del molde). Eran
           dos tarjetas apiladas, cada una con su vacío de 400 px. */}
@@ -280,8 +284,12 @@ export function ListasClient() {
                 Listas cargadas ({listas.length})
               </TabsTrigger>
             </TabsList>
-            {parte === 'consultas' && consultas.length > 0 && (
-              <div className="relative w-full sm:max-w-sm">
+            {/* El buscador es de las consultas: aparece y se va con la pestaña. */}
+            <Presence
+              show={parte === 'consultas' && consultas.length > 0}
+              direction="none"
+              className="relative w-full sm:max-w-sm"
+            >
                 <MagnifyingGlass
                   className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
                   aria-hidden="true"
@@ -294,8 +302,7 @@ export function ListasClient() {
                   onChange={(e) => setBusqueda(e.target.value)}
                   data-testid="buscar-consulta"
                 />
-              </div>
-            )}
+            </Presence>
           </div>
 
           <TabsContent value="consultas" className="mt-0">
@@ -329,11 +336,11 @@ export function ListasClient() {
                     }
                   />
                 ) : (
-                  <ul className="divide-y divide-border-faint" data-testid="lista-de-consultas">
+                  <Stagger as="ul" layout={false} className="divide-y divide-border-faint" data-testid="lista-de-consultas">
                     {paginado.pageItems.map((c) => {
                       const rotulo = ROTULO[c.estado]
                       return (
-                        <li key={c.id}>
+                        <StaggerItem as="li" key={c.id}>
                           {/* 🔴 La fila abre el cajón con TODO y con la decisión.
                               La tabla no puede llevar dos botones por fila. */}
                           <button
@@ -358,10 +365,10 @@ export function ListasClient() {
                               {rotulo.texto}
                             </Badge>
                           </button>
-                        </li>
+                        </StaggerItem>
                       )
                     })}
-                  </ul>
+                  </Stagger>
                 )}
                 {paginado.shouldPaginate && (
                   <div className="border-t border-border px-4 py-3">
@@ -402,9 +409,9 @@ export function ListasClient() {
                     descripcion="Descarga el archivo del sitio de la OFAC, la ONU o la UE y cárgalo con el botón de arriba. Mientras no haya lista, los terceros se crean igual y quedan «sin verificar»."
                   />
                 ) : (
-                  <ul className="divide-y divide-border-faint" data-testid="lista-de-listas">
+                  <Stagger as="ul" className="divide-y divide-border-faint" data-testid="lista-de-listas">
                     {listas.map((l) => (
-                      <li
+                      <StaggerItem as="li"
                         key={l.id}
                         className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5"
                         data-testid={`lista-${l.lista}`}
@@ -427,9 +434,9 @@ export function ListasClient() {
                           </p>
                         </div>
                         {l.activa ? null : <Badge variant="outline">Desactivada</Badge>}
-                      </li>
+                      </StaggerItem>
                     ))}
-                  </ul>
+                  </Stagger>
                 )}
               </EstadoDeDatos>
             )}

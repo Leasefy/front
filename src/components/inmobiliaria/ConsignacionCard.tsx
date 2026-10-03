@@ -4,6 +4,7 @@ import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Pressable, motionSpring } from '@leasefy/cadence';
 import {
   Buildings,
   House,
@@ -133,12 +134,13 @@ export function ConsignacionCard({
   // Compact variant - single row for list views
   if (variant === 'compact') {
     return (
-      <motion.button
+      <Pressable
+        as="button"
+        hover="scale"
+        press="sm"
         onClick={onClick}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-base text-left',
           selected
             ? 'border-primary/30 bg-primary-soft dark:border-primary/30'
             : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong'
@@ -187,6 +189,7 @@ export function ConsignacionCard({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3 text-primary-fg"
               fill="none"
               viewBox="0 0 24 24"
@@ -196,16 +199,17 @@ export function ConsignacionCard({
             </motion.svg>
           </div>
         )}
-      </motion.button>
+      </Pressable>
     );
   }
 
   // Default variant - full card with stats
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
+    <Pressable
+      hover="lift"
+      press="none"
       className={cn(
-        'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-[border-color,box-shadow] duration-base group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/30'
           : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:',
@@ -401,7 +405,7 @@ export function ConsignacionCard({
           )}
         </div>
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 

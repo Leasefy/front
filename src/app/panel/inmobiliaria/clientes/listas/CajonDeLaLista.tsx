@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { UploadSimple, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -311,11 +312,15 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
           <ErrorDelCampo id="lista-archivo-error" mensaje={errores.archivo} />
         </div>
 
-        {leyendo && (
-          <p className="flex items-center gap-2 text-sm text-fg-muted" data-testid="lista-leyendo">
+        <Presence
+          as="p"
+          show={leyendo}
+          distance="xs"
+          className="flex items-center gap-2 text-sm text-fg-muted"
+          data-testid="lista-leyendo"
+        >
             <Spinner className="h-4 w-4" /> Leyendo el archivo…
-          </p>
-        )}
+        </Presence>
 
         {/* 🔴 Lo que se encontró, ANTES de cargar. Una lista mal leída bloquea
             a clientes reales: nadie carga a ciegas. */}

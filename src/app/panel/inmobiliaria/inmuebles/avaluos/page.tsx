@@ -39,7 +39,8 @@
  * both locales.
  */
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { MotionIndicator, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import {
   Check,
@@ -141,6 +142,8 @@ function AvaluosSala() {
   const { t } = useI18n()
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
+  // El filtro de estado elegido lleva su píldora, que se DESLIZA al nuevo.
+  const indicadorDelEstado = `${useId()}-estado`
 
   // Both CTAs end at the avalúo MICRO's wizard, whose origin comes from
   // `NEXT_PUBLIC_AVALUO_API_URL`. When that is unset there is no URL to compose:
@@ -379,17 +382,18 @@ function AvaluosSala() {
           Output of the "Generar link para compartir" action: the minted wizard
           link carries the agency token so the avalúo is issued in the agency's
           name. The agency copies it and sends it to their client. */}
-      {shareUrl && (
-        <div
-          className="rounded-lg border border-border bg-card p-4 space-y-3"
-          data-testid="avaluos-share-link"
-        >
+      {/* El link recién generado aparece con su entrada (sube 8 px). */}
+      <Presence
+        show={Boolean(shareUrl)}
+        className="rounded-lg border border-border bg-card p-4 space-y-3"
+        data-testid="avaluos-share-link"
+      >
           <p className="text-sm text-muted-foreground">{t(`${NS}.linkListoDetalle`)}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               readOnly
-              value={shareUrl}
+              value={shareUrl ?? ''}
               aria-label={t(`${NS}.linkAria`)}
               onFocus={(e) => e.currentTarget.select()}
               className="flex-1 min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-mono text-foreground truncate"
@@ -409,14 +413,13 @@ function AvaluosSala() {
                 )}
               </Button>
               <Button asChild variant="outline" hideArrow>
-                <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                <a href={shareUrl ?? undefined} target="_blank" rel="noopener noreferrer">
                   {t(`${NS}.abrirAhora`)}
                 </a>
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </Presence>
 
       {/* ── ¿Cómo funciona? ────────────────────────────────────────── */}
       <div
@@ -473,12 +476,19 @@ function AvaluosSala() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => onStateChange(tab.value)}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium border transition-colors ${
+                className={`relative isolate rounded-full px-3.5 py-1.5 text-sm font-medium border transition-colors ${
                   active
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? 'text-primary-foreground border-transparent'
                     : 'bg-card text-muted-foreground border-border hover:bg-muted/40'
                 }`}
               >
+                {/* La píldora cobalto del activo (la misma de antes), que viaja. */}
+                {active && (
+                  <MotionIndicator
+                    layoutId={indicadorDelEstado}
+                    className="-inset-px -z-10 rounded-full border border-primary bg-primary"
+                  />
+                )}
                 {tab.label}
               </button>
             )
@@ -531,11 +541,12 @@ function AvaluosSala() {
             </div>
 
             {/* Rows */}
-            <ul role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {/* Filtrar o paginar: las filas entran escalonadas (paginada: sin `layout`). */}
+            <Stagger as="ul" layout={false} role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {avaluos.map((item) => {
                 const meta = stateMeta(item.state, t)
                 return (
-                  <li
+                  <StaggerItem as="li"
                     key={item.id}
                     className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-4 py-3"
                   >
@@ -557,10 +568,10 @@ function AvaluosSala() {
                     <span className="text-xs text-muted-foreground hidden sm:block text-right whitespace-nowrap tabular-nums">
                       {formatDate(item.createdAt)}
                     </span>
-                  </li>
+                  </StaggerItem>
                 )
               })}
-            </ul>
+            </Stagger>
 
             {/* Pie de tabla del design system, el mismo del resto del panel:
                 «Mostrando 1–100 de N». Antes eran dos botones Anterior/

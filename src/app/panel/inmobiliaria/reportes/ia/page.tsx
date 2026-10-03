@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
@@ -19,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, Pressable, SegmentedControl } from '@leasefy/cadence';
 import {
   AnalyticsDashboard,
 } from '@/components/inmobiliaria';
@@ -151,18 +150,16 @@ function HeroKPICard({
   // al pasar por encima, se hunde al hacer clic, entra en el recorrido del
   // teclado y un lector de pantalla lo anuncia como botón. Las cuatro tarjetas
   // de arriba nunca recibieron `onClick`. Si no hay a dónde ir, es un bloque.
-  const Contenedor = onClick ? motion.button : motion.div;
-
-  return (
-    <Contenedor
-      {...(onClick
-        ? { onClick, whileHover: { y: -2 }, whileTap: { scale: 0.98 } }
-        : {})}
-      className={cn(
-        'w-full p-5 rounded-lg border bg-card text-left transition-all',
-        colors.border
-      )}
-    >
+  // Con `onClick`, `Pressable` (sube 2px y se hunde con los resortes del
+  // sistema); sin él, un bloque quieto.
+  const contenedorProps = {
+    className: cn(
+      'w-full p-5 rounded-lg border bg-card text-left transition-colors duration-base',
+      colors.border
+    ),
+  };
+  const contenido = (
+    <>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', colors.bg)}>
@@ -183,7 +180,10 @@ function HeroKPICard({
       </div>
 
       {/* Value */}
-      <p className="text-2xl font-bold text-foreground mb-1">{value}</p>
+      {/* «—» → la cifra al llegar las métricas: se cruzan con un fundido. */}
+      <CrossFade as="p" swapKey={String(value)} className="text-2xl font-bold text-foreground mb-1">
+        {value}
+      </CrossFade>
       <p className="text-sm text-muted-foreground mb-3">{label}</p>
 
       {/* Trend & Target */}
@@ -216,7 +216,15 @@ function HeroKPICard({
           />
         </div>
       )}
-    </Contenedor>
+    </>
+  );
+
+  return onClick ? (
+    <Pressable as="button" onClick={onClick} {...contenedorProps}>
+      {contenido}
+    </Pressable>
+  ) : (
+    <div {...contenedorProps}>{contenido}</div>
   );
 }
 
@@ -415,12 +423,9 @@ function AnalyticsContent() {
         </p>
       </div>
 
-      {/* Hero KPIs - Executive Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
+      {/* Hero KPIs - Executive Summary (sin entrada propia: la página entra
+          con su template) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <HeroKPICard
           icon={Lightning}
           label="Evaluaciones este mes"
@@ -453,15 +458,10 @@ function AnalyticsContent() {
           value={heroKPIs.hoursSaved.value}
           accentColor="violet"
         />
-      </motion.div>
+      </div>
 
       {/* Main Content Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Tabs */}
         <div className="m-4 mb-0 w-fit">
           <SegmentedControl<AnalyticsView>
@@ -485,16 +485,13 @@ function AnalyticsContent() {
 
         {/* View Content */}
         <div className="p-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
+          {/* Cambiar de vista: la vieja se va rápido y la nueva entra. Adentro,
+              cargando → métricas (o → fallo) también se cruzan. */}
+          <CrossFade swapKey={activeView}>
               {activeView === 'dashboard' && (
-                <>
+                <CrossFade
+                  swapKey={isLoading ? 'cargando' : analyticsError ? 'fallo' : 'listo'}
+                >
                   {/* Antes acá salía `Unauthorized` en rojo: el mensaje crudo
                       del backend, en inglés, suelto en el medio de la tarjeta,
                       sin decir qué hacer. `FalloDeCarga` lo clasifica y ofrece
@@ -509,12 +506,11 @@ function AnalyticsContent() {
                     />
                   )}
                   {!analyticsError && analyticsData && <AnalyticsDashboard data={analyticsData} />}
-                </>
+                </CrossFade>
               )}
-            </motion.div>
-          </AnimatePresence>
+          </CrossFade>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -32,7 +32,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, Star } from '@phosphor-icons/react';
-import { Eyebrow } from '@leasefy/cadence';
+import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
@@ -195,6 +196,8 @@ function FormularioDeProveedor({
   });
   const [guardando, setGuardando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
+  // El aviso de la falla sale con su animación sin vaciarse mientras se va.
+  const fallaQueSeVe = useUltimoPresente(falla);
   /** Lo que rechazó el back, por campo; cada campo borra el suyo al tocarse. */
   const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelProveedor, string>>>({});
   const formulario = useRef<HTMLFormElement>(null);
@@ -445,14 +448,13 @@ function FormularioDeProveedor({
             />
           </Campo>
 
-          {falla && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
-            >
-              {falla}
-            </div>
-          )}
+          <Presence
+            show={Boolean(falla)}
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
+          >
+            {fallaQueSeVe}
+          </Presence>
 
         </form>
 
@@ -576,7 +578,12 @@ function HistorialDeCalificaciones({
         <DialogHeader>
           <DialogTitle>Cómo le ha ido a {proveedor.nombre}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        {/* Cargando → calificaciones (o → vacío / fallo) con un fundido, y las
+            calificaciones entran escalonadas. */}
+        <CrossFade
+          className="space-y-3"
+          swapKey={error ? 'fallo' : filas === null ? 'cargando' : filas.length === 0 ? 'vacio' : 'lista'}
+        >
           {error ? (
             <p role="alert" className="text-sm text-danger">
               No se pudo cargar el historial.
@@ -588,8 +595,10 @@ function HistorialDeCalificaciones({
           {filas?.length === 0 && (
             <p className="text-sm text-fg-muted">Todavía no lo han calificado.</p>
           )}
-          {filas?.map((c) => (
-            <div key={c.id} className="rounded-md border border-border p-3">
+          {filas && filas.length > 0 && (
+          <Stagger className="space-y-3">
+          {filas.map((c) => (
+            <StaggerItem key={c.id} className="rounded-md border border-border p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1 text-sm">
                   <Star className="h-4 w-4 text-warning" weight="fill" />
@@ -607,9 +616,11 @@ function HistorialDeCalificaciones({
               {c.comentario && (
                 <p className="mt-2 text-sm text-fg-muted">{c.comentario}</p>
               )}
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+          </Stagger>
+          )}
+        </CrossFade>
       </DialogContent>
     </Dialog>
   );

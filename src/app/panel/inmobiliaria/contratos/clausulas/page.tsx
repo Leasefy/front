@@ -22,8 +22,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
-import { CrossFade, Presence } from '@leasefy/cadence';
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Scroll, Plus, WarningCircle, CheckCircle } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -183,9 +182,9 @@ function ContenidoDeClausulas() {
         >
           {/* La cláusula nueva entra y las demás se acomodan (`key` = el id).
               «No se ofrece» baja la opacidad con transición, sin saltar. */}
-          <ListaQueAnima as="ul" className="space-y-3">
+          <Stagger as="ul" className="space-y-3">
             {(clausulas ?? []).map((c) => (
-              <ElementoQueAnima
+              <StaggerItem
                 as="li"
                 key={c.id}
                 data-testid="clausula"
@@ -225,9 +224,9 @@ function ContenidoDeClausulas() {
                     </div>
                   )}
                 </div>
-              </ElementoQueAnima>
+              </StaggerItem>
             ))}
-          </ListaQueAnima>
+          </Stagger>
         </EstadoDeDatos>
       </div>
 

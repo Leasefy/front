@@ -1,7 +1,6 @@
 'use client'
 
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -36,6 +35,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -363,14 +364,14 @@ export default function RevisionesClient() {
             </TableHeader>
             {/* La decisión que se revisa o se filtra sale y las demás suben
                 (`key` = el id); las que llegan entran escalonadas. */}
-            <CuerpoQueAnima>
+            <TableBodyAnimado>
               {pageItems.map((d) => {
                 const meta = decisionMeta(d.decisionType)
                 const DecisionIcon = meta.icon
                 const reviewed = d.reviewedBy !== null
                 const canReview = d.reviewable && !reviewed
                 return (
-                  <FilaQueAnima key={d.id}>
+                  <TableRowAnimada key={d.id}>
                     <TableCell>
                       <span
                         className={
@@ -445,10 +446,10 @@ export default function RevisionesClient() {
                         <span className="flex justify-end text-xs text-fg-subtle">—</span>
                       )}
                     </TableCell>
-                  </FilaQueAnima>
+                  </TableRowAnimada>
                 )
               })}
-            </CuerpoQueAnima>
+            </TableBodyAnimado>
           </Table>
 
           {/* Pie de tabla del design system: cuántas decisiones hay, cuántas

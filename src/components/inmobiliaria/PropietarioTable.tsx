@@ -18,7 +18,6 @@ import {
   Export,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +27,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import {
   DropdownList,
@@ -296,13 +297,13 @@ export function PropietarioTable({
           </TableHeader>
           {/* Las filas entran escalonadas (techo de 320 ms) y, al filtrar o
               buscar, la que se va sale en su lugar: `key` = el id. */}
-          <CuerpoQueAnima>
+          <TableBodyAnimado>
             {filteredPropietarios.map((propietario) => {
               const isCompany = propietario.documentType === 'NIT';
               const hasPending = propietario.pendingBalance > 0;
 
               return (
-                <FilaQueAnima
+                <TableRowAnimada
                   key={propietario.id}
                   onClick={() => onView(propietario)}
                   className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
@@ -450,10 +451,10 @@ export function PropietarioTable({
                       </DropdownListContent>
                     </DropdownList>
                   </TableCell>
-                </FilaQueAnima>
+                </TableRowAnimada>
               );
             })}
-          </CuerpoQueAnima>
+          </TableBodyAnimado>
         </Table>
 
         {/* Empty State — se mira el total con filtros, no las filas de ESTA

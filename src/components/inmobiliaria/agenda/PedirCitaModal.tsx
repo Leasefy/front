@@ -21,7 +21,8 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
-import { DatePicker } from '@leasefy/cadence';
+import { DatePicker, Presence } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
@@ -221,6 +222,8 @@ export function PedirCitaModal({
   const [submitting, setSubmitting] = useState(false);
   /** Lo que rechazó el back, por campo. Cada campo borra el suyo al tocarse. */
   const [rechazos, setRechazos] = useState<Partial<Record<CampoDelRechazo, string>>>({});
+  // El rechazo general sale con su animación: mientras se va, sigue diciendo lo que decía.
+  const rechazoGeneral = useUltimoPresente(rechazos.general);
   const formulario = useRef<HTMLDivElement>(null);
   const quitarRechazo = (campo: CampoDelRechazo) =>
     setRechazos((r) => (r[campo] ? { ...r, [campo]: undefined } : r));
@@ -563,12 +566,10 @@ export function PedirCitaModal({
               </SelectContent>
             </Select>
             {avisoDe('modalidad')}
-            {modalidades?.length === 0 && (
-              <p className="mt-1.5 text-caption text-fg-muted">
+            <Presence as="p" show={modalidades?.length === 0} distance="xs" className="mt-1.5 text-caption text-fg-muted">
                 Este inmueble todavía no tiene horarios de visita cargados: se ofrecen las
                 dos modalidades, pero conviene configurarlos en su ficha.
-              </p>
-            )}
+            </Presence>
           </div>
 
           {/* Notes */}
@@ -592,15 +593,15 @@ export function PedirCitaModal({
           </div>
         </div>
 
-        {rechazos.general ? (
-          <p
-            role="alert"
-            data-testid="cita-rechazo-general"
-            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-          >
-            {rechazos.general}
-          </p>
-        ) : null}
+        <Presence
+          as="p"
+          show={Boolean(rechazos.general)}
+          role="alert"
+          data-testid="cita-rechazo-general"
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {rechazoGeneral}
+        </Presence>
 
         <ResponsiveDialogFooter className="gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>

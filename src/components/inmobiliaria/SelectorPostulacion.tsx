@@ -25,8 +25,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima'
-import { CrossFade } from '@leasefy/cadence'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useRouter } from 'next/navigation'
 import { Plus, MagnifyingGlass, User, House } from '@phosphor-icons/react'
 
@@ -194,9 +193,9 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                 // Sin scroll propio: el cuerpo del modal es lo único que scrollea
                 // (y ya trae `data-lenis-prevent`, DESIGN.md §17).
                 // Al buscar, las que no coinciden salen y las que vuelven entran.
-                <ListaQueAnima as="ul" className="space-y-1">
+                <Stagger as="ul" className="space-y-1">
                   {elegibles.map((c) => (
-                    <ElementoQueAnima as="li" key={c.id}>
+                    <StaggerItem as="li" key={c.id}>
                       <button
                         type="button"
                         onClick={() => {
@@ -223,9 +222,9 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
                           </span>
                         </span>
                       </button>
-                    </ElementoQueAnima>
+                    </StaggerItem>
                   ))}
-                </ListaQueAnima>
+                </Stagger>
               )}
             </div>
           )}

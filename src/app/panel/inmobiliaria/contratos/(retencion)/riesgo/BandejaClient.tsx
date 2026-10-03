@@ -1,7 +1,6 @@
 'use client'
 
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Warning } from '@phosphor-icons/react'
@@ -14,6 +13,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { CrossFade, Presence } from '@leasefy/cadence'
 
@@ -216,9 +217,9 @@ export default function BandejaClient() {
               </TableHeader>
               {/* Al cambiar de pestaña o buscar, las filas que no van salen y
                   las que llegan entran (`key` = el caso). */}
-              <CuerpoQueAnima>
+              <TableBodyAnimado>
                 {pageItems.map((c) => (
-                  <FilaQueAnima
+                  <TableRowAnimada
                     key={c.caseId}
                     role="link"
                     tabIndex={0}
@@ -252,9 +253,9 @@ export default function BandejaClient() {
                     <TableCell numeric className="font-semibold text-fg whitespace-nowrap">
                       {formatCop(c.expectedCommissionLoss)}
                     </TableCell>
-                  </FilaQueAnima>
+                  </TableRowAnimada>
                 ))}
-              </CuerpoQueAnima>
+              </TableBodyAnimado>
             </Table>
 
             {/* Pie de tabla del design system: cuántos casos hay, cuáles se

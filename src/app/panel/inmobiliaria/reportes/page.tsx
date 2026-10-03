@@ -4,7 +4,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
   ChartLine,
@@ -19,7 +18,10 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui';
-import { SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+
+/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import {
@@ -468,12 +470,9 @@ function ReportesContent() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-      >
+      {/* Quick Stats — sin entrada propia (la página entra con su template);
+          las cifras cuentan cuando cambian (marcar o quitar un favorito). */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
@@ -481,7 +480,7 @@ function ReportesContent() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {stats.totalReports}
+                <AnimatedNumber value={stats.totalReports} format={enteroTalCual} />
               </p>
               <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.reports')}</p>
             </div>
@@ -495,7 +494,7 @@ function ReportesContent() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {stats.favoritesCount}
+                <AnimatedNumber value={stats.favoritesCount} format={enteroTalCual} />
               </p>
               <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.favorites')}</p>
             </div>
@@ -517,15 +516,10 @@ function ReportesContent() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
           <SegmentedControl<ViewMode>
@@ -581,22 +575,17 @@ function ReportesContent() {
                 ({favoriteReports.length})
               </span>
             </div>
-            <div
+            {/* Marcar o quitar un favorito: el reporte sale de una lista y
+                entra en la otra; los demás se corren a su lugar. */}
+            <Stagger
               className={cn(
                 viewMode === 'grid'
                   ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
                   : 'space-y-3'
               )}
             >
-              <AnimatePresence mode="popLayout">
                 {favoriteReports.map((report) => (
-                  <motion.div
-                    key={report.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                  >
+                  <StaggerItem key={report.id} className="flex [&>*]:w-full">
                     <ReporteCard
                       report={{ ...report, isFavorite: true }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
@@ -609,10 +598,9 @@ function ReportesContent() {
                       isLocked={!!report.premium && !hasAdvancedReports}
                       onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </AnimatePresence>
-            </div>
+            </Stagger>
           </div>
         )}
 
@@ -630,22 +618,17 @@ function ReportesContent() {
                 </span>
               </div>
             )}
-            <div
+            {/* Marcar o quitar un favorito: el reporte sale de una lista y
+                entra en la otra; los demás se corren a su lugar. */}
+            <Stagger
               className={cn(
                 viewMode === 'grid'
                   ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
                   : 'space-y-3'
               )}
             >
-              <AnimatePresence mode="popLayout">
                 {otherReports.map((report) => (
-                  <motion.div
-                    key={report.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                  >
+                  <StaggerItem key={report.id} className="flex [&>*]:w-full">
                     <ReporteCard
                       report={{ ...report, isFavorite: false }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
@@ -658,10 +641,9 @@ function ReportesContent() {
                       isLocked={!!report.premium && !hasAdvancedReports}
                       onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </AnimatePresence>
-            </div>
+            </Stagger>
           </div>
         )}
 
@@ -686,7 +668,7 @@ function ReportesContent() {
           </div>
         )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Report Viewer Modal */}
       <ReporteViewer

@@ -31,7 +31,8 @@
  *      desconfiar de la pantalla.
  */
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
+import { CrossFade, MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Checkbox } from '@/components/ui/checkbox';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import {
@@ -347,8 +348,13 @@ function FilaDeRequisito({
   onBorrar: () => void
 }) {
   const { texto, icono: Icono } = claseDe(r.clase)
+  // «Obligatorio | Opcional»: la píldora de la elegida se DESLIZA a la otra.
+  const indicador = `${useId()}-obligatorio`
+  // Un `StaggerItem`: agregar o quitar un requisito lo hace entrar o salir, y
+  // los de abajo se corren a su lugar.
   return (
-    <li
+    <StaggerItem
+      as="li"
       className="flex flex-wrap items-start justify-between gap-3 py-3"
       data-testid={`requisito-${r.id}`}
     >
@@ -406,13 +412,16 @@ function FilaDeRequisito({
                     if (r.obligatorio !== o.valor) onAlternar()
                   }}
                   className={cn(
-                    'px-3 py-1 text-xs transition-colors disabled:opacity-50',
+                    'relative isolate px-3 py-1 text-xs transition-colors disabled:opacity-50',
                     r.obligatorio === o.valor
-                      ? 'bg-fg font-medium text-background'
+                      ? 'font-medium text-background'
                       : 'text-fg-muted hover:text-fg',
                   )}
                   data-testid={`poner-${o.valor ? 'obligatorio' : 'opcional'}-${r.id}`}
                 >
+                  {r.obligatorio === o.valor && (
+                    <MotionIndicator layoutId={indicador} className="inset-0 -z-10 bg-fg" />
+                  )}
                   {o.texto}
                 </button>
               ))}
@@ -436,7 +445,7 @@ function FilaDeRequisito({
           </Badge>
         )}
       </div>
-    </li>
+    </StaggerItem>
   )
 }
 
@@ -449,6 +458,7 @@ export function RequisitosClient() {
   const puedeEditar = canAccess('configuracion', 'edit')
 
   const [perfil, setPerfil] = useState<string | null>(null)
+  const indicadorDelPerfil = `${useId()}-perfil`
   const datos = useCrm(
     () => postulacionesApi.requisitos(perfil ?? undefined),
     [perfil],
@@ -627,13 +637,19 @@ export function RequisitosClient() {
                         aria-selected={activa}
                         onClick={() => setPerfil(p.perfil)}
                         className={cn(
-                          'shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm transition-colors',
-                          activa
-                            ? 'border-fg font-medium text-fg'
-                            : 'border-transparent text-fg-muted hover:text-fg',
+                          'relative shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm transition-colors',
+                          activa ? 'font-medium text-fg' : 'text-fg-muted hover:text-fg',
                         )}
                         data-testid={p.perfil ? `perfil-${p.perfil}` : 'perfil-todos'}
                       >
+                        {/* El subrayado de la activa (el mismo de antes), que
+                            se DESLIZA a la pestaña elegida. */}
+                        {activa && (
+                          <MotionIndicator
+                            layoutId={indicadorDelPerfil}
+                            className="inset-x-0 -bottom-0.5 h-0.5 bg-fg"
+                          />
+                        )}
                         {p.nombre}
                       </button>
                     )
@@ -673,8 +689,10 @@ export function RequisitosClient() {
                   />
                 }
               >
+                {/* Otro perfil: la lista vieja se va rápido y entra la nueva. */}
+                <CrossFade swapKey={perfil ?? 'todos'}>
                 {perfil ? (
-                  <ul className="divide-y" data-testid="lista-de-requisitos">
+                  <Stagger as="ul" className="divide-y" data-testid="lista-de-requisitos">
                     {requisitos.map((r) => (
                       <FilaDeRequisito
                         key={r.id}
@@ -686,7 +704,7 @@ export function RequisitosClient() {
                         onBorrar={() => setPorBorrar(r)}
                       />
                     ))}
-                  </ul>
+                  </Stagger>
                 ) : (
                   <div className="space-y-6" data-testid="lista-de-requisitos">
                     {grupos.map((g) => (
@@ -698,7 +716,7 @@ export function RequisitosClient() {
                             {g.items.length === 1 ? 'requisito' : 'requisitos'}
                           </span>
                         </h3>
-                        <ul className="divide-y border-t">
+                        <Stagger as="ul" className="divide-y border-t">
                           {g.items.map((r) => (
                             <FilaDeRequisito
                               key={r.id}
@@ -712,11 +730,12 @@ export function RequisitosClient() {
                               onBorrar={() => setPorBorrar(r)}
                             />
                           ))}
-                        </ul>
+                        </Stagger>
                       </section>
                     ))}
                   </div>
                 )}
+                </CrossFade>
               </EstadoDeDatos>
             </CardContent>
           </Card>

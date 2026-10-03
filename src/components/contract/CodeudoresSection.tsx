@@ -7,8 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima';
-import { Collapse } from '@leasefy/cadence';
+import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import { PencilSimple, Plus, TrashSimple, UserPlus, Users } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,9 +132,9 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
               <p className="text-sm text-fg-muted">Este contrato no tiene codeudores.</p>
             ) : (
               /* El codeudor que se agrega entra y el que se elimina sale (`key` = el id). */
-              <ListaQueAnima as="ul" className="space-y-2" data-testid="codeudores-lista">
+              <Stagger as="ul" className="space-y-2" data-testid="codeudores-lista">
                 {codeudores.map((c) => (
-                  <ElementoQueAnima as="li" key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
+                  <StaggerItem as="li" key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-fg truncate">{c.nombre}</p>
                       <p className="text-xs text-fg-muted">
@@ -171,9 +170,9 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
                         </>
                       )}
                     </div>
-                  </ElementoQueAnima>
+                  </StaggerItem>
                 ))}
-              </ListaQueAnima>
+              </Stagger>
             )}
 
             {/* El formulario se abre y se cierra con su altura. */}

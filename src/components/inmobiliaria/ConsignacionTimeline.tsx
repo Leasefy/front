@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   FileText,
   UserPlus,
@@ -309,7 +309,7 @@ export function ConsignacionTimeline({
       });
     }
     // Mientras el historial real no llegó, no se dibuja el respaldo: si se
-    // pintara y después se quitara, AnimatePresence lo deja un rato en
+    // pintara y después se quitara, la salida animada lo deja un rato en
     // pantalla y el historial se vería duplicado.
     const hayHistorial = (historial?.length ?? 0) > 0 || (historial === null && !falloHistorial);
 
@@ -411,20 +411,16 @@ export function ConsignacionTimeline({
           {/* Vertical line */}
           <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-muted dark:bg-ink" />
 
-          {/* Events */}
-          <div className="space-y-4">
-            <AnimatePresence>
-              {visibleEvents.map((event, index) => {
+          {/* Events: entran escalonados desde la línea (techo de 320 ms), y
+              «Ver más» / «Ver menos» los hace entrar y salir. */}
+          <Stagger className="space-y-4" direction="right">
+              {visibleEvents.map((event) => {
                 const style = EVENT_STYLES[event.type];
                 const Icon = style.icon;
 
                 return (
-                  <motion.div
+                  <StaggerItem
                     key={event.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ delay: index * 0.05 }}
                     className="relative pl-10"
                   >
                     {/* Icon */}
@@ -467,11 +463,10 @@ export function ConsignacionTimeline({
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </StaggerItem>
                 );
               })}
-            </AnimatePresence>
-          </div>
+          </Stagger>
         </div>
         )}
 

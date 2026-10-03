@@ -24,6 +24,7 @@ import {
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui';
@@ -326,9 +327,13 @@ export function PipelineDetail({
             </span>
           }
           actions={
-            <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold', stageInfo?.color)}>
-              {stageInfo?.labelEs}
-            </span>
+            // Al avanzar de etapa la píldora cambia con un fundido: la nueva
+            // entra ya y la vieja se va encima (`popLayout`).
+            <CrossFade as="span" swapKey={item.stage} mode="popLayout" className="inline-flex shrink-0">
+              <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold', stageInfo?.color)}>
+                {stageInfo?.labelEs}
+              </span>
+            </CrossFade>
           }
         />
 
@@ -495,11 +500,13 @@ export function PipelineDetail({
                 {/* Vertical line */}
                 <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-border" />
 
-                <div className="space-y-4">
+                {/* Los hitos entran escalonados; al avanzar de etapa, el nuevo
+                    entra y los demás se corren a su lugar. */}
+                <Stagger className="space-y-4">
                   {timeline.map((hito) => {
                     const infoDeLaEtapa = hito.stage ? getPipelineStageInfo(hito.stage) : null;
                     return (
-                      <div
+                      <StaggerItem
                         key={hito.clave}
                         className="relative flex items-start gap-3"
                         data-hito={hito.clave}
@@ -543,10 +550,10 @@ export function PipelineDetail({
                             })}
                           </span>
                         </div>
-                      </div>
+                      </StaggerItem>
                     );
                   })}
-                </div>
+                </Stagger>
               </div>
 
               {/* El hueco, dicho de frente. Antes esto se llenaba con

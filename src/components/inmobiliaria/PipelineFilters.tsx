@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, IconButton } from '@leasefy/cadence';
+import { Chip, IconButton, Presence } from '@leasefy/cadence';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -166,16 +166,16 @@ export function PipelineFilters({
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
           className="w-full pl-10 pr-4"
         />
-        {filters.search && (
+        <Presence show={Boolean(filters.search)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
           <IconButton
             variant="ghost"
             size="sm"
             onClick={() => updateFilter('search', undefined)}
             aria-label="Limpiar búsqueda"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="text-muted-foreground"
             icon={<X className="w-4 h-4" />}
           />
-        )}
+        </Presence>
       </div>
 
       {/* Row 2: Dropdowns + Date Presets */}
@@ -289,8 +289,8 @@ export function PipelineFilters({
         </div>
 
         {/* Clear Filters */}
-        {hasAnyFilter && (
-          <>
+        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
+        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
             <div className="hidden sm:block w-px h-6 bg-border" />
             <Button
               variant="ghost"
@@ -302,8 +302,7 @@ export function PipelineFilters({
               <X className="w-4 h-4" />
               {t('inmobiliaria.pipeline.clear')}
             </Button>
-          </>
-        )}
+        </Presence>
       </div>
     </div>
   );

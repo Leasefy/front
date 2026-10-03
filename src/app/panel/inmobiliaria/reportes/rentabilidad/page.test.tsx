@@ -128,6 +128,9 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El error del rango es `<ErrorDelCampo>` (02-10-2026): el `FormError` real.
   FormError: (await importOriginal<typeof import('@leasefy/cadence')>()).FormError,
+  // Las cifras en plata cuentan (movimiento ola 2): el real, que con las
+  // animaciones apagadas escribe la cifra final de una.
+  AnimatedNumber: (await importOriginal<typeof import('@leasefy/cadence')>()).AnimatedNumber,
   SegmentedControl: ({ options, value, onChange }: { options: Array<{ value: string; label: React.ReactNode }>; value: string; onChange: (v: string) => void }) =>
     React.createElement(
       'div',
@@ -159,8 +162,11 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    // Las filas que entran y salen (movimiento ola 2): acá, la etiqueta tal cual.
+    TableBodyAnimado: el('tbody'),
     TableFooter: el('tfoot'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }

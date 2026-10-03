@@ -24,11 +24,10 @@
  */
 
 import { useState } from 'react'
-import { ListaQueAnima, ElementoQueAnima } from '@/components/contratos/lista-que-anima'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
-import { CrossFade, Presence } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -175,9 +174,9 @@ export function FirmasClient() {
                 </CardHeader>
                 <CardContent>
                   {/* La que se cancela sale y las de abajo suben (`key` = el contrato). */}
-                  <ListaQueAnima as="ul" className="divide-y">
+                  <Stagger as="ul" className="divide-y">
                     {vencidas.map((v) => (
-                      <ElementoQueAnima
+                      <StaggerItem
                         as="li"
                         key={v.contractId}
                         className="space-y-2 py-3"
@@ -249,9 +248,9 @@ export function FirmasClient() {
                             )}
                           </CrossFade>
                         ) : null}
-                      </ElementoQueAnima>
+                      </StaggerItem>
                     ))}
-                  </ListaQueAnima>
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}
@@ -274,18 +273,18 @@ export function FirmasClient() {
                     te espera en la Bandeja del Piloto con un clic y en Manual te
                     lo propone. El inmueble sigue reservado.
                   </p>
-                  <ListaQueAnima as="ul" className="divide-y">
+                  <Stagger as="ul" className="divide-y">
                     {porVencer.map((p) => (
-                      <ElementoQueAnima
+                      <StaggerItem
                         as="li"
                         key={p.invitacionId}
                         className="py-3 text-sm"
                         data-testid={`por-vencer-${p.contractId}`}
                       >
                         {p.tenantName ?? 'Contrato sin nombre del inquilino'}
-                      </ElementoQueAnima>
+                      </StaggerItem>
                     ))}
-                  </ListaQueAnima>
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}
@@ -301,9 +300,9 @@ export function FirmasClient() {
                   <p className="text-muted-foreground mb-3 text-sm">
                     Esta pantalla no envía: arma el texto y deja la constancia.
                   </p>
-                  <ListaQueAnima as="ul" className="divide-y">
+                  <Stagger as="ul" className="divide-y">
                     {recordatorios.map((r) => (
-                      <ElementoQueAnima
+                      <StaggerItem
                         as="li"
                         key={r.contractId}
                         className="space-y-1 py-3"
@@ -314,9 +313,9 @@ export function FirmasClient() {
                           Recordatorio {r.numero} de {r.de} ·{' '}
                           {r.correo ?? 'sin correo'}
                         </p>
-                      </ElementoQueAnima>
+                      </StaggerItem>
                     ))}
-                  </ListaQueAnima>
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}

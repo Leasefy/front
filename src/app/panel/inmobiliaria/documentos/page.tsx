@@ -23,7 +23,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { CuerpoQueAnima, FilaQueAnima } from '@/components/contratos/lista-que-anima';
 import { useSearchParams } from 'next/navigation';
 import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -54,6 +53,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
@@ -516,11 +517,11 @@ function DocumentosContent() {
                 o filtrar (`key` = el id). Al cambiar de pestaña el cuerpo se
                 monta de nuevo: las de la pestaña nueva entran, sin esperar a
                 que se vayan las de la vieja. */}
-            <CuerpoQueAnima key={pestana}>
+            <TableBodyAnimado key={pestana}>
               {/* ── Documentos ─────────────────────────────────────────── */}
               {pestana === 'documentos' &&
                 (visibles.length === 0 ? (
-                  <FilaQueAnima key="vacio-documentos">
+                  <TableRowAnimada key="vacio-documentos">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="documentos"
@@ -540,10 +541,10 @@ function DocumentosContent() {
                         onLimpiarFiltros={() => setFiltros(FILTROS_VACIOS)}
                       />
                     </TableCell>
-                  </FilaQueAnima>
+                  </TableRowAnimada>
                 ) : (
                   paginaDocumentos.pageItems.map((doc) => (
-                    <FilaQueAnima
+                    <TableRowAnimada
                       key={doc.id}
                       data-testid="documento-fila"
                       onClick={() => setDocumentoAbierto(doc)}
@@ -617,14 +618,14 @@ function DocumentosContent() {
                           </Button>
                         </div>
                       </TableCell>
-                    </FilaQueAnima>
+                    </TableRowAnimada>
                   ))
                 ))}
 
               {/* ── Plantillas ─────────────────────────────────────────── */}
               {pestana === 'plantillas' &&
                 (plantillas.length === 0 ? (
-                  <FilaQueAnima key="vacio-plantillas">
+                  <TableRowAnimada key="vacio-plantillas">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="plantillas"
@@ -633,10 +634,10 @@ function DocumentosContent() {
                         descripcion={t(k('vacioPlantillasDesc'))}
                       />
                     </TableCell>
-                  </FilaQueAnima>
+                  </TableRowAnimada>
                 ) : (
                   paginaPlantillas.pageItems.map((p) => (
-                    <FilaQueAnima
+                    <TableRowAnimada
                       key={p.id}
                       data-testid="plantilla-fila"
                       // La fila hace lo mismo que «Ver plantilla» (el molde, regla 5).
@@ -727,14 +728,14 @@ function DocumentosContent() {
                           )}
                         </div>
                       </TableCell>
-                    </FilaQueAnima>
+                    </TableRowAnimada>
                   ))
                 ))}
 
               {/* ── Actas ──────────────────────────────────────────────── */}
               {pestana === 'actas' &&
                 (actas.length === 0 ? (
-                  <FilaQueAnima key="vacio-actas">
+                  <TableRowAnimada key="vacio-actas">
                     <TableCell colSpan={columnas.length} className="p-0">
                       <SinDatos
                         queSon="actas"
@@ -764,10 +765,10 @@ function DocumentosContent() {
                         }
                       />
                     </TableCell>
-                  </FilaQueAnima>
+                  </TableRowAnimada>
                 ) : (
                   paginaActas.pageItems.map((acta) => (
-                    <FilaQueAnima
+                    <TableRowAnimada
                       key={acta.id}
                       className="cursor-pointer"
                       data-testid="acta-fila"
@@ -806,10 +807,10 @@ function DocumentosContent() {
                           {ACTA_ESTADO_LABEL[acta.status]}
                         </span>
                       </TableCell>
-                    </FilaQueAnima>
+                    </TableRowAnimada>
                   ))
                 ))}
-            </CuerpoQueAnima>
+            </TableBodyAnimado>
           </Table>
 
           {pestana === 'documentos' && paginaDocumentos.shouldPaginate && (

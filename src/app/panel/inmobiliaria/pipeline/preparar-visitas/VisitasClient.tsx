@@ -30,6 +30,7 @@ import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -212,9 +213,10 @@ export function VisitasClient() {
                 />
               }
             >
-              <ul className="divide-y" data-testid="lista-de-visitas">
+              {/* Asignar asesor o avisar: las visitas entran escalonadas y la que se resuelve sale. */}
+              <Stagger as="ul" className="divide-y" data-testid="lista-de-visitas">
                 {ordenadas.map((v) => (
-                  <li
+                  <StaggerItem as="li"
                     key={v.visitId}
                     className="space-y-2 py-3"
                     data-testid={`visita-${v.visitId}`}
@@ -309,9 +311,9 @@ export function VisitasClient() {
                         {v.noShow ? 'No, sí llegó' : 'No llegó'}
                       </Button>
                     ) : null}
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </EstadoDeDatos>
           )}
         </CardContent>
@@ -361,16 +363,17 @@ export function VisitasClient() {
                 Esta pantalla NO envía: arma el texto y deja la constancia. El
                 envío sale por los avisos de la inmobiliaria.
               </p>
-              <ul className="divide-y" data-testid="lista-recordatorios">
+              {/* Los recordatorios entran escalonados; el que se marca, sale. */}
+              <Stagger as="ul" className="divide-y" data-testid="lista-recordatorios">
                 {pendientes.map((r) => (
-                  <li key={r.visitId} className="space-y-1 py-3">
+                  <StaggerItem as="li" key={r.visitId} className="space-y-1 py-3">
                     <p className="text-sm">{r.mensaje}</p>
                     <p className="text-muted-foreground text-xs">
                       {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
                     </p>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </EstadoDeDatos>
           )}
         </CardContent>

@@ -10,6 +10,7 @@ import {
   CurrencyDollar,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BarraQueCrece } from './barra-que-crece';
 import { useI18n } from '@/lib/i18n';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -188,9 +189,9 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                   {medido === null ? SIN_MEDIR : `${medido}%`}
                 </span>
                 <div className="w-full min-h-0 flex-1 flex items-end">
-                  <div
+                  <BarraQueCrece
                     className={cn(
-                      'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
+                      'w-full rounded-t transition-opacity duration-base group-hover:opacity-80',
                       medido === null
                         ? 'bg-border dark:bg-border-strong'
                         : medido >= 90

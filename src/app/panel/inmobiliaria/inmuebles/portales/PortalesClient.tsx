@@ -68,6 +68,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar'
@@ -545,9 +546,9 @@ function DialogoDePublicar({
                   : 'Ningún inmueble coincide con eso.'}
               </p>
             ) : (
-              <ul className="divide-y rounded-lg border border-border" data-testid="resultados">
+              <Stagger as="ul" layout={false} className="divide-y rounded-lg border border-border" data-testid="resultados">
                 {resultados.map((i) => (
-                  <li key={i.propertyId}>
+                  <StaggerItem as="li" key={i.propertyId}>
                     <button
                       type="button"
                       onClick={() => void escoger(i)}
@@ -568,9 +569,9 @@ function DialogoDePublicar({
                         </span>
                       </span>
                     </button>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             )}
           </div>
         ) : (
@@ -595,6 +596,12 @@ function DialogoDePublicar({
             </div>
 
             {/* ── Qué dice el back de ese inmueble ───────────────────── */}
+            {/* Revisando → lo que dijo el back, con un fundido (popLayout: lo
+                nuevo ya, lo viejo se va encima). */}
+            <CrossFade
+              mode="popLayout"
+              swapKey={revisando ? 'revisando' : revision ? (puedeSalir ? 'completo' : 'le-falta') : 'nada'}
+            >
             {revisando ? (
               <p className="text-sm text-fg-muted">Revisando el inmueble…</p>
             ) : revision ? (
@@ -636,6 +643,7 @@ function DialogoDePublicar({
                 </div>
               )
             ) : null}
+            </CrossFade>
 
             {/* ── En qué portales ────────────────────────────────────── */}
             {puedeSalir ? (
@@ -1201,12 +1209,16 @@ export function PortalesClient() {
                       <th className="py-2 font-medium">Qué falta</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  {/* Publicar, subir o confirmar: las filas entran y salen
+                      (como `TableBodyAnimado`: sin `layout`, salida «sync»). */}
+                  <Stagger as="tbody" layout={false}>
                     {ordenadas.map((f) => {
                       const rotulo = ROTULO[f.estado]
                       const clave = `${f.propertyId}:${f.portal}`
                       return (
-                        <tr
+                        <StaggerItem
+                          as="tr"
+                          layout={false}
                           key={f.id}
                           className={cn(
                             'border-b last:border-0',
@@ -1279,10 +1291,10 @@ export function PortalesClient() {
                               ) : null}
                             </div>
                           </td>
-                        </tr>
+                        </StaggerItem>
                       )
                     })}
-                  </tbody>
+                  </Stagger>
                 </table>
               </div>
             </EstadoDeDatos>

@@ -273,8 +273,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/MantenimientoViewer.tsx':
     'Velo `bg-black/20` sobre la foto del ticket, y `text-white` sobre el relleno ' +
     '`bg-success` del paso completado.',
-  'components/inmobiliaria/MantenimientoForm.tsx':
-    '`text-white` sobre el relleno `bg-danger`.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     '`text-white` sobre el relleno `bg-success` del círculo de paso completado.',
   'components/inmobiliaria/CandidateDrawer.tsx':

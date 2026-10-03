@@ -21,7 +21,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, IconButton } from '@leasefy/cadence';
+import { Chip, IconButton, Presence } from '@leasefy/cadence';
 import type { Consignacion, Propietario, Agente } from '@/lib/types/inmobiliaria';
 import {
   CAJONES_DEL_INMUEBLE,
@@ -167,16 +167,18 @@ export function ConsignacionFilters({
           onChange={(e) => updateFilter('search', e.target.value)}
           className="w-full pl-10 pr-4"
         />
-        {filters.search && (
+        {/* La equis aparece y se va con un fundido (sin moverse: el
+            `-translate-y-1/2` la centra). */}
+        <Presence show={Boolean(filters.search)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
           <IconButton
             variant="ghost"
             size="sm"
             onClick={() => updateFilter('search', '')}
             aria-label="Limpiar búsqueda"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="text-muted-foreground"
             icon={<X className="w-4 h-4" />}
           />
-        )}
+        </Presence>
       </div>
 
       {/* Row 2: Estado Tabs + Dropdowns */}
@@ -292,8 +294,8 @@ export function ConsignacionFilters({
         </Select>
 
         {/* Clear Filters + Active Count */}
-        {hasAnyFilter && (
-          <>
+        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
+        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
             <div className="hidden sm:block w-px h-6 bg-border" />
             <Button
               variant="ghost"
@@ -305,8 +307,7 @@ export function ConsignacionFilters({
               <X className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.filters.clear')}
             </Button>
-          </>
-        )}
+        </Presence>
       </div>
     </div>
   );

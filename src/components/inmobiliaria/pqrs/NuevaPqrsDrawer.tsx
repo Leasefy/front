@@ -16,11 +16,12 @@
  * `./pqrs-reglas` y se reexportan acá para quien las busque junto al cajón.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { toast } from '@/components/ui/toast'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
-import { RadioCard, RadioCardGroup, SegmentedControl } from '@leasefy/cadence'
+import { Collapse, MotionIndicator, RadioCard, RadioCardGroup, SegmentedControl } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -208,6 +209,11 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
     form.solicitanteTipo === 'INQUILINO' ? inquilinos : form.solicitanteTipo === 'PROPIETARIO' ? propietarios : []
   const opcionesPersona = useMemo(() => personas.map(opcionDePersona), [personas])
   const hayLista = form.solicitanteTipo !== 'TERCERO' && opcionesPersona.length > 0
+  // El buscador de la persona se pliega con su altura al pasar a «Tercero»;
+  // mientras se va, conserva su rótulo.
+  const tipoConLista = useUltimoPresente(hayLista ? form.solicitanteTipo : null)
+  // El asunto sugerido elegido lleva su marca, que se DESLIZA a la nueva elección.
+  const indicadorDelAsunto = `${useId()}-asunto`
 
   const elegirPersona = (id: string | undefined) => {
     setPersonaId(id ?? '')
@@ -326,10 +332,9 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                 onChange={cambiarSolicitante}
                 options={PQRS_SOLICITANTES.map((s) => ({ value: s, label: SOLICITANTE_LABEL[s] }))}
               />
-              {hayLista ? (
-                <div className="space-y-1.5">
+              <Collapse open={hayLista} className="space-y-1.5">
                   <Label htmlFor="pqrs-persona">
-                    {form.solicitanteTipo === 'INQUILINO' ? 'Inquilino' : 'Propietario'}
+                    {tipoConLista === 'INQUILINO' ? 'Inquilino' : 'Propietario'}
                   </Label>
                   <Combobox
                     data-testid="pqrs-persona"
@@ -343,8 +348,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   <p className="text-xs text-fg-muted">
                     Al elegirlo se llenan el nombre y el contacto; puedes corregirlos.
                   </p>
-                </div>
-              ) : null}
+              </Collapse>
               <div className="space-y-1.5">
                 <Label htmlFor="pqrs-nombre">Nombre</Label>
                 <Input
@@ -480,10 +484,18 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                         aria-pressed={elegido}
                         className={
                           elegido
-                            ? 'rounded-full border border-primary bg-primary-soft px-3 py-1 text-xs font-medium text-primary'
-                            : 'rounded-full border border-border bg-surface px-3 py-1 text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg'
+                            ? 'relative isolate rounded-full border border-transparent px-3 py-1 text-xs font-medium text-primary'
+                            : 'relative isolate rounded-full border border-border bg-surface px-3 py-1 text-xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg'
                         }
                       >
+                        {/* La marca del elegido (mismo borde y fondo cobalto)
+                            viaja desde el asunto anterior. */}
+                        {elegido && (
+                          <MotionIndicator
+                            layoutId={indicadorDelAsunto}
+                            className="-inset-px -z-10 rounded-full border border-primary bg-primary-soft"
+                          />
+                        )}
                         {asunto}
                       </button>
                     )

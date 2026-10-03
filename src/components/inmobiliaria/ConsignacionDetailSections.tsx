@@ -6,7 +6,6 @@ import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InvitarAlPortal } from './InvitarAlPortal';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
-import { motion } from 'framer-motion';
 import {
   User,
   Buildings,
@@ -71,9 +70,9 @@ interface SectionCardProps {
 
 function SectionCard({ title, icon, children, className }: SectionCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+    // Sin entrada propia: la ficha entera entra con su `CrossFade` al llegar
+    // de la carga (y con el `template.tsx` al navegar).
+    <div
       className={cn(
         'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
@@ -86,7 +85,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
         <h3 className="font-semibold text-fg">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
-    </motion.div>
+    </div>
   );
 }
 

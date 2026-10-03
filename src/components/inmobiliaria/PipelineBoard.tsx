@@ -15,7 +15,6 @@ import {
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
   CaretDown,
@@ -25,7 +24,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
-import { IconButton } from '@leasefy/cadence';
+import { Collapse, CrossFade, IconButton, Presence } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
@@ -108,7 +107,7 @@ function DraggableCard({ item, onClick, motivoBloqueo }: DraggableCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        'transition-opacity duration-200',
+        'transition-opacity duration-base',
         isDragging && 'opacity-40'
       )}
       title={motivoBloqueo}
@@ -173,7 +172,7 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col h-full rounded-lg border bg-muted/40 transition-all duration-200',
+        'flex flex-col h-full rounded-lg border bg-muted/40 transition-[border-color,box-shadow] duration-base',
         isOver
           ? 'border-primary/30 border-dashed ring-2 ring-primary/20'
           : 'border-border'
@@ -226,27 +225,26 @@ function DroppableColumn({
         )}
       </div>
 
-      {/* Column Body - Scrollable card container */}
-      <AnimatePresence initial={false}>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="flex-1 overflow-hidden"
-          >
+      {/* Column Body - Scrollable card container. Se pliega y se despliega
+          con su altura (`Collapse`: la única primitiva que anima la altura). */}
+      <Collapse open={!isCollapsed}>
             <div
               className={cn(
-                'flex flex-col gap-2.5 p-2.5 overflow-y-auto',
+                'relative flex flex-col gap-2.5 p-2.5 overflow-y-auto',
                 'max-h-[calc(100vh-280px)]'
               )}
             >
+              {/* Vacía ⇄ con leads: al soltar el primero o sacar el último, lo
+                  nuevo entra ya y lo viejo se funde encima (`popLayout`). Lo que
+                  ya estaba al cargar no se anima. */}
+              <CrossFade
+                swapKey={items.length === 0 ? 'vacia' : 'con-leads'}
+                mode="popLayout"
+                className="flex flex-col gap-2.5"
+              >
               {items.length === 0 ? (
                 /* Empty State */
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
                   className={cn(
                     'flex flex-col items-center justify-center py-8 px-4 rounded-md border-2 border-dashed',
                     isOver
@@ -261,7 +259,7 @@ function DroppableColumn({
                   <p className="text-[10px] text-muted-foreground/70 text-center mt-1">
                     {t('inmobiliaria.pipeline.dragHere')}
                   </p>
-                </motion.div>
+                </div>
               ) : (
                 /* Cards */
                 items.map((item) => (
@@ -279,22 +277,21 @@ function DroppableColumn({
                   />
                 ))
               )}
+              </CrossFade>
 
-              {/* Drop zone at bottom when not empty and dragging over */}
-              {items.length > 0 && isOver && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className={cn(
-                    'flex items-center justify-center py-4 rounded-md border-2 border-dashed',
-                    'border-primary/30 bg-primary-soft/50'
-                  )}
-                >
-                  <p className="text-xs text-primary">
-                    {t('inmobiliaria.pipeline.dropHere')}
-                  </p>
-                </motion.div>
-              )}
+              {/* Drop zone at bottom when not empty and dragging over: abre su
+                  lugar con la altura y se cierra al soltar o salir. */}
+              <Collapse
+                open={items.length > 0 && isOver}
+                className={cn(
+                  'flex items-center justify-center py-4 rounded-md border-2 border-dashed',
+                  'border-primary/30 bg-primary-soft/50'
+                )}
+              >
+                <p className="text-xs text-primary">
+                  {t('inmobiliaria.pipeline.dropHere')}
+                </p>
+              </Collapse>
             </div>
 
             {/* Ver todo button */}
@@ -312,22 +309,14 @@ function DroppableColumn({
                 </Button>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
 
       {/* Collapsed footer showing count */}
-      {isCollapsed && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-3 text-center"
-        >
-          <p className="text-xs text-muted-foreground">
-            {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
-          </p>
-        </motion.div>
-      )}
+      <Presence show={isCollapsed} initial={false} className="p-3 text-center">
+        <p className="text-xs text-muted-foreground">
+          {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
+        </p>
+      </Presence>
 
       {/* Ver Todo — el cajón flotante de la casa */}
       <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>

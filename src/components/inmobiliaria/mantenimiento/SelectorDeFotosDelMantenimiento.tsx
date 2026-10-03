@@ -14,9 +14,9 @@
  */
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X } from '@phosphor-icons/react';
-import { IconButton, motionDuration, motionEase } from '@leasefy/cadence';
+import { IconButton, motionScale, motionTransition } from '@leasefy/cadence';
 import {
   MAX_FOTOS_DEL_MANTENIMIENTO,
   TIPOS_DE_FOTO_DEL_MANTENIMIENTO,
@@ -85,7 +85,6 @@ export function SelectorDeFotosDelMantenimiento({
   testIdInput = 'mantenimiento-foto-input',
 }: SelectorDeFotosDelMantenimientoProps) {
   const vistas = useVistasPrevias(fotos);
-  const reducido = useReducedMotion();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const elegidas = Array.from(e.target.files ?? []);
@@ -93,12 +92,11 @@ export function SelectorDeFotosDelMantenimiento({
     e.target.value = '';
   };
 
-  // Entran con un leve crecimiento y salen acelerando; con movimiento
-  // reducido, sólo el fundido.
-  const entrada = reducido ? { opacity: 0 } : { opacity: 0, scale: 0.94 };
-  const salida = reducido
-    ? { opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.standard } }
-    : { opacity: 0, scale: 0.94, transition: { duration: motionDuration.fast, ease: motionEase.exit } };
+  // Entran con un leve crecimiento y salen acelerando. Con movimiento
+  // reducido, el `MotionProvider` del layout (`reducedMotion="user"`) deja
+  // sólo el fundido: no hace falta preguntarlo acá.
+  const entrada = { opacity: 0, scale: motionScale.pop };
+  const salida = { opacity: 0, scale: motionScale.pop, transition: motionTransition.exit };
 
   return (
     <div className="space-y-2">
@@ -112,14 +110,11 @@ export function SelectorDeFotosDelMantenimiento({
           {fotos.map((foto, index) => (
             <motion.div
               key={llaveDeLaFoto(foto)}
-              layout={!reducido}
+              layout
               initial={entrada}
               animate={{ opacity: 1, scale: 1 }}
               exit={salida}
-              transition={{
-                duration: motionDuration.base,
-                ease: reducido ? motionEase.standard : motionEase.enter,
-              }}
+              transition={{ ...motionTransition.enter, layout: motionTransition.layout }}
               className="relative w-24 h-24 rounded-xl overflow-hidden group"
               data-testid={testIdFoto}
             >
@@ -143,7 +138,7 @@ export function SelectorDeFotosDelMantenimiento({
 
         {/* Agregar: hasta el tope del back (30 por solicitud). */}
         {fotos.length < MAX_FOTOS_DEL_MANTENIMIENTO && !deshabilitado && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-all">
+          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-colors duration-base">
             <Camera className="w-6 h-6 text-fg-subtle" />
             <span className="text-caption text-fg-muted dark:text-fg-subtle">{textoAgregar}</span>
             {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}

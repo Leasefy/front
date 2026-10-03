@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   MagnifyingGlass,
   Plus,
@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui';
-import { IconButton } from '@leasefy/cadence';
+import { Collapse, IconButton, Presence, Stagger, StaggerItem, motionSpring } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioCard } from './PropietarioCard';
 import { PropietarioForm } from './PropietarioForm';
@@ -126,6 +127,8 @@ export function PropietarioSelector({
   // independent of remounts (this component unmounts when the wizard moves
   // off step 1, so any local "just created" flag would reset on return).
   const hasNewPropietario = Boolean(value) && Boolean(newPropietarioData);
+  // Mientras la tarjeta del propietario nuevo se va, sigue mostrando sus datos.
+  const propietarioNuevo = useUltimoPresente(newPropietarioData);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -166,22 +169,20 @@ export function PropietarioSelector({
       </div>
 
       {/* New Propietario Created Card */}
-      <AnimatePresence>
-        {hasNewPropietario && newPropietarioData && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4 rounded-lg border-2 border-primary/30 bg-primary-soft"
-          >
+      <Presence
+        show={hasNewPropietario}
+        direction="down"
+        className="p-4 rounded-lg border-2 border-primary/30 bg-primary-soft"
+      >
+        {propietarioNuevo && (
             <div className="flex items-start gap-3">
               <div className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
-                newPropietarioData.documentType === 'NIT'
+                propietarioNuevo.documentType === 'NIT'
                   ? 'bg-muted text-muted-foreground'
                   : 'bg-card text-primary'
               )}>
-                {newPropietarioData.documentType === 'NIT' ? (
+                {propietarioNuevo.documentType === 'NIT' ? (
                   <Buildings className="w-6 h-6" />
                 ) : (
                   <User className="w-6 h-6" />
@@ -194,13 +195,13 @@ export function PropietarioSelector({
                   </span>
                 </div>
                 <h3 className="text-base font-semibold text-foreground truncate">
-                  {newPropietarioData.name}
+                  {propietarioNuevo.name}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {newPropietarioData.email} - {newPropietarioData.phone}
+                  {propietarioNuevo.email} - {propietarioNuevo.phone}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {newPropietarioData.documentType}: {newPropietarioData.documentNumber}
+                  {propietarioNuevo.documentType}: {propietarioNuevo.documentNumber}
                 </p>
               </div>
               <Button
@@ -217,19 +218,11 @@ export function PropietarioSelector({
                 {t('inmobiliaria.propietario.selector.edit')}
               </Button>
             </div>
-          </motion.div>
         )}
-      </AnimatePresence>
+      </Presence>
 
-      {/* Inline Form for New Propietario */}
-      <AnimatePresence>
-        {showNewForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
+      {/* Inline Form for New Propietario: se abre con su altura. */}
+      <Collapse open={showNewForm}>
             <div className="p-5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-foreground">
@@ -251,30 +244,32 @@ export function PropietarioSelector({
                 serverError={serverError}
               />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
 
       {/* Propietarios Grid */}
       {!showNewForm && !hasNewPropietario && (
         <>
           {filteredPropietarios.length > 0 ? (
-            <div
+            // Al buscar, las tarjetas que quedan entran escalonadas y las que
+            // sobran se van. Sin `layout`: la lista puede ser larga.
+            <Stagger
+              layout={false}
               className={cn(
                 'grid grid-cols-1 sm:grid-cols-2 gap-3',
                 columnas === 3 && 'lg:grid-cols-3',
               )}
             >
               {filteredPropietarios.map((propietario) => (
-                <PropietarioCard
-                  key={propietario.id}
-                  propietario={propietario}
-                  variant="compact"
-                  selected={value === propietario.id}
-                  onClick={() => handleSelectPropietario(propietario)}
-                />
+                <StaggerItem key={propietario.id} className="flex [&>*]:w-full">
+                  <PropietarioCard
+                    propietario={propietario}
+                    variant="compact"
+                    selected={value === propietario.id}
+                    onClick={() => handleSelectPropietario(propietario)}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           ) : (
             <div className="p-8 text-center rounded-lg border border-border bg-muted/40">
               <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
@@ -291,12 +286,16 @@ export function PropietarioSelector({
       )}
 
       {/* Selected Count */}
-      {!showNewForm && value && !hasNewPropietario && (
-        <p className="text-sm text-success flex items-center gap-2">
+      <Presence
+        as="p"
+        show={Boolean(!showNewForm && value && !hasNewPropietario)}
+        className="text-sm text-success flex items-center gap-2"
+      >
           <span className="w-5 h-5 rounded-full bg-success-soft flex items-center justify-center">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3"
               fill="none"
               viewBox="0 0 24 24"
@@ -306,8 +305,7 @@ export function PropietarioSelector({
             </motion.svg>
           </span>
           {t('inmobiliaria.propietario.selector.ownerSelected')}
-        </p>
-      )}
+      </Presence>
     </div>
   );
 }

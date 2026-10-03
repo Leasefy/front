@@ -33,6 +33,13 @@ vi.mock('framer-motion', () => ({
 
 vi.mock('@leasefy/cadence', () => ({
   IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
+  // La tarjeta sube al pasar el puntero con `Pressable`: acá, la etiqueta tal cual.
+  Pressable: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
+    const { as = 'div', hover, press, children, ...rest } = props;
+    void hover; void press;
+    return React.createElement(as as string, rest, children);
+  },
+  motionSpring: { bouncy: {}, snappy: {}, soft: {} },
 }));
 
 import { ConsignacionCard } from './ConsignacionCard';

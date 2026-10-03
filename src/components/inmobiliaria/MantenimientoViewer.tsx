@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import Image from 'next/image';
 import { SheetHeader } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -332,8 +332,10 @@ function PhotoGallery({
 // ============================================================================
 
 function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: string) => string }) {
+  // Los hitos entran escalonados; al aprobar, empezar o cerrar desde el
+  // cajón, el nuevo entra arriba y los demás bajan a su lugar.
   return (
-    <div className="space-y-1">
+    <Stagger className="space-y-1">
       {events.map((event, idx) => {
         const isLast = idx === events.length - 1;
         const StatusIcon =
@@ -353,7 +355,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
             : STATUS_STYLES[event.status as MantenimientoStatus] || STATUS_STYLES.reported;
 
         return (
-          <div key={event.id} className="flex gap-3">
+          <StaggerItem key={event.id} className="flex gap-3">
             {/* Timeline Line */}
             <div className="flex flex-col items-center">
               <div
@@ -396,10 +398,10 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
                 )}
               </div>
             </div>
-          </div>
+          </StaggerItem>
         );
       })}
-    </div>
+    </Stagger>
   );
 }
 

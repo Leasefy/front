@@ -215,22 +215,14 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    // Las filas que entran y salen (03-10-2026) van con el mismo reemplazo
+    // plano: acá importa QUÉ se pinta, no cómo entra.
+    TableBodyAnimado: el('tbody'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }
-})
-
-// Las filas que entran y salen (03-10-2026) van con el mismo reemplazo plano
-// que la tabla: acá importa QUÉ se pinta, no cómo entra.
-vi.mock('@/components/contratos/lista-que-anima', () => {
-  const el = (tag: string) => {
-    const MockEl = ({ children, ...props }: { children?: React.ReactNode }) =>
-      React.createElement(tag, props, children)
-    MockEl.displayName = `MockLista_${tag}`
-    return MockEl
-  }
-  return { CuerpoQueAnima: el('tbody'), FilaQueAnima: el('tr') }
 })
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────

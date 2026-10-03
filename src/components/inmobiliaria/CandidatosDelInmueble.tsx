@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Users, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber, Stagger, StaggerItem } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -134,7 +135,8 @@ export function CandidatosDelInmueble({
         </div>
         {candidatos !== null && candidatos.length > 0 && (
           <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-            {candidatos.length}
+            {/* Cuenta cuando llega uno nuevo o se relee después de decidir. */}
+            <AnimatedNumber value={candidatos.length} format={(n) => String(Math.round(n))} />
           </span>
         )}
       </div>
@@ -166,13 +168,13 @@ export function CandidatosDelInmueble({
       )}
 
       {ordenados !== null && ordenados.length > 0 && (
-        <ul className="divide-y divide-border">
+        <Stagger as="ul" className="divide-y divide-border">
           {/* Tres y el enlace: la lista completa vive en su pantalla, con
               comparador y acciones. Repetirla acá sería tener dos. */}
           {ordenados.slice(0, CUANTOS_SE_MUESTRAN).map((c) => {
             const est = ESTADO[c.status] ?? ESTADO.SUBMITTED;
             return (
-              <li key={c.id}>
+              <StaggerItem as="li" key={c.id}>
                 {/* Un botón y no un `li` con onClick: así se alcanza con
                     teclado y se anuncia como accionable. El foco lo pinta la
                     regla global de `focus-visible` (docs/DESIGN.md §Focus). */}
@@ -204,10 +206,10 @@ export function CandidatosDelInmueble({
                     {est.label}
                   </span>
                 </button>
-              </li>
+              </StaggerItem>
             );
           })}
-        </ul>
+        </Stagger>
       )}
 
       {propertyId && (

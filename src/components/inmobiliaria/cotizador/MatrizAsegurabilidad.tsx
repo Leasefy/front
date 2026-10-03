@@ -37,7 +37,7 @@ import {
   SquaresFour,
 } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/cadence'
+import { CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
@@ -262,17 +262,25 @@ function MatrizTable({
                     <CaretDown
                       weight="bold"
                       aria-hidden="true"
-                      className={cn('w-4 h-4 text-fg-muted transition-transform duration-200', isOpen && 'rotate-180')}
+                      className={cn('w-4 h-4 text-fg-muted transition-transform duration-base ease-standard', isOpen && 'rotate-180')}
                     />
                   </TableCell>
                 </TableRow>
-                {isOpen && (
-                  <TableRow id={detailId} className="bg-surface-muted/40">
+                {/* El detalle de la fila entra bajando 4px desde ella y sale
+                    con un fundido (`Presence` como `<tr>`, mismas clases que
+                    una fila de la tabla). */}
+                <Presence
+                  as="tr"
+                  show={isOpen}
+                  direction="down"
+                  distance="xs"
+                  id={detailId}
+                  className="border-b border-border-faint last:border-b-0 bg-surface-muted/40"
+                >
                     <TableCell colSpan={7} className="p-0">
                       <CarrierCardExpandible carrier={carrier} bare />
                     </TableCell>
-                  </TableRow>
-                )}
+                </Presence>
               </React.Fragment>
             )
           })}
@@ -341,6 +349,8 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
 
       {/* Desktop: table when 'matriz'; cards when 'tarjetas'. Mobile is always
           cards (table hidden < md). */}
+      {/* Matriz ⇄ tarjetas: la una sale y la otra entra. */}
+      <CrossFade swapKey={view}>
       {view === 'matriz' ? (
         <>
           <div className="hidden md:block">
@@ -385,6 +395,7 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
           ))}
         </div>
       )}
+      </CrossFade>
     </section>
   )
 }

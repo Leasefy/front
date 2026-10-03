@@ -18,7 +18,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { CaretRight, Tray, Clock } from '@phosphor-icons/react'
 
-import { MonoLabel } from '@leasefy/cadence'
+import { CrossFade, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { Severidad, WorkItem } from '@/lib/api/work-item'
@@ -142,6 +142,9 @@ export function CotizadorPriorityInbox() {
           sección no se leía como una sección: sólo se veía texto suelto en el
           medio de la nada. Cuando SÍ hay filas no hace falta —cada fila ya es
           una tarjeta con borde— y meterlas en otro recuadro anidaría tarjetas. */}
+      {/* Cargando → fallo / «todo al día» / la cola: cada estado entra con su
+          fundido; las consultas, escalonadas, y la que se resuelve sale. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : sorted.length === 0 ? 'vacio' : 'cola'}>
       {isLoading ? (
         <div className="space-y-2" data-testid="cotizador-inbox-loading">
           {[0, 1, 2].map((i) => (
@@ -173,12 +176,15 @@ export function CotizadorPriorityInbox() {
           />
         </div>
       ) : (
-        <div className="space-y-2" data-testid="cotizador-inbox">
+        <Stagger className="space-y-2" data-testid="cotizador-inbox">
           {sorted.map((item) => (
-            <InboxRow key={item.id} item={item} tf={tf} />
+            <StaggerItem key={item.id}>
+              <InboxRow item={item} tf={tf} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
+      </CrossFade>
     </section>
   )
 }

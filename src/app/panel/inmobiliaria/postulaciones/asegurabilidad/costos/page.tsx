@@ -27,6 +27,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { CrossFade } from '@leasefy/cadence'
 
 const COLUMNAS = 3
 
@@ -63,7 +64,15 @@ export default function CostosPage() {
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
   // per-section table skeleton + inline empty prose preserved below; no EmptyState since
   // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
-  if (isLoadingSummary && !summaryData) return <PageSkeleton variant="dashboard" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoadingSummary && !summaryData) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
+  }
 
   // Derive table rows by joining costSources registry labels with source totals
   const tableRows = (summaryData?.costSources ?? []).map(src => ({
@@ -82,6 +91,7 @@ export default function CostosPage() {
   const tablaCargando = (isLoadingSummary || isLoadingSeries) && tableRows.length === 0
 
   return (
+    <CrossFade swapKey="costos">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <header className="space-y-1.5">
@@ -207,5 +217,6 @@ export default function CostosPage() {
       </>
       )}
     </div>
+    </CrossFade>
   )
 }

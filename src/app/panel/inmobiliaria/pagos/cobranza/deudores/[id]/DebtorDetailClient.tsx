@@ -36,7 +36,7 @@ import {
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
 import { Button, Badge } from '@/components/ui'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { MonoLabel } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
 // El Sheet va por el adaptador local, no crudo del DS: es lo que trae el
 // overlay z-[300], el contrato de Lenis y la ✕ del producto. Importado
 // directo, este cajón era el único con la ✕ pelada del DS.
@@ -209,9 +209,18 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   // ── Skeleton guard (Phase 38 plan 38-04a / D-38-04) ───────────────────────
   // Detail/dynamic routes get a skeleton only — no page-level EmptyState (404
   // path handles not-found per D-38-04 rule for detail/dynamic routes).
-  if (isLoading && !data) return <CobranzaDeudorDetailSkeleton />
+  // Movimiento: esqueleto → ficha en un `CrossFade` (el mismo nodo en las dos
+  // ramas); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaDeudorDetailSkeleton />
+      </CrossFade>
+    )
+  }
 
   return (
+    <CrossFade swapKey="ficha">
     <div className="p-4 lg:p-8 pb-8">
       {/* Header */}
       <header className="mb-5">
@@ -225,8 +234,14 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
             {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
           </h1>
           <div className="flex items-center gap-2">
+            {/* El caso cambia de etapa en vivo (realtime): la etiqueta vieja
+                sale y la nueva entra en su lugar, y los días cuentan. */}
             {data && stageColors && (
-              <span
+              <CrossFade
+                as="span"
+                swapKey={data.currentStage}
+                mode="popLayout"
+                direction="none"
                 className={
                   'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ' +
                   stageColors.bg +
@@ -238,7 +253,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                 }
               >
                 {t('inmobiliaria.ai.cobranza.detail.header.stage')}: {data.currentStage}
-              </span>
+              </CrossFade>
             )}
             {data && (
               <span
@@ -247,21 +262,23 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   daysBadgeClasses(data.daysInStage)
                 }
               >
-                {data.daysInStage} d
+                <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} /> d
               </span>
             )}
-            {data?.isPaused && (
+            <Presence as="span" show={Boolean(data?.isPaused)} direction="none" initial={false}>
               <Badge variant="warning">
                 {t('inmobiliaria.ai.cobranza.detail.header.paused')}
               </Badge>
-            )}
+            </Presence>
           </div>
         </div>
       </header>
 
       {/* Error */}
-      {error && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-4">
+      <Presence
+        show={Boolean(error)}
+        className="rounded-md border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-4"
+      >
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.detail.error')}: {error}
           </p>
@@ -274,8 +291,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           >
             {t('inmobiliaria.ai.cobranza.detail.errorRetry')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* 3 zonas — lg+: contexto | conversación | recomendación; below lg the
           zones stack in that same order (visión #14). */}
@@ -366,6 +382,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           {/* Lazy-mount per active tab (D-31-09): non-active tabs unmount,
               so their data hooks do not poll until activated. */}
           <TabsContent value={activeTab} className="mt-0">
+          {/* Cambiar de pestaña cambia el panel de abajo: el viejo sale y el
+              nuevo entra (el `TabsContent` es el mismo nodo para todas). */}
+          <CrossFade swapKey={activeTab}>
           {activeTab === 'timeline' && (
             <TimelineTab debtorId={debtorId} refetchKey={timelineRefetchKey} />
           )}
@@ -382,6 +401,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               onIntervention={onIntervention}
             />
           )}
+          </CrossFade>
           </TabsContent>
           </Tabs>
         </section>
@@ -405,5 +425,6 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
         onClose={() => setRevealModal(null)}
       />
     </div>
+    </CrossFade>
   )
 }

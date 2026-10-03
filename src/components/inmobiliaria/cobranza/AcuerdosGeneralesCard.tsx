@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CaretDown, FloppyDisk, Robot } from '@phosphor-icons/react'
-import { Card } from '@leasefy/cadence'
+import { Card, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { Button, Input, Label, Checkbox, Switch, Spinner } from '@/components/ui'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -205,18 +205,24 @@ export function AcuerdosGeneralesCard() {
         {resumenAcuerdo(borrador)}
       </p>
 
-      {avisos.map((aviso) => (
-        <p
-          key={aviso}
-          data-testid="acuerdo-aviso"
-          className="mt-2 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
-        >
-          {aviso}
-        </p>
-      ))}
+      {/* Los avisos aparecen y se van mientras se edita: entran y salen con
+          su animación en vez de saltar. */}
+      <Stagger>
+        {avisos.map((aviso) => (
+          <StaggerItem
+            as="p"
+            key={aviso}
+            data-testid="acuerdo-aviso"
+            className="mt-2 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
+          >
+            {aviso}
+          </StaggerItem>
+        ))}
+      </Stagger>
 
-      {abierto && (
-        <div id="acuerdo-general-form" className="mt-4 pt-4 border-t border-border space-y-4">
+      {/* «Ajustar» despliega los límites con su altura (`Collapse`), con la
+          misma curva que el chevron; «Listo» los pliega. */}
+      <Collapse open={abierto} id="acuerdo-general-form" className="mt-4 pt-4 border-t border-border space-y-4">
           <div className="space-y-2">
             <Label className="text-sm">Plazos que puede aceptar</Label>
             <p className="text-xs text-fg-muted">
@@ -392,15 +398,19 @@ export function AcuerdosGeneralesCard() {
             />
           </div>
 
-          {errorGuardar && (
-            <p role="alert" className="text-sm text-danger" data-testid="acuerdo-general-error">
+          <Presence
+            as="p"
+            show={Boolean(errorGuardar)}
+            role="alert"
+            className="text-sm text-danger"
+            data-testid="acuerdo-general-error"
+          >
               {errorGuardar}
-            </p>
-          )}
+          </Presence>
 
           {canEdit && (
             <div className="flex items-center justify-end gap-2">
-              {sucio && (
+              <Presence show={sucio} direction="none" initial={false}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -411,7 +421,7 @@ export function AcuerdosGeneralesCard() {
                 >
                   Descartar
                 </Button>
-              )}
+              </Presence>
               <Button
                 size="sm"
                 className="min-h-[44px]"
@@ -428,8 +438,7 @@ export function AcuerdosGeneralesCard() {
               </Button>
             </div>
           )}
-        </div>
-      )}
+      </Collapse>
     </Card>
   )
 }

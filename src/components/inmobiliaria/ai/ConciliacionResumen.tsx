@@ -40,6 +40,7 @@ import {
   hallazgosPorTipo,
 } from '@/lib/hooks/conciliacion/hallazgos'
 import type { ConciliacionSummaryResponse } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
+import { AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
 const copFormatter = new Intl.NumberFormat('es-CO', {
@@ -82,14 +83,17 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
 
   const { totals, tasa_conciliacion } = data
 
-  const kpis: { id: string; label: string; value: string }[] = [
-    { id: 'movimientos', label: 'Movimientos', value: numberFormatter.format(totals.movimientos) },
-    { id: 'conciliados', label: 'Conciliados', value: numberFormatter.format(totals.conciliados) },
-    { id: 'tasa', label: 'Tasa de conciliación', value: formatTasa(tasa_conciliacion) },
+  // Cada cifra con su formato: cuando el resumen se refresca, cuenta desde la
+  // anterior (`AnimatedNumber`); el texto final es el mismo de antes.
+  const kpis: { id: string; label: string; valor: number | null; formato: (n: number) => string }[] = [
+    { id: 'movimientos', label: 'Movimientos', valor: totals.movimientos, formato: (n) => numberFormatter.format(n) },
+    { id: 'conciliados', label: 'Conciliados', valor: totals.conciliados, formato: (n) => numberFormatter.format(n) },
+    { id: 'tasa', label: 'Tasa de conciliación', valor: tasa_conciliacion, formato: (n) => formatTasa(n) },
     {
       id: 'monto',
       label: 'Monto conciliado',
-      value: copFormatter.format(totals.monto_conciliado_cop),
+      valor: totals.monto_conciliado_cop,
+      formato: (n) => copFormatter.format(n),
     },
   ]
 
@@ -117,7 +121,9 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
           data-testid={`conciliacion-total-${kpi.id}`}
         >
           <p className="text-caption text-fg-muted">{kpi.label}</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">{kpi.value}</p>
+          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
+            {kpi.valor === null ? formatTasa(null) : <AnimatedNumber value={kpi.valor} format={kpi.formato} />}
+          </p>
         </div>
       ))}
       </div>
@@ -171,30 +177,33 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
           {/* El desglose por tipo — sólo los que tienen casos. Con la taxonomía
               en ceros no se pintan cinco ceros: no habría nada que mirar. */}
           {hallazgos.length > 0 && (
-            <ul className="flex flex-wrap gap-2 pt-1" data-testid="conciliacion-hallazgos-tipos">
+            <Stagger as="ul" className="flex flex-wrap gap-2 pt-1" data-testid="conciliacion-hallazgos-tipos">
               {hallazgos.map((h) => (
-                <li
+                <StaggerItem
+                  as="li"
                   key={h.tipo}
                   className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-fg-muted"
                   data-testid={`conciliacion-hallazgo-${h.tipo}`}
                 >
-                  <span className="font-semibold tabular-nums text-fg">{h.cantidad}</span>
+                  <span className="font-semibold tabular-nums text-fg">
+                    <AnimatedNumber value={h.cantidad} format={(n) => String(Math.round(n))} />
+                  </span>
                   {h.etiqueta}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           )}
         </div>
 
         {/* Con la cola vacía no hay botón: no se ofrece revisar lo que no existe. */}
-        {enCola > 0 && (
+        <Presence show={enCola > 0} direction="none" initial={false} className="shrink-0">
           <Button asChild variant="secondary" hideArrow className="shrink-0">
             <Link href={colaHref} data-testid="conciliacion-hallazgos-cta">
               {etiquetaDeRevision(enCola)}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
-        )}
+        </Presence>
       </div>
     </section>
   )

@@ -21,7 +21,7 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, motion } from 'framer-motion'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -51,7 +51,6 @@ import {
   usePaymentPlanApproval,
   type RejectReasonSlug,
 } from '@/lib/hooks/cobranza/use-payment-plan-approval'
-import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
@@ -125,8 +124,6 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     modifyPlan,
     acceptPlan,
   } = usePaymentPlanApproval({ planId, canApprove })
-  const aparecer = useAparecer()
-
   // Realtime — single refetch on each cartera_payments event for this plan.
   const onUpdate = useCallback(() => {
     void refetch()
@@ -496,12 +493,13 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       </div>
 
       {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
+      {/* «Primero apruébalo» ⇄ «Registrar que lo aceptó»: el uno se va y el
+          otro entra con el `CrossFade` del sistema (antes, `AnimatePresence
+          mode="wait"` con su propia receta). */}
       {canApprove && esperaAceptacion && (
-        <AnimatePresence mode="wait" initial={false}>
+        <CrossFade swapKey={puedeRegistrarAceptacion ? 'registrar-aceptacion' : 'aprobar-primero'}>
           {puedeRegistrarAceptacion ? (
-            <motion.section
-              key="registrar-aceptacion"
-              {...aparecer}
+            <section
               data-testid="plan-registrar-aceptacion"
               className="space-y-2 rounded-md border border-border bg-surface p-4"
             >
@@ -523,11 +521,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               >
                 {t('inmobiliaria.ai.cobranza.planes.aceptacion.registrar')}
               </Button>
-            </motion.section>
+            </section>
           ) : (
-            <motion.section
-              key="aprobar-primero"
-              {...aparecer}
+            <section
               role="status"
               data-testid="plan-sin-aprobar"
               className="space-y-2 rounded-md border border-warning/30 bg-warning-soft p-4"
@@ -550,26 +546,27 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               >
                 {t('inmobiliaria.ai.cobranza.planes.aceptacion.aprobarPrimero')}
               </Button>
-            </motion.section>
+            </section>
           )}
-        </AnimatePresence>
+        </CrossFade>
       )}
 
-      {actionError && (
-        <div
-          role="alert"
-          data-testid="plan-accion-error"
-          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-        >
+      {/* El error y el «listo» de una acción entran y salen con `Presence`. */}
+      <Presence
+        show={Boolean(actionError)}
+        role="alert"
+        data-testid="plan-accion-error"
+        className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+      >
           {actionError}
-        </div>
-      )}
+      </Presence>
 
-      {toast && (
-        <div className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
+      <Presence
+        show={Boolean(toast)}
+        className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success"
+      >
           {toast}
-        </div>
-      )}
+      </Presence>
 
       {/* Wompi link panel — populated after approve success.
           🔴 PRUEBAS-PAGOS (03-10-2026): sólo con el plan APROBADO. La oferta

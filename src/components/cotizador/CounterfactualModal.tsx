@@ -31,6 +31,7 @@ import { useAskWhy, type AskWhyResult, type AskWhyError, type AskWhyVariable, ty
 import { useAskWhyUsage } from '@/lib/hooks/cotizador/use-ask-why-usage'
 import { useAuth } from '@/lib/auth'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
+import { AnimatedNumber, CrossFade, MotionIndicator } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -365,13 +366,21 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       disabled={ro}
                       onClick={() => activate('tipo', tipo)}
                       className={[
-                        'rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
+                        'relative isolate rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
                         isActive
-                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+                          ? 'border-primary text-primary'
                           : 'border-border bg-card text-foreground hover:bg-muted',
                         ro ? 'pointer-events-none opacity-50' : '',
                       ].join(' ')}
                     >
+                      {/* El fondo y el anillo del tipo elegido se deslizan al
+                          nuevo (`MotionIndicator`). */}
+                      {isActive && (
+                        <MotionIndicator
+                          layoutId="contrafactual-tipo"
+                          className="inset-0 -z-10 rounded-lg bg-primary/10 ring-1 ring-primary"
+                        />
+                      )}
                       {tipo}
                     </button>
                   )
@@ -402,7 +411,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         <Minus size={16} />
                       </button>
                       <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
-                        {draftValues.codeudores}
+                        <AnimatedNumber value={draftValues.codeudores} format={(n) => String(Math.round(n))} />
                       </span>
                       <button
                         type="button"
@@ -439,6 +448,13 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               <h3 className="text-xs font-mono uppercase tracking-wide text-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.hypotheticalColumn')}
               </h3>
+              {/* Esperando → consultando → el resultado hipotético: cada
+                  estado entra con su fundido (`popLayout`: monta ya). */}
+              <CrossFade
+                mode="popLayout"
+                swapKey={isLoading ? 'consultando' : result ? 'resultado' : !error ? 'esperando' : 'fallo'}
+                className="space-y-2"
+              >
               {isLoading && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Spinner weight="bold" className="w-4 h-4 animate-spin" />
@@ -459,11 +475,16 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   <CarrierCard carrier={c} />
                 </div>
               ))}
+              </CrossFade>
             </div>
           </section>
 
           {/* Narrative pane */}
           <section>
+            <CrossFade
+              mode="popLayout"
+              swapKey={isLoading ? 'cargando' : result ? 'narrativa' : 'nada'}
+            >
             {isLoading && (
               <div className="space-y-2" data-testid="narrative-skeleton">
                 <div className="h-4 w-full rounded bg-muted animate-pulse" />
@@ -479,6 +500,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 {result.narrative_es}
               </p>
             )}
+            </CrossFade>
 
             {/* Error UX (D-33-13) */}
             {error && error.code === 'timeout' && (

@@ -16,7 +16,7 @@
  */
 
 import { useState } from 'react'
-import { MonoLabel } from '@leasefy/cadence'
+import { MonoLabel, Presence } from '@leasefy/cadence'
 
 import type { ThresholdRow, ThresholdUpdateBody } from '@/lib/hooks/cobranza/use-thresholds'
 import { useI18n } from '@/lib/i18n'
@@ -267,23 +267,19 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
       </div>
 
-      {errors.form && (
-        <div
+      <Presence show={Boolean(errors.form)}
           role="alert"
           data-testid="umbrales-error"
           className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           {errors.form}
-        </div>
-      )}
+      </Presence>
 
-      {successVersion !== null && (
-        <div className="rounded-sm border border-success/30 bg-success-soft text-success font-mono">
+      <Presence show={successVersion !== null} className="rounded-sm border border-success/30 bg-success-soft text-success font-mono">
           {locale.startsWith('es')
             ? `Versión ${successVersion} creada`
             : `Version ${successVersion} created`}
-        </div>
-      )}
+      </Presence>
 
       <div className="flex justify-end">
         <Button

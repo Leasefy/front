@@ -5,7 +5,7 @@
 // Browser handles Range/206 negotiation automatically; DO NOT add MediaSource.
 
 import { useEffect, type KeyboardEvent } from 'react'
-import { IconButton, SegmentedControl } from '@leasefy/cadence'
+import { CrossFade, IconButton, SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   ALLOWED_SPEEDS,
@@ -65,13 +65,18 @@ export default function CallAudioPlayer({
     }
   }, [callId, audioRef])
 
+  // Movimiento: cada estado en un `CrossFade` con su clave (buscando el
+  // audio → reproductor, → sin grabación, → falló); el ícono de reproducir ⇄
+  // pausar se cruza en su lugar.
   if (state.status === 'probing') {
     return (
+      <CrossFade swapKey="buscando">
       <PlayerSlot>
         <p className="text-sm text-fg-muted" role="status">
           {t('inmobiliaria.ai.cobranza.call.player.probing')}
         </p>
       </PlayerSlot>
+      </CrossFade>
     )
   }
 
@@ -79,6 +84,7 @@ export default function CallAudioPlayer({
     // No es un error: hay llamadas sin audio (grabación deshabilitada, purgada
     // por retención, o canal sin voz). Se dice por qué la transcripción sí está.
     return (
+      <CrossFade swapKey="sin-audio">
       <PlayerSlot>
         <p className="text-sm text-fg">
           {t('inmobiliaria.ai.cobranza.call.player.absent')}
@@ -87,6 +93,7 @@ export default function CallAudioPlayer({
           {t('inmobiliaria.ai.cobranza.call.player.absentHint')}
         </p>
       </PlayerSlot>
+      </CrossFade>
     )
   }
 
@@ -94,6 +101,7 @@ export default function CallAudioPlayer({
     // Falló traerla ≠ no existe. Decir «no hay grabación» acá sería mentir
     // sobre la evidencia de una llamada.
     return (
+      <CrossFade swapKey="fallo">
       <PlayerSlot>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-danger" role="status">
@@ -108,6 +116,7 @@ export default function CallAudioPlayer({
           </button>
         </div>
       </PlayerSlot>
+      </CrossFade>
     )
   }
 
@@ -151,6 +160,7 @@ export default function CallAudioPlayer({
   }
 
   return (
+    <CrossFade swapKey="reproductor">
     <div
       role="region"
       aria-label={t('inmobiliaria.ai.cobranza.call.player.play')}
@@ -191,7 +201,8 @@ export default function CallAudioPlayer({
           aria-pressed={isPlaying}
           className="min-h-11 min-w-11 rounded-full bg-ink hover:bg-ink text-primary-fg"
           icon={
-            isPlaying ? (
+            <CrossFade as="span" swapKey={isPlaying ? 'pausa' : 'play'} mode="popLayout" direction="none" className="inline-flex">
+            {isPlaying ? (
               <svg
                 width="18"
                 height="18"
@@ -212,7 +223,8 @@ export default function CallAudioPlayer({
               >
                 <path d="M8 5v14l11-7z" />
               </svg>
-            )
+            )}
+            </CrossFade>
           }
         />
 
@@ -264,5 +276,6 @@ export default function CallAudioPlayer({
         />
       </div>
     </div>
+    </CrossFade>
   )
 }

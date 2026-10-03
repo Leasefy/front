@@ -29,6 +29,7 @@ import { EstudioOverviewSkeleton } from '@/components/skeleton/panel/EstudioOver
 import { relativeTime } from '@/lib/cartera'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.estudio'
 const NS = 'inmobiliaria.ai.estudio'
@@ -51,9 +52,18 @@ function EstudioOverview() {
     return r === key ? fallback : r
   }
 
-  if (isLoading && !data) return <EstudioOverviewSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <EstudioOverviewSkeleton />
+      </CrossFade>
+    )
+  }
 
   return (
+    <CrossFade swapKey="estudio">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header — resumen ejecutivo */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -84,6 +94,8 @@ function EstudioOverview() {
 
       {/* Empty (sin datos del overview) — el header ya es dueño del CTA "Ver
           estudios", así que aquí NO se duplica la acción (contrato §6). */}
+      {/* Sin datos ⇄ el resumen: el uno sale y el otro entra. */}
+      <CrossFade swapKey={data ? 'resumen' : !isLoading && !error ? 'vacio' : 'nada'} className="space-y-6">
       {!data && !isLoading && !error && (
         <EmptyState
           icon={ShieldCheck}
@@ -131,9 +143,9 @@ function EstudioOverview() {
               <h2 className="text-base font-semibold text-fg mb-3">
                 {tf(`${NS}.overview.pipeline.title`, 'Pipeline por estado')}
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {data.pipeline.map((seg) => (
-                  <div
+                  <StaggerItem
                     key={seg.estado}
                     className="rounded-lg border border-border bg-card p-4"
                     data-estado={seg.estado}
@@ -142,11 +154,11 @@ function EstudioOverview() {
                       {tf(`inmobiliaria.ai.workspace.estado.${seg.estado}`, seg.estado)}
                     </p>
                     <p className="mt-1 text-xl font-semibold text-fg tabular-nums">
-                      {seg.count}
+                      <AnimatedNumber value={seg.count} format={(n) => String(Math.round(n))} />
                     </p>
-                  </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             </section>
           )}
 
@@ -156,12 +168,14 @@ function EstudioOverview() {
               <h2 className="text-base font-semibold text-fg mb-3">
                 {tf(`${NS}.overview.feed.title`, 'Actividad reciente')}
               </h2>
-              <ul
+              <Stagger
+                as="ul"
+                direction="down"
                 role="list"
                 className="rounded-lg border border-border bg-card divide-y divide-border"
               >
                 {data.feed.slice(0, 8).map((f) => (
-                  <li key={f.id} className="px-4 py-3 flex items-start gap-3">
+                  <StaggerItem as="li" key={f.id} className="px-4 py-3 flex items-start gap-3">
                     <span
                       aria-hidden="true"
                       className={cn(
@@ -180,13 +194,14 @@ function EstudioOverview() {
                     <span className="text-xs text-fg-muted whitespace-nowrap shrink-0">
                       {relativeTime(f.occurredAt, locale)}
                     </span>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </section>
           )}
         </>
       )}
+      </CrossFade>
 
       {/* Cómo funciona — el viaje del estudio en 4 pasos (step-strip parejo) */}
       <section className="space-y-3" data-testid="estudio-como-funciona">
@@ -222,14 +237,15 @@ function EstudioOverview() {
           a nadie y no ofrece salida. `FalloDeCarga` clasifica el fallo, escribe
           en español lo que pasó y sólo ofrece reintentar cuando reintentar
           puede dar otro resultado. */}
-      {error && !isLoading && (
+      <Presence show={Boolean(error && !isLoading)}>
         <FalloDeCarga
           error={errorCrudo ?? error}
           queEs="los estudios"
           onReintentar={refetch}
         />
-      )}
+      </Presence>
     </div>
+    </CrossFade>
   )
 }
 

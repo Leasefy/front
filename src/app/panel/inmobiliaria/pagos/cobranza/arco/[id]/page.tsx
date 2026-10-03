@@ -47,14 +47,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import {
-  Card,
-  KeyValueList,
-  MonoLabel,
-  Timeline,
-  type KeyValueItem,
-  type TimelineEntry,
-} from '@leasefy/cadence'
+import { Card, CrossFade, KeyValueList, MonoLabel, Presence, Timeline, type KeyValueItem, type TimelineEntry } from '@leasefy/cadence'
 import type { ArcoDetailTimelineEntry } from '@/lib/hooks/cobranza/use-arco-detail'
 import type { ArcoRequestType } from '@/lib/hooks/cobranza/use-arco-requests'
 
@@ -380,12 +373,12 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         </h2>
 
         {/* Counsel gate inline Alert — D-36-05: NOT a redirect, NOT a toast */}
-        {gateBlocked && (
+        <Presence show={gateBlocked} direction="none" initial={false}>
           <Alert className="bg-warning-soft border border-warning/30 text-warning">
             <AlertTitle>{t('inmobiliaria.ai.arco.counselGate.title')}</AlertTitle>
             <AlertDescription>{t('inmobiliaria.ai.arco.counselGate.description')}</AlertDescription>
           </Alert>
-        )}
+        </Presence>
 
         <ResolveForm
           type={type}
@@ -875,12 +868,21 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
   const gateBlocked = gateData?.blocked ?? true // fail-closed: blocked until gate confirms otherwise
 
   // Loading skeleton (Phase 38-05a: PageSkeleton primitive)
-  if (isLoading && !data) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // solicitud, → fallo); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
 
   // Error state
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-4 md:p-6">
         <Alert variant="destructive">
           <AlertTitle>{t('common.error')}</AlertTitle>
@@ -897,6 +899,7 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
           </AlertDescription>
         </Alert>
       </div>
+      </CrossFade>
     )
   }
 
@@ -908,6 +911,7 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
   const timeline = data.timeline
 
   return (
+    <CrossFade swapKey="solicitud">
     <div className="p-4 md:p-6 space-y-6">
       {/* Volver: primitivo del DS (`backButtonVariants` de Cadence), no un
           Link con una flecha escrita a mano. */}
@@ -966,5 +970,6 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
         </div>
       </div>
     </div>
+    </CrossFade>
   )
 }

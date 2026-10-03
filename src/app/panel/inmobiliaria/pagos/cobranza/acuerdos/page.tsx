@@ -89,6 +89,7 @@ import {
 import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
 import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
 import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -607,8 +608,8 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         </div>
 
         {/* Aviso suave si el backend aún no está desplegado (404). Form intacto. */}
-        {notDeployed && (
-          <div
+        <Presence
+            show={notDeployed}
             role="status"
             className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border"
           >
@@ -617,19 +618,17 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
               La creación de propuestas estará disponible muy pronto. Por ahora puedes
               armar las condiciones; el envío quedó guardado para cuando se habilite.
             </p>
-          </div>
-        )}
+        </Presence>
 
-        {/* Error de validación / permiso / red. */}
-        {error && (
-          <div
+        {/* Error de validación / permiso / red: entra y sale con `Presence`. */}
+        <Presence
+            show={Boolean(error)}
             role="alert"
             className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 ring-1 ring-danger/30"
           >
             <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
             <p className="text-xs text-danger leading-relaxed">{error}</p>
-          </div>
-        )}
+        </Presence>
 
         <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
           {/* Único primary CTA de la sección (contrato §2). */}
@@ -648,6 +647,9 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
       {/* Columna derecha — vista previa local mientras se arma el acuerdo. */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-fg">Vista previa</h3>
+        {/* «Completa las condiciones» ⇄ la vista previa: la una sale y la otra
+            entra al llenar (o vaciar) lo que falta. */}
+        <CrossFade swapKey={hasPreview ? 'vista-previa' : 'faltan-datos'}>
         {hasPreview ? (
           <AcuerdoPropuestoCard
             totalAdeudado={total}
@@ -665,6 +667,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             </p>
           </div>
         )}
+        </CrossFade>
       </div>
     </div>
   )
@@ -860,6 +863,8 @@ function AcuerdosContent() {
       <AcuerdosGeneralesCard />
       <AcuerdosGeneralesTabla />
 
+      {/* Cargando → la tabla: entra con su fundido. */}
+      <CrossFade swapKey={cargando && acuerdos.length === 0 && !error ? 'cargando' : 'tabla'}>
       {cargando && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="md" />
@@ -874,6 +879,7 @@ function AcuerdosContent() {
           onReintentar={recargar}
         />
       )}
+      </CrossFade>
 
       <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
 

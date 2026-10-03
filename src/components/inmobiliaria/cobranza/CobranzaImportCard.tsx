@@ -29,6 +29,7 @@ import {
   useCarteraImport,
   type CarteraImportSummary,
 } from '@/lib/hooks/cobranza/use-cartera-import'
+import { CrossFade } from '@leasefy/cadence'
 
 export interface CobranzaImportCardProps {
   /** Se invoca tras un import exitoso (p.ej. para refrescar la lista/overview). */
@@ -146,6 +147,9 @@ export function CobranzaImportCard({
         </Button>
       </div>
 
+      {/* El resultado de la carga cambia con el estado: «listo para subir» →
+          error / no disponible / resumen, cada uno entra con su fundido. */}
+      <CrossFade swapKey={`${status}-${file ? 'archivo' : 'nada'}`}>
       {file && status === 'idle' && (
         <p className="mt-2 text-xs text-muted-foreground truncate">
           Listo para subir
@@ -294,6 +298,7 @@ export function CobranzaImportCard({
           </Button>
         </div>
       )}
+      </CrossFade>
     </div>
   )
 }

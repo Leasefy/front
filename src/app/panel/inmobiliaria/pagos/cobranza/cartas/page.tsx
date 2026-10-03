@@ -28,8 +28,10 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui'
-import { Card, Chip } from '@leasefy/cadence'
+import { Card, Chip, CrossFade, Presence } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   useTablePagination,
@@ -138,8 +140,11 @@ function CartasContent() {
   const hasFilters = kindFilter !== undefined || statusFilter !== undefined
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // lista, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-4 lg:p-8" aria-busy="true">
         <header className="mb-5">
           <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
@@ -161,12 +166,14 @@ function CartasContent() {
           </Table>
         </Card>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Global empty state (no filters, no data) ──────────────────────────────
   if (!isLoading && !hasFilters && artifacts.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Envelope}
@@ -174,10 +181,12 @@ function CartasContent() {
           description={t('inmobiliaria.ai.cobranza.cartas.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="lista">
     <div className="p-4 lg:p-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
@@ -233,7 +242,7 @@ function CartasContent() {
           </div>
         </fieldset>
 
-        {hasFilters && (
+        <Presence show={hasFilters} direction="none" initial={false} className="self-center">
           <Button
             variant="link"
             size="sm"
@@ -246,19 +255,17 @@ function CartasContent() {
           >
             {isEs ? 'Limpiar filtros' : 'Clear filters'}
           </Button>
-        )}
+        </Presence>
       </div>
 
       {/* Error */}
-      {error && (
-        <div
+      <Presence show={Boolean(error)}
           role="alert"
           className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
-        </div>
-      )}
+      </Presence>
 
       {/* Table */}
         <div className="overflow-x-auto">
@@ -287,9 +294,10 @@ function CartasContent() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+          <TableBodyAnimado>
             {artifacts.length === 0 && !isLoading && (
-              <TableRow>
+              <TableRowAnimada key="vacio">
                 <TableCell colSpan={6} className="px-3 py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     {isEs
@@ -297,10 +305,10 @@ function CartasContent() {
                       : 'No letters match the selected filters.'}
                   </p>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             )}
             {pageItems.map((a) => (
-              <TableRow
+              <TableRowAnimada
                 key={a.id}
                 onClick={() => navigateToCarta(a.id)}
                 role="link"
@@ -356,9 +364,9 @@ function CartasContent() {
                       a.physicalSendMethod
                     : '—'}
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
         </div>
 
@@ -377,6 +385,7 @@ function CartasContent() {
         )}
       </Card>
     </div>
+    </CrossFade>
   )
 }
 

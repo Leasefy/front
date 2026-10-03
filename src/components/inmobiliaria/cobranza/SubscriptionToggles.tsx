@@ -12,7 +12,7 @@
  */
 
 import { Envelope, WhatsappLogo, type Icon } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { MonoLabel, Presence } from '@leasefy/cadence'
 
 import type { SubscriptionRow } from '@/lib/hooks/cobranza/use-subscription'
 import { useI18n } from '@/lib/i18n'
@@ -47,21 +47,19 @@ export function SubscriptionToggles({
         checked={data.whatsapp_enabled}
         onChange={(v) => onToggle({ whatsapp_enabled: v })}
       />
-      {isSaving && (
+      <Presence show={isSaving} direction="none">
         <MonoLabel className="block text-[10px] text-muted-foreground tracking-wide">
           {locale.startsWith('es') ? 'Guardando…' : 'Saving…'}
         </MonoLabel>
-      )}
+      </Presence>
       {/* `error` ya es la frase entera del traductor (el hook la arma). */}
-      {error && (
-        <div
+      <Presence show={Boolean(error)}
           role="alert"
           data-testid="suscripcion-error"
           className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           {error}
-        </div>
-      )}
+      </Presence>
     </div>
   )
 }
@@ -78,7 +76,7 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 cursor-pointer hover:bg-muted/30 transition">
+    <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 cursor-pointer hover:bg-muted/30 transition-colors">
       <span className="flex items-center gap-2 text-sm text-foreground">
         <Icon className="w-4 h-4 text-muted-foreground" aria-hidden={true} />
         {label}

@@ -25,10 +25,10 @@ import { useRouter } from 'next/navigation'
 import { Clock, ShieldCheck } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Table, TableHeader, TableBodyAnimado, TableRow, TableHead, TableCell, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
-import { Chip, SearchInput } from '@leasefy/cadence'
+import { Chip, CrossFade, Presence, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useEstudiosList } from '@/lib/hooks/estudio/use-estudios-list'
 import type {
@@ -136,11 +136,20 @@ export default function EstudiosListClient() {
     searchInput.trim().length > 0
 
   // ── First-load skeleton ───────────────────────────────────────────────────
-  if (isLoading && items.length === 0) return <EstudiosListSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && items.length === 0) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <EstudiosListSkeleton />
+      </CrossFade>
+    )
+  }
 
   // ── Zero-data EmptyState (no filters, genuinely empty, no error) ───────────
   if (!isLoading && !hasActiveFilters && items.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={ShieldCheck}
@@ -148,6 +157,7 @@ export default function EstudiosListClient() {
           description={t('inmobiliaria.ai.estudio.list.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -243,6 +253,7 @@ export default function EstudiosListClient() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
+    <CrossFade swapKey="estudios">
     <div className="p-4 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
@@ -281,16 +292,14 @@ export default function EstudiosListClient() {
           </div>
 
           {/* Error banner (inline bottom-style, not a toast) */}
-          {error && (
-            <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+          <Presence show={Boolean(error)} className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
               <p className="text-sm text-danger">
                 {t('inmobiliaria.ai.estudio.list.error')}: {error}
               </p>
               <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
                 {t('inmobiliaria.ai.estudio.list.errorRetry')}
               </Button>
-            </div>
-          )}
+          </Presence>
 
           {/* md+ table */}
           <div className="hidden md:block overflow-x-auto overscroll-contain rounded-lg border border-border bg-card">
@@ -314,9 +323,10 @@ export default function EstudiosListClient() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-border">
+              {/* Filtrar, buscar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+              <TableBodyAnimado className="divide-y divide-border">
                 {filtered.length === 0 && (
-                  <TableRow>
+                  <TableRowAnimada key="vacio">
                     <TableCell colSpan={5} className="px-3 py-12 text-center">
                       <p className="text-sm text-fg-muted mb-3">
                         {t('inmobiliaria.ai.estudio.list.emptyFiltered')}
@@ -325,12 +335,12 @@ export default function EstudiosListClient() {
                         {t('inmobiliaria.ai.estudio.list.filters.clear')}
                       </Button>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )}
                 {pageItems.map((it) => {
                   const sev = SEVERIDAD_TOKEN[it.severidad] ?? SEVERIDAD_TOKEN.media
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={it.id}
                       onClick={() => navigateToEstudio(it.id)}
                       role="link"
@@ -386,10 +396,10 @@ export default function EstudiosListClient() {
                           {relativeTime(it.createdAt, t)}
                         </span>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   )
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
 
@@ -405,11 +415,11 @@ export default function EstudiosListClient() {
                 </Button>
               </div>
             ) : (
-              <ul className="space-y-2">
+              <Stagger as="ul" layout={false} className="space-y-2">
                 {pageItems.map((it) => {
                   const sev = SEVERIDAD_TOKEN[it.severidad] ?? SEVERIDAD_TOKEN.media
                   return (
-                    <li key={it.id}>
+                    <StaggerItem as="li" key={it.id}>
                       <button
                         type="button"
                         onClick={() => navigateToEstudio(it.id)}
@@ -453,10 +463,10 @@ export default function EstudiosListClient() {
                           {relativeTime(it.createdAt, t)}
                         </span>
                       </button>
-                    </li>
+                    </StaggerItem>
                   )
                 })}
-              </ul>
+              </Stagger>
             )}
           </div>
 
@@ -476,5 +486,6 @@ export default function EstudiosListClient() {
         </section>
       </div>
     </div>
+    </CrossFade>
   )
 }

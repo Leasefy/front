@@ -172,7 +172,7 @@ export default function NuevoAvaluoPage() {
                     type="button"
                     onClick={() => setTipo(tp.key)}
                     aria-pressed={isSel}
-                    className="relative rounded-lg border bg-surface p-5 text-left transition-all active:scale-[0.99]"
+                    className="relative rounded-lg border bg-surface p-5 text-left transition-[border-color,background-color,box-shadow,transform] duration-fast ease-enter active:scale-[0.99]"
                     style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                   >
                     <span
@@ -219,7 +219,7 @@ export default function NuevoAvaluoPage() {
                       type="button"
                       onClick={() => setInmueble(p.id)}
                       aria-pressed={isSel}
-                      className="w-full flex items-center gap-4 rounded-lg border bg-surface p-3.5 text-left transition-all"
+                      className="w-full flex items-center gap-4 rounded-lg border bg-surface p-3.5 text-left transition-[border-color,background-color,box-shadow] duration-fast ease-enter"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-surface-muted shrink-0">
@@ -399,7 +399,11 @@ function Procesando() {
             {/* progress */}
             <div className="w-full max-w-sm mt-1">
               <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: BLUE }} />
+                {/* Avanza con `scaleX` (sólo transform), no con el ancho. */}
+                <div
+                  className="h-full w-full origin-left rounded-full transition-transform duration-slow ease-standard"
+                  style={{ transform: `scaleX(${progress / 100})`, background: BLUE }}
+                />
               </div>
             </div>
           </div>

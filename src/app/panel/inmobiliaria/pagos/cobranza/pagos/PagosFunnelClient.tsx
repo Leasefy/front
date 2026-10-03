@@ -34,10 +34,11 @@ import {
   Badge,
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
   TableHead,
   TableCell,
+  TableRowAnimada,
 } from '@/components/ui'
 import {
   Select,
@@ -46,7 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, Chip, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, Card, Chip, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   PAGE_SIZE_OPTIONS,
@@ -103,6 +104,7 @@ function KpiCard({
   value,
   hint,
   isLoading,
+  cifra,
 }: {
   testId: string
   label: string
@@ -110,21 +112,30 @@ function KpiCard({
   /** Línea de apoyo: un monto sin saber sobre cuántas filas se calcula dice a medias. */
   hint?: string
   isLoading: boolean
+  /**
+   * La cifra detrás de `value`, para que CUENTE al cambiar (filtrar por
+   * fecha, pasarela o estado): desde la anterior, con el mismo formato. Sin
+   * ella (un «—»), se escribe `value` tal cual.
+   */
+  cifra?: { valor: number; formato: (n: number) => string }
 }) {
   return (
     <Card data-testid={testId} className="px-4 py-3">
       <p className="text-xs font-medium text-fg-muted uppercase tracking-wider">
         {label}
       </p>
+      {/* Hueco → cifra con un fundido (`CrossFade`). */}
+      <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
       {isLoading ? (
         <div className="mt-1 h-5 w-24 animate-pulse rounded bg-surface-muted" />
       ) : (
         // Los números van monoespaciados y tabulares para que las columnas de
         // cifras se alineen entre tarjetas.
         <p className="mt-1 text-lg font-semibold text-fg font-mono tabular-nums">
-          {value}
+          {cifra ? <AnimatedNumber value={cifra.valor} format={cifra.formato} /> : value}
         </p>
       )}
+      </CrossFade>
       {!isLoading && hint && (
         <p className="mt-0.5 text-xs text-fg-subtle">{hint}</p>
       )}
@@ -194,8 +205,14 @@ export default function PagosFunnelClient() {
     providers.length > 0 || statuses.length > 0 || dateWindow !== '30d' || sort !== 'created_at'
 
   // Phase 38-05a: dashboard skeleton during initial fetch (before any KPI lands).
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // pagos, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading && rows.length === 0 && !kpis) {
-    return <PageSkeleton variant="dashboard" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
   }
 
   // Phase 38-05a: page-level EmptyState only when zero results AND no filters
@@ -203,6 +220,7 @@ export default function PagosFunnelClient() {
   // keeps the chip controls reachable so the operator can clear filters.
   if (!isLoading && !error && rows.length === 0 && !hasActiveFilters) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-4 lg:p-8">
         <header className="mb-5">
           <h1 className="text-h2 text-fg">
@@ -222,6 +240,7 @@ export default function PagosFunnelClient() {
           }}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -264,6 +283,7 @@ export default function PagosFunnelClient() {
         testId="pagos-kpi-por-cobrar"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrar')}
         value={formatCop(k?.porCobrarCop ?? 0)}
+        cifra={{ valor: k?.porCobrarCop ?? 0, formato: formatCop }}
         hint={
           k
             ? k.porCobrarCount === 1
@@ -279,36 +299,42 @@ export default function PagosFunnelClient() {
         testId="pagos-kpi-en-proceso"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.enProceso')}
         value={String(k?.enProcesoCount ?? 0)}
+        cifra={{ valor: k?.enProcesoCount ?? 0, formato: (n) => String(Math.round(n)) }}
         isLoading={isLoading && !k}
       />
       <KpiCard
         testId="pagos-kpi-approved"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.approved')}
         value={String(k?.approvedCount ?? 0)}
+        cifra={{ valor: k?.approvedCount ?? 0, formato: (n) => String(Math.round(n)) }}
         isLoading={isLoading && !k}
       />
       <KpiCard
         testId="pagos-kpi-declined"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.declined')}
         value={String(k?.declinedCount ?? 0)}
+        cifra={{ valor: k?.declinedCount ?? 0, formato: (n) => String(Math.round(n)) }}
         isLoading={isLoading && !k}
       />
       <KpiCard
         testId="pagos-kpi-recaudado"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.recaudado')}
         value={formatCop(k?.totalRecaudadoCop)}
+        cifra={k?.totalRecaudadoCop != null ? { valor: k.totalRecaudadoCop, formato: formatCop } : undefined}
         isLoading={isLoading && !k}
       />
       <KpiCard
         testId="pagos-kpi-disbursed"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.disbursed')}
         value={formatCop(k?.totalDisbursedCop)}
+        cifra={k?.totalDisbursedCop != null ? { valor: k.totalDisbursedCop, formato: formatCop } : undefined}
         isLoading={isLoading && !k}
       />
     </div>
   )
 
   return (
+    <CrossFade swapKey="pagos">
     <div className="p-4 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
@@ -414,7 +440,7 @@ export default function PagosFunnelClient() {
           </fieldset>
 
           {/* Sólo cuando hay algo que limpiar: un botón que no hace nada es ruido. */}
-          {hasActiveFilters && (
+          <Presence show={hasActiveFilters} direction="none" initial={false} className="ml-auto">
             <Button
               variant="link"
               size="sm"
@@ -424,13 +450,12 @@ export default function PagosFunnelClient() {
             >
               {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
             </Button>
-          )}
+          </Presence>
         </div>
       </div>
 
       {/* Error banner */}
-      {error && (
-        <div className="border-b border-border bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
+      <Presence show={Boolean(error)} className="border-b border-border bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
@@ -443,8 +468,7 @@ export default function PagosFunnelClient() {
           >
             {t('inmobiliaria.ai.cobranza.pagos.errorRetry')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* Table */}
         <div className="overflow-x-auto">
@@ -483,33 +507,34 @@ export default function PagosFunnelClient() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+          <TableBodyAnimado>
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
-                <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
+                <TableRowAnimada key={`pagos-skel-${i}`} className="animate-pulse">
                   {Array.from({ length: COLUMNAS }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
                   ))}
-                </TableRow>
+                </TableRowAnimada>
               ))
             )}
             {!isLoading && rows.length === 0 && !error && (
-              <TableRow>
+              <TableRowAnimada key="vacio">
                 <TableCell colSpan={COLUMNAS} className="px-3 py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             )}
             {pageItems.map((row) => {
               const estado = estadoVisible(row)
               const esObligacion = row.kind === 'obligacion'
               const isPending = row.disbursementPendingDays >= 3
               return (
-                <TableRow
+                <TableRowAnimada
                   key={row.id}
                   data-testid={`pagos-row-${row.id}`}
                   onClick={() => handleRowClick(row)}
@@ -601,10 +626,10 @@ export default function PagosFunnelClient() {
                       year: 'numeric',
                     })}
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               )
             })}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
         </div>
 
@@ -623,5 +648,6 @@ export default function PagosFunnelClient() {
         )}
       </Card>
     </div>
+    </CrossFade>
   )
 }

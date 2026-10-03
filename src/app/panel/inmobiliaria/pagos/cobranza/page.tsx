@@ -31,6 +31,7 @@ import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaI
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
+import { CrossFade, Presence } from '@leasefy/cadence'
 import { CARTERA_STAGES } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
@@ -191,11 +192,28 @@ export default function CobranzaOverviewPage() {
     [handleStageClick],
   )
 
+  // ¿Se vio la carga? Entonces las cifras de las etapas que llegan cuentan
+  // desde 0; si el panorama ya estaba (volver a la pantalla), sólo cuentan
+  // cuando cambian.
+  const huboCarga = useRef(false)
+  if (isLoading && !data) huboCarga.current = true
+
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
-  if ((isLoading && !data) || sinDeudores) return <CobranzaOverviewSkeleton />
+  // Movimiento: cada salida va en un `CrossFade` con su clave (esqueleto →
+  // panorama, → vacío, → fallo). Es el mismo nodo en todas las ramas, así que
+  // lo que llega después de cargar entra con su fundido; lo que ya estaba al
+  // montarse no se anima (la página entra con su template).
+  if ((isLoading && !data) || sinDeudores) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaOverviewSkeleton />
+      </CrossFade>
+    )
+  }
 
   if (!data && !isLoading && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={FolderOpen}
@@ -208,6 +226,7 @@ export default function CobranzaOverviewPage() {
             import exitoso refrescamos el overview para salir del empty state. */}
         <CobranzaImportCard onImported={() => void refetch()} />
       </div>
+      </CrossFade>
     )
   }
 
@@ -217,6 +236,7 @@ export default function CobranzaOverviewPage() {
   // con reintento, y sin ningún número.
   if (error && !data) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
@@ -230,6 +250,7 @@ export default function CobranzaOverviewPage() {
           onReintentar={() => refetch()}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -244,6 +265,7 @@ export default function CobranzaOverviewPage() {
       : ''
 
   return (
+    <CrossFade swapKey="panorama">
     <div className="p-6 lg:p-8 space-y-6">
       {/* ARIA live region — announces new stage transitions to screen readers */}
       <div
@@ -268,21 +290,21 @@ export default function CobranzaOverviewPage() {
       </header>
 
       {/* Ya había datos y un refresco falló: lo de abajo no se borra, pero se
-          dice ARRIBA que puede estar viejo, con reintento. */}
-      {error && data && (
-        <div
-          role="alert"
-          data-testid="cartera-desactualizada"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-warning-soft px-4 py-2.5"
-        >
+          dice ARRIBA que puede estar viejo, con reintento. Entra y sale con
+          su animación (`Presence`): un reintento que funciona lo retira. */}
+      <Presence
+        show={Boolean(error && data)}
+        role="alert"
+        data-testid="cartera-desactualizada"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-warning-soft px-4 py-2.5"
+      >
           <p className="text-sm text-fg">
             No se pudo actualizar el panorama de tu cartera: lo que ves es de la última carga.
           </p>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
             Intentar de nuevo
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
           Lo único que pide que una persona haga algo. Reemplaza cuatro
@@ -352,6 +374,7 @@ export default function CobranzaOverviewPage() {
                 id={`stage-tab-${stage}`}
                 aria-controls="stage-panel"
                 onKeyDown={(e) => handleStageKeyDown(e, stage)}
+                contarDesdeCero={huboCarga.current}
               />
             )
           })}
@@ -429,5 +452,6 @@ export default function CobranzaOverviewPage() {
       )}
 
     </div>
+    </CrossFade>
   )
 }

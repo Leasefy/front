@@ -29,6 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Presence } from '@leasefy/cadence'
 
 void React
 
@@ -169,11 +170,9 @@ export function ManualCallModal({
             </div>
           ))}
 
-        {error && (
-          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
             {error}
-          </p>
-        )}
+        </Presence>
 
         <DialogFooter>
           <Button

@@ -58,6 +58,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 void React
 
@@ -245,6 +246,12 @@ export function ManualWAModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Cargando plantillas → el formulario (o «no hay plantillas»): cada
+            estado entra con su fundido; `popLayout` monta el nuevo ya. */}
+        <CrossFade
+          mode="popLayout"
+          swapKey={envMissing ? 'sin-agente' : templatesLoading ? 'cargando' : templates.length === 0 ? 'sin-plantillas' : 'formulario'}
+        >
         {envMissing ? (
           <p className="text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
@@ -279,6 +286,8 @@ export function ManualWAModal({
 
             {/* La vista previa va ARRIBA de los campos: lo primero que tiene
                 que ver quien va a mandar un mensaje es el mensaje. */}
+            {/* Otra plantilla, otra vista previa: se cruzan con un fundido. */}
+            <CrossFade swapKey={selectedId} mode="popLayout" direction="none">
             {vistaPrevia && (
               <div>
                 <p className="mb-1 text-xs font-medium text-fg-subtle">
@@ -297,6 +306,7 @@ export function ManualWAModal({
                 )}
               </div>
             )}
+            </CrossFade>
 
             {selectedTemplate && selectedTemplate.variables.length > 0 && (
               <div>
@@ -345,12 +355,11 @@ export function ManualWAModal({
             )}
           </div>
         )}
+        </CrossFade>
 
-        {error && (
-          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
             {error}
-          </p>
-        )}
+        </Presence>
 
         <DialogFooter>
           <Button

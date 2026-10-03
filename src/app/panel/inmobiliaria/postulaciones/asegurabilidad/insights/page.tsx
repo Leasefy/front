@@ -12,6 +12,7 @@ import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SectionLabel } from '@/components/ui/section-label'
+import { CrossFade } from '@leasefy/cadence'
 
 /**
  * Cuatro widgets, los cuatro con dato detrás. Había dos más —«Calidad de
@@ -33,9 +34,18 @@ export default function CotizadorInsightsPage() {
   } = useInsights()
 
   // Phase 38-05b: PageSkeleton replaces inline animate-pulse grid (D-38-04: skeleton only).
-  if (isLoading && approvalRateMonthly.length === 0) return <PageSkeleton variant="dashboard" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && approvalRateMonthly.length === 0) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
+  }
 
   return (
+    <CrossFade swapKey="insights">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <header className="space-y-1.5">
@@ -106,5 +116,6 @@ export default function CotizadorInsightsPage() {
         </div>
       )}
     </div>
+    </CrossFade>
   )
 }

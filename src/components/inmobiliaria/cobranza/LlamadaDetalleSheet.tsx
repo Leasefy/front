@@ -25,7 +25,7 @@ import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/comp
 import { Button } from '@/components/ui'
 // El Badge de cadence — el del barrel local no tiene el variant `neutral`,
 // y la página del detalle usa este mismo.
-import { Badge } from '@leasefy/cadence'
+import { Badge, CrossFade } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
@@ -154,6 +154,12 @@ function CajonAbierto({ callId }: { callId: string }) {
 
         {/* Cuerpo — lo único que scrollea (`SheetBody` trae data-lenis-prevent) */}
         <SheetBody className="space-y-4">
+          {/* Cargando → la llamada (o → el fallo): cada estado entra con su
+              fundido; el cajón ya trae su propia entrada. */}
+          <CrossFade
+            swapKey={isLoading && !data ? 'cargando' : error && !data && !isLoading ? 'fallo' : data ? 'llamada' : 'nada'}
+            className="space-y-4"
+          >
           {isLoading && !data && (
             <div className="space-y-3" aria-hidden="true">
               {[0, 1, 2].map((i) => (
@@ -207,6 +213,7 @@ function CajonAbierto({ callId }: { callId: string }) {
               <CallStateTracePanel stateTrace={data.stateTrace} />
             </>
           )}
+          </CrossFade>
         </SheetBody>
 
         {/* Pie: la página completa sigue siendo la casa del PDF de

@@ -64,6 +64,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 // =============================================================================
 // Constants
@@ -560,7 +561,7 @@ function TemplateEditorContent({
       {/* Page body */}
       <div className="p-4 md:p-6 space-y-6 flex-1">
         {/* Unknown variable warning (T-36-10-01 UI layer) */}
-        {unknownVars.length > 0 && (
+        <Presence show={unknownVars.length > 0} direction="none" initial={false}>
           <Alert
             data-unknown-var-alert
             className="border-warning/30 bg-warning-soft text-warning"
@@ -575,7 +576,7 @@ function TemplateEditorContent({
                 .join(' ')}
             </AlertDescription>
           </Alert>
-        )}
+        </Presence>
 
         {/* Variable picker */}
         <section>
@@ -665,22 +666,18 @@ function TemplateEditorContent({
       </div>
 
       {/* Success toast */}
-      {successToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-success/30 bg-success-soft text-success px-4 py-3 text-sm">
+      <Presence show={Boolean(successToast)} className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-success/30 bg-success-soft text-success px-4 py-3 text-sm">
           {successToast}
-        </div>
-      )}
+      </Presence>
 
       {/* Error toast */}
-      {errorToast && (
-        <div
+      <Presence show={Boolean(errorToast)}
           role="alert"
           data-testid="plantilla-error"
           className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm"
         >
           {errorToast}
-        </div>
-      )}
+      </Presence>
     </div>
   )
 }
@@ -702,8 +699,14 @@ export default function TemplatePage(props: { params: Promise<{ id: string }> })
   )
 
   // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // editor, → no está); los avisos flotantes entran y salen con `Presence`.
   if (isLoading && !data) {
-    return <PageSkeleton variant="detail" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
   }
 
   if (!template) {
@@ -711,11 +714,17 @@ export default function TemplatePage(props: { params: Promise<{ id: string }> })
     // para que el agente las use»), que acá no viene al caso — el caso es que
     // ESTA plantilla no está en el catálogo.
     return (
+      <CrossFade swapKey="no-esta">
       <div className="p-6 text-sm text-fg-muted">
         {t('inmobiliaria.ai.templates.notFound')}
       </div>
+      </CrossFade>
     )
   }
 
-  return <TemplateEditorContent template={template} agencyId={agencyId} />
+  return (
+    <CrossFade swapKey="editor">
+      <TemplateEditorContent template={template} agencyId={agencyId} />
+    </CrossFade>
+  )
 }

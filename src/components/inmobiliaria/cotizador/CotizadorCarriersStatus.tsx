@@ -4,6 +4,7 @@ import { Warning } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/lib/cartera'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Internal sub-components
@@ -74,8 +75,11 @@ export function CotizadorCarriersStatus({
   const allInBreach =
     enabledCarriers.length > 0 && enabledCarriers.every((c) => c.slaState === 'breached')
 
+  // Movimiento: esqueleto → aseguradoras en un `CrossFade` (el mismo nodo en
+  // las dos ramas); las tarjetas entran escalonadas.
   if (isLoading && carriers.length === 0) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
           <div
@@ -88,23 +92,23 @@ export function CotizadorCarriersStatus({
           </div>
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="aseguradoras">
     <div>
       {/* All-breach banner */}
-      {allInBreach && (
-        <div className="mb-4 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2">
+      <Presence show={allInBreach} className="mb-4 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 flex-shrink-0" />
           {t('inmobiliaria.ai.cotizador.overview.carriers.allBreachBanner')}
-        </div>
-      )}
+      </Presence>
 
       {/* Carriers grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {enabledCarriers.map((carrier) => (
-          <div
+          <StaggerItem
             key={carrier.name}
             className="rounded-lg border border-border bg-surface p-4 space-y-3"
           >
@@ -124,9 +128,10 @@ export function CotizadorCarriersStatus({
                 ? relativeTime(carrier.lastVerdictAt, locale)
                 : t('inmobiliaria.ai.cotizador.overview.carriers.neverSeen')}
             </p>
-          </div>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </div>
+    </CrossFade>
   )
 }

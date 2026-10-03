@@ -27,6 +27,7 @@ import { SinDatos } from '@/components/estado/SinDatos'
 import { Button } from '@/components/ui/button'
 import { SectionLabel } from '@/components/ui/section-label'
 import { relativeTime } from '@/lib/cartera'
+import { CrossFade } from '@leasefy/cadence'
 
 // Permissions gate is enforced by the cotizador layout (Phase 29).
 // This page does NOT re-check canAccess — layout handles 403 before mount.
@@ -125,11 +126,20 @@ export default function CotizadorOverviewPage() {
   }, [realtimeQuotes, data?.lastQuotes])
 
   // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04) ───────────────────────
-  if (isLoading && !data) return <CotizadorOverviewSkeleton />
+  // Movimiento: esqueleto → sala en un `CrossFade` (el mismo nodo en las dos
+  // ramas); adentro, fallo / vacío / resumen se cruzan con su fundido.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CotizadorOverviewSkeleton />
+      </CrossFade>
+    )
+  }
 
   const sinCotizaciones = !isLoading && !error && mergedQuotes.length === 0
 
   return (
+    <CrossFade swapKey="sala">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa: etiqueta de sección + título + qué es. Antes el
           vacío salía SIN encabezado: la persona caía en un recuadro suelto sin
@@ -184,6 +194,7 @@ export default function CotizadorOverviewPage() {
           estaba al final de la página, después de los indicadores en cero y
           las listas vacías, fuera de pantalla. La pantalla afirmaba y
           desmentía en el mismo scroll. */}
+      <CrossFade swapKey={error && !isLoading ? 'fallo' : sinCotizaciones ? 'vacio' : 'resumen'} className="space-y-6">
       {error && !isLoading ? (
         <FalloDeCarga
           error={error}
@@ -243,6 +254,8 @@ export default function CotizadorOverviewPage() {
           </section>
         </>
       )}
+      </CrossFade>
     </div>
+    </CrossFade>
   )
 }

@@ -4,7 +4,7 @@
 // hashCedula() is called at submit time only.
 
 import * as React from 'react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -32,6 +32,7 @@ import { SectionLabel } from '@/components/ui/section-label'
 import { falloDeLaRespuesta } from '@/lib/hooks/cotizador/fallo-de-la-respuesta'
 import { leerFallo } from '@/lib/errores/traductor-de-errores'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 
@@ -104,6 +105,13 @@ export default function NuevaCotizacionPage() {
 
   // Wizard state — steps: candidato(1) → propiedad(2) → config(3) → review(4)
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  // ¿Se avanzó o se volvió? El paso nuevo entra por la derecha al avanzar y
+  // por la izquierda al volver (`CrossFade` con dirección).
+  const pasoAnterior = useRef(step)
+  const avanzando = step >= pasoAnterior.current
+  useEffect(() => {
+    pasoAnterior.current = step
+  }, [step])
   const [showRestoreBanner, setShowRestoreBanner] = useState(true)
   const [candidato, setCandidato] = useState(EMPTY_CANDIDATO)
   const [propiedad, setPropiedad] = useState<{
@@ -481,8 +489,7 @@ export default function NuevaCotizacionPage() {
         {/* Step indicator — candidato → propiedad → config → review */}
         <WizardStepIndicator totalSteps={4} currentStep={step} />
           {/* Phase 33 D-33-14: pre-fill GET failure banner — 404/network on parent quote */}
-          {isReQuoteMode && prefillFailed && !prefillDismissed && (
-            <div
+          <Presence show={isReQuoteMode && prefillFailed && !prefillDismissed}
               role="alert"
               className="mb-6 rounded-lg border border-warning/30 bg-warning-soft p-4"
             >
@@ -510,15 +517,14 @@ export default function NuevaCotizacionPage() {
                   {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.continuar')}
                 </Button>
               </div>
-            </div>
-          )}
+          </Presence>
 
-          {hasDraft && showRestoreBanner && (
+          <Presence show={hasDraft && showRestoreBanner} initial={false}>
             <WizardRestoreBanner
               onContinue={handleContinue}
               onStartFresh={handleStartFresh}
             />
-          )}
+          </Presence>
 
           {/* Phase 33 D-33-10: re-using cédula notice (replaces cédula input semantically) */}
           {step === 1 && prefillCedulaHash && (
@@ -542,6 +548,14 @@ export default function NuevaCotizacionPage() {
             </div>
           )}
 
+          {/* Cada paso entra desde su lado y el anterior sale hacia el otro.
+              `popLayout`: el paso nuevo se monta YA (el foco que deja un error
+              del servidor tiene que encontrar su campo en el mismo cuadro). */}
+          <CrossFade
+            swapKey={step}
+            direction={avanzando ? 'forward' : 'backward'}
+            mode="popLayout"
+          >
           {step === 1 && (
             <WizardStep1Candidato
               value={candidato}
@@ -584,25 +598,22 @@ export default function NuevaCotizacionPage() {
               ctaLabel={tf('inmobiliaria.ai.cotizador.nueva.ctaConsultar', 'Consultar asegurabilidad')}
             />
           )}
+          </CrossFade>
 
           {/* Phase 33 D-33-14 error path 2: per-session re-quote cap (HTTP 429) */}
-          {sessionCapError && (
-            <div
+          <Presence show={Boolean(sessionCapError)}
               role="alert"
               className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
-            </div>
-          )}
+          </Presence>
 
-          {submitError && (
-            <div
+          <Presence show={Boolean(submitError)}
               role="alert"
               className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {submitError}
-            </div>
-          )}
+          </Presence>
         </div>
       </div>
     </PageGuard>

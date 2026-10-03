@@ -35,7 +35,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Warning, FloppyDisk } from '@phosphor-icons/react'
-import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
+import { CrossFade, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -459,11 +459,19 @@ function CobranzaConfiguracionContent() {
   const policySettled = !policy.isLoading || !!policy.data || policy.notProvisioned
   const autonomySettled = !autonomy.isLoading || !!autonomy.data || autonomy.notProvisioned
 
+  // Movimiento: esqueleto → configuración en un `CrossFade` (el mismo nodo en
+  // las dos ramas). Adentro, los campos de cada modelo de cobro se cruzan al
+  // cambiarlo, y los errores y botones de guardar entran y salen con `Presence`.
   if (!policySettled || !autonomySettled) {
-    return <CobranzaConfiguracionSkeleton />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaConfiguracionSkeleton />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="configuracion">
     <div className="p-4 md:p-6 space-y-6 pb-24">
       <div>
         {/* Vuelta al origen. Se llega acá desde «Ajustar» en Acuerdos de pago y
@@ -581,6 +589,9 @@ function CobranzaConfiguracionContent() {
             </div>
           </div>
 
+          {/* Cambiar el modelo de cobro cambia los campos: los de antes salen y
+              los nuevos entran (`popLayout`: montan ya, sin esperar). */}
+          <CrossFade swapKey={negDraft.billingModel} mode="popLayout">
           {negDraft.billingModel === 'performance' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <PorcentajeField
@@ -677,10 +688,11 @@ function CobranzaConfiguracionContent() {
               </div>
             </div>
           )}
+          </CrossFade>
 
           {canEdit && (
             <div className="flex items-center justify-end gap-2 pt-1">
-              {comercialDirty && (
+              <Presence show={comercialDirty} direction="none" initial={false}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -690,7 +702,7 @@ function CobranzaConfiguracionContent() {
                 >
                   Descartar
                 </Button>
-              )}
+              </Presence>
               <Button
                 size="sm"
                 className="min-h-[44px]"
@@ -707,11 +719,9 @@ function CobranzaConfiguracionContent() {
               </Button>
             </div>
           )}
-          {negError?.donde === 'comercial' && (
-            <p role="alert" className="text-sm text-danger text-right" data-testid="comercial-save-error">
-              {negError.texto}
-            </p>
-          )}
+          <Presence as="p" show={negError?.donde === 'comercial'} role="alert" className="text-sm text-danger text-right" data-testid="comercial-save-error">
+              {negError?.texto}
+          </Presence>
         </section>
       )}
 
@@ -766,11 +776,9 @@ function CobranzaConfiguracionContent() {
               {autonomySaving && <Spinner size="sm" variant="muted" data-testid="autonomy-saving" />}
             </div>
 
-            {autonomyError && (
-              <p role="alert" className="text-sm text-danger" data-testid="autonomia-save-error">
+            <Presence as="p" show={Boolean(autonomyError)} role="alert" className="text-sm text-danger" data-testid="autonomia-save-error">
                 {autonomyError}
-              </p>
-            )}
+            </Presence>
           </>
         )}
       </section>
@@ -836,7 +844,7 @@ function CobranzaConfiguracionContent() {
               Enviar el reporte diario por WhatsApp
             </Label>
             <div className="flex items-center gap-3 shrink-0">
-              {canEdit && avisoDirty && (
+              <Presence show={canEdit && avisoDirty} direction="none" initial={false}>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -847,7 +855,7 @@ function CobranzaConfiguracionContent() {
                 >
                   Guardar
                 </Button>
-              )}
+              </Presence>
               <Switch
                 id="dailyReportWhatsappEnabled"
                 data-testid="field-dailyReportWhatsappEnabled"
@@ -858,11 +866,9 @@ function CobranzaConfiguracionContent() {
             </div>
           </div>
         )}
-        {negError?.donde === 'aviso' && (
-          <p role="alert" className="text-sm text-danger" data-testid="aviso-save-error">
-            {negError.texto}
-          </p>
-        )}
+        <Presence as="p" show={negError?.donde === 'aviso'} role="alert" className="text-sm text-danger" data-testid="aviso-save-error">
+            {negError?.texto}
+        </Presence>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="secondary" size="sm" hideArrow>
@@ -883,6 +889,7 @@ function CobranzaConfiguracionContent() {
         </div>
       </section>
     </div>
+    </CrossFade>
   )
 }
 

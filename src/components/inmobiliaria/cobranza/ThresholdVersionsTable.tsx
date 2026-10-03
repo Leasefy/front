@@ -17,7 +17,7 @@
 
 import { useState } from 'react'
 import { ArrowCounterClockwise } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { MonoLabel, Presence } from '@leasefy/cadence'
 
 import type { ThresholdRow } from '@/lib/hooks/cobranza/use-thresholds'
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -26,11 +26,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 export interface ThresholdVersionsTableProps {
   versions: ThresholdRow[]
@@ -59,6 +61,7 @@ export function ThresholdVersionsTable({
 }: ThresholdVersionsTableProps) {
   const { t, locale } = useI18n()
   const [rollbackConfirmVersion, setRollbackConfirmVersion] = useState<number | null>(null)
+  const versionDelDialogo = useUltimoPresente(rollbackConfirmVersion)
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false)
   const [toast, setToast] = useState<string | null>(null)
   /** Un fallo no se pinta en verde: el aviso dice si salió o no. */
@@ -85,8 +88,8 @@ export function ThresholdVersionsTable({
       setToastEsError(false)
       setToast(
         locale.startsWith('es')
-          ? `Restaurado a versión ${rollbackConfirmVersion} (ahora vigente como versión ${row.version})`
-          : `Rolled back to version ${rollbackConfirmVersion} (now active as version ${row.version})`,
+          ? `Restaurado a versión ${versionDelDialogo} (ahora vigente como versión ${row.version})`
+          : `Rolled back to version ${versionDelDialogo} (now active as version ${row.version})`,
       )
       setRollbackConfirmVersion(null)
     } catch (err) {
@@ -142,11 +145,12 @@ export function ThresholdVersionsTable({
                 <TableHead className="text-right px-3 py-2" />
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Restaurar crea una versión nueva: entra arriba con su animación; paginar hace entrar las filas escalonadas. */}
+            <TableBodyAnimado>
               {pageItems.map((v) => {
                 const isCurrent = v.version === currentMax
                 return (
-                  <TableRow
+                  <TableRowAnimada
                     key={`v-${v.version ?? 'null'}-${v.created_at ?? ''}`}
                     className="border-b border-border last:border-0"
                   >
@@ -191,10 +195,10 @@ export function ThresholdVersionsTable({
                         </Button>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
           </div>
 
@@ -214,8 +218,7 @@ export function ThresholdVersionsTable({
       )}
 
       {/* Toast */}
-      {toast && (
-        <div
+      <Presence show={Boolean(toast)}
           role={toastEsError ? 'alert' : 'status'}
           className={
             toastEsError
@@ -224,10 +227,10 @@ export function ThresholdVersionsTable({
           }
         >
           {toast}
-        </div>
-      )}
+      </Presence>
 
-      {/* Rollback confirmation */}
+      {/* Rollback confirmation. El texto sigue nombrando la versión mientras
+          el diálogo se cierra (`versionDelDialogo`). */}
       <AlertDialog
         open={rollbackConfirmVersion !== null}
         onOpenChange={(o) => {
@@ -241,8 +244,8 @@ export function ThresholdVersionsTable({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {locale.startsWith('es')
-                ? `¿Restaurar a la versión ${rollbackConfirmVersion}? Esto creará una nueva versión ${currentMax + 1} con los valores de v${rollbackConfirmVersion}.`
-                : `Restore version ${rollbackConfirmVersion}? This will create a new version ${currentMax + 1} with the values from v${rollbackConfirmVersion}.`}
+                ? `¿Restaurar a la versión ${versionDelDialogo}? Esto creará una nueva versión ${currentMax + 1} con los valores de v${versionDelDialogo}.`
+                : `Restore version ${versionDelDialogo}? This will create a new version ${currentMax + 1} with the values from v${versionDelDialogo}.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

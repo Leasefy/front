@@ -39,6 +39,7 @@
 
 import Link from 'next/link'
 import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
@@ -101,8 +102,11 @@ function Ficha({ item }: { item: PendienteItem }) {
     item.montoCop != null ? COP.format(item.montoCop) : null,
   ].filter(Boolean)
 
+  // Cada ficha es un `StaggerItem`: `usePendientes` junta seis fuentes y las
+  // fichas llegan a medida que cada una responde; entran a su columna en vez
+  // de aparecer de golpe, y la que se resuelve sale.
   return (
-    <li>
+    <StaggerItem as="li">
       <Link
         href={item.href}
         data-testid={`te-toca-${item.key}`}
@@ -122,9 +126,12 @@ function Ficha({ item }: { item: PendienteItem }) {
           <p className="text-xs text-fg-muted truncate mt-0.5">{item.reason}</p>
         )}
       </Link>
-    </li>
+    </StaggerItem>
   )
 }
+
+/** El número tal cual se escribía antes: sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n))
 
 // ── Componente ───────────────────────────────────────────────────────────────
 
@@ -193,6 +200,33 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
           </p>
         </div>
 
+        {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
+            fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
+            cargar tus pendientes» encima de un tablero con fichas es falso de
+            las dos maneras — ni cargó todo, ni falló todo.
+            Entra y sale con su animación (`Presence`). */}
+        <Presence
+          show={Boolean(error && !isLoading)}
+          role="alert"
+          className={[
+            'rounded-lg border p-3 text-sm',
+            totalQueEspera > 0
+              ? 'border-warning/30 bg-warning-soft text-warning'
+              : 'border-danger/30 bg-danger-soft text-danger',
+          ].join(' ')}
+        >
+          {totalQueEspera > 0
+            ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
+            : 'No pudimos cargar tus pendientes.'}{' '}
+          <span className="opacity-80">{error ? errorLegible(error) : null}</span>
+        </Presence>
+
+        {/* Contando → tablero (o → «nada pendiente»): cada estado entra con
+            su fundido. */}
+        <CrossFade
+          swapKey={contando ? 'contando' : totalQueEspera > 0 ? 'tablero' : 'vacio'}
+          className="space-y-3"
+        >
         {contando && (
           <div
             className="grid grid-cols-2 lg:grid-cols-4 gap-3"
@@ -201,27 +235,6 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="h-40 rounded-lg bg-surface-muted animate-pulse" />
             ))}
-          </div>
-        )}
-
-        {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
-            fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
-            cargar tus pendientes» encima de un tablero con fichas es falso de
-            las dos maneras — ni cargó todo, ni falló todo. */}
-        {error && !isLoading && (
-          <div
-            role="alert"
-            className={[
-              'rounded-lg border p-3 text-sm',
-              totalQueEspera > 0
-                ? 'border-warning/30 bg-warning-soft text-warning'
-                : 'border-danger/30 bg-danger-soft text-danger',
-            ].join(' ')}
-          >
-            {totalQueEspera > 0
-              ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
-              : 'No pudimos cargar tus pendientes.'}{' '}
-            <span className="opacity-80">{errorLegible(error)}</span>
           </div>
         )}
 
@@ -267,7 +280,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                       <span
                         className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
                       >
-                        {fichas.length}
+                        <AnimatedNumber value={fichas.length} format={enteroTalCual} />
                       </span>
                     </p>
 
@@ -282,7 +295,8 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                         Nada pendiente
                       </p>
                     ) : (
-                      <ul
+                      <Stagger
+                        as="ul"
                         data-lenis-prevent
                         className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5"
                         style={{ overscrollBehavior: 'contain' }}
@@ -290,7 +304,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                         {fichas.map((item) => (
                           <Ficha key={item.key} item={item} />
                         ))}
-                      </ul>
+                      </Stagger>
                     )}
                   </div>
                 )
@@ -325,6 +339,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
             </Button>
           </>
         )}
+        </CrossFade>
       </div>
     </section>
   )

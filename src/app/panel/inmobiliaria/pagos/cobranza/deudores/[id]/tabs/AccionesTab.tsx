@@ -24,6 +24,7 @@ import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention/ManualCallModal'
 import type { CarteraStage } from '@/lib/cartera'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 void React
 
@@ -191,6 +192,19 @@ export function AccionesTab({
         <h3 className="text-sm font-semibold text-fg mb-2">
           {t('inmobiliaria.ai.cobranza.detail.acciones.auditTitle')}
         </h3>
+        {/* Fallo / cargando / vacío / bitácora: cada estado entra con su
+            fundido; la intervención que se acaba de hacer entra ARRIBA. */}
+        <CrossFade
+          swapKey={
+            audit.error && !audit.data && !audit.isLoading
+              ? 'fallo'
+              : audit.isLoading && !audit.data
+                ? 'cargando'
+                : auditEntries.length === 0
+                  ? 'vacio'
+                  : 'bitacora'
+          }
+        >
         {audit.error && !audit.data && !audit.isLoading ? (
           /* Cargando, falló y «no hay» son tres cosas distintas: el fallo
              mostraba «Sin actividad reciente» — un vacío deshonesto sobre una
@@ -226,9 +240,10 @@ export function AccionesTab({
             {t('inmobiliaria.ai.cobranza.detail.acciones.auditEmpty')}
           </p>
         ) : (
-          <ul className="space-y-1">
+          <Stagger as="ul" direction="down" className="space-y-1">
             {auditEntries.map((e) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={e.id}
                 className="flex items-center justify-between text-xs px-2 py-1 rounded bg-surface-muted border border-border"
               >
@@ -239,10 +254,11 @@ export function AccionesTab({
                   {describirActor(e, t)} ·{' '}
                   {new Date(e.occurred_at).toLocaleString(locale)}
                 </span>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         )}
+        </CrossFade>
       </section>
 
       {/* Modals */}
@@ -310,7 +326,10 @@ function CTACard({
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
       className={
-        'group text-left rounded-md border border-border bg-surface px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+        // Presión física del sistema (se hunde al 97%, como `Button`) además
+        // del cambio de borde; quieta cuando el botón está deshabilitado. Una
+        // sola `transition-[…]`: dos clases `transition-*` se pisan.
+        'group text-left rounded-md border border-border bg-surface px-4 py-3 transition-[color,background-color,border-color,transform] duration-fast ease-enter active:scale-[0.97] disabled:active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed ' +
         accentClass
       }
     >

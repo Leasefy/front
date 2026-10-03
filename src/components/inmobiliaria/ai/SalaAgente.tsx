@@ -13,7 +13,7 @@
  */
 
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { ArrowRight, Robot } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -23,6 +23,8 @@ import { useI18n } from '@/lib/i18n'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -107,8 +109,18 @@ function OverviewBody({
   const { t } = useI18n()
   // Empty-state ícono mudo: usa el ícono del agente si llega, o Robot.
   const EmptyIcon = icon ?? Robot
+  // ¿Se vio la carga? Entonces las cifras que llegan cuentan desde 0; si la
+  // sala ya estaba, sólo cuentan cuando cambian.
+  const huboCarga = useRef(false)
+  if (isLoading) huboCarga.current = true
+  const desde = huboCarga.current ? 0 : undefined
+  const enteroTalCual = (n: number) => String(Math.round(n))
+
+  // Movimiento: cada estado en un `CrossFade` con su clave (esqueleto →
+  // sala, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="space-y-4" data-testid="sala-agente-loading">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
@@ -118,6 +130,7 @@ function OverviewBody({
         <div className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
         <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
       </div>
+      </CrossFade>
     )
   }
 
@@ -126,15 +139,18 @@ function OverviewBody({
     // 500». Lo que el hook guardó (el status, «Failed to fetch») lo clasifica
     // `FalloDeCarga`: un 403 no se dice como una red caída.
     return (
+      <CrossFade swapKey="fallo">
       <div data-testid="sala-agente-error">
         <FalloDeCarga error={error} queEs="la sala del agente" />
       </div>
+      </CrossFade>
     )
   }
 
   if (!overview) {
     // 404 / notAvailable — empty state limpio y MONOCROMO, NO banner de error.
     return (
+      <CrossFade swapKey="vacio">
       <div
         role="status"
         aria-label={t(`${WORKSPACE_NS}.sala.emptyTitle`)}
@@ -157,29 +173,36 @@ function OverviewBody({
           </p>
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   const pipelineTotal = overview.pipeline.reduce((sum, seg) => sum + seg.count, 0)
 
   return (
+    <CrossFade swapKey="sala">
     <div className="space-y-6">
-      {/* KPI strip */}
+      {/* KPI strip: las tarjetas entran escalonadas y cada cifra cuenta
+          (desde 0 si acaba de cargar; desde la anterior si cambia). */}
       {overview.kpis.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="sala-kpi-strip">
+        <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="sala-kpi-strip">
           {overview.kpis.map((kpi) => (
-            <div
+            <StaggerItem
               key={kpi.id}
               className="rounded-lg border border-border bg-card p-4"
               data-testid={`sala-kpi-${kpi.id}`}
             >
               <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
               <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
-                {formatKpiValue(kpi.value, kpi.format)}
+                <AnimatedNumber
+                  value={kpi.value}
+                  from={desde}
+                  format={(n) => formatKpiValue(n, kpi.format)}
+                />
               </p>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       {/* Pipeline por estado */}
@@ -191,7 +214,10 @@ function OverviewBody({
           <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
           <>
-            <div
+            {/* La barra crece desde la izquierda (sólo `scaleX`); el ancho de
+                cada estado es el dato. */}
+            <BarraQueCrece
+              eje="x"
               className="flex h-3 w-full overflow-hidden rounded-full bg-muted"
               role="img"
               aria-label={t(`${WORKSPACE_NS}.sala.pipelineAria`, { total: pipelineTotal })}
@@ -206,7 +232,7 @@ function OverviewBody({
                     title={`${estadoLabel(t, seg.estado, agente)}: ${seg.count}`}
                   />
                 ))}
-            </div>
+            </BarraQueCrece>
             <dl className="flex flex-wrap gap-x-4 gap-y-1.5">
               {overview.pipeline.map((seg) => (
                 <div key={seg.estado} className="flex items-center gap-1.5">
@@ -217,7 +243,9 @@ function OverviewBody({
                   <dt className="text-[11px] text-muted-foreground">
                     {estadoLabel(t, seg.estado, agente)}
                   </dt>
-                  <dd className="text-[11px] font-medium text-foreground tabular-nums">{seg.count}</dd>
+                  <dd className="text-[11px] font-medium text-foreground tabular-nums">
+                    <AnimatedNumber value={seg.count} format={enteroTalCual} />
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -231,11 +259,12 @@ function OverviewBody({
         {overview.feed.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
         ) : (
-          <ul className="divide-y divide-border">
+          // Lo que el agente acaba de hacer entra ARRIBA bajando a su lugar.
+          <Stagger as="ul" direction="down" className="divide-y divide-border">
             {overview.feed.map((entry) => {
               const meta = actorMeta(entry.actorType)
               return (
-                <li key={entry.id} className="py-2.5 first:pt-0 last:pb-0 flex items-start gap-2">
+                <StaggerItem as="li" key={entry.id} className="py-2.5 first:pt-0 last:pb-0 flex items-start gap-2">
                   <span
                     className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full ring-1 shrink-0 mt-0.5 ${meta.cls}`}
                   >
@@ -248,13 +277,14 @@ function OverviewBody({
                   <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 mt-0.5">
                     {relativeTime(entry.occurredAt, t)}
                   </span>
-                </li>
+                </StaggerItem>
               )
             })}
-          </ul>
+          </Stagger>
         )}
       </section>
     </div>
+    </CrossFade>
   )
 }
 
@@ -291,7 +321,7 @@ export function SalaAgente({
 
         <Link
           href={colaHref}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-[opacity,transform] duration-fast ease-enter"
           data-testid="sala-cola-cta"
         >
           {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}

@@ -41,7 +41,7 @@ import {
   CaretRight,
   Robot,
 } from '@phosphor-icons/react';
-import { SegmentedControl, Badge } from '@leasefy/cadence';
+import { SegmentedControl, Badge, Presence } from '@leasefy/cadence';
 // El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
   Dialog,
@@ -246,11 +246,15 @@ function CuerpoDelRechazo({
               : {})}
           />
           <ErrorDelCampo id={`${ID_DEL_MOTIVO}-error`} mensaje={errorDelMotivo} className="mt-0" />
-          {errorGeneral && (
-            <p role="alert" className="text-caption text-danger" data-testid="rechazo-del-cruce-error">
-              {errorGeneral}
-            </p>
-          )}
+          <Presence
+            as="p"
+            show={Boolean(errorGeneral)}
+            role="alert"
+            className="text-caption text-danger"
+            data-testid="rechazo-del-cruce-error"
+          >
+            {errorGeneral}
+          </Presence>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={busy} hideArrow>

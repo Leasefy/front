@@ -109,7 +109,7 @@ export function ChatLessonCard({
         'border-l-[3px]',
         STATUS_ACCENT[lesson.status],
         'bg-white dark:bg-card/80',
-        'transition-opacity duration-200',
+        'transition-opacity duration-base ease-standard',
         isRejected && 'opacity-60',
         className,
       )}

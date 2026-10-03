@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ArrowUp, ArrowDown, Minus } from '@phosphor-icons/react'
-import { motion } from 'framer-motion'
+import { AnimatedNumber, Pressable } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   type CarteraStage,
@@ -26,7 +26,15 @@ interface CobranzaStageCardProps {
   onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>
   id?: string
   'aria-controls'?: string
+  /**
+   * La cifra cuenta desde 0 al aparecer (la pantalla acaba de cargar). Sin
+   * esto, se muestra tal cual y sólo cuenta cuando cambia.
+   */
+  contarDesdeCero?: boolean
 }
+
+/** El número tal cual se escribía antes (`{count}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n))
 
 export const CobranzaStageCard = React.forwardRef<
   HTMLButtonElement,
@@ -45,6 +53,7 @@ export const CobranzaStageCard = React.forwardRef<
     onKeyDown,
     id,
     'aria-controls': ariaControls,
+    contarDesdeCero = false,
   },
   ref,
 ) {
@@ -59,11 +68,11 @@ export const CobranzaStageCard = React.forwardRef<
     count,
   })
 
+  // Movimiento (sistema de Cadence): la tarjeta sube 2px al pasar el puntero
+  // y se hunde apenas al presionar (`Pressable`, resorte del sistema); antes
+  // crecía con una duración inventada. La cifra cuenta cuando cambia.
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.15 }}
-    >
+    <Pressable hover="lift" press="sm">
       <button
         ref={ref}
         type="button"
@@ -99,7 +108,11 @@ export const CobranzaStageCard = React.forwardRef<
           <div className="h-8 w-12 rounded bg-surface-muted animate-pulse mt-2" />
         ) : (
           <p className="text-3xl font-bold text-fg mt-2 font-mono tabular-nums">
-            {count}
+            <AnimatedNumber
+              value={count}
+              from={contarDesdeCero ? 0 : undefined}
+              format={enteroTalCual}
+            />
           </p>
         )}
 
@@ -131,6 +144,6 @@ export const CobranzaStageCard = React.forwardRef<
           )}
         </div>
       </button>
-    </motion.div>
+    </Pressable>
   )
 })

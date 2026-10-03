@@ -25,7 +25,7 @@
 
 import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -39,7 +39,15 @@ import { CobranzaReporteSkeleton } from '@/components/skeleton/panel/CobranzaRep
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBodyAnimado,
+  TableRow,
+  TableRowAnimada,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { MonoLabel } from '@leasefy/cadence'
 
 const COP_FORMATTER = new Intl.NumberFormat('es-CO', {
@@ -118,10 +126,19 @@ function ReporteViewerContent() {
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // Skeleton during first-load (covers report data load; thresholds loads with it).
   // EmptyState when report data is genuinely absent and no error.
-  if (isLoading && !data) return <CobranzaReporteSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // reporte, → vacío); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaReporteSkeleton />
+      </CrossFade>
+    )
+  }
 
   if (!isLoading && !data && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={CalendarBlank}
@@ -133,10 +150,12 @@ function ReporteViewerContent() {
           }}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="reporte">
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -200,13 +219,13 @@ function ReporteViewerContent() {
           </section>
 
           {/* 2. Alert banners */}
+          {/* Cada aviso baja 4px a su lugar, escalonado (techo 320 ms). La
+              clave es el aviso (código + texto), no su posición. */}
           {data.alerts.length > 0 && (
-            <section className="space-y-2">
-              {data.alerts.map((alert, idx) => (
-                <motion.div
-                  key={`${alert.code}-${idx}`}
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
+            <Stagger as="section" direction="down" distance="xs" className="space-y-2">
+              {data.alerts.map((alert) => (
+                <StaggerItem
+                  key={`${alert.code}-${alert.message_es}`}
                   className={[
                     'rounded-lg border p-3 flex items-start gap-3',
                     alert.level === 'CRITICAL'
@@ -234,9 +253,9 @@ function ReporteViewerContent() {
                   >
                     {alert.message_es}
                   </p>
-                </motion.div>
+                </StaggerItem>
               ))}
-            </section>
+            </Stagger>
           )}
 
           {/* 3. Top-N debtors */}
@@ -268,9 +287,9 @@ function ReporteViewerContent() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBodyAnimado>
                   {data.top_debtors.slice(0, topN).map((d) => (
-                    <TableRow key={d.debtor_id} className="border-b border-border last:border-0">
+                    <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0">
                       {/* El agente SÍ manda `debtor_name` (JOIN agregado el
                           2026-08-10); esta tabla se quedó pintando la
                           referencia y mostraba «CD06141F» en la columna
@@ -297,9 +316,9 @@ function ReporteViewerContent() {
                           ? new Date(d.last_contact_at).toLocaleDateString(locale)
                           : '—'}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             )}
           </section>
@@ -321,6 +340,11 @@ function ReporteViewerContent() {
                 {t('inmobiliaria.ai.cobranza.reporte.history.exportCsv')}
               </Button>
             </div>
+            {/* Cargando → vacío → historia; «Cargar más» agrega días que
+                entran escalonados al final de la tabla. */}
+            <CrossFade
+              swapKey={historyLoading && history.length === 0 ? 'cargando' : history.length === 0 ? 'vacio' : 'tabla'}
+            >
             {historyLoading && history.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <Spinner />
@@ -346,11 +370,11 @@ function ReporteViewerContent() {
                       </TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBodyAnimado>
                     {history.map((entry) => {
                       const pkr = entry.summary.pkr_pct ?? entry.summary.pkr_7d_pct
                       return (
-                        <TableRow key={entry.report_date} className="border-b border-border last:border-0">
+                        <TableRowAnimada key={entry.report_date} className="border-b border-border last:border-0">
                           <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
                             {entry.report_date}
                           </TableCell>
@@ -365,10 +389,10 @@ function ReporteViewerContent() {
                           <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.calls_outside_window_count ?? '—'}
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       )
                     })}
-                  </TableBody>
+                  </TableBodyAnimado>
                 </Table>
                 {historyHasMore && (
                   <div className="p-3 border-t border-border bg-muted/20 text-center">
@@ -387,10 +411,12 @@ function ReporteViewerContent() {
                 )}
               </>
             )}
+            </CrossFade>
           </section>
         </>
       )}
     </div>
+    </CrossFade>
   )
 }
 

@@ -36,7 +36,8 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
-import { SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -148,36 +149,45 @@ function PromesasContent() {
     </header>
   )
 
+  // El modal de WhatsApp se montaba con `{x && <Modal open />}`: cerraba de
+  // golpe. Con el último deudor presente sale con su animación.
+  const contactarAVivo = useUltimoPresente(contactarA)
+
   // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cargando → promesas en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && promesas.length === 0 && !error) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="promesas">
     <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error de carga */}
-      {error && (
-        <div
+      <Presence
+          show={Boolean(error)}
           role="alert"
           className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>No se pudo cargar las promesas. {error}</span>
-        </div>
-      )}
+      </Presence>
 
-      {/* Banner del agente cuando hay incumplidas */}
-      {incumplidas.length > 0 && (
-        <section
+      {/* Banner del agente cuando hay incumplidas: entra y sale con `Presence`. */}
+      <Presence
+          as="section"
+          show={incumplidas.length > 0}
           role="status"
           className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           data-testid="promesas-banner-incumplidas"
@@ -208,10 +218,10 @@ function PromesasContent() {
               <Link href={DEUDORES_HREF}>Ver deudores</Link>
             </Button>
           </div>
-        </section>
-      )}
+      </Presence>
 
       {/* Sin promesas → EmptyState honesto + cross-link */}
+      <CrossFade swapKey={promesas.length === 0 && !error ? 'vacio' : 'lista'}>
       {promesas.length === 0 && !error ? (
         <EmptyState
           icon={Handshake}
@@ -231,11 +241,15 @@ function PromesasContent() {
                 aria-label="Filtrar promesas por estado"
               />
               <span className="text-xs text-fg-muted tabular-nums">
-                {visibles.length} de {promesas.length}
+                <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} /> de{' '}
+                {promesas.length}
               </span>
             </div>
 
-            {/* Tabla / lista de promesas */}
+            {/* Tabla / lista de promesas. Filtrar por estado o paginar hace
+                entrar las promesas escalonadas y salir las que sobran;
+                filtrado a cero, el vacío entra en su lugar. */}
+            <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'vacio'}>
             {visibles.length > 0 ? (
               <div className="space-y-3 max-w-3xl">
                 {/* Encabezado tipo tabla (solo desktop, contexto de columnas) */}
@@ -246,9 +260,9 @@ function PromesasContent() {
                   <span className="text-right">Estado</span>
                 </div>
 
-                <ul className="space-y-3" aria-label="Promesas de pago">
+                <Stagger as="ul" className="space-y-3" aria-label="Promesas de pago">
                   {pageItems.map((p) => (
-                    <li key={p.key} className="space-y-2">
+                    <StaggerItem as="li" key={p.key} className="space-y-2">
                       <PromesaCard promesa={p} />
                       {/* Acción sugerida por estado — placeholder honesto T-323 */}
                       <div className="flex items-center justify-between gap-3 px-4">
@@ -270,9 +284,9 @@ function PromesasContent() {
                           </Button>
                         )}
                       </div>
-                    </li>
+                    </StaggerItem>
                   ))}
-                </ul>
+                </Stagger>
 
                 {shouldPaginate && (
                   <div className="border-t border-border px-4 py-3">
@@ -294,6 +308,7 @@ function PromesasContent() {
                 description="Ajusta el filtro para ver otras promesas, o revisa el detalle de cada deudor."
               />
             )}
+            </CrossFade>
 
             {/* Nota honesta de alcance de la fuente */}
             <p className="text-xs text-fg-muted max-w-2xl leading-relaxed">
@@ -311,12 +326,13 @@ function PromesasContent() {
           </>
         )
       )}
+      </CrossFade>
 
-      {contactarA && (
+      {contactarAVivo && (
         <ManualWAModal
-          open
+          open={contactarA !== null}
           onClose={() => setContactarA(null)}
-          debtorId={contactarA}
+          debtorId={contactarAVivo}
           debtorName=""
           prefill={{}}
           onSuccess={() => {
@@ -326,6 +342,7 @@ function PromesasContent() {
         />
       )}
     </div>
+    </CrossFade>
   )
 }
 

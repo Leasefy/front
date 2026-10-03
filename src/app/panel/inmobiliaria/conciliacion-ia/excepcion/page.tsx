@@ -189,7 +189,7 @@ export default function ConciliacionExcepcionPage() {
                       type="button"
                       onClick={() => setSel(c.id)}
                       aria-pressed={isSel}
-                      className="w-full rounded-lg border bg-surface p-4 text-left transition-all"
+                      className="w-full rounded-lg border bg-surface p-4 text-left transition-[border-color,background-color,box-shadow] duration-fast ease-enter"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <div className="flex items-start justify-between gap-3">

@@ -20,7 +20,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FloppyDisk } from '@phosphor-icons/react'
-import { Card } from '@leasefy/cadence'
+import { Card, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import {
   Button,
@@ -540,24 +540,27 @@ export function AcuerdoGeneralForm({
           {resumenAcuerdoGeneral(comoSeLee)}
         </p>
 
-        {avisos.map((aviso) => (
-          <p
-            key={aviso}
-            data-testid="acuerdo-general-aviso"
-            className="rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
-          >
-            {aviso}
-          </p>
-        ))}
+        {/* Los avisos aparecen y se van mientras se edita: entran y salen
+            con su animación en vez de saltar. */}
+        <Stagger className="space-y-2 empty:hidden">
+          {avisos.map((aviso) => (
+            <StaggerItem
+              as="p"
+              key={aviso}
+              data-testid="acuerdo-general-aviso"
+              className="rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
+            >
+              {aviso}
+            </StaggerItem>
+          ))}
+        </Stagger>
 
-        {error && (
-          <p
+        <Presence as="p" show={Boolean(error)}
             role="alert"
             className="rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger"
           >
             {error}
-          </p>
-        )}
+        </Presence>
       </div>
 
       <div className="flex items-center gap-3">

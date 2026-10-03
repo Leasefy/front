@@ -90,7 +90,7 @@ function ConexionCard({ c }: { c: Conexion }) {
           <div className="flex items-center gap-1.5">
             <span className="text-[14px] font-semibold text-fg">{c.modulo}</span>
             {c.href && (
-              <ArrowRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" weight="bold" />
+              <ArrowRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-[color,transform] duration-fast ease-enter" weight="bold" />
             )}
           </div>
           <p className="mt-1 text-[12.5px] text-fg-muted leading-snug">{c.ejemplo}</p>

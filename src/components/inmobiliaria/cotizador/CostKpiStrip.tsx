@@ -12,7 +12,7 @@
  */
 
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
-import { IconButton } from '@leasefy/cadence'
+import { CrossFade, IconButton } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   Tooltip,
@@ -88,11 +88,14 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
             <p className="text-xs text-fg-muted truncate">{label}</p>
           </div>
+          {/* Hueco → cifra con un fundido (`CrossFade`). */}
+          <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
           {isLoading ? (
             <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
             <p className="text-xl font-semibold text-fg mt-1">{value}</p>
           )}
+          </CrossFade>
           {caption && (
             <div className="flex items-center gap-1 mt-2">
               <p className="text-xs text-fg-muted leading-snug">

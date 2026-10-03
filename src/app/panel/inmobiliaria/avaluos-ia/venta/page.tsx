@@ -205,7 +205,7 @@ export default function AvaluoVentaPage() {
                   type="button"
                   onClick={() => setSelected(s.key)}
                   aria-pressed={isSel}
-                  className="relative rounded-lg border bg-surface p-5 text-left transition-all active:scale-[0.99]"
+                  className="relative rounded-lg border bg-surface p-5 text-left transition-[border-color,background-color,box-shadow,transform] duration-fast ease-enter active:scale-[0.99]"
                   style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                 >
                   <div className="flex items-center justify-between">

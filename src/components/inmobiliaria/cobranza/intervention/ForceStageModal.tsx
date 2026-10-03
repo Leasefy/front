@@ -46,6 +46,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 void React
 
@@ -79,6 +81,8 @@ export function ForceStageModal({
   // destino que nadie eligió no es un default, es una afirmación falsa. Acá
   // hay que elegir, y hasta entonces «Confirmar» está apagado.
   const [target, setTarget] = useState<CarteraStage | ''>('')
+  // La consecuencia sigue diciendo la última etapa mientras se pliega.
+  const targetVisible = useUltimoPresente(target || null)
   const [reason, setReason] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -246,19 +250,23 @@ export function ForceStageModal({
                   de etapa no es reetiquetar: cambia a quién contacta el agente,
                   cuándo, y si sigue haciéndolo. Sólo aparece cuando ya hay un
                   destino elegido — antes no hay nada verdadero que decir. */}
-              {target && (
+              {/* Se despliega con su altura al elegir el destino, y la frase
+                  se cruza al cambiarlo. */}
+              <Collapse open={Boolean(target)}>
+              {targetVisible && (
                 <div className="rounded-md border border-primary/25 bg-primary-soft px-3 py-2.5">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectLabel')}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-fg">
-                    {stageAgentPlan(target, locale)}
-                  </p>
+                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-xs leading-relaxed text-fg">
+                    {stageAgentPlan(targetVisible, locale)}
+                  </CrossFade>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectNote')}
                   </p>
                 </div>
               )}
+              </Collapse>
 
               <label className="block">
                 <span className="text-xs font-medium text-fg-subtle">
@@ -285,11 +293,9 @@ export function ForceStageModal({
             </div>
           ))}
 
-        {error && (
-          <p role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
             {error}
-          </p>
-        )}
+        </Presence>
 
         <DialogFooter>
           <Button

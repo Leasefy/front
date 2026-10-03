@@ -20,19 +20,18 @@
  * reinicia al cambiar la categoría y NUNCA viaja en el cuerpo. Un campo con
  * `visibleSi` entra y sale con su opción; oculto, no se valida ni viaja.
  *
- * Entra con Framer y los tokens de movimiento de Cadence (sólo `opacity` y
- * `transform`; con movimiento reducido, sólo el fundido).
+ * Movimiento (tokens de Cadence, sólo `opacity` y `transform`): el
+ * formulario NO anima su propia entrada — lo hace quien lo despliega (la fila
+ * del motivo de `ColaHumana`, el `Collapse` de `AccionSugerida`); con las dos
+ * se sumaban dos entradas. Lo que entra y sale acá son los campos con
+ * `visibleSi`. Con movimiento reducido, el `MotionProvider` del layout deja
+ * sólo el fundido.
  */
 
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle, WarningCircle, XCircle } from '@phosphor-icons/react'
-import {
-  motionDistance,
-  motionDuration,
-  motionEase,
-  usePrefersReducedMotion,
-} from '@leasefy/cadence'
+import { motionDistance, motionDuration, motionEase } from '@leasefy/cadence'
 
 import type { CampoDeLaAccion, WorkItemAction } from '@/lib/api/work-item'
 import { useI18n } from '@/lib/i18n'
@@ -89,7 +88,6 @@ export function FormularioDeLaAccion({
   className,
 }: FormularioDeLaAccionProps) {
   const { t } = useI18n()
-  const reducido = usePrefersReducedMotion()
   const campos = useMemo(() => camposDeLaAccion(action), [action])
   const [valores, setValores] = useState<ValoresDeLaAccion>(() => valoresIniciales(campos))
   /** Lo que dijo el micro de cada campo (un 400 con `campos`). */
@@ -155,18 +153,15 @@ export function FormularioDeLaAccion({
   const ocupado = enviando || Boolean(deshabilitado)
   const visibles = camposVisibles(campos, valores)
   /** Entra bajando un poco y sale subiendo; con movimiento reducido, sólo el fundido. */
-  const desplazamiento = reducido ? 0 : -motionDistance.xs
+  const desplazamiento = -motionDistance.xs
 
   return (
-    <motion.form
+    <form
       noValidate
       onSubmit={(ev) => void enviar(ev)}
       className={cn('space-y-3', className)}
       data-testid="formulario-de-la-accion"
       data-accion={action.id}
-      initial={{ opacity: 0, y: reducido ? 0 : motionDistance.sm }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: motionDuration.base, ease: motionEase.enter }}
     >
       <AnimatePresence initial={false}>
         {visibles.map((campo) => {
@@ -311,6 +306,6 @@ export function FormularioDeLaAccion({
           {t(`${WORKSPACE_NS}.acciones.cancelar`)}
         </Button>
       </div>
-    </motion.form>
+    </form>
   )
 }

@@ -29,6 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Presence } from '@leasefy/cadence'
 
 void React
 
@@ -87,11 +88,9 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
-        {error && (
-          <p role="alert" className="text-xs text-danger" data-testid="pii-reveal-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="pii-reveal-error">
             {error}
-          </p>
-        )}
+        </Presence>
 
         <DialogFooter className="gap-2">
           <Button

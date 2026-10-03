@@ -142,7 +142,7 @@ export default function ConciliacionProcesarPage() {
             {/* progress */}
             <div className="w-full max-w-sm mt-1">
               <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: '70%', background: BLUE }} />
+                <div className="h-full rounded-full" style={{ width: '70%', background: BLUE }} />
               </div>
             </div>
           </div>

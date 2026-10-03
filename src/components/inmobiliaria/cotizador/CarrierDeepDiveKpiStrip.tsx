@@ -11,6 +11,7 @@
 import { Timer, Warning, CheckCircle, CurrencyDollar } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierDetailPayload } from '@/lib/hooks/cotizador/use-carrier-detail'
+import { CrossFade } from '@leasefy/cadence'
 
 // =============================================================================
 // Props
@@ -70,6 +71,8 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
             <p className="text-xs text-fg-muted truncate">{label}</p>
           </div>
+          {/* Hueco → cifra con un fundido (`CrossFade`). */}
+          <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
           {isLoading ? (
             <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
@@ -82,6 +85,7 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
               {value}
             </p>
           )}
+          </CrossFade>
         </div>
       ))}
     </div>

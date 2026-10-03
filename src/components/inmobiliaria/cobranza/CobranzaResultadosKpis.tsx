@@ -45,7 +45,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { KpiCard } from '@leasefy/cadence'
+import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
@@ -209,21 +209,25 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
           la fila del título. Cuando esta rejilla vivía con una fila propia
           `justify-end` para el botón, quedaba una franja casi vacía entre el
           título y las tarjetas. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* Las tarjetas se montan a medida que cada fuente responde (recaudo,
+          reporte diario): entran escalonadas y las demás se corren a su lugar
+          (`layout`), en vez de saltar de golpe. */}
+      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {metricas.map((m) => {
           const MetricaIcon = m.icon
           return (
-            <KpiCard
-              key={m.key}
-              label={m.label}
-              value={m.value as string}
-              sublabel={m.sublabel}
-              icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
-              data-testid={`cobranza-kpi-${m.key}`}
-            />
+            <StaggerItem key={m.key} className="min-w-0 [&>*]:h-full">
+              <KpiCard
+                label={m.label}
+                value={m.value as string}
+                sublabel={m.sublabel}
+                icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
+                data-testid={`cobranza-kpi-${m.key}`}
+              />
+            </StaggerItem>
           )
         })}
-      </div>
+      </Stagger>
     </section>
   )
 }

@@ -21,18 +21,20 @@ import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Handshake, PencilSimple, Trash } from '@phosphor-icons/react'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
-import { Card } from '@leasefy/cadence'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 import {
   Button,
   Switch,
   Spinner,
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui'
 import {
   AlertDialog,
@@ -121,6 +123,9 @@ export function AcuerdosGeneralesTabla() {
     }
   }, [aBorrar, borrar])
 
+  // El diálogo de borrar sigue nombrando el acuerdo mientras se cierra.
+  const aBorrarVisible = useUltimoPresente(aBorrar)
+
   return (
     <Card>
       <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border px-4 py-3">
@@ -144,8 +149,8 @@ export function AcuerdosGeneralesTabla() {
       </div>
 
       {/* Cargando, falló, y no hay: tres cosas distintas, tres mensajes. */}
-      {error && (
-        <div
+      <Presence
+          show={Boolean(error)}
           role="alert"
           className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
@@ -161,18 +166,28 @@ export function AcuerdosGeneralesTabla() {
           >
             Reintentar
           </Button>
-        </div>
-      )}
+      </Presence>
 
-      {errorAccion && (
-        <div
+      <Presence
+          show={Boolean(errorAccion)}
           role="alert"
           className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
           {errorAccion}
-        </div>
-      )}
+      </Presence>
 
+      {/* Cargando → vacío → tabla: cada estado entra con su fundido. */}
+      <CrossFade
+        swapKey={
+          isLoading && acuerdos.length === 0 && !error
+            ? 'cargando'
+            : acuerdos.length === 0 && !error
+              ? 'vacio'
+              : acuerdos.length > 0
+                ? 'tabla'
+                : 'nada'
+        }
+      >
       {isLoading && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
@@ -209,9 +224,10 @@ export function AcuerdosGeneralesTabla() {
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Crear, borrar o paginar: las filas entran escalonadas y la que se borra sale. */}
+            <TableBodyAnimado>
               {pageItems.map((a) => (
-                <TableRow key={a.id} data-testid={`acuerdo-general-${a.id}`}>
+                <TableRowAnimada key={a.id} data-testid={`acuerdo-general-${a.id}`}>
                   <TableCell>
                     <span className="font-medium text-fg">{a.name}</span>
                     <span className="block text-xs text-fg-muted">{a.conditionEs}</span>
@@ -255,12 +271,13 @@ export function AcuerdosGeneralesTabla() {
                       </div>
                     )}
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ))}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       ) : null}
+      </CrossFade>
 
       {acuerdos.length > 1 && (
         <p className="border-t border-border px-4 py-2 text-xs text-fg-muted">
@@ -286,7 +303,7 @@ export function AcuerdosGeneralesTabla() {
       <AlertDialog open={aBorrar !== null} onOpenChange={(abierto) => !abierto && setABorrar(null)}>
         <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Borrar «{aBorrar?.name}»?</AlertDialogTitle>
+            <AlertDialogTitle>¿Borrar «{aBorrarVisible?.name}»?</AlertDialogTitle>
             <AlertDialogDescription>
               El agente deja de ofrecerlo desde la próxima llamada. Para pausarlo sin perderlo,
               apágalo con el interruptor.

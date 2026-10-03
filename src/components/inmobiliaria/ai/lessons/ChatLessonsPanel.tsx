@@ -46,6 +46,7 @@ import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lesson
 import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const STATUS_ORDER = ['candidate', 'certified', 'rejected'] as const
 
@@ -138,6 +139,8 @@ export function ChatLessonsPanel() {
   }
 
   // ── No backend wired (dev posture / fail-soft) ──────────────────────────────
+  // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
+  // lecciones, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (!isAgentConfigured()) {
     return (
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
@@ -159,45 +162,54 @@ export function ChatLessonsPanel() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (isLoading && lessons.length === 0) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-3" aria-busy="true">
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-32 w-full rounded-lg" />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   // ── Error ───────────────────────────────────────────────────────────────────
   if (error && lessons.length === 0) {
     return (
-      /* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
-         para volver a pedir una lista: se perdía todo lo demás que hubiera en
-         pantalla. El hook ya expone `refresh`. */
+      <CrossFade swapKey="fallo">
+      {/* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
+          para volver a pedir una lista: se perdía todo lo demás que hubiera en
+          pantalla. El hook ya expone `refresh`. */}
       <FalloDeCarga
         error={error}
         queEs="las lecciones del asistente"
         onReintentar={refresh}
       />
+      </CrossFade>
     )
   }
 
   // ── Empty ───────────────────────────────────────────────────────────────────
   if (lessons.length === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <EmptyState
         icon={Brain}
         title="Aún no hay lecciones"
         description="El asistente aprende a medida que lo usas. Cuando detecte un patrón, lo verás aquí para certificarlo."
       />
+      </CrossFade>
     )
   }
 
   // ── List ────────────────────────────────────────────────────────────────────
   return (
+    <CrossFade swapKey="lecciones">
     <div className="space-y-6">
-      {/* Master-switch banner: certified lessons exist but aren't applied yet. */}
-      {!enabled && grouped.certified.length > 0 && (
-        <div
+      {/* Master-switch banner: certified lessons exist but aren't applied yet.
+          Entra y sale con `Presence` (certificar la primera lo hace aparecer). */}
+      <Presence
+          show={!enabled && grouped.certified.length > 0}
+          initial={false}
           role="status"
           className="flex items-start gap-3 rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
         >
@@ -207,8 +219,7 @@ export function ChatLessonsPanel() {
             Tienes lecciones certificadas, pero todavía no influyen en el asistente.
             Se aplicarán cuando se active el aprendizaje para tu inmobiliaria.
           </p>
-        </div>
-      )}
+      </Presence>
 
       {/* Read-only notice for VIEWER / CONTADOR with candidates waiting. */}
       {!canCertify && candidateCount > 0 && (
@@ -233,24 +244,27 @@ export function ChatLessonsPanel() {
               >
                 {GROUP_TITLE[status]}
                 <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
-                  {items.length}
+                  <AnimatedNumber value={items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {GROUP_HINT[status]}
               </p>
             </div>
-            <div className="space-y-3">
+            {/* Certificar o descartar mueve la lección de grupo: sale de éste
+                y entra en el otro. */}
+            <Stagger className="space-y-3">
               {items.map((lesson) => (
-                <ChatLessonCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  canCertify={canCertify}
-                  pendingId={pendingId}
-                  onDecide={handleDecide}
-                />
+                <StaggerItem key={lesson.id}>
+                  <ChatLessonCard
+                    lesson={lesson}
+                    canCertify={canCertify}
+                    pendingId={pendingId}
+                    onDecide={handleDecide}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           </section>
         )
       })}
@@ -263,5 +277,6 @@ export function ChatLessonsPanel() {
         </p>
       )}
     </div>
+    </CrossFade>
   )
 }

@@ -23,7 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { WarningCircle, CheckCircle } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { Collapse, MonoLabel, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { useLenis } from '@/components/providers/SmoothScroll'
@@ -241,7 +241,8 @@ export function EscalationResolveModal({
         </div>
 
         {/* Escalated-to-legal warning (rose banner per DESIGN.md §4) */}
-        {requiresLegalAck && (
+        {/* Aparece y se va con su altura al elegir (o dejar) «pasa a jurídico». */}
+        <Collapse open={requiresLegalAck}>
           <div className="rounded-lg bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
             <WarningCircle
               className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
@@ -266,7 +267,7 @@ export function EscalationResolveModal({
               </label>
             </div>
           </div>
-        )}
+        </Collapse>
 
         {/* Free-form textarea */}
         <div>
@@ -306,11 +307,9 @@ export function EscalationResolveModal({
           </div>
         </div>
 
-        {submitError && (
-          <p role="alert" className="text-xs text-danger" data-testid="escalacion-resolver-error">
+        <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="escalacion-resolver-error">
             {submitError}
-          </p>
-        )}
+        </Presence>
 
         <ResponsiveDialogFooter className="gap-2">
           <Button

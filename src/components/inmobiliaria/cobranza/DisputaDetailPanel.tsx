@@ -39,6 +39,7 @@ import {
   debtorLabel,
   outcomeLabel,
 } from '@/lib/cobranza/dispute-vocab'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 /** El mismo tope del micro (`resolutionNote: z.string().trim().min(1).max(2000)`). */
 const NOTE_MAX = 2000
@@ -162,14 +163,19 @@ export function DisputaDetailPanel({
       ? `La nota puede tener hasta ${NOTE_MAX.toLocaleString('es-CO')} caracteres.`
       : erroresDelServidor.resolutionNote
 
+  // Movimiento: elegir otra disputa cambia el panel con un fundido
+  // (`CrossFade` con la disputa como clave); resolverla cruza el formulario
+  // con la decisión.
   if (!dispute) {
     return (
+      <CrossFade swapKey="ninguna">
       <div className="flex flex-col items-center justify-center h-full py-24 px-6 text-center gap-3">
         <Scales className="w-8 h-8 text-fg-muted" weight="duotone" aria-hidden="true" />
         <p className="text-sm text-fg-muted max-w-xs">
           Elige una disputa de la lista para leer el motivo y resolverla.
         </p>
       </div>
+      </CrossFade>
     )
   }
 
@@ -179,6 +185,7 @@ export function DisputaDetailPanel({
   const abierta = new Date(dispute.opened_at)
 
   return (
+    <CrossFade swapKey={dispute.id}>
     <article className="p-5 lg:p-6 space-y-6" data-testid={`disputa-detalle-${dispute.id}`}>
       {/* Quién, en qué estado, desde cuándo */}
       <header className="space-y-2">
@@ -215,6 +222,7 @@ export function DisputaDetailPanel({
       </section>
 
       {/* Ya resuelta: se muestra la decisión, no un formulario */}
+      <CrossFade swapKey={resuelta ? 'resuelta' : 'por-resolver'}>
       {resuelta ? (
         <section className="space-y-4 border-t border-border pt-5">
           <div className="space-y-1.5">
@@ -234,8 +242,7 @@ export function DisputaDetailPanel({
               Resuelta {formatRelativeDate(dispute.resolved_at).toLowerCase()}
             </p>
           )}
-          {recomendacion && (
-            <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3">
+          <Presence show={Boolean(recomendacion)} className="flex items-start gap-2 rounded-lg bg-surface-muted p-3">
               <Info
                 className="w-4 h-4 mt-0.5 shrink-0 text-fg-muted"
                 weight="duotone"
@@ -244,8 +251,7 @@ export function DisputaDetailPanel({
               <p className="text-xs text-fg-muted leading-relaxed">
                 {recomendacion}
               </p>
-            </div>
-          )}
+          </Presence>
         </section>
       ) : (
         /* Formulario de resolución — HUMANO (T-323) */
@@ -319,11 +325,9 @@ export function DisputaDetailPanel({
             </div>
           </div>
 
-          {submitError && (
-            <p role="alert" className="text-xs text-danger" data-testid="disputa-resolver-error">
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-resolver-error">
               {submitError}
-            </p>
-          )}
+          </Presence>
 
           <Button
             size="sm"
@@ -337,6 +341,8 @@ export function DisputaDetailPanel({
           </Button>
         </section>
       )}
+      </CrossFade>
     </article>
+    </CrossFade>
   )
 }

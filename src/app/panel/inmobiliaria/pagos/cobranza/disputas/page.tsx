@@ -31,7 +31,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
-import { SegmentedControl, Card } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Card } from '@leasefy/cadence'
 // El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
   Dialog,
@@ -269,11 +269,9 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <ErrorDelCampo id="disputa-monto-error" mensaje={errorDelMonto} />
           </div>
 
-          {submitError && (
-            <p role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
               {submitError}
-            </p>
-          )}
+          </Presence>
         </div>
 
         <DialogFooter>
@@ -433,25 +431,29 @@ function DisputasContent() {
   )
 
   // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cargando → disputas en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && disputes.length === 0 && !error) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" variant="default" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="disputas">
     <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error de carga. Cuando falla, ABAJO no puede decirse «no hay
           disputas»: no sabemos si hay o no. */}
-      {hayError && (
-        <div
+      <Presence show={hayError}
           role="alert"
           className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
         >
@@ -468,8 +470,7 @@ function DisputasContent() {
           >
             Reintentar
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* Filtro por estado + conteo */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -484,12 +485,15 @@ function DisputasContent() {
         />
         {disputes.length > 0 && (
           <span className="text-xs text-fg-muted tabular-nums">
-            {counts.open} abiertas · {counts.in_review} en revisión ·{' '}
-            {counts.resolved} resueltas
+            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} /> abiertas ·{' '}
+            <AnimatedNumber value={counts.in_review} format={(n) => String(Math.round(n))} /> en revisión ·{' '}
+            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} /> resueltas
           </span>
         )}
       </div>
 
+      {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
+      <CrossFade swapKey={hayError ? 'fallo' : disputes.length === 0 ? `vacio-${filtro}` : 'lista'}>
       {hayError ? null : disputes.length === 0 ? (
         <EmptyState
           icon={Scales}
@@ -568,6 +572,7 @@ function DisputasContent() {
           </Card>
         </div>
       )}
+      </CrossFade>
 
       {/* Alta — sigue siendo modal: es una creación, no una lectura */}
       <AbrirDisputaModal
@@ -576,6 +581,7 @@ function DisputasContent() {
         onSubmit={handleOpenDispute}
       />
     </div>
+    </CrossFade>
   )
 }
 

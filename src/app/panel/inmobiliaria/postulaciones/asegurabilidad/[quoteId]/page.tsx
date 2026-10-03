@@ -34,6 +34,7 @@ import { CasoSidebar } from './CasoSidebar'
 import { RecomendacionRail } from './RecomendacionRail'
 import { MatrizActionBar, type MatrizActionCode } from './MatrizActionBar'
 import type { PostSeleccionCode } from './PostSeleccionSheet'
+import { Appear, CrossFade, Presence } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Inner component (rendered inside PageGuard — auth is guaranteed)
@@ -205,11 +206,19 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // was superficial). Fires while SSE is still connecting and no carriers have
   // arrived yet. NO EmptyState — dynamic route only loads when quote exists;
   // 404 path handles not-found.
+  // Movimiento: esqueleto → cotización en un `CrossFade` (el mismo nodo en las
+  // dos ramas). Lo que llega con el stream (veredicto, cierre, matriz, barra
+  // de acciones, avisos) entra con `Presence`; las aseguradoras, escalonadas.
   if (carriers.length === 0 && !isConnected && !error) {
-    return <CotizadorQuoteDetailSkeleton />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CotizadorQuoteDetailSkeleton />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="cotizacion">
     <div className="min-h-screen bg-background">
       {/* Sticky header */}
       <QuoteHeader
@@ -279,8 +288,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             )}
 
             {/* Reconnection error banner */}
-            {error && !isConnected && (
-              <div
+            <Presence show={Boolean(error && !isConnected)}
                 role="alert"
                 className="rounded-lg border border-warning/30 bg-warning-soft p-4 flex items-center justify-between gap-3"
               >
@@ -290,8 +298,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 <Button variant="outline" size="sm" hideArrow onClick={reconnect}>
                   {t('inmobiliaria.ai.cotizador.detail.retry')}
                 </Button>
-              </div>
-            )}
+            </Presence>
 
             {/* CONCLUSIÓN + RECOMENDACIÓN en lenguaje natural — aparece cuando el
                 agente emite agent.final_verdict. Mientras tanto, el grid de abajo
@@ -307,7 +314,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             )}
 
             {/* Completion banner — appears when all carriers final */}
-            {allFinal && (
+            <Presence show={allFinal}>
               <StreamCompleteBanner
                 carrierCount={carriers.length}
                 totalCostUsd={totalCostUsd}
@@ -319,13 +326,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 quoteId={quoteId}
                 pdfFilenamePrefix={pdfFilenamePrefix}
               />
-            )}
+            </Presence>
 
             {/* F10 — verdict del agente como AccionSugerida (compact panel).
                 Renders ONLY when the work-item detail resolves; cotizador items
                 are read-only triage so `actions` is usually [] and the card shows
                 the verdict narrative (label + confianza + razón + evidencia). */}
             {verdictItem.data && (
+              // Llega cuando resuelve el detalle del caso: entra con `Appear`.
+              <Appear>
               <AccionSugerida
                 accion={verdictItem.data.item.accionSugerida}
                 actions={verdictItem.data.item.actions}
@@ -335,6 +344,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                   return res
                 }}
               />
+              </Appear>
             )}
 
             {/* Carrier cards grid (always rendered — shows pending skeletons while streaming) */}
@@ -350,13 +360,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 condición, costo estimado, tiempo, recomendación}. Toggle matriz /
                 tarjetas. Aparece cuando ≥1 aseguradora tiene veredicto; los stubs
                 van etiquetados "Estimado · Prevalidación Leasefy". */}
-            {hasAnyVerdict && <MatrizAsegurabilidad carriers={carriers} />}
+            <Presence show={hasAnyVerdict}>
+              <MatrizAsegurabilidad carriers={carriers} />
+            </Presence>
 
             {/* Barra de acciones (visión #8/#21) — debajo de la matriz. Aparece
                 con ≥1 veredicto. Descargar reusa el path de PDF; re-cotizar /
                 resolver / reconectar usan los handlers existentes; el resto
                 degrada a "Próximamente" (aviso inline abajo). */}
-            {hasAnyVerdict && (
+            <Presence show={hasAnyVerdict}>
               <MatrizActionBar
                 carriers={carriers}
                 onReQuote={handleReQuote}
@@ -365,13 +377,12 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 onDownload={allFinal && !isStubMode ? downloadPdf : undefined}
                 onAction={handleMatrizAction}
               />
-            )}
+            </Presence>
 
             {/* Aviso "Próximamente" (patrón de honestidad — NO toast): las
                 acciones sin backend explican que están por llegar en lugar de
                 fallar en silencio. */}
-            {proximamente && (
-              <div
+            <Presence show={Boolean(proximamente)}
                 role="status"
                 className="rounded-lg border border-border bg-surface-muted p-3 flex items-center justify-between gap-3"
               >
@@ -396,8 +407,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                     ? 'Cerrar'
                     : t('inmobiliaria.ai.cotizador.detail.acciones.cerrar')}
                 </Button>
-              </div>
-            )}
+            </Presence>
 
             {/* RECOVERY "nadie lo asegura" (visión #10) + CONDICIONADO (visión #11).
                 - Recovery: solo cuando final_verdict.asegurabilidad === 'no'.
@@ -445,6 +455,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         onQuote404={handleQuote404}
       />
     </div>
+    </CrossFade>
   )
 }
 

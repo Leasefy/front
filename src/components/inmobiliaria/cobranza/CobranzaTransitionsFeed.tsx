@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, relativeTime } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
@@ -38,6 +38,8 @@ export function CobranzaTransitionsFeed({
         {t('inmobiliaria.ai.cobranza.overview.transitions.title')}
       </h2>
 
+      {/* Cargando → vacío → lista: cada estado entra con su fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : transitions.length === 0 ? 'vacio' : 'lista'}>
       {isLoading ? (
         <div className="mt-4 space-y-3">
           {[1, 2, 3].map((i) => (
@@ -54,19 +56,20 @@ export function CobranzaTransitionsFeed({
           </p>
         </div>
       ) : (
-        <ul
+        // El cambio que llega en vivo entra ARRIBA bajando a su lugar
+        // (`direction="down"`) y las de abajo se corren; la que pasa de 25 sale.
+        // Lo que ya estaba al aparecer la lista entra escalonado (techo 320 ms).
+        <Stagger
+          as="ul"
+          direction="down"
           aria-live="polite"
           aria-relevant="additions"
           className="mt-4 space-y-2"
         >
-          <AnimatePresence initial={false}>
             {transitions.map((item) => (
-              <motion.li
+              <StaggerItem
+                as="li"
                 key={item.id}
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
                 className="flex flex-wrap items-start gap-2 p-3 rounded-md bg-surface-muted border border-border-faint"
               >
                 {/* Stage transition */}
@@ -103,11 +106,11 @@ export function CobranzaTransitionsFeed({
                     {relativeTime(item.transitionedAt, locale)}
                   </span>
                 </div>
-              </motion.li>
+              </StaggerItem>
             ))}
-          </AnimatePresence>
-        </ul>
+        </Stagger>
       )}
+      </CrossFade>
     </div>
   )
 }

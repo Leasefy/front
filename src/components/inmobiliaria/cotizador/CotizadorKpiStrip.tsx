@@ -13,7 +13,7 @@ import {
   Vault,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { KpiCard } from '@leasefy/cadence'
+import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 
@@ -151,15 +151,18 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    // Las tarjetas entran escalonadas (techo 320 ms); las opcionales que llegan
+    // después se suman con su animación y las demás se corren.
+    <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map(({ label, value, Icon }) => (
-        <KpiCard
-          key={label}
-          label={label}
-          value={isLoading ? '—' : value}
-          icon={<Icon weight="duotone" aria-hidden="true" />}
-        />
+        <StaggerItem key={label} className="min-w-0 [&>*]:h-full">
+          <KpiCard
+            label={label}
+            value={isLoading ? '—' : value}
+            icon={<Icon weight="duotone" aria-hidden="true" />}
+          />
+        </StaggerItem>
       ))}
-    </div>
+    </Stagger>
   )
 }

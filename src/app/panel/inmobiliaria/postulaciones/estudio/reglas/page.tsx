@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Chip, SegmentedControl, Switch } from '@leasefy/cadence'
+import { Chip, Collapse, SegmentedControl, Switch } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.estudio'
@@ -338,7 +338,8 @@ function EstudioReglas() {
                 </SelectContent>
               </Select>
             </div>
-            {reglas.cuandoCodeudor === 'porRelacion' && (
+            {/* El umbral aparece y se va con su altura al elegir «por relación». */}
+            <Collapse open={reglas.cuandoCodeudor === 'porRelacion'}>
               <div>
                 <label htmlFor="relacionParaCodeudor" className={LABEL_CLASSES}>
                   {tf(`${NS}.reglas.codeudor.umbral`, 'Exigir codeudor si la relación es menor a')}
@@ -353,7 +354,7 @@ function EstudioReglas() {
                   value={reglas.relacionParaCodeudor}
                   onChange={(e) => set('relacionParaCodeudor', Number.parseFloat(e.target.value) || 0)}                />
               </div>
-            )}
+            </Collapse>
           </div>
         </section>
 

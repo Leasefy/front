@@ -32,6 +32,7 @@ import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/Paus
 import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention/ForceStageModal'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention/ManualCallModal'
+import { CrossFade } from '@leasefy/cadence'
 
 void React
 
@@ -148,6 +149,9 @@ export function DebtorActionRail({
         <h3 className="text-sm font-semibold text-fg">
           {t(`${NS}.detalle.proximaAccionTitulo`)}
         </h3>
+        {/* La próxima acción la agenda el agente en vivo: la que había sale y
+            la nueva entra (o «no hay nada programado»). */}
+        <CrossFade swapKey={nextAction ? `${nextAction.channel}-${nextAction.plannedFor}` : 'nada'}>
         {nextAction ? (
           <>
             <div className="mt-2 space-y-1">
@@ -180,6 +184,7 @@ export function DebtorActionRail({
             {t(`${NS}.detail.sidebar.noNextAction`)}
           </p>
         )}
+        </CrossFade>
       </section>
 
       {/* Acciones rápidas */}
@@ -197,6 +202,8 @@ export function DebtorActionRail({
             puerta: quien se equivocaba de fecha dejaba al agente detenido sobre
             ese caso hasta que la fecha pasara sola.
           */}
+          {/* Pausar ⇄ Reanudar: el botón cambia en su lugar con un fundido. */}
+          <CrossFade swapKey={estaPausado ? 'reanudar' : 'pausar'} mode="popLayout" direction="none">
           {estaPausado ? (
             <RailAction
               label={t(`${NS}.detail.acciones.resume.cta`)}
@@ -214,6 +221,7 @@ export function DebtorActionRail({
               testId="rail-pause"
             />
           )}
+          </CrossFade>
           <RailAction
             label={t(`${NS}.detail.acciones.forceStage.cta`)}
             disabled={!forceStageEnabled}
@@ -323,7 +331,9 @@ function RailAction({
       disabled={disabled}
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
-      className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
+      // Presión del sistema (97%, como `Button`) con el cambio de borde en UNA
+      // sola `transition-[…]`; quieta deshabilitada.
+      className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-[color,background-color,border-color,transform] duration-fast ease-enter active:scale-[0.97] disabled:active:scale-100 hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
     >
       <span className="text-sm font-medium text-fg">
         {label}

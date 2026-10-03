@@ -23,6 +23,7 @@ import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
 import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 function ThresholdsContent() {
   const { t, locale } = useI18n()
@@ -54,14 +55,15 @@ function ThresholdsContent() {
          spinner. No page-level EmptyState — the threshold editor always
          renders a form (defaults are seeded server-side on first access), so
          a "no thresholds" state never surfaces. See SUMMARY deviations. */}
+      {/* Esqueleto → editor con su fundido (`CrossFade`); el error entra y
+          sale con `Presence`. */}
+      <CrossFade swapKey={isLoading && !active ? 'cargando' : active ? 'editor' : 'nada'} className="space-y-6">
       {isLoading && !active && <PageSkeleton variant="list" />}
 
       {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
-      {error && (
-        <div role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
-        </div>
-      )}
+      </Presence>
 
       {active && (
         <>
@@ -83,6 +85,7 @@ function ThresholdsContent() {
           />
         </>
       )}
+      </CrossFade>
     </div>
   )
 }

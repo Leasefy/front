@@ -30,12 +30,13 @@ import {
   Button,
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
   TableHead,
   TableCell,
+  TableRowAnimada,
 } from '@/components/ui'
-import { Card } from '@leasefy/cadence'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
 import {
   normalizeOptOuts,
   nextCursorOf,
@@ -145,20 +146,31 @@ function OptOutContent() {
   )
 
   // Phase 38-05a: page-level skeleton during first load
-  if (isLoading && items.length === 0) return <PageSkeleton variant="list" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // lista, → vacío); lo que ya estaba al montarse no se anima.
+  if (isLoading && items.length === 0) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
+  }
 
   // Phase 38-05a: page-level EmptyState when no opt-outs
   if (!isLoading && items.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <EmptyState
         icon={BellSlash}
         title={t('inmobiliaria.ai.cobranza.compliance.optOut.empty.title')}
         description={t('inmobiliaria.ai.cobranza.compliance.optOut.empty.description')}
       />
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="lista">
     <div className="p-4 md:p-6 space-y-6">
       <div>
         <h1 className="text-h2 font-heading text-fg mt-2">
@@ -167,11 +179,9 @@ function OptOutContent() {
       </div>
 
       {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
-      {error && (
-        <div role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
-        </div>
-      )}
+      </Presence>
 
       {items.length > 0 && (
         <Card className="overflow-hidden">
@@ -197,12 +207,13 @@ function OptOutContent() {
                 <TableHead className="text-right" />
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* «Cargar más» o una fila nueva: entran escalonadas (techo 320 ms). */}
+            <TableBodyAnimado>
               {items.map((row) => {
                 const isAcked = row.acknowledgedAt !== null
                 const isAcking = acking.has(row.eventId)
                 return (
-                  <TableRow key={row.eventId}>
+                  <TableRowAnimada key={row.eventId}>
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
                       {new Date(row.requestedAt).toLocaleString(locale)}
                     </TableCell>
@@ -246,13 +257,13 @@ function OptOutContent() {
                         </Button>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
           </div>
-          {nextCursor && (
+          <Presence show={Boolean(nextCursor)} direction="none" initial={false}>
             <div className="p-3 border-t border-border text-center">
               <Button
                 variant="outline"
@@ -266,10 +277,11 @@ function OptOutContent() {
                   : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
               </Button>
             </div>
-          )}
+          </Presence>
         </Card>
       )}
     </div>
+    </CrossFade>
   )
 }
 

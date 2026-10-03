@@ -68,7 +68,7 @@ import {
   Textarea,
   toast,
 } from '@/components/ui'
-import { Eyebrow, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, Eyebrow, Presence, SegmentedControl } from '@leasefy/cadence'
 
 import {
   cobranzaSecuenciaApi,
@@ -380,22 +380,31 @@ function PagosRecordatorios() {
       return siguiente
     })
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // condiciones, → fallo); lo que ya estaba al montarse no se anima.
   if (cargando) {
-    return <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+    return (
+      <CrossFade swapKey="cargando">
+        <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+      </CrossFade>
+    )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-4 p-6 lg:p-8">
         <Aviso tono="warning">{error}</Aviso>
         <Button hideArrow onClick={() => void cargar()}>
           Reintentar
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="condiciones">
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-2">
         <Eyebrow>Cobranza</Eyebrow>
@@ -589,12 +598,12 @@ function PagosRecordatorios() {
             </div>
           </div>
 
-          {hayCambios && (
+          <Presence show={hayCambios} initial={false}>
             <Aviso tono="info">
               Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guarda los
               cambios para verlos reflejados acá.
             </Aviso>
-          )}
+          </Presence>
 
           {calendario && calendario.pasos.length > 0 ? (
             <ol className="space-y-2">
@@ -686,12 +695,24 @@ function PagosRecordatorios() {
             </Button>
           </div>
 
+          {/* «Ver a quién le llega» ⇄ la lista: la vista previa entra con su
+              fundido la primera vez (`popLayout`: monta ya, sin esperar a que
+              el aviso termine de irse); al cambiar de paso o de canal se queda
+              y sus cifras cuentan. */}
+          <CrossFade swapKey={previa ? 'previa' : 'sin-previa'} mode="popLayout" className="space-y-4">
           {previa && (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
                 <p className="text-sm text-fg">
-                  De <strong>{previa.revisados}</strong> cuotas de {previa.mes}, le va a llegar a{' '}
-                  <strong className="text-primary">{previa.lesLlega}</strong> por{' '}
+                  De{' '}
+                  <strong>
+                    <AnimatedNumber value={previa.revisados} format={(n) => String(Math.round(n))} />
+                  </strong>{' '}
+                  cuotas de {previa.mes}, le va a llegar a{' '}
+                  <strong className="text-primary">
+                    <AnimatedNumber value={previa.lesLlega} format={(n) => String(Math.round(n))} />
+                  </strong>{' '}
+                  por{' '}
                   {previa.canal === 'CORREO' ? 'correo' : 'WhatsApp'}.
                 </p>
                 {/*
@@ -812,9 +833,11 @@ function PagosRecordatorios() {
               cobro sin saber a cuántos le llega.
             </Aviso>
           )}
+          </CrossFade>
         </CardContent>
       </Card>
     </div>
+    </CrossFade>
   )
 }
 

@@ -16,7 +16,7 @@
 import { useState } from 'react'
 import { toast } from '@/components/ui/toast'
 import { CheckCircle, Sparkle, XCircle } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { Collapse, MonoLabel } from '@leasefy/cadence'
 
 import type {
   AccionSugerida as AccionSugeridaModel,
@@ -26,6 +26,7 @@ import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ACTION_KIND_VARIANT } from './ColaHumana'
 import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
 import { tieneCampos } from './campos-de-la-accion'
@@ -96,6 +97,15 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
   }
 
   const pendingReasonAction = actions.find((a) => a.id === reasonForActionId)
+  // Cada panel conserva su última acción mientras se pliega: sin esto, se
+  // vaciaba en el mismo cuadro en que empezaba a cerrarse y se encogía en
+  // blanco.
+  const accionConCampos = useUltimoPresente(
+    pendingReasonAction && tieneCampos(pendingReasonAction) ? pendingReasonAction : null,
+  )
+  const accionSinCampos = useUltimoPresente(
+    pendingReasonAction && !tieneCampos(pendingReasonAction) ? pendingReasonAction : null,
+  )
 
   return (
     <div
@@ -135,25 +145,35 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
 
       {/* Los campos que la acción declara (02-10-2026): «Resolver» pide la
           categoría y el texto de la resolución, no un motivo. */}
-      {pendingReasonAction && tieneCampos(pendingReasonAction) && (
-        <div className="rounded-lg border border-border p-2">
+      {/* Movimiento: los dos paneles se abren y se cierran con su altura
+          (`Collapse`) en vez de aparecer de golpe; el formulario de adentro ya
+          no anima su propia entrada. */}
+      <Collapse
+        open={Boolean(pendingReasonAction && tieneCampos(pendingReasonAction))}
+        className="rounded-lg border border-border p-2"
+      >
+        {accionConCampos && (
           <FormularioDeLaAccion
-            key={pendingReasonAction.id}
-            idBase={`accion-sugerida-${pendingReasonAction.id}`}
-            action={pendingReasonAction}
-            onEnviar={(cuerpo) => ejecutar(pendingReasonAction, cuerpo)}
+            key={accionConCampos.id}
+            idBase={`accion-sugerida-${accionConCampos.id}`}
+            action={accionConCampos}
+            onEnviar={(cuerpo) => ejecutar(accionConCampos, cuerpo)}
             onCancelar={() => setReasonForActionId(null)}
-            deshabilitado={disabled || (busyActionId !== null && busyActionId !== pendingReasonAction.id)}
+            deshabilitado={disabled || (busyActionId !== null && busyActionId !== accionConCampos.id)}
           />
-        </div>
-      )}
+        )}
+      </Collapse>
 
       {/* Reason input (revealed by a requiresReason action without declared fields) */}
-      {pendingReasonAction && !tieneCampos(pendingReasonAction) && (
-        <div className="space-y-1.5 rounded-lg border border-border p-2">
+      <Collapse
+        open={Boolean(pendingReasonAction && !tieneCampos(pendingReasonAction))}
+        className="space-y-1.5 rounded-lg border border-border p-2"
+      >
+        {accionSinCampos && (
+          <>
           <label className="text-[11px] text-muted-foreground" htmlFor="accion-sugerida-reason">
             {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
-              accion: pendingReasonAction.label.toLowerCase(),
+              accion: accionSinCampos.label.toLowerCase(),
             })}
           </label>
           <Textarea
@@ -182,7 +202,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
                 reasonText.trim().length === 0 ||
                 busyActionId !== null
               }
-              onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
+              onClick={() => void run(accionSinCampos, { reason: reasonText.trim() })}
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -201,8 +221,9 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               {t(`${WORKSPACE_NS}.acciones.cancelar`)}
             </Button>
           </div>
-        </div>
-      )}
+          </>
+        )}
+      </Collapse>
 
       {/* Actions */}
       {actions.length > 0 && (

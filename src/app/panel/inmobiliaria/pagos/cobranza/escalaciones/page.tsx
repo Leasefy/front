@@ -17,8 +17,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
 import { CheckCircle, Warning } from '@phosphor-icons/react'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -189,7 +189,15 @@ function EscalacionesContent() {
   )
 
   // ── Skeleton + celebratory EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─
-  if (isLoading && !data) return <CobranzaEscalacionesSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // tablero, → «todo al día»); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaEscalacionesSkeleton />
+      </CrossFade>
+    )
+  }
 
   const allEmpty =
     data !== null &&
@@ -198,6 +206,7 @@ function EscalacionesContent() {
     data.resolved.length === 0
   if (!isLoading && allEmpty && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={CheckCircle}
@@ -205,10 +214,12 @@ function EscalacionesContent() {
           description={t('inmobiliaria.ai.cobranza.escalaciones.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="tablero">
     <div className="p-4 md:p-6 space-y-6">
       {/* ARIA live region — announces new open escalations to screen readers */}
       <div
@@ -259,25 +270,24 @@ function EscalacionesContent() {
       )}
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      {error && !data && (
-        <div
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-        >
+      <Presence
+        show={Boolean(error && !data)}
+        role="alert"
+        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+      >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
-        </div>
-      )}
+      </Presence>
 
-      {/* Kanban — 3 columns md+, stacked sm */}
+      {/* Kanban — 3 columns md+, stacked sm. Las columnas ya no animan su
+          propia entrada (la página entra con su template): se anima el
+          CAMBIO — tomar, asignar o resolver saca la tarjeta de su columna y la
+          hace entrar en la otra, y el número de la columna cuenta. */}
       {data && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {columns.map((col, idx) => (
-            <motion.section
+          {columns.map((col) => (
+            <section
               key={col.key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * idx }}
               className="rounded-lg border border-border bg-card/50 overflow-hidden"
               aria-labelledby={`column-${col.key}-heading`}
             >
@@ -289,31 +299,37 @@ function EscalacionesContent() {
                   {col.label}
                 </h2>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {col.items.length}
+                  <AnimatedNumber value={col.items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </div>
               <div className="p-3 space-y-2 min-h-[200px]">
-                {col.items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">
-                    {locale.startsWith('es') ? 'Sin escalaciones' : 'No escalations'}
-                  </p>
-                ) : (
-                  col.items.map((esc) => (
-                    <EscalationCard
-                      key={esc.id}
-                      escalation={esc}
-                      currentUserEmail={currentUserEmail}
-                      hasResolvePerm={hasResolvePerm}
-                      hasAssignPerm={hasAssignPerm}
-                      onOpen={handleOpenDetail}
-                      onClaim={handleClaim}
-                      onAssign={setAssignOpen}
-                      onResolve={setResolveOpen}
-                    />
-                  ))
-                )}
+                <Presence
+                  as="p"
+                  show={col.items.length === 0}
+                  initial={false}
+                  direction="none"
+                  className="text-xs text-muted-foreground text-center py-6"
+                >
+                  {locale.startsWith('es') ? 'Sin escalaciones' : 'No escalations'}
+                </Presence>
+                <Stagger className="space-y-2">
+                  {col.items.map((esc) => (
+                    <StaggerItem key={esc.id}>
+                      <EscalationCard
+                        escalation={esc}
+                        currentUserEmail={currentUserEmail}
+                        hasResolvePerm={hasResolvePerm}
+                        hasAssignPerm={hasAssignPerm}
+                        onOpen={handleOpenDetail}
+                        onClaim={handleClaim}
+                        onAssign={setAssignOpen}
+                        onResolve={setResolveOpen}
+                      />
+                    </StaggerItem>
+                  ))}
+                </Stagger>
               </div>
-            </motion.section>
+            </section>
           ))}
         </div>
       )}
@@ -340,6 +356,7 @@ function EscalacionesContent() {
         onAssign={handleAssign}
       />
     </div>
+    </CrossFade>
   )
 }
 

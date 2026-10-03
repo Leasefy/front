@@ -29,7 +29,7 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { MonoLabel } from '@leasefy/cadence'
+import { CrossFade, MonoLabel } from '@leasefy/cadence'
 
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
@@ -116,8 +116,12 @@ export function WorkItemDetalle({
   const BreadcrumbIcon = icon ?? Robot
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
+  // Movimiento: cada estado en un `CrossFade` con su clave (esqueleto → caso,
+  // → fallo, → no disponible, → no encontrado); lo que ya estaba al montarse
+  // no se anima.
   if (isLoading) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-6 lg:p-8 space-y-6" data-testid="caso-loading">
         <div className="h-5 w-48 rounded bg-muted/40 animate-pulse" />
         <div className="h-8 w-2/3 rounded bg-muted/40 animate-pulse" />
@@ -129,6 +133,7 @@ export function WorkItemDetalle({
           <div className="lg:col-span-2 h-64 rounded-lg border border-border bg-muted/40 animate-pulse" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -137,6 +142,7 @@ export function WorkItemDetalle({
     // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar el caso:
     // 500». Con la salida a la cola: sobre un 404 o un 403 reintentar no sirve.
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-4">
         <div data-testid="caso-error">
           <FalloDeCarga
@@ -146,6 +152,7 @@ export function WorkItemDetalle({
           />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -153,7 +160,7 @@ export function WorkItemDetalle({
   // elemento con énfasis): el notFoundAction de la página o, si no llega, el
   // clásico "Volver a la cola". Ambos comparten el mismo pill mudo.
   const EMPTY_CTA_CLS =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150'
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-[border-color,box-shadow,transform] duration-fast ease-enter'
   const emptyStateCta = notFoundAction ? (
     <Link href={notFoundAction.href} className={EMPTY_CTA_CLS} data-testid="caso-not-found-action">
       {notFoundAction.label}
@@ -169,6 +176,7 @@ export function WorkItemDetalle({
   // doesn't expose a detail endpoint yet.
   if (notAvailable) {
     return (
+      <CrossFade swapKey="no-disponible">
       <div className="p-6 lg:p-8 space-y-4">
         <div
           role="status"
@@ -194,12 +202,14 @@ export function WorkItemDetalle({
           <div className="mt-1">{emptyStateCta}</div>
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Not found (the item itself is missing) ────────────────────────────────
   if (!data) {
     return (
+      <CrossFade swapKey="no-encontrado">
       <div className="p-6 lg:p-8 space-y-4">
         <div
           role="status"
@@ -225,6 +235,7 @@ export function WorkItemDetalle({
           <div className="mt-1">{emptyStateCta}</div>
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -234,6 +245,7 @@ export function WorkItemDetalle({
   const isActionable = ACTIONABLE_ESTADOS.has(item.estado)
 
   return (
+    <CrossFade swapKey="caso">
     <div className="p-6 lg:p-8 space-y-6" data-testid={`caso-${item.id}`}>
       {/* Header */}
       <header className="space-y-2">
@@ -344,7 +356,7 @@ export function WorkItemDetalle({
           {crossLink && (
             <Link
               href={crossLink.href}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 hover:bg-muted/50 transition group"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 hover:bg-muted/50 transition-colors group"
               data-testid="caso-cross-link"
             >
               <div className="min-w-0">
@@ -352,7 +364,7 @@ export function WorkItemDetalle({
                 <p className="text-xs text-muted-foreground mt-0.5">{crossLink.destino}</p>
               </div>
               <ArrowRight
-                className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition shrink-0"
+                className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-[color,transform] duration-fast ease-enter shrink-0"
                 aria-hidden="true"
               />
             </Link>
@@ -366,5 +378,6 @@ export function WorkItemDetalle({
         </aside>
       </div>
     </div>
+    </CrossFade>
   )
 }

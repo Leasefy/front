@@ -22,6 +22,7 @@ import {
   useAcuerdosGenerales,
   type AcuerdoGeneralNuevo,
 } from '@/lib/hooks/cobranza/use-acuerdos-generales'
+import { CrossFade } from '@leasefy/cadence'
 
 const VOLVER = '/panel/inmobiliaria/pagos/cobranza/acuerdos'
 
@@ -39,16 +40,21 @@ function EditarAcuerdoGeneral() {
     [editar, acuerdoId],
   )
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // formulario, → fallo, → ya no existe).
   if (isLoading && !acuerdo && !error) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="flex items-center justify-center p-16">
         <Spinner size="md" />
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 max-w-xl space-y-3">
         <h1 className="text-xl font-semibold text-fg">No pudimos cargar el acuerdo</h1>
         <p className="text-sm text-fg-muted">{error}</p>
@@ -61,11 +67,13 @@ function EditarAcuerdoGeneral() {
           </Button>
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   if (!acuerdo) {
     return (
+      <CrossFade swapKey="no-existe">
       <div className="p-6 lg:p-8 max-w-xl space-y-3">
         <h1 className="text-xl font-semibold text-fg">Ese acuerdo general ya no existe</h1>
         <p className="text-sm text-fg-muted">
@@ -75,16 +83,19 @@ function EditarAcuerdoGeneral() {
           <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   return (
-    <AcuerdoGeneralForm
-      titulo={acuerdo.name}
-      inicial={borradorDesde(acuerdo)}
-      onGuardar={guardar}
-      textoGuardar="Guardar cambios"
-    />
+    <CrossFade swapKey="formulario">
+      <AcuerdoGeneralForm
+        titulo={acuerdo.name}
+        inicial={borradorDesde(acuerdo)}
+        onGuardar={guardar}
+        textoGuardar="Guardar cambios"
+      />
+    </CrossFade>
   )
 }
 

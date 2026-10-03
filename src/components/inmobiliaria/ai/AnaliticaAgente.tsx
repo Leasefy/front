@@ -36,6 +36,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import type { AgentAnaliticaResponse, AnaliticaSerie } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { formatKpiValue } from './SalaAgente'
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
+import { useRef } from 'react'
 
 const NS = 'inmobiliaria.ai.workspace.analitica'
 
@@ -91,7 +94,9 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
           {t(`${NS}.serieEmpty`)}
         </p>
       ) : (
-        <div
+        // Las barras crecen desde abajo al aparecer (una sola capa con
+        // `scaleY`, como las de recharts); el alto de cada día es el dato.
+        <BarraQueCrece
           className="flex items-end gap-[2px] h-24 w-full"
           role="img"
           aria-label={t(`${NS}.serieAria`, {
@@ -112,7 +117,7 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
               title={`${formatDay(point.date)} · ${formatKpiValue(point.value, serie.format)}`}
             />
           ))}
-        </div>
+        </BarraQueCrece>
       )}
 
       {max > 0 && (
@@ -129,8 +134,15 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
 
 export function AnaliticaAgente({ data, isLoading, error, notAvailable }: AnaliticaAgenteProps) {
   const { t } = useI18n()
+  // ¿Se vio la carga? Entonces las cifras del resumen cuentan desde 0.
+  const huboCarga = useRef(false)
+  if (isLoading) huboCarga.current = true
+
+  // Movimiento: cada estado en un `CrossFade` con su clave (esqueleto →
+  // analítica, → fallo); lo que ya estaba al montarse no se anima.
   if (isLoading) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="space-y-4" data-testid="analitica-loading">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
@@ -140,6 +152,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
         <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
         <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
       </div>
+      </CrossFade>
     )
   }
 
@@ -147,9 +160,11 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
     // El mensaje crudo del backend no se muestra: `FalloDeCarga` lo clasifica
     // y lo deja en el nodo de diagnóstico.
     return (
+      <CrossFade swapKey="fallo">
       <div data-testid="analitica-error">
         <FalloDeCarga error={new Error(error)} queEs="la analítica de este agente" enmarcado={false} />
       </div>
+      </CrossFade>
     )
   }
 
@@ -160,6 +175,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
      * no un vacío — ver el encabezado del archivo.
      */
     return (
+      <CrossFade swapKey="no-disponible">
       <div data-testid="analitica-no-disponible">
         <FalloDeCarga
           error={FALLO_SIN_RUTA}
@@ -167,27 +183,33 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
           enmarcado={false}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="analitica">
     <div className="space-y-6" data-testid="analitica-agente">
-      {/* Resumen KPI strip */}
+      {/* Resumen KPI strip: entran escalonadas y cada cifra cuenta. */}
       {data.resumen.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="analitica-resumen">
+        <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="analitica-resumen">
           {data.resumen.map((kpi) => (
-            <div
+            <StaggerItem
               key={kpi.id}
               className="rounded-lg border border-border bg-card p-4"
               data-testid={`analitica-kpi-${kpi.id}`}
             >
               <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
               <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
-                {formatKpiValue(kpi.value, kpi.format)}
+                <AnimatedNumber
+                  value={kpi.value}
+                  from={huboCarga.current ? 0 : undefined}
+                  format={(n) => formatKpiValue(n, kpi.format)}
+                />
               </p>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       {/* One bar-chart block per serie */}
@@ -200,5 +222,6 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
         data.series.map((serie) => <SerieBlock key={serie.id} serie={serie} />)
       )}
     </div>
+    </CrossFade>
   )
 }

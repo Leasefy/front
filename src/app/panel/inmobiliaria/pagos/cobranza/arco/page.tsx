@@ -45,15 +45,16 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
   TableHead,
   TableCell,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TablePagination } from '@/components/ui/pagination'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import { Banner, Callout, Card, Eyebrow, KpiCard, MonoLabel } from '@leasefy/cadence'
+import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
 
 const NS = 'inmobiliaria.ai.arco'
 
@@ -148,7 +149,7 @@ function AttentionBanner({
   onFocus: () => void
 }) {
   const { t } = useI18n()
-  if (overdue === 0 && urgent === 0) return null
+  const hay = overdue > 0 || urgent > 0
 
   const critical = overdue > 0
   const count = critical ? overdue : urgent
@@ -160,7 +161,11 @@ function AttentionBanner({
     .replace('{count}', String(count))
     .replace('{days}', String(ARCO_URGENT_THRESHOLD_DAYS))
 
+  // Sale con `Presence` (fundido): atender lo vencido la retira con su
+  // animación (antes `return null` la desmontaba de golpe). La entrada la
+  // pone el propio `Banner` (sube 8px), por eso aquí sin desplazamiento.
   return (
+    <Presence show={hay} direction="none">
     <Banner
       role="status"
       variant={critical ? 'danger' : 'warning'}
@@ -182,6 +187,7 @@ function AttentionBanner({
         </Button>
       </span>
     </Banner>
+    </Presence>
   )
 }
 
@@ -220,11 +226,18 @@ function RequestsTable({
 }) {
   const { t } = useI18n()
 
+  // Vacío ⇄ tabla (cambiar de pestaña o de filtro): el uno sale y el otro
+  // entra; es el mismo `CrossFade` en las dos ramas.
   if (total === 0) {
-    return <EmptyState icon={CheckCircle} title={emptyTitle} description={emptyBody} />
+    return (
+      <CrossFade swapKey={`vacio-${emptyTitle}`}>
+        <EmptyState icon={CheckCircle} title={emptyTitle} description={emptyBody} />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="tabla">
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
       <Table className="min-w-full">
@@ -238,9 +251,10 @@ function RequestsTable({
             <TableHead className="px-4 py-2.5 text-right">{t(`${NS}.table.actions`)}</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Cambiar de pestaña, filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+        <TableBodyAnimado>
           {rows.map((row) => (
-            <TableRow
+            <TableRowAnimada
               key={row.id}
               className={cn(
                 'border-t border-border transition-colors hover:bg-surface-muted',
@@ -302,9 +316,9 @@ function RequestsTable({
                   </Link>
                 </Button>
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ))}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
       </div>
 
@@ -324,6 +338,7 @@ function RequestsTable({
         </div>
       )}
     </Card>
+    </CrossFade>
   )
 }
 
@@ -397,11 +412,18 @@ export default function ArcoInboxPage() {
   const updatedAgo = formatUpdatedAgo(t, lastUpdatedAt)
 
   // Primera carga: esqueleto. Los refetch posteriores no desmontan la vista.
+  // Movimiento: esqueleto → bandeja en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && requests.length === 0 && !error) {
-    return <PageSkeleton variant="list" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="bandeja">
     <div className="space-y-6 p-4 md:p-6">
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -444,8 +466,7 @@ export default function ArcoInboxPage() {
       <IntroPanel terms={slaTerms} />
 
       {/* Error: no reemplaza la tabla — los datos viejos siguen sirviendo. */}
-      {error && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-danger-soft p-3">
+      <Presence show={Boolean(error)} className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-danger-soft p-3">
           <Warning className="h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-danger">{t(`${NS}.error.load`)}</p>
@@ -454,8 +475,7 @@ export default function ArcoInboxPage() {
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
             {t(`${NS}.error.retry`)}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       <AttentionBanner
         overdue={kpis.overdue}
@@ -496,8 +516,7 @@ export default function ArcoInboxPage() {
       </div>
 
       {/* Filtro activo desde la banda de atención */}
-      {onlyAttention && (
-        <div className="flex items-center gap-2">
+      <Presence show={onlyAttention} direction="none" initial={false} className="flex items-center gap-2">
           <Badge variant="warning">{t(`${NS}.attention.cta`)}</Badge>
           <Button
             variant="ghost"
@@ -510,8 +529,7 @@ export default function ArcoInboxPage() {
           >
             {t('common.all')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* Pestañas por tipo + tabla */}
       <Tabs value={activeTab} onValueChange={(v) => changeTab(v as TabValue)}>
@@ -526,7 +544,7 @@ export default function ArcoInboxPage() {
                   variant={hasOverdue ? 'destructive' : 'secondary'}
                   className="px-1.5 py-0.5 font-mono text-[11px] tabular-nums"
                 >
-                  {count}
+                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
                 </Badge>
                 {/* El color no puede ser la única señal (DESIGN.md §7). */}
                 {hasOverdue && (
@@ -567,5 +585,6 @@ export default function ArcoInboxPage() {
         </div>
       </Tabs>
     </div>
+    </CrossFade>
   )
 }

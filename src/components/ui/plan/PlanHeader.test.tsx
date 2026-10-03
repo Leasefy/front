@@ -350,3 +350,74 @@ describe('PlanHeader — sin la pastilla del plan junto al avatar (Nico, 02-10-2
     expect(popover.textContent).toContain('Porcentaje');
   });
 });
+
+describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
+  const PORCENTAJE_1 = [
+    {
+      ...PORCENTAJE_CATALOG[0],
+      pricingModel: 'percentage' as const,
+      canonPercentage: 1,
+      features: ['Propiedades ilimitadas', 'Usuarios ilimitados', 'Evaluaciones IA ilimitadas incluidas', 'Scoring premium', 'Soporte dedicado'],
+    },
+  ];
+  const popover = () => container.querySelector<HTMLElement>('[data-testid="subscription-popover"]')!;
+
+  it('etiqueta en mono y en minúscula, la ✕ de la casa y nada de la franja gris', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const p = popover();
+    const titulo = p.querySelector('h3')!;
+    expect(titulo.textContent).toBe('Tu suscripción');
+    expect(titulo.className).toContain('font-mono');
+    const aspa = p.querySelector<HTMLButtonElement>('button[aria-label="common.close"]')!;
+    expect(aspa.className).toContain('rounded-full');
+    expect(aspa.className).toMatch(/\bborder\b/);
+    // `surface-muted` y `plan-primary` en oscuro son grises amarillentos sobre el negro.
+    // (El `active:bg-surface-muted` del botón secundario de Cadence es el de presionar: se vale.)
+    const fondos = Array.from(p.querySelectorAll('*')).flatMap((el) => Array.from(el.classList));
+    expect(fondos).not.toContain('bg-surface-muted');
+    expect(fondos).not.toContain('bg-plan-primary');
+  });
+
+  it('la loseta del plan va en cobalto y el porcentaje en mono', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const p = popover();
+    expect(p.textContent).toContain('Plan Porcentaje');
+    expect(p.textContent).toContain('1% del canon administrado');
+    expect(p.querySelector('.bg-primary-soft.text-primary')).not.toBeNull();
+    const cifra = Array.from(p.querySelectorAll('span')).find((s) => s.textContent === '1%')!;
+    expect(cifra.className).toContain('font-mono');
+  });
+
+  it('lo incluido es una lista con sus vistos, y dice cuántas cosas más trae el plan', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const lista = popover().querySelector('ul[aria-label="Lo que incluye tu plan"]')!;
+    const items = Array.from(lista.querySelectorAll('li')).map((li) => li.textContent);
+    expect(items).toEqual([
+      'Propiedades ilimitadas',
+      'Usuarios ilimitados',
+      'Evaluaciones IA ilimitadas incluidas',
+      'Scoring premium',
+      'y 1 más en tu plan',
+    ]);
+  });
+
+  it('las acciones son píldoras: «Gestionar suscripción» siempre; «Ver planes» fuera del plan más alto', () => {
+    agencySubState.value = { currentPlanId: 'pro-plus', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PRO_PLUS_CATALOG, isLoading: false };
+    render();
+    const links = Array.from(popover().querySelectorAll('a'));
+    const ver = links.find((a) => a.textContent?.includes('Ver planes'))!;
+    const gestionar = links.find((a) => a.textContent?.includes('Gestionar suscripción'))!;
+    expect(ver.getAttribute('href')).toBe('/panel/inmobiliaria/upgrade');
+    expect(gestionar.getAttribute('href')).toBe('/panel/inmobiliaria/upgrade');
+    expect(ver.className).toContain('rounded-full');
+    expect(gestionar.className).toContain('rounded-full');
+    expect(popover().textContent).not.toContain('Ver Planes');
+  });
+});

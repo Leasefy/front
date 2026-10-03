@@ -134,6 +134,6 @@ describe('mergeBackendIntoAgencyPlan — admin-created slug uses backend columns
       backendPlan({ tier: 'flex', billingMode: 'USAGE_CANON', usageFeeBps: 1000, monthlyPrice: 0 }),
     );
     expect(result.canonPercentage).toBe(10);
-    expect(result.features).toContain('Evaluaciones AI ilimitadas incluidas');
+    expect(result.features).toContain('Evaluaciones IA ilimitadas incluidas');
   });
 });

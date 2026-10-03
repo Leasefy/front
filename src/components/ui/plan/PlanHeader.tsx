@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
-import { SegmentedControl } from '@leasefy/cadence';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
+import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { getUserHomeRoute } from '@/lib/auth/role-routes';
@@ -16,6 +16,8 @@ import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/sub
 import { useMySubscription, useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import { formatDate } from '@/lib/format';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
@@ -640,103 +642,127 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-md rounded-lg overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
-                  {/* Header */}
-                  <div className="px-5 py-4 border-b border-border-faint bg-surface-muted">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-fg">Tu Suscripción</h3>
-                      <button
-                        onClick={() => setSubscriptionOpen(false)}
-                        aria-label={t('common.close')}
-                        className="text-fg-subtle hover:text-fg-muted transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                  {/* «Tu suscripción» (glow up, Nico 03-10: «a este también hay que
+                      hacerle un glow up»). Sin la franja gris de cabecera ni la
+                      loseta clara de la corona (`surface-muted` y `plan-primary` en
+                      oscuro son grises amarillentos sobre el negro): la etiqueta en
+                      mono, la ✕ única de la casa, la loseta en cobalto, lo incluido
+                      en un pozo con sus vistos escalonados y las acciones como
+                      píldoras. Mismos datos, mismas rutas y mismos estados. */}
+                  <div className="flex items-center justify-between gap-3 pl-5 pr-4 pt-4">
+                    <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                      Tu suscripción
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSubscriptionOpen(false)}
+                      aria-label={t('common.close')}
+                      className={cn(ASPA_DE_CIERRE, 'size-8')}
+                    >
+                      <X size={14} weight="bold" aria-hidden />
+                    </button>
                   </div>
 
-                  {/* Current Plan */}
-                  <div className="p-5">
+                  <div className="px-5 pb-5 pt-3">
                     {effectiveSubError ? (
                       /* Honest error state — do not assert a plan name we could not load */
-                      <div className="flex flex-col items-center gap-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-border px-4 py-5 text-center">
                         <p className="text-[13px] text-fg-muted">
                           No pudimos cargar tu plan
                         </p>
-                        <button
-                          type="button"
-                          onClick={effectiveSubRefetch}
-                          className="text-[12px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
-                        >
+                        <Button type="button" variant="secondary" size="sm" onClick={effectiveSubRefetch}>
                           Reintentar
-                        </button>
+                        </Button>
                       </div>
                     ) : isPlanCatalogLoading ? (
                       /* Catalog not resolved yet — never flash a wrong plan name (e.g.
                          "Starter" for a paying agency) while it loads. */
-                      <div className="flex items-center justify-center py-6">
+                      <div className="flex items-center justify-center py-8">
                         <Spinner size="sm" variant="muted" />
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className={cn(
-                            'w-10 h-10 flex items-center justify-center rounded-sm',
-                            isBaseTier ? 'bg-muted' : 'bg-plan-primary'
-                          )}>
+                        {/* El plan */}
+                        <div className="flex items-center gap-3.5">
+                          <div
+                            className={cn(
+                              'flex size-12 shrink-0 items-center justify-center rounded-md',
+                              isBaseTier ? 'border border-border bg-surface text-fg-muted' : 'bg-primary-soft text-primary'
+                            )}
+                          >
                             {isBaseTier ? (
-                              <Lightning className="w-5 h-5 text-plan-secondary" />
+                              <Lightning size={22} weight="duotone" aria-hidden />
                             ) : (
-                              <Crown className="w-5 h-5 text-plan-accent" />
+                              <Crown size={22} weight="duotone" aria-hidden />
                             )}
                           </div>
-                          <div>
-                            <p className="text-[14px] font-semibold text-plan-primary">
+                          <div className="min-w-0">
+                            <p className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em] text-fg">
                               Plan {currentPlan.name}
                             </p>
-                            <p className="text-[12px] text-plan-secondary">
-                              {isBaseTier
-                                ? 'Funciones limitadas'
-                                : isInmobiliaria
-                                  ? (agencyLivePlan?.pricingModel === 'percentage'
-                                      ? `${agencyLivePlan.canonPercentage ?? 1}% del canon administrado`
-                                      : agencyLivePlan?.pricingModel === 'custom'
-                                        ? 'Precio personalizado'
-                                        : 'Facturación mensual')
-                                  : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
-                              }
+                            <p className="mt-1 text-[13px] leading-snug text-fg-muted">
+                              {isBaseTier ? (
+                                'Funciones limitadas'
+                              ) : isInmobiliaria ? (
+                                agencyLivePlan?.pricingModel === 'percentage' ? (
+                                  <>
+                                    <span className="font-mono tabular-nums text-fg">{agencyLivePlan.canonPercentage ?? 1}%</span>
+                                    {' del canon administrado'}
+                                  </>
+                                ) : agencyLivePlan?.pricingModel === 'custom' ? (
+                                  'Precio personalizado'
+                                ) : (
+                                  'Facturación mensual'
+                                )
+                              ) : (
+                                `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                              )}
                             </p>
                           </div>
                         </div>
 
-                        {/* Features preview */}
-                        <div className="space-y-2 mb-4">
+                        {/* Lo que incluye: un pozo con los vistos que entran escalonados */}
+                        <Stagger
+                          as="ul"
+                          aria-label="Lo que incluye tu plan"
+                          layout={false}
+                          className="mt-4 space-y-2.5 rounded-md border border-border-faint bg-bg p-3.5"
+                        >
                           {currentPlan.features.slice(0, 4).map((feature) => (
-                            <div key={feature.id} className="flex items-center gap-2">
-                              <div className={cn(
-                                'w-4 h-4 flex items-center justify-center rounded-sm',
-                                feature.included ? 'bg-plan-status-green-bg text-[#2C7A53]' : 'bg-muted text-plan-muted'
-                              )}>
-                                <Check className="w-3 h-3" />
-                              </div>
-                              <span className={cn(
-                                'text-[12px]',
-                                feature.included ? 'text-foreground' : 'text-plan-muted'
-                              )}>
-                                {feature.name}
-                                {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
+                            <StaggerItem key={feature.id} as="li" className="flex items-start gap-2.5 text-[13px] leading-snug">
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'mt-px flex size-[18px] shrink-0 items-center justify-center rounded-full',
+                                  feature.included ? 'bg-success-soft text-success' : 'border border-border text-fg-subtle'
+                                )}
+                              >
+                                {feature.included ? <Check size={11} weight="bold" /> : <Minus size={11} weight="bold" />}
                               </span>
-                            </div>
+                              <span className={feature.included ? 'text-fg' : 'text-fg-subtle'}>
+                                {feature.name}
+                                {feature.limit && feature.limit !== 'unlimited' && (
+                                  <span className="font-mono tabular-nums"> ({feature.limit})</span>
+                                )}
+                              </span>
+                            </StaggerItem>
                           ))}
-                        </div>
+                          {currentPlan.features.length > 4 && (
+                            <StaggerItem key="mas" as="li" className="pl-[28px] text-[12px] text-fg-subtle">
+                              y <span className="font-mono tabular-nums">{currentPlan.features.length - 4}</span> más en tu plan
+                            </StaggerItem>
+                          )}
+                        </Stagger>
 
                         {/* Pending change echo (T-0089) — the fuller "Deshacer" action
                             lives in ConfigFacturacion; this is a one-line heads-up. */}
                         {pendingPlanTier && (
-                          <p className="text-[11px] text-warning mb-3">
+                          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-1 text-[12px] text-warning">
+                            <Clock size={13} aria-hidden />
                             Cambia a {pendingPlanDisplay?.name ?? pendingPlanTier}
                             {pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}
                           </p>
@@ -744,25 +770,25 @@ export function PlanHeader({
 
                         {/* Upgrade CTA — hide only when already on the top tier */}
                         {!isTopTier && (
-                          <Link
-                            href={upgradePlanHref}
-                            onClick={() => setSubscriptionOpen(false)}
-                            className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-lg transition-colors"
-                          >
-                            {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
-                          </Link>
+                          <Button asChild className="mt-5 w-full">
+                            <Link href={upgradePlanHref} onClick={() => setSubscriptionOpen(false)}>
+                              {isBaseTier ? 'Mejorar plan' : 'Ver planes'}
+                            </Link>
+                          </Button>
                         )}
                       </>
                     )}
 
                     {/* Manage subscription — always visible */}
-                    <Link
-                      href={manageSubscriptionHref}
-                      onClick={() => setSubscriptionOpen(false)}
-                      className="block mt-3 text-center text-[13px] font-medium text-fg-muted hover:text-fg underline underline-offset-2 decoration-border-strong hover:decoration-fg-muted transition-colors"
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className={cn('w-full', !effectiveSubError && !isPlanCatalogLoading && isTopTier ? 'mt-5' : 'mt-2')}
                     >
-                      Gestionar suscripción
-                    </Link>
+                      <Link href={manageSubscriptionHref} onClick={() => setSubscriptionOpen(false)}>
+                        Gestionar suscripción
+                      </Link>
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>}

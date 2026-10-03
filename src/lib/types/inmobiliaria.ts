@@ -10,6 +10,7 @@ import type {
   AprobacionDeReparacion,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
+import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
  * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
@@ -2014,6 +2015,8 @@ export function getDispersionStatusLabel(status: DispersionStatus): string {
 }
 
 export function formatCurrency(amount: number): string {
+  // 🔴 «Centavos en todo» (C1-C): un texto acá LANZA en las pruebas.
+  plataQueNoEsNumero('formatCurrency (lib/types/inmobiliaria)', amount);
   // Colombian pesos (COP). es-CO grouping (dot thousands) with a literal "$"
   // prefix — `{ style:'currency', currency:'COP' }` would insert a space after
   // the "$", so the prefix keeps the exact existing visual ("$2.500.000",

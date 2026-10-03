@@ -5,6 +5,7 @@
  */
 
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
 
 type SupportedLocale = 'es-CO' | 'en-US';
 
@@ -16,9 +17,13 @@ function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
  * Formats a number as currency. Null-safe: si `amount` viene null/undefined/NaN,
  * devuelve "$ 0" en vez de crashear. Necesario porque el backend puede no devolver
  * algunos campos (ej. lease.adminFee opcional).
+ *
+ * 🔴 «Centavos en todo» (C1-C): si llega TEXTO (`"1500000"`), en una prueba
+ * LANZA (`plataQueNoEsNumero`); en el navegador sigue pintando «$ 0» como antes.
  * @example formatCurrency(2500000) → "$ 2.500.000"
  */
 export function formatCurrency(amount: number | null | undefined, locale?: 'es' | 'en'): string {
+  plataQueNoEsNumero('formatCurrency', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
   return (
     '$ ' +

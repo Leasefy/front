@@ -27,6 +27,12 @@
  * `DELETE :id/fotos`), para que no queden en «Fotos de después» ni ocupen
  * cupo. Las que la solicitud ya tenía no se tocan. El diálogo se cierra de una:
  * un borrado que falla no lo frena y queda escrito en el log.
+ *
+ * Quitar con la «x» una foto que YA subió (tras un intento con una foto que
+ * falló) y confirmar BORRA su archivo (Nico, 02-10-2026): antes del cierre,
+ * con el mismo `DELETE :id/fotos`; si no, quedaba huérfana en Storage. Un
+ * borrado que falla no frena el cierre y queda en el log. Si en vez de
+ * confirmar se cancela, se borra igual (era de este intento).
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -73,6 +79,8 @@ export function CompletarSolicitudDialog({
   const [enviando, setEnviando] = useState(false);
   // Las que ya subieron en un intento anterior: no se suben dos veces.
   const yaSubidas = useRef(new Map<File, string>());
+  // Las que ya subieron y se quitaron con la «x»: se borran al confirmar.
+  const quitadas = useRef(new Set<string>());
 
   // Cada vez que se abre, de cero: las fotos de otra solicitud no son de ésta.
   useEffect(() => {
@@ -80,8 +88,21 @@ export function CompletarSolicitudDialog({
       setFotos([]);
       setError(null);
       yaSubidas.current = new Map();
+      quitadas.current = new Set();
     }
   }, [abierto, solicitudId]);
+
+  /** Quitar con la «x». Si ya había subido, su ruta queda para borrarla al confirmar. */
+  const quitar = (index: number) => {
+    const foto = fotos[index];
+    const ruta = foto ? yaSubidas.current.get(foto) : undefined;
+    if (foto && ruta) {
+      yaSubidas.current.delete(foto);
+      quitadas.current.add(ruta);
+    }
+    setFotos((prev) => prev.filter((_, i) => i !== index));
+    setError(null);
+  };
 
   const agregar = (elegidas: File[]) => {
     const { entran, problemas } = fotosQueEntran(fotos.length, elegidas);
@@ -93,10 +114,17 @@ export function CompletarSolicitudDialog({
     setEnviando(true);
     setError(null);
     try {
-      const r = await completarConFotos(solicitudId, fotos, yaSubidas.current, {
-        subir: (id, foto, destino) => mantenimientoApi.subirFoto(id, foto, destino),
-        completar: (id, cierre) => mantenimientoApi.completar(id, cierre),
-      });
+      const r = await completarConFotos(
+        solicitudId,
+        fotos,
+        yaSubidas.current,
+        {
+          subir: (id, foto, destino) => mantenimientoApi.subirFoto(id, foto, destino),
+          completar: (id, cierre) => mantenimientoApi.completar(id, cierre),
+          borrar: (id, ruta, destino) => mantenimientoApi.borrarFoto(id, ruta, destino),
+        },
+        quitadas.current,
+      );
       if (!r.completada && r.fraseDelTope) {
         // El tope de las fotos del trabajo es del campo, no de una foto.
         setError(`${r.fraseDelTope} La solicitud sigue abierta: quita las que sobran y vuelve a confirmar.`);
@@ -132,11 +160,16 @@ export function CompletarSolicitudDialog({
    */
   const cancelar = () => {
     const delIntento = yaSubidas.current;
+    const lasQuitadas = quitadas.current;
     yaSubidas.current = new Map();
-    if (delIntento.size > 0) {
-      void borrarLasDelIntento(solicitudId, delIntento, {
-        borrar: (id, ruta, destino) => mantenimientoApi.borrarFoto(id, ruta, destino),
-      });
+    quitadas.current = new Set();
+    if (delIntento.size > 0 || lasQuitadas.size > 0) {
+      void borrarLasDelIntento(
+        solicitudId,
+        delIntento,
+        { borrar: (id, ruta, destino) => mantenimientoApi.borrarFoto(id, ruta, destino) },
+        lasQuitadas,
+      );
     }
     onCerrar();
   };
@@ -157,10 +190,7 @@ export function CompletarSolicitudDialog({
             textoAgregar="Agregar foto"
             fotos={fotos}
             onAgregar={agregar}
-            onQuitar={(index) => {
-              setFotos((prev) => prev.filter((_, i) => i !== index));
-              setError(null);
-            }}
+            onQuitar={quitar}
             conError={Boolean(error)}
             idDelError={ID_DEL_ERROR}
             deshabilitado={enviando}

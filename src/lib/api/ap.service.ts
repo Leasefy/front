@@ -57,11 +57,41 @@ function textoDelMicro(body: Record<string, unknown>): string {
   return typeof body.error === 'string' ? body.error : '';
 }
 
+/**
+ * ¿El cuerpo es el SOBRE de error del micro (`{ statusCode, code, message }`,
+ * 02-10-2026)? Su `message` ya está escrito para la persona, en español.
+ */
+function esElSobre(body: Record<string, unknown>): boolean {
+  const { message } = body;
+  return (
+    typeof body.code === 'string' &&
+    body.code !== '' &&
+    ((typeof message === 'string' && message.trim() !== '') ||
+      (Array.isArray(message) && message.some((m) => String(m).trim() !== '')))
+  );
+}
+
 async function lanzarError(res: Response, contexto: 'extract' | 'bill' | 'vendor' | 'read'): Promise<never> {
   const body = ((await res.json().catch(() => ({}))) ?? {}) as Record<string, unknown>;
   const delMicro = textoDelMicro(body);
   const code = typeof body.code === 'string' ? body.code : undefined;
-  const falla = (status: number, mensaje: string) => new ApiError(status, mensaje, code, body);
+  const falla = (status: number, mensaje: string | string[]) => new ApiError(status, mensaje, code, body);
+  /*
+   * 🔴 Con el sobre del micro, SU frase (Nico, 02-10-2026): «Tu sesión
+   * expiró» o «No tienes permiso para registrar facturas» eran fijas por
+   * status y a veces mentían (un 401 `SESION_NO_VERIFICADA` no es una sesión
+   * vencida; un 403 de rol en «ver proveedores» no es «registrar facturas»).
+   * El `message` viaja tal cual —una lista, si el micro mandó varias— y
+   * `mensajeParaLaPersona` lo muestra. Sin sobre (un cuerpo viejo `{ error }`
+   * en inglés, o ningún cuerpo), la frase de siempre.
+   */
+  if (esElSobre(body)) {
+    const { message } = body;
+    throw falla(
+      res.status,
+      Array.isArray(message) ? message.map(String).filter((m) => m.trim() !== '') : String(message),
+    );
+  }
   if (res.status === 401) throw falla(401, 'Tu sesión expiró. Vuelve a iniciar sesión.');
   if (res.status === 403) throw falla(403, 'No tienes permiso para registrar facturas en esta agencia.');
   if (res.status === 413) throw falla(413, 'Los archivos son demasiado grandes (máximo 20 MB en total).');

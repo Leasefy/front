@@ -26,6 +26,14 @@ import {
 export interface DependenciasDelCierre<Solicitud> {
   subir: (solicitudId: string, foto: File, destino: DestinoDeLaFoto) => Promise<{ ruta: string }>
   completar: (solicitudId: string, cierre: { completionPhotoUrls: string[] }) => Promise<Solicitud>
+  /**
+   * `DELETE :id/fotos` (Nico, 02-10-2026): para las fotos del trabajo que ya
+   * subieron y se quitaron con la «x» antes de confirmar. Sin él no se borra
+   * nada (como antes).
+   */
+  borrar?: (solicitudId: string, ruta: string, destino: DestinoDeLaFoto) => Promise<unknown>
+  /** Dónde queda escrito un borrado que falló. Por defecto, el log del panel. */
+  anotar?: (mensaje: string, error: unknown) => void
 }
 
 export type ResultadoDelCierre<Solicitud> =
@@ -43,11 +51,20 @@ export type ResultadoDelCierre<Solicitud> =
 /** El campo del tope de las fotos del trabajo, en el sobre de error del back. */
 const CAMPO_DE_LAS_FOTOS_DEL_TRABAJO = 'completionPhotoUrls'
 
+/**
+ * `quitadas` (Nico, 02-10-2026): las rutas de las fotos del trabajo que YA
+ * subieron en este intento y la persona quitó con la «x». Al confirmar se
+ * BORRAN —su archivo y su lugar en la lista— antes del cierre: el back sólo
+ * deja borrar con la solicitud abierta, y si no se borran quedan huérfanas en
+ * Storage. Un borrado que falla no frena el cierre y queda en el log. El
+ * conjunto queda vacío cuando se intentaron.
+ */
 export async function completarConFotos<Solicitud>(
   solicitudId: string,
   fotos: readonly File[],
   yaSubidas: Map<File, string>,
-  { subir, completar }: DependenciasDelCierre<Solicitud>,
+  { subir, completar, borrar, anotar }: DependenciasDelCierre<Solicitud>,
+  quitadas: Set<string> = new Set(),
 ): Promise<ResultadoDelCierre<Solicitud>> {
   const pendientes = fotos.filter((f) => !yaSubidas.has(f))
   let fraseDelTope: string | undefined
@@ -75,6 +92,17 @@ export async function completarConFotos<Solicitud>(
   }
   // En el orden en que se eligieron: así se ven después.
   const completionPhotoUrls = fotos.map((f) => yaSubidas.get(f)).filter((r): r is string => !!r)
+  // Las quitadas con la «x», ANTES del cierre (después el back ya no deja).
+  // Una ruta que otra foto elegida todavía usa no se toca.
+  const aBorrar = [...quitadas].filter((ruta) => !completionPhotoUrls.includes(ruta))
+  quitadas.clear()
+  if (borrar && aBorrar.length > 0) {
+    await borrarUnaPorUna(solicitudId, aBorrar, {
+      borrar,
+      anotar,
+      cuando: 'al confirmar el cierre (la quitaste con la «x»)',
+    })
+  }
   const solicitud = await completar(solicitudId, { completionPhotoUrls })
   return { completada: true, solicitud }
 }
@@ -109,10 +137,30 @@ const log = createLoggerWithNamespace('Mantenimiento')
 export async function borrarLasDelIntento(
   solicitudId: string,
   yaSubidas: Map<File, string>,
-  { borrar, anotar = (mensaje, error) => log.warn(mensaje, error) }: DependenciasDelDeshacer,
+  { borrar, anotar }: DependenciasDelDeshacer,
+  /** Las que subieron y se quitaron con la «x» (02-10-2026): también son de este intento. */
+  quitadas: Set<string> = new Set(),
 ): Promise<ResultadoDelDeshacer> {
-  const rutas = [...new Set(yaSubidas.values())]
+  const rutas = [...new Set([...yaSubidas.values(), ...quitadas])]
   yaSubidas.clear()
+  quitadas.clear()
+  return borrarUnaPorUna(solicitudId, rutas, { borrar, anotar, cuando: 'al cancelar el cierre' })
+}
+
+/**
+ * Borra las rutas una por una (el back reescribe la lista de la fila en cada
+ * borrado: en paralelo se estorbarían). Nunca se rechaza: lo que falla queda
+ * escrito en el log con la ruta, la solicitud y cuándo pasó.
+ */
+async function borrarUnaPorUna(
+  solicitudId: string,
+  rutas: readonly string[],
+  {
+    borrar,
+    anotar = (mensaje, error) => log.warn(mensaje, error),
+    cuando,
+  }: DependenciasDelDeshacer & { cuando: string },
+): Promise<ResultadoDelDeshacer> {
   const resultado: ResultadoDelDeshacer = { borradas: [], fallidas: [] }
   for (const ruta of rutas) {
     try {
@@ -122,11 +170,11 @@ export async function borrarLasDelIntento(
       resultado.fallidas.push(ruta)
       try {
         anotar(
-          `No se pudo borrar la foto del trabajo «${ruta}» de la solicitud ${solicitudId} al cancelar el cierre.`,
+          `No se pudo borrar la foto del trabajo «${ruta}» de la solicitud ${solicitudId} ${cuando}.`,
           error,
         )
       } catch {
-        // El log nunca tumba el cierre del diálogo.
+        // El log nunca tumba el cierre ni el diálogo.
       }
     }
   }

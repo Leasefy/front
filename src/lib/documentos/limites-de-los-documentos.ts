@@ -6,7 +6,7 @@
  * mismos números y mismas frases. Si cambia uno, cambia el otro.
  */
 
-import { esDiaDelCalendario } from '@/lib/contratos/limites-del-contrato'
+import { leerFechaEscrita } from '@/lib/fechas/fecha-escrita'
 
 export const MAX_LARGO_NOMBRE_DE_LA_PLANTILLA = 200
 export const MAX_LARGO_VERSION_DE_LA_PLANTILLA = 20
@@ -27,22 +27,53 @@ export const MENSAJES_DE_LOS_DOCUMENTOS = {
   // y, desde el hueco 1 de S2-B2, también AL GENERAR (dentro de `overrides`,
   // 400 en el campo `overrides`): `GenerarDocumentoDialog` la pinta bajo
   // «Fecha de vigencia».
-  fechaDeVigencia: 'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).',
+  // 02-10-2026 (Nico: «¿no tenemos parsers…?»): la frase exacta la da el
+  // lector compartido (`lib/fechas/fecha-escrita.ts`); ésta es el respaldo.
+  fechaDeVigencia:
+    'La fecha de vigencia no es un día real del calendario. Escríbela con el día primero, por ejemplo 01/12/2026.',
   fechaDeVigenciaFueraDeRango: 'La fecha de vigencia debe estar entre el año 2000 y el 2100.',
 } as const
+
+/** Cómo se llama el campo en las frases del lector. Igual que en el back. */
+export const ETIQUETA_DE_LA_VIGENCIA = 'La fecha de vigencia'
 
 /**
  * Lo que el back diría de la fecha de vigencia, o `null` si está bien.
  *
- * Sólo opina sobre una fecha ya escrita entera (`AAAA-MM-DD`): mientras la
- * persona va tecleando no se le grita, y el diálogo tampoco le pregunta nada
- * al back con una fecha a medias.
+ * 🔴 02-10-2026 (Nico: «¿no tenemos parsers que solucionan eso? si no, constrúyelos»):
+ * la fecha se escribe como la escribe una persona («01/12/2026», «1/12/26»,
+ * «1 de diciembre de 2026», «dic 1 2026»…) y se lee con el lector compartido
+ * (`lib/fechas/fecha-escrita.ts`, espejo del back).
+ *
+ * Mientras la persona va tecleando no se le grita lo que todavía puede
+ * arreglar escribiendo (falta el año, aún no se entiende): eso se dice cuando
+ * sale del campo o pide generar (`terminada`). Lo que ya no tiene arreglo —un
+ * día que no existe («31/02/2026»), un mes de más de 12, fuera de 2000–2100—
+ * se dice de una.
  */
-export function errorDeLaFechaDeVigencia(valor: string | null | undefined): string | null {
-  const dia = valor?.trim() ?? ''
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return null
-  if (!esDiaDelCalendario(dia)) return MENSAJES_DE_LOS_DOCUMENTOS.fechaDeVigencia
-  return dia < FECHA_DE_VIGENCIA_DESDE || dia > FECHA_DE_VIGENCIA_HASTA
+export function errorDeLaFechaDeVigencia(
+  valor: string | null | undefined,
+  { terminada = false }: { terminada?: boolean } = {},
+): string | null {
+  if (!valor || valor.trim() === '') return null
+  const lectura = leerFechaEscrita(valor, { etiqueta: ETIQUETA_DE_LA_VIGENCIA })
+  if (!lectura.ok) {
+    return lectura.motivo === 'NO_EXISTE' || terminada ? lectura.mensaje : null
+  }
+  return lectura.iso < FECHA_DE_VIGENCIA_DESDE || lectura.iso > FECHA_DE_VIGENCIA_HASTA
     ? MENSAJES_DE_LOS_DOCUMENTOS.fechaDeVigenciaFueraDeRango
     : null
+}
+
+/**
+ * La fecha de vigencia en `AAAA-MM-DD` —lo que viaja al back—, o `null` si no
+ * se entiende o está fuera de 2000–2100.
+ */
+export function vigenciaComoIso(valor: string | null | undefined): string | null {
+  if (!valor || valor.trim() === '') return null
+  const lectura = leerFechaEscrita(valor)
+  if (!lectura.ok) return null
+  return lectura.iso < FECHA_DE_VIGENCIA_DESDE || lectura.iso > FECHA_DE_VIGENCIA_HASTA
+    ? null
+    : lectura.iso
 }

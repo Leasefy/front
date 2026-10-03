@@ -49,7 +49,10 @@ import { cn } from '@/lib/utils';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { errorDeLaFechaDeVigencia } from '@/lib/documentos/limites-de-los-documentos';
+import {
+  errorDeLaFechaDeVigencia,
+  vigenciaComoIso,
+} from '@/lib/documentos/limites-de-los-documentos';
 import {
   elSelectorSirve,
   loQueDiceUnSelector,
@@ -151,6 +154,14 @@ export function GenerarDocumentoDialog({
    * el aviso general. Se borra al escribir en ese campo.
    */
   const [vigenciaRechazada, setVigenciaRechazada] = useState<string | null>(null);
+  /*
+   * 02-10-2026 (Nico: «¿no tenemos parsers…?»): la fecha de vigencia se
+   * escribe como la escribe una persona («01/12/2026», «1 de diciembre de
+   * 2026»…). Lo que todavía se puede arreglar tecleando (falta el año, aún no
+   * se entiende) se dice cuando sale del campo o pide generar: `true` desde
+   * ese momento hasta que vuelve a escribir.
+   */
+  const [vigenciaTerminada, setVigenciaTerminada] = useState(false);
 
   const plantilla = useMemo(
     () => plantillas.find((p) => p.codigo === codigo) ?? null,
@@ -198,6 +209,7 @@ export function GenerarDocumentoDialog({
     setValores({});
     setError(null);
     setVigenciaRechazada(null);
+    setVigenciaTerminada(false);
     // `fechaDeVigencia` es SÓLO de la carta de incremento: es lo que fija el
     // tope del art. 20. Si sobrevive al cierre, el próximo documento —un
     // inventario, un acta— se prepara con un parámetro que no es suyo.
@@ -213,16 +225,24 @@ export function GenerarDocumentoDialog({
    */
   const escribirCampo = useCallback((nombre: string, valor: string) => {
     setValores((v) => ({ ...v, [nombre]: valor }));
-    if (nombre === 'fechaDeVigencia') setVigenciaRechazada(null);
+    if (nombre !== 'fechaDeVigencia') return;
+    setVigenciaRechazada(null);
+    setVigenciaTerminada(false);
     // 🔴 02-10-2026 · Un día que no existe (`2026-02-31`) o fuera de 2000–2100
     // no se le pregunta al back: se dice bajo el campo con su misma frase.
-    if (
-      nombre === 'fechaDeVigencia' &&
-      /^\d{4}-\d{2}-\d{2}$/.test(valor) &&
-      !errorDeLaFechaDeVigencia(valor)
-    ) {
-      setVigenciaPedida(valor);
-    }
+    // Con el año de cuatro cifras («01/12/2026», «1 de diciembre de 2026») ya
+    // está entera y se le pregunta el tope de una; con dos («1/12/26») se
+    // espera a que salga del campo: «1/12/20» también es una fecha y pediría
+    // el tope de 2020 a mitad de camino.
+    const iso = vigenciaComoIso(valor);
+    if (iso && /\d{4}/.test(valor)) setVigenciaPedida(iso);
+  }, []);
+
+  /** Salir de la fecha de vigencia: ahí se dice lo que falta y se pide el tope. */
+  const terminarLaVigencia = useCallback((valor: string) => {
+    setVigenciaTerminada(true);
+    const iso = vigenciaComoIso(valor);
+    if (iso) setVigenciaPedida(iso);
   }, []);
 
   // Los campos prellenados los calcula el backend con los datos reales del
@@ -329,7 +349,8 @@ export function GenerarDocumentoDialog({
   // `@FechaEntre`): con ella no se genera la carta.
   const tieneVigencia = preparacion?.campos.some((c) => c.nombre === 'fechaDeVigencia') ?? false;
   const errorDeLaVigencia = tieneVigencia
-    ? (errorDeLaFechaDeVigencia(valores.fechaDeVigencia) ?? vigenciaRechazada)
+    ? (errorDeLaFechaDeVigencia(valores.fechaDeVigencia, { terminada: vigenciaTerminada }) ??
+      vigenciaRechazada)
     : null;
 
   /* Una propia se puede generar en cuanto hay sobre qué; si no usa variables,
@@ -383,6 +404,17 @@ export function GenerarDocumentoDialog({
     }
 
     if (!codigo || !preparacion) return;
+    // La fecha de vigencia que todavía no se entiende se dice bajo el campo y
+    // no se manda: el back diría lo mismo.
+    if (
+      tieneVigencia &&
+      errorDeLaFechaDeVigencia(valores.fechaDeVigencia, { terminada: true })
+    ) {
+      setVigenciaTerminada(true);
+      return;
+    }
+    // Viaja en AAAA-MM-DD (el back también la lee escrita, pero no hace falta).
+    const vigenciaIso = tieneVigencia ? vigenciaComoIso(valores.fechaDeVigencia) : null;
     setGenerando(true);
     setError(null);
     try {
@@ -390,7 +422,7 @@ export function GenerarDocumentoDialog({
         codigo,
         contractId: contractId || undefined,
         consignacionId: consignacionId || undefined,
-        overrides: valores,
+        overrides: vigenciaIso ? { ...valores, fechaDeVigencia: vigenciaIso } : valores,
         name: preparacion.nombreSugerido,
       });
       toast.success('Documento generado', { description: documento.name });
@@ -788,7 +820,15 @@ export function GenerarDocumentoDialog({
                             aria-describedby={
                               campo.nombre === 'fechaDeVigencia' ? `${id}-error` : undefined
                             }
+                            placeholder={
+                              campo.nombre === 'fechaDeVigencia' ? 'Por ejemplo 01/12/2026' : undefined
+                            }
                             onChange={(e) => escribirCampo(campo.nombre, e.target.value)}
+                            onBlur={
+                              campo.nombre === 'fechaDeVigencia'
+                                ? (e) => terminarLaVigencia(e.target.value)
+                                : undefined
+                            }
                           />
                         )}
                         {campo.nombre === 'fechaDeVigencia' && (

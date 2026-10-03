@@ -200,3 +200,95 @@ describe('borrarLasDelIntento', () => {
     expect(borrar).toHaveBeenCalledTimes(1)
   })
 })
+
+/**
+ * 🔴 Quitar con la «x» una foto del trabajo que YA subió y confirmar la BORRA
+ * (Nico, 02-10-2026), con el `DELETE :id/fotos` de siempre y antes del cierre
+ * (el back sólo deja borrar con la solicitud abierta). Si no, el archivo
+ * quedaba huérfano en Storage.
+ */
+describe('completarConFotos — las quitadas con la «x»', () => {
+  it('🔴 se borran ANTES del cierre, con destino «trabajo», y no van en la lista', async () => {
+    const orden: string[] = []
+    const d = dobles()
+    d.completar.mockImplementation(async (id, cierre) => {
+      orden.push('completar')
+      return { id, ...cierre }
+    })
+    const borrar = vi.fn(async (_id: string, ruta: string) => {
+      orden.push(`borrar ${ruta}`)
+    })
+    const a = foto('a.jpg')
+    const yaSubidas = new Map<File, string>([[a, 'agencia/sol-1/a.jpg']])
+    const quitadas = new Set(['agencia/sol-1/b.jpg'])
+
+    const r = await completarConFotos('sol-1', [a], yaSubidas, { ...d, borrar }, quitadas)
+
+    expect(borrar).toHaveBeenCalledWith('sol-1', 'agencia/sol-1/b.jpg', 'trabajo')
+    expect(orden).toEqual(['borrar agencia/sol-1/b.jpg', 'completar'])
+    expect(d.completar).toHaveBeenCalledWith('sol-1', { completionPhotoUrls: ['agencia/sol-1/a.jpg'] })
+    expect(r.completada).toBe(true)
+    // Ya se intentó: un segundo cierre no las vuelve a borrar.
+    expect(quitadas.size).toBe(0)
+  })
+
+  it('🔴 un borrado que falla no frena el cierre y queda escrito en el log', async () => {
+    const d = dobles()
+    const fallo = new ApiError(503, 'No pudimos borrar el archivo.', 'FOTO_NO_BORRADA')
+    const borrar = vi.fn().mockRejectedValue(fallo)
+    const anotar = vi.fn()
+
+    const r = await completarConFotos(
+      'sol-1',
+      [],
+      new Map(),
+      { ...d, borrar, anotar },
+      new Set(['agencia/sol-1/b.jpg']),
+    )
+
+    expect(r.completada).toBe(true)
+    expect(d.completar).toHaveBeenCalledWith('sol-1', { completionPhotoUrls: [] })
+    expect(anotar).toHaveBeenCalledTimes(1)
+    expect(anotar.mock.calls[0]![0]).toContain('agencia/sol-1/b.jpg')
+    expect(anotar.mock.calls[0]![0]).toContain('al confirmar el cierre')
+    expect(anotar.mock.calls[0]![1]).toBe(fallo)
+  })
+
+  it('si otra subida falla, NO se cierra y las quitadas quedan para el próximo intento (o para «Cancelar»)', async () => {
+    const d = dobles()
+    d.subir.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    const borrar = vi.fn()
+    const quitadas = new Set(['agencia/sol-1/b.jpg'])
+
+    const r = await completarConFotos('sol-1', [foto('c.jpg')], new Map(), { ...d, borrar }, quitadas)
+
+    expect(r.completada).toBe(false)
+    expect(borrar).not.toHaveBeenCalled()
+    expect(quitadas).toEqual(new Set(['agencia/sol-1/b.jpg']))
+  })
+
+  it('una ruta que otra foto elegida todavía usa no se borra', async () => {
+    const d = dobles()
+    const borrar = vi.fn()
+    const a = foto('a.jpg')
+    await completarConFotos(
+      'sol-1',
+      [a],
+      new Map([[a, 'agencia/sol-1/a.jpg']]),
+      { ...d, borrar },
+      new Set(['agencia/sol-1/a.jpg']),
+    )
+    expect(borrar).not.toHaveBeenCalled()
+  })
+
+  it('«Cancelar» también borra las quitadas: eran de este intento', async () => {
+    const borrar = vi.fn().mockResolvedValue(undefined)
+    const quitadas = new Set(['agencia/sol-1/b.jpg'])
+    await borrarLasDelIntento('sol-1', new Map([[foto('a.jpg'), 'agencia/sol-1/a.jpg']]), { borrar }, quitadas)
+    expect(borrar.mock.calls).toEqual([
+      ['sol-1', 'agencia/sol-1/a.jpg', 'trabajo'],
+      ['sol-1', 'agencia/sol-1/b.jpg', 'trabajo'],
+    ])
+    expect(quitadas.size).toBe(0)
+  })
+})

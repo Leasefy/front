@@ -359,7 +359,7 @@ describe('GenerarDocumentoDialog', () => {
     await act(async () => escribir(campo, '2026-02-31'))
     expect(api.preparar).not.toHaveBeenCalled()
     expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(
-      'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).',
+      'La fecha de vigencia no es un día real del calendario: febrero de 2026 tiene 28 días.',
     )
     expect(campo.getAttribute('aria-invalid')).toBe('true')
     expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
@@ -380,7 +380,8 @@ describe('GenerarDocumentoDialog', () => {
   })
 
   it('🔴 02-10 · si el back rechaza la fecha de vigencia AL GENERAR (`overrides`), la frase sale bajo el campo, no en el aviso', async () => {
-    const frase = 'La fecha de vigencia no es un día real del calendario (usa AAAA-MM-DD).'
+    const frase =
+      'La fecha de vigencia no es un día real del calendario: febrero de 2026 tiene 28 días.'
     api.generar.mockRejectedValueOnce(
       new ApiError(400, [frase], 'DATOS_INVALIDOS', {
         statusCode: 400,
@@ -405,6 +406,92 @@ describe('GenerarDocumentoDialog', () => {
     await act(async () => escribir(campo, '2026-12-01'))
     expect(q('#doc-campo-fechaDeVigencia-error')?.textContent ?? '').toBe('')
     expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
+  })
+
+  /*
+   * 🔴 02-10-2026 (Nico: «¿no tenemos parsers que solucionan eso? si no, constrúyelos»):
+   * la fecha de vigencia se escribe como la escribe una persona, con el
+   * lector compartido (`lib/fechas/fecha-escrita.ts`, espejo del back).
+   */
+  describe('la fecha de vigencia escrita como la escribe una persona', () => {
+    async function laCarta() {
+      await abrir()
+      await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+      await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+      api.preparar.mockClear()
+      return q<HTMLInputElement>('[data-testid="doc-campo-fechaDeVigencia"]')!
+    }
+
+    const salir = (campo: HTMLInputElement) =>
+      act(async () => {
+        campo.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      })
+
+    it.each(['01/12/2026', '1/12/2026', '1 de diciembre de 2026', 'dic 1 2026'])(
+      '«%s» pide el tope con el día en AAAA-MM-DD, sin error',
+      async (escrita) => {
+        const campo = await laCarta()
+        await act(async () => escribir(campo, escrita))
+        expect(api.preparar).toHaveBeenCalledWith(
+          expect.objectContaining({ codigo: 'CARTA_INCREMENTO', fechaDeVigencia: '2026-12-01' }),
+        )
+        // Lo escrito se queda como lo escribió la persona.
+        expect(campo.value).toBe(escrita)
+        expect(q('#doc-campo-fechaDeVigencia-error')?.textContent ?? '').toBe('')
+        expect(campo.getAttribute('aria-invalid')).toBe('false')
+      },
+    )
+
+    it('«1/12/26» (año de dos cifras) pide el tope al salir del campo, no a mitad de camino («1/12/20» también es una fecha)', async () => {
+      const campo = await laCarta()
+      await act(async () => escribir(campo, '1/12/2'))
+      await act(async () => escribir(campo, '1/12/26'))
+      expect(api.preparar).not.toHaveBeenCalled()
+      await salir(campo)
+      expect(api.preparar).toHaveBeenCalledWith(
+        expect.objectContaining({ fechaDeVigencia: '2026-12-01' }),
+      )
+    })
+
+    it('🔴 lo que no se entiende no se grita mientras teclea: al salir del campo dice cómo escribirla, con un ejemplo, y no se genera', async () => {
+      const campo = await laCarta()
+      await act(async () => escribir(campo, 'el otro mes'))
+      expect(q('#doc-campo-fechaDeVigencia-error')?.textContent ?? '').toBe('')
+
+      await salir(campo)
+      expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(
+        'No entendimos la fecha de vigencia «el otro mes». Escríbela con el día primero, por ejemplo 01/12/2026 o «1 de diciembre de 2026».',
+      )
+      expect(campo.getAttribute('aria-invalid')).toBe('true')
+      expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+      expect(api.preparar).not.toHaveBeenCalled()
+
+      // Volver a escribir la limpia.
+      await act(async () => escribir(campo, '1 de diciembre de 2026'))
+      expect(q('#doc-campo-fechaDeVigencia-error')?.textContent ?? '').toBe('')
+      expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
+    })
+
+    it('sin el año: al salir del campo lo dice', async () => {
+      const campo = await laCarta()
+      await act(async () => escribir(campo, '1 de diciembre'))
+      await salir(campo)
+      expect(q('#doc-campo-fechaDeVigencia-error')?.textContent).toBe(
+        'A la fecha de vigencia le falta el año. Escríbela completa, por ejemplo 01/12/2026.',
+      )
+    })
+
+    it('🔴 generar manda la fecha en AAAA-MM-DD aunque se haya escrito en letras', async () => {
+      api.generar.mockResolvedValue({ id: 'd-9', name: 'Carta de incremento' })
+      const campo = await laCarta()
+      await act(async () => escribir(campo, '1 de diciembre de 2026'))
+      await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+      expect(api.generar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          overrides: expect.objectContaining({ fechaDeVigencia: '2026-12-01' }),
+        }),
+      )
+    })
   })
 
   it('🔴 al repreguntar el tope no se pierde lo que la persona ya escribió', async () => {

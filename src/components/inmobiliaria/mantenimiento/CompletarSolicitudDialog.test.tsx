@@ -386,3 +386,106 @@ describe('Marcar como completada — cancelar borra lo que subió este intento',
     expect(h.borrarFoto).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * 🔴 Quitar con la «x» una foto del trabajo que YA subió y confirmar BORRA su
+ * archivo (Nico, 02-10-2026), con `DELETE :id/fotos` antes del cierre. Antes
+ * quedaba huérfana en Storage.
+ */
+describe('Marcar como completada — la foto quitada con la «x» se borra al confirmar', () => {
+  /** Sube `a.jpg` y deja fallar `b.jpg`: la solicitud sigue abierta y `a.jpg` ya está arriba. */
+  async function aSubioYBFallo() {
+    h.subirFoto.mockImplementation(async (_id: string, f: File) => {
+      if (f.name === 'b.jpg') throw new ApiError(503, 'No se pudo guardar la foto.', 'FOTO_NO_GUARDADA');
+      return { ruta: `agencia/sol-7/${f.name}`, completionPhotoUrls: [] };
+    });
+    await elegir(foto('a.jpg'), foto('b.jpg'));
+    await confirmar();
+    expect(h.completar).not.toHaveBeenCalled();
+    h.subirFoto.mockReset().mockImplementation(async (_id: string, f: File) => ({
+      ruta: `agencia/sol-7/${f.name}`,
+      completionPhotoUrls: [],
+    }));
+  }
+
+  async function quitarLaFoto(n: number) {
+    const boton = enDocumento<HTMLButtonElement>(`[aria-label="Quitar la foto ${n}"]`)!;
+    await act(async () => {
+      boton.click();
+    });
+  }
+
+  it('🔴 se borra (DELETE con destino «trabajo») ANTES del cierre, y el cierre va sin ella', async () => {
+    const orden: string[] = [];
+    h.borrarFoto.mockImplementation(async (_id: string, ruta: string) => {
+      orden.push(`borrar ${ruta}`);
+      return { ruta, completionPhotoUrls: [] };
+    });
+    h.completar.mockImplementation(async (id: string, cierre: object) => {
+      orden.push('completar');
+      return { ...SOLICITUD, id, status: 'completed', ...cierre };
+    });
+    const { onCompletada } = montar();
+    await aSubioYBFallo();
+
+    // La «x» de `a.jpg`, que ya había subido.
+    await quitarLaFoto(1);
+    expect(todos('[data-testid="foto-del-trabajo"]')).toHaveLength(1);
+    // Quitarla no borra nada todavía: se borra al confirmar.
+    expect(h.borrarFoto).not.toHaveBeenCalled();
+
+    await confirmar();
+
+    expect(h.borrarFoto.mock.calls).toEqual([['sol-7', 'agencia/sol-7/a.jpg', 'trabajo']]);
+    expect(orden).toEqual(['borrar agencia/sol-7/a.jpg', 'completar']);
+    expect(h.completar).toHaveBeenCalledWith('sol-7', { completionPhotoUrls: ['agencia/sol-7/b.jpg'] });
+    expect(onCompletada).toHaveBeenCalledTimes(1);
+  });
+
+  it('🔴 un borrado que falla no bloquea el cierre y queda escrito en el log', async () => {
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      h.borrarFoto.mockRejectedValue(new ApiError(503, 'No pudimos borrar el archivo.', 'FOTO_NO_BORRADA'));
+      const { onCompletada } = montar();
+      await aSubioYBFallo();
+      await quitarLaFoto(1);
+
+      await confirmar();
+
+      expect(h.completar).toHaveBeenCalledWith('sol-7', { completionPhotoUrls: ['agencia/sol-7/b.jpg'] });
+      expect(onCompletada).toHaveBeenCalledTimes(1);
+      const escrito = aviso.mock.calls.map((c) => c.map(String).join(' ')).join('\n');
+      expect(escrito).toContain('agencia/sol-7/a.jpg');
+      expect(escrito).toContain('al confirmar el cierre');
+    } finally {
+      aviso.mockRestore();
+    }
+  });
+
+  it('quitar una que NO había subido no borra nada', async () => {
+    montar();
+    await elegir(foto('a.jpg'), foto('b.jpg'));
+    await quitarLaFoto(2);
+    await confirmar();
+    expect(h.borrarFoto).not.toHaveBeenCalled();
+    expect(h.completar).toHaveBeenCalledWith('sol-7', { completionPhotoUrls: ['agencia/sol-7/a.jpg'] });
+  });
+
+  it('si en vez de confirmar se cancela, la quitada también se borra (era de este intento)', async () => {
+    montar();
+    await aSubioYBFallo();
+    await quitarLaFoto(1);
+    const dialogo = enDocumento('[data-testid="completar-solicitud"]')!;
+    const cancelar = Array.from(dialogo.querySelectorAll('button')).find(
+      (b) => b.textContent === 'inmobiliaria.mantenimiento.cancel',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      cancelar.click();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(h.borrarFoto).toHaveBeenCalledWith('sol-7', 'agencia/sol-7/a.jpg', 'trabajo');
+    expect(h.completar).not.toHaveBeenCalled();
+  });
+});

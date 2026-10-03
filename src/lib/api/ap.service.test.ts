@@ -11,6 +11,7 @@ vi.mock('./agent-fetch', () => ({ agentFetch: (...a: unknown[]) => agentFetchMoc
 
 import { apApi, ApUnavailableError, mediaTypeDeFactura, validarArchivosFactura } from './ap.service';
 import { ApiError } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const AGENCY = '00000000-0000-0000-0000-000000000001';
 
@@ -180,3 +181,50 @@ describe('apApi.createBill / createVendor / listados', () => {
     expect((de500 as ApiError).detalle?.referencia).toBe('abcd1234');
   });
 });
+
+/*
+ * 🔴 02-10-2026 (Nico, ola «seguimiento 4»): con el sobre de error del micro
+ * (`{ statusCode, code, message }`) se muestra SU `message`, no la frase fija
+ * por status. Sin sobre, la frase de siempre.
+ */
+describe('apApi — la frase del sobre del micro gana a la frase fija', () => {
+  const body = { vendorId: 'v1', invoiceNumber: 'FE-1', amountCop: 1, costCenterCode: 'x', issuedAt: 'a', dueDate: 'b' };
+
+  it.each([
+    [401, 'SESION_NO_VERIFICADA', 'No pudimos verificar tu sesión. Vuelve a entrar e intenta de nuevo.'],
+    [403, 'SIN_PERMISO', 'Tu rol no puede ver los proveedores. Pídele a un administrador de tu inmobiliaria que te dé acceso.'],
+    [409, 'FACTURA_REPETIDA', 'Ya registraste la factura FE-1 de este proveedor el 1 de septiembre.'],
+    [413, 'ARCHIVOS_MUY_GRANDES', 'Los archivos pesan 31 MB y el máximo es 20 MB entre todos.'],
+    [503, 'SIN_BASE', 'No pudimos guardar la factura: algo falló de nuestro lado. Prueba de nuevo en un momento.'],
+  ])('%i con sobre (%s): el `message` del micro, tal cual, y mensajeParaLaPersona lo muestra', async (status, code, message) => {
+    agentFetchMock.mockResolvedValueOnce(respuesta(status, { statusCode: status, code, message, error: 'Old english text' }));
+    const err = (await apApi.createBill(AGENCY, body).catch((e: unknown) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(status);
+    expect(err.code).toBe(code);
+    expect(err.message).toBe(message);
+    expect(mensajeParaLaPersona(err)).toContain(message);
+  });
+
+  it('un `message` en lista (varias frases) llega como lista', async () => {
+    agentFetchMock.mockResolvedValueOnce(
+      respuesta(400, { statusCode: 400, code: 'DATOS_INVALIDOS', message: ['Falta el proveedor.', 'Falta el número.'], campos: [] }),
+    );
+    const err = (await apApi.createBill(AGENCY, body).catch((e: unknown) => e)) as ApiError;
+    expect(err.messages).toEqual(['Falta el proveedor.', 'Falta el número.']);
+    expect(mensajeParaLaPersona(err)).toBe('Falta el proveedor. · Falta el número.');
+  });
+
+  it('sin sobre (el cuerpo viejo en inglés, o ninguno): la frase de siempre', async () => {
+    agentFetchMock.mockResolvedValueOnce(respuesta(401, { error: 'Unauthorized' }));
+    await expect(apApi.listVendors(AGENCY)).rejects.toThrow('Tu sesión expiró. Vuelve a iniciar sesión.');
+    agentFetchMock.mockResolvedValueOnce(respuesta(403, { success: false, error: 'Forbidden' }));
+    await expect(apApi.createBill(AGENCY, body)).rejects.toThrow('No tienes permiso para registrar facturas en esta agencia.');
+    agentFetchMock.mockResolvedValueOnce(new Response('', { status: 503 }));
+    await expect(apApi.createBill(AGENCY, body)).rejects.toThrow('El servicio no está disponible en este momento. Intenta más tarde.');
+    // Un `code` sin frase tampoco es un sobre.
+    agentFetchMock.mockResolvedValueOnce(respuesta(403, { code: 'SIN_PERMISO', message: '' }));
+    await expect(apApi.createBill(AGENCY, body)).rejects.toThrow('No tienes permiso para registrar facturas en esta agencia.');
+  });
+});
+

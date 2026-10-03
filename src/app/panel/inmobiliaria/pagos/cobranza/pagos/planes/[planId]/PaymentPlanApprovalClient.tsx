@@ -11,11 +11,17 @@
  *  - Inline Rechazar form: canned 6-reason dropdown + optional 500-char comment.
  *  - Inline Modificar form: range slider hard-capped at agency.maxDiscount.
  *  - Realtime: cartera_payments channel triggers a single refetch on every event.
+ *  - 🔴 «El inquilino aceptó» (03-10-2026, Nico S5 Q4, contra la recomendada):
+ *    el panel TAMBIÉN exige la aprobación de la inmobiliaria para aceptar en
+ *    nombre del inquilino. Sin aprobar, la pantalla lo explica y ofrece
+ *    «Aprobar primero»; si el micro igual responde 409 `ACUERDO_SIN_APROBAR`
+ *    (otra persona, otra pestaña), se dice lo mismo con la frase del servidor.
  */
 
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -41,9 +47,12 @@ import { Slider, NumberInput } from '@leasefy/cadence'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import {
+  CODIGO_ACUERDO_SIN_APROBAR,
   usePaymentPlanApproval,
   type RejectReasonSlug,
 } from '@/lib/hooks/cobranza/use-payment-plan-approval'
+import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
@@ -91,7 +100,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     approvePlan,
     rejectPlan,
     modifyPlan,
+    acceptPlan,
   } = usePaymentPlanApproval({ planId, canApprove })
+  const aparecer = useAparecer()
 
   // Realtime — single refetch on each cartera_payments event for this plan.
   const onUpdate = useCallback(() => {
@@ -112,6 +123,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   const [actionLoading, setActionLoading] = useState<boolean>(false)
   const [wompiLink, setWompiLink] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  /** La frase del 409 `ACUERDO_SIN_APROBAR` cuando el servidor dijo que no. */
+  const [sinAprobarDelServidor, setSinAprobarDelServidor] = useState<string | null>(null)
+  const [aceptando, setAceptando] = useState<boolean>(false)
 
   // Sync wompiLink from plan (in case refetch picks up another operator's approve).
   useEffect(() => {
@@ -263,6 +277,51 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   const actionsDisabled = !canApprove || !isPending || actionLoading
 
+  // 🔴 Aprobado = la marca del servidor (`operatorApprovedAt`; el hook la pone
+  // al aprobar acá y la quita si el servidor responde que no). El enlace de
+  // Wompi NO sirve de señal: la oferta ya trae uno antes de aprobar.
+  const estaAprobado = Boolean(plan.operatorApprovedAt)
+  // Espera la aceptación del inquilino: ofrecido (aprobado o no). `approved` es
+  // el estado local justo después de aprobar acá (el servidor sigue diciendo
+  // `offered` con la marca de aprobación).
+  const esperaAceptacion =
+    plan.status === 'offered' || plan.status === 'pending' || plan.status === 'approved'
+  const puedeRegistrarAceptacion = esperaAceptacion && estaAprobado && !sinAprobarDelServidor
+
+  const handleAceptar = async (): Promise<void> => {
+    setAceptando(true)
+    setActionError(null)
+    try {
+      const res = await acceptPlan()
+      if ('error' in res) {
+        if (res.code === CODIGO_ACUERDO_SIN_APROBAR) {
+          setSinAprobarDelServidor(
+            mensajeParaLaPersona(res.fallo, {
+              porDefecto: t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobar'),
+              accion: 'registrar la aceptación',
+            }),
+          )
+        } else {
+          setActionError(
+            mensajeDeLaAccion(res, {
+              porDefecto: 'No pudimos registrar la aceptación.',
+              accion: 'registrar la aceptación',
+            }),
+          )
+        }
+      } else {
+        setToast(t('inmobiliaria.ai.cobranza.planes.aceptacion.registrado'))
+      }
+    } finally {
+      setAceptando(false)
+    }
+  }
+
+  const handleAprobarPrimero = async (): Promise<void> => {
+    setSinAprobarDelServidor(null)
+    await handleAprobar()
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -409,6 +468,66 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </Button>
       </div>
+
+      {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
+      {canApprove && esperaAceptacion && (
+        <AnimatePresence mode="wait" initial={false}>
+          {puedeRegistrarAceptacion ? (
+            <motion.section
+              key="registrar-aceptacion"
+              {...aparecer}
+              data-testid="plan-registrar-aceptacion"
+              className="space-y-2 rounded-md border border-border bg-surface p-4"
+            >
+              <div className="text-sm font-medium text-fg">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.titulo')}
+              </div>
+              <p className="text-sm text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.ayuda')}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                data-testid="plan-registrar-aceptacion-boton"
+                onClick={() => void handleAceptar()}
+                disabled={aceptando || actionLoading}
+                isLoading={aceptando}
+                hideArrow
+              >
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.registrar')}
+              </Button>
+            </motion.section>
+          ) : (
+            <motion.section
+              key="aprobar-primero"
+              {...aparecer}
+              role="status"
+              data-testid="plan-sin-aprobar"
+              className="space-y-2 rounded-md border border-warning/30 bg-warning-soft p-4"
+            >
+              <div className="text-sm font-medium text-warning">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobarTitulo')}
+              </div>
+              <p className="text-sm text-fg">
+                {sinAprobarDelServidor ?? t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobar')}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                data-testid="plan-aprobar-primero"
+                onClick={() => void handleAprobarPrimero()}
+                disabled={aprobarDisabled}
+                isLoading={actionLoading}
+                title={aprobarDisabledTitle || undefined}
+                hideArrow
+              >
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.aprobarPrimero')}
+              </Button>
+            </motion.section>
+          )}
+        </AnimatePresence>
+      )}
 
       {actionError && (
         <div

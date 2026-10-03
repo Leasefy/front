@@ -204,6 +204,10 @@ export const finanzasApi = {
     if (devolucion.motivoDetalle) f.append('motivoDetalle', devolucion.motivoDetalle);
     if (devolucion.codigoDelBanco) f.append('codigoDelBanco', devolucion.codigoDelBanco);
     f.append('fechaDeLaDevolucion', devolucion.fechaDeLaDevolucion);
+    // 🔴 Ola E: la entrada del extracto con la que volvió la plata (opcional).
+    if (devolucion.movimientoBancarioId) {
+      f.append('movimientoBancarioId', devolucion.movimientoBancarioId);
+    }
     f.append('soporte', devolucion.soporte);
     const token = getAccessToken();
     let respuesta: Response;

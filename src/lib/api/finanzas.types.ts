@@ -485,7 +485,48 @@ export interface GiroDevuelto {
   fechaDelNuevoGiro?: string | null;
   resueltoAt?: string | null;
   createdAt?: string;
+  /**
+   * 🔴 Ola E (03-10-2026). Todo opcional: un back anterior no lo manda.
+   * Cuándo se volvió a girar (lo cierra SOLO el pago del lote o «Marcar como
+   * girada») y la fecha con la que quedó el egreso.
+   */
+  regiradoAt?: string | null;
+  fechaDelEgreso?: string | null;
+  /** Cuándo se le avisó al propietario («Tu giro volvió»). */
+  avisadoAt?: string | null;
+  /** El motivo es de la cuenta: se regira cuando se corrija. */
+  exigeCorregirCuenta?: boolean;
+  /** Retenido: ni lote ni aprobación suelta hasta un cambio de cuenta aprobado. */
+  retenidoHastaCorregirLaCuenta?: boolean;
+  /** El cambio de cuenta pedido después de la devolución, si hay. */
+  cambioDeCuenta?: { id: string; estado: string; aprobadoAt: string | null } | null;
+  /** La entrada del extracto con la que volvió la plata, si se enlazó. */
+  lineaDelExtracto?: LineaDeLaDevolucion | null;
 }
+
+/** 🔴 Ola E: una línea del extracto (la entrada con la que volvió la plata). */
+export interface LineaDeLaDevolucion {
+  movimientoId: string;
+  /** `YYYY-MM-DD`. */
+  fecha: string;
+  valorCop: number;
+  descripcion: string;
+  /** Ya conciliada como la devolución de este giro. */
+  yaEnlazada?: boolean;
+}
+
+/** 🔴 Ola E: `GET giros-devueltos/lineas-del-extracto?dispersionId=`. */
+export interface LineasDeLaDevolucion {
+  /** `false` = falta la migración de las salidas: se registra sin la línea. */
+  disponible: boolean;
+  motivo: string | null;
+  lineas: LineaDeLaDevolucion[];
+}
+
+/** 🔴 Ola E: la reversa en el libro del giro devuelto. */
+export type ReversaDelGiroDevuelto =
+  | { generado: true; asientoId: string; numero: number; yaExistia: boolean }
+  | { generado: false; motivo: string };
 
 export interface GirosDevueltos extends PuedeFaltarLaMigracion {
   giros: GiroDevuelto[];
@@ -503,6 +544,13 @@ export interface QueHacerConLaDevolucion {
 export interface DevolucionRegistrada {
   giro: GiroDevuelto;
   queHacer: QueHacerConLaDevolucion;
+  /** 🔴 Ola E (opcionales: un back anterior no los manda). Qué pasó con el aviso. */
+  aviso?: { estado: 'ENVIADO' | 'SIMULADO' | 'SIN_CORREO' | 'FALLIDO' | 'NO_DISPONIBLE' };
+  /** La reversa en el libro (o por qué no hubo). */
+  asiento?: ReversaDelGiroDevuelto | null;
+  retenidoHastaCorregirLaCuenta?: boolean;
+  lineaDelExtracto?: LineaDeLaDevolucion | null;
+  bitacora?: { entradas: number };
 }
 
 export interface NuevaDevolucion {
@@ -514,6 +562,8 @@ export interface NuevaDevolucion {
   fechaDeLaDevolucion: string;
   /** 🔴 Obligatorio (23-09): el extracto o comprobante del banco. */
   soporte: File;
+  /** 🔴 Ola E: la entrada del extracto con la que volvió la plata (opcional). */
+  movimientoBancarioId?: string;
 }
 
 export interface Regiro {

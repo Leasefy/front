@@ -17,7 +17,18 @@ void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // El documento no usa `useI18n`: sus palabras viven en `textos.ts` (ver el
-// porqué allá). No hay nada que mockear.
+// porqué allá). Sólo las secciones del panel que leen la API (el anticipo y el
+// saldo a favor al terminar) se cambian por una marca.
+vi.mock('./AnticipoDelContrato', () => ({
+  AnticipoDelContratoSeccion: ({ contractId }: { contractId: string }) => (
+    <div data-testid={`anticipo-${contractId}`} />
+  ),
+}));
+vi.mock('./SaldoAFavorAlTerminar', () => ({
+  SaldoAFavorAlTerminarSeccion: ({ contractId }: { contractId: string }) => (
+    <div data-testid={`saldo-al-terminar-${contractId}`} />
+  ),
+}));
 import { EstadoDeCuentaDocumento } from './EstadoDeCuentaDocumento';
 import { contrato, contratoConImpuestos, estadoDeCuenta, fila } from './ejemplo-de-prueba';
 
@@ -207,6 +218,49 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(resumen).not.toContain('En mora');
     const estado = host.querySelector('[data-testid="estado-del-cliente"]');
     expect(estado?.className).not.toContain('text-danger');
+  });
+
+  it('🔴 ola E: el saldo a favor del inquilino y en qué va su devolución, aparte de lo que debe', () => {
+    const c = contrato({
+      vigente: false,
+      saldoAFavor: {
+        anticipoSinConsumirCop: 250_000,
+        devolucion: { egresoId: 'e-1', estado: 'PAGADO', numero: 31, valorCop: 400_000 },
+      },
+    });
+    montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [c] })} hoy={HOY} />);
+    const bloque = host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')?.textContent ?? '';
+    expect(bloque).toContain('250.000');
+    expect(bloque).toContain('400.000');
+    expect(bloque).toContain('31');
+    // En el enlace del cliente no hay acciones del panel.
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-1298"]')).toBeNull();
+  });
+
+  it('🔴 ola E: sin saldo a favor ni devolución, no hay bloque', () => {
+    const c = contrato({ saldoAFavor: { anticipoSinConsumirCop: 0, devolucion: null } });
+    montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [c] })} hoy={HOY} />);
+    expect(host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')).toBeNull();
+  });
+
+  it('🔴 ola E: en el panel, el contrato terminado del inquilino trae la liquidación con su acción', () => {
+    const terminado = contrato({
+      vigente: false,
+      saldoAFavor: { anticipoSinConsumirCop: 250_000, devolucion: null },
+    });
+    const vigente = contrato({ id: 'ct-77', numero: '77', vigente: true });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={estadoDeCuenta({ contratos: [terminado, vigente] })}
+        hoy={HOY}
+        conAnticipoDelContrato
+      />,
+    );
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-1298"]')).not.toBeNull();
+    // La sección del panel ya lo dice: el bloque informativo no se repite.
+    expect(host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')).toBeNull();
+    // Un contrato vigente no tiene nada que devolver todavía.
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-77"]')).toBeNull();
   });
 
   it('la nota de los filtros sale cuando hay filtros puestos', () => {

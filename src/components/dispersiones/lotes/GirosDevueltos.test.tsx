@@ -26,6 +26,11 @@ const h = vi.hoisted(() => ({
   marcar: vi.fn(),
   regirar: vi.fn(),
   soporte: vi.fn(),
+  lineas: vi.fn(),
+}));
+
+vi.mock('@/lib/api/giros-devueltos', () => ({
+  girosDevueltosApi: { lineasDeLaDevolucion: h.lineas, reversarEnElLibro: vi.fn() },
 }));
 
 vi.mock('@/lib/api/finanzas.service', () => ({
@@ -90,6 +95,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  h.lineas.mockReset().mockResolvedValue({ disponible: true, motivo: null, lineas: [] });
   h.listar.mockReset().mockResolvedValue({ disponible: true, motivo: null, giros: [] });
   h.marcar.mockReset().mockResolvedValue({
     giro: giro(),
@@ -311,6 +317,156 @@ describe('volver a girar', () => {
     await abrir(giro({ fechaDeLaDevolucion: '2026-09-23T00:00:00.000Z' }));
     expect(document.body.textContent).toContain('El giro se devolvió el 23 de septiembre de 2026');
     expect(document.body.textContent).not.toContain('T00:00:00');
+  });
+});
+
+describe('🔴 ola E: lo que faltaba del giro devuelto', () => {
+  async function abrirDialogo() {
+    await act(async () => {
+      root.render(
+        <MarcarDevueltoDialog
+          abierto
+          dispersionId="d-1"
+          nombreTitular="Jorge Restrepo"
+          valorCop={2_400_000}
+          onCerrar={() => {}}
+          onListo={() => {}}
+        />,
+      );
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('ofrece las entradas del extracto y manda la elegida como la devolución', async () => {
+    h.lineas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      lineas: [
+        { movimientoId: 'mov-9', fecha: '2026-09-17', valorCop: 2_400_000, descripcion: 'DEVOLUCION TRANSF' },
+      ],
+    });
+    await abrirDialogo();
+    expect(h.lineas).toHaveBeenCalledWith('d-1');
+    const radio = document.body.querySelector<HTMLInputElement>(
+      '[data-testid="linea-mov-9"] input[type="radio"]',
+    )!;
+    await act(async () => {
+      radio.click();
+    });
+    await adjuntar();
+    await act(async () => {
+      boton('Marcar devuelto').click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(h.marcar).toHaveBeenCalledWith(expect.objectContaining({ movimientoBancarioId: 'mov-9' }));
+  });
+
+  it('sin elegir línea («todavía no está en el extracto») no manda ninguna', async () => {
+    h.lineas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      lineas: [{ movimientoId: 'mov-9', fecha: '2026-09-17', valorCop: 2_400_000, descripcion: 'X' }],
+    });
+    await abrirDialogo();
+    await adjuntar();
+    await act(async () => {
+      boton('Marcar devuelto').click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(h.marcar.mock.calls[0][0]).not.toHaveProperty('movimientoBancarioId');
+  });
+
+  it('si no se pueden leer las líneas, el diálogo funciona como antes (falla abierto)', async () => {
+    h.lineas.mockRejectedValue(new Error('sin red'));
+    await abrirDialogo();
+    expect(document.body.querySelector('[data-testid="lineas-de-la-devolucion"]')).toBeNull();
+    await adjuntar();
+    await act(async () => {
+      boton('Marcar devuelto').click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(h.marcar).toHaveBeenCalledTimes(1);
+  });
+
+  it('el resultado dice qué pasó con el aviso, la línea y el libro', async () => {
+    h.marcar.mockResolvedValue({
+      giro: giro(),
+      queHacer: {
+        vuelveAEstarPorGirar: true,
+        avisarAlPropietario: true,
+        exigirCambioDeCuenta: true,
+        dejarEnBitacora: true,
+        bitacora: BITACORA,
+      },
+      aviso: { estado: 'SIMULADO' },
+      asiento: { generado: true, asientoId: 'a', numero: 77, yaExistia: false },
+      retenidoHastaCorregirLaCuenta: true,
+      lineaDelExtracto: { movimientoId: 'mov-9', fecha: '2026-09-17', valorCop: 2_400_000, descripcion: 'X' },
+    });
+    await abrirDialogo();
+    await adjuntar();
+    await act(async () => {
+      boton('Marcar devuelto').click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.body.querySelector('[data-testid="estado-del-aviso"]')?.textContent).toContain(
+      'envío de correos está apagado',
+    );
+    expect(document.body.querySelector('[data-testid="linea-enlazada"]')?.textContent).toContain(
+      '17 de septiembre de 2026',
+    );
+    expect(document.body.querySelector('[data-testid="estado-del-asiento"]')?.textContent).toContain(
+      'asiento N.º 77',
+    );
+    expect(document.body.textContent).toContain('cuando se apruebe la cuenta nueva');
+  });
+
+  it('la celda dice que falta corregir la cuenta y en qué va el cambio', async () => {
+    await act(async () => {
+      root.render(
+        <AccionesDelGiro
+          dispersionId="d-1"
+          nombreTitular="Jorge Restrepo"
+          valorCop={2_400_000}
+          giro={giro({
+            retenidoHastaCorregirLaCuenta: true,
+            cambioDeCuenta: { id: 'c-1', estado: 'CONFIRMADO', aprobadoAt: null },
+            lineaDelExtracto: { movimientoId: 'mov-9', fecha: '2026-09-17', valorCop: 2_400_000, descripcion: 'X' },
+          })}
+          puedeEditar
+          disponible
+          onDevolver={() => {}}
+          onRegirar={() => {}}
+        />,
+      );
+    });
+    const retenido = container.querySelector('[data-testid="retenido-d-1"]');
+    expect(retenido?.textContent).toContain('Falta corregir la cuenta');
+    expect(retenido?.getAttribute('title')).toContain('falta que un administrador la apruebe');
+    expect(container.querySelector('[data-testid="linea-de-la-devolucion-d-1"]')?.textContent).toContain(
+      '17 de septiembre de 2026',
+    );
+  });
+
+  it('cerrada sola (regiradoAt + fecha del egreso): dice cuándo salió y no ofrece la acción', async () => {
+    await act(async () => {
+      root.render(
+        <AccionesDelGiro
+          dispersionId="d-1"
+          nombreTitular="Jorge Restrepo"
+          valorCop={2_400_000}
+          giro={giro({ regiradoAt: '2026-09-18T15:00:00.000Z', fechaDelEgreso: '2026-09-18' })}
+          puedeEditar
+          disponible
+          onDevolver={() => {}}
+          onRegirar={() => {}}
+        />,
+      );
+    });
+    expect(container.querySelector('[data-testid="regirado-d-1"]')?.textContent).toContain(
+      '18 de septiembre de 2026',
+    );
+    expect(container.querySelector('[data-testid="regirar-d-1"]')).toBeNull();
   });
 });
 

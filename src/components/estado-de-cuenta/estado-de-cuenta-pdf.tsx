@@ -73,6 +73,7 @@ import {
 } from './resumen';
 import { claveDelLado, texto } from './textos';
 import { numeroDelContratoDelEstado } from './numero';
+import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 // ══ Paleta ══════════════════════════════════════════════════════════════════
@@ -922,6 +923,35 @@ function PaginaDelContrato({
               </Text>
             </View>
           ))}
+        </View>
+      ) : null}
+
+      {/* 🔴 Ola E (Juan Camilo): el saldo a favor del inquilino y su devolución
+          al terminar el contrato, aparte de lo que debe. */}
+      {contrato.saldoAFavor &&
+      (contrato.saldoAFavor.anticipoSinConsumirCop > 0 || contrato.saldoAFavor.devolucion) ? (
+        <View style={estilos.totales} wrap={false}>
+          <Text style={estilos.totalesRotulo}>{frase('estadoDeCuenta.saldoAFavor')}</Text>
+          {contrato.saldoAFavor.anticipoSinConsumirCop > 0 ? (
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>{frase('estadoDeCuenta.saldoAFavorAnticipo')}</Text>
+              <Text style={estilos.totalCifraApagada}>
+                {formatCurrency(contrato.saldoAFavor.anticipoSinConsumirCop)}
+              </Text>
+            </View>
+          ) : null}
+          {contrato.saldoAFavor.devolucion ? (
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>
+                {paraElPapel(
+                  `${frase('estadoDeCuenta.saldoAFavorDevolucion')} · ${estadoDeLaDevolucion(contrato.saldoAFavor.devolucion, frase)}`,
+                )}
+              </Text>
+              <Text style={estilos.totalCifraApagada}>
+                {formatCurrency(contrato.saldoAFavor.devolucion.valorCop)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 

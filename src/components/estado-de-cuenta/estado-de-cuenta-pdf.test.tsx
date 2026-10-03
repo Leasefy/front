@@ -249,6 +249,30 @@ describe('EstadoDeCuentaPDF', () => {
     expect(hoja).toContain('Sistema anterior');
   });
 
+  it('🔴 ola E: el saldo a favor del inquilino y su devolución salen aparte de los totales', () => {
+    const c = contrato({
+      vigente: false,
+      saldoAFavor: {
+        anticipoSinConsumirCop: 250_000,
+        devolucion: { egresoId: 'e-1', estado: 'PAGADO', numero: 31, valorCop: 400_000 },
+      },
+    });
+    const hojasConSaldo = paginasDe(EstadoDeCuentaPDF({ doc: estadoDeCuenta({ contratos: [c] }), hoy: HOY }));
+    const hoja = letraDe(hojasConSaldo[1]);
+    expect(hoja).toContain('Saldo a favor');
+    expect(hoja).toContain(formatCurrency(250_000));
+    expect(hoja).toContain(formatCurrency(400_000));
+    expect(hoja).toContain('31');
+    // Sin saldo ni devolución, nada.
+    const sinSaldo = paginasDe(
+      EstadoDeCuentaPDF({
+        doc: estadoDeCuenta({ contratos: [contrato({ saldoAFavor: { anticipoSinConsumirCop: 0, devolucion: null } })] }),
+        hoy: HOY,
+      }),
+    );
+    expect(letraDe(sinSaldo[1])).not.toContain('Saldo a favor');
+  });
+
   it('el período se lee una vez, debajo del concepto y con raya imprimible', () => {
     const hoja = letraDe(hojas[1]);
     expect(hoja).toContain('21 jun 2026 – 20 jul 2026');

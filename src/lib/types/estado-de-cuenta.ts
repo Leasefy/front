@@ -190,7 +190,25 @@ export interface ContratoDelEstadoDeCuenta {
    * INQUILINO; ausente o `null` en el del propietario y con un back anterior.
    */
   intereses?: InteresesDelContrato | null;
+  /**
+   * 🔴 Ola E (03-10-2026, Juan Camilo): el saldo a favor del inquilino en este
+   * contrato — el anticipo sin consumir y, al terminar, la devolución (cuenta
+   * por pagar + comprobante de egreso). Sólo del inquilino; ausente si no hay.
+   */
+  saldoAFavor?: SaldoAFavorDelContrato | null;
   cortes: PuntoDeQuiebre[];
+}
+
+export interface SaldoAFavorDelContrato {
+  anticipoSinConsumirCop: number;
+  devolucion: {
+    egresoId: string;
+    /** `PENDIENTE` | `EN_LOTE` | `PAGADO` | `ANULADO`. */
+    estado: string;
+    /** El número del comprobante de egreso, cuando ya salió la plata. */
+    numero: number | null;
+    valorCop: number;
+  } | null;
 }
 
 // ══ Intereses de mora ═══════════════════════════════════════════════════════

@@ -43,6 +43,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
+import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { BotonAnularRecibo } from './AnularReciboDeLaFila';
 import { formatCurrency } from '@/lib/format';
 import {
@@ -78,6 +79,7 @@ import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { useTextoDelEstado } from './textos';
 import { InteresesDelContratoSeccion } from './InteresesDelContrato';
 import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
+import { SaldoAFavorAlTerminarSeccion } from './SaldoAFavorAlTerminar';
 import { hayQueContarIntereses, interesesDelContrato } from './intereses';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
@@ -115,6 +117,10 @@ export function ContratoDelEstado({
 }: Props) {
   const t = useTextoDelEstado();
   const esPropietario = contrato.rol === 'PROPIETARIO';
+  // 🔴 Ola E: en el panel, un contrato que ya no está vigente muestra la
+  // liquidación del saldo a favor con su acción (registrar la devolución); el
+  // bloque informativo de abajo es para el enlace del cliente y el PDF.
+  const conSaldoAFavorAlTerminar = conAnticipoDelContrato && !esPropietario && !contrato.vigente;
   const intereses = interesesDelContrato(contrato);
   const conIntereses = Boolean(intereses && intereses.filas.length > 0);
 
@@ -221,6 +227,8 @@ export function ContratoDelEstado({
         <AnticipoDelContratoSeccion contractId={contrato.id} />
       )}
 
+      {conSaldoAFavorAlTerminar && <SaldoAFavorAlTerminarSeccion contractId={contrato.id} />}
+
       {/* 🔴 D11: la deuda subrogada, VISIBLE y SEPARADA de lo que se le debe a
           la inmobiliaria: no suma a «resta por pagar». */}
       {contrato.subrogacion && contrato.subrogacion.totalCop > 0 && (
@@ -241,6 +249,39 @@ export function ContratoDelEstado({
           <p className="text-caption text-fg-muted">{t('estadoDeCuenta.deudaSubrogadaAyuda')}</p>
         </div>
       )}
+
+      {/* 🔴 Ola E (Juan Camilo): el saldo a favor del inquilino y su devolución
+          al terminar (cuenta por pagar + comprobante de egreso). Aparte de lo
+          que debe: no suma a «resta por pagar». */}
+      {!conSaldoAFavorAlTerminar &&
+        contrato.saldoAFavor &&
+        (contrato.saldoAFavor.anticipoSinConsumirCop > 0 || contrato.saldoAFavor.devolucion) && (
+          <div
+            className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+            data-testid={`saldo-a-favor-contrato-${contrato.numero}`}
+          >
+            <p className="text-label uppercase tracking-wide text-fg-subtle">
+              {t('estadoDeCuenta.saldoAFavor')}
+            </p>
+            {contrato.saldoAFavor.anticipoSinConsumirCop > 0 && (
+              <p className="text-body-sm text-fg">
+                {t('estadoDeCuenta.saldoAFavorAnticipo')}:{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(contrato.saldoAFavor.anticipoSinConsumirCop)}
+                </span>
+              </p>
+            )}
+            {contrato.saldoAFavor.devolucion && (
+              <p className="text-body-sm text-fg">
+                {t('estadoDeCuenta.saldoAFavorDevolucion')}:{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(contrato.saldoAFavor.devolucion.valorCop)}
+                </span>{' '}
+                · {estadoDeLaDevolucion(contrato.saldoAFavor.devolucion, t)}
+              </p>
+            )}
+          </div>
+        )}
 
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
@@ -730,3 +771,4 @@ function Dato({
     </div>
   );
 }
+

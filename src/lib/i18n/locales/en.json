@@ -7116,6 +7116,16 @@
           "aprobarDisabledPerm": "You need cobranza:approve permission.",
           "wompiLinkTitle": "Plan approved. Payment link:",
           "wompiLinkLabel": "Open Wompi link",
+          "aceptacion": {
+            "titulo": "The tenant accepted the agreement",
+            "ayuda": "If the tenant accepted by phone or in person, record it here: the agreement becomes active and collections pause while it is kept.",
+            "registrar": "Record the acceptance",
+            "registrado": "Done: the agreement is active.",
+            "sinAprobarTitulo": "Approve it first",
+            "sinAprobar": "The agency has not approved this agreement yet. To accept it on the tenant's behalf, approve it first.",
+            "aprobarPrimero": "Approve first",
+            "yaVigente": "The agreement is already active."
+          },
           "comparisonHeader": {
             "campo": "Field",
             "propuesto": "AI Proposed",
@@ -12286,6 +12296,37 @@
       "recibo": "Receipt {{numero}}",
       "anulado": "Voided",
       "errorAlLeer": "We could not read this contract's advance payment: we don't know whether it has a balance left to apply."
+    },
+    "saldoAFavorAlTerminar": {
+      "titulo": "Tenant credit balance",
+      "ayuda": "The contract ended: the tenant credit is first applied to what they owe and the rest is refunded as a payable (a disbursement in their name, paid through the payment batch with its voucher).",
+      "aFavor": "In favor",
+      "anticipo": "Unused advance",
+      "suelto": "Credit balance",
+      "debe": "What they owe (deducted)",
+      "aDevolver": "To refund",
+      "registrar": "Record the refund",
+      "confirmar": "Record the payable",
+      "cancelar": "Cancel",
+      "banco": "Tenant bank (optional)",
+      "tipoDeCuenta": "Account type",
+      "ahorros": "Savings",
+      "corriente": "Checking",
+      "sinTipo": "Not chosen",
+      "numeroDeCuenta": "Account number (optional)",
+      "numeroInvalido": "The account number must be digits only (4 to 30).",
+      "notas": "Note (optional)",
+      "cuentaDespues": "If you do not have the tenant account yet, record it anyway: it is completed on the disbursement before paying it.",
+      "registrada": "Recorded: {{valor}} as a payable to the tenant (pending disbursement).",
+      "aplicadoALaDeuda": "{{valor}} were applied to what they owed.",
+      "nadaQueDevolver": "The whole balance only covered what they owed: nothing left to refund.",
+      "devolucion": "Refund",
+      "estadoPendiente": "Payable: not paid out yet",
+      "estadoEnLote": "In a payment batch, to be paid",
+      "estadoPagado": "Refunded · disbursement voucher No. {{numero}}",
+      "estadoPagadoSinNumero": "Refunded",
+      "estadoAnulado": "Voided: the balance belongs to the tenant again",
+      "errorAlLeer": "We could not read the credit balance of this contract."
     }
   },
   "inquilinos": {
@@ -12810,7 +12851,15 @@
     "subrogadaA": "Subrogated to {{nombre}}",
     "pagoLaAseguradora": "Paid by {{nombre}}",
     "deudaSubrogada": "Debt subrogated to the insurer",
-    "deudaSubrogadaAyuda": "These instalments are settled for the agency and the owner because an insurer paid them. The tenant owes that amount to the insurer, not to the agency."
+    "deudaSubrogadaAyuda": "These instalments are settled for the agency and the owner because an insurer paid them. The tenant owes that amount to the insurer, not to the agency.",
+    "saldoAFavor": "Tenant credit balance",
+    "saldoAFavorAnticipo": "Unused advance",
+    "saldoAFavorDevolucion": "Refund when the contract ended",
+    "saldoAFavorPendiente": "Payable: not paid out yet",
+    "saldoAFavorEnLote": "In a payment batch, to be paid",
+    "saldoAFavorPagado": "Refunded · disbursement voucher No. {{numero}}",
+    "saldoAFavorPagadoSinNumero": "Refunded",
+    "saldoAFavorAnulado": "Refund voided: the balance belongs to the tenant again"
   },
   "agentes": {
     "equipo": {

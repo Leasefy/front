@@ -7150,6 +7150,16 @@
           "aprobarDisabledPerm": "Necesitas permiso cobranza:aprobar.",
           "wompiLinkTitle": "Plan aprobado. Enlace de pago:",
           "wompiLinkLabel": "Abrir enlace Wompi",
+          "aceptacion": {
+            "titulo": "El inquilino aceptó el acuerdo",
+            "ayuda": "Si el inquilino aceptó por teléfono o en persona, regístralo aquí: el acuerdo queda vigente y la cobranza se frena mientras se cumpla.",
+            "registrar": "Registrar que lo aceptó",
+            "registrado": "Listo: el acuerdo quedó vigente.",
+            "sinAprobarTitulo": "Primero apruébalo",
+            "sinAprobar": "La inmobiliaria todavía no aprobó este acuerdo. Para aceptarlo en nombre del inquilino, primero apruébalo.",
+            "aprobarPrimero": "Aprobar primero",
+            "yaVigente": "El acuerdo ya está vigente."
+          },
           "comparisonHeader": {
             "campo": "Campo",
             "propuesto": "Propuesto por IA",
@@ -12320,6 +12330,37 @@
       "recibo": "Recibo {{numero}}",
       "anulado": "Anulado",
       "errorAlLeer": "No pudimos leer el anticipo de este contrato: no sabemos si tiene saldo por descontar."
+    },
+    "saldoAFavorAlTerminar": {
+      "titulo": "Saldo a favor del inquilino",
+      "ayuda": "El contrato terminó: lo que el inquilino tiene a favor se aplica primero a lo que deba y lo que sobra se le devuelve como una cuenta por pagar (un egreso a su nombre que sale por el lote de egresos con su comprobante).",
+      "aFavor": "A favor",
+      "anticipo": "Anticipo sin consumir",
+      "suelto": "Saldo a favor",
+      "debe": "Lo que debe (se descuenta)",
+      "aDevolver": "Se le devuelve",
+      "registrar": "Registrar la devolución",
+      "confirmar": "Registrar la cuenta por pagar",
+      "cancelar": "Cancelar",
+      "banco": "Banco del inquilino (opcional)",
+      "tipoDeCuenta": "Tipo de cuenta",
+      "ahorros": "Ahorros",
+      "corriente": "Corriente",
+      "sinTipo": "Sin elegir",
+      "numeroDeCuenta": "Número de cuenta (opcional)",
+      "numeroInvalido": "El número de cuenta va sólo con dígitos (entre 4 y 30).",
+      "notas": "Nota (opcional)",
+      "cuentaDespues": "Si todavía no tienes la cuenta del inquilino, regístrala igual: se completa en el egreso antes de pagarlo.",
+      "registrada": "Quedó registrada: {{valor}} como cuenta por pagar al inquilino (egreso pendiente).",
+      "aplicadoALaDeuda": "Se aplicaron {{valor}} a lo que debía.",
+      "nadaQueDevolver": "Todo el saldo alcanzó sólo para lo que debía: no quedó nada que devolver.",
+      "devolucion": "Devolución",
+      "estadoPendiente": "Cuenta por pagar: falta girarla",
+      "estadoEnLote": "En un lote de egresos, por pagar",
+      "estadoPagado": "Devuelta · comprobante de egreso N.º {{numero}}",
+      "estadoPagadoSinNumero": "Devuelta",
+      "estadoAnulado": "Anulada: el saldo volvió a ser del inquilino",
+      "errorAlLeer": "No pudimos leer el saldo a favor de este contrato."
     }
   },
   "inquilinos": {
@@ -12844,7 +12885,15 @@
     "subrogadaA": "Subrogada a {{nombre}}",
     "pagoLaAseguradora": "Pagó {{nombre}}",
     "deudaSubrogada": "Deuda subrogada a la aseguradora",
-    "deudaSubrogadaAyuda": "Estas cuotas quedaron pagadas para la inmobiliaria y el propietario porque las pagó una aseguradora. El inquilino le debe ese valor a ella, no a la inmobiliaria."
+    "deudaSubrogadaAyuda": "Estas cuotas quedaron pagadas para la inmobiliaria y el propietario porque las pagó una aseguradora. El inquilino le debe ese valor a ella, no a la inmobiliaria.",
+    "saldoAFavor": "Saldo a favor del inquilino",
+    "saldoAFavorAnticipo": "Anticipo sin consumir",
+    "saldoAFavorDevolucion": "Devolución al terminar el contrato",
+    "saldoAFavorPendiente": "Cuenta por pagar: falta girarla",
+    "saldoAFavorEnLote": "En un lote de egresos, por pagar",
+    "saldoAFavorPagado": "Devuelto · comprobante de egreso N.º {{numero}}",
+    "saldoAFavorPagadoSinNumero": "Devuelto",
+    "saldoAFavorAnulado": "Devolución anulada: el saldo volvió a ser del inquilino"
   },
   "agentes": {
     "equipo": {

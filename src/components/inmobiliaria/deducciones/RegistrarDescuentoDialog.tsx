@@ -166,6 +166,7 @@ export function RegistrarDescuentoDialog({
             </label>
             <Input
               id="descuento-motivo"
+              aria-required="true"
               value={motivo}
               maxLength={500}
               onChange={(e) => {
@@ -185,6 +186,7 @@ export function RegistrarDescuentoDialog({
             </label>
             <MoneyInput
               id="descuento-valor"
+              aria-required="true"
               value={valor}
               onChange={(crudo) => {
                 setValor(crudo);
@@ -236,6 +238,7 @@ export function RegistrarDescuentoDialog({
               <Paperclip className="h-4 w-4 flex-shrink-0 text-fg-muted" />
               <input
                 id="descuento-soporte"
+                aria-required="true"
                 type="file"
                 accept={TIPOS_DE_SOPORTE.join(',')}
                 onChange={(e) => {

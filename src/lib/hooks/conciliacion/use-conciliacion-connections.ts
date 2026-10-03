@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Closed sets (mirror the backend CHECK constraints) ───────────────────────
@@ -101,6 +102,13 @@ export interface UseConciliacionConnectionsResult {
   items: ConciliacionConnection[]
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   /** Backend 404/503 — endpoint not deployed / not migrated (NOT an error). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -115,6 +123,7 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
   const [items, setItems] = useState<ConciliacionConnection[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch). */
@@ -137,6 +146,8 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
     abortRef.current = controller
 
     const url = `${agentUrl}/api/agency/${agencyId}/conciliacion/connections`
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
@@ -149,18 +160,24 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
         setItems([])
         setNotAvailable(true)
         setError(null)
+        setErrorCrudo(null)
         return
       }
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConnectionsListResponse
       setItems(Array.isArray(json.items) ? json.items : [])
       setNotAvailable(false)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       if (controller.signal.aborted) return
       // Network error / unexpected non-OK → degrade to empty list, honest error.
       setItems([])
       setError(err instanceof Error ? err.message : 'Failed to fetch connections')
+      setErrorCrudo(fallo ?? err)
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
@@ -250,6 +267,7 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
     items,
     isLoading,
     error,
+    errorCrudo,
     notAvailable,
     refetch: fetchData,
     createConnection,

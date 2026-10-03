@@ -430,6 +430,7 @@ export function PedirCitaModal({
             </label>
             <Input
               id="cita-contacto"
+              aria-required="true"
               value={contactName}
               onChange={(e) => {
                 setContactName(e.target.value);

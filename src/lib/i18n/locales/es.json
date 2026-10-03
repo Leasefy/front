@@ -12329,6 +12329,8 @@
       "descontado": "Descontado",
       "entrada": "Entró como anticipo",
       "descuento": "Descuento de {{mes}}",
+      "descuentoSinMes": "Descuento",
+      "alSaldoAFavor": "Pasó al saldo a favor del inquilino al terminar el contrato",
       "recibo": "Recibo {{numero}}",
       "anulado": "Anulado",
       "errorAlLeer": "No pudimos leer el anticipo de este contrato: no sabemos si tiene saldo por descontar."

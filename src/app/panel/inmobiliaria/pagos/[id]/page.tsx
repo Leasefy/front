@@ -36,6 +36,7 @@ import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
 import { PagoCasoDetalle } from '@/components/inmobiliaria/pagos/PagoCasoDetalle'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const SALA_HREF = '/panel/inmobiliaria/pagos'
 /*
@@ -52,7 +53,7 @@ function PagosCaso() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
-  const { data, isLoading, error, notAvailable } = useWorkItemDetail('pagos', id)
+  const { data, isLoading, error, errorCrudo, notAvailable } = useWorkItemDetail('pagos', id)
 
   async function handleAction(action: WorkItemAction, body?: Record<string, unknown>) {
     const res = await runWorkItemAction(action, body)
@@ -114,7 +115,12 @@ function PagosCaso() {
         <Card data-testid="pago-caso-error">
           <div className="space-y-3 p-6">
             <p className="text-sm font-medium text-danger">No pudimos cargar este caso.</p>
-            <p className="text-sm text-fg-muted">{error}</p>
+            {/* ARREGLOS-7 (MOV-A1): decía «500» crudo; el traductor dice «de
+                nuestro lado» (5xx) o qué está mal (4xx). Sin `accion`: el
+                título de arriba ya dice que no se pudo cargar. */}
+            <p className="text-sm text-fg-muted" data-testid="pago-caso-error-motivo">
+              {mensajeParaLaPersona(errorCrudo ?? error)}
+            </p>
             <Button variant="outline" hideArrow onClick={() => router.refresh()}>
               Reintentar
             </Button>

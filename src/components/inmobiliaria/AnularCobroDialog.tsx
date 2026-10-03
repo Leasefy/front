@@ -153,6 +153,7 @@ export function AnularCobroDialog({ cobro, onOpenChange, onAnulado }: AnularCobr
             </label>
             <Input
               id="anular-cobro-motivo"
+              aria-required="true"
               value={motivo}
               maxLength={500}
               onChange={(e) => {

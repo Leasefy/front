@@ -207,6 +207,7 @@ export function InventarioItemDialog({
             </label>
             <Input
               id="inv-name"
+              aria-required="true"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('inmobiliaria.acta.itemDialog.namePlaceholder')}
@@ -223,6 +224,7 @@ export function InventarioItemDialog({
               </label>
               <Input
                 id="inv-qty"
+                aria-required="true"
                 type="number"
                 min={1}
                 max={999}

@@ -42,6 +42,7 @@ import {
   type LiquidacionDelSaldoAFavor,
 } from '@/lib/api/saldo-a-favor';
 import { useAparecer } from '@/components/cobros/extracto-bancario/cuentas-del-extracto';
+import { useRefrescarElEstado } from './refrescar-el-estado';
 
 type Lectura =
   | { estado: 'cargando' }
@@ -73,6 +74,8 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
   const permisos = usePermissionsContextSafe();
   const puedeRegistrar = permisos ? permisos.canAccess('cobros', 'create') : false;
   const aparecer = useAparecer();
+  /** Los totales del documento de alrededor (ARREGLOS-7); `null` fuera de la pantalla. */
+  const refrescarElEstado = useRefrescarElEstado();
 
   const [lectura, setLectura] = React.useState<Lectura>({ estado: 'cargando' });
   const [abierto, setAbierto] = React.useState(false);
@@ -138,6 +141,8 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
       setRegistrada(r);
       setAbierto(false);
       await leer();
+      // ARREGLOS-7: la deuda cambió; los totales del documento también.
+      void refrescarElEstado?.();
     } catch (e) {
       setError(
         mensajeParaLaPersona(e, {
@@ -158,6 +163,8 @@ export function SaldoAFavorAlTerminarSeccion({ contractId }: { contractId: strin
       setRevisada(r);
       setRegistrada(null);
       await leer();
+      // ARREGLOS-7: «Revisado» recalcula con la deuda de hoy; los totales también.
+      void refrescarElEstado?.();
     } catch (e) {
       setErrorDeLaRevision(
         mensajeParaLaPersona(e, {

@@ -91,6 +91,12 @@ export interface OTPVerificationProps {
   onCancel: () => void;
   /** Additional CSS classes */
   className?: string;
+  /**
+   * Qué se firma, para la nota del pie: «solo tú puedes firmar {queSeFirma}».
+   * Por defecto «este contrato» (ARREGLOS-7: el acta de entrega decía
+   * «contrato»).
+   */
+  queSeFirma?: string;
 }
 
 type OTPStatus = 'idle' | 'sending' | 'verifying' | 'verified' | 'error';
@@ -120,6 +126,7 @@ export function OTPVerification({
   onVerified,
   onCancel,
   className,
+  queSeFirma = 'este contrato',
 }: OTPVerificationProps) {
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [status, setStatus] = useState<OTPStatus>('idle');
@@ -430,7 +437,7 @@ export function OTPVerification({
           <div className="rounded-[14px] border border-border p-3 text-xs text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
-              solo tú puedes firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
+              solo tú puedes firmar {queSeFirma}. Este proceso cumple con la Ley 527/1999 sobre
               firmas electrónicas.
             </p>
           </div>

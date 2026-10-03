@@ -798,3 +798,37 @@ describe('las cuotas que llegaron tarde', () => {
     expect(generate).toHaveBeenCalledWith('2026-08', undefined, undefined);
   });
 });
+
+/*
+ * ARREGLOS-7 (MOV-A1): un mes en el que todos ya tienen su liquidación y sólo
+ * hay cuotas tardías que se suman abría la lista vacía diciendo «Ningún
+ * propietario ni inmueble coincide con «»» — sin que nadie hubiera buscado.
+ */
+describe('sin nadie por liquidar, sólo cuotas tardías', () => {
+  const YA = propietario({
+    id: 'p-ya',
+    nombre: 'Jorge Ya Liquidado',
+    yaExiste: true,
+    inmuebles: [{ propertyId: 'inm-ya', titulo: 'Calle 10', canon: 2_000_000, comision: 200_000 }],
+  });
+  const TARDIA = {
+    propietarioId: 'p-ya',
+    propietarioName: 'Jorge Ya Liquidado',
+    dispersionId: 'disp-1',
+    cuotas: 1,
+    netoCop: 1_800_000,
+    seSuman: true,
+    motivo: null,
+  };
+
+  it('no dice que una búsqueda vacía no coincide: dice que sólo se suman las tardías', async () => {
+    preview.mockResolvedValue(previaCon([YA], { tardias: [TARDIA] }));
+    await montar();
+
+    const vacio = q('sin-resultados')?.textContent ?? '';
+    expect(vacio).not.toContain('coincide con «»');
+    expect(vacio).toContain('no queda ningún propietario por liquidar');
+    // Lo de las tardías sigue al pie, como antes.
+    expect(q('confirmacion-tardias')).not.toBeNull();
+  });
+});

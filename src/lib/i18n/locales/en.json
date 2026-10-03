@@ -12295,6 +12295,8 @@
       "descontado": "Applied",
       "entrada": "Came in as an advance",
       "descuento": "Applied to {{mes}}",
+      "descuentoSinMes": "Applied",
+      "alSaldoAFavor": "Moved to the tenant's credit balance when the contract ended",
       "recibo": "Receipt {{numero}}",
       "anulado": "Voided",
       "errorAlLeer": "We could not read this contract's advance payment: we don't know whether it has a balance left to apply."

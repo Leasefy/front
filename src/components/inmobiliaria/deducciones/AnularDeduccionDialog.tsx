@@ -95,6 +95,7 @@ export function AnularDeduccionDialog({
             </label>
             <Input
               id="anular-motivo"
+              aria-required="true"
               value={motivo}
               maxLength={500}
               onChange={(e) => {

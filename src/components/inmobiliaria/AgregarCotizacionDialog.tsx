@@ -218,6 +218,7 @@ export function AgregarCotizacionDialog({
             </label>
             <Input
               id="cotizacion-proveedor"
+              aria-required="true"
               value={campos.providerName}
               maxLength={MAX_LARGO_NOMBRE_DEL_PROVEEDOR}
               onChange={(e) => poner('providerName', e.target.value)}
@@ -263,6 +264,7 @@ export function AgregarCotizacionDialog({
               </label>
               <MoneyInput
                 id="cotizacion-monto"
+                aria-required="true"
                 value={campos.amount}
                 onChange={(crudo) => poner('amount', crudo)}
                 {...aria('amount')}
@@ -280,6 +282,7 @@ export function AgregarCotizacionDialog({
               </label>
               <Input
                 id="cotizacion-dias"
+                aria-required="true"
                 type="number"
                 min={1}
                 max={MAX_DIAS_ESTIMADOS}
@@ -301,6 +304,7 @@ export function AgregarCotizacionDialog({
             </label>
             <Textarea
               id="cotizacion-alcance"
+              aria-required="true"
               value={campos.description}
               onChange={(e) => poner('description', e.target.value)}
               placeholder={t('inmobiliaria.mantenimiento.nuevaCotizacion.alcancePlaceholder')}

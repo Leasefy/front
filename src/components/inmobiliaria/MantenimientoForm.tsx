@@ -714,6 +714,7 @@ export function MantenimientoForm({
           </label>
           <Input
             id="mantenimiento-title"
+            aria-required="true"
             type="text"
             value={formData.title}
             onChange={(e) => updateField('title', e.target.value)}
@@ -738,6 +739,7 @@ export function MantenimientoForm({
           </label>
           <Textarea
             id="mantenimiento-description"
+            aria-required="true"
             aria-invalid={touched.description && errors.description ? true : undefined}
             aria-describedby={
               touched.description && errors.description ? 'mantenimiento-description-error' : undefined

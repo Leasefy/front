@@ -69,6 +69,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger
                 id="provider"
+                aria-required="true"
                 aria-invalid={Boolean(errors.provider) || undefined}
                 aria-describedby={errors.provider ? 'provider-error' : undefined}
               >
@@ -104,6 +105,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         */}
         <Input
           id="apiKey"
+          aria-required="true"
           type="password"
           autoComplete="off"
           aria-invalid={Boolean(errors.apiKey) || undefined}
@@ -119,6 +121,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         </label>
         <Input
           id="eventSecret"
+          aria-required="true"
           type="password"
           autoComplete="off"
           aria-invalid={Boolean(errors.eventSecret) || undefined}

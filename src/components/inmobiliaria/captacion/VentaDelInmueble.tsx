@@ -345,6 +345,7 @@ export function RegistrarLaVenta({
                 </label>
                 <Input
                   id="venta-fechaDeLaEscritura"
+                  aria-required="true"
                   type="date"
                   value={fecha}
                   onChange={(e) => {
@@ -362,6 +363,7 @@ export function RegistrarLaVenta({
                 </label>
                 <MoneyInput
                   id="venta-precioDeVentaCop"
+                  aria-required="true"
                   value={precio}
                   onChange={(crudo) => {
                     setPrecio(crudo)
@@ -552,6 +554,7 @@ export function AnularLaComision({
           </label>
           <Textarea
             id="anular-motivo"
+            aria-required="true"
             ref={campo}
             value={motivo}
             rows={3}

@@ -41,6 +41,9 @@ import {
   type FiltrosDelEstadoDeCuenta,
 } from './filas';
 import { useTextoDelEstado } from './textos';
+import { ContextoDeRefrescarElEstado } from './refrescar-el-estado';
+import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /**
  * ¿El fallo es «este cliente todavía no tiene contratos»?
@@ -177,6 +180,23 @@ export function PantallaDelEstadoDeCuenta({
   React.useEffect(() => {
     void pedir();
   }, [pedir]);
+
+  /*
+   * 🔴 ARREGLOS-7 · Una acción de una sección (la devolución del saldo a favor,
+   * «Revisado») cambia la deuda: se vuelve a pedir el documento entero SIN
+   * pasar por «cargando», así nada se desmonta y la sección conserva su aviso.
+   * El recorte de un filtro se vuelve a pedir solo (el efecto de abajo mira
+   * `entero`). Si falla, el documento de antes se queda y se dice.
+   */
+  const refrescar = React.useCallback(async () => {
+    try {
+      setEntero(await cargar());
+    } catch (e) {
+      toast.error('No pudimos actualizar los totales del estado de cuenta', {
+        description: mensajeParaLaPersona(e),
+      });
+    }
+  }, [cargar]);
 
   const conFiltros = hayFiltros(filtros);
 
@@ -379,6 +399,7 @@ export function PantallaDelEstadoDeCuenta({
               </Button>
             </div>
           ) : (
+            <ContextoDeRefrescarElEstado.Provider value={refrescar}>
             <EstadoDeCuentaDocumento
               doc={vista}
               hoy={hoy}
@@ -419,6 +440,7 @@ export function PantallaDelEstadoDeCuenta({
                 recargando && 'opacity-60 transition-opacity',
               )}
             />
+            </ContextoDeRefrescarElEstado.Provider>
           )}
         </section>
       ) : null}

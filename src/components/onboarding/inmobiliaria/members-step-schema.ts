@@ -25,8 +25,7 @@
  * `ADMIN | AGENTE | CONTADOR | VIEWER | OPERATOR` (`OPERATOR` kept
  * server-side only as a deprecated alias for pre-existing data). The front
  * aligns `MEMBER_ROLE_OPTIONS` with the panel's agency roles
- * (`src/lib/auth/agency-roles.ts`, same labels as
- * `InviteFirstMemberForm.tsx`'s `ROLE_OPTIONS`) and never sends `OPERATOR`.
+ * (`src/lib/auth/agency-roles.ts`) and never sends `OPERATOR`.
  */
 import { z } from 'zod'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'

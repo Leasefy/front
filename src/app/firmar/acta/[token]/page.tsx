@@ -302,6 +302,7 @@ function ActaParaFirmar({
               firmado: 'Acta firmada',
               aceptacion: `Estoy de acuerdo con el acta: ${deDevolucion ? 'entregué' : 'recibí'} el inmueble en el estado que describen el inventario y las fotos.`,
               boton: 'Firmar el acta',
+              queSeFirma: 'el acta',
             }}
           />
         </div>

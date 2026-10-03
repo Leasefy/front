@@ -59,7 +59,13 @@ export interface SignatureFormProps {
    * inventario del contrato (Nico, 2026-09-17) usa este mismo formulario —el
    * mismo trazo y el mismo OTP— con sus propias palabras.
    */
-  textos?: { firmado?: string; aceptacion?: string; boton?: string };
+  textos?: {
+    firmado?: string;
+    aceptacion?: string;
+    boton?: string;
+    /** La nota del código: «solo tú puedes firmar {queSeFirma}» (por defecto «este contrato»). */
+    queSeFirma?: string;
+  };
   /**
    * T-0109 — el transporte de envío/verificación de OTP inyectado, igual que
    * `OTPVerification.adapter`. Con `adapter`, `contractId`/`isLandlord` dejan
@@ -372,6 +378,7 @@ export function SignatureForm({
         adapter={adapter}
         onVerified={handleOTPVerified}
         onCancel={handleOTPCancel}
+        queSeFirma={textos?.queSeFirma}
       />
     </>
   );

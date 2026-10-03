@@ -532,7 +532,12 @@ export function GenerarDispersion({
 
             {paginado.pageItems.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-fg-muted" data-testid="sin-resultados">
-                Ningún propietario ni inmueble coincide con «{busqueda}».
+                {/* ARREGLOS-7 (MOV-A1): sin nadie por liquidar (sólo cuotas
+                    tardías que se suman) no hay búsqueda que no coincida: decía
+                    «Ningún propietario ni inmueble coincide con «»». */}
+                {candidatos.length === 0
+                  ? 'Este mes no queda ningún propietario por liquidar: sólo se suman las cuotas que llegaron tarde a las liquidaciones que ya existen.'
+                  : `Ningún propietario ni inmueble coincide con «${busqueda}».`}
               </p>
             ) : (
               /* Las filas entran escalonadas; al buscar, la que ya no coincide

@@ -770,7 +770,6 @@ export function GenerarDocumentoDialog({
                   {preparacion.campos.map((campo) => {
                     const id = `doc-campo-${campo.nombre}`;
                     const valor = valores[campo.nombre] ?? '';
-                    const vacio = campo.requerida && valor.trim() === '';
                     const errorDelCampo =
                       campo.nombre === 'fechaDeVigencia' ? errorDeLaVigencia : null;
                     return (
@@ -796,7 +795,10 @@ export function GenerarDocumentoDialog({
                             onChange={(v) => escribirCampo(campo.nombre, v ?? '')}
                             placeholder="Elige la ciudad"
                             searchPlaceholder="Ciudad o departamento"
-                            invalid={vacio}
+                            // ARREGLOS-7 (ARREGLOS-4 Q3 A): sin `invalid` por estar
+                            // vacía. La ciudad abría en rojo antes de que nadie
+                            // intentara nada; que falta lo dice el pie, como en
+                            // los demás campos del diálogo.
                             contentClassName="z-[400]"
                           />
                         ) : campo.tipo === 'parrafo' ? (

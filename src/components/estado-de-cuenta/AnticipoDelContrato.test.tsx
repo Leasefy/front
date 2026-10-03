@@ -79,3 +79,39 @@ describe('<AnticipoDelContratoSeccion>', () => {
     );
   });
 });
+
+/*
+ * ARREGLOS-7 (de ARREGLOS-3): un descuento SIN mes —lo que quedó del anticipo
+ * al terminar el contrato y pasó al saldo a favor— decía «Descuento de» y nada.
+ */
+describe('<AnticipoDelContratoSeccion> — un descuento sin mes', () => {
+  const sinMes = (medio: string): AnticipoDelContrato => ({
+    ...CON_SALDO,
+    movimientos: [
+      ...CON_SALDO.movimientos,
+      { id: 'm3', fecha: '2026-10-20', tipo: 'DESCUENTO', valorCop: -11_000_000, mes: null, medio, referencia: 'saldo-a-favor:ct-1', notas: null, reciboDeCajaId: null, reciboNumero: null, anulado: false },
+    ],
+  });
+  const linea = () => host.querySelector('[data-testid="anticipo-movimiento-m3"]')?.textContent ?? '';
+
+  it('el traslado al terminar el contrato dice que pasó al saldo a favor', async () => {
+    api.anticipoDelContrato.mockResolvedValue(sinMes('traslado'));
+    await montar();
+    expect(linea()).toContain('Pasó al saldo a favor del inquilino al terminar el contrato');
+    expect(linea()).not.toMatch(/Descuento de\s*(·|$)/);
+  });
+
+  it('cualquier otro sin mes dice «Descuento», sin la etiqueta colgando', async () => {
+    api.anticipoDelContrato.mockResolvedValue(sinMes('ajuste'));
+    await montar();
+    expect(linea()).toContain('Descuento');
+    expect(linea()).not.toContain('Descuento de');
+  });
+
+  it('con mes sigue diciendo «Descuento de <mes>»', async () => {
+    api.anticipoDelContrato.mockResolvedValue(sinMes('traslado'));
+    await montar();
+    const conMes = host.querySelector('[data-testid="anticipo-movimiento-m2"]')?.textContent ?? '';
+    expect(conMes).toMatch(/Descuento de \S/);
+  });
+});

@@ -21,6 +21,12 @@ export interface UseWorkItemDetailResult {
   data: WorkItemDetailResponse | null
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-7, como `useAgentOverview`): con
+   * sólo `error` («500») la pantalla no puede decir qué pasó; con esto,
+   * `mensajeParaLaPersona` dice «de nuestro lado» o qué está mal.
+   */
+  errorCrudo: unknown
   /** Backend 404 — caso no encontrado (not an error banner). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -33,6 +39,7 @@ export function useWorkItemDetail(agente: AgenteId, id: string): UseWorkItemDeta
   const [data, setData] = useState<WorkItemDetailResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
@@ -58,8 +65,10 @@ export function useWorkItemDetail(agente: AgenteId, id: string): UseWorkItemDeta
       setData(res.data)
       setNotAvailable(res.notAvailable)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       if (controller.signal.aborted) return
+      setErrorCrudo(err)
       setError(err instanceof Error ? err.message : 'Failed to fetch work item detail')
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
@@ -74,5 +83,5 @@ export function useWorkItemDetail(agente: AgenteId, id: string): UseWorkItemDeta
     }
   }, [fetchData, agencyId, id])
 
-  return { data, isLoading, error, notAvailable, refetch: fetchData }
+  return { data, isLoading, error, errorCrudo, notAvailable, refetch: fetchData }
 }

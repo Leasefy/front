@@ -279,6 +279,7 @@ export function DocumentUpload({
           <input
             ref={fileInputRef}
             id={inputId}
+            aria-required={required || undefined}
             type="file"
             accept={accept}
             onChange={handleInputChange}

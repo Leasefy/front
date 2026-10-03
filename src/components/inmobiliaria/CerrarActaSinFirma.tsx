@@ -213,6 +213,7 @@ export function CerrarActaSinFirma({
               </label>
               <Input
                 id="acta-testigoNombre"
+                aria-required="true"
                 value={nombre}
                 onChange={(e) => {
                   setNombre(e.target.value);
@@ -231,6 +232,7 @@ export function CerrarActaSinFirma({
               </label>
               <Input
                 id="acta-testigoDocumento"
+                aria-required="true"
                 value={documento}
                 onChange={(e) => {
                   setDocumento(e.target.value);

@@ -138,6 +138,7 @@ export function RejectContractModal({
           </label>
           <Textarea
             id="motivo-del-rechazo"
+            aria-required="true"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             onBlur={() => setTouched(true)}

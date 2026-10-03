@@ -146,14 +146,6 @@ export { ActaEntregaViewer } from './ActaEntregaViewer';
 // Analytics - Dashboard & KPIs (Phase 10 - Plan 06)
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 
-// Agency Setup Wizard (P1-01 - Inmobiliaria Registration)
-export { AgencyBasicForm } from './wizard/AgencyBasicForm';
-export type { AgencyBasicFormData } from './wizard/AgencyBasicForm';
-export { AgencyOperationsForm } from './wizard/AgencyOperationsForm';
-export type { AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
-export { InviteFirstMemberForm } from './wizard/InviteFirstMemberForm';
-export type { InviteFirstMemberFormData, AgencyMemberRoleOption } from './wizard/InviteFirstMemberForm';
-
 // AI Agent Components
 export { AIAgentCard } from './ai/AIAgentCard';
 export { AIAgentActivityFeed } from './ai/AIAgentActivityFeed';

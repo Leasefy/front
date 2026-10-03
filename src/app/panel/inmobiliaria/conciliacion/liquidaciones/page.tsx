@@ -274,7 +274,7 @@ function ConciliacionLiquidaciones() {
     [statusFilter],
   )
 
-  const { items, isLoading, error, refetch, generateSettlement, approveSettlement } =
+  const { items, isLoading, error, errorCrudo, refetch, generateSettlement, approveSettlement } =
     useConciliacionSettlements(filters)
 
   // El recorte es de presentación: el filtro por estado ya viajó al backend,
@@ -470,7 +470,9 @@ function ConciliacionLiquidaciones() {
             encabezados de la tabla se sigan viendo. */}
         <EstadoDeDatos
           cargando={isLoading}
-          error={error}
+          /* ARREGLOS-7: el error ENTERO (con el micro caído dice «El asistente
+             de Leasefy no está disponible», no «Fue un problema nuestro»). */
+          error={errorCrudo ?? error}
           queEs="las liquidaciones"
           onReintentar={refetch}
           esqueleto={

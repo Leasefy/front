@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { accionQueNoSalio, accionQueNoSalioConCuerpo, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── API shapes (matched to conciliacion-queue.ts backend) ─────────────────
@@ -181,6 +182,13 @@ export interface UseConciliacionQueueResult {
   total: number
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   refetch: () => Promise<void>
   confirmMatch: (matchId: string) => Promise<ActionResult>
   rejectMatch: (matchId: string, reason: string) => Promise<ActionResult>
@@ -198,6 +206,7 @@ export function useConciliacionQueue(
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
 
   const fetchData = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
@@ -216,17 +225,24 @@ export function useConciliacionQueue(
     if (filters?.caseType) url.searchParams.set('caseType', filters.caseType)
     if (filters?.page) url.searchParams.set('page', String(filters.page))
     if (filters?.pageSize) url.searchParams.set('pageSize', String(filters.pageSize))
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
       const res = await agentFetch(url.toString())
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConciliacionQueueResponse
       setItems(json.items)
       setTotal(json.total)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch reconciliation queue')
+      setErrorCrudo(fallo ?? err)
     } finally {
       setIsLoading(false)
     }
@@ -355,6 +371,7 @@ export function useConciliacionQueue(
     total,
     isLoading,
     error,
+    errorCrudo,
     refetch: fetchData,
     confirmMatch,
     rejectMatch,

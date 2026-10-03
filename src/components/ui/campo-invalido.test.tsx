@@ -165,4 +165,28 @@ describe('🔴 guardián: ningún campo se pinta rojo por estar vacío', () => {
         `  ${malos.join('\n  ')}\n`,
     ).toEqual([])
   })
+
+  /*
+   * ARREGLOS-7 (ARREGLOS-4 Q3 A): lo mismo con la prop `invalid` del DS
+   * (`Combobox`, `Input`…), que pinta el borde sin pasar por `aria-invalid`:
+   * la ciudad de «Generar documento» abría en rojo con `invalid={vacio}`.
+   */
+  it('ningún invalid del DS sale de «está vacío»', () => {
+    const INVALID_DE_VACIO =
+      /(?<![\w-])invalid=\{\s*(?:vac[ií][oa]\w*|empty\w*|isEmpty\w*|![\w.?]+(?:\.trim\(\))?)\s*(?:\|\||\})/
+    const malos: string[] = []
+    for (const f of tsx(SRC)) {
+      readFileSync(f, 'utf8')
+        .split('\n')
+        .forEach((l, i) => {
+          if (INVALID_DE_VACIO.test(l)) malos.push(`${f}:${i + 1}  ${l.trim()}`)
+        })
+    }
+    expect(
+      malos,
+      `Estos campos llevan invalid por estar vacíos: se ven rojos desde que se\n` +
+        `abre el formulario. Deja invalid para el error dicho.\n\n` +
+        `  ${malos.join('\n  ')}\n`,
+    ).toEqual([])
+  })
 })

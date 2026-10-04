@@ -18,10 +18,18 @@
 
 import type { ParsedRow } from './importTypes';
 
+import { separarFilasDeTotales, type FilaDeTotales } from '@/lib/migracion/fila-de-totales';
+
 export interface ParseResult {
   rows: ParsedRow[];
   headers: string[];
   sheetNames: string[];
+  /**
+   * Las filas de TOTALES del final del archivo (MIG-C, 04-10): ya NO están en
+   * `rows` — no son datos — y quien muestra el archivo lo dice con
+   * `fraseDeFilasDeTotales`.
+   */
+  filasDeTotales?: FilaDeTotales[];
 }
 
 /**
@@ -320,7 +328,8 @@ export async function parseSpreadsheetFile(
       return limpia;
     });
 
-  return { rows, headers, sheetNames };
+  const { filas: datos, totales } = separarFilasDeTotales(rows);
+  return { rows: datos, headers, sheetNames, filasDeTotales: totales };
 }
 
 /**

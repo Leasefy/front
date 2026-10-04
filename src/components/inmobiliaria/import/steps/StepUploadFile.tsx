@@ -29,6 +29,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { parseSpreadsheetFile, downloadTemplate, leerPrimerasFilasDeCadaHoja } from '../lib/parseFile';
+import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
 import {
   elegirDondeEstaLaTabla,
   elegirFilaDeEncabezado,
@@ -101,7 +102,14 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         // Si la exploración falla, se lee como siempre: A1 de la hoja pedida.
       }
       const result = await parseSpreadsheetFile(file, hoja, { filaDeEncabezado: fila });
-      setDondeSeLeyo(fraseDeDondeSeLeyo({ hoja: sheetName ? undefined : hoja, fila }));
+      setDondeSeLeyo(
+        [
+          fraseDeDondeSeLeyo({ hoja: sheetName ? undefined : hoja, fila }),
+          fraseDeFilasDeTotales(result.filasDeTotales ?? []),
+        ]
+          .filter(Boolean)
+          .join(' ') || null,
+      );
 
       if (result.rows.length === 0) {
         setParseError('El archivo está vacío o no tiene datos válidos');

@@ -77,9 +77,38 @@ export function tandasDe(total: number, tamano = MAX_ASIENTOS_POR_LOTE): number 
   return total <= 0 ? 0 : Math.ceil(total / tamano);
 }
 
-function trozos<T>(todo: readonly T[], tamano: number): T[][] {
-  const salida: T[][] = [];
-  for (let i = 0; i < todo.length; i += tamano) salida.push(todo.slice(i, i + tamano));
+/**
+ * Las tandas, con el índice de su primer asiento en el archivo (`desde`).
+ *
+ * MC-27 (MIG-C, 04-10): dos asientos SIN número con la misma fecha y la misma
+ * descripción —las piezas de dos pagos idénticos del mismo día, que
+ * `armarAsientos` ya no funde— no se separan entre dos tandas: el back los
+ * distingue con un ordinal POR ENVÍO («#2»), y en envíos distintos el segundo
+ * se tomaría por «ya migrado» y se perdería. El corte se corre hacia atrás
+ * (nunca hacia adelante: el tope por envío es del back). Una racha más larga
+ * que una tanda entera se corta igual (no hay otra forma de mandarla).
+ */
+export function trozosConInicio(
+  todo: readonly AsientoMigrado[],
+  tamano: number,
+): { inicio: number; parte: AsientoMigrado[] }[] {
+  const pieza = (a: AsientoMigrado | undefined) =>
+    a && !a.numeroOriginal ? `${a.fecha}|${a.descripcion}` : null;
+  const salida: { inicio: number; parte: AsientoMigrado[] }[] = [];
+  let inicio = 0;
+  while (inicio < todo.length) {
+    let fin = Math.min(inicio + tamano, todo.length);
+    if (fin < todo.length) {
+      let corte = fin;
+      while (corte > inicio + 1 && pieza(todo[corte - 1]) !== null && pieza(todo[corte - 1]) === pieza(todo[corte])) {
+        corte -= 1;
+      }
+      // Toda la tanda es una sola racha: se corta en el tope.
+      if (corte > inicio + 1 || pieza(todo[inicio]) !== pieza(todo[fin])) fin = corte;
+    }
+    salida.push({ inicio, parte: todo.slice(inicio, fin) });
+    inicio = fin;
+  }
   return salida;
 }
 
@@ -130,7 +159,8 @@ export async function revisarPorTandas(
   opciones: { debeParar?: () => boolean; tamano?: number } = {},
 ): Promise<ResultadoDeRevision> {
   const tamano = opciones.tamano ?? MAX_ASIENTOS_POR_LOTE;
-  const partes = trozos(asientos, tamano);
+  const tandas = trozosConInicio(asientos, tamano);
+  const partes = tandas.map((t) => t.parte);
 
   const acumulada: RevisionDeLote = {
     lote,
@@ -154,7 +184,7 @@ export async function revisarPorTandas(
      * (1…5.000). Sin correrlos, el asiento 9 de la segunda tanda se mostraba
      * como «9» y el contador buscaba en otro lado: es el 5.009 del archivo.
      */
-    const r = conNumerosDelArchivo(r0, i * tamano);
+    const r = conNumerosDelArchivo(r0, tandas[i].inicio);
 
     acumulada.total += r.total;
     acumulada.listas += r.listas;
@@ -212,7 +242,8 @@ export async function aplicarPorTandas(
   opciones: { debeParar?: () => boolean; tamano?: number } = {},
 ): Promise<ResultadoDeAplicacion> {
   const tamano = opciones.tamano ?? MAX_ASIENTOS_POR_LOTE;
-  const partes = trozos(asientos, tamano);
+  const tandas = trozosConInicio(asientos, tamano);
+  const partes = tandas.map((t) => t.parte);
 
   const acumulado: InformeDeMigracion = {
     lote,
@@ -238,7 +269,7 @@ export async function aplicarPorTandas(
           lote,
           asientos: parte,
           totalDelArchivo: asientos.length,
-          desde: i * tamano,
+          desde: tandas[i].inicio,
         }),
       (dentro) =>
         onProgreso?.({
@@ -285,7 +316,7 @@ export async function aplicarPorTandas(
     acumulado.yaMigrados += Math.max(0, r.yaMigrados - escritoAntesEnEstaTanda);
     acumulado.restantes = (acumulado.restantes ?? 0) + (r.restantes ?? 0);
     // QA-MIG-B: números de asiento del ARCHIVO, no de la tanda (ver revisar).
-    const base = i * tamano;
+    const base = tandas[i].inicio;
     const correr = <T extends { filas: number[] }>(xs: readonly T[]): T[] =>
       base === 0 ? [...xs] : xs.map((x) => ({ ...x, filas: x.filas.map((f) => f + base) }));
     acumulado.cuentasFaltantes = unirPorLlave(acumulado.cuentasFaltantes, correr(r.cuentasFaltantes), porCodigo);

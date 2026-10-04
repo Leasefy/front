@@ -338,3 +338,63 @@ describe('QA-MIG-B — otros sistemas contables', () => {
     expect(a.movimientos).toEqual([{ codigoCuenta: '', valor: '-5' }]);
   });
 });
+
+describe('MC-27 (MIG-C 04-10): sin número, dos pagos idénticos del mismo día', () => {
+  const sinNumero = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Cuenta', 'Descripción', 'Débito', 'Crédito']);
+
+  it('🔴 el archivo 30 del corpus: son DOS asientos de 2 líneas, no uno de 4', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Comisión transferencia', Débito: '3.500', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Comisión transferencia', Débito: '', Crédito: '3.500' },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Comisión transferencia', Débito: '3.500', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Comisión transferencia', Débito: '', Crédito: '3.500' },
+      ],
+      sinNumero,
+    );
+    expect(asientos).toHaveLength(2);
+    expect(asientos.map((a) => a.movimientos.length)).toEqual([2, 2]);
+  });
+
+  it('un asiento legítimo de varias líneas sigue entero: sólo cuadra al final', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Factura internet', Débito: '100.000', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '240805', Descripción: 'Factura internet', Débito: '19.000', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Factura internet', Débito: '', Crédito: '119.000' },
+      ],
+      sinNumero,
+    );
+    expect(asientos).toHaveLength(1);
+    expect(asientos[0].movimientos).toHaveLength(3);
+  });
+
+  it('con número no se parte nunca (el número dice qué va junto)', () => {
+    const conNumero = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Comprobante', 'Fecha', 'Cuenta', 'Descripción', 'Débito', 'Crédito']);
+    const asientos = armarAsientos(
+      [
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'X', Débito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'X', Crédito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'X', Débito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'X', Crédito: 10 },
+      ],
+      conNumero,
+    );
+    expect(asientos).toHaveLength(1);
+  });
+
+  it('las piezas de una clave salen seguidas aunque el archivo las intercale', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'A', Débito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'A', Crédito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'B', Débito: 2 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'B', Crédito: 2 },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'A', Débito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'A', Crédito: 1 },
+      ],
+      sinNumero,
+    );
+    expect(asientos.map((a) => a.descripcion)).toEqual(['A', 'A', 'B']);
+  });
+});

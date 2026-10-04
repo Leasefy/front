@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { CuentasPorPagar } from '@/components/contabilidad/gastos/CuentasPorPagar';
 import {
   Select,
   SelectContent,
@@ -37,9 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import { ComoSeFactura } from '@/components/facturacion/ComoSeFactura';
 import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
@@ -229,10 +228,13 @@ function FacturacionContent() {
                 de las dos era el tema. La pantalla que abre (`pagos/cxp/nueva`,
                 lectura de la foto o el PDF con IA) no cambió: cambió de dónde
                 se entra. Sólo en «Compras»: en Ventas todavía no hay motor DIAN
-                que emita nada, y ofrecerlo ahí sería un botón que no cumple. */}
+                que emita nada, y ofrecerlo ahí sería un botón que no cumple.
+                🔴 CB-R21 (04-10, Nico: «Proveedores: Una sola, en Gastos»): ya
+                no abre el formulario del agente de pagos (guardaba la factura
+                aparte, fuera del libro): lleva a Contabilidad → Gastos. */}
             {active === 'compras' && (
               <Button asChild hideArrow className="shrink-0" data-testid="facturacion-registrar-compra">
-                <Link href="/panel/inmobiliaria/pagos/cxp/nueva">
+                <Link href="/panel/inmobiliaria/contabilidad/gastos">
                   <Receipt className="h-4 w-4" weight="bold" />
                   {t(k('registrarCompra'))}
                 </Link>
@@ -342,50 +344,15 @@ function FacturacionContent() {
             </TabsContent>
           ))}
 
-          {/* 🔴 «Compras» es la ÚNICA pestaña que sigue sin listado propio: las
-              facturas de proveedor viven en Pagos → cuentas por pagar. Las
-              otras tres que estaban acá («Electrónica», y ahora «Documento
-              soporte» y «Mandato») ya tienen motor y pintan sus propias
-              tablas. */}
-          {TABS.filter((x) => x.key === 'compras').map((tab) => (
-            <TabsContent key={tab.key} value={tab.key} className="mt-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {tab.columns.map((c) => (
-                      <TableHead key={c} className="whitespace-nowrap">
-                        {t(k(c))}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* El vacío vive dentro del cuerpo para que los encabezados
-                      se sigan viendo.
-
-                      🔴 F4 (auditoría 13-09): decía «Todavía no tienes facturas
-                      de compra» sobre un listado que no puede leer. Una
-                      pantalla que no puede leer no afirma nada sobre los datos
-                      de la persona: dice dónde están de verdad. */}
-                  <TableRow>
-                    <TableCell colSpan={tab.columns.length} className="p-0">
-                      <SinDatos
-                        queSon={t(k('queSon_compras'))}
-                        icono={Receipt}
-                        titulo="Este listado todavía no trae tus compras"
-                        descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
-                        accion={
-                          <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
-                            <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
-                          </Button>
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TabsContent>
-          ))}
+          {/* 🔴 CB-R21 (04-10-2026, decidido con la recomendada): «Compras»
+              muestra las facturas de proveedor de Contabilidad → Gastos —la
+              única fuente, decisión de Nico—, las mismas de Pagos → cuentas
+              por pagar. Antes era un vacío que mandaba a Pagos. */}
+          <TabsContent value="compras" className="mt-0">
+            <div className="p-4">
+              <CuentasPorPagar conRegistrar={false} />
+            </div>
+          </TabsContent>
         </section>
       </Tabs>
     </div>

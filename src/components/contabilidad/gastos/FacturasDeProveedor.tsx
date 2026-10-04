@@ -34,7 +34,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowsClockwise, FileText, Plus, Prohibit } from '@phosphor-icons/react';
+import Link from 'next/link';
+import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -97,6 +98,8 @@ import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { PagarFactura } from './PagarFactura';
+import { egresoDeLaFacturaEnPalabras, sePuedePagar } from '@/lib/contabilidad/pagar-factura';
 import { CampoDeDia } from '../CampoDeDia';
 import { FormularioDeFactura } from './FormularioDeFactura';
 
@@ -143,6 +146,8 @@ export function FacturasDeProveedor({
   /** El asiento que quedó después de causar, para mostrarlo. */
   const [asiento, setAsiento] = useState<AsientoContable | null>(null);
   const [anulando, setAnulando] = useState<FacturaDeProveedor | null>(null);
+  /** 🔴 CB-R21: la factura que se está mandando a pagar (cajón abierto). */
+  const [pagando, setPagando] = useState<FacturaDeProveedor | null>(null);
   const [motivo, setMotivo] = useState('');
   const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
 
@@ -517,6 +522,15 @@ export function FacturasDeProveedor({
                             Asiento N.º {f.asientoNumero}
                           </p>
                         ) : null}
+                        {f.egreso ? (
+                          <Link
+                            href="/panel/inmobiliaria/contabilidad/egresos"
+                            className="mt-1 block text-caption text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                            data-testid={`egreso-de-${f.id}`}
+                          >
+                            {egresoDeLaFacturaEnPalabras(f.egreso)}
+                          </Link>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-2">
@@ -543,6 +557,18 @@ export function FacturasDeProveedor({
                             <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                             Anular
                           </AccionConMotivo>
+                          {/* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */}
+                          {sePuedePagar(f) ? (
+                            <AccionConMotivo
+                              puede={escritura.puede}
+                              motivo={escritura.motivo}
+                              onClick={() => setPagando(f)}
+                              testId={`pagar-${f.id}`}
+                            >
+                              <Money className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                              Pagar
+                            </AccionConMotivo>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRowAnimada>
@@ -687,6 +713,15 @@ export function FacturasDeProveedor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PagarFactura
+        factura={pagando}
+        onCerrar={() => setPagando(null)}
+        onPagada={() => {
+          setPagando(null);
+          void cargar();
+        }}
+      />
     </div>
   );
 }

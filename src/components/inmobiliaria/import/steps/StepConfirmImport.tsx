@@ -1954,12 +1954,12 @@ export function StepConfirmImport({
               : "Todo listo para crear"}
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Se crean{" "}
+            {listas === 1 ? "Se crea" : "Se crean"}{" "}
             <span className="font-mono tabular-nums font-medium text-fg">
               {listas.toLocaleString("es-CO")}
             </span>{" "}
             {listas === 1 ? "inmueble" : "inmuebles"} en un solo proceso del servidor. Puedes cerrar
-            esta página: las seguimos creando.
+            esta página: {listas === 1 ? "lo creamos aunque te vayas." : "las seguimos creando."}
           </p>
         </div>
 
@@ -2103,6 +2103,7 @@ export function StepConfirmImport({
           lote={lote}
           deshabilitado={revisando || descartandoLote || iniciandoCreacion}
           onCambio={() => void refrescarRevision(lote, 1)}
+          firmaDelLote={resumenLote ? `${resumenLote.pendientes}|${resumenLote.listos}|${resumenLote.descartados}` : undefined}
         />
 
         {pendientes.length > 0 && (

@@ -138,6 +138,10 @@ export const CLAVES_DE_FILA = [
   // Del NIT: se compara con el calculado (2026-09-07).
   'digitoVerificacion',
   'nombre',
+  // MG-22: el nombre en PARTES (las dos mitades). Mandan sobre partir el
+  // nombre completo a ojo. Las arma `armarFila`; nunca se editan sueltas.
+  'nombres',
+  'apellidos',
   'correo',
   'telefono',
   'direccion',

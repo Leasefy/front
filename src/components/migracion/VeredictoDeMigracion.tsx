@@ -229,6 +229,17 @@ export function FilasFrenadas({
    */
   const hayQueMirar = lentes.length > 0;
   const hayAccion = Boolean(resolver.href || resolver.onIr);
+  /*
+   * MG-26 (MIG-C, 04-10): cuando la deuda cambia —se activó o se corrigió una
+   * fila allá abajo y la página la volvió a pedir— la tabla se vuelve a
+   * pedir. Antes se pedía una sola vez y seguía listando como frenada una
+   * fila que ya era contrato. Y si el lente elegido se quedó sin filas
+   * (ya no hay pendientes), se pasa al que queda.
+   */
+  const firmaDeLaDeuda = `${deuda.contratos}|${deuda.pendientes}|${deuda.sinInmueble}|${deuda.sinPropietario}`;
+  useEffect(() => {
+    if (lentes.length > 0 && !lentes.includes(lente)) setLente(lentes[0]);
+  }, [firmaDeLaDeuda]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cargar = useCallback(async () => {
     if (!hayQueMirar) return;
@@ -256,7 +267,7 @@ export function FilasFrenadas({
 
   useEffect(() => {
     void cargar();
-  }, [cargar]);
+  }, [cargar, firmaDeLaDeuda]);
 
   if (!hayQueMirar) return null;
 

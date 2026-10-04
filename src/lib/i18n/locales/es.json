@@ -11764,7 +11764,8 @@
       "semaforo": {
         "mora": "En mora · {{dias}} días",
         "vence": "Vence en {{dias}} días",
-        "alDia": "Al día"
+        "alDia": "Al día",
+        "vencidoSinPagar": "Vencido sin pagar"
       },
       "papel": {
         "inquilino": "Inquilino",
@@ -11795,10 +11796,14 @@
       "otrosContratos": "Y {{n}} contratos más en su historial.",
       "verFilasQueFaltan": "Ver las {{n}} filas que faltan",
       "masInteres": "+ {{monto}} de interés de mora",
-      "restaDelContrato": "Resta del contrato"
+      "restaDelContrato": "Resta del contrato",
+      "vencidoSinPagar": "Vencido sin pagar"
     },
     "estadoDeHoy": {
       "cartera": "Cartera por cobrar",
+      "vencido": "Vencido sin pagar",
+      "carteraEnMora": "En mora (pasó el plazo)",
+      "porVencer": "Por vencer",
       "contratosEnCartera": "Contratos en cartera",
       "deudores": "Deudores activos",
       "pagadoHoy": "Pagado hoy",

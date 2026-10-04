@@ -13,7 +13,8 @@ describe('mosaicosDelEstado', () => {
   it('con la cartera del ERP, ésa manda y los ceros del agente no se pintan', () => {
     const m = mosaicosDelEstado({ ...VIEJO, carteraCop: 48_250_000, contratosEnCartera: 12 }, t);
     expect(m.map((x) => x.label)).toEqual(['Cartera por cobrar', 'Contratos en cartera']);
-    expect(String(m[0].value)).toMatch(/48[,.]3/);
+    // CH-02 (CHAT-FIX 04-10): la plata entera, como en la casa (antes «$ 48,3 M»).
+    expect(String(m[0].value)).toBe('$\u00a048.250.000');
     expect(m[1].value).toBe(12);
   });
 

@@ -99,6 +99,8 @@ function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
     enPrejuridico: s.enPrejuridico,
     ...(typeof s.carteraCop === 'number' ? { carteraCop: s.carteraCop } : {}),
     ...(typeof s.contratosEnCartera === 'number' ? { contratosEnCartera: s.contratosEnCartera } : {}),
+    ...(typeof s.vencidoCop === 'number' ? { vencidoCop: s.vencidoCop } : {}),
+    ...(typeof s.porVencerCop === 'number' ? { porVencerCop: s.porVencerCop } : {}),
   };
 }
 

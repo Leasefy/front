@@ -151,6 +151,12 @@ export interface BackendSnapshot {
   /** La cartera del ERP (Pagos → Cartera). Opcional: un micro viejo no la manda. */
   carteraCop?: number;
   contratosEnCartera?: number;
+  /**
+   * CH-02/CH-04 (CHAT-FIX 04-10): lo vencido sin pagar (mora + lo vencido dentro
+   * del plazo) y lo que falta por vencer. Opcional: un micro viejo no lo manda.
+   */
+  vencidoCop?: number;
+  porVencerCop?: number;
 }
 
 export interface BackendChatResponse {

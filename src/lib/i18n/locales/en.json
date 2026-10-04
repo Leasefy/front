@@ -11729,7 +11729,8 @@
       "semaforo": {
         "mora": "Overdue · {{dias}} days",
         "vence": "Ends in {{dias}} days",
-        "alDia": "Up to date"
+        "alDia": "Up to date",
+        "vencidoSinPagar": "Past due, unpaid"
       },
       "papel": {
         "inquilino": "Tenant",
@@ -11760,10 +11761,14 @@
       "otrosContratos": "And {{n}} more leases in their history.",
       "verFilasQueFaltan": "Show the {{n}} remaining rows",
       "masInteres": "+ {{monto}} late interest",
-      "restaDelContrato": "Contract balance"
+      "restaDelContrato": "Contract balance",
+      "vencidoSinPagar": "Past due, unpaid"
     },
     "estadoDeHoy": {
       "cartera": "Receivables",
+      "vencido": "Overdue, unpaid",
+      "carteraEnMora": "Past grace period",
+      "porVencer": "Not yet due",
       "contratosEnCartera": "Leases with debt",
       "deudores": "Active debtors",
       "pagadoHoy": "Paid today",

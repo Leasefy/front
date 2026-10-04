@@ -287,6 +287,9 @@ export interface ChatSnapshot {
   /** La cartera del ERP (Pagos → Cartera). Falta con un micro anterior al 23-09. */
   carteraCop?: number;
   contratosEnCartera?: number;
+  /** Lo vencido sin pagar (CH-02/CH-04): con el plazo sin fijar la mora es $ 0 y esto no. */
+  vencidoCop?: number;
+  porVencerCop?: number;
 }
 
 /**

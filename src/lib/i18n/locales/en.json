@@ -1659,7 +1659,8 @@
           "toastPrendido": "Control group on.",
           "toastApagado": "Control group off.",
           "fallo": "Could not change the control group. Try again."
-        }
+        },
+        "pilotoApagado": "Autopilot is not active for your agency: the director will not plan or give orders until you turn it on."
       }
     },
     "mobileNav": {

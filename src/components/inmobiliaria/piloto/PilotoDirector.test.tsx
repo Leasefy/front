@@ -192,6 +192,31 @@ describe('PilotoDirector — estados', () => {
     expect(q('piloto-director-replanear')).toBeNull()
   })
 
+  it('🔴 sin Piloto automático activo (04-10-2026): lo dice en una línea, muestra el último plan y no ofrece «Volver a planear»', () => {
+    render(hoyCon({ ...PLAN, pilotoActivo: false }))
+    expect(q('piloto-director-piloto-apagado')?.textContent).toContain('inmobiliaria.piloto.director.pilotoApagado')
+    expect(q('piloto-director-replanear')).toBeNull()
+    expect(q('piloto-director-pestana-hoy')).not.toBeNull()
+  })
+
+  it('un micro que no manda `pilotoActivo` cuenta como activo (como antes): sin la línea y con el botón', () => {
+    render(hoyCon(PLAN))
+    expect(q('piloto-director-piloto-apagado')).toBeNull()
+    expect(q('piloto-director-replanear')).not.toBeNull()
+  })
+
+  it('«Volver a planear» con el Piloto apagado (409 piloto_apagado) lo dice, no «ya hay uno en curso»', async () => {
+    render(
+      hoyCon(PLAN, {
+        replanear: vi.fn(async (): Promise<ResultadoDeReplanear> => ({ estado: 'error', status: 409, error: 'piloto_apagado' })),
+      }),
+    )
+    await act(async () => {
+      ;(q('piloto-director-replanear') as HTMLButtonElement).click()
+    })
+    expect(toasts).toEqual([['error', 'inmobiliaria.piloto.director.pilotoApagado']])
+  })
+
   it('un 404 (un micro sin estas rutas) no pinta nada', () => {
     render(hoyCon(null, { notAvailable: true }))
     expect(container.innerHTML).toBe('')

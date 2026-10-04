@@ -148,6 +148,12 @@ export interface PrioridadDelDirector {
 
 export interface DirectorHoy {
   encendido: boolean
+  /**
+   * ¿El Piloto automático está activo para la inmobiliaria? Sin él el director
+   * no planea ni ordena (04-10-2026). Un micro que no lo manda cuenta como sí:
+   * así era antes.
+   */
+  pilotoActivo: boolean
   fecha: string | null
   ciclo: CicloDelDirector | null
   resumen: string | null
@@ -307,6 +313,7 @@ export function normalizarHoy(raw: unknown): DirectorHoy {
   const control = esObjeto(r.grupoDeControl) ? r.grupoDeControl : {}
   return {
     encendido: r.encendido === true,
+    pilotoActivo: r.pilotoActivo !== false,
     fecha: texto(r.fecha),
     ciclo: normalizarCiclo(r.ciclo),
     resumen: texto(r.resumen),
@@ -543,12 +550,18 @@ export type ResultadoDeReplanear =
   | { estado: 'arranco'; cicloId: string | null }
   /** 409: ya había uno en curso. Se espera ESE. */
   | { estado: 'en_curso'; cicloId: string | null }
+  /** 409 sin ciclo que esperar: el director o el Piloto automático están apagados (`error` dice cuál). */
   | { estado: 'error'; status: number; error: string }
 
 export async function postDirectorReplanear(agencyId: string): Promise<ResultadoDeReplanear> {
   const r = await enviar(`${base(agencyId)}/replanear`, 'POST', {})
   if (r.status === 202 || r.status === 200) return { estado: 'arranco', cicloId: texto(r.cuerpo.cicloId) }
-  if (r.status === 409) return { estado: 'en_curso', cicloId: texto(r.cuerpo.cicloId) }
+  if (r.status === 409) {
+    // Un 409 «apagado» no tiene ciclo que esperar: es un error con su porqué.
+    const error = errorDe(r)
+    if (error === 'piloto_apagado' || error === 'director_apagado') return { estado: 'error', status: 409, error }
+    return { estado: 'en_curso', cicloId: texto(r.cuerpo.cicloId) }
+  }
   return { estado: 'error', status: r.status, error: errorDe(r) }
 }
 

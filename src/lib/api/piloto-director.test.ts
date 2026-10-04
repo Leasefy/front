@@ -120,6 +120,15 @@ describe('volver a planear', () => {
     expect(await postDirectorReplanear(AG)).toEqual({ estado: 'en_curso', cicloId: 'c-7' })
   })
 
+  it('🔴 409 «apagado» (el Piloto automático o el director) NO es «en curso»: no hay ciclo que esperar', async () => {
+    respuestas.push(
+      { status: 409, cuerpo: { error: 'piloto_apagado', mensaje: 'El Piloto automático no está activo…' } },
+      { status: 409, cuerpo: { error: 'director_apagado' } },
+    )
+    expect(await postDirectorReplanear(AG)).toEqual({ estado: 'error', status: 409, error: 'piloto_apagado' })
+    expect(await postDirectorReplanear(AG)).toEqual({ estado: 'error', status: 409, error: 'director_apagado' })
+  })
+
   it('403 → sólo un administrador', async () => {
     respuestas.push({ status: 403, cuerpo: { error: 'solo_admin' } })
     expect(await postDirectorReplanear(AG)).toEqual({ estado: 'error', status: 403, error: 'solo_admin' })

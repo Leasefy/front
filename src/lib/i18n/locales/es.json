@@ -1693,7 +1693,8 @@
           "toastPrendido": "Grupo de control prendido.",
           "toastApagado": "Grupo de control apagado.",
           "fallo": "No se pudo cambiar el grupo de control. Intenta de nuevo."
-        }
+        },
+        "pilotoApagado": "El Piloto automático no está activo en tu inmobiliaria: el director no planea ni ordena hasta que lo actives."
       }
     },
     "mobileNav": {

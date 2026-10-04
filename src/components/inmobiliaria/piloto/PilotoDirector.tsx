@@ -21,7 +21,10 @@
  *   · 404               → no se pinta: un micro sin estas rutas (igual que el pulso);
  *   · `encendido:false` → UNA frase («El director todavía no está prendido
  *                         para tu inmobiliaria»), sin error;
- *   · en curso / sin modelo / fallido → lo dice `PilotoDirectorHoy`.
+ *   · en curso / sin modelo / fallido → lo dice `PilotoDirectorHoy`;
+ *   · `pilotoActivo:false` → una línea: sin Piloto automático activo el
+ *                         director no planea ni ordena (04-10-2026); se ve el
+ *                         último plan y no hay «Volver a planear».
  *
  * «Volver a planear» es SÓLO para un administrador (el micro responde 403 al
  * resto). 202 o 409 esperan al mismo ciclo, preguntando cada 5 s hasta 3 min
@@ -152,6 +155,7 @@ export function PilotoDirectorVista({
     if (r.estado === 'arranco') toast.success(t('inmobiliaria.piloto.director.replanear.arranco'))
     else if (r.estado === 'en_curso') toast.info(t('inmobiliaria.piloto.director.replanear.enCurso'))
     else if (r.status === 403 || r.error === 'solo_admin') toast.error(t('inmobiliaria.piloto.director.replanear.soloAdmin'))
+    else if (r.error === 'piloto_apagado') toast.error(t('inmobiliaria.piloto.director.pilotoApagado'))
     else toast.error(t('inmobiliaria.piloto.director.replanear.fallo'))
   }
 
@@ -162,7 +166,8 @@ export function PilotoDirectorVista({
           <Rotulo />
           <p className="max-w-2xl text-caption text-fg-muted">{t('inmobiliaria.piloto.director.queEs')}</p>
         </div>
-        {isAdmin && (
+        {/* Sin Piloto activo el director no planea: no hay a quién pedirle que vuelva a planear. */}
+        {isAdmin && data.pilotoActivo && (
           <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
             <Button
               variant="outline"
@@ -181,6 +186,11 @@ export function PilotoDirectorVista({
           </div>
         )}
       </div>
+      {!data.pilotoActivo && (
+        <p className="px-6 pt-2 text-body-sm text-fg-muted" role="status" data-testid="piloto-director-piloto-apagado">
+          {t('inmobiliaria.piloto.director.pilotoApagado')}
+        </p>
+      )}
       {hoy.seCansoDeEsperar && (
         <p className="px-6 pt-2 text-caption text-fg-muted" role="status" data-testid="piloto-director-se-canso">
           {t('inmobiliaria.piloto.director.replanear.seCanso')}

@@ -44,6 +44,8 @@ import { DesgloseAdeudado } from './DesgloseAdeudado';
 import { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
 import { enviarRecordatorio } from './recordatorio-de-cobro';
 import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 interface CobroDetailProps {
   isOpen: boolean;
@@ -153,9 +155,16 @@ export function CobroDetail({
   onSendReminder,
   onCobroActualizado,
 }: CobroDetailProps) {
-  const { t, formatDate, locale } = useI18n();
+  const { t, locale } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const puedeHacerRecibo = usePuedeHacerRecibo();
+  /*
+   * 🔴 PG-R06 (QA de Pagos, 03-10-2026): anular un recibo es SÓLO del
+   * administrador (CEO, 16-09: «sólo un administrador, con motivo»; Nico lo
+   * confirmó el 03-10 y el back ya responde 403 al resto). El estado de cuenta
+   * lo cumplía; este cajón le ofrecía «Anular» al contador.
+   */
+  const puedeAnularRecibos = usePermissionsContextSafe()?.isAdmin ?? false;
   const { stop: stopLenis, start: startLenis } = useLenis();
 
   /*
@@ -389,10 +398,10 @@ export function CobroDetail({
               <div>
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
                 <p className="font-medium text-foreground">
-                  {formatDate(new Date(cobro.dueDate), {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
+                  {/* PG-R11 (03-10-2026): el día del vencimiento tal cual. Con
+                      `new Date('2026-10-01')` (medianoche UTC) en Bogotá salía
+                      «30 de sept» para un cobro que vence el 1 de octubre. */}
+                  {fechaCorta(String(cobro.dueDate ?? '').slice(0, 10))}
                 </p>
               </div>
             </div>
@@ -419,7 +428,13 @@ export function CobroDetail({
               <div className="flex items-center gap-2">
                 <Warning className="w-4 h-4 text-danger" weight="fill" />
                 <span className="text-sm font-medium text-danger">
-                  {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
+                  {/* PG-R16: «1 día», no «1 días». */}
+                  {t(
+                    cobro.daysLate === 1
+                      ? 'inmobiliaria.cobros.detail.daysLateUno'
+                      : 'inmobiliaria.cobros.detail.daysLate',
+                    { count: cobro.daysLate },
+                  )}
                 </span>
               </div>
             </div>
@@ -437,7 +452,7 @@ export function CobroDetail({
             cargando={cargandoDetalle}
             fallo={falloRecibos}
             onReintentar={recargar}
-            onAnular={anularRecibo}
+            onAnular={puedeAnularRecibos ? anularRecibo : undefined}
           />
         </StaggerItem>
 
@@ -463,11 +478,9 @@ export function CobroDetail({
                 {cobro.lastReminderDate && (
                   <p className="text-xs text-muted-foreground">
                     {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
-                    {formatDate(new Date(cobro.lastReminderDate), {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {/* PG-R11: el día de Colombia. `new Date('2026-10-03')`
+                        es medianoche UTC y en Bogotá se pintaba el 2. */}
+                    {fechaCorta(diaEnColombia(cobro.lastReminderDate) ?? cobro.lastReminderDate)}
                   </p>
                 )}
               </div>

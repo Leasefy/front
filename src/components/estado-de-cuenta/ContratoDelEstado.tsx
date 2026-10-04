@@ -73,6 +73,7 @@ import {
   intercalarCortes,
   periodoLegible,
   pintaDelEstado,
+  sinComprobantesDelSistemaAnterior,
   type ColumnaDeImpuesto,
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
@@ -387,7 +388,14 @@ function SeccionDeFilas({
    * vencimiento atrasado baja a su propia línea y Concepto y Pago se angostan.
    * Los montos no se parten. El lado del inquilino queda igual.
    */
-  const compacta = rol === 'PROPIETARIO';
+  /*
+   * 🔴 PG-15 (QA de Pagos, 03-10-2026), lado del INQUILINO: con dos o más
+   * columnas de impuestos (un local con IVA, retención y ReteIVA) tampoco cabía
+   * a 1440 px (1.241 px en una caja de 1.052). Se pliegan igual que del lado
+   * del propietario, en «Impuestos»; con una sola, queda como
+   * estaba.
+   */
+  const compacta = rol === 'PROPIETARIO' || columnas.length >= 2;
   const columnasVisibles = compacta ? (columnas.length > 0 ? 1 : 0) : columnas.length;
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, {
@@ -469,7 +477,7 @@ function SeccionDeFilas({
                   {compacta
                     ? columnasVisibles > 0 && (
                         <TableHead className="whitespace-nowrap text-right" data-testid="col-impuestos-plegados">
-                          {t('estadoDeCuenta.delPropietario.colImpuestos')}
+                          {t(claveDelLado('estadoDeCuenta.colImpuestos', rol))}
                         </TableHead>
                       )
                     : columnas.map((c) => (
@@ -661,8 +669,11 @@ function Vence({
       )}
     >
       {fechaLegible(fila.fechaVencimiento)}
+      {/* PG-15 (03-10-2026): «vencida» en su propia línea, como del lado del
+          propietario: en el mismo renglón ensanchaba la columna ~50 px y la
+          tabla del inquilino con impuestos no cabía a 1440 px. */}
       {vencida && (
-        <span className="ml-1 font-sans">{t('estadoDeCuenta.vencida')}</span>
+        <span className="block font-sans">{t('estadoDeCuenta.vencida')}</span>
       )}
     </span>
   );
@@ -675,6 +686,20 @@ function Vence({
 function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
   const t = useTextoDelEstado();
   const doc = fila.documentoDePago;
+  // PG-08 (Nico, 03-10-2026): un mes del sistema anterior sin comprobante
+  // migrado lo dice; un «—» se leería como «no pagó».
+  if (sinComprobantesDelSistemaAnterior(fila)) {
+    return (
+      <>
+        <span className="block text-caption text-fg-subtle" data-testid="sin-comprobantes">
+          {t('estadoDeCuenta.sinComprobantesCargados')}
+        </span>
+        <span className="block text-caption text-fg-subtle" data-testid="no-suma">
+          {t('estadoDeCuenta.noSuma')}
+        </span>
+      </>
+    );
+  }
   if (!doc && !fila.fechaDePago) {
     return <span className="text-caption text-fg-subtle">—</span>;
   }
@@ -691,6 +716,13 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           title={doc.descripcion || undefined}
         >
           {doc.numero} · {doc.tipo}
+        </p>
+      )}
+      {/* PG-08: un mes del sistema anterior con su comprobante se lee como
+          pago, pero tampoco suma en los totales (lo cobró el sistema de antes). */}
+      {fila.estado === 'ANTERIOR' && (
+        <p className="text-caption text-fg-subtle" data-testid="no-suma">
+          {t('estadoDeCuenta.noSuma')}
         </p>
       )}
       {/* Sólo en el panel y para un administrador (llega por contexto). */}

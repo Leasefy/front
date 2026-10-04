@@ -797,6 +797,32 @@ describe('las cuotas que llegaron tarde', () => {
     expect(host.textContent).toContain('sus cuotas entran el mes que viene');
     expect(generate).toHaveBeenCalledWith('2026-08', undefined, undefined);
   });
+
+  /*
+   * 🔴 PG-R03 (QA de Pagos, decisión de Nico 03-10-2026): lo que llegó tarde a
+   * un mes YA GIRADO va en una liquidación complementaria. El back la arma
+   * sólo si su dueño viaja en la lista, como las que se suman.
+   */
+  it('🔴 PG-R03: las de un mes ya girado dicen que van en una complementaria y viajan en el generate', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const complementaria = { ...tardia, seSuman: false, motivo: 'Ya se giró.', complementaria: true };
+    preview.mockResolvedValue(
+      previaCon([JORGE, MARCELA, propietario({
+        id: 'p-ya',
+        nombre: 'Luis Ya',
+        yaExiste: true,
+        inmuebles: [{ propertyId: 'inm-ya', titulo: 'Casa Ya', canon: 900_000, comision: 0 }],
+      })], { tardias: [complementaria] }),
+    );
+    previewDeLaSeleccion.mockResolvedValue(previaCon([MARCELA], { tardias: [complementaria] }));
+    await montar();
+    expect(q('cuotas-que-llegaron-tarde')?.textContent).toContain('liquidación complementaria');
+    await clic(casilla('Girarle a Jorge Restrepo'));
+    await esperarElRecalculo();
+    await clic(q('confirmar')!);
+
+    expect(generate).toHaveBeenCalledWith('2026-08', ['p-marcela', 'p-ya'], undefined);
+  });
 });
 
 /*

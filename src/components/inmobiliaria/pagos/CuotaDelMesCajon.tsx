@@ -34,7 +34,7 @@
  */
 
 import Link from 'next/link'
-import { ArrowSquareOut, Phone } from '@phosphor-icons/react'
+import { ArrowSquareOut, Phone, Printer } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -212,6 +212,20 @@ export function CuotaDelMesCajon({ fila, onCerrar, volverA }: CuotaDelMesCajonPr
           ref
             ? 'Esta cuota es un renglón del estado de cuenta del cliente: ahí están todos sus períodos y sus pagos.'
             : 'Sin cuenta en el portal ni documento en el contrato no se puede abrir su estado de cuenta: se identifica con el documento.'
+        }
+        /* 🔴 PG-R12 (03-10-2026): la cuenta de cobro de ESTA cuota, aunque no
+           exista un cobro (un mes migrado no lo tiene). Sale de la cuota, con
+           el total del estado de cuenta. */
+        izquierda={
+          <Button asChild variant="ghost" hideArrow>
+            <Link
+              href={`/panel/inmobiliaria/pagos/cartera/cuotas/${encodeURIComponent(fila.cuotaId)}/cuenta-de-cobro?volver=${encodeURIComponent(volverA)}`}
+              data-testid="cajon-cuenta-de-cobro"
+            >
+              <Printer className="h-4 w-4" aria-hidden="true" />
+              Cuenta de cobro
+            </Link>
+          </Button>
         }
       >
         <Button variant="ghost" hideArrow onClick={onCerrar}>

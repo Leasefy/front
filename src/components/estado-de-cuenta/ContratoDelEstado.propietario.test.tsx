@@ -135,13 +135,17 @@ describe('Estado de cuenta del propietario — cabe en escritorio (P-19)', () =>
     expect(tablaDe('7').textContent).not.toContain('vencida');
   });
 
-  it('el lado del INQUILINO queda igual: una columna por impuesto', () => {
+  it('el lado del INQUILINO con dos o más impuestos también se pliega, con SU rótulo (PG-15)', () => {
+    // Cambiado a propósito el 03-10-2026 (QA de Pagos, PG-15): del lado del
+    // inquilino la tabla con IVA y retención tampoco cabía a 1440 px. Se
+    // pliega igual, pero se llama «Impuestos», no «Comisión e impuestos».
     montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [contratoConImpuestos()] })} hoy="2026-09-13" />);
     const encabezados = Array.from(tablaDe('1659').querySelectorAll('th')).map((th) => th.textContent);
-    expect(encabezados).toContain('IVA');
-    expect(encabezados).toContain('Retención');
+    expect(encabezados).toContain('Impuestos');
     expect(encabezados).not.toContain('Comisión e impuestos');
-    expect(tablaDe('1659').querySelector('[data-testid="impuestos-plegados"]')).toBeNull();
+    const plegados = tablaDe('1659').querySelector('[data-testid="impuestos-plegados"]')?.textContent ?? '';
+    expect(plegados).toContain('IVA');
+    expect(plegados).toContain('Retención');
   });
 
   it('el inquilino sigue viendo «vencida»', () => {

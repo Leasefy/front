@@ -127,6 +127,16 @@ export const PANEL = '/panel/inmobiliaria';
 const CONTADOR_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
 
 /**
+ * 🔴 PG-R07 (QA de Pagos, 03-10-2026): la «Deuda del mes» también es del
+ * AUXILIAR DE CARTERA. Su rol es hacer recibos (`cobros:create`, O-05) y la
+ * puerta de su trabajo diario —la deuda del mes con «Registrar un pago»— no
+ * existía para él: sólo llegaba al recibo por Cartera › Cobros emitidos.
+ * Decisión de Nico (la recomendada): la ve, sin Liquidaciones ni Dispersiones
+ * (esas filas siguen con `CONTADOR_ROLES` o `dispersiones`).
+ */
+const DEUDA_DEL_MES_ROLES: readonly AgencyRole[] = [...CONTADOR_ROLES, AGENCY_ROLES.AUXILIAR_CARTERA];
+
+/**
  * Los que gestionan: ADMIN y AGENTE. Es lo mismo que `AgencyRoleGuard
  * allowed="managers"`, y va acá porque una fila del sidebar que un rol ve pero
  * no puede abrir es una promesa rota — el rol entra y lo devuelven a la
@@ -610,7 +620,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // 2026-09-16, con su URL intacta. Desde Cartera —que es lo que la
         // cobranza persigue— se llega con un enlace (`IrALaCobranza`), no con
         // una card: una sala la reclama un solo lugar.
-        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', labelEnElRielKey: 'inmobiliaria.nav.deudaDelMes', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
+        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', labelEnElRielKey: 'inmobiliaria.nav.deudaDelMes', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: DEUDA_DEL_MES_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },

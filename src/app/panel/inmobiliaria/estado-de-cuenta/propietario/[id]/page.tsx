@@ -91,7 +91,14 @@ function Contenido() {
 
 export default function EstadoDeCuentaDelPropietarioPage() {
   return (
-    <PageGuard module="cobros" action="view">
+    /*
+     * 🔴 PG-R08 (QA de Pagos, 03-10-2026): la pantalla pedía `cobros` y el back
+     * `dispersiones:view` (`estado-de-cuenta.controller.ts`: «es la plata que
+     * se le gira a él»). El visor y el auxiliar entraban y recibían un 403; un
+     * rol con dispersiones y sin cobros no entraba. El mismo permiso que el
+     * back: quien no lo tiene ve el cartel de la pantalla entera.
+     */
+    <PageGuard module="dispersiones" action="view">
       <Suspense
         fallback={
           <div className="p-6 lg:p-8">

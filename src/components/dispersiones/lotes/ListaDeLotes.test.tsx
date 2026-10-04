@@ -220,6 +220,27 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     expect(botonQueDice('Armar el lote de')).toBeDefined();
   });
 
+  it('🔴 PG-05 (03-10-2026): cada exclusión dice su porqué — el giro devuelto no es «le falta un dato bancario»', async () => {
+    const mes = unMesChico();
+    mes.candidatos = mes.candidatos.map((c, i) =>
+      i === 0
+        ? { ...c, motivoDeExclusion: 'Retenida: el banco devolvió el giro anterior', tipoDeExclusion: 'RETENIDA_GIRO_DEVUELTO' as const }
+        : i === 1
+          ? { ...c, tipoDeExclusion: 'SIN_CUENTA' as const }
+          : i === 2
+            ? { ...c, tipoDeExclusion: 'DATO_BANCARIO' as const }
+            : { ...c, tipoDeExclusion: null },
+    );
+    candidatos.mockResolvedValue(mes);
+    await montar('2026-09');
+
+    const texto = frase();
+    expect(texto).toContain('1 retenida: el banco devolvió el giro anterior y falta aprobar la cuenta');
+    expect(texto).toContain('1 sin cuenta bancaria registrada');
+    expect(texto).toContain('a 1 le falta un dato bancario');
+    expect(texto).not.toContain('A 3 les falta un dato bancario');
+  });
+
   it('el mes se elige con SelectorDeMes en español, no con un <input type="month">', async () => {
     await montar('2026-09');
 

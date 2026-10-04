@@ -41,8 +41,53 @@ export function motivoDelFalloDelRecordatorio(error: unknown): string {
 }
 
 /**
- * Espera el envío. Devuelve `true` sólo si salió; nunca relanza, porque el
- * fallo ya quedó dicho en pantalla.
+ * Lo que contesta `PUT /inmobiliaria/cobros/:id/send-reminder`.
+ *
+ * 🔴 PG-R01 (QA de Pagos, 03-10-2026): el back sumaba `remindersSent` y NO
+ * mandaba nada, y la pantalla decía «Recordatorio enviado · Se envió un
+ * recordatorio a X». Decisión de Nico: que salga de verdad, y si el aviso
+ * está apagado, que lo diga. Del lado del front eso es UNA regla: «se envió»
+ * sólo cuando el back CONFIRMA que salió (`enviado: true`). Una respuesta sin
+ * esa confirmación —el back de antes, que no manda nada— no es un envío.
+ */
+export interface RespuestaDelRecordatorio {
+  enviado?: boolean;
+  /** Por dónde salió: `EMAIL`, `WHATSAPP`… */
+  canal?: string | null;
+  /** Por qué no salió (el aviso apagado, sin correo ni teléfono…). */
+  motivo?: string | null;
+}
+
+/** Lo que se dice cuando el servidor contestó bien pero no confirmó el envío. */
+export const NO_CONFIRMO_EL_ENVIO =
+  'El servidor no confirmó que el recordatorio haya salido, así que no lo damos por enviado.';
+
+const CANAL_LEGIBLE: Record<string, string> = {
+  EMAIL: 'correo',
+  CORREO: 'correo',
+  WHATSAPP: 'WhatsApp',
+  SMS: 'SMS',
+};
+
+/** ¿Salió? Lee la respuesta con desconfianza: sólo `enviado: true` es un sí. */
+export function loQueDijoElServidor(respuesta: unknown): {
+  salio: boolean;
+  canal: string | null;
+  motivo: string | null;
+} {
+  const r = (respuesta && typeof respuesta === 'object' ? respuesta : {}) as RespuestaDelRecordatorio;
+  const texto = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const canal = texto(r.canal);
+  return {
+    salio: r.enviado === true,
+    canal: canal ? (CANAL_LEGIBLE[canal.toUpperCase()] ?? canal) : null,
+    motivo: texto(r.motivo),
+  };
+}
+
+/**
+ * Espera el envío. Devuelve `true` sólo si el servidor confirmó que salió;
+ * nunca relanza, porque el fallo ya quedó dicho en pantalla.
  */
 export async function enviarRecordatorio({
   enviar,
@@ -51,14 +96,22 @@ export async function enviarRecordatorio({
   enviar: () => Promise<unknown> | unknown;
   exito: { titulo: string; descripcion: string };
 }): Promise<boolean> {
+  let respuesta: unknown;
   try {
-    await enviar();
+    respuesta = await enviar();
   } catch (error) {
     toast.error('No se pudo enviar el recordatorio', {
       description: motivoDelFalloDelRecordatorio(error),
     });
     return false;
   }
-  toast.success(exito.titulo, { description: exito.descripcion });
+  const dicho = loQueDijoElServidor(respuesta);
+  if (!dicho.salio) {
+    toast.warning('El recordatorio no salió', { description: dicho.motivo ?? NO_CONFIRMO_EL_ENVIO });
+    return false;
+  }
+  toast.success(exito.titulo, {
+    description: dicho.canal ? `${exito.descripcion} por ${dicho.canal}.` : exito.descripcion,
+  });
   return true;
 }

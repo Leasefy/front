@@ -669,9 +669,12 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
   it('🔴 PERMISOS: cada pantalla conserva EXACTAMENTE el gate que tenía como fila propia', () => {
     // Unificar no puede abrirle a nadie una pantalla que no tenía ni cerrarle
     // una que usaba. Estos son los gates de ANTES, uno por uno.
+    // PG-R07 (QA de Pagos, 03-10-2026), a propósito: la Deuda del mes también
+    // la ve el AUXILIAR DE CARTERA (hace recibos; decisión de Nico, la
+    // recomendada). Liquidaciones y Dispersiones siguen igual (abajo).
     expect({ module: pagos.module, roles: pagos.roles }).toEqual({
       module: null,
-      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR, AGENCY_ROLES.AUXILIAR_CARTERA],
     });
     expect(porHref('/pagos/recaudo')?.module).toBe('cobros');
     expect(porHref('/pagos/cartera')?.module).toBe('cobros');

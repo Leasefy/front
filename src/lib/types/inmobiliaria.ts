@@ -957,6 +957,13 @@ export interface CuotasTardias {
   seSuman: boolean;
   /** Por qué no se pueden sumar. `null` si se suman. */
   motivo: string | null;
+  /**
+   * 🔴 PG-R03 (QA de Pagos, decisión de Nico 03-10-2026): su liquidación del
+   * mes ya está cerrada (girada, aprobada o en un lote) y al generar se le arma
+   * una liquidación COMPLEMENTARIA de ese mes con estas cuotas, que se gira en
+   * el próximo lote. Ausente o `false` con un back sin la migración.
+   */
+  complementaria?: boolean;
 }
 
 export interface VistaPreviaDeDispersiones {

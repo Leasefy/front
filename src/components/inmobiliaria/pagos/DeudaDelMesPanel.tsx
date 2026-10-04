@@ -135,19 +135,30 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
+
+/** PG-R18: cuántos meses por venir ofrece el selector (como «Por pagar»: el mes en curso + 3). */
+export const MESES_HACIA_ADELANTE = 3
 
 /** El mes corriente en 'YYYY-MM', en hora LOCAL (no UTC: ver lib/utils/mes). */
 export function mesActual(hoy: Date = new Date()): string {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** Los últimos `cantidad` meses hasta hoy, del más reciente al más viejo. */
-export function mesesRecientes(cantidad = 12, hoy: Date = new Date()): string[] {
+/**
+ * Los últimos `cantidad` meses hasta hoy, del más reciente al más viejo.
+ *
+ * 🔴 PG-R18 (QA de Pagos, decisión de Nico 03-10-2026): con `adelante` el
+ * selector también ofrece los meses que vienen —hasta el mes en curso + 3, como
+ * «Por pagar a propietarios»—: un inquilino que adelanta paga cuotas de
+ * noviembre, y esa deuda ya existe desde la firma del contrato.
+ */
+export function mesesRecientes(cantidad = 12, hoy: Date = new Date(), adelante = 0): string[] {
   const meses: string[] = []
-  for (let i = 0; i < cantidad; i += 1) {
+  for (let i = -adelante; i < cantidad; i += 1) {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
     meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
@@ -397,7 +408,8 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   const { datos, cargando, error, recargar } = useCarteraDelMes(mes)
   const puedeHacerRecibo = usePuedeHacerRecibo()
 
-  const opciones = useMemo(() => mesesRecientes(12), [])
+  // PG-R18: los 12 de atrás y hasta el mes en curso + 3.
+  const opciones = useMemo(() => mesesRecientes(12, new Date(), MESES_HACIA_ADELANTE), [])
   const titulo = mesEnTitulo(mes)
 
   const todas = useMemo(() => datos?.filas ?? [], [datos])
@@ -774,7 +786,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
           de cartera de su contrato. Cada fila es un mes del{' '}
           <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
-          clic en su nombre para verlo completo. Leído contra el {datos.hoy}.
+          clic en su nombre para verlo completo. Leído contra el {fechaLarga(datos.hoy)}.
         </p>
       ) : null}
 

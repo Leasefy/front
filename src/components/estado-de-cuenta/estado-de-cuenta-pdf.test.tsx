@@ -245,8 +245,10 @@ describe('EstadoDeCuentaPDF', () => {
     // podría rastrear hasta un ingreso.
     expect(hoja).toContain('28518 · INGRESO');
     expect(hoja).toContain('Sin pago');
-    // Y la cuota que gestionó el sistema viejo se dice con esas palabras.
-    expect(hoja).toContain('Sistema anterior');
+    // Y la cuota que gestionó el sistema viejo se dice con esas palabras
+    // (PG-08, Nico 03-10-2026: «Del sistema anterior»; sin comprobante, lo dice).
+    expect(hoja).toContain('Del sistema anterior');
+    expect(hoja).toContain('Sin comprobantes cargados');
   });
 
   it('🔴 ola E: el saldo a favor del inquilino y su devolución salen aparte de los totales', () => {

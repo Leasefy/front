@@ -70,6 +70,9 @@ import {
   useCopyDeMigracionEnLista,
 } from '@/components/migracion/VeredictoDeMigracion';
 import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
+import { loQueDijoElServidor } from '@/components/inmobiliaria/recordatorio-de-cobro';
+import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 
 // View modes
@@ -377,21 +380,29 @@ function CobrosContent() {
    */
   const handleSendReminder = useCallback(
     async (cobro: Cobro) => {
-      await cobrosApi.sendReminder(cobro.id);
-
-      setCobrosData((prev) => {
-        if (!prev) return prev;
-        return prev.map((c) =>
-          c.id === cobro.id
-            ? {
-                ...c,
-                remindersSent: c.remindersSent + 1,
-                lastReminderDate: new Date().toISOString().split('T')[0],
-                updatedAt: new Date().toISOString(),
-              }
-            : c
-        );
-      });
+      const respuesta = await cobrosApi.sendReminder(cobro.id);
+      /*
+       * 🔴 PG-R01 (03-10-2026): el contador sube sólo si el back CONFIRMA que
+       * salió (`enviado: true`). La respuesta vuelve al cajón, que dice lo que
+       * pasó (`recordatorio-de-cobro.ts`).
+       */
+      if (loQueDijoElServidor(respuesta).salio) {
+        setCobrosData((prev) => {
+          if (!prev) return prev;
+          return prev.map((c) =>
+            c.id === cobro.id
+              ? {
+                  ...c,
+                  remindersSent: c.remindersSent + 1,
+                  // PG-R11: el día de Colombia; a las 7 p. m. UTC ya es mañana.
+                  lastReminderDate: hoyEnColombia(),
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          );
+        });
+      }
+      return respuesta;
     },
     [setCobrosData]
   );
@@ -578,6 +589,15 @@ function CobrosContent() {
       {/* Las otras lecturas de la misma plata: un cobro es un DOCUMENTO sobre
           la cartera, no un módulo aparte (Nico + CEO, 2026-09-15). */}
       <PestanasDeCartera />
+
+      {/* PG-07 (QA de Pagos, 03-10-2026): los cobros sin cuota y su plata,
+          sólo para el administrador y sólo si hay alguno. */}
+      <CobrosSinCuota
+        onReaplicado={() => {
+          void refetchCobros();
+          void refetchSummary();
+        }}
+      />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen → fallo. */}

@@ -352,6 +352,16 @@ describe('el mes', () => {
   it('mesesRecientes va del más nuevo al más viejo y cruza el año', () => {
     expect(mesesRecientes(3, new Date(2026, 1, 15))).toEqual(['2026-02', '2026-01', '2025-12'])
   })
+
+  it('🔴 PG-R18 (03-10-2026): con `adelante` ofrece los meses que vienen, también cruzando el año', () => {
+    expect(mesesRecientes(2, new Date(2026, 10, 15), 3)).toEqual([
+      '2027-02',
+      '2027-01',
+      '2026-12',
+      '2026-11',
+      '2026-10',
+    ])
+  })
 })
 
 describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
@@ -630,6 +640,12 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(host.querySelector('[data-testid="resumen-del-mes"]')).toBeNull()
   })
 
+  it('🔴 PG-13 (03-10-2026): «Leído contra el 15 de septiembre de 2026», no «2026-09-15»', () => {
+    montar()
+    expect(host.textContent).toContain('Leído contra el 15 de septiembre de 2026')
+    expect(host.textContent).not.toContain('2026-09-15')
+  })
+
   it('🔴 la columna «Período» dice el mes: el back manda `mes`, no `month`', () => {
     // El espejo del tipo decía `month` y el back siempre mandó `mes`: la
     // columna venía leyendo `undefined` y salía en blanco.
@@ -717,6 +733,16 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
       expect(cajon?.querySelector('[data-testid="cajon-se-debe"]')?.textContent).toContain(
         '2.000.000',
       )
+    })
+
+    it('🔴 PG-R12 (03-10-2026): el cajón de la cuota ofrece SU cuenta de cobro, que sale de la cuota y no de un cobro', () => {
+      montar()
+      act(() => {
+        ($('[data-testid="cuota-fila"]') as HTMLElement).click()
+      })
+      expect(
+        document.body.querySelector('[data-testid="cajon-cuenta-de-cobro"]')?.getAttribute('href'),
+      ).toBe('/panel/inmobiliaria/pagos/cartera/cuotas/q1/cuenta-de-cobro?volver=%2Fpanel%2Finmobiliaria%2Fpagos')
     })
 
     it('el pie lo dice con palabras: cada fila es un mes del estado de cuenta', () => {

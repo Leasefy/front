@@ -95,6 +95,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PrioridadInbox } from '@/components/inmobiliaria/pagos/PrioridadInbox'
 import { DeudaDelMesPanel } from '@/components/inmobiliaria/pagos/DeudaDelMesPanel'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { OverviewFeedEntry } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
@@ -318,10 +319,38 @@ function PagosHome() {
   )
 }
 
+/**
+ * 🔴 PG-R07 (QA de Pagos, 03-10-2026): la Deuda del mes del AUXILIAR DE
+ * CARTERA. Su trabajo es hacer recibos y ésta es la puerta («Registrar un
+ * pago»), así que la ve (Nico, la recomendada). Sin la bandeja ni la actividad
+ * del agente de pagos: son la cola de facturas de proveedor, que no es suya, y
+ * pedirlas sólo le pintaría un «no pudimos cargar».
+ */
+function PagosDelAuxiliar() {
+  const { t } = useI18n()
+  return (
+    <div className="space-y-8 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
+      <header className="space-y-1.5">
+        <SectionLabel>Pagos · inquilinos</SectionLabel>
+        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.pagos_home.title')}</h1>
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
+          {t('inmobiliaria.ai.pagos_home.subtitle')}
+        </p>
+      </header>
+      <DeudaDelMesPanel />
+    </div>
+  )
+}
+
+function PagosSegunElRol() {
+  const rol = usePermissionsContextSafe()?.agencyRole ?? null
+  return rol === AGENCY_ROLES.AUXILIAR_CARTERA ? <PagosDelAuxiliar /> : <PagosHome />
+}
+
 export default function PagosPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
-      <PagosHome />
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR, AGENCY_ROLES.AUXILIAR_CARTERA]}>
+      <PagosSegunElRol />
     </PageGuard>
   )
 }

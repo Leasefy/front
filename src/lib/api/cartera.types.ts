@@ -287,6 +287,11 @@ export interface CarteraDelMes {
 
 export type EstadoDelGiro =
   | 'SIN_GENERAR'
+  /**
+   * PG-02 (QA de Pagos, 03-10-2026): el mes tiene una dispersión generada Y
+   * cuotas que llegaron después y todavía no están en ninguna.
+   */
+  | 'GENERADO_EN_PARTE'
   | 'DISP_PENDING'
   | 'PROCESSING'
   | 'DISP_COMPLETED'

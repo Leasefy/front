@@ -1769,8 +1769,41 @@ describe('<RegistrarPagoModal> las facturas del pago (2026-09-16)', () => {
 
     const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
       ?.description;
-    expect(descripcion).toContain('recibos.form.facturasDelPago');
+    // PG-12 (03-10-2026), cambiado a propósito: ya no «Facturas de … al día»
+    // (se leía «pagadas» sobre un mes que quedaba debiendo): la que quedó en
+    // cero se dice pagada; la que no, con lo que le queda.
+    expect(descripcion).toContain('recibos.form.facturaPagada');
+    expect(descripcion).not.toContain('recibos.form.facturasDelPago');
     expect(descripcion).toContain('recibos.form.facturasSinEmitir');
+  });
+
+  it('🔴 PG-12: un mes que queda con saldo NO se dice «al día»: se dice cuánto le queda', async () => {
+    const { toast } = await import('sonner');
+    const factura = (mes: string, saldoCop: number) => ({
+      facturaId: `f-${mes}`,
+      contractId: 'ct1',
+      mes,
+      estado: 'GENERADA' as const,
+      numero: null,
+      totalCop: 2_750_000,
+      netoCop: 2_750_000,
+      abonadoCop: 2_750_000 - saldoCop,
+      saldoCop,
+      generadaAhora: true,
+    });
+    const onSubmit = vi.fn().mockResolvedValue({
+      ...RESPUESTA,
+      facturas: [factura('2026-09', 0), factura('2026-10', 2_500_000)],
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.facturaPagada');
+    expect(descripcion).toContain('recibos.form.facturaConSaldo');
+    expect(descripcion).not.toContain('al día');
   });
 });
 

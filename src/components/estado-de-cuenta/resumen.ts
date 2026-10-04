@@ -26,6 +26,7 @@ import type {
   EstadoDeCuenta,
   FilaDelEstadoDeCuenta,
 } from '@/lib/types/estado-de-cuenta';
+import { sinComprobantesDelSistemaAnterior } from './filas';
 
 /** Un día en milisegundos. */
 const UN_DIA = 24 * 60 * 60 * 1000;
@@ -201,6 +202,14 @@ export interface AmortizacionDelContrato {
    */
   cubiertas: number;
   cubiertoCop: number;
+  /**
+   * 🔴 PG-08 (Nico, 03-10-2026): las cuotas del sistema anterior SIN
+   * comprobante migrado. Siguen en su tramo gris (existen: el contrato tiene
+   * esas cuotas), pero NO son «cubiertas»: sin comprobante no se afirma que
+   * se pagaron, y tampoco son deuda. Con el comprobante, sí cuentan como
+   * pagadas (`cubiertas`).
+   */
+  anterioresSinComprobante: number;
 }
 
 /**
@@ -227,15 +236,23 @@ export function amortizacionDe(
   const pactadoCop = filas.reduce((s, f) => s + f.valorNeto, 0);
   const total = filas.length;
 
+  // PG-08: «vino pagado» sólo con el comprobante migrado.
+  const anterioresConComprobante = filas.filter(
+    (f) => f.estado === 'ANTERIOR' && !sinComprobantesDelSistemaAnterior(f),
+  );
+  const anterioresSinComprobante = anteriores - anterioresConComprobante.length;
+
   return {
     pagadas: pagadasFilas.length,
     anteriores,
     total,
     pagadoCop,
     anterioresCop,
-    // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado.
-    cubiertas: pagadasFilas.length + anteriores,
-    cubiertoCop: pagadoCop + anterioresCop,
+    // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado CON su
+    // comprobante (PG-08: sin comprobante no se afirma que se pagó).
+    cubiertas: pagadasFilas.length + anterioresConComprobante.length,
+    cubiertoCop: pagadoCop + anterioresConComprobante.reduce((s, f) => s + f.valorNeto, 0),
+    anterioresSinComprobante,
     pactadoCop,
     porcentaje: total === 0 ? 0 : Math.round((pagadasFilas.length / total) * 100),
     porcentajeAnterior: total === 0 ? 0 : Math.round((anteriores / total) * 100),

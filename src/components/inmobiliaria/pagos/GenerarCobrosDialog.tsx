@@ -41,6 +41,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui'
+import { Checkbox } from '@/components/ui/checkbox'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Appear, Banner } from '@leasefy/cadence'
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -186,6 +187,12 @@ export function GenerarCobrosDialog({
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<unknown>(null)
   /**
+   * 🔴 PG-R13 (QA de Pagos, 03-10-2026): avisarles a los inquilinos es una
+   * decisión de quien genera, apagada por defecto. Antes generar disparaba
+   * «Factura y cobro del mes» a todos sin decirlo (el incidente del 14-09).
+   */
+  const [avisar, setAvisar] = useState(false)
+  /**
    * El resultado de la corrida. Antes el diálogo se cerraba y listo; desde que
    * el back excluye los contratos VENCIDOS hay que mostrarlos, porque una
    * corrida que deja gente afuera en silencio es justo lo que esa exclusión
@@ -201,7 +208,9 @@ export function GenerarCobrosDialog({
     setEnviando(true)
     setError(null)
     try {
-      const r = await cobrosApi.generate(mes)
+      const r = avisar
+        ? await cobrosApi.generate(mes, { avisarALosInquilinos: true })
+        : await cobrosApi.generate(mes)
       onGenerado()
       const omitidos = r?.omitidosPorContratoVencido
       // Sólo se queda abierto si hay algo que CONTAR: vencidos que quedaron
@@ -225,6 +234,7 @@ export function GenerarCobrosDialog({
     if (!siguiente) {
       setError(null)
       setResultado(null)
+      setAvisar(false)
     }
     onOpenChange(siguiente)
   }
@@ -353,6 +363,25 @@ export function GenerarCobrosDialog({
                 </span>
               </p>
             )}
+
+            {/* PG-R13: si los inquilinos se enteran o no lo decide quien
+                genera, y se dice ANTES de confirmar. */}
+            <label className="flex items-start gap-2 px-1 text-sm text-fg" data-testid="generar-avisar">
+              <Checkbox
+                className="mt-0.5"
+                checked={avisar}
+                onCheckedChange={(v) => setAvisar(v === true)}
+                data-testid="generar-avisar-casilla"
+              />
+              <span>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.avisarALosInquilinos')}
+                <span className="block text-caption text-fg-muted">
+                  {avisar
+                    ? t('inmobiliaria.ai.pagos_home.resumen.generar.avisarSi')
+                    : t('inmobiliaria.ai.pagos_home.resumen.generar.avisarNo')}
+                </span>
+              </span>
+            </label>
           </div>
         )}
 

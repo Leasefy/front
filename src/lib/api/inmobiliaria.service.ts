@@ -76,6 +76,7 @@ import {
   type DispersionDelBack,
 } from './dispersion-adapter';
 import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-del-mes';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -1263,9 +1264,18 @@ export const cobrosApi = {
    * lista, y una corrida que deja gente afuera en silencio es exactamente lo
    * que esa exclusión vino a evitar.
    */
-  async generate(month: string): Promise<ResultadoDeLaGeneracion> {
+  /**
+   * 🔴 PG-R13 (QA de Pagos, 03-10-2026): generar NO avisa a los inquilinos
+   * salvo que la persona lo pida (`avisarALosInquilinos: true`); el back
+   * tampoco avisa sin el campo. Es el incidente del 14-09.
+   */
+  async generate(
+    month: string,
+    opciones?: { avisarALosInquilinos?: boolean },
+  ): Promise<ResultadoDeLaGeneracion> {
     return apiClient.post<ResultadoDeLaGeneracion>(`${BASE}/cobros/generate`, {
       month,
+      ...(opciones?.avisarALosInquilinos ? { avisarALosInquilinos: true } : {}),
     });
   },
 
@@ -1293,8 +1303,15 @@ export const cobrosApi = {
     return { cobro: normalizeCobro(res.cobro), creado: Boolean(res.creado) };
   },
 
-  async sendReminder(id: string): Promise<void> {
-    await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
+  /**
+   * 🔴 PG-R01 (03-10-2026): devuelve lo que contestó el back. «Se envió» sólo
+   * con `enviado: true` (`recordatorio-de-cobro.ts`): el back de antes sumaba
+   * el contador sin mandar nada.
+   */
+  async sendReminder(id: string): Promise<{ enviado?: boolean; canal?: string | null; motivo?: string | null } | null> {
+    return apiClient.put<{ enviado?: boolean; canal?: string | null; motivo?: string | null } | null>(
+      `${BASE}/cobros/${id}/send-reminder`,
+    );
   },
 
   /**
@@ -1496,7 +1513,8 @@ export const dispersionesApi = {
      * Las cuotas que llegaron tarde: las que se sumaron a una liquidación
      * abierta y las que no, con el motivo. Opcional: back anterior.
      */
-    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[] };
+    /** PG-R03: `complementarias` = las liquidaciones complementarias que se armaron. */
+    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[]; complementarias?: CuotasTardias[] };
   }> {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
@@ -1575,6 +1593,18 @@ export const dispersionesApi = {
   async preview(month: string): Promise<VistaPreviaDeDispersiones> {
     return apiClient.get<VistaPreviaDeDispersiones>(
       `${BASE}/dispersiones/preview?month=${month}`,
+    );
+  },
+
+  /**
+   * 🔴 PG-02 (QA de Pagos, 03-10-2026): la liquidación del MES COMPLETO por
+   * propietario —lo ya generado en dispersiones más lo que falta—, con el
+   * estado verdadero de cada fila. Es lo que pinta «Liquidaciones»; `preview`
+   * sigue siendo lo que falta generar (el asistente de Dispersiones).
+   */
+  async liquidacionDelMes(month: string): Promise<LiquidacionDelMesCompleto> {
+    return apiClient.get<LiquidacionDelMesCompleto>(
+      `${BASE}/dispersiones/liquidacion-del-mes?month=${encodeURIComponent(month)}`,
     );
   },
 

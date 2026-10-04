@@ -218,11 +218,20 @@ export function CuotasDelMesTabla({
                   }
                 }}
               >
+                {/* 🔴 PG-15 (QA de Pagos, 03-10-2026): un nombre largo («Inversiones y
+                    Construcciones del Valle de Aburrá Hermanos Restrepo Londoño
+                    S.A.S.») se llevaba 594 px y la tabla no cabía a 1440 px
+                    («se corre a los lados», con «Pagado / falta» cortado). El
+                    nombre va en hasta DOS renglones dentro de un ancho fijo, con
+                    el nombre entero al pasar el puntero. */}
                 <TableCell>
-                  <p className="truncate font-medium text-fg">
+                  <p
+                    className="line-clamp-2 max-w-[16rem] break-words font-medium text-fg"
+                    title={f.inquilino ?? undefined}
+                  >
                     {f.inquilino ?? 'Sin nombre en el contrato'}
                   </p>
-                  <p className="truncate text-caption text-fg-muted">
+                  <p className="max-w-[16rem] truncate text-caption text-fg-muted">
                     {f.documento ? `CC ${f.documento}` : ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
                   </p>

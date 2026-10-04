@@ -256,7 +256,12 @@ export function CobroCard({
         {cobro.daysLate > 0 && (
           <div className="flex items-center gap-2 text-sm text-warning">
             <Warning className="w-4 h-4" weight="fill" />
-            <span className="font-medium">{t('inmobiliaria.cobros.card.daysLate', { count: cobro.daysLate })}</span>
+            {/* PG-R16: «1 día de mora», no «1 días». */}
+            <span className="font-medium">
+              {t(cobro.daysLate === 1 ? 'inmobiliaria.cobros.card.daysLateUno' : 'inmobiliaria.cobros.card.daysLate', {
+                count: cobro.daysLate,
+              })}
+            </span>
           </div>
         )}
 

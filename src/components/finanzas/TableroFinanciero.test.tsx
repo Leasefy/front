@@ -138,6 +138,13 @@ describe('tablero financiero', () => {
     expect(valor('margen')).toContain('12.100.000');
   });
 
+  it('🔴 PG-13 (03-10-2026): las fechas con la forma de la casa, nunca «2026-09-17»', async () => {
+    await pintar();
+    expect(container.textContent).toContain('Datos al 17 de septiembre de 2026 (hora de Bogotá)');
+    expect(container.textContent).toContain('Los recibos de caja con fecha 17 de septiembre de 2026');
+    expect(container.textContent).not.toContain('2026-09-17');
+  });
+
   it('🔴 una tasa que el back no pudo medir sale «—», nunca «0 %»', async () => {
     h.tablero.mockResolvedValue(
       tablero({

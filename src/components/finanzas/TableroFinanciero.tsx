@@ -48,6 +48,7 @@ import type { TableroFinanciero as Tablero, TramoDeCartera } from '@/lib/api/fin
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 const NUMERO = new Intl.NumberFormat('es-CO');
 
@@ -187,7 +188,8 @@ export function TableroFinancieroPanel() {
             <BloqueDeMargen tablero={tablero} />
 
             <p className="text-caption text-fg-muted">
-              Datos al {tablero.hoy} (hora de Bogotá).{' '}
+              {/* PG-13 (03-10-2026): la fecha de la casa, no «2026-10-03». */}
+              Datos al {fechaLarga(tablero.hoy)} (hora de Bogotá).{' '}
               {tablero.sedeId === null
                 ? 'Consolidado de todas las sedes.'
                 : `Sólo la sede ${sedes.find((s) => s.id === tablero.sedeId)?.nombre ?? tablero.sedeId}.`}
@@ -219,7 +221,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           id="recaudo-del-dia"
           etiqueta="Entró hoy"
           valor={recaudo.delDiaCop}
-          definicion={`Los recibos de caja con fecha ${tablero.hoy}, de cualquier período.`}
+          definicion={`Los recibos de caja con fecha ${fechaLarga(tablero.hoy)}, de cualquier período.`}
         />
         <Cifra
           id="recaudo-del-mes"

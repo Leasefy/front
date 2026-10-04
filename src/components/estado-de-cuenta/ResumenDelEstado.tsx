@@ -229,6 +229,13 @@ export function BarraDeAmortizacion({
             <span className="text-fg-subtle">
               {' '}
               · {t('estadoDeCuenta.delSistemaAnterior', { n: a.anteriores })}
+              {/* PG-08: sin comprobante no se cuentan como pagadas: se dice. */}
+              {a.anterioresSinComprobante > 0 && (
+                <span data-testid="anteriores-sin-comprobante">
+                  {', '}
+                  {t('estadoDeCuenta.sinComprobantesDe', { n: a.anterioresSinComprobante })}
+                </span>
+              )}
             </span>
           )}
         </span>

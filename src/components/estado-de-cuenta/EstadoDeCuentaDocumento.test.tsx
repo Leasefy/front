@@ -107,9 +107,11 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(quiebre?.textContent).toContain('INVERSIONES EL PORTAL');
   });
 
-  it('«Sistema anterior» se dice con esas palabras, no con «Contrato terminado»', () => {
+  it('«Del sistema anterior» se dice con esas palabras, no con «Contrato terminado»', () => {
     montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [contrato()] })} hoy={HOY} />);
-    expect(host.textContent).toContain('Sistema anterior');
+    // PG-08 (Nico, 03-10-2026): «Del sistema anterior» y, sin comprobante migrado, lo dice.
+    expect(host.textContent).toContain('Del sistema anterior');
+    expect(host.querySelector('[data-testid="sin-comprobantes"]')?.textContent).toBe('Sin comprobantes cargados');
   });
 
   it('el total del contrato y el general salen, y el general es el número del CEO', () => {
@@ -151,9 +153,14 @@ describe('EstadoDeCuentaDocumento', () => {
         hoy={HOY}
       />,
     );
+    /* PG-15 (03-10-2026), cambiado a propósito: con dos o más impuestos la
+       tabla no cabía a 1440 px; se pliegan en «Impuestos», un renglón por
+       impuesto con su nombre. IVA y retención se siguen viendo. */
     const encabezados = Array.from(host.querySelectorAll('th')).map((th) => th.textContent);
-    expect(encabezados).toContain('IVA');
-    expect(encabezados).toContain('Retención');
+    expect(encabezados).toContain('Impuestos');
+    const plegados = host.querySelector('[data-testid="impuestos-plegados"]')?.textContent ?? '';
+    expect(plegados).toContain('IVA');
+    expect(plegados).toContain('Retención');
   });
 
   it('una cuota pendiente ya vencida lo dice con la palabra, no sólo con el color', () => {
@@ -188,8 +195,16 @@ describe('EstadoDeCuentaDocumento', () => {
        vino pagada está pagada (Nico: «que haya pagado en el sistema anterior
        quiere decir que pagó»). La distinción de dónde salió cada una la siguen
        llevando la barra de dos tonos y su leyenda. */
-    expect(host.textContent).toContain('2 de 4 cuotas');
+    /* 🔴 PG-08 (Nico, 03-10-2026), cambiado a propósito: la cuota del sistema
+       anterior de este ejemplo NO trae comprobante migrado, y sin comprobante
+       «no suma ni en la deuda ni en lo pagado». Ya no se cuenta como pagada
+       («1 de 4», no «2 de 4»), y la leyenda dice por qué. Con su comprobante
+       sí cuenta (resumen.test.ts). */
+    expect(host.textContent).toContain('1 de 4 cuotas');
     expect(host.textContent).toContain('1 del sistema anterior');
+    expect(host.querySelector('[data-testid="anteriores-sin-comprobante"]')?.textContent).toContain(
+      '1 sin comprobantes cargados',
+    );
   });
 
   it('🔴 del lado PROPIETARIO no dice «Resta por pagar» ni «En mora» (QA 22-09)', () => {

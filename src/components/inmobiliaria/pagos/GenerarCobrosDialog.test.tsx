@@ -115,6 +115,30 @@ describe('GenerarCobrosDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('🔴 PG-R13 (03-10-2026): por defecto NO se avisa a los inquilinos, y se dice antes de confirmar', async () => {
+    generate.mockResolvedValue(undefined)
+    montar({ mes: '2026-09' })
+    expect(porTestId('generar-avisar')?.textContent).toContain('avisarNo')
+    await act(async () => {
+      porTestId('generar-confirmar')!.click()
+    })
+    // Sin la marca: el back genera callado.
+    expect(generate).toHaveBeenCalledWith('2026-09')
+  })
+
+  it('🔴 PG-R13: avisar es una decisión explícita y viaja al back', async () => {
+    generate.mockResolvedValue(undefined)
+    montar({ mes: '2026-09' })
+    await act(async () => {
+      porTestId('generar-avisar-casilla')!.click()
+    })
+    expect(porTestId('generar-avisar')?.textContent).toContain('avisarSi')
+    await act(async () => {
+      porTestId('generar-confirmar')!.click()
+    })
+    expect(generate).toHaveBeenCalledWith('2026-09', { avisarALosInquilinos: true })
+  })
+
   it('si el back falla, el diálogo NO se cierra y el fallo se ve', async () => {
     generate.mockRejectedValue(new Error('500'))
     const { onGenerado, onOpenChange } = montar()

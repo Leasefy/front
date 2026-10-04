@@ -204,6 +204,12 @@ export function GenerarDispersion({
   );
   const tardias: CuotasTardias[] = previa?.tardias ?? [];
   const tardiasQueSeSuman = useMemo(() => tardias.filter((t) => t.seSuman), [tardias]);
+  /**
+   * 🔴 PG-R03 (Nico, 03-10-2026): las tardías de un mes ya cerrado van en una
+   * liquidación COMPLEMENTARIA. El back la arma sólo si el propietario viaja en
+   * la lista, igual que las que se suman.
+   */
+  const tardiasComplementarias = useMemo(() => tardias.filter((t) => t.complementaria === true), [tardias]);
   const haySumables = tardiasQueSeSuman.length > 0;
   const base: BaseDelCanon = previa ? baseDeLaLiquidacion(previa) : 'CAUSADO';
   const mandato: NumerosDelMandato = {
@@ -340,6 +346,7 @@ export function GenerarDispersion({
             ...new Set([
               ...viaje.propietarioIds,
               ...tardiasQueSeSuman.map((t) => t.propietarioId),
+              ...tardiasComplementarias.map((t) => t.propietarioId),
             ]),
           ]
         : undefined;
@@ -352,10 +359,14 @@ export function GenerarDispersion({
 
       const sumadas = r.tardias?.sumadas ?? [];
       const sinSumar = r.tardias?.sinSumar ?? [];
+      const complementarias = r.tardias?.complementarias ?? [];
       const cuotasSumadas = sumadas.reduce((n, t) => n + t.cuotas, 0);
       const deLasTardias = [
         sumadas.length > 0
           ? `${cuotasSumadas === 1 ? 'Se sumó 1 cuota que llegó tarde' : `Se sumaron ${cuotasSumadas} cuotas que llegaron tarde`} a ${sumadas.length} ${sumadas.length === 1 ? 'liquidación' : 'liquidaciones'} del mes.`
+          : '',
+        complementarias.length > 0
+          ? `Se ${complementarias.length === 1 ? 'armó 1 liquidación complementaria' : `armaron ${complementarias.length} liquidaciones complementarias`} con lo que llegó tarde a un mes ya girado: ${complementarias.length === 1 ? 'entra' : 'entran'} al próximo lote.`
           : '',
         sinSumar.length > 0
           ? `${sinSumar.length} ${sinSumar.length === 1 ? 'propietario tiene' : 'propietarios tienen'} cuotas tardías que no se pudieron sumar.`
@@ -364,7 +375,7 @@ export function GenerarDispersion({
         .filter(Boolean)
         .join(' ');
 
-      if (r.created === 0 && sumadas.length > 0) {
+      if (r.created === 0 && (sumadas.length > 0 || complementarias.length > 0)) {
         toast.success('Cuotas sumadas a las liquidaciones del mes', {
           description: deLasTardias,
         });
@@ -409,7 +420,7 @@ export function GenerarDispersion({
     } finally {
       setEnviando(false);
     }
-  }, [previa, seleccion, mes, tardiasQueSeSuman, onComplete]);
+  }, [previa, seleccion, mes, tardiasQueSeSuman, tardiasComplementarias, onComplete]);
 
   const hayQueElegir = !cargando && !error && (candidatos.length > 0 || haySumables);
 

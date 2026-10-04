@@ -59,6 +59,7 @@ import {
   documentoDelCliente,
   conceptoLimpio,
   estaVencida,
+  sinComprobantesDelSistemaAnterior,
   ETIQUETA_DE_COLUMNA,
   fechaLegible,
   intercalarCortes,
@@ -1237,7 +1238,10 @@ function FilaDeLaTabla({
           </>
         ) : (
           <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue }}>
-            {frase('estadoDeCuenta.sinPago')}
+            {/* PG-08: un mes del sistema anterior sin comprobante migrado no es «Sin pago». */}
+            {sinComprobantesDelSistemaAnterior(fila)
+              ? frase('estadoDeCuenta.sinComprobantesCargados')
+              : frase('estadoDeCuenta.sinPago')}
           </Text>
         )}
       </View>

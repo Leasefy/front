@@ -13,6 +13,7 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 void React; // jsx-preserve
 
@@ -36,8 +37,17 @@ vi.mock('@/components/ui/select', async () => {
 });
 
 const preview = vi.fn();
+const liquidacionDelMes = vi.fn<(m: string) => Promise<unknown>>(() =>
+  Promise.reject(new ApiError(404, 'Cannot GET /inmobiliaria/dispersiones/liquidacion-del-mes')),
+);
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
-  dispersionesApi: { preview: (m: string) => preview(m) },
+  // PG-02 (03-10-2026): la pantalla pide primero la liquidación del mes
+  // completo; un back sin esa ruta contesta 404 y se usa la vista previa (lo
+  // que cuidan las pruebas de este archivo). El camino nuevo tiene las suyas.
+  dispersionesApi: {
+    preview: (m: string) => preview(m),
+    liquidacionDelMes: (m: string) => liquidacionDelMes(m),
+  },
 }));
 
 import LiquidacionesPage from './page';

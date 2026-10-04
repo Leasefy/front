@@ -43,6 +43,7 @@ import {
   errorDeLaFechaDelFestivo,
   errorDelNombreDelFestivo,
 } from '@/lib/tesoreria/limites-de-tesoreria';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 /** Los dos campos de «Agregar un día», y el id de cada uno. */
 type CampoDelFestivo = 'fecha' | 'nombre';
@@ -60,6 +61,13 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 /** El día de la semana de un `YYYY-MM-DD`, leído en UTC como lo cuenta el back. */
 function diaDeLaSemana(fecha: string): string {
   return DIAS[new Date(`${fecha}T00:00:00.000Z`).getUTCDay()] ?? '';
+}
+
+/** «1 festivo» / «18 festivos»: PG-13 (03-10-2026) — antes «18 festivo(s) en 18 día(s)». */
+export function cuantosFestivos(activos: number, diasDistintos: number): string {
+  const festivos = `${activos} ${activos === 1 ? 'festivo' : 'festivos'}`;
+  const dias = `${diasDistintos} ${diasDistintos === 1 ? 'día distinto' : 'días distintos'}`;
+  return `${festivos} en ${dias}`;
 }
 
 export function CalendarioDeFestivosPanel() {
@@ -193,7 +201,7 @@ export function CalendarioDeFestivosPanel() {
 
             <TituloDeBloque
               titulo={`Festivos de ${datos.anio}`}
-              explicacion={`${datos.activos} festivo(s) en ${datos.diasDistintos} día(s) distintos. Se calculan con la Ley 51 de 1983 (los trasladables caen el lunes siguiente) y la Pascua. Dos festivos pueden caer el mismo día: en 2025 el Sagrado Corazón y San Pedro cayeron los dos el 30 de junio.`}
+              explicacion={`${cuantosFestivos(datos.activos, datos.diasDistintos)}. Se calculan con la Ley 51 de 1983 (los trasladables caen el lunes siguiente) y la Pascua. Dos festivos pueden caer el mismo día: en 2025 el Sagrado Corazón y San Pedro cayeron los dos el 30 de junio.`}
               accion={
                 <div className="space-y-1">
                   <Label htmlFor="anio-del-calendario">Año</Label>
@@ -229,7 +237,8 @@ export function CalendarioDeFestivosPanel() {
                       className="border-t border-border"
                       data-testid={`dia-${d.fecha}`}
                     >
-                      <td className="p-3 font-mono tabular-nums">{d.fecha}</td>
+                      {/* PG-13: la fecha de la casa («1 ene 2026»), no el ISO crudo. */}
+                      <td className="whitespace-nowrap p-3 font-mono tabular-nums">{fechaCorta(d.fecha)}</td>
                       <td className="p-3 text-fg-muted">{diaDeLaSemana(d.fecha)}</td>
                       <td className="p-3">
                         <span className={d.activo ? 'text-fg' : 'text-fg-muted line-through'}>

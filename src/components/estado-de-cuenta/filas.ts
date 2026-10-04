@@ -365,7 +365,8 @@ const PINTA: Record<EstadoDeFila, PintaDelEstado> = {
   CANCELADA: { texto: 'Cancelada', clase: 'bg-success-soft text-success' },
   PENDIENTE: { texto: 'Pendiente', clase: 'bg-surface-muted text-fg' },
   ANULADA: { texto: 'Anulada', clase: 'bg-surface-muted text-fg-subtle line-through' },
-  ANTERIOR: { texto: 'Sistema anterior', clase: 'bg-surface-muted text-fg-subtle' },
+  // PG-08 (Nico, 03-10-2026): «Del sistema anterior», tal cual.
+  ANTERIOR: { texto: 'Del sistema anterior', clase: 'bg-surface-muted text-fg-subtle' },
 };
 
 export function pintaDelEstado(
@@ -401,11 +402,27 @@ export function comoSeLlamaElRol(rol: RolEnElContrato): string {
 }
 
 /**
+ * 🔴 PG-08 (QA de Pagos, decisión de Nico 03-10-2026): el estado de cuenta del
+ * migrado va mes a mes desde el INICIO del contrato; los meses anteriores a la
+ * fecha de cartera son «Del sistema anterior». Con el comprobante migrado se
+ * leen como pagos; SIN él, la fila dice «Sin comprobantes cargados» y no suma
+ * ni en la deuda ni en lo pagado.
+ */
+export function sinComprobantesDelSistemaAnterior(fila: FilaDelEstadoDeCuenta): boolean {
+  return fila.estado === 'ANTERIOR' && !fila.documentoDePago;
+}
+
+/**
  * `true` si la fila ya se venció y todavía se debe.
  *
  * No cambia el estado —ese lo manda el back— pero sí se dice en la columna
  * «Vence», con la palabra y no sólo con el color: dos filas «Pendiente» de
  * distinto color y con el mismo texto no se distinguen sin ver bien.
+ *
+ * 🔴 PG-R10 (QA de Pagos, 03-10-2026): el MISMO criterio del back
+ * (`armar-el-estado-de-cuenta.ts`, que pasó a `vencimiento < hoy`): la cuota
+ * que vence hoy todavía no está vencida ese día. Antes el resumen la contaba
+ * en «Vencido» (`<=`) y ninguna fila lo decía; ahora los dos dicen lo mismo.
  */
 export function estaVencida(
   fila: FilaDelEstadoDeCuenta,

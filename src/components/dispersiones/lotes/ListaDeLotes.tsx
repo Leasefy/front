@@ -91,6 +91,51 @@ interface PendientesDelMes {
   totalCop: number;
   /** Las que tienen un dato bancario por completar. */
   sinDatos: number;
+  /**
+   * 🔴 PG-05: las que no van al archivo, por QUÉ (sin las que se compensan).
+   * `null` = un back anterior que no lo dice: queda la frase de siempre.
+   */
+  porTipo: Partial<Record<'RETENIDA_GIRO_DEVUELTO' | 'RETENIDA_CAMBIO_DE_CUENTA' | 'SIN_CUENTA' | 'DATO_BANCARIO', number>> | null;
+}
+
+/** Cuántas de cada exclusión, desde los candidatos (o `null` si el back no lo dice). */
+export function exclusionesPorTipo(
+  candidatos: readonly { motivoDeExclusion: string | null; seCompensa?: boolean; tipoDeExclusion?: string | null }[],
+): PendientesDelMes['porTipo'] {
+  const excluidas = candidatos.filter((c) => c.motivoDeExclusion !== null && !c.seCompensa);
+  if (excluidas.some((c) => c.tipoDeExclusion === undefined)) return null;
+  const cuenta: NonNullable<PendientesDelMes['porTipo']> = {};
+  for (const c of excluidas) {
+    const tipo = (c.tipoDeExclusion ?? 'DATO_BANCARIO') as keyof NonNullable<PendientesDelMes['porTipo']>;
+    if (tipo === ('SE_COMPENSA' as string)) continue;
+    cuenta[tipo] = (cuenta[tipo] ?? 0) + 1;
+  }
+  return cuenta;
+}
+
+/** Cada exclusión en palabras: «1 retenida: el banco devolvió el giro anterior…». */
+export function frasesDeLasExclusiones(porTipo: NonNullable<PendientesDelMes['porTipo']>): string[] {
+  const n = (k: keyof typeof porTipo) => porTipo[k] ?? 0;
+  const frases: string[] = [];
+  if (n('RETENIDA_GIRO_DEVUELTO') > 0) {
+    frases.push(
+      `${n('RETENIDA_GIRO_DEVUELTO')} ${n('RETENIDA_GIRO_DEVUELTO') === 1 ? 'retenida' : 'retenidas'}: el banco devolvió el giro anterior y falta aprobar la cuenta`,
+    );
+  }
+  if (n('RETENIDA_CAMBIO_DE_CUENTA') > 0) {
+    frases.push(
+      `${n('RETENIDA_CAMBIO_DE_CUENTA')} ${n('RETENIDA_CAMBIO_DE_CUENTA') === 1 ? 'retenida' : 'retenidas'}: falta aprobar el cambio de cuenta`,
+    );
+  }
+  if (n('SIN_CUENTA') > 0) {
+    frases.push(`${n('SIN_CUENTA')} sin cuenta bancaria registrada`);
+  }
+  if (n('DATO_BANCARIO') > 0) {
+    frases.push(
+      `a ${n('DATO_BANCARIO')} ${n('DATO_BANCARIO') === 1 ? 'le falta un dato bancario' : 'les falta un dato bancario'}`,
+    );
+  }
+  return frases;
 }
 
 /**
@@ -136,7 +181,13 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
       .then((r) => {
         if (!vigente) return;
         const sinDatos = r.candidatos.filter((c) => c.motivoDeExclusion !== null && !c.seCompensa).length;
-        setPendientes({ esperan: r.candidatos.length, girables: r.cantidad, totalCop: r.totalCop, sinDatos });
+        setPendientes({
+          esperan: r.candidatos.length,
+          girables: r.cantidad,
+          totalCop: r.totalCop,
+          sinDatos,
+          porTipo: exclusionesPorTipo(r.candidatos),
+        });
       })
       .catch((e: unknown) => {
         // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
@@ -393,14 +444,22 @@ function FraseDelMes({
         </>
       )}
       .
-      {sinDatos > 0 && (
+      {sinDatos > 0 && pendientes.porTipo ? (
+        /* 🔴 PG-05 (03-10-2026): cada exclusión con su porqué. Paula tiene
+           cuenta; su giro anterior fue DEVUELTO y el siguiente queda retenido
+           hasta aprobar la cuenta: no es «le falta un dato bancario». */
+        <span className="text-fg-muted" data-testid="exclusiones-del-mes">
+          {' '}
+          No van al archivo del banco (entran al lote): {frasesDeLasExclusiones(pendientes.porTipo).join('; ')}.
+        </span>
+      ) : sinDatos > 0 ? (
         <span className="text-fg-muted">
           {' '}
           A <span className="font-mono tabular-nums">{sinDatos}</span>{' '}
           {sinDatos === 1 ? 'le falta un dato bancario: entra al lote' : 'les falta un dato bancario: entran al lote'} pero
           no al archivo.
         </span>
-      )}
+      ) : null}
     </p>
   );
 }

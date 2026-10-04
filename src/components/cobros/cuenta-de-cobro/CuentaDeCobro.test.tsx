@@ -241,6 +241,27 @@ describe('<CuentaDeCobro>', () => {
     expect(alerta).toContain('$4305750');
   });
 
+  it('🔴 PG-13 (03-10-2026): el concepto sale sin la cola cruda «De 01-Oct-2026 hasta 31-Oct-2026»', () => {
+    render({
+      cobro: {
+        ...COBRO,
+        conceptos: [
+          linea({
+            id: 'x1',
+            tipo: 'CANON',
+            nombre: 'Canon de arrendamiento con IVA y retención. De 01-Oct-2026 hasta 31-Oct-2026',
+            valorCop: 3_750_000,
+            orden: 1,
+          }),
+        ],
+      },
+      agencia: AGENCIA,
+      hoy: HOY,
+    });
+    expect(container.textContent).toContain('Canon de arrendamiento con IVA y retención');
+    expect(container.textContent).not.toContain('01-Oct-2026');
+  });
+
   it('con saldo en cero lo dice como pagada', () => {
     render({
       cobro: { ...COBRO, status: 'paid', paidAmount: 4_305_750, pendingAmount: 0 },

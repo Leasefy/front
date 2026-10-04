@@ -81,6 +81,7 @@
  */
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import {
@@ -88,8 +89,10 @@ import {
   Calendar,
   CreditCard,
   CurrencyCircleDollar,
+  DeviceMobile,
   DotsThree,
   FileText,
+  Link as LinkIcon,
   Money,
   Note,
   Receipt,
@@ -98,14 +101,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
@@ -134,7 +130,17 @@ import {
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { finanzasApi } from '@/lib/api/finanzas.service';
-import { sinLosApagados } from '@/lib/finanzas/medios';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type { MediosDeRecibo } from '@/lib/api/finanzas.types';
+import type { MediosDelRecibo } from '@/lib/api/recibos-de-caja.types';
+import { normalizarMedio } from '@/lib/finanzas/medios';
+import {
+  desdeElBack,
+  sinElEndpoint,
+  type OpcionDeMedio,
+} from '@/lib/recibos/medios-del-recibo';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
 import {
   faltaElPagador,
   PAGA_EL_CLIENTE,
@@ -142,7 +148,6 @@ import {
   QuienPaga,
   type QuienPagaValor,
 } from './aseguradoras/QuienPaga';
-import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import {
   AvisoSinConciliar,
   CarteraDelClientePanel,
@@ -155,76 +160,35 @@ import {
 } from './ReciboPorCliente';
 
 /**
- * Los medios de pago. `medio` viaja como `string` libre en el contrato del
- * back, así que estos son los valores que el front ya venía mandando como
- * `paymentMethod`: cambiarlos partiría el histórico en dos vocabularios.
+ * El ícono de cada medio, por su TIPO. Las opciones las arma
+ * `lib/recibos/medios-del-recibo.ts` (PG-01, 03-10-2026): las cuentas de la
+ * inmobiliaria MÁS los otros medios que tenga habilitados, nunca los apagados.
+ * Hasta ese día esta pantalla tenía su propia lista (`mediosParaElegir`) y, con
+ * una sola cuenta configurada, escondía todo lo demás —el efectivo, la
+ * tarjeta, PSE, Nequi…—: Nico, mirando el recibo, «aquí puede ser en efectivo
+ * también no? y más opciones».
  */
-const MEDIOS = [
-  { valor: 'transferencia', clave: 'recibos.form.medios.transferencia', icono: Bank },
-  { valor: 'efectivo', clave: 'recibos.form.medios.efectivo', icono: Money },
-  { valor: 'tarjeta', clave: 'recibos.form.medios.tarjeta', icono: CreditCard },
-  { valor: 'cheque', clave: 'recibos.form.medios.cheque', icono: FileText },
-  { valor: 'pse', clave: 'recibos.form.medios.pse', icono: Wallet },
-  { valor: 'otro', clave: 'recibos.form.medios.otro', icono: DotsThree },
-] as const;
+const ICONO_DEL_MEDIO: Record<string, typeof Bank> = {
+  TRANSFERENCIA: Bank,
+  CONSIGNACION: Bank,
+  EFECTIVO: Money,
+  TARJETA: CreditCard,
+  PSE: Wallet,
+  ENLACE_DE_PAGO: LinkIcon,
+  NEQUI: DeviceMobile,
+  DAVIPLATA: DeviceMobile,
+  CHEQUE: FileText,
+  OTRO: DotsThree,
+};
+
+function iconoDelMedio(opcion: OpcionDeMedio): typeof Bank {
+  return ICONO_DEL_MEDIO[normalizarMedio(opcion.codigo)] ?? DotsThree;
+}
 
 const ORIGEN_MINIMO = 5;
 
-/** El DTO del back acepta `medio` como texto libre de hasta 40 caracteres. */
-const LARGO_MAXIMO_DEL_MEDIO = 40;
-
 /** Los «saludos» topan en 380: el back le agrega el detalle del reparto. */
 const LARGO_MAXIMO_DE_SALUDOS = 380;
-
-/**
- * Los medios configurados por la inmobiliaria (activos), como chips. Si no
- * hay ninguno, la lista fija de arriba.
- *
- * 🔴 QA 22-09 (P0): el valor que viajaba era el NOMBRE del medio. «Efectivo en
- * la oficina» llegaba al back como `EFECTIVO_EN_LA_OFICINA`, que no está en la
- * lista de apagados, y el recibo en efectivo entraba aunque la regla de la
- * inmobiliaria diga «sólo transferencia y pasarela». Ahora:
- *   · lo que viaja en `medio` es el TIPO (`codigo`), que es lo que la regla
- *     juzga; el nombre que la persona de caja reconoce va en las notas;
- *   · los medios cuyo tipo la inmobiliaria APAGÓ no se ofrecen (`apagados`,
- *     de `GET /inmobiliaria/finanzas/medios`). Sin esa lista —no se pudo leer—
- *     no se filtra: el back rechaza igual lo apagado, con el motivo.
- * `valor` es sólo la identidad del chip: dos cuentas de transferencia son dos
- * chips con el mismo código.
- */
-export function mediosParaElegir(
-  configurados: { nombre: string; tipo: keyof typeof ICONO_DEL_TIPO; activo: boolean }[] | null | undefined,
-  apagados: readonly string[] = [],
-): {
-  valor: string;
-  codigo: string;
-  /** El nombre configurado, para las notas del recibo. `null` en la lista fija. */
-  nombre: string | null;
-  etiqueta: string | null;
-  clave: string | null;
-  icono: typeof Bank;
-}[] {
-  const activos = (configurados ?? []).filter((m) => m.activo);
-  if (activos.length === 0) {
-    return sinLosApagados(
-      MEDIOS.map((m) => ({ valor: m.valor, codigo: m.valor, nombre: null, etiqueta: null, clave: m.clave, icono: m.icono })),
-      (m) => m.codigo,
-      apagados,
-    );
-  }
-  return sinLosApagados(
-    activos.map((m) => ({
-      valor: `${m.tipo}|${m.nombre.trim()}`,
-      codigo: m.tipo,
-      nombre: m.nombre.trim().slice(0, LARGO_MAXIMO_DEL_MEDIO),
-      etiqueta: m.nombre,
-      clave: null,
-      icono: ICONO_DEL_TIPO[m.tipo] ?? DotsThree,
-    })),
-    (m) => m.codigo,
-    apagados,
-  );
-}
 
 /**
  * «octubre de 2026, noviembre de 2026 y parte de diciembre de 2026»: los meses
@@ -243,7 +207,14 @@ export function mesesEnPalabras(
   return `${nombres.slice(0, -1).join(', ')}${y}${nombres[nombres.length - 1]}`;
 }
 
-/** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
+/** «septiembre de 2026 y octubre de 2026»: una lista como se dice. */
+export function listaEnPalabras(cosas: readonly string[], idioma: 'es' | 'en'): string {
+  if (cosas.length <= 1) return cosas.join('');
+  const y = idioma === 'en' ? ' and ' : ' y ';
+  return `${cosas.slice(0, -1).join(', ')}${y}${cosas[cosas.length - 1]}`;
+}
+
+/** El pie del cajón vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
 
 /**
@@ -309,29 +280,55 @@ export function RegistrarPagoModal({
 }: RegistrarPagoModalProps) {
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
-  const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
-  // Qué tipos apagó la inmobiliaria. Falla ABIERTO: sin la lista (sin permiso
-  // de configuración, red caída) no se filtra y el back decide.
-  const [apagados, setApagados] = React.useState<string[]>([]);
+  /*
+   * 🔴 PG-01 (03-10-2026): con qué se puede registrar el pago. Primero
+   * `GET /inmobiliaria/recibos-de-caja/medios` —lo puede leer quien hace el
+   * recibo (`cobros:create`)—; con un back anterior que no lo tiene, las
+   * cuentas de «Medios de pago» y el catálogo de Configuración, como antes.
+   * Falla ABIERTO: sin poder leer ninguno, la lista fija; el back rechaza igual
+   * lo apagado, con el motivo.
+   */
+  const [mediosDelBack, setMediosDelBack] = React.useState<MediosDelRecibo | null>(null);
+  const [sinElEndpointDeMedios, setSinElEndpointDeMedios] = React.useState(false);
+  const [catalogoDeMedios, setCatalogoDeMedios] = React.useState<MediosDeRecibo | null>(null);
+  const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen && sinElEndpointDeMedios });
   React.useEffect(() => {
     if (!isOpen) return;
     let vivo = true;
-    finanzasApi
-      .medios()
-      .then((r) => {
-        if (vivo) setApagados(r.apagados ?? []);
-      })
-      .catch(() => {
-        if (vivo) setApagados([]);
-      });
+    void (async () => {
+      try {
+        const r = await recibosDeCajaApi.medios();
+        if (vivo) {
+          setMediosDelBack(r);
+          setSinElEndpointDeMedios(false);
+        }
+        return;
+      } catch {
+        if (!vivo) return;
+        setMediosDelBack(null);
+        setSinElEndpointDeMedios(true);
+      }
+      try {
+        const r = await finanzasApi.medios();
+        if (vivo) setCatalogoDeMedios(r);
+      } catch {
+        if (vivo) setCatalogoDeMedios(null);
+      }
+    })();
     return () => {
       vivo = false;
     };
   }, [isOpen]);
-  const opcionesDeMedio = React.useMemo(
-    () => mediosParaElegir(mediosConfigurados, apagados),
-    [mediosConfigurados, apagados],
+  const mediosParaElRecibo = React.useMemo(
+    () =>
+      mediosDelBack
+        ? desdeElBack(mediosDelBack)
+        : sinElEndpoint(mediosConfigurados, catalogoDeMedios),
+    [mediosDelBack, mediosConfigurados, catalogoDeMedios],
   );
+  const opcionesDeMedio = mediosParaElRecibo.opciones;
+  /** El interruptor de efectivo vive en Configuración, que es del administrador. */
+  const puedePrenderElEfectivo = usePermissionsContextSafe()?.isAdmin ?? false;
 
   /**
    * Hoy EN BOGOTÁ, no en UTC.
@@ -692,13 +689,32 @@ export function RegistrarPagoModal({
        */
       const facturas = res.facturas ?? [];
       const pendientesDeEmitir = facturas.filter((f) => f.estado === 'GENERADA');
+      /*
+       * 🔴 PG-12 (QA de Pagos, 03-10-2026): decía «Facturas de septiembre de
+       * 2026, octubre de 2026 al día: les quedan $2.500.000 por pagar» sobre un
+       * octubre que quedó DEBIENDO. «Al día» quería decir «actualizadas con el
+       * abono», pero se lee «pagadas». Ahora se dice cuáles quedaron pagadas y
+       * cuánto le queda a cada una de las que no.
+       */
+      const pagadas = facturas.filter((f) => f.saldoCop <= 0);
+      const conSaldo = facturas.filter((f) => f.saldoCop > 0);
+      const partesDeFacturas = [
+        pagadas.length === 0
+          ? null
+          : t(pagadas.length === 1 ? 'recibos.form.facturaPagada' : 'recibos.form.facturasPagadas', {
+              meses: listaEnPalabras(pagadas.map((f) => nombreDelMes(f.mes, idioma)), idioma),
+            }),
+        ...conSaldo.map((f) =>
+          t('recibos.form.facturaConSaldo', {
+            mes: nombreDelMes(f.mes, idioma),
+            saldo: formatCurrency(f.saldoCop),
+          }),
+        ),
+      ].filter(Boolean);
       const lineaDeFacturas =
         facturas.length === 0
           ? ''
-          : ` ${t('recibos.form.facturasDelPago', {
-              meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
-              saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
-            })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
+          : ` ${partesDeFacturas.join(' ')}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
       // Los intereses pagados con la factura del mes ya emitida: factura aparte.
       const deIntereses = facturas.flatMap((f) => f.facturasDeIntereses ?? []);
       const lineaDeIntereses =
@@ -896,24 +912,34 @@ export function RegistrarPagoModal({
     cartera !== null && (cartera.total > 0 || cartera.anticipoDisponible === true);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
-      {/* El ícono va en el medallón de la cabecera, no metido en el título; el
-          alto lo maneja la primitiva (sólo scrollea el cuerpo). */}
-      <DialogContent size="md" icon={<Receipt weight="bold" />}>
-        <DialogHeader>
-          <DialogTitle>{t('recibos.form.titulo')}</DialogTitle>
-          <DialogDescription>
-            {/* Sin nada vencido el encabezado deja de prometer un cobro y
-                nombra lo que de verdad se puede hacer: adelantar. */}
-            {!cartera
-              ? t('recibos.form.elegirClienteAyuda')
-              : sePuedeAdelantar
-                ? t('recibos.form.descripcionAdelanto')
-                : t('recibos.form.descripcion')}
-          </DialogDescription>
-        </DialogHeader>
+    /*
+      🔴 PG-18 (Nico, QA de Pagos 03-10-2026): «Hacer recibo de caja» es un
+      CAJÓN, no un modal — como «Nuevo propietario» y «Nuevo inquilino»: es un
+      formulario largo (la cartera, el plan, el monto, el medio, la fecha) y en
+      un modal centrado el pie se perdía detrás del scroll. Mismo contenido y
+      mismo comportamiento: cabecera fija, cuerpo que scrollea y el pie fijo
+      con «Emitir el recibo». En el celular sube como hoja desde abajo.
+    */
+    <Cajon
+      abierto={isOpen}
+      onOpenChange={(abierto) => !abierto && cerrar()}
+      tamano="md"
+      data-testid="cajon-recibo-de-caja"
+    >
+      <CajonCabecera
+        titulo={t('recibos.form.titulo')}
+        descripcion={
+          /* Sin nada vencido el encabezado deja de prometer un cobro y nombra
+             lo que de verdad se puede hacer: adelantar. */
+          !cartera
+            ? t('recibos.form.elegirClienteAyuda')
+            : sePuedeAdelantar
+              ? t('recibos.form.descripcionAdelanto')
+              : t('recibos.form.descripcion')
+        }
+      />
 
-        <>
+      <CajonCuerpo className="space-y-5">
           {/* 1. El cliente. Con cobro de entrada la persona ya está resuelta. */}
           {!cobroId && conciliando === null && (
             <ElegirCliente
@@ -1215,30 +1241,78 @@ export function RegistrarPagoModal({
                 <span className="text-sm font-medium text-foreground">
                   {t('recibos.form.medioLabel')}
                 </span>
+                {/*
+                  🔴 PG-01: las CUENTAS de la inmobiliaria (a cuál entró una
+                  transferencia o una consignación) y, aparte, los OTROS medios
+                  que tiene habilitados. Dos grupos con su rótulo: una lista
+                  sola mezclaba «Bancolombia ahorros» con «Tarjeta».
+                */}
                 <div
                   id="medio-recibo"
                   role="group"
                   aria-label={t('recibos.form.medioLabel')}
                   aria-describedby="medio-recibo-error"
-                  className="flex flex-wrap gap-2"
+                  className="space-y-3"
                 >
-                  {opcionesDeMedio.map((m) => {
-                    const Icono = m.icono;
+                  {(['CUENTA', 'OTRO'] as const).map((grupo) => {
+                    const delGrupo = opcionesDeMedio.filter((m) => m.grupo === grupo);
+                    if (delGrupo.length === 0) return null;
+                    const hayDosGrupos = opcionesDeMedio.some((m) => m.grupo !== grupo);
                     return (
-                      <Chip
-                        key={m.valor}
-                        selected={medio === m.valor}
-                        onClick={() => {
-                          setMedio(m.valor);
-                          olvidarDelServidor('medio');
-                        }}
-                        icon={<Icono className="h-4 w-4" />}
-                      >
-                        {m.etiqueta ?? t(m.clave!)}
-                      </Chip>
+                      <div key={grupo} className="space-y-1.5" data-testid={`medios-${grupo.toLowerCase()}`}>
+                        {hayDosGrupos && (
+                          <p className="text-caption text-fg-muted">
+                            {t(grupo === 'CUENTA' ? 'recibos.form.medios.aUnaCuenta' : 'recibos.form.medios.otrosMedios')}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {delGrupo.map((m) => {
+                            const Icono = iconoDelMedio(m);
+                            return (
+                              <Chip
+                                key={m.valor}
+                                selected={medio === m.valor}
+                                onClick={() => {
+                                  setMedio(m.valor);
+                                  olvidarDelServidor('medio');
+                                }}
+                                icon={<Icono className="h-4 w-4" />}
+                              >
+                                {m.clave ? t(m.clave) : m.etiqueta}
+                                {m.detalle ? (
+                                  <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
+                                    {m.detalle}
+                                  </span>
+                                ) : null}
+                              </Chip>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
+                {/* Decisión de Nico: el efectivo sale SÓLO con su interruptor
+                    prendido. Apagado, se dice en una línea dónde prenderlo; el
+                    enlace, a quien puede prenderlo (Configuración es del
+                    administrador). */}
+                {mediosParaElRecibo.efectivoApagado ? (
+                  <p className="text-caption text-fg-muted" data-testid="efectivo-apagado">
+                    {mediosParaElRecibo.efectivoApagado}
+                    {puedePrenderElEfectivo ? (
+                      <>
+                        {' '}
+                        <Link
+                          href={hrefDeSeccion('medios-de-recibo')}
+                          className="font-medium text-primary underline-offset-4 hover:underline"
+                          data-testid="ir-a-medios-de-recibo"
+                        >
+                          {t('recibos.form.medios.irAMediosDeRecibo')}
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
                 <ErrorDelCampo
                   id="medio-recibo-error"
                   mensaje={tocado && !medio ? t('recibos.form.medioRequerido') : erroresDelServidor.medio}
@@ -1360,11 +1434,11 @@ export function RegistrarPagoModal({
             </form>
             </Appear>
           )}
-        </>
+      </CajonCuerpo>
 
-        {/* Pie fijo: en un modal alto los botones no se pueden ir con el scroll. */}
+        {/* Pie fijo: en un cajón alto los botones no se pueden ir con el scroll. */}
         {(hayCartera || conciliando !== null || (!cargando && cartera !== null)) && (
-          <DialogFooter>
+          <CajonPie>
             {conciliando !== null ? (
               <>
                 <Button
@@ -1398,8 +1472,8 @@ export function RegistrarPagoModal({
                 <Button type="button" variant="outline" onClick={cerrar} disabled={enviando}>
                   {t('recibos.form.cancelar')}
                 </Button>
-                {/* `form=` porque el pie vive FUERA del <form>: el DialogContent
-                    reparte cabecera/cuerpo/pie y el pie no puede estar adentro. */}
+                {/* `form=` porque el pie vive FUERA del <form>: el cajón tiene
+                    cabecera/cuerpo/pie y el pie no puede estar adentro. */}
                 <Button
                   type="submit"
                   form={ID_FORM}
@@ -1412,10 +1486,9 @@ export function RegistrarPagoModal({
                 </Button>
               </>
             )}
-          </DialogFooter>
+          </CajonPie>
         )}
-      </DialogContent>
-    </Dialog>
+    </Cajon>
   );
 }
 

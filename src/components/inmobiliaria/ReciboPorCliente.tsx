@@ -87,6 +87,7 @@ import {
   type Imputacion,
 } from '@/lib/recibos/imputar-pago';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { conceptoSinElRango, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { esAdelantableComoAnticipo } from '@/lib/recibos/forma-del-adelanto';
 
 // ── Reglas puras (probadas solas en ReciboPorCliente.test.tsx) ───────────────
@@ -119,7 +120,10 @@ export function etiquetaDeCliente(i: Inquilino): string {
  * pensar que se le están cobrando.
  */
 export function conceptosDelPeriodo(periodo: PeriodoEnDeuda): string[] {
-  return (periodo.conceptos ?? []).filter((c) => !c.resta).map((c) => c.nombre);
+  // PG-13 (03-10-2026): sin la cola cruda de Nui «. De 01-Sep-2026 hasta
+  // 30-Sep-2026» — el renglón ya dice el mes; un mes partido la conserva en
+  // la forma de la casa.
+  return (periodo.conceptos ?? []).filter((c) => !c.resta).map((c) => conceptoSinElRango(c.nombre));
 }
 
 /** ¿Algún período del plan tiene plata sin recibo? El back frena el pago ahí. */
@@ -361,12 +365,14 @@ function TarjetaDePeriodo({
           {periodo.vencida ? (
             <Badge variant="destructive" data-testid="periodo-vencido">
               {periodo.daysLate > 0
-                ? t(k('conMora'), { dias: periodo.daysLate })
+                ? // PG-R16: «1 día de mora», no «1 días».
+                  t(k(periodo.daysLate === 1 ? 'conMoraUno' : 'conMora'), { dias: periodo.daysLate })
                 : t(k('vencida'))}
             </Badge>
           ) : (
             <Badge variant="default" data-testid="periodo-futuro">
-              {t(k('noVenceAun'), { fecha: diaDeVencimiento(periodo.dueDate) })}
+              {/* PG-13: «Vence el 1 nov 2026», no «Vence el 2026-11-01». */}
+              {t(k('noVenceAun'), { fecha: fechaCorta(diaDeVencimiento(periodo.dueDate)) })}
             </Badge>
           )}
           {periodo.paidAmount > 0 && (
@@ -610,9 +616,10 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
         </p>
       )}
 
-      <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
+      <div className="flex items-center justify-between gap-3 border-t border-border pt-2 text-sm">
         <span className="text-fg-muted">{t(k('despues'))}</span>
-        <span className="font-mono font-semibold tabular-nums text-fg" data-testid="plan-deuda-restante">
+        {/* PG-18: en el cajón a 390 px el monto se partía en dos renglones. */}
+        <span className="shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums text-fg" data-testid="plan-deuda-restante">
           {formatCurrency(queda)}
         </span>
       </div>

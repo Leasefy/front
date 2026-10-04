@@ -40,9 +40,10 @@ function PagosCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1.5">
-          {/* La cara del módulo, en el título: lo que se aprueba acá es plata
-              que sale hacia el propietario o su proveedor. */}
-          <SectionLabel>Pagos · propietarios</SectionLabel>
+          {/* La cara del módulo, en el título: lo que se aprueba acá son las
+              facturas de PROVEEDOR (PG-16, 03-10-2026: decía «propietarios» y
+              se confundía con las liquidaciones). */}
+          <SectionLabel>Pagos · proveedores</SectionLabel>
           <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.workspace.pages.pagos.colaDesc')}

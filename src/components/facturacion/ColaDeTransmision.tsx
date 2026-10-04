@@ -26,12 +26,26 @@
  *   3. **Un RECHAZO no se reintenta solo.** Mandarlo igual daría el mismo
  *      rechazo mil veces: lo arregla una persona —normalmente con nota crédito
  *      y factura nueva— y vuelve a encolarlo con el botón.
+ *
+ * 🔴 QA-FACT (03-10-2026, FA-16 / FA-R19 / FA-R27 / FA-R30): el filtro de estado
+ * era un `<select>` del navegador con los códigos crudos (`POR_TRANSMITIR`,
+ * `SIN_PROVEEDOR`); ahora es el `Select` del DS con los nombres de la casa. Y
+ * sin proveedor conectado no se ofrecen «Volver a encolar N sin proveedor» ni
+ * «Volver a intentar»: el documento volvía a «Sin proveedor» a los cinco
+ * minutos, un botón que no sirve de nada.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import { CloudArrowUp, Info, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -46,11 +60,30 @@ import { toast } from '@/components/ui/toast'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   ESTADOS_DE_TRANSMISION,
+  NOMBRE_DEL_ESTADO_DE_TRANSMISION,
   facturacionElectronicaService,
+  nombreDelDocumento,
   type ColaDeTransmision as Cola,
   type EstadoDeTransmision,
 } from '@/lib/api/facturacion-electronica.service'
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service'
+import { cuantos, faltaEnLaBase } from '@/lib/facturacion/por-facturar'
+
+/** El `Select` del DS no acepta `''`: «todos» viaja con su clave. */
+const TODOS = 'TODOS'
+
+/**
+ * 🔴 FA-R27: el «último error» llegaba tal cual del proveedor (códigos, trazas,
+ * JSON). Se muestra si se lee como una frase; si no, se dice qué hacer.
+ */
+export function errorLegible(error: string | null): string | null {
+  if (!error) return null
+  const tecnico =
+    /[A-Z]{3,}_[A-Z_]+|\bat\s+\S+\s*\(|[{}<>]|https?:\/\/|Error:|Exception|\bundefined\b/.test(error)
+  return tecnico
+    ? 'El proveedor respondió con un error técnico. Si se repite, escríbenos con el número del documento.'
+    : error
+}
 
 /** El color de cada estado. Rojo sólo para lo que de verdad está mal. */
 const TONO: Record<EstadoDeTransmision, string> = {
@@ -113,7 +146,7 @@ export function ColaDeTransmision() {
       toast.success(
         r.reencolados === 0
           ? 'No había documentos esperando proveedor'
-          : `${r.reencolados} documentos volvieron a la cola`,
+          : `${cuantos(r.reencolados, 'documento volvió', 'documentos volvieron')} a la cola`,
       )
       await cargar()
     } catch (e) {
@@ -129,6 +162,8 @@ export function ColaDeTransmision() {
   }
 
   const sinProveedor = datos?.resumen.SIN_PROVEEDOR ?? 0
+  /** Sin proveedor conectado, volver a encolar no transmite nada. */
+  const hayProveedor = datos?.disponible === true && datos.proveedorConfigurado
 
   return (
     <div className="space-y-4" data-testid="cola-de-transmision">
@@ -141,7 +176,9 @@ export function ColaDeTransmision() {
             className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
             weight="fill"
           />
-          <p className="text-caption text-fg">{datos.explicacion}</p>
+          <p className="text-caption text-fg">
+            {faltaEnLaBase('La cola de transmisión a la DIAN')}
+          </p>
         </div>
       )}
 
@@ -169,7 +206,7 @@ export function ColaDeTransmision() {
             <p className="text-caption text-fg">
               {datos.proveedorConfigurado
                 ? `Transmitiendo con ${datos.proveedor}.`
-                : `Todavía no hay proveedor tecnológico conectado (${datos.proveedor}). Tus facturas se numeran con tu resolución y quedan en esta cola, pero NO están validadas ante la DIAN hasta que se conecte.`}
+                : 'Todavía no hay proveedor tecnológico conectado. Tus facturas se numeran con tu resolución y quedan en esta cola, pero NO están validadas ante la DIAN hasta que se conecte.'}
             </p>
             <p className="text-caption text-fg-muted">
               El recaudo no depende de esto: puedes hacer recibos de caja con la
@@ -192,34 +229,38 @@ export function ColaDeTransmision() {
           <ul className="space-y-0.5">
             {datos.avisos.slice(0, 10).map((a) => (
               <li key={a.transmisionId} className="text-caption text-fg">
-                {a.numeroDian ?? a.documentoTipo}: {a.horas} horas y{' '}
-                {a.intentos} intentos.
-                {a.ultimoError ? ` Último error: ${a.ultimoError}` : ''}
+                <span className="font-mono tabular-nums">
+                  {a.numeroDian ?? nombreDelDocumento(a.documentoTipo)}
+                </span>
+                : {cuantos(a.horas, 'hora', 'horas')} y {cuantos(a.intentos, 'intento', 'intentos')}.
+                {a.ultimoError ? ` Último error: ${errorLegible(a.ultimoError)}` : ''}
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <label htmlFor="cola-filtro" className="text-caption text-fg-muted">
           Estado
         </label>
-        <select
-          id="cola-filtro"
-          className="h-9 rounded-md border border-border bg-surface px-3 text-sm"
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value as EstadoDeTransmision | '')}
-          data-testid="cola-filtro"
+        <Select
+          value={filtro === '' ? TODOS : filtro}
+          onValueChange={(v) => setFiltro(v === TODOS ? '' : (v as EstadoDeTransmision))}
         >
-          <option value="">Todos</option>
-          {ESTADOS_DE_TRANSMISION.map((e) => (
-            <option key={e} value={e}>
-              {e}
-            </option>
-          ))}
-        </select>
-        {datos?.disponible && sinProveedor > 0 && (
+          <SelectTrigger id="cola-filtro" className="w-full sm:w-64" data-testid="cola-filtro">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={TODOS}>Todos los estados</SelectItem>
+            {ESTADOS_DE_TRANSMISION.map((e) => (
+              <SelectItem key={e} value={e}>
+                {NOMBRE_DEL_ESTADO_DE_TRANSMISION[e]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hayProveedor && sinProveedor > 0 && (
           <Button
             variant="outline"
             hideArrow
@@ -227,7 +268,7 @@ export function ColaDeTransmision() {
             disabled={reintentando !== null}
             data-testid="cola-reintentar-sin-proveedor"
           >
-            Volver a encolar {sinProveedor} sin proveedor
+            Volver a encolar {cuantos(sinProveedor, 'documento', 'documentos')} sin proveedor
           </Button>
         )}
       </div>
@@ -263,12 +304,13 @@ export function ColaDeTransmision() {
                       icono={CloudArrowUp}
                       titulo={
                         datos && !datos.disponible
-                          ? 'La cola llega con una migración que falta'
+                          ? 'La cola todavía no está disponible'
                           : 'Todavía no hay documentos en la cola'
                       }
                       descripcion={
-                        datos?.explicacion ??
-                        'Cada factura, nota o documento soporte que emitas entra acá y se transmite sola. El recaudo no espera a esto.'
+                        datos && !datos.disponible
+                          ? faltaEnLaBase('La cola de transmisión a la DIAN')
+                          : 'Cada documento que emitas entra acá y se transmite a la DIAN cuando el proveedor tecnológico esté conectado. El recaudo no espera a esto.'
                       }
                     />
                   </TableCell>
@@ -279,7 +321,7 @@ export function ColaDeTransmision() {
                     <TableCell className="whitespace-nowrap text-fg">
                       {d.documentoNombre}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                    <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
                       {d.numeroDian ?? '—'}
                     </TableCell>
                     <TableCell
@@ -287,17 +329,23 @@ export function ColaDeTransmision() {
                     >
                       {d.estadoNombre}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                    <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                       {d.intentos}
                     </TableCell>
                     <TableCell className="max-w-[28rem] text-caption text-fg-muted">
-                      {d.cufe ?? d.cude ?? d.ultimoError ?? '—'}
+                      {/* Sin proveedor, el porqué es el mismo en todas las filas y
+                          ya lo dice el aviso de arriba: no se repite (como FA-03). */}
+                      {d.cufe ??
+                        d.cude ??
+                        (d.estado === 'SIN_PROVEEDOR' ? null : errorLegible(d.ultimoError)) ??
+                        '—'}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-fg-muted">
                       {fechaLegible(d.encoladaAt)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right">
-                      {d.reintentable && (
+                      {/* Sin proveedor conectado, reintentar no transmite nada. */}
+                      {d.reintentable && hayProveedor && (
                         <Button
                           variant="outline"
                           size="sm"

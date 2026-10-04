@@ -129,6 +129,32 @@ export const ESTADOS_DE_TRANSMISION: readonly EstadoDeTransmision[] = [
   'SIN_PROVEEDOR',
 ]
 
+/**
+ * 🔴 FA-16 / FA-R27 (QA-FACT, 03-10-2026): el filtro de la cola mostraba los
+ * códigos crudos (`POR_TRANSMITIR`, `SIN_PROVEEDOR`…). Los mismos nombres del
+ * back (`cola-de-transmision.ts::NOMBRE_DEL_ESTADO`).
+ */
+export const NOMBRE_DEL_ESTADO_DE_TRANSMISION: Record<EstadoDeTransmision, string> = {
+  POR_TRANSMITIR: 'Por transmitir',
+  TRANSMITIDA: 'Transmitida, esperando la DIAN',
+  ACEPTADA_DIAN: 'Aceptada por la DIAN',
+  RECHAZADA_DIAN: 'Rechazada por la DIAN',
+  SIN_PROVEEDOR: 'Sin proveedor configurado',
+}
+
+/** El documento en palabras, cuando no hay número que mostrar (FA-R27). */
+export const NOMBRE_DEL_DOCUMENTO: Record<DocumentoQueSeTransmite, string> = {
+  FACTURA: 'Factura',
+  NOTA_CREDITO: 'Nota crédito',
+  NOTA_DEBITO: 'Nota débito',
+  DOCUMENTO_SOPORTE: 'Documento soporte',
+}
+
+/** «Factura», o el tipo tal cual si el back manda uno que esta pantalla no conoce. */
+export function nombreDelDocumento(tipo: string): string {
+  return (NOMBRE_DEL_DOCUMENTO as Record<string, string>)[tipo] ?? 'Documento'
+}
+
 export interface DocumentoEnLaCola {
   id: string
   documentoTipo: DocumentoQueSeTransmite
@@ -198,6 +224,11 @@ export interface EntregaDeDocumento {
   destinatario: string | null
   estado: EstadoDeEntrega
   estadoNombre: string
+  /**
+   * 🔴 QA-FACT (03-10-2026): `true` = no le llegó porque falta el correo (el
+   * back lo dice: «Sin entregar · falta el correo»). Ausente con un back anterior.
+   */
+  sinEntregar?: boolean
   constancia: string | null
   motivo: string | null
   enviadaAt: string | null

@@ -138,9 +138,12 @@ describe('ColaDeTransmision', () => {
     expect(aviso.textContent).not.toContain('NO están validadas');
   });
 
-  it('🔴 un RECHAZO muestra su motivo y ofrece volver a intentar', async () => {
+  it('🔴 un RECHAZO muestra su motivo y ofrece volver a intentar (con proveedor)', async () => {
     await pintar(
       respuesta({
+        // FA-R19 (03-10): sólo con proveedor conectado reintentar transmite algo.
+        proveedorConfigurado: true,
+        proveedor: 'FEEL',
         documentos: [
           documento({
             id: 't-rechazada',
@@ -214,8 +217,10 @@ describe('ColaDeTransmision', () => {
     expect(avisos.textContent).toContain('timeout');
   });
 
-  it('ofrece volver a encolar TODO lo que quedó sin proveedor', async () => {
-    await pintar(respuesta({ resumen: { SIN_PROVEEDOR: 12 } }));
+  it('ofrece volver a encolar TODO lo que quedó sin proveedor, cuando ya hay proveedor', async () => {
+    await pintar(
+      respuesta({ resumen: { SIN_PROVEEDOR: 12 }, proveedorConfigurado: true, proveedor: 'FEEL' }),
+    );
     const boton = q(
       '[data-testid="cola-reintentar-sin-proveedor"]',
     ) as HTMLButtonElement;
@@ -239,7 +244,9 @@ describe('ColaDeTransmision', () => {
       }),
     );
     const aviso = q('[data-testid="cola-sin-migracion"]')!;
-    expect(aviso.textContent).toContain('20260918001000');
+    // 🔴 FA-R27 (03-10): el id de la migración no le dice nada a quien factura.
+    expect(aviso.textContent).not.toContain('20260918001000');
+    expect(document.body.textContent).not.toContain('20260918001000');
     expect(aviso.textContent).toContain('el recaudo funcionan igual');
     // Y el vacío NO dice «no tienes nada».
     expect((q('[data-testid="sin-datos"]')?.textContent ?? '').toLowerCase()).not.toContain(
@@ -248,10 +255,51 @@ describe('ColaDeTransmision', () => {
   });
 });
 
+describe('ColaDeTransmision · QA-FACT (03-10-2026)', () => {
+  it('🔴 FA-R19: sin proveedor conectado no ofrece «Volver a encolar» ni «Volver a intentar»', async () => {
+    await pintar(
+      respuesta({
+        resumen: { SIN_PROVEEDOR: 1 },
+        documentos: [
+          documento({ id: 't-sp', estado: 'SIN_PROVEEDOR', estadoNombre: 'Sin proveedor configurado', reintentable: true }),
+        ],
+      }),
+    );
+    expect(q('[data-testid="cola-reintentar-sin-proveedor"]')).toBeNull();
+    expect(q('[data-testid="transmision-reintentar-t-sp"]')).toBeNull();
+    // Y el aviso no repite el nombre del «proveedor» que no hay.
+    expect(q('[data-testid="cola-proveedor"]')!.textContent).toContain(
+      'Todavía no hay proveedor tecnológico conectado. Tus facturas',
+    );
+  });
+
+  it('🔴 FA-16: el filtro de estado es el Select del DS, no un <select> con los códigos', async () => {
+    await pintar(respuesta());
+    expect(q('select')).toBeNull();
+    expect(q('[data-testid="cola-filtro"]')!.getAttribute('role')).toBe('combobox');
+    expect(host.textContent).not.toMatch(/POR_TRANSMITIR|SIN_PROVEEDOR|ACEPTADA_DIAN/);
+  });
+
+  it('el aviso de lo que lleva demasiado dice «1 hora» y «1 intento», y no el código del documento', async () => {
+    await pintar(
+      respuesta({
+        avisos: [
+          { transmisionId: 't-9', documentoTipo: 'DOCUMENTO_SOPORTE', numeroDian: null, horas: 1, intentos: 1, ultimoError: null },
+        ],
+      }),
+    );
+    const avisos = q('[data-testid="cola-avisos"]')!;
+    expect(avisos.textContent).toContain('Documento soporte: 1 hora y 1 intento.');
+    expect(avisos.textContent).not.toContain('DOCUMENTO_SOPORTE');
+  });
+});
+
 describe('ColaDeTransmision · el sistema de errores (02-10)', () => {
   it('🔴 volver a encolar con un 5xx dice «de nuestro lado» con la referencia', async () => {
     await pintar(
       respuesta({
+        proveedorConfigurado: true,
+        proveedor: 'FEEL',
         documentos: [
           documento({
             id: 't-rechazada',

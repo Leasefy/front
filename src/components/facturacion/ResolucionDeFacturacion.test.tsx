@@ -20,6 +20,7 @@ void React;
 
 const resolucionesMock = vi.fn();
 const crearMock = vi.fn();
+const sugerenciaMock = vi.fn();
 const anularMock = vi.fn();
 const toastOk = vi.fn();
 const toastErr = vi.fn();
@@ -34,6 +35,7 @@ vi.mock('@/lib/api/facturacion-por-mes.service', async () => {
       resoluciones: (...a: unknown[]) => resolucionesMock(...a),
       crearResolucion: (...a: unknown[]) => crearMock(...a),
       anularResolucion: (...a: unknown[]) => anularMock(...a),
+      sugerenciaDeLaResolucion: (...a: unknown[]) => sugerenciaMock(...a),
     },
   };
 });
@@ -44,6 +46,25 @@ vi.mock('@/components/ui/toast', () => ({
     error: (...a: unknown[]) => toastErr(...a),
   },
 }));
+
+/*
+ * FA-R29 (QA-FACT, 03-10-2026): las fechas usan el selector de fecha del DS
+ * (`CampoDeFecha`, sobre el `DatePicker` de Cadence), que no se escribe. El
+ * doble es un input con el mismo `data-testid`: el formulario sigue hablando en
+ * `AAAA-MM-DD` y las validaciones son las mismas.
+ */
+vi.mock('./CampoDeFecha', async () => {
+  const R = await import('react');
+  return {
+    CampoDeFecha: ({ value, onChange, testid, id }: { value: string; onChange: (v: string) => void; testid?: string; id: string }) =>
+      R.createElement('input', {
+        id,
+        'data-testid': testid,
+        value,
+        onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+      }),
+  };
+});
 
 import { ResolucionDeFacturacion } from './ResolucionDeFacturacion';
 import { ApiError } from '@/lib/api/client';
@@ -141,6 +162,8 @@ beforeEach(() => {
   resolucionesMock.mockReset().mockResolvedValue(respuesta());
   crearMock.mockReset().mockResolvedValue({});
   anularMock.mockReset().mockResolvedValue({});
+  // Por defecto, un back sin la ruta de la sugerencia (Q10): silencio.
+  sugerenciaMock.mockReset().mockRejectedValue(new Error('404'));
   toastOk.mockReset();
   toastErr.mockReset();
 });
@@ -186,9 +209,10 @@ describe('ResolucionDeFacturacion', () => {
     const estado = q('[data-testid="resolucion-estado"]')!;
     expect(estado.textContent).toContain('18764003394379');
     expect(estado.textContent).toContain('FE-1200');
-    expect(estado.textContent).toContain('3801');
+    expect(estado.textContent).toContain('3.801');
     // 🔴 En día civil: `new Date('2028-01-15T00:00:00Z')` en Bogotá es el 14.
-    expect(estado.textContent).toContain('15/01/2028');
+    // FA-R29 (03-10): dentro de una frase, la fecha larga de la casa.
+    expect(estado.textContent).toContain('15 de enero de 2028');
   });
 
   it('🔴 sin resolución vigente dice el motivo, que es lo que se arregla', async () => {
@@ -219,10 +243,13 @@ describe('ResolucionDeFacturacion', () => {
   it('el listado muestra rango, usados, disponibles y vigencia', async () => {
     await montar();
     const fila = q('[data-testid="resolucion-res-1"]')!;
-    expect(fila.textContent).toContain('1–5000');
-    expect(fila.textContent).toContain('1199');
-    expect(fila.textContent).toContain('3801');
-    expect(fila.textContent).toContain('15/01/2026 – 15/01/2028');
+    // FA-14 (03-10): los números con su separador y las fechas de la casa; el
+    // rango, lo usado y lo que queda en UNA columna para que la tabla quepa.
+    expect(fila.textContent).toContain('1–5.000');
+    expect(fila.textContent).toContain('1.199 usados');
+    expect(fila.textContent).toContain('quedan 3.801');
+    expect(fila.textContent).toContain('15 ene 2026');
+    expect(fila.textContent).toContain('hasta el 15 ene 2028');
   });
 
   it('🔴 el botón no deja mandar una resolución a medias', async () => {
@@ -640,5 +667,142 @@ describe('ResolucionDeFacturacion · anular con el sistema de errores (02-10)', 
     const texto = toastErr.mock.calls[0]?.[0] as string;
     expect(texto).toContain('No pudimos anular la resolución: algo falló de nuestro lado');
     expect(texto).toContain('ab12cd34');
+  });
+});
+
+/**
+ * 🔴 FA-08 (QA-FACT, 03-10-2026): el mismo párrafo «La inmobiliaria no tiene
+ * ninguna resolución… Cárgala en Facturación → Resolución…» salía diez veces en
+ * esta pestaña y mandaba a Facturación → Resolución estando ya ahí.
+ */
+describe('ResolucionDeFacturacion · sin resolución se dice UNA vez (FA-08)', () => {
+  const sinNada = (): ResolucionesDeLaAgencia => {
+    const explicacion = (tipo: string) =>
+      `La inmobiliaria no tiene ninguna resolución de facturación que numere «${tipo}». Cárgala en Facturación → Resolución, eligiendo ese tipo de documento (o una resolución sin tipo, que numera todo).`;
+    const tipos = [
+      ['CANON_INQUILINO', 'Canon del inquilino'],
+      ['COMISION_PROPIETARIO', 'Comisión al propietario'],
+      ['OTROS', 'Otros (intereses, reparaciones, estudios)'],
+    ] as const;
+    return {
+      ...respuesta(),
+      resoluciones: [],
+      vigente: {
+        puedeNumerar: false,
+        motivo: 'SIN_RESOLUCION',
+        explicacion: explicacion('Canon del inquilino'),
+        numero: null,
+        prefijo: null,
+        desde: null,
+        hasta: null,
+        vigenteHasta: null,
+        disponibles: 0,
+        siguiente: null,
+      },
+      porTipoDisponible: true,
+      porTipo: tipos.map(([tipo, nombre]) => ({
+        tipo,
+        nombre,
+        resolucionId: null,
+        resolucionNumero: null,
+        prefijo: null,
+        puedeNumerar: false,
+        porLaGeneral: false,
+        disponibles: 0,
+        siguiente: null,
+        explicacion: explicacion(nombre),
+      })),
+      avisos: tipos.map(([tipo, nombre]) => ({
+        tipo,
+        clase: 'BLOQUEA' as const,
+        motivo: 'SIN_RESOLUCION' as const,
+        resolucionId: null,
+        resolucionNumero: null,
+        disponibles: 0,
+        diasParaVencer: null,
+        explicacion: explicacion(nombre),
+      })),
+    };
+  };
+
+  it('🔴 lo dice una vez arriba, sin mandar a «Facturación → Resolución»', async () => {
+    resolucionesMock.mockResolvedValue(sinNada());
+    await montar();
+    const texto = host.textContent ?? '';
+    expect(texto.split('no tiene ninguna resolución').length - 1).toBe(0);
+    expect(texto).not.toContain('Cárgala en Facturación');
+    expect(q('[data-testid="resolucion-estado"]')!.textContent).toContain(
+      'Todavía no hay ninguna resolución de facturación vigente',
+    );
+    // Ni el resumen por tipo ni las filas repiten el párrafo.
+    expect(q('[data-testid="numeracion-bloqueos"]')).toBeNull();
+    expect(q('[data-testid="numeracion-CANON_INQUILINO"]')!.textContent).toContain('Sin resolución');
+  });
+});
+
+/**
+ * 🔴 Q10 (QA-FACT, 03-10-2026; Nico, la recomendada): la resolución propone el
+ * último número usado (lo migrado incluido) y no deja cargar una que se cruza.
+ */
+describe('ResolucionDeFacturacion · la sugerencia del back (Q10)', () => {
+  const esperarLaSugerencia = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 450));
+    });
+
+  it('propone seguir desde el mayor número ya usado y lo pone con un clic', async () => {
+    sugerenciaMock.mockResolvedValue({
+      prefijo: 'FE',
+      desde: 1,
+      hasta: 5000,
+      mayorYaUsado: 1042,
+      dondeEstaElMayor: 'comprobantes migrados',
+      ultimoNumeroPropuesto: 1042,
+      siguiente: 'FE-1043',
+      seCruza: false,
+      explicacion: 'Ya hay documentos con este prefijo hasta el 1042 (comprobantes migrados): te proponemos seguir desde el 1043.',
+    });
+    await montar();
+    await abrirCarga();
+    await act(async () => {
+      escribir('resolucion-campo-prefijo', 'FE');
+      escribir('resolucion-campo-desde', '1');
+      escribir('resolucion-campo-hasta', '5000');
+    });
+    await esperarLaSugerencia();
+    expect(sugerenciaMock).toHaveBeenLastCalledWith({ prefijo: 'FE', desde: 1, hasta: 5000 });
+    expect(q('[data-testid="resolucion-sugerencia"]')!.textContent).toContain('comprobantes migrados');
+    await act(async () => {
+      (q('[data-testid="resolucion-usar-sugerencia"]') as HTMLButtonElement).click();
+    });
+    expect((q('[data-testid="resolucion-campo-ultimo"]') as HTMLInputElement).value).toBe('1042');
+  });
+
+  it('🔴 un rango que se cruza con otra resolución se dice y no se deja cargar', async () => {
+    sugerenciaMock.mockResolvedValue({
+      prefijo: 'LAB',
+      desde: 30,
+      hasta: 60,
+      mayorYaUsado: null,
+      dondeEstaElMayor: null,
+      ultimoNumeroPropuesto: 29,
+      siguiente: 'LAB-30',
+      seCruza: true,
+      explicacion: 'El rango 30–60 de LAB se cruza con la resolución PRUEBA-LAB-0001 (1–40).',
+    });
+    await montar();
+    await abrirCarga();
+    await act(async () => {
+      escribir('resolucion-campo-numero', 'PRUEBA-LAB-0002');
+      escribir('resolucion-campo-fecha', '2026-10-01');
+      escribir('resolucion-campo-prefijo', 'LAB');
+      escribir('resolucion-campo-desde', '30');
+      escribir('resolucion-campo-hasta', '60');
+      escribir('resolucion-campo-vigente-desde', '2026-10-01');
+      escribir('resolucion-campo-vigente-hasta', '2026-12-31');
+    });
+    await esperarLaSugerencia();
+    expect(q('[data-testid="resolucion-se-cruza"]')!.textContent).toContain('se cruza');
+    expect((q('[data-testid="resolucion-guardar"]') as HTMLButtonElement).disabled).toBe(true);
   });
 });

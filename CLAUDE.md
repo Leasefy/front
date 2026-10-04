@@ -594,6 +594,33 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - **Contrato manual**: `?inquilino=<identidad>` llega elegido (sin cuenta, como «Nuevo» con sus datos); un campo vacío no
   abre en rojo (su error sale al dejarlo) y el botón apagado dice qué falta (`lo-que-falta`).
 
+## QA de Facturación (QA-FACT, 03-10-2026; decisiones de Nico de las 18:30 y 19:4x)
+
+- **Lo que se emite y lo que no** (`lib/facturacion/por-facturar.ts`, puro y probado): `sePuedeEmitirHoy`, `seSugiere`,
+  `estadoDeLaFila`, `porQueNoSeEmite`. Lee `codigoNoEmitible` del back (`MES_NO_EMPEZO`, `ESCENARIO_SIN_CONFIRMAR`,
+  `GIRO_SIN_PAGAR`, `ANTES_DE_LA_FECHA_DE_CARTERA`, `ANULADA_POR_NOTA_CREDITO`, `COPROPIEDAD_SIN_MIGRACION`,
+  `PARTICIPACIONES_NO_SUMAN_100`); con un back anterior, `emitible`/`impuestosSinConfirmar`. Sin escenario confirmado
+  NO se emite («Confirmar en el contrato»); la comisión dice «Se factura cuando se le gire»; la preselección es sólo de
+  inquilinos; copropiedad «Jorge · 70 %» (`participacionBps`, clave de 4 partes con el propietario).
+- **«Por facturar»** (`NuevaFactura.tsx`): cinco columnas (cabe a 1440), tarjetas bajo 768 px (`useIsMobile`), la mora
+  sin intereses UNA vez arriba (`moraDelMes`; la factura del mes no lleva intereses), el pie con
+  `BarraDeAccionesMasivas compacta` (una línea + «Ver más»; bajo `lg` encima de la barra del celular). Emitir SIEMPRE
+  confirma a quién, cuánto y con qué números (`numerosQueSalen`); emitir UNA no abre el centro de procesos.
+  Propietarios numera con `resolucionDeLaComision` (o `porTipo` de `GET /resolucion`). Las facturas de intereses ya
+  pagados, aparte (`FacturasDeIntereses.tsx`: `intereses/por-emitir` e `intereses/emitir`, resolución de «Otros»).
+- **Notas**: la pestaña lee `notas/lista?mes=` (por el día de emisión, NC y ND, lo que movió en la deuda, «Emitir» en las
+  generadas con `notas-credito/:id/emitir`, PDF con `notas-credito/:id/pdf`); un back sin la ruta, lo de antes. Anular
+  dice que la deuda baja; «sólo un dato del documento» manda `efecto: 'SOLO_EL_DOCUMENTO'` (sale la corregida).
+- **Electrónica**: el filtro con el `Select` del DS y `NOMBRE_DEL_ESTADO_DE_TRANSMISION`; sin proveedor no se ofrece
+  reintentar; la entrega «Sin entregar · falta el correo» sale de `sinEntregar` del back y entonces ni corre la tácita
+  ni se ofrecen «La aceptó / La rechazó» (tampoco en una SIMULADA).
+- **Textos y formatos**: sin «M2», ids de migración (`faltaEnLaBase`) ni «Cárgala en Facturación → Resolución» estando
+  ahí (`sinLaRutaDeFacturacion`); plata con `formatCurrency` en mono; fechas con `fechaLegible` (un instante en la hora
+  de Colombia) / `fechaEnFrase`; fechas de formulario con `CampoDeFecha` (DatePicker de Cadence); valores con
+  `MoneyInput`. Resolución: casilla «Es una resolución de prueba» (`esDePrueba`), sugerencia del último número y rango
+  cruzado (`resolucion/sugerencia`), anular sólo el administrador. Documento soporte: registrar al proveedor ahí mismo.
+- **Quién entra**: `PageGuard roles=[ADMIN, CONTADOR] seccion="Facturación"`; «Hoy» filtra con `lib/nav/se-ve-el-enlace.ts`.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

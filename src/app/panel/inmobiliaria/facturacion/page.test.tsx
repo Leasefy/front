@@ -148,7 +148,11 @@ describe('/panel/inmobiliaria/facturacion', () => {
     await act(async () => {
       boton.click();
     });
-    expect(document.body.textContent).toContain('se factura SIN impuestos');
+    // 🔴 QA-FACT (03-10, Nico): sin escenario confirmado NO se emite (antes
+    // decía que «se factura SIN impuestos»), y los intereses van aparte.
+    expect(document.body.textContent).toContain('no se factura hasta confirmarlo');
+    expect(document.body.textContent).toContain('se facturan aparte, cuando se pagan');
+    expect(document.body.textContent).not.toContain('se factura SIN impuestos');
     expect(document.body.textContent).toContain('todavía no se transmite');
   });
 

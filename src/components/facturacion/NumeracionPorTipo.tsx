@@ -25,6 +25,13 @@
  * 🔴 Y sin la migración (`porTipoDisponible: false`) esto no se pinta: la
  * numeración por tipo todavía no existe en esa base y una tabla que promete lo
  * que no hay es peor que no mostrarla.
+ *
+ * 🔴 QA-FACT (03-10-2026), FA-08 / FA-14: sin ninguna resolución el mismo
+ * párrafo salía una vez por tipo en el aviso y otra en cada fila. Ahora: sin
+ * ninguna, el aviso de arriba de la pestaña lo dice y acá no se repite; los
+ * tipos sin resolución van en UNA línea; la fila dice «Sin resolución», no el
+ * párrafo; y la nota crédito dice que lleva su consecutivo propio (no usa
+ * resolución), en vez de «numera con LABQA».
  */
 
 import { SealCheck, SealWarning, Warning } from '@phosphor-icons/react'
@@ -39,6 +46,13 @@ import {
 } from '@/components/ui/table'
 import type { ResolucionesDeLaAgencia } from '@/lib/api/facturacion-por-mes.service'
 import { TIPOS_EN_ORDEN } from '@/lib/api/facturacion-electronica.service'
+import { sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
+
+/** «a, b y c». */
+function enUnaFrase(nombres: readonly string[]): string {
+  if (nombres.length <= 1) return nombres.join('')
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
 
 export interface NumeracionPorTipoProps {
   datos: ResolucionesDeLaAgencia
@@ -47,7 +61,15 @@ export interface NumeracionPorTipoProps {
 export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
   if (!datos.porTipoDisponible) return null
 
-  const bloqueos = datos.avisos.filter((a) => a.clase === 'BLOQUEA')
+  /** Ningún tipo tiene resolución: el aviso de arriba de la pestaña ya lo dice. */
+  const ninguna = datos.porTipo.every((t) => t.resolucionId === null)
+  const bloqueos = ninguna
+    ? []
+    : datos.avisos.filter((a) => a.clase === 'BLOQUEA' && a.tipo !== 'NOTA_CREDITO')
+  /** Los tipos sin ninguna resolución, juntos en UNA línea. */
+  const sinResolucion = bloqueos.filter((a) => a.motivo === 'SIN_RESOLUCION')
+  const otrosBloqueos = bloqueos.filter((a) => a.motivo !== 'SIN_RESOLUCION')
+  const nombreDe = new Map(datos.porTipo.map((t) => [t.tipo, t.nombre]))
   const advertencias = datos.avisos.filter((a) => a.clase === 'ADVIERTE')
   const orden = new Map(TIPOS_EN_ORDEN.map((t, i) => [t, i]))
   const porTipo = [...datos.porTipo].sort(
@@ -73,13 +95,21 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
             </p>
           </div>
           <ul className="space-y-1 pl-7">
-            {bloqueos.map((a) => (
+            {sinResolucion.length > 0 && (
+              <li className="text-caption text-fg" data-testid="aviso-bloquea-sin-resolucion">
+                {enUnaFrase(sinResolucion.map((a) => nombreDe.get(a.tipo) ?? a.tipo))}{' '}
+                {sinResolucion.length === 1 ? 'no tiene' : 'no tienen'} una resolución que{' '}
+                {sinResolucion.length === 1 ? 'lo numere' : 'los numere'}. Carga una de ese
+                tipo, o una sin tipo, que numera todo.
+              </li>
+            )}
+            {otrosBloqueos.map((a) => (
               <li
                 key={`${a.tipo}-${a.motivo}`}
                 className="text-caption text-fg"
                 data-testid={`aviso-bloquea-${a.tipo}`}
               >
-                {a.explicacion}
+                {sinLaRutaDeFacturacion(a.explicacion)}
               </li>
             ))}
           </ul>
@@ -146,7 +176,16 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {porTipo.map((t) => (
+              {porTipo.map((t) =>
+                t.tipo === 'NOTA_CREDITO' ? (
+                  /* 🔴 FA-14 / FA-R34: ninguna nota crédito usa resolución. */
+                  <TableRow key={t.tipo} data-testid={`numeracion-${t.tipo}`}>
+                    <TableCell className="text-fg">{t.nombre}</TableCell>
+                    <TableCell colSpan={4} className="text-caption text-fg-muted">
+                      No usa resolución: lleva su consecutivo propio (NC-1, NC-2…).
+                    </TableCell>
+                  </TableRow>
+                ) : (
                 <TableRow key={t.tipo} data-testid={`numeracion-${t.tipo}`}>
                   <TableCell className="text-fg">
                     <span className="inline-flex items-center gap-1.5">
@@ -168,9 +207,10 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
                         Numera con la resolución general (no tiene una propia).
                       </p>
                     )}
-                    {!t.puedeNumerar && t.explicacion && (
+                    {/* El porqué largo va UNA vez en el aviso de arriba. */}
+                    {!t.puedeNumerar && (
                       <p className="text-caption text-danger pl-[22px]">
-                        {t.explicacion}
+                        {t.resolucionId === null ? 'Sin resolución' : 'No numera hoy'}
                       </p>
                     )}
                   </TableCell>
@@ -183,11 +223,12 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
                   <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
                     {t.puedeNumerar ? t.disponibles.toLocaleString('es-CO') : '—'}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap tabular-nums text-fg">
+                  <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg">
                     {t.siguiente ?? '—'}
                   </TableCell>
                 </TableRow>
-              ))}
+                ),
+              )}
             </TableBody>
           </Table>
         </div>

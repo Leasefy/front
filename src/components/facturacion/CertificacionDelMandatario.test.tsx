@@ -8,8 +8,8 @@
  * Lo que protege esta prueba:
  *  · la certificación se genera por PROPIETARIO y PERÍODO, y su detalle se
  *    puede descargar (el CSV se arma en el front con lo que ya vino);
- *  · la lista de sin correo distingue a quien le llega por WhatsApp de quien
- *    no recibe NADA — su documento queda esperando en un enlace.
+ *  · la lista de sin correo dice que su documento queda «Sin entregar · falta
+ *    el correo» (Nico, 03-10-2026; antes prometía WhatsApp o un enlace).
  */
 
 import * as React from 'react';
@@ -229,7 +229,8 @@ describe('CertificacionDelMandatario', () => {
     const resultado = q('[data-testid="cert-resultado"]')!;
     expect(resultado.textContent).toContain('Ana Propietaria');
     expect(resultado.textContent).toContain('12 facturas');
-    expect(resultado.textContent).toContain('$420.000');
+    // FA-R28 (03-10): la plata con un solo formato en la sección, «$ 420.000».
+    expect(resultado.textContent).toContain('$ 420.000');
     expect(q('[data-testid="cert-exportar"]')).not.toBeNull();
   });
 
@@ -271,7 +272,11 @@ describe('CertificacionDelMandatario', () => {
     await pintar(<CertificacionDelMandatario />);
     expect(
       q('[data-testid="certificacion-sin-migracion"]')!.textContent,
-    ).toContain('20260918002000');
+    ).not.toContain('20260918002000');
+    // FA-R27 (03-10): lo dice, sin el id de la migración.
+    expect(q('[data-testid="certificacion-sin-migracion"]')!.textContent).toContain(
+      'todavía no está disponible en esta base',
+    );
   });
 });
 
@@ -308,7 +313,13 @@ describe('TercerosSinCorreo', () => {
     );
   });
 
-  it('🔴 distingue a quien le llega por WhatsApp de quien NO recibe nada', async () => {
+  /*
+   * 🔴 Nico (03-10-2026): sin correo la factura queda «Sin entregar · falta el
+   * correo». Antes esta lista distinguía «Se le entrega por WhatsApp» de «No le
+   * llega nada: queda en un enlace»; el WhatsApp no sale y el enlace no existe
+   * (FA-R19). A los dos les falta lo mismo.
+   */
+  it('🔴 sin correo, sus facturas quedan sin entregar: no promete WhatsApp ni enlace', async () => {
     tercerosSinCorreo.mockResolvedValue({
       total: 10,
       conCorreo: 7,
@@ -342,15 +353,17 @@ describe('TercerosSinCorreo', () => {
 
     const resumen = q('[data-testid="terceros-resumen"]')!;
     expect(resumen.textContent).toContain('3 de 10');
-    expect(resumen.textContent).toContain('a 2 no les llega nada');
+    expect(resumen.textContent).toContain('sus facturas quedan sin entregar');
+    expect(resumen.textContent).not.toMatch(/WhatsApp|enlace/);
     expect(resumen.textContent).toContain('no se crea sin correo');
 
     expect(q('[data-testid="tercero-t-1"]')!.textContent).toContain(
-      'No le llega nada',
+      'Sin entregar · falta el correo',
     );
     expect(q('[data-testid="tercero-t-2"]')!.textContent).toContain(
-      'Se le entrega por WhatsApp',
+      'Sin entregar · falta el correo',
     );
+    expect(q('[data-testid="tercero-t-2"]')!.textContent).not.toContain('WhatsApp');
   });
 
   it('cuando todos tienen correo, lo dice y no alarma', async () => {

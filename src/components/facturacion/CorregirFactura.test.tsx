@@ -183,7 +183,8 @@ describe('CorregirFactura', () => {
       'se cobró el parqueadero y el contrato no lo tiene',
     );
     // Desde el 02-10 el error es `<ErrorDelCampo>` (FormError de Cadence): por su id.
-    expect(q('#corregir-valor-error')?.textContent).toContain('Escribe un valor entre $1 y');
+    // FA-R28 (03-10): la plata con un solo formato, «$ 1».
+    expect(q('#corregir-valor-error')?.textContent).toContain('Escribe un valor entre $ 1 y');
     expect(
       (q('[data-testid="corregir-confirmar"]') as HTMLButtonElement).disabled,
     ).toBe(true);
@@ -321,5 +322,25 @@ describe('CorregirFactura · el sistema de errores (02-10)', () => {
     await escribir('[data-testid="corregir-motivo"]', 'se cobró el parqueadero de más');
     await confirmar();
     expect(vi.mocked(toast.error).mock.calls[0]?.[0]).toMatch(/conexi[oó]n/);
+  });
+});
+
+/**
+ * 🔴 FA-25 (QA-FACT, 03-10-2026): la nota parcial pide el concepto DIAN como la
+ * total (antes iba fijo «Rebaja») y el valor se escribe en el campo de plata
+ * de la casa, que agrupa los miles (antes `type="number"`).
+ */
+describe('CorregirFactura · FA-25', () => {
+  it('la parcial ofrece el concepto (sin «Anulación») y el valor agrupa los miles', async () => {
+    pintar(factura());
+    await act(async () => {
+      (q('[data-testid="nota-parcial-3"]') as HTMLButtonElement).click();
+    });
+    const concepto = q('[data-testid="corregir-concepto-parcial"]')!;
+    expect(concepto.getAttribute('role')).toBe('combobox');
+    await escribir('[data-testid="corregir-valor"]', '100000');
+    const valor = q('[data-testid="corregir-valor"]') as HTMLInputElement;
+    expect(valor.type).toBe('text');
+    expect(valor.value).toBe('100.000');
   });
 });

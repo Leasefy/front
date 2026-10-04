@@ -19,6 +19,12 @@
  *   2. **El canal ALTERNO es una deuda, no una solución.** Un documento
  *      entregado por enlace es un documento que espera a que alguien lo abra.
  *      La pantalla lo dice y manda a completar el correo.
+ *
+ * 🔴 Y desde el 03-10-2026 (Nico, QA-FACT FA-13 / FA-R04): sin correo el
+ * documento queda **«Sin entregar · falta el correo»**, la aceptación tácita NO
+ * corre y no se ofrece «La aceptó / La rechazó» mientras no le haya llegado. El
+ * enlace descargable no existía (no hay ruta pública) y un back anterior lo
+ * marcaba «Entregada» y, a los tres días hábiles, «Aceptada tácitamente».
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -55,6 +61,8 @@ import {
   type EstadoDeEntrega,
 } from '@/lib/api/facturacion-electronica.service'
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service'
+import { nombreDelDocumento } from '@/lib/api/facturacion-electronica.service'
+import { cuantos, faltaEnLaBase } from '@/lib/facturacion/por-facturar'
 
 const TONO: Record<EstadoDeEntrega, string> = {
   POR_ENVIAR: 'text-fg-muted',
@@ -65,6 +73,35 @@ const TONO: Record<EstadoDeEntrega, string> = {
   ACEPTADA: 'text-success',
   ACEPTADA_TACITA: 'text-success',
   RECHAZADA_CLIENTE: 'text-danger',
+}
+
+/** «Sin entregar · falta el correo» va en ámbar: no le llegó a nadie. */
+const TONO_SIN_ENTREGAR = 'text-warning'
+
+/** Los estados que dicen que el documento salió (o hasta que el cliente lo aceptó). */
+const SALIO: readonly string[] = ['ENVIADA', 'ACEPTADA_TACITA']
+
+/**
+ * 🔴 No le llegó porque falta el correo. Como lo marca el back de QA-FACT
+ * (`entrega-del-documento.ts::quedoSinEntregar`: por correo, «por enviar» y sin
+ * destinatario), y también lo que un back anterior daba por «Entregada» por un
+ * enlace que no existía o un WhatsApp que no sale.
+ */
+function quedoSinEntregar(e: EntregaDeDocumento): boolean {
+  if (typeof e.sinEntregar === 'boolean') return e.sinEntregar
+  if (e.canal === 'CORREO') return e.estado === 'POR_ENVIAR' && !e.destinatario
+  return SALIO.includes(e.estado) || e.estado === 'POR_ENVIAR'
+}
+
+/** Le llegó por correo: desde ahí corre la aceptación tácita y caben los acuses. */
+function leLlego(e: EntregaDeDocumento): boolean {
+  return e.canal === 'CORREO' && SALIO.includes(e.estado)
+}
+
+/** Lo que dice la columna de estado. */
+function estadoParaMostrar(e: EntregaDeDocumento): { texto: string; tono: string } {
+  if (quedoSinEntregar(e)) return { texto: 'Sin entregar · falta el correo', tono: TONO_SIN_ENTREGAR }
+  return { texto: e.estadoNombre, tono: TONO[e.estado] ?? 'text-fg' }
 }
 
 export function EntregasYAcuse() {
@@ -144,9 +181,7 @@ export function EntregasYAcuse() {
     }
   }
 
-  const alternas = (datos?.entregas ?? []).filter(
-    (e) => e.canal !== 'CORREO',
-  ).length
+  const sinEntregar = (datos?.entregas ?? []).filter(quedoSinEntregar).length
   const simuladas = datos?.resumen.SIMULADA ?? 0
 
   return (
@@ -160,7 +195,9 @@ export function EntregasYAcuse() {
             className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
             weight="fill"
           />
-          <p className="text-caption text-fg">{datos.explicacion}</p>
+          <p className="text-caption text-fg">
+            {faltaEnLaBase('La entrega de los documentos y su acuse')}
+          </p>
         </div>
       )}
 
@@ -173,27 +210,30 @@ export function EntregasYAcuse() {
             className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
             weight="fill"
           />
+          {/* 🔴 FA-R19: decía «Cuando se prenda, se vuelven a enviar», y no hay
+              nada que los vuelva a enviar. Y «1 documentos». */}
           <p className="text-caption text-fg">
-            {simuladas} documentos figuran como <strong>simulados</strong>: en
-            este entorno el envío de correos está apagado y no le llegaron a
-            nadie. Cuando se prenda, se vuelven a enviar.
+            {cuantos(simuladas, 'documento no salió', 'documentos no salieron')}: en este
+            entorno el envío de correos está apagado y no le llegaron a nadie.
           </p>
         </div>
       )}
 
-      {alternas > 0 && (
+      {sinEntregar > 0 && (
         <div
-          className="rounded-lg border border-border bg-surface-muted p-3 flex items-start gap-2.5"
+          className="rounded-lg border border-warning/30 bg-warning-soft p-3 flex items-start gap-2.5"
           data-testid="entregas-alternas"
         >
           <EnvelopeSimple
-            className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
             weight="fill"
           />
+          {/* 🔴 FA-R19: decía «salieron por WhatsApp o por enlace»; el WhatsApp
+              no sale y el enlace no existe. No le llegaron: se dice así. */}
           <p className="text-caption text-fg">
-            {alternas} documentos salieron por WhatsApp o por enlace porque su
-            cliente no tiene correo. El correo es obligatorio para la factura
-            electrónica: complétalo en «Terceros sin correo».
+            {cuantos(sinEntregar, 'documento quedó', 'documentos quedaron')} sin entregar
+            porque a su cliente le falta el correo. Mientras no lo tenga, la
+            aceptación tácita no corre. Complétalo en «Mandato y correos».
           </p>
         </div>
       )}
@@ -233,42 +273,57 @@ export function EntregasYAcuse() {
                           : 'Todavía no se ha entregado ningún documento'
                       }
                       descripcion={
-                        datos?.explicacion ??
-                        'Cada factura que emites sale por correo con su XML y su PDF, y acá queda la constancia.'
+                        datos && !datos.disponible
+                          ? faltaEnLaBase('La entrega de los documentos y su acuse')
+                          : 'Cada documento que emites se le manda por correo a su cliente, y acá queda la constancia de si le llegó.'
                       }
                     />
                   </TableCell>
                 </TableRow>
               ) : (
-                datos.entregas.map((e) => (
+                datos.entregas.map((e) => {
+                  const estado = estadoParaMostrar(e)
+                  return (
                   <TableRow key={e.id} data-testid={`entrega-${e.id}`}>
-                    <TableCell className="whitespace-nowrap text-fg">
-                      {e.numeroDian ?? e.documentoTipo}
+                    <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg">
+                      {e.numeroDian ?? nombreDelDocumento(e.documentoTipo)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-fg-muted">
-                      {e.canalNombre}
+                      {/* El «enlace descargable» de antes no existía. */}
+                      {quedoSinEntregar(e) && e.canal === 'ENLACE' ? '—' : e.canalNombre}
                     </TableCell>
                     <TableCell className="max-w-[16rem] truncate text-fg-muted">
                       {e.destinatario ?? '—'}
                     </TableCell>
-                    <TableCell
-                      className={`whitespace-nowrap ${TONO[e.estado] ?? 'text-fg'}`}
-                    >
-                      {e.estadoNombre}
-                      {e.motivo && (
+                    <TableCell className={`min-w-[11rem] ${estado.tono}`}>
+                      <span data-testid={`entrega-estado-${e.id}`}>{estado.texto}</span>
+                      {/* Sin correo o con el envío apagado, el porqué es el mismo
+                          en todas las filas y ya lo dice el aviso de arriba (y el
+                          del back nombraba `EMAIL_DELIVERY_ENABLED`, FA-R27). */}
+                      {e.motivo && !quedoSinEntregar(e) && e.estado !== 'SIMULADA' && (
                         <p className="text-caption text-fg-muted whitespace-normal">
                           {e.motivo}
                         </p>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-fg-muted">
-                      {e.enviadaAt ? fechaLegible(e.enviadaAt) : '—'}
+                      {e.enviadaAt && leLlego(e) ? fechaLegible(e.enviadaAt) : '—'}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-fg-muted">
-                      {e.aceptaTacitoAt ? fechaLegible(e.aceptaTacitoAt) : '—'}
+                    <TableCell className="min-w-[9rem] text-fg-muted">
+                      {/* 🔴 La tácita corre desde que el documento LLEGA: ni sin
+                          correo, ni con el envío apagado, ni si falló. */}
+                      {leLlego(e) || e.estado === 'ACEPTADA_TACITA'
+                        ? e.aceptaTacitoAt
+                          ? fechaLegible(e.aceptaTacitoAt)
+                          : '—'
+                        : e.estado === 'ACEPTADA' || e.estado === 'RECHAZADA_CLIENTE'
+                          ? '—'
+                          : 'No corre: no le ha llegado'}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right">
-                      {e.esperaAcuse && (
+                      {/* 🔴 Nico (03-10): ni «La aceptó» ni «La rechazó» sobre un
+                          documento que no le llegó (simulado, sin correo). */}
+                      {e.esperaAcuse && e.estado === 'ENVIADA' && leLlego(e) && (
                         <span className="inline-flex gap-2">
                           <Button
                             variant="outline"
@@ -297,7 +352,8 @@ export function EntregasYAcuse() {
                       )}
                     </TableCell>
                   </TableRow>
-                ))
+                  )
+                })
               )}
             </TableBody>
           </Table>

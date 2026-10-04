@@ -129,12 +129,20 @@ describe('EntregasYAcuse', () => {
     );
     const aviso = q('[data-testid="entregas-simuladas"]')!;
     expect(aviso.textContent).toContain('no le llegaron a nadie');
-    expect(q('[data-testid="entrega-e-1"]')!.textContent).toContain(
-      'NO le llegó al cliente',
-    );
+    // La fila dice que no salió; el porqué va UNA vez en el aviso de arriba y
+    // sin el nombre de la variable del entorno (FA-R27, 03-10).
+    const fila = q('[data-testid="entrega-e-1"]')!.textContent!;
+    expect(fila).toContain('No salió (envío apagado en este entorno)');
+    expect(fila).not.toContain('EMAIL_DELIVERY_ENABLED');
   });
 
-  it('🔴 el canal ALTERNO se declara y manda a completar el correo', async () => {
+  /*
+   * 🔴 Nico (03-10-2026, FA-13 / FA-R04): sin correo el documento queda «Sin
+   * entregar · falta el correo», la tácita NO corre y no se ofrecen «La aceptó /
+   * La rechazó». Un back anterior lo marcaba «Entregada» por un enlace que no
+   * existe; la pantalla ya no lo repite.
+   */
+  it('🔴 sin correo: «Sin entregar · falta el correo», sin tácita y sin acuses', async () => {
     await pintar(
       respuesta({
         entregas: [
@@ -142,13 +150,67 @@ describe('EntregasYAcuse', () => {
             canal: 'ENLACE',
             canalNombre: 'Enlace descargable',
             destinatario: null,
+            estado: 'ENVIADA',
+            estadoNombre: 'Entregada',
+            aceptaTacitoAt: '2026-10-07T12:00:00.000Z',
           }),
         ],
       }),
     );
-    expect(q('[data-testid="entregas-alternas"]')!.textContent).toContain(
-      'Terceros sin correo',
+    const fila = q('[data-testid="entrega-e-1"]')!;
+    expect(q('[data-testid="entrega-estado-e-1"]')!.textContent).toBe('Sin entregar · falta el correo');
+    expect(fila.textContent).not.toContain('Entregada');
+    expect(fila.textContent).toContain('No corre: no le ha llegado');
+    expect(fila.textContent).not.toContain('7 oct 2026');
+    expect(q('[data-testid="entrega-aceptar-e-1"]')).toBeNull();
+    expect(q('[data-testid="entrega-rechazar-e-1"]')).toBeNull();
+    // FA-R19: ni «salieron por WhatsApp o por enlace» ni «1 documentos».
+    const aviso = q('[data-testid="entregas-alternas"]')!.textContent!;
+    expect(aviso).toContain('1 documento quedó sin entregar');
+    expect(aviso).not.toMatch(/WhatsApp|salieron/);
+    expect(aviso).toContain('Mandato y correos');
+  });
+
+  it('como la marca el back de QA-FACT (por correo, por enviar y sin destinatario) también', async () => {
+    await pintar(
+      respuesta({
+        entregas: [
+          entrega({
+            canal: 'CORREO',
+            destinatario: null,
+            estado: 'POR_ENVIAR',
+            estadoNombre: 'Sin entregar · falta el correo',
+            sinEntregar: true,
+            enviadaAt: null,
+            aceptaTacitoAt: null,
+            esperaAcuse: false,
+          }),
+        ],
+      }),
     );
+    expect(q('[data-testid="entrega-estado-e-1"]')!.textContent).toBe('Sin entregar · falta el correo');
+    expect(q('[data-testid="entrega-e-1"]')!.textContent).toContain('No corre: no le ha llegado');
+  });
+
+  it('si el back dice `sinEntregar: false`, manda el back (un correo que ya salió)', async () => {
+    await pintar(respuesta({ entregas: [entrega({ sinEntregar: false })] }));
+    expect(q('[data-testid="entrega-estado-e-1"]')!.textContent).toBe('Entregada');
+    expect(q('[data-testid="entrega-aceptar-e-1"]')).not.toBeNull();
+  });
+
+  it('🔴 una SIMULADA no ofrece «La aceptó / La rechazó» y no promete reenviarla', async () => {
+    await pintar(
+      respuesta({
+        resumen: { SIMULADA: 1 },
+        entregas: [entrega({ estado: 'SIMULADA', estadoNombre: 'No salió (envío apagado en este entorno)' })],
+      }),
+    );
+    expect(q('[data-testid="entrega-aceptar-e-1"]')).toBeNull();
+    const aviso = q('[data-testid="entregas-simuladas"]')!.textContent!;
+    expect(aviso).toContain('1 documento no salió');
+    expect(aviso).not.toContain('se vuelven a enviar');
+    // Y la tácita no corre: no le llegó.
+    expect(q('[data-testid="entrega-e-1"]')!.textContent).toContain('No corre: no le ha llegado');
   });
 
   it('aceptar registra el acuse sin pedir motivo', async () => {
@@ -216,9 +278,10 @@ describe('EntregasYAcuse', () => {
           'La entrega y el acuse llegan con la migración 20260918001000_cola_de_transmision_y_entrega, que todavía no está aplicada en esta base.',
       }),
     );
-    expect(q('[data-testid="entregas-sin-migracion"]')!.textContent).toContain(
-      '20260918001000',
-    );
+    // 🔴 FA-R27 (03-10): lo dice, sin el id de la migración.
+    const aviso = q('[data-testid="entregas-sin-migracion"]')!.textContent!;
+    expect(aviso).toContain('todavía no está disponible en esta base');
+    expect(aviso).not.toContain('20260918001000');
   });
 });
 

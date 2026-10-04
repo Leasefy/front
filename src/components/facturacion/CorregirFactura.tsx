@@ -27,7 +27,6 @@
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -41,6 +40,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from '@/components/ui/toast'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { formatCurrency } from '@/lib/format'
+import { MoneyInput } from '@/components/ui/money-input'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
@@ -50,10 +58,24 @@ import {
 import {
   NOMBRE_DEL_CONCEPTO_DEBITO,
   facturacionElectronicaService,
-  pesos,
   type ConceptoDeNotaDebito,
 } from '@/lib/api/facturacion-electronica.service'
-import type { FacturaEmitida } from '@/lib/api/facturacion-por-mes.service'
+import {
+  NOMBRE_DEL_CONCEPTO,
+  type ConceptoDeNotaCredito,
+  type FacturaEmitida,
+} from '@/lib/api/facturacion-por-mes.service'
+
+/**
+ * Los conceptos DIAN de una nota crédito PARCIAL (FA-25, 03-10): los de la
+ * total menos «Anulación», que acredita la factura entera.
+ */
+const CONCEPTOS_DE_LA_PARCIAL: readonly ConceptoDeNotaCredito[] = [
+  'REBAJA',
+  'DEVOLUCION',
+  'AJUSTE_DE_PRECIO',
+  'OTROS',
+]
 
 /** El mínimo que el back exige para el motivo (`MinLength(10)`). */
 export const MIN_MOTIVO = 10
@@ -88,7 +110,7 @@ export function errorDelValorDeLaNota(
   if (cual === 'PARCIAL') {
     return Number.isInteger(n) && n > 0 && n <= maximoParcialCop
       ? null
-      : `Escribe un valor entre $1 y ${pesos(maximoParcialCop)}.`
+      : `Escribe un valor entre ${formatCurrency(1)} y ${formatCurrency(maximoParcialCop)}.`
   }
   if (!Number.isInteger(n) || n <= 0) return 'Escribe un valor mayor que cero.'
   if (n > VALOR_MAXIMO_DE_LA_NOTA_COP) return MENSAJES_DE_LA_FACTURACION.valorDeLaNotaMaximo
@@ -102,6 +124,8 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
   const [concepto, setConcepto] = useState<ConceptoDeNotaDebito>(
     'INTERESES_DE_MORA',
   )
+  /** El concepto DIAN de la parcial (FA-25: antes iba fijo «Rebaja»). */
+  const [conceptoParcial, setConceptoParcial] = useState<ConceptoDeNotaCredito>('REBAJA')
   const [guardando, setGuardando] = useState(false)
   /** Lo que el back dijo de cada campo (02-10-2026): va debajo del campo. */
   const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaNota, string>>>({})
@@ -141,7 +165,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
       if (cual === 'PARCIAL') {
         const r = await facturacionElectronicaService.emitirNotaCreditoParcial(
           factura.id,
-          { concepto: 'REBAJA', motivo: motivo.trim(), valorCop },
+          { concepto: conceptoParcial, motivo: motivo.trim(), valorCop },
         )
         toast.success(`Nota crédito ${r.numeroDeLaNota} emitida`)
       } else {
@@ -185,6 +209,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
           onClick={() => {
             setMotivo('')
             setValor('')
+            setConceptoParcial('REBAJA')
             setCual('PARCIAL')
           }}
           data-testid={`nota-parcial-${factura.numero}`}
@@ -221,7 +246,9 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
           className="text-caption text-fg-muted"
           data-testid={`acreditado-${factura.numero}`}
         >
-          Ya acreditado {pesos(c.acreditadoCop)} · saldo {pesos(c.saldoCop)}
+          Ya acreditado{' '}
+          <span className="font-mono tabular-nums">{formatCurrency(c.acreditadoCop)}</span> · saldo{' '}
+          <span className="font-mono tabular-nums">{formatCurrency(c.saldoCop)}</span>
         </span>
       )}
 
@@ -240,46 +267,84 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {cual === 'PARCIAL'
-                ? `La factura no se borra ni cambia de valor: queda con su número y una nota crédito por lo que se acredita. Puedes acreditar hasta ${pesos(c.maximoParcialCop)}.`
-                : 'La nota débito es un documento aparte que suma sobre esta factura. Se usa cuando faltó plata en ella (intereses, un ajuste de precio).'}
+                ? `La factura no se borra ni cambia de valor: queda con su número y una nota crédito por lo que se acredita, y la deuda de su cuota baja en ese valor. Puedes acreditar hasta ${formatCurrency(c.maximoParcialCop)}.`
+                : 'La nota débito es un documento aparte que suma sobre esta factura y sobre la deuda de su cuota. Se usa cuando faltó plata en ella (intereses, un ajuste de precio). Su IVA lo calcula Leasefy con el escenario tributario del contrato.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-3">
+            {cual === 'PARCIAL' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="corregir-concepto-parcial">Concepto (lo pide la DIAN)</Label>
+                <Select
+                  value={conceptoParcial}
+                  onValueChange={(v) => {
+                    setConceptoParcial(v as ConceptoDeNotaCredito)
+                    olvidar('concepto')
+                  }}
+                >
+                  <SelectTrigger
+                    id="corregir-concepto-parcial"
+                    className="w-full"
+                    aria-invalid={delServidor.concepto ? true : undefined}
+                    aria-describedby={delServidor.concepto ? 'corregir-concepto-error' : undefined}
+                    data-testid="corregir-concepto-parcial"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONCEPTOS_DE_LA_PARCIAL.map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {NOMBRE_DEL_CONCEPTO[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <ErrorDelCampo id="corregir-concepto-error" mensaje={delServidor.concepto} />
+              </div>
+            )}
             {cual === 'DEBITO' && (
               <div className="space-y-1.5">
                 <Label htmlFor="corregir-concepto">Concepto</Label>
-                <select
-                  id="corregir-concepto"
-                  className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                {/* FA-R30: el `Select` del DS, no el del navegador. */}
+                <Select
                   value={concepto}
-                  onChange={(e) => {
-                    setConcepto(e.target.value as ConceptoDeNotaDebito)
+                  onValueChange={(v) => {
+                    setConcepto(v as ConceptoDeNotaDebito)
                     olvidar('concepto')
                   }}
-                  aria-invalid={delServidor.concepto ? true : undefined}
-                  aria-describedby={delServidor.concepto ? 'corregir-concepto-error' : undefined}
-                  data-testid="corregir-concepto"
                 >
-                  {(
-                    Object.keys(NOMBRE_DEL_CONCEPTO_DEBITO) as ConceptoDeNotaDebito[]
-                  ).map((k) => (
-                    <option key={k} value={k}>
-                      {NOMBRE_DEL_CONCEPTO_DEBITO[k]}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id="corregir-concepto"
+                    className="w-full"
+                    aria-invalid={delServidor.concepto ? true : undefined}
+                    aria-describedby={delServidor.concepto ? 'corregir-concepto-error' : undefined}
+                    data-testid="corregir-concepto"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(
+                      Object.keys(NOMBRE_DEL_CONCEPTO_DEBITO) as ConceptoDeNotaDebito[]
+                    ).map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {NOMBRE_DEL_CONCEPTO_DEBITO[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <ErrorDelCampo id="corregir-concepto-error" mensaje={delServidor.concepto} />
               </div>
             )}
             <div className="space-y-1.5">
               <Label htmlFor="corregir-valor">Valor</Label>
-              <Input
+              {/* FA-25 (QA-FACT, 03-10): el campo de plata de la casa, que agrupa
+                  los miles mientras se escribe; no `type="number"`. */}
+              <MoneyInput
                 id="corregir-valor"
-                type="number"
                 value={valor}
-                onChange={(e) => {
-                  setValor(e.target.value)
+                onChange={(crudo) => {
+                  setValor(crudo)
                   olvidar('valor')
                 }}
                 data-testid="corregir-valor"
@@ -288,7 +353,8 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
               />
               {cual === 'PARCIAL' && (
                 <p className="text-caption text-fg-muted">
-                  Como máximo {pesos(c.maximoParcialCop)}: es lo que le queda de
+                  Como máximo{' '}
+                  <span className="font-mono tabular-nums">{formatCurrency(c.maximoParcialCop)}</span>: es lo que le queda de
                   saldo a la factura.
                 </p>
               )}

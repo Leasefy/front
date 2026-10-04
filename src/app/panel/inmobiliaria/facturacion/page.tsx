@@ -167,12 +167,12 @@ function FacturacionContent() {
         </div>
       </header>
 
-      {/* Banner del M2, tal cual estaba: no es de esta pantalla decidir cuándo
-          llega el motor. Se calla en «Nueva factura» porque ahí sí hay motor
-          —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
-          con sus propias palabras: dos avisos distintos sobre lo mismo, uno
-          encima del otro, no los lee nadie. */}
-      {active === 'ventas' || active === 'compras' || active === 'notas' ? (
+      {/* El aviso de lo que todavía no pasa con lo emitido: se numera, pero
+          no se transmite a la DIAN. Sólo en Ventas y Notas, que es donde está
+          lo emitido. 🔴 FA-06 (QA-FACT, 03-10): decía «Estructura lista — el
+          motor DIAN llega en M2» (jerga interna) y «Compras todavía se lleva en
+          Pagos» estando en Ventas; Compras ya lo dice en su propio vacío. */}
+      {active === 'ventas' || active === 'notas' ? (
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -308,7 +308,7 @@ function FacturacionContent() {
                   <p className="text-caption text-fg-muted">
                     {clave === 'ventas'
                       ? 'Las facturas que emitiste en el mes.'
-                      : 'Las notas crédito con las que anulaste facturas del mes.'}
+                      : 'Las notas crédito y débito del mes.'}
                   </p>
                   <Select value={mes} onValueChange={setMes}>
                     <SelectTrigger
@@ -316,7 +316,7 @@ function FacturacionContent() {
                       aria-label={
                         clave === 'ventas'
                           ? 'Mes de las facturas emitidas'
-                          : 'Mes de las notas crédito'
+                          : 'Mes de las notas'
                       }
                       data-testid="facturacion-mes-emitidas"
                     >
@@ -398,7 +398,9 @@ export default function FacturacionPage() {
   // CONTADOR algo que sí podía hacer desde Liquidaciones — y el contador es
   // justamente quien factura. Mismo par de roles que /pagos.
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    // Nico (03-10-2026): Facturación es sólo de administrador y contador, también
+    // en el back. A los demás, el cartel dice «No tienes acceso a Facturación».
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Facturación">
       <FacturacionContent />
     </PageGuard>
   );

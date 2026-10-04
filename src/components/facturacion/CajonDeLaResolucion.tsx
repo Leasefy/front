@@ -22,9 +22,14 @@
  *
  * Lo que NO cambió: las cuatro validaciones al lado del campo (auditoría 13-09,
  * F5), que el back sigue aplicando igual, y que una resolución no se edita.
+ *
+ * 🔴 QA-FACT (03-10-2026): las tres fechas usan el selector de fecha del DS
+ * (`CampoDeFecha`), no el `type="date"` del navegador (FA-R29); la descripción
+ * dice «Por facturar» (FA-14), y «Nota crédito» ya no se ofrece como tipo:
+ * ninguna nota crédito usa resolución, llevan su consecutivo propio (NC-1).
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Certificate } from '@phosphor-icons/react'
 
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
@@ -35,6 +40,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { Checkbox } from '@/components/ui/checkbox'
+import { CampoDeFecha } from './CampoDeFecha'
 import {
   Select,
   SelectContent,
@@ -96,6 +103,7 @@ import { toast } from '@/components/ui/toast'
 import {
   facturacionPorMesService,
   type ResolucionesDeLaAgencia,
+  type SugerenciaDeLaResolucion,
 } from '@/lib/api/facturacion-por-mes.service'
 import {
   NOMBRE_DEL_TIPO,
@@ -119,6 +127,8 @@ export interface Formulario {
    * elegir uno le cambiaría la numeración a quien no pidió nada.
    */
   tipoDeDocumento: string
+  /** Nico (03-10): una resolución de PRUEBA no le entrega nada a ningún cliente. */
+  esDePrueba: boolean
 }
 
 export const VACIO: Formulario = {
@@ -131,6 +141,7 @@ export const VACIO: Formulario = {
   vigenteHasta: '',
   ultimoNumeroUsado: '',
   tipoDeDocumento: '',
+  esDePrueba: false,
 }
 
 /**
@@ -164,6 +175,46 @@ export function CajonDeLaResolucion({
   const [delServidor, setDelServidor] = useState<
     Partial<Record<CampoConError, string>>
   >({})
+
+  /*
+   * 🔴 Q10 (Nico, la recomendada): con el prefijo y el rango escritos, el back
+   * propone el último número ya usado (lo migrado incluido) y dice si el rango
+   * se cruza con otra resolución. Una inmobiliaria que viene de otro sistema
+   * repetía números ya emitidos allá. Un back sin la ruta: silencio, como antes.
+   */
+  const [sugerencia, setSugerencia] = useState<SugerenciaDeLaResolucion | null>(null)
+  useEffect(() => {
+    const desde = Number(form.desde)
+    const hasta = Number(form.hasta)
+    const prefijo = form.prefijo.trim()
+    if (
+      !abierto ||
+      !Number.isInteger(desde) ||
+      !Number.isInteger(hasta) ||
+      desde < 1 ||
+      hasta < desde ||
+      !/^[A-Za-z0-9]*$/.test(prefijo)
+    ) {
+      setSugerencia(null)
+      return
+    }
+    let vivo = true
+    const espera = setTimeout(() => {
+      void (async () => {
+        try {
+          const s = await facturacionPorMesService.sugerenciaDeLaResolucion({ prefijo, desde, hasta })
+          if (vivo) setSugerencia(s)
+        } catch {
+          if (vivo) setSugerencia(null)
+        }
+      })()
+    }, 400)
+    return () => {
+      vivo = false
+      clearTimeout(espera)
+    }
+  }, [abierto, form.prefijo, form.desde, form.hasta])
+  const seCruza = sugerencia?.seCruza === true
 
   const campo = (clave: keyof Formulario) => (valor: string) => {
     setForm((previo) => ({ ...previo, [clave]: valor }))
@@ -209,7 +260,7 @@ export function CajonDeLaResolucion({
     form.vigenteHasta !== ''
 
   async function guardar() {
-    if (!completo || hayErrores(errores) || guardando) return
+    if (!completo || hayErrores(errores) || guardando || seCruza) return
     setGuardando(true)
     try {
       await facturacionPorMesService.crearResolucion({
@@ -226,6 +277,7 @@ export function CajonDeLaResolucion({
         ...(form.tipoDeDocumento !== '' && form.tipoDeDocumento !== CUALQUIER_TIPO
           ? { tipoDeDocumento: form.tipoDeDocumento as TipoDeDocumento }
           : {}),
+        ...(form.esDePrueba ? { esDePrueba: true } : {}),
       })
       toast.success('Resolución cargada')
       setForm(VACIO)
@@ -253,7 +305,9 @@ export function CajonDeLaResolucion({
   /** Qué falta, dicho en el pie: el botón apagado solo no lo explica. */
   const ayuda = hayErrores(errores)
     ? 'Hay un dato que no cuadra: está señalado arriba.'
-    : completo
+    : seCruza
+      ? 'El rango se cruza con otra resolución: dos autorizaciones no pueden numerar el mismo número.'
+      : completo
       ? 'Una resolución no se edita después: se anula y se carga la siguiente.'
       : 'Faltan datos del papel de la DIAN: número, fecha, rango y vigencia.'
 
@@ -271,7 +325,7 @@ export function CajonDeLaResolucion({
     >
       <CajonCabecera
         titulo="Cargar una resolución"
-        descripcion="Copia los datos tal cual están en la resolución que te dio la DIAN. Con ella, «Nueva factura» numera; sin ella no emite nada."
+        descripcion="Copia los datos tal cual están en la resolución que te dio la DIAN. Con ella, «Por facturar» numera; sin ella no emite nada."
       />
       <CajonCuerpo>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -289,13 +343,12 @@ export function CajonDeLaResolucion({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-fecha">Fecha de la resolución</Label>
-            <Input
+            <CampoDeFecha
               id="resolucion-fecha"
-              type="date"
               value={form.fechaResolucion}
-              onChange={(e) => campo('fechaResolucion')(e.target.value)}
-              data-testid="resolucion-campo-fecha"
-              {...aria('fechaResolucion')}
+              onChange={campo('fechaResolucion')}
+              invalido={Boolean(errorDe('fechaResolucion'))}
+              testid="resolucion-campo-fecha"
             />
             <ErrorDelCampo id={ID_DEL_ERROR.fechaResolucion} mensaje={errorDe('fechaResolucion')} />
           </div>
@@ -335,7 +388,8 @@ export function CajonDeLaResolucion({
                   <SelectItem value={CUALQUIER_TIPO}>
                     Cualquier tipo de documento
                   </SelectItem>
-                  {TIPOS_EN_ORDEN.map((t) => (
+                  {/* Ninguna nota crédito usa resolución (FA-R34): no se ofrece. */}
+                  {TIPOS_EN_ORDEN.filter((t) => t !== 'NOTA_CREDITO').map((t) => (
                     <SelectItem key={t} value={t}>
                       {NOMBRE_DEL_TIPO[t]}
                     </SelectItem>
@@ -374,30 +428,58 @@ export function CajonDeLaResolucion({
             />
             <ErrorDelCampo id={ID_DEL_ERROR.hasta} mensaje={errorDe('hasta')} />
           </div>
+          {seCruza && sugerencia?.explicacion && (
+            <p
+              className="text-caption text-danger sm:col-span-2"
+              role="alert"
+              data-testid="resolucion-se-cruza"
+            >
+              {sugerencia.explicacion}
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-desde">Vigente desde</Label>
-            <Input
+            <CampoDeFecha
               id="resolucion-vigente-desde"
-              type="date"
               value={form.vigenteDesde}
-              onChange={(e) => campo('vigenteDesde')(e.target.value)}
-              data-testid="resolucion-campo-vigente-desde"
-              {...aria('vigenteDesde')}
+              onChange={campo('vigenteDesde')}
+              invalido={Boolean(errorDe('vigenteDesde'))}
+              testid="resolucion-campo-vigente-desde"
             />
             <ErrorDelCampo id={ID_DEL_ERROR.vigenteDesde} mensaje={errorDe('vigenteDesde')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-hasta">Vigente hasta</Label>
-            <Input
+            <CampoDeFecha
               id="resolucion-vigente-hasta"
-              type="date"
               value={form.vigenteHasta}
-              onChange={(e) => campo('vigenteHasta')(e.target.value)}
-              data-testid="resolucion-campo-vigente-hasta"
-              {...aria('vigenteHasta')}
+              onChange={campo('vigenteHasta')}
+              invalido={Boolean(errorDe('vigenteHasta'))}
+              testid="resolucion-campo-vigente-hasta"
             />
             <ErrorDelCampo id={ID_DEL_ERROR.vigenteHasta} mensaje={errorDe('vigenteHasta')} />
           </div>
+          {/* 🔴 Nico (03-10-2026, 19:4x): la resolución de prueba se marca
+              aquí. Lo que numere lleva la marca de prueba en su PDF y no se le
+              entrega a ningún cliente. */}
+          <label
+            htmlFor="resolucion-de-prueba"
+            className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 sm:col-span-2"
+          >
+            <Checkbox
+              id="resolucion-de-prueba"
+              checked={form.esDePrueba}
+              onCheckedChange={(v) => setForm((previo) => ({ ...previo, esDePrueba: v === true }))}
+              className="mt-0.5"
+              data-testid="resolucion-campo-de-prueba"
+            />
+            <span>
+              <span className="block text-sm text-fg">Es una resolución de prueba</span>
+              <span className="block text-caption text-fg-muted">
+                Lo que numere no se le entrega a ningún cliente.
+              </span>
+            </span>
+          </label>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
             <Input
@@ -414,6 +496,22 @@ export function CajonDeLaResolucion({
               mensaje={errorDe('ultimoNumeroUsado')}
               pista="Sólo si ya gastaste parte del rango en otro sistema. Con esto, la próxima factura sigue desde ahí y no desde el principio del rango."
             />
+            {!seCruza &&
+              sugerencia?.explicacion &&
+              sugerencia.mayorYaUsado !== null &&
+              form.ultimoNumeroUsado !== String(sugerencia.ultimoNumeroPropuesto) && (
+                <p className="text-caption text-fg" data-testid="resolucion-sugerencia">
+                  {sugerencia.explicacion}{' '}
+                  <button
+                    type="button"
+                    onClick={() => campo('ultimoNumeroUsado')(String(sugerencia.ultimoNumeroPropuesto))}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    data-testid="resolucion-usar-sugerencia"
+                  >
+                    Usar el {sugerencia.ultimoNumeroPropuesto.toLocaleString('es-CO')}
+                  </button>
+                </p>
+              )}
           </div>
         </div>
       </CajonCuerpo>
@@ -429,7 +527,7 @@ export function CajonDeLaResolucion({
         </Button>
         <Button
           hideArrow
-          disabled={!completo || guardando || hayErrores(errores)}
+          disabled={!completo || guardando || hayErrores(errores) || seCruza}
           onClick={() => void guardar()}
           data-testid="resolucion-guardar"
         >

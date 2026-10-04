@@ -23,12 +23,49 @@ const {
   proveedores,
   previsualizarDocumentoSoporte,
   emitirDocumentoSoporte,
+  crearProveedor,
 } = vi.hoisted(() => ({
   documentosSoporte: vi.fn(),
   proveedores: vi.fn(),
   previsualizarDocumentoSoporte: vi.fn(),
   emitirDocumentoSoporte: vi.fn(),
+  crearProveedor: vi.fn(),
 }));
+
+/*
+ * QA-FACT (03-10-2026): el proveedor y la fecha usan el `Select` y el selector
+ * de fecha del DS (FA-R29 / FA-R30), que no abren en happy-dom. Dobles con el
+ * mismo contrato: las opciones son botones con `data-opcion` y la fecha es un
+ * input con su `data-testid`.
+ */
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react');
+  const Ctx = R.createContext<(v: string) => void>(() => undefined);
+  return {
+    Select: ({ onValueChange, children }: { onValueChange: (v: string) => void; children?: React.ReactNode }) =>
+      R.createElement(Ctx.Provider, { value: onValueChange }, R.createElement('div', null, children)),
+    SelectTrigger: ({ children, ...resto }: { children?: React.ReactNode } & Record<string, unknown>) =>
+      R.createElement('div', resto, children),
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx);
+      return R.createElement('button', { type: 'button', 'data-opcion': value, onClick: () => elegir(value) }, children);
+    },
+  };
+});
+
+vi.mock('./CampoDeFecha', async () => {
+  const R = await import('react');
+  return {
+    CampoDeFecha: ({ value, onChange, testid }: { value: string; onChange: (v: string) => void; testid?: string }) =>
+      R.createElement('input', {
+        'data-testid': testid,
+        value,
+        onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+      }),
+  };
+});
 
 vi.mock('@/lib/api/facturacion-electronica.service', async () => {
   const real =
@@ -42,6 +79,7 @@ vi.mock('@/lib/api/facturacion-electronica.service', async () => {
       proveedores,
       previsualizarDocumentoSoporte,
       emitirDocumentoSoporte,
+      crearProveedor,
     },
   };
 });
@@ -125,15 +163,9 @@ async function escribir(sel: string, valor: string) {
   });
 }
 
-async function elegirProveedor() {
-  const sel = q('[data-testid="ds-proveedor"]') as HTMLSelectElement;
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLSelectElement.prototype,
-    'value',
-  )!.set!;
+async function elegirProveedor(id = 'p-1') {
   await act(async () => {
-    setter.call(sel, 'p-1');
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    (q(`[data-opcion="${id}"]`) as HTMLButtonElement).click();
   });
 }
 
@@ -155,9 +187,7 @@ describe('DocumentoSoporte', () => {
   it('marca en la lista el proveedor al que le falta su perfil tributario', async () => {
     await pintar(VACIO, CON_PROVEEDOR);
     await abrirEmision();
-    expect(q('[data-testid="ds-proveedor"]')!.textContent).toContain(
-      'falta su perfil',
-    );
+    expect(q('[data-opcion="p-1"]')!.textContent).toContain('falta su perfil');
   });
 
   it('🔴 no deja emitir sin ver primero la liquidación', async () => {
@@ -203,7 +233,8 @@ describe('DocumentoSoporte', () => {
     });
 
     const previa = q('[data-testid="ds-previa"]')!;
-    expect(previa.textContent).toContain('se le paga $200.000');
+    // FA-R28: la plata con un solo formato, «$ 200.000».
+    expect(previa.textContent).toContain('se le paga $ 200.000');
     expect(q('[data-testid="ds-sin-confirmar"]')).not.toBeNull();
     expect(previa.textContent).toContain('SIN retención');
     // 🔴 Pero sale igual: al técnico hay que pagarle.
@@ -283,8 +314,8 @@ describe('DocumentoSoporte', () => {
     );
     const fila = q('[data-testid="documento-soporte-ds-1"]')!;
     expect(fila.textContent).toContain('DS-1');
-    expect(fila.textContent).toContain('$9.400');
-    expect(fila.textContent).toContain('$190.600');
+    expect(fila.textContent).toContain('$ 9.400');
+    expect(fila.textContent).toContain('$ 190.600');
     expect(fila.textContent).toContain('Sin proveedor configurado');
   });
 
@@ -304,9 +335,10 @@ describe('DocumentoSoporte', () => {
         explicacion: 'idem',
       },
     );
-    expect(
-      q('[data-testid="documento-soporte-sin-migracion"]')!.textContent,
-    ).toContain('20260918003000');
+    // FA-R27 (03-10): lo dice, sin el id de la migración.
+    const aviso = q('[data-testid="documento-soporte-sin-migracion"]')!.textContent!;
+    expect(aviso).toContain('todavía no está disponible en esta base');
+    expect(aviso).not.toContain('20260918003000');
     expect(q('[data-testid="documento-soporte-formulario"]')).toBeNull();
   });
 });
@@ -350,5 +382,80 @@ describe('DocumentoSoporte · el sistema de errores (02-10)', () => {
     const texto = vi.mocked(toast.error).mock.calls.at(-1)?.[0] as string;
     expect(texto).toContain('No pudimos calcular el documento soporte: algo falló de nuestro lado');
     expect(texto).toContain('ab12cd34');
+  });
+});
+
+/**
+ * 🔴 FA-R12 (QA-FACT, 03-10-2026): no había dónde registrar al proveedor que no
+ * factura; una inmobiliaria nueva no podía emitir ni un documento soporte.
+ */
+describe('DocumentoSoporte · registrar al proveedor (FA-R12)', () => {
+  const SIN_PROVEEDORES = { disponible: true, migracion: null, proveedores: [], explicacion: null };
+
+  it('🔴 sin ningún proveedor, el cajón abre en el registro y lo deja elegido', async () => {
+    await pintar(VACIO, SIN_PROVEEDORES);
+    await abrirEmision();
+    expect(q('[data-testid="ds-registrar-proveedor"]')).not.toBeNull();
+    const guardar = q('[data-testid="ds-prov-guardar"]') as HTMLButtonElement;
+    // Sin nombre no se puede.
+    expect(guardar.disabled).toBe(true);
+    await escribir('[data-testid="ds-prov-nombre"]', 'QA-FA Plomero');
+    await escribir('[data-testid="ds-prov-documento"]', '1037600999');
+    await escribir('[data-testid="ds-prov-retencion"]', '4');
+    crearProveedor.mockResolvedValue({ ...PROVEEDOR, id: 'p-nuevo', nombre: 'QA-FA Plomero' });
+    proveedores.mockResolvedValue({
+      ...CON_PROVEEDOR,
+      proveedores: [{ ...PROVEEDOR, id: 'p-nuevo', nombre: 'QA-FA Plomero', faltaPerfilTributario: false }],
+    });
+    await act(async () => {
+      (q('[data-testid="ds-prov-guardar"]') as HTMLButtonElement).click();
+    });
+    expect(crearProveedor).toHaveBeenCalledWith({
+      nombre: 'QA-FA Plomero',
+      tipoDocumento: 'CC',
+      documento: '1037600999',
+      email: undefined,
+      telefono: undefined,
+      responsableIva: undefined,
+      retefuentePct: 4,
+    });
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith('Proveedor QA-FA Plomero registrado');
+    expect(q('[data-testid="ds-registrar-proveedor"]')).toBeNull();
+    // Queda elegido: con fecha, concepto y valor ya se puede ver la liquidación.
+    await escribir('[data-testid="ds-fecha"]', '2026-10-03');
+    await escribir('[data-testid="ds-concepto"]', 'Arreglo del baño');
+    await escribir('[data-testid="ds-valor"]', '350000');
+    expect((q('[data-testid="ds-previsualizar"]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('con proveedores, el registro está a un clic y una retención imposible se dice bajo su campo', async () => {
+    await pintar(VACIO, CON_PROVEEDOR);
+    await abrirEmision();
+    expect(q('[data-testid="ds-registrar-proveedor"]')).toBeNull();
+    await act(async () => {
+      (q('[data-testid="ds-abrir-registro"]') as HTMLButtonElement).click();
+    });
+    await escribir('[data-testid="ds-prov-nombre"]', 'Pintor');
+    await escribir('[data-testid="ds-prov-retencion"]', '140');
+    expect(q('#ds-prov-retencion-error')?.textContent).toContain('entre 0 y 100');
+    expect((q('[data-testid="ds-prov-guardar"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('un 409 del back (documento repetido) se dice, sin cerrar el registro', async () => {
+    await pintar(VACIO, SIN_PROVEEDORES);
+    await abrirEmision();
+    await escribir('[data-testid="ds-prov-nombre"]', 'QA-FA Plomero');
+    crearProveedor.mockRejectedValue(
+      new ApiError(409, 'Ya tienes un proveedor con ese documento en esta inmobiliaria.', 'YA_EXISTE', {
+        statusCode: 409,
+        code: 'YA_EXISTE',
+        message: 'Ya tienes un proveedor con ese documento en esta inmobiliaria.',
+      }),
+    );
+    await act(async () => {
+      (q('[data-testid="ds-prov-guardar"]') as HTMLButtonElement).click();
+    });
+    expect(String(vi.mocked(toast.error).mock.calls.at(-1)?.[0])).toContain('Ya tienes un proveedor con ese documento');
+    expect(q('[data-testid="ds-registrar-proveedor"]')).not.toBeNull();
   });
 });

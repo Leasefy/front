@@ -8,7 +8,14 @@
  *
  * Acá se carga lo que dice el papel de la DIAN: el número de la resolución, su
  * fecha, el prefijo autorizado, el rango de numeración y la vigencia. Con eso,
- * «Nueva factura» numera; sin eso, no emite nada y lo dice.
+ * «Por facturar» numera; sin eso, no emite nada y lo dice.
+ *
+ * 🔴 QA-FACT (03-10-2026), FA-08 / FA-14: el mismo párrafo «La inmobiliaria no
+ * tiene ninguna resolución… Cárgala en Facturación → Resolución…» salía DIEZ
+ * veces en esta pestaña (arriba, en el resumen por tipo y en cada fila) y
+ * mandaba a Facturación → Resolución estando ya ahí. Ahora se dice UNA vez
+ * arriba, sin la ruta; las fechas son las de la casa y la tabla cabe entera a
+ * 1.440 px (el prefijo va con la resolución; usados y disponibles, con el rango).
  *
  * ── Por qué esta pantalla vive en Facturación y no en Configuración ────────
  *
@@ -48,6 +55,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Certificate, DotsThreeVertical, Prohibit, SealWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -81,11 +89,14 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
   facturacionPorMesService,
+  fechaEnFrase,
   fechaLegible,
   type ResolucionDeFacturacion as Resolucion,
   type ResolucionesDeLaAgencia,
 } from '@/lib/api/facturacion-por-mes.service'
+import { sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
 import { NumeracionPorTipo } from './NumeracionPorTipo'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CajonDeLaResolucion } from './CajonDeLaResolucion'
 
 /** El tope del back (`AnularResolucionDto`). */
@@ -107,6 +118,14 @@ export function ResolucionDeFacturacion({
   onCargaAbierta,
 }: ResolucionDeFacturacionProps = {}) {
   const [datos, setDatos] = useState<ResolucionesDeLaAgencia | null>(null)
+  /*
+   * 🔴 Q12 (Nico, la recomendada): anular una resolución, SÓLO el
+   * administrador (el back responde 403 SOLO_EL_ADMINISTRADOR al contador). Al
+   * contador no se le ofrece el botón. Fuera del proveedor de permisos (una
+   * prueba aislada), como antes.
+   */
+  const permisos = usePermissionsContextSafe()
+  const puedeAnular = permisos === null || permisos.isAdmin || permisos.agencyRole === 'ADMIN'
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [cargandoResolucion, setCargandoResolucion] = useState(false)
@@ -188,6 +207,8 @@ export function ResolucionDeFacturacion({
    * facturar cuando no es así es asustarlo en falso.
    */
   const numeraHoy = porAnular?.puedeNumerar === true
+  /** No hay ninguna resolución que no esté anulada: lo de arriba lo dice todo. */
+  const ningunaVigente = datos !== null && datos.resoluciones.every((r) => r.anulada)
 
   return (
     <div className="space-y-4">
@@ -213,11 +234,13 @@ export function ResolucionDeFacturacion({
               weight="fill"
             />
           )}
-          <p className="text-caption text-fg">
+          <p className="text-caption text-fg" data-testid="resolucion-estado-texto">
             {datos.vigente.puedeNumerar
-              ? `Facturando con la resolución ${datos.vigente.numero}. La próxima factura lleva el ${datos.vigente.siguiente}; quedan ${datos.vigente.disponibles} números y la autorización vence el ${fechaLegible(datos.vigente.vigenteHasta)}.`
-              : (datos.vigente.explicacion ??
-                'No hay una resolución de facturación vigente con la cual numerar.')}
+              ? `Facturando con la resolución ${datos.vigente.numero}. La próxima factura lleva el ${datos.vigente.siguiente}; quedan ${datos.vigente.disponibles.toLocaleString('es-CO')} ${datos.vigente.disponibles === 1 ? 'número' : 'números'} y la autorización vence el ${fechaEnFrase(datos.vigente.vigenteHasta)}.`
+              : datos.vigente.motivo === 'SIN_RESOLUCION' && ningunaVigente
+                ? 'Todavía no hay ninguna resolución de facturación vigente: sin ella no se numera ninguna factura. Cárgala con «Cargar una resolución»; son los datos del papel que te dio la DIAN.'
+                : sinLaRutaDeFacturacion(datos.vigente.explicacion) ||
+                  'No hay una resolución de facturación vigente con la cual numerar.'}
           </p>
         </div>
       )}
@@ -265,11 +288,8 @@ export function ResolucionDeFacturacion({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Resolución</TableHead>
-                    <TableHead className="whitespace-nowrap">Prefijo</TableHead>
                     <TableHead className="whitespace-nowrap">Numera</TableHead>
-                    <TableHead className="whitespace-nowrap">Rango</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Usados</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Disponibles</TableHead>
+                    <TableHead className="whitespace-nowrap">Números</TableHead>
                     <TableHead className="whitespace-nowrap">Vigencia</TableHead>
                     <TableHead className="whitespace-nowrap">Estado</TableHead>
                     <TableHead />
@@ -278,41 +298,52 @@ export function ResolucionDeFacturacion({
                 <TableBody>
                   {datos.resoluciones.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="p-0">
+                      <TableCell colSpan={6} className="p-0">
                         <SinDatos
                           queSon="resoluciones de facturación"
                           icono={Certificate}
-                          descripcion="Sin una resolución de la DIAN no se puede numerar una factura. Cárgala con el botón de arriba: son los datos del papel que te autorizó."
+                          descripcion="Acá queda cada resolución que cargues, con los números que lleva usados y su vigencia."
                         />
                       </TableCell>
                     </TableRow>
                   ) : (
                     datos.resoluciones.map((r) => (
                       <TableRow key={r.id} data-testid={`resolucion-${r.id}`}>
-                        <TableCell className="whitespace-nowrap tabular-nums text-fg">
-                          {r.numero}
+                        <TableCell className="whitespace-nowrap text-fg">
+                          <span className="font-mono tabular-nums">{r.numero}</span>
+                          {r.esDePrueba && (
+                            <Badge variant="warning" className="ml-2 align-middle">
+                              De prueba
+                            </Badge>
+                          )}
                           <p className="text-caption text-fg-muted">
                             del {fechaLegible(r.fechaResolucion)}
+                            {' · '}
+                            {r.prefijo ? (
+                              <>
+                                prefijo <span className="font-mono">{r.prefijo}</span>
+                              </>
+                            ) : (
+                              'sin prefijo'
+                            )}
+                          </p>
+                        </TableCell>
+                        <TableCell className="max-w-[12rem] text-fg-muted">
+                          {r.tipoNombre ?? 'Cualquier tipo de documento'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-fg-muted">
+                          <span className="font-mono tabular-nums">
+                            {r.desde.toLocaleString('es-CO')}–{r.hasta.toLocaleString('es-CO')}
+                          </span>
+                          <p className="text-caption">
+                            <span className="font-mono tabular-nums">{r.usados.toLocaleString('es-CO')}</span>{' '}
+                            {r.usados === 1 ? 'usado' : 'usados'} · quedan{' '}
+                            <span className="font-mono tabular-nums">{r.disponibles.toLocaleString('es-CO')}</span>
                           </p>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted">
-                          {r.prefijo || '—'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-fg-muted">
-                          {r.tipoNombre ?? 'Cualquier tipo de documento'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
-                          {r.desde}–{r.hasta}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                          {r.usados}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                          {r.disponibles}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-fg-muted">
-                          {fechaLegible(r.vigenteDesde)} –{' '}
-                          {fechaLegible(r.vigenteHasta)}
+                          {fechaLegible(r.vigenteDesde)}
+                          <p className="text-caption">hasta el {fechaLegible(r.vigenteHasta)}</p>
                         </TableCell>
                         {/* 🔴 El estado en UN renglón. Con la acción escrita al
                             lado, la tabla no cabía —la pantalla decía «esta
@@ -325,8 +356,8 @@ export function ResolucionDeFacturacion({
                               Numerando · sigue el {r.siguiente}
                             </span>
                           ) : (
-                            <span className="text-caption text-fg-muted">
-                              {r.explicacion}
+                            <span className="block max-w-[16rem] whitespace-normal text-caption text-fg-muted">
+                              {sinLaRutaDeFacturacion(r.explicacion)}
                             </span>
                           )}
                         </TableCell>
@@ -334,7 +365,7 @@ export function ResolucionDeFacturacion({
                             panel: un botón con texto por fila empuja la tabla
                             fuera de la pantalla y ademas grita más que el dato. */}
                         <TableCell className="w-10 whitespace-nowrap text-right">
-                          {!r.anulada && (
+                          {!r.anulada && puedeAnular && (
                             <DropdownList>
                               <DropdownListTrigger asChild>
                                 <Button
@@ -401,7 +432,7 @@ export function ResolucionDeFacturacion({
             <AlertDialogDescription data-testid="anular-resolucion-consecuencia">
               {numeraHoy
                 ? 'Es la resolución con la que numeras hoy. Sin resolución vigente no vas a poder numerar facturas hasta cargar otra: «Generar» queda apagado.'
-                : `Hoy no está numerando${porAnular?.explicacion ? ` (${porAnular.explicacion.replace(/\.$/, '')})` : ''}, así que no cambia lo que puedes facturar hoy.`}{' '}
+                : `Hoy no está numerando${porAnular?.explicacion ? ` (${sinLaRutaDeFacturacion(porAnular.explicacion).replace(/\.$/, '')})` : ''}, así que no cambia lo que puedes facturar hoy.`}{' '}
               Anular no se deshace; las facturas que ya numeró conservan su
               número.
             </AlertDialogDescription>

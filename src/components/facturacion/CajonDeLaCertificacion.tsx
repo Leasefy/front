@@ -42,10 +42,11 @@ import { propietariosApi } from '@/lib/api/inmobiliaria.service'
 import type { Propietario } from '@/lib/types/inmobiliaria'
 import {
   facturacionElectronicaService,
-  pesos,
   type CertificacionGenerada,
 } from '@/lib/api/facturacion-electronica.service'
 import { comoCsv } from './certificacion-en-csv'
+import { CampoDeFecha } from './CampoDeFecha'
+import { formatCurrency } from '@/lib/format'
 
 /** Cuántos resultados se muestran: es un buscador, no un listado. */
 const CUANTOS_RESULTADOS = 8
@@ -140,7 +141,8 @@ export function CajonDeLaCertificacion({
       )
       setUltima(c)
       toast.success(
-        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas} facturas)`,
+        // FA-23: «1 factura», no «1 facturas».
+        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas.toLocaleString('es-CO')} ${c.facturasContadas === 1 ? 'factura' : 'facturas'})`,
       )
       await onGenerada()
     } catch (e) {
@@ -263,23 +265,12 @@ export function CajonDeLaCertificacion({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="cert-desde">Desde</Label>
-            <Input
-              id="cert-desde"
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-              data-testid="cert-desde"
-            />
+            {/* FA-R29: el selector de fecha del DS, no el `type="date"` nativo. */}
+            <CampoDeFecha id="cert-desde" value={desde} onChange={setDesde} testid="cert-desde" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cert-hasta">Hasta</Label>
-            <Input
-              id="cert-hasta"
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-              data-testid="cert-hasta"
-            />
+            <CampoDeFecha id="cert-hasta" value={hasta} onChange={setHasta} testid="cert-hasta" />
           </div>
         </div>
 
@@ -293,12 +284,16 @@ export function CajonDeLaCertificacion({
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
               {[
-                ['Facturas', `${ultima.facturasContadas} facturas`],
-                ['Base', pesos(ultima.baseCop)],
-                ['IVA', pesos(ultima.ivaCop)],
+                [
+                  'Facturas',
+                  `${ultima.facturasContadas.toLocaleString('es-CO')} ${ultima.facturasContadas === 1 ? 'factura' : 'facturas'}`,
+                ],
+                // FA-R28: la plata con un solo formato en toda la sección.
+                ['Base', formatCurrency(ultima.baseCop)],
+                ['IVA', formatCurrency(ultima.ivaCop)],
                 [
                   'Retenciones',
-                  pesos(
+                  formatCurrency(
                     ultima.retefuenteCop + ultima.reteivaCop + ultima.reteicaCop,
                   ),
                 ],

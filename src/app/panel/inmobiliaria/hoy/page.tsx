@@ -6,12 +6,21 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { getActiveAgents } from '@/lib/types/ai-agents';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
+import { seVeElEnlace } from '@/lib/nav/se-ve-el-enlace';
 
 /** A link/row inside a system block. `soon` renders muted + "Pronto" pill. */
 interface BlockItem {
   labelKey: string;
   href: string;
   soon?: boolean;
+  /**
+   * Sólo estos roles lo ven (el administrador de la plataforma, siempre). Sin
+   * `roles`, todos. 🔴 FA-R31 (QA-FACT, 03-10-2026): «Facturación» salía a
+   * todos y la asesora caía en la pantalla negada.
+   */
+  roles?: readonly AgencyRole[];
 }
 
 interface SystemBlock {
@@ -59,7 +68,12 @@ const BLOCKS: SystemBlock[] = [
       { labelKey: 'cartera.pestanas.cobrosEmitidos', href: '/panel/inmobiliaria/pagos/cartera/cobros' },
       { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
       { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/pagos/liquidaciones' },
-      { labelKey: 'inmobiliaria.nav.facturacion', href: '/panel/inmobiliaria/facturacion' },
+      {
+        labelKey: 'inmobiliaria.nav.facturacion',
+        href: '/panel/inmobiliaria/facturacion',
+        // Nico (03-10-2026): Facturación es sólo de administrador y contador.
+        roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      },
       { labelKey: 'inmobiliaria.nav.conciliacion', href: '/panel/inmobiliaria/conciliacion' },
       { labelKey: 'inmobiliaria.nav.reportes', href: '/panel/inmobiliaria/reportes' },
       { labelKey: 'inmobiliaria.nav.analitica', href: '/panel/inmobiliaria/reportes/ia' },
@@ -98,6 +112,7 @@ const BLOCKS: SystemBlock[] = [
 export default function HoyPage() {
   const { t, locale } = useI18n();
   const agents = getActiveAgents();
+  const { isAdmin, agencyRole, isLoading } = usePermissions();
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -167,7 +182,7 @@ export default function HoyPage() {
                 </div>
 
                 <ul className="grid grid-cols-2 gap-1">
-                  {block.items.map((item) =>
+                  {block.items.filter((item) => seVeElEnlace(item, { isAdmin, agencyRole, isLoading })).map((item) =>
                     item.soon ? (
                       <li
                         key={item.labelKey}

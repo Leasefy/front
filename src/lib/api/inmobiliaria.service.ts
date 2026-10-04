@@ -2359,8 +2359,14 @@ export const inmobiliariaConfigApi = {
   },
 
   async getInvoices(): Promise<BillingInvoice[]> {
-    const res = await apiClient.get<{ data: BillingInvoice[] } | BillingInvoice[]>(`${BASE}/config/billing/invoices`);
-    return lista(res);
+    // El back responde `{ invoices, total }` (los cobros de la suscripción de la
+    // inmobiliaria, CF-07 04-10-2026); `lista` sólo miraba `data` y la tabla
+    // salía siempre vacía.
+    const res = await apiClient.get<
+      { data?: BillingInvoice[]; invoices?: BillingInvoice[] } | BillingInvoice[]
+    >(`${BASE}/config/billing/invoices`);
+    if (res && !Array.isArray(res) && Array.isArray(res.invoices)) return res.invoices;
+    return lista(res as { data?: BillingInvoice[] } | BillingInvoice[]);
   },
 
   // ==========================================================================

@@ -82,7 +82,9 @@ describe('<StickyCTA> — tenant / anonymous viewer', () => {
     render()
 
     expect(container.textContent).toContain('Postularme a esta propiedad')
-    const cta = [...container.querySelectorAll('button')].find((b) =>
+    // 🔴 El estudio es opcional (Nico, 04-10-2026): el CTA es el enlace al
+    // asistente, nunca un botón que frena.
+    const cta = [...container.querySelectorAll('a, button')].find((b) =>
       b.textContent?.includes('Postularme a esta propiedad'),
     )
     expect(cta).toBeTruthy()
@@ -99,10 +101,11 @@ describe('<StickyCTA> — tenant / anonymous viewer', () => {
     expect(container.textContent).not.toContain('Verificado')
   })
 
-  it('sin aprobación NO salta directo al wizard: primero explica qué falta', () => {
+  it('🔴 sin estudio también lleva derecho al asistente: el estudio es opcional (Nico, 04-10-2026)', () => {
     render()
-    // Sin sesión no hay aprobación posible → el gate intercepta el clic.
-    expect(q('a[href="/aplicar/p1"]')).toBeFalsy()
+    // Antes, sin sesión ni aprobación, el clic abría «Antes de postularte» y
+    // la persona no llegaba al asistente. Ahora el estudio se le ofrece allá.
+    expect(q('a[href="/aplicar/p1"]')).toBeTruthy()
   })
 })
 

@@ -8,7 +8,6 @@ import {
   Bank,
   Receipt,
   Calendar,
-  CalendarX,
   Check,
   Crown,
   Sparkle,
@@ -29,16 +28,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { toast } from '@/components/ui/toast';
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import {
   Table,
   TableHeader,
   TableBody,
@@ -50,7 +39,6 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
-import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import type { AgencyPlan } from '@/lib/types/subscription';
 import type { AgencyBilling, BillingInvoice } from '@/lib/types/inmobiliaria';
 
@@ -131,49 +119,29 @@ export function ConfigFacturacion({
   // already pending (its own "Deshacer" is the only action needed then).
   const canCancelPlan = !!currentPlan && !currentPlan.isDefault && !pendingPlanTier;
 
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [undoing, setUndoing] = useState(false);
-
-  const handleConfirmCancel = useCallback(async () => {
-    setCancelling(true);
-    try {
-      await agencySubscriptionApi.selectPlan(defaultPlanId);
-      toast.success('Cancelación programada: tu plan cambia al final de tu período actual.');
-      setCancelDialogOpen(false);
-      void subRefetch();
-    } catch (e) {
-      // Con la regla de oro (02-10-2026): antes decía lo mismo pasara lo que
-      // pasara. Un 4xx dice qué está mal; un 5xx, que falló de nuestro lado
-      // con la referencia; «conexión», sólo sin respuesta.
-      toast.error(
-        mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos cancelar el plan. Intenta de nuevo.',
-          accion: 'cancelar el plan',
-        }),
-      );
-    } finally {
-      setCancelling(false);
-    }
-  }, [defaultPlanId, subRefetch]);
-
-  const handleUndoPendingChange = useCallback(async () => {
-    setUndoing(true);
-    try {
-      await agencySubscriptionApi.cancelPendingChange();
-      toast.success('Deshecho: tu plan no va a cambiar.');
-      void subRefetch();
-    } catch (e) {
-      toast.error(
-        mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos deshacer el cambio. Intenta de nuevo.',
-          accion: 'deshacer el cambio de plan',
-        }),
-      );
-    } finally {
-      setUndoing(false);
-    }
-  }, [subRefetch]);
+  /*
+   * 🔴 El plan y su precio los cambia SÓLO Leasefy (Nico, 04-10-2026: «sólo
+   * Leasefy lo cambia; la inmobiliaria lo ve en sólo lectura»). Antes «Mejorar
+   * plan» llevaba al checkout y «Cancelar plan» / «Deshacer» programaban el
+   * cambio directo. Ahora los tres son una SOLICITUD a Leasefy (un correo con
+   * el plan actual), no un cambio: decidido con la recomendada (no se toca el
+   * modelo de negocio, sólo quién cambia el plan).
+   */
+  const planActual = currentPlan?.name ?? currentPlanId ?? 'sin plan';
+  const correoParaLeasefy = (asunto: string, cuerpo: string) =>
+    `mailto:hola@leasefy.co?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  const pedirCambioDePlan = correoParaLeasefy(
+    'Cambio de plan',
+    `Hola, quiero cambiar el plan de mi inmobiliaria. Plan actual: ${planActual}.`,
+  );
+  const pedirCancelacion = correoParaLeasefy(
+    'Cancelación del plan',
+    `Hola, quiero cancelar el plan de mi inmobiliaria. Plan actual: ${planActual}.`,
+  );
+  const pedirDeshacer = correoParaLeasefy(
+    'Deshacer el cambio de plan',
+    `Hola, quiero deshacer el cambio de plan programado. Plan actual: ${planActual}.`,
+  );
 
   // Next billing date comes from the real subscription state, not a hardcoded
   // date. Absent for free/postpaid plans or a brand-new agency → simply hidden.
@@ -280,10 +248,6 @@ export function ConfigFacturacion({
     window.open(invoice.pdfUrl, '_blank', 'noopener,noreferrer');
   }, []);
 
-  const goToUpgrade = useCallback(() => {
-    router.push(UPGRADE_ROUTE);
-  }, [router]);
-
   if (planLoading) {
     return (
       <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
@@ -373,45 +337,39 @@ export function ConfigFacturacion({
                       </p>
                       <p className="text-caption text-fg-muted mt-0.5">
                         {isPendingCancellation
-                          ? `Pasás a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}. Sin más cobros.`
+                          ? `Pasas a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}. Sin más cobros.`
                           : `Cambia a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}.`}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    hideArrow
-                    onClick={handleUndoPendingChange}
-                    disabled={undoing}
-                    className="text-fg-muted flex-shrink-0"
-                  >
-                    Deshacer
+                  <Button asChild variant="ghost" size="sm" hideArrow className="text-fg-muted flex-shrink-0">
+                    <a href={pedirDeshacer} data-testid="pedir-deshacer">
+                      Pedir que se deshaga
+                    </a>
                   </Button>
                 </div>
               )}
 
-              {/* Upgrade → real /upgrade flow (Wompi). No mock dialog. */}
-              <Button
-                hideArrow
-                className="w-full justify-center"
-                onClick={goToUpgrade}
-              >
-                <ArrowUp className="w-4 h-4" />
-                {t('inmobiliaria.config.billing.upgradePlan')}
+              {/* 🔴 Sólo Leasefy cambia el plan (04-10-2026): pedirlo, no hacerlo. */}
+              <p className="text-caption text-fg-muted mb-3" data-testid="plan-solo-leasefy">
+                Tu plan y su precio los define Leasefy. Para cambiarlo o cancelarlo, escríbenos a{' '}
+                <a className="text-primary hover:underline" href="mailto:hola@leasefy.co">
+                  hola@leasefy.co
+                </a>
+                .
+              </p>
+              <Button asChild hideArrow className="w-full justify-center">
+                <a href={pedirCambioDePlan} data-testid="pedir-cambio-de-plan">
+                  <ArrowUp className="w-4 h-4" />
+                  Pedir un cambio de plan
+                </a>
               </Button>
 
-              {/* Cancel at period end (T-0089) — schedules the downgrade to
-                  the default tier; access stays until currentPeriodEnd. */}
               {canCancelPlan && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  hideArrow
-                  onClick={() => setCancelDialogOpen(true)}
-                  className="w-full justify-center text-danger mt-2"
-                >
-                  Cancelar plan
+                <Button asChild variant="ghost" size="sm" hideArrow className="w-full justify-center text-danger mt-2">
+                  <a href={pedirCancelacion} data-testid="pedir-cancelacion">
+                    Pedir la cancelación
+                  </a>
                 </Button>
               )}
             </>
@@ -425,9 +383,11 @@ export function ConfigFacturacion({
                   ? t('inmobiliaria.config.billing.planUnavailable')
                   : t('inmobiliaria.config.billing.unavailable')}
               </p>
-              <Button hideArrow onClick={goToUpgrade}>
-                <Lightning className="w-4 h-4" />
-                {t('inmobiliaria.config.billing.upgradePlan')}
+              <Button asChild hideArrow>
+                <a href={pedirCambioDePlan}>
+                  <Lightning className="w-4 h-4" />
+                  Escribirle a Leasefy
+                </a>
               </Button>
             </div>
           )}
@@ -688,29 +648,6 @@ export function ConfigFacturacion({
         )}
       </div>
 
-      {/* Confirm BEFORE scheduling the cancellation (T-0089) — exact copy of
-          what happens: current plan stays until currentPeriodEnd, then the
-          default tier, no further charges, undoable until that date. */}
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent size="sm" variant="destructive" icon={<CalendarX weight="bold" />}>
-          <DialogHeader>
-            <DialogTitle>Cancelar tu plan</DialogTitle>
-            <DialogDescription>
-              {nextBillingDate
-                ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`
-                : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" hideArrow onClick={() => setCancelDialogOpen(false)}>
-              Volver
-            </Button>
-            <Button variant="destructive" hideArrow onClick={handleConfirmCancel} isLoading={cancelling}>
-              Sí, cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </CrossFade>
   );
 }

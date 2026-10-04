@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
 // Quien ya postuló puede retirar: el estudio no es lo que se prueba acá.
 vi.mock('@/lib/tenant/antes-de-postularte', () => ({
   leerElegibilidad: () => Promise.resolve({ apto: true, motivo: 'OK', topeAprobadoCop: 3_000_000, elegibleHasta: null }),
-  motivoPorElegibilidad: () => null,
+  ofertaPorElegibilidad: () => null,
 }))
 vi.mock('@/lib/hooks/use-aprobacion', () => ({
   useAprobacion: () => ({ aprobacion: null, cargando: false, vigente: false, error: null, recargar: () => {} }),

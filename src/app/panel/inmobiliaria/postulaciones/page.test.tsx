@@ -60,15 +60,27 @@ vi.mock('@/components/inmobiliaria/CandidateDrawer', () => ({
   CandidateDrawer: ({
     candidate,
     puedeDecidir,
+    onAction,
   }: {
     candidate: { tenantName?: string } | null
     puedeDecidir?: boolean
+    onAction?: (tipo: 'approve', c: unknown) => void
   }) =>
     candidate
       ? React.createElement(
-          'div',
-          { 'data-testid': 'cajon-candidato', 'data-puede-decidir': String(puedeDecidir) },
-          candidate.tenantName,
+          React.Fragment,
+          null,
+          React.createElement(
+            'div',
+            { 'data-testid': 'cajon-candidato', 'data-puede-decidir': String(puedeDecidir) },
+            candidate.tenantName,
+          ),
+          // «Aprobar» del cajón (el de verdad tiene su suite).
+          React.createElement(
+            'button',
+            { type: 'button', 'data-testid': 'aprobar-desde-cajon', onClick: () => onAction?.('approve', candidate) },
+            'Aprobar',
+          ),
         )
       : null,
 }))
@@ -109,6 +121,15 @@ vi.mock('@/components/ui/error-state', () => ({
     ),
 }))
 
+// El campo de texto del cajón de «Aprobar» (para la marca del estudio): plano.
+vi.mock('@/components/ui/textarea', () => ({
+  Textarea: React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+    function TextareaPlano(props, ref) {
+      return React.createElement('textarea', { ...props, ref })
+    },
+  ),
+}))
+
 // S6 — `AccionDePostulacion` pasó al `ResponsiveDialog` de la casa (portal,
 // role, Escape, Lenis). Acá se reemplaza por envoltorios planos: el portal
 // montaría el modal fuera del contenedor de la prueba, y lo que se verifica es
@@ -140,11 +161,13 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
   // (`vitest.setup.ts`) muestran el estado final de una.
-  ...(({ AnimatedNumber, CrossFade, MotionIndicator, Presence }) => ({
+  ...(({ AnimatedNumber, CrossFade, MotionIndicator, Presence, FormError }) => ({
     AnimatedNumber,
     CrossFade,
     MotionIndicator,
     Presence,
+    // El error bajo el campo del cajón de «Aprobar» (marca del estudio).
+    FormError,
   }))(await importOriginal<typeof import('@leasefy/cadence')>()),
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.
@@ -211,6 +234,7 @@ vi.mock('@/components/ui/table', () => {
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
 import PostulacionesPage from './page'
+import { formatCurrency } from '@/lib/format'
 
 const RESPONSE: AllCandidatesResponse = {
   candidates: [
@@ -574,5 +598,100 @@ describe('PostulacionesPage', () => {
     expect(container.querySelector('[data-testid="cajon-candidato"]')?.getAttribute('data-puede-decidir')).toBe(
       'true',
     )
+  })
+
+  // 🔴 El estudio es OPCIONAL (Nico, 04-10-2026): la postulación entra sin él y
+  // la inmobiliaria la ve marcada; aprobar una marcada pide confirmar.
+  describe('la marca del estudio', () => {
+    const CON_MARCAS: AllCandidatesResponse = {
+      candidates: [
+        { ...RESPONSE.candidates[0], riskScore: undefined, marcaDelEstudio: { codigo: 'SIN_ESTUDIO', respaldoCop: null } },
+        {
+          ...RESPONSE.candidates[1],
+          marcaDelEstudio: { codigo: 'CANON_SOBRE_RESPALDO', respaldoCop: 3_200_000 },
+        },
+        {
+          ...RESPONSE.candidates[1],
+          id: 'app-3',
+          tenantName: 'Iván Ruiz',
+          status: 'UNDER_REVIEW',
+          marcaDelEstudio: null,
+        },
+      ],
+      total: 3,
+      stats: { total: 3, pending: 3, approved: 0, rejected: 0 },
+    }
+
+    it('la columna «Estudio» dice qué falta (o «Con estudio»)', async () => {
+      getAllCandidatesMock.mockResolvedValue(CON_MARCAS)
+      await renderPage()
+
+      const encabezados = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
+      expect(encabezados).toContain('Estudio')
+      const chips = Array.from(container.querySelectorAll('[data-testid="marca-del-estudio"]')).map(
+        (c) => c.textContent,
+      )
+      expect(chips).toEqual([
+        'Sin estudio',
+        `Canon por encima de su respaldo (${formatCurrency(3_200_000)})`,
+        'Con estudio',
+      ])
+    })
+
+    it('sin ningún puntaje no sale la columna «Puntaje» (no está prendido)', async () => {
+      getAllCandidatesMock.mockResolvedValue(CON_MARCAS)
+      await renderPage()
+
+      const encabezados = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
+      expect(encabezados).not.toContain('Puntaje')
+      expect(container.textContent).not.toContain('—')
+    })
+
+    it('si alguna trae puntaje, la que no lo trae dice «Sin puntaje», no una raya', async () => {
+      getAllCandidatesMock.mockResolvedValue(RESPONSE)
+      await renderPage()
+
+      const encabezados = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
+      expect(encabezados).toContain('Puntaje')
+      expect(container.textContent).toContain('Sin puntaje')
+    })
+
+    it('el vacío ya no dice «con asegurabilidad vigente»', async () => {
+      getAllCandidatesMock.mockResolvedValue({ candidates: [], total: 0, stats: { total: 0, pending: 0, approved: 0, rejected: 0 } })
+      await renderPage()
+
+      expect(container.textContent).not.toMatch(/asegurabilidad vigente/i)
+    })
+
+    it('«Aprobar» a alguien sin estudio pide confirmar diciendo qué falta', async () => {
+      getAllCandidatesMock.mockResolvedValue(CON_MARCAS)
+      await renderPage()
+
+      await act(async () => {
+        ;(container.querySelectorAll('tbody tr')[0] as HTMLElement).click()
+      })
+      await act(async () => {
+        ;(container.querySelector('[data-testid="aprobar-desde-cajon"]') as HTMLButtonElement).click()
+      })
+
+      const aviso = document.body.querySelector('[data-testid="aviso-al-aprobar"]')
+      expect(aviso?.textContent).toBe('Esta persona no tiene estudio de arrendamiento. ¿Aprobarla igual?')
+      expect(document.body.textContent).toContain('Aprobar igual')
+    })
+
+    it('sin marca, aprobar es como siempre (sin aviso)', async () => {
+      getAllCandidatesMock.mockResolvedValue(CON_MARCAS)
+      await renderPage()
+
+      await act(async () => {
+        ;(container.querySelectorAll('tbody tr')[2] as HTMLElement).click()
+      })
+      await act(async () => {
+        ;(container.querySelector('[data-testid="aprobar-desde-cajon"]') as HTMLButtonElement).click()
+      })
+
+      expect(document.body.querySelector('[data-testid="aviso-al-aprobar"]')).toBeNull()
+      expect(document.body.textContent).not.toContain('Aprobar igual')
+    })
   })
 })

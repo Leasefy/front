@@ -63,7 +63,7 @@ export function ChatInput({ onSend, disabled = false, className, topSlot }: Chat
             />
           }
         />
-        {/* Apagado hasta que se apruebe la cláusula (Nico, 04-10-2026). */}
+        {/* La cláusula se aprobó (Nico, 04-10-2026): política v4.0 §16. */}
         <AvisoDePreguntas />
       </div>
     </div>

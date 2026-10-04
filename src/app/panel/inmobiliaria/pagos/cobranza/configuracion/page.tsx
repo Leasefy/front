@@ -6,7 +6,10 @@
  * Wires the 3 sections that map to REAL endpoints the agent runtime reads,
  * plus a 4th purely informative section:
  *
- *   ① Facturación e integraciones → GET/PATCH /api/agency/:id/policy (useAgencyPolicy)
+ *   ① Facturación e integraciones → GET/PATCH /api/agency/:id/policy (useAgencyPolicy).
+ *      🔴 El modelo de cobro con Leasefy (modelo y comisión de éxito) es SÓLO
+ *      LECTURA desde el 04-10-2026 (Nico: «sólo Leasefy lo cambia desde
+ *      /admin»); CRM y ERP siguen editables.
  *   ② Autonomía    → GET/PUT   /api/agency/:id/cobranza/autonomy  (useAutonomy)
  *   ③ Horario y frecuencia → informativo fijo (Ley 2300), sin inputs.
  *   ④ Reporte diario → enlaces + el switch de WhatsApp (mismo PATCH de policy).
@@ -34,7 +37,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowLeft, Warning, FloppyDisk } from '@phosphor-icons/react'
+import { ArrowLeft, Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
 import { CrossFade, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -48,7 +51,6 @@ import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autono
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -70,8 +72,13 @@ const CRM_PROVIDERS = ['wasi', 'domus', 'webprop', 'sinco'] as const
 const ERP_PROVIDERS = ['alegra', 'alegra_full', 'siigo_full', 'world_office'] as const
 const BILLING_MODELS = ['performance', 'subscription', 'hybrid'] as const
 
-/** El `<select>` mostraba el slug crudo: «performance», «hybrid». */
-const BILLING_MODEL_LABELS: Record<(typeof BILLING_MODELS)[number], string> = {
+/**
+ * El nombre del modelo de cobro (nunca el slug crudo). `standard` es el que
+ * guarda el registro de la inmobiliaria (`agency-step-schema.ts`) y el motor de
+ * facturación del micro (`billing/engine.ts`): por deudor.
+ */
+const NOMBRE_DEL_MODELO_DE_COBRO: Record<string, string> = {
+  standard: 'Estándar (por deudor)',
   performance: 'Por resultado',
   subscription: 'Suscripción',
   hybrid: 'Mixto',
@@ -138,16 +145,25 @@ const CLAVES_ACUERDO = [
   'siniestroCanonesThreshold',
 ] as const satisfies readonly (keyof NegotiationDraft)[]
 
-/** Cómo nos paga la inmobiliaria y con qué sistemas se habla. */
+/** Con qué sistemas de la inmobiliaria se habla. */
 const CLAVES_COMERCIAL = [
+  'crmProvider',
+  'erpProvider',
+] as const satisfies readonly (keyof NegotiationDraft)[]
+
+/**
+ * 🔴 Cómo le cobra Leasefy a la inmobiliaria (el modelo de cobro del SaaS y la
+ * comisión de éxito del 8 %): lo cambia SÓLO Leasefy, desde /admin (Nico,
+ * 04-10-2026). Acá se ve en sólo lectura y nunca viaja en el PATCH (el micro
+ * igual lo rechazaría: 403 `MODELO_DE_COBRO_SOLO_LEASEFY`).
+ */
+const CLAVES_DEL_MODELO_DE_COBRO = [
   'billingModel',
   'successFeePct',
   'hybridPct',
   'monthlyMinCop',
   'perDeudorCop',
   'baseFeeCop',
-  'crmProvider',
-  'erpProvider',
 ] as const satisfies readonly (keyof NegotiationDraft)[]
 
 function difieren(
@@ -230,6 +246,8 @@ function avisosDelAcuerdo(d: NegotiationDraft): string[] {
 function diffPatch(saved: NegotiationDraft, draft: NegotiationDraft): AgencyPolicyPatchBody {
   const patch: Record<string, unknown> = {}
   ;(Object.keys(draft) as (keyof NegotiationDraft)[]).forEach((key) => {
+    // El modelo de cobro no lo cambia la inmobiliaria: nunca viaja.
+    if ((CLAVES_DEL_MODELO_DE_COBRO as readonly string[]).includes(key)) return
     const a = saved[key]
     const b = draft[key]
     const changed =
@@ -267,49 +285,58 @@ const AUTONOMY_OPTIONS: { value: AutonomyLevel; label: string; description: stri
 // ─── Shared small components ────────────────────────────────────────────────
 
 /**
- * Campo de porcentaje.
- *
- * El valor viaja como fracción (0.08) porque así lo guarda la política, pero
- * se escribe en % — antes la etiqueta decía «% éxito» y el campo mostraba
- * `0,08`, que se lee como «0,08 %» y es cien veces menos.
+ * Cómo le cobra Leasefy a la inmobiliaria, en sólo lectura. Lo que se muestra
+ * depende del modelo, como lo cobra el motor de facturación del micro
+ * (`billing/engine.ts`): estándar = mínimo o por deudor; por resultado = mínimo
+ * o comisión de éxito sobre lo recuperado; mixto = tarifa base + porcentaje.
  */
-function PorcentajeField({
-  id,
-  testId,
-  label,
-  value,
-  disabled,
-  onChange,
-}: {
-  id: string
-  testId?: string
-  label: string
-  value: number
-  disabled: boolean
-  onChange: (fraccion: number) => void
-}) {
+function ModeloDeCobroDeLeasefy({ draft }: { draft: NegotiationDraft }) {
+  const modelo: string = draft.billingModel
+  const filas: { etiqueta: string; valor: string; testId: string }[] = []
+  if (modelo === 'performance' || modelo === 'hybrid') {
+    filas.push({
+      etiqueta: modelo === 'hybrid' ? 'Porcentaje del modelo mixto' : 'Comisión de éxito',
+      valor: `${Math.round((modelo === 'hybrid' ? draft.hybridPct : draft.successFeePct) * 10000) / 100} %`,
+      testId: modelo === 'hybrid' ? 'valor-hybridPct' : 'valor-successFeePct',
+    })
+  }
+  if (modelo === 'hybrid' || modelo === 'subscription') {
+    filas.push({ etiqueta: 'Tarifa base', valor: pesos.format(draft.baseFeeCop), testId: 'valor-baseFeeCop' })
+  }
+  if (modelo === 'standard' || modelo === 'subscription') {
+    filas.push({ etiqueta: 'Por deudor', valor: pesos.format(draft.perDeudorCop), testId: 'valor-perDeudorCop' })
+  }
+  filas.push({ etiqueta: 'Mínimo mensual', valor: pesos.format(draft.monthlyMinCop), testId: 'valor-monthlyMinCop' })
+
   return (
-    <div className="space-y-1">
-      <Label htmlFor={id} className="text-sm">
-        {label}
-      </Label>
-      <div className="relative">
-        <Input
-          id={id}
-          data-testid={testId ?? `field-${id}`}
-          type="number"
-          min={0}
-          max={50}
-          step={1}
-          className="min-h-[44px] pr-8"
-          disabled={disabled}
-          value={Math.round(value * 100)}
-          onChange={(e) => onChange(Math.min(50, Math.max(0, Number(e.target.value))) / 100)}
-        />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">
-          %
-        </span>
-      </div>
+    <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3" data-testid="modelo-de-cobro">
+      <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <LockSimple className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+        Modelo de cobro con Leasefy
+      </p>
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+        <div>
+          <dt className="text-caption text-fg-muted">Modelo</dt>
+          <dd className="text-foreground" data-testid="valor-billingModel">
+            {NOMBRE_DEL_MODELO_DE_COBRO[modelo] ?? modelo}
+          </dd>
+        </div>
+        {filas.map((f) => (
+          <div key={f.testId}>
+            <dt className="text-caption text-fg-muted">{f.etiqueta}</dt>
+            <dd className="font-mono tabular-nums text-foreground" data-testid={f.testId}>
+              {f.valor}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-caption text-fg-muted" data-testid="modelo-de-cobro-solo-leasefy">
+        Lo define Leasefy. Para cambiarlo, escríbenos a{' '}
+        <a className="text-primary underline-offset-2 hover:underline" href="mailto:hola@leasefy.co">
+          hola@leasefy.co
+        </a>
+        .
+      </p>
     </div>
   )
 }
@@ -519,33 +546,17 @@ function CobranzaConfiguracionContent() {
               Facturación e integraciones
             </h2>
             <p className="text-sm text-fg-muted mt-1">
-              Cómo se cobra el servicio y con qué sistemas de la inmobiliaria se sincroniza.
+              Cómo te cobra Leasefy el servicio y con qué sistemas de la inmobiliaria se sincroniza.
             </p>
           </div>
           <div className="border-t border-border-faint" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="billingModel" className="text-sm">
-                Modelo de facturación
-              </Label>
-              <Select
-                value={negDraft.billingModel}
-                onValueChange={(v) => updateNeg('billingModel', v as NegotiationDraft['billingModel'])}
-                disabled={!canEdit}
-              >
-                <SelectTrigger id="billingModel" data-testid="field-billingModel">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BILLING_MODELS.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {BILLING_MODEL_LABELS[m]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* 🔴 Cómo te cobra Leasefy: SÓLO LECTURA (Nico, 04-10-2026: «sólo
+              Leasefy lo cambia desde /admin»). Antes se cambiaba acá el modelo
+              de facturación y la comisión de éxito del 8 %. */}
+          <ModeloDeCobroDeLeasefy draft={negDraft} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="crmProvider" className="text-sm">
                 CRM
@@ -590,107 +601,6 @@ function CobranzaConfiguracionContent() {
             </div>
           </div>
 
-          {/* Cambiar el modelo de cobro cambia los campos: los de antes salen y
-              los nuevos entran (`popLayout`: montan ya, sin esperar). */}
-          <CrossFade swapKey={negDraft.billingModel} mode="popLayout">
-          {negDraft.billingModel === 'performance' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <PorcentajeField
-                id="successFeePct"
-                label="Comisión de éxito"
-                value={negDraft.successFeePct}
-                disabled={!canEdit}
-                onChange={(v) => updateNeg('successFeePct', v)}
-              />
-            </div>
-          )}
-
-          {negDraft.billingModel === 'subscription' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="monthlyMinCop" className="text-sm">
-                  Mínimo mensual (COP)
-                </Label>
-                <Input
-                  id="monthlyMinCop"
-                  data-testid="field-monthlyMinCop"
-                  type="number"
-                  min={0}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.monthlyMinCop}
-                  onChange={(e) => updateNeg('monthlyMinCop', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="perDeudorCop" className="text-sm">
-                  Por deudor (COP)
-                </Label>
-                <Input
-                  id="perDeudorCop"
-                  data-testid="field-perDeudorCop"
-                  type="number"
-                  min={0}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.perDeudorCop}
-                  onChange={(e) => updateNeg('perDeudorCop', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="baseFeeCop" className="text-sm">
-                  Tarifa base (COP)
-                </Label>
-                <Input
-                  id="baseFeeCop"
-                  data-testid="field-baseFeeCop"
-                  type="number"
-                  min={0}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.baseFeeCop}
-                  onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
-
-          {negDraft.billingModel === 'hybrid' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <PorcentajeField
-                id="successFeePctHybrid"
-                testId="field-successFeePct"
-                label="Comisión de éxito"
-                value={negDraft.successFeePct}
-                disabled={!canEdit}
-                onChange={(v) => updateNeg('successFeePct', v)}
-              />
-              <PorcentajeField
-                id="hybridPct"
-                label="Porcentaje híbrido"
-                value={negDraft.hybridPct}
-                disabled={!canEdit}
-                onChange={(v) => updateNeg('hybridPct', v)}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="baseFeeCopHybrid" className="text-sm">
-                  Tarifa base (COP)
-                </Label>
-                <Input
-                  id="baseFeeCopHybrid"
-                  data-testid="field-baseFeeCop"
-                  type="number"
-                  min={0}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.baseFeeCop}
-                  onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
-          </CrossFade>
-
           {canEdit && (
             <div className="flex items-center justify-end gap-2 pt-1">
               <Presence show={comercialDirty} direction="none" initial={false}>
@@ -716,7 +626,7 @@ function CobranzaConfiguracionContent() {
                 ) : (
                   <FloppyDisk className="h-4 w-4 mr-1" />
                 )}
-                Guardar facturación
+                Guardar integraciones
               </Button>
             </div>
           )}

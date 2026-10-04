@@ -173,6 +173,14 @@ describe('Requisitos por tipo de inquilino', () => {
     expect(porTestId('requisito-r-1')!.textContent).toContain('Sube un archivo')
   })
 
+  it('🔴 el estudio es OPCIONAL (Nico, 04-10-2026): lo dice y no promete que frena', async () => {
+    await montar()
+    const fila = porTestId('requisito-r-2')!
+    expect(fila.textContent).toContain('Opcional')
+    expect(fila.textContent).not.toContain('Nadie se postula ni firma sin estudio')
+    expect(porTestId('estudio-candado-r-2')!.textContent).toContain('No frena la postulación')
+  })
+
   it('P3 — el estudio no lleva interruptor ni botón de quitar', async () => {
     await montar()
     expect(porTestId('estudio-candado-r-2')).not.toBeNull()

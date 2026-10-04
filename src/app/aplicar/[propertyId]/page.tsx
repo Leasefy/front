@@ -2,7 +2,7 @@
 
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -25,11 +25,12 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PostulacionDirecta } from '@/components/tenant/PostulacionDirecta';
 import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { AntesDePostularte, motivoDeBloqueo } from '@/components/tenant/PostularButton';
+import { ofertaDelEstudio, type OfertaDelEstudio as Oferta } from '@/components/tenant/PostularButton';
+import { OfertaDelEstudio } from '@/components/tenant/OfertaDelEstudio';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import {
   leerElegibilidad,
-  motivoPorElegibilidad,
+  ofertaPorElegibilidad,
   type Elegibilidad,
 } from '@/lib/tenant/antes-de-postularte';
 
@@ -90,14 +91,12 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   >(undefined);
   const [withdrawing, setWithdrawing] = useState(false);
   const [errorAlRetirar, setErrorAlRetirar] = useState<string | null>(null);
-  const router = useRouter();
 
-  // 🔴 QA-IA-A (04-10-2026): ¿puede empezar el asistente? Sin esto, una
-  // persona sin estudio llenaba los cinco pasos y chocaba al enviar con
-  // «An error occurred»; y sin cuenta, la postulación de invitado entraba sin
-  // estudio ni documentos (F-08). Con sesión manda el MISMO veredicto que el
-  // back aplica al enviar; sin sesión, la aprobación local (quien se aprobó
-  // por un enlace y aún no tiene cuenta sigue pudiendo postularse).
+  // 🔴 El estudio es OPCIONAL (Nico, 04-10-2026; reemplaza F-08 y el «Antes de
+  // postularte» de QA-IA-A): nadie se queda sin postularse por el estudio. Lo
+  // que se lee acá es qué OFRECERLE: con sesión, el veredicto del back; sin
+  // sesión, la aprobación local (quien se aprobó por un enlace y aún no tiene
+  // cuenta).
   const aprobacionLocal = useAprobacion();
   const [elegibilidad, setElegibilidad] = useState<Elegibilidad | null | undefined>(undefined);
   useEffect(() => {
@@ -114,14 +113,13 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       cancelado = true;
     };
   }, [isAuthed, resolviendoSesion]);
-  const motivoAntes = isAuthed
-    ? motivoPorElegibilidad(elegibilidad)
+  const oferta: Oferta | null = isAuthed
+    ? ofertaPorElegibilidad(elegibilidad)
     : aprobacionLocal.cargando
       ? null
-      : motivoDeBloqueo({
+      : ofertaDelEstudio({
           aprobacion: aprobacionLocal.aprobacion,
           vigente: aprobacionLocal.vigente,
-          canonCop: property?.monthlyRent ?? undefined,
           haySesion: false,
         });
   const decidiendoSiPuede =
@@ -301,22 +299,6 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     );
   }
 
-  // Todavía no puede postularse: la misma explicación que da el botón de la
-  // ficha, en vez de seis pasos que terminan en un rechazo. «Ahora no» vuelve
-  // al inmueble.
-  if (motivoAntes) {
-    return (
-      <div className="min-h-screen bg-muted" data-testid="aplicar-antes-de-postularte">
-        <AntesDePostularte
-          open
-          onClose={() => router.push(`/propiedades/${resolvedParams.propertyId}`)}
-          motivo={motivoAntes}
-          propertyId={resolvedParams.propertyId}
-        />
-      </div>
-    );
-  }
-
   // A quien ya se estudió, tiene la aprobación vigente, el inmueble le entra en
   // el tope y ya llenó una postulación completa, no hay nada que preguntarle:
   // una pantalla de confirmación en vez de los seis pasos.
@@ -351,7 +333,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       agentCode={agentCode}
       linkCode={linkCode}
     >
-      <WizardContent property={property} />
+      <WizardContent property={property} oferta={oferta} />
     </ApplicationProvider>
   );
 }
@@ -422,12 +404,14 @@ function AlreadyAppliedCard({
 
 interface WizardContentProps {
   property: Property;
+  /** Qué ofrecerle sobre el estudio (nunca un freno). `null` = nada. */
+  oferta: Oferta | null;
 }
 
 /**
  * Wrapper that handles the submission state and switches between wizard and confirmation
  */
-function WizardContent({ property }: WizardContentProps) {
+function WizardContent({ property, oferta }: WizardContentProps) {
   const { application, isGuestSubmission } = useApplication();
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -443,7 +427,11 @@ function WizardContent({ property }: WizardContentProps) {
   return (
     <>
       <WizardShell property={property}>
-        <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
+        <WizardStepContent
+          onSubmissionComplete={handleSubmissionComplete}
+          oferta={oferta}
+          propertyId={property.id}
+        />
       </WizardShell>
       {enviada ? (
         <PostulacionEnviadaModal
@@ -463,12 +451,14 @@ function WizardContent({ property }: WizardContentProps) {
 
 interface WizardStepContentProps {
   onSubmissionComplete: () => void;
+  oferta: Oferta | null;
+  propertyId: string;
 }
 
 /**
  * Renders the appropriate step component based on current step
  */
-function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
+function WizardStepContent({ onSubmissionComplete, oferta, propertyId }: WizardStepContentProps) {
   const { currentStep, application, submitApplication, isLoading } = useApplication();
 
   // Handle form submission
@@ -479,6 +469,13 @@ function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
 
   return (
     <div className="space-y-6">
+      {/* El estudio, ofrecido como ayuda al empezar (nunca un freno) y, al
+          final, cómo va a ver la inmobiliaria la postulación. */}
+      {oferta && currentStep === 1 && <OfertaDelEstudio oferta={oferta} propertyId={propertyId} />}
+      {oferta && currentStep === 5 && (
+        <OfertaDelEstudio oferta={oferta} propertyId={propertyId} compacta />
+      )}
+
       {/* Step 1: Personal Information */}
       {currentStep === 1 && <StepPersonal />}
 

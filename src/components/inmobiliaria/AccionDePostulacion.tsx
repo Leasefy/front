@@ -94,13 +94,22 @@ export function AccionDePostulacion({
   candidateName,
   onConfirm,
   onClose,
+  aviso,
 }: {
   type: ActionType;
   candidateName: string;
   onConfirm: (text: string) => Promise<void>;
   onClose: () => void;
+  /**
+   * Al aprobar una postulación marcada (sin estudio, estudio en curso o
+   * vencido, canon por encima del respaldo): qué falta y la pregunta
+   * (`avisoAlAprobar`). 🔴 El estudio es opcional (Nico, 04-10-2026): no se
+   * frena, se confirma. Sin aviso, se aprueba como siempre.
+   */
+  aviso?: string | null;
 }) {
   const cfg = ACTION_CONFIG[type];
+  const avisoDeAprobar = type === 'approve' && aviso ? aviso : null;
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   // El error del texto (lo que el back dijo de `message`/`reason`) y el de la
@@ -165,6 +174,15 @@ export function AccionDePostulacion({
         </ResponsiveDialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {avisoDeAprobar ? (
+            <p
+              role="note"
+              data-testid="aviso-al-aprobar"
+              className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-fg"
+            >
+              {avisoDeAprobar}
+            </p>
+          ) : null}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="accion-postulacion-texto">
               {cfg.label}
@@ -210,7 +228,7 @@ export function AccionDePostulacion({
               disabled={(cfg.required && !text.trim()) || isSubmitting}
               className="flex-1"
             >
-              {cfg.confirmLabel}
+              {avisoDeAprobar ? 'Aprobar igual' : cfg.confirmLabel}
             </Button>
           </ResponsiveDialogFooter>
         </form>

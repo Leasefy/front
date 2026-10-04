@@ -18,6 +18,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 
 /** Mismos rótulos que la tabla de Postulaciones: una postulación, un nombre. */
@@ -190,6 +191,8 @@ export function CandidatosDelInmueble({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-fg">{c.tenantName}</span>
                     <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
+                    {/* 🔴 El estudio es opcional (Nico, 04-10-2026). */}
+                    <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} className="mt-1" />
                   </span>
                   {c.riskScore && (
                     <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">

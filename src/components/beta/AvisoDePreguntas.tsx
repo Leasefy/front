@@ -9,16 +9,21 @@
  * (`memory/archivos/noche/clausula-preguntas-del-chat.md`) propone esta línea
  * fija debajo de la caja de texto — un aviso, no una casilla.
  *
- * 🔴 APAGADO hasta que Nico / legal aprueben la cláusula (y salga la política
- * v4). Para prenderlo: `AVISO_DE_PREGUNTAS_ENCENDIDO = true`. Mientras tanto la
- * pantalla de Leasefy (`/admin/chat-preguntas`) tampoco está en el menú.
+ * 🔴 PRENDIDO desde el 04-10-2026: Nico aprobó la cláusula tal cual y salió la
+ * política v4.0 (§13 y §16). La pantalla de Leasefy (`/admin/chat-preguntas`)
+ * quedó en el menú del admin el mismo día.
  *
- * «Más información» abre la política en OTRA pestaña: ningún botón del chat
- * saca a la persona del chat.
+ * «Más información» abre la §16 de la política en OTRA pestaña: ningún botón
+ * del chat saca a la persona del chat. (La cláusula decía
+ * `/legal/privacidad#16`; la política vive en `/privacidad` y su §16 en el
+ * ancla `#seccion-16`, que es a donde lleva.)
  */
 
-/** 🔴 Apagado hasta la aprobación de la cláusula (§13 y §16 de la política). */
-export const AVISO_DE_PREGUNTAS_ENCENDIDO = false;
+/** Prendido: la cláusula está aprobada y publicada (política v4.0). */
+export const AVISO_DE_PREGUNTAS_ENCENDIDO = true;
+
+/** La §16 de la política publicada («Qué hacemos con la información de la plataforma»). */
+export const ENLACE_DE_LA_CLAUSULA = '/privacidad#seccion-16';
 
 export const TEXTO_DEL_AVISO_DE_PREGUNTAS =
   'Leasefy revisa las preguntas, sin tu nombre, para mejorar el asistente. Se guardan 12 meses.';
@@ -29,7 +34,7 @@ export function AvisoDePreguntas({ encendido = AVISO_DE_PREGUNTAS_ENCENDIDO }: {
     <p className="mt-1.5 px-1 text-center text-[11px] leading-snug text-fg-subtle" data-testid="aviso-de-preguntas">
       {TEXTO_DEL_AVISO_DE_PREGUNTAS}{' '}
       <a
-        href="/privacidad"
+        href={ENLACE_DE_LA_CLAUSULA}
         target="_blank"
         rel="noopener noreferrer"
         className="underline underline-offset-2 hover:text-fg"

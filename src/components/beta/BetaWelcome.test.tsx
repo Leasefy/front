@@ -104,6 +104,13 @@ function migracion(listos: number, extra: Partial<EstadoDeMigracion> = {}): Esta
 }
 
 describe('la llegada del chat', () => {
+  it('🔴 debajo de la caja va la línea fija de la cláusula (Nico, 04-10-2026: política v4.0 §16)', () => {
+    pintar(<BetaWelcome />);
+    const aviso = container.querySelector('[data-testid="aviso-de-preguntas"]');
+    expect(aviso?.textContent).toContain('Leasefy revisa las preguntas, sin tu nombre, para mejorar el asistente. Se guardan 12 meses.');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/privacidad#seccion-16');
+  });
+
   it('dice el título y la línea de apoyo nuevos', () => {
     pintar(<BetaWelcome />);
     expect(container.querySelector('h1')?.textContent).toBe('¿Qué revisamos hoy?');

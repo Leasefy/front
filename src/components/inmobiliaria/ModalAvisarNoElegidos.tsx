@@ -41,6 +41,7 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
 import { MAX_LARGO_DEL_TEXTO_AL_CANDIDATO } from '@/lib/postulaciones/limites-de-la-decision'
+import { avisoAlAprobar } from '@/lib/postulaciones/marca-del-estudio'
 
 const MENSAJE_POR_DEFECTO =
   'Gracias por postularte. En esta oportunidad el inmueble se asignó a otra ' +
@@ -182,6 +183,19 @@ export function ModalAvisarNoElegidos({
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* 🔴 El estudio es opcional (Nico, 04-10-2026): elegir a alguien
+              sin estudio (o con el canon por encima de su respaldo) se
+              confirma sabiendo qué falta; no se frena. */}
+          {avisoAlAprobar(elegido.marcaDelEstudio) && !elegidoYaAprobado ? (
+            <p
+              role="note"
+              data-testid="aviso-al-aprobar"
+              className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-fg"
+            >
+              {avisoAlAprobar(elegido.marcaDelEstudio)}
+            </p>
+          ) : null}
+
           {errorDelElegido !== null && (
             <div className="rounded-md border border-danger bg-danger-soft px-4 py-3">
               <p className="text-sm font-medium text-danger">
@@ -309,8 +323,10 @@ export function ModalAvisarNoElegidos({
             {yaSeIntentó && fallaron.length > 0
               ? `Reintentar con ${fallaron.length}`
               : cantidad > 0
-                ? `Elegir y avisar a ${cantidad}`
-                : 'Elegir'}
+                ? `Elegir${avisoAlAprobar(elegido.marcaDelEstudio) && !elegidoYaAprobado ? ' igual' : ''} y avisar a ${cantidad}`
+                : avisoAlAprobar(elegido.marcaDelEstudio) && !elegidoYaAprobado
+                  ? 'Elegir igual'
+                  : 'Elegir'}
           </Button>
         </DialogFooter>
       </DialogContent>

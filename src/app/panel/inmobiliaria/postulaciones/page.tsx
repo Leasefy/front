@@ -41,6 +41,8 @@ import {
 } from '@/components/inmobiliaria/AccionDePostulacion'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio'
+import { avisoAlAprobar } from '@/lib/postulaciones/marca-del-estudio'
 
 // ─── Status display (mirrors propiedades/candidatos pages) ────────────────────
 
@@ -290,6 +292,14 @@ function PostulacionesContenido() {
     shouldPaginate,
   } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
 
+  /*
+   * El puntaje NO está prendido (Nico, 04-10-2026: «aún ese no lo vamos a
+   * prender»). Una columna «Puntaje» llena de rayas promete algo que no
+   * existe: sólo sale si alguna postulación de la lista trae puntaje, y la que
+   * no lo trae dice «Sin puntaje».
+   */
+  const hayPuntaje = items.some((c) => Boolean(c.riskScore))
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -349,7 +359,7 @@ function PostulacionesContenido() {
           <EmptyState
             icon={ClipboardText}
             title="Todavía no te ha llegado ninguna postulación"
-            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado."
+            description="Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento."
           />
           {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
               la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…
@@ -438,7 +448,11 @@ function PostulacionesContenido() {
                     <TableHead>Candidato</TableHead>
                     <TableHead>Propiedad</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Puntaje</TableHead>
+                    {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
+                        postuló sin él (o con el canon por encima de su
+                        respaldo) se ve marcado acá. */}
+                    <TableHead>Estudio</TableHead>
+                    {hayPuntaje && <TableHead>Puntaje</TableHead>}
                     <TableHead>Fecha</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -491,19 +505,24 @@ function PostulacionesContenido() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {c.riskScore ? (
-                            <span
-                              className={cn(
-                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
-                                SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
-                              )}
-                            >
-                              {c.riskScore.totalScore} · {c.riskScore.level}
-                            </span>
-                          ) : (
-                            <span className="text-fg-muted">—</span>
-                          )}
+                          <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
                         </TableCell>
+                        {hayPuntaje && (
+                          <TableCell>
+                            {c.riskScore ? (
+                              <span
+                                className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
+                                  SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
+                                )}
+                              >
+                                {c.riskScore.totalScore} · {c.riskScore.level}
+                              </span>
+                            ) : (
+                              <span className="text-fg-muted">Sin puntaje</span>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="text-fg-muted">{formatDate(c.submittedAt)}</TableCell>
                       </TableRowAnimada>
                     )
@@ -565,6 +584,7 @@ function PostulacionesContenido() {
           candidateName={accion.candidate.tenantName || accion.candidate.id.slice(0, 8)}
           onConfirm={confirmarAccion}
           onClose={() => setAccion(null)}
+          aviso={avisoAlAprobar(accion.candidate.marcaDelEstudio)}
         />
       )}
     </div>

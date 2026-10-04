@@ -9,9 +9,9 @@
  * enmascarados), + sugerencias de cómo optimizar el chat según lo que se vaya
  * encontrando.
  *
- * 🔴 NO está en el menú del admin (`src/components/admin/Nav.tsx`) hasta que
- * Nico / legal aprueben la cláusula de la política (§13 y §16; propuesta en
- * `memory/archivos/noche/clausula-preguntas-del-chat.md`). Se entra por URL.
+ * 🔴 En el menú del admin (`src/components/admin/Nav.tsx`) desde el
+ * 04-10-2026: Nico aprobó la cláusula tal cual y salió la política v4.0 (§13 y
+ * §16, `memory/archivos/noche/clausula-preguntas-del-chat.md`).
  *
  * Los datos salen del micro de agentes (`GET /api/admin/ai-hub/chat/preguntas`,
  * misma puerta que `/admin/chat-feedback`: ADMIN_EMAILS + segundo factor). El
@@ -276,8 +276,8 @@ export default function ChatPreguntasPage() {
       />
 
       <div className="card p-3 mb-6 text-sm text-fg-muted" role="note">
-        Esta pantalla no está en el menú: se abre cuando se apruebe la cláusula de la política de privacidad
-        que lo permite. Mientras tanto sólo la ve el equipo de Leasefy, por este enlace.
+        Sólo la ve el equipo de producto de Leasefy, como dice la §16 de la política de tratamiento
+        (versión 4.0). Las preguntas se guardan 12 meses.
       </div>
 
       {/* Filtros (viven en la URL). */}

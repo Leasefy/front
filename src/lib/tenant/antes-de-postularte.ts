@@ -1,23 +1,19 @@
 /**
- * antes-de-postularte — ¿esta persona puede empezar el asistente de /aplicar?
+ * antes-de-postularte — qué ofrecerle sobre el estudio a quien llega a /aplicar.
  *
- * 🔴 QA-IA-A (04-10-2026), medido en el laboratorio: el botón «Postularme» de
- * la ficha ya explicaba qué faltaba, pero el asistente de /aplicar (al que se
- * llega por un enlace compartido, el «Ver mi postulación» de otro inmueble o
- * escribiendo la dirección) no miraba nada. Una persona SIN estudio llenaba los
- * cinco pasos y al enviar recibía un 409 que decía «An error occurred». Y sin
- * cuenta, la postulación de invitado entraba sin estudio ni documentos —F-08:
- * «NUNCA se postula sin el estudio de Leasefy»—.
+ * 🔴 El estudio de arrendamiento es OPCIONAL (Nico, 04-10-2026: «el estudio es
+ * opcional, no es obligatorio»; reemplaza F-08 y lo que se hizo en PO-01/PO-02
+ * la noche del 04-10). Antes esto decidía si la persona PODÍA empezar el
+ * asistente; ahora sólo decide qué se le OFRECE (`OfertaDelEstudio`), nunca un
+ * freno: se postula igual y la inmobiliaria ve la postulación marcada.
  *
- * Con sesión, la respuesta la da el MISMO veredicto que aplica el back al
- * enviar (`GET /pre-scoring/elegibilidad`, la lectura de
- * `PreScoringEligibilityService`): no hay dos reglas. Si no se puede saber
- * (red caída, error), se deja pasar: el back sigue cuidando la puerta al enviar
- * y bloquear por una duda castiga a quien sí puede.
+ * Con sesión, el dato lo da el MISMO veredicto del back
+ * (`GET /pre-scoring/elegibilidad`). Si no se puede saber (red caída, error),
+ * no se ofrece nada: no se le inventa un estado a nadie.
  */
 
 import { apiClient } from '@/lib/api/client'
-import type { MotivoBloqueo } from '@/components/tenant/PostularButton'
+import type { OfertaDelEstudio } from '@/components/tenant/PostularButton'
 
 export type MotivoDeElegibilidad =
   | 'OK'
@@ -33,7 +29,7 @@ export interface Elegibilidad {
   elegibleHasta: string | null
 }
 
-/** El veredicto del back, o `null` si no se pudo saber (ante la duda, el formulario). */
+/** El veredicto del back, o `null` si no se pudo saber. */
 export async function leerElegibilidad(): Promise<Elegibilidad | null> {
   try {
     const r = await apiClient.get<Elegibilidad>('/pre-scoring/elegibilidad')
@@ -43,18 +39,18 @@ export async function leerElegibilidad(): Promise<Elegibilidad | null> {
   }
 }
 
-/** Qué explicación mostrar antes del asistente. `null` = puede empezar. */
-export function motivoPorElegibilidad(e: Elegibilidad | null | undefined): MotivoBloqueo | null {
+/** Qué ofrecerle sobre el estudio. `null` = tiene estudio vigente (o no se sabe). */
+export function ofertaPorElegibilidad(e: Elegibilidad | null | undefined): OfertaDelEstudio | null {
   if (!e || e.apto) return null
   switch (e.motivo) {
     case 'ESTUDIO_VENCIDO':
-      return 'vencida'
+      return 'vencido'
     case 'ESTUDIO_EN_CURSO':
-      return 'en_proceso'
+      return 'en_curso'
     case 'NO_ASEGURABLE':
-      return 'rechazado'
+      return 'sin_respaldo'
     case 'SIN_ESTUDIO':
-      return 'sin_aprobacion'
+      return 'sin_estudio'
     default:
       return null
   }

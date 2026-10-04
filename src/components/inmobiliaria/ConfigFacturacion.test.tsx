@@ -179,17 +179,17 @@ describe('ConfigFacturacion — real subscription as source of truth', () => {
     expect(container.textContent).toContain('inmobiliaria.config.billing.planUnavailable')
   })
 
-  it('navigates to /upgrade on the upgrade button (no mock dialog)', async () => {
+  // 🔴 El plan lo cambia SÓLO Leasefy (Nico, 04-10-2026): pedirlo, no hacerlo.
+  it('«Pedir un cambio de plan» es un correo a Leasefy con el plan actual; no lleva al checkout', async () => {
     await render(BILLING)
-    const buttons = Array.from(container.querySelectorAll('button'))
-    const upgradeBtn = buttons.find((b) =>
-      b.textContent?.includes('inmobiliaria.config.billing.upgradePlan'),
+    const pedir = container.querySelector<HTMLAnchorElement>('[data-testid="pedir-cambio-de-plan"]')
+    expect(pedir?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co\?subject=Cambio%20de%20plan/)
+    expect(decodeURIComponent(pedir?.getAttribute('href') ?? '')).toContain('Plan actual: Pro')
+    expect(container.textContent).not.toContain('inmobiliaria.config.billing.upgradePlan')
+    expect(container.querySelector('[data-testid="plan-solo-leasefy"]')?.textContent).toContain(
+      'Tu plan y su precio los define Leasefy',
     )
-    expect(upgradeBtn).toBeTruthy()
-    await act(async () => {
-      upgradeBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
+    expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
   })
 
   /*
@@ -284,58 +284,39 @@ describe('ConfigFacturacion — cancel at period end / pending change (T-0089)',
     expect(container.textContent).not.toMatch(/cancelaci[oó]n programada/i)
   })
 
-  it('"Deshacer" on the pending-change block calls cancelPendingChange and refetches', async () => {
-    const refetch = vi.fn()
+  it('🔴 con un cambio programado, deshacerlo también se PIDE a Leasefy (no llama al back)', async () => {
     subState.value = makeSub({
       state: {
         subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
         pendingPlanTier: 'starter',
         pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
       },
-      refetch,
     })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    const undoBtn = findButton('Deshacer')
-    expect(undoBtn).toBeTruthy()
-    await act(async () => {
-      undoBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockCancelPendingChange).toHaveBeenCalledTimes(1)
-    expect(refetch).toHaveBeenCalled()
+    expect(findButton('Deshacer')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-deshacer"]')?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co/)
+    expect(mockCancelPendingChange).not.toHaveBeenCalled()
   })
 
-  it('"Cancelar plan" opens a confirmation dialog, and confirming calls selectPlan with the default plan id', async () => {
+  it('🔴 «Pedir la cancelación» es un correo a Leasefy: ya no programa la baja directo', async () => {
     subState.value = makeSub({ currentPlanId: 'pro' })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-
-    const cancelTrigger = findButton('Cancelar plan')
-    expect(cancelTrigger).toBeTruthy()
-    await act(async () => {
-      cancelTrigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // The dialog explains what happens before charging ahead.
-    expect(document.body.textContent).toMatch(/Pro/)
-    expect(document.body.textContent).toMatch(/Starter/)
-
-    const confirmBtn = findButton('Sí, cancelar')
-    expect(confirmBtn).toBeTruthy()
-    await act(async () => {
-      confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockSelectPlan).toHaveBeenCalledWith('starter')
+    expect(findButton('Cancelar plan')).toBeFalsy()
+    const pedir = container.querySelector<HTMLAnchorElement>('[data-testid="pedir-cancelacion"]')
+    expect(pedir?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co\?subject=Cancelaci%C3%B3n%20del%20plan/)
+    expect(mockSelectPlan).not.toHaveBeenCalled()
   })
 
-  it('hides "Cancelar plan" when the agency is already on the free/default plan', async () => {
+  it('no ofrece pedir la cancelación en el plan gratuito / por defecto', async () => {
     subState.value = makeSub({ currentPlanId: 'starter' })
     plansState.value = { plans: [STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    expect(findButton('Cancelar plan')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-cancelacion"]')).toBeNull()
   })
 
-  it('hides "Cancelar plan" while a change is already pending', async () => {
+  it('ni mientras ya hay un cambio programado', async () => {
     subState.value = makeSub({
       currentPlanId: 'pro',
       state: {
@@ -346,26 +327,10 @@ describe('ConfigFacturacion — cancel at period end / pending change (T-0089)',
     })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    expect(findButton('Cancelar plan')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-cancelacion"]')).toBeNull()
   })
-})
 
-/*
- * 02-10-2026 · Cancelar el plan y deshacer el cambio con la regla de oro:
- * antes decían «No pudimos … Intenta de nuevo.» pasara lo que pasara. Un 5xx
- * dice «de nuestro lado» con la referencia; un 4xx, lo que escribió el back;
- * «conexión», sólo sin respuesta. Nada de cobros reales: el servicio es un doble.
- */
-describe('ConfigFacturacion — los errores con la regla de oro (02-10)', () => {
-  const fallo500 = () =>
-    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
-      statusCode: 500,
-      code: 'ERROR_INTERNO',
-      referencia: 'ab12cd34',
-    })
-
-  it('🔴 deshacer con un 5xx: «de nuestro lado» con la referencia', async () => {
-    mockCancelPendingChange.mockRejectedValue(fallo500())
+  it('sin voseo: «Pasas a…»', async () => {
     subState.value = makeSub({
       state: {
         subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
@@ -375,39 +340,7 @@ describe('ConfigFacturacion — los errores con la regla de oro (02-10)', () => 
     })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    await act(async () => {
-      findButton('Deshacer')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    const texto = mockToastError.mock.calls.at(-1)?.[0] as string
-    expect(texto).toContain('No pudimos deshacer el cambio de plan: algo falló de nuestro lado')
-    expect(texto).toContain('ab12cd34')
-  })
-
-  it('🔴 cancelar el plan con un 409: el motivo del back, no la frase fija', async () => {
-    mockSelectPlan.mockRejectedValue(new ApiError(409, 'Ya hay un cambio de plan programado.'))
-    subState.value = makeSub({ currentPlanId: 'pro' })
-    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
-    await render(BILLING)
-    await act(async () => {
-      findButton('Cancelar plan')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    await act(async () => {
-      findButton('Sí, cancelar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockToastError.mock.calls.at(-1)?.[0]).toBe('Ya hay un cambio de plan programado.')
-  })
-
-  it('cancelar el plan sin respuesta: ahí sí habla de la conexión', async () => {
-    mockSelectPlan.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
-    subState.value = makeSub({ currentPlanId: 'pro' })
-    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
-    await render(BILLING)
-    await act(async () => {
-      findButton('Cancelar plan')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    await act(async () => {
-      findButton('Sí, cancelar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockToastError.mock.calls.at(-1)?.[0]).toMatch(/conexi[oó]n/)
+    expect(container.textContent).toContain('Pasas a')
+    expect(container.textContent).not.toContain('Pasás')
   })
 })

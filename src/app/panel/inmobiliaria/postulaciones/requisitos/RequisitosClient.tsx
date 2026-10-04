@@ -24,8 +24,9 @@
  *   1. **cuando todavía es el sugerido, lo dice**. Una lista que parece propia y
  *      no lo es hace que nadie la revise, y el día que el candidato sube los
  *      papeles equivocados nadie entiende por qué.
- *   2. 🔴 **el estudio de Leasefy no se puede apagar** (F-08: «nunca se firma o
- *      postula sin el estudio»). Se muestra con candado y sin interruptor, no
+ *   2. 🔴 **el estudio de Leasefy es OPCIONAL para todos y no se edita**
+ *      (Nico, 04-10-2026: «el estudio es opcional, no es obligatorio»; antes
+ *      F-08 lo hacía obligatorio). Se muestra con candado y sin interruptor, no
  *      con un interruptor que después devuelve un 409: un control deshabilitado
  *      con su porqué al lado enseña la regla; uno que falla, enseña a
  *      desconfiar de la pantalla.
@@ -368,7 +369,7 @@ function FilaDeRequisito({
           <p className="flex items-center gap-2 font-medium text-fg">
             {r.etiqueta}
             {r.esElEstudio ? (
-              <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede apagar" />
+              <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" />
             ) : null}
           </p>
           {r.detalle ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
@@ -376,14 +377,14 @@ function FilaDeRequisito({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {/* 🔴 F-08: el estudio no se puede volver opcional. Va como etiqueta
-            fija con su porqué al lado, no como un control que después
-            devuelve 409. */}
+        {/* 🔴 El estudio es opcional para todos (Nico, 04-10-2026). Va como
+            etiqueta fija con su porqué al lado, no como un control que
+            después devuelve 409. */}
         {r.esElEstudio ? (
           <>
-            <Badge variant="default">Obligatorio</Badge>
+            <Badge variant="secondary">Opcional</Badge>
             <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
-              Nadie se postula ni firma sin estudio
+              No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
             </span>
           </>
         ) : puedeEditar && !esElPreset ? (

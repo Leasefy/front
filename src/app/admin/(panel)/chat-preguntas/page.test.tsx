@@ -178,7 +178,8 @@ describe('/admin/chat-preguntas', () => {
     expect(texto()).toContain('¿cuánto debe la cédula ••••••••89?')
     expect(texto()).toContain('US$0,09')
     expect(texto()).toContain('Portofino')
-    expect(texto()).toContain('no está en el menú')
+    expect(texto()).toContain('Sólo la ve el equipo de producto de Leasefy')
+    expect(texto()).not.toContain('no está en el menú')
     expect(texto()).not.toMatch(/@/)
   })
 
@@ -222,9 +223,9 @@ describe('/admin/chat-preguntas', () => {
   })
 })
 
-describe('🔴 sin enlace en el menú del admin hasta que se apruebe la cláusula', () => {
-  it('Nav.tsx no enlaza /admin/chat-preguntas', () => {
+describe('🔴 en el menú del admin desde que se aprobó la cláusula (Nico, 04-10-2026)', () => {
+  it('Nav.tsx enlaza /admin/chat-preguntas', () => {
     const nav = readFileSync(resolve(__dirname, '../../../../components/admin/Nav.tsx'), 'utf8')
-    expect(nav).not.toContain('chat-preguntas')
+    expect(nav).toContain("href: '/admin/chat-preguntas'")
   })
 })

@@ -41,6 +41,8 @@ export const NAV_ITEMS = [
   { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
   { href: '/admin/inmuebles', label: 'Inmuebles', hint: 'riesgo · historial interno', code: '32' },
   { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
+  // Prendida el 04-10-2026: Nico aprobó la cláusula de la política (v4.0 §13 y §16).
+  { href: '/admin/chat-preguntas', label: 'Preguntas del chat', hint: 'qué preguntan · sugerencias', code: '36' },
   { href: '/admin/modulos-pagos', label: 'Módulos', hint: 'nómina · qué compró cada una', code: '34' },
   { href: '/admin/exogena', label: 'Exógena', hint: 'conceptos por año · publicar', code: '34' },
   { href: '/admin/recaudo-en-linea', label: 'Recaudo en línea', hint: 'wompi · liquidaciones', code: '35' },

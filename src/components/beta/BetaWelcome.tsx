@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { CHAT_TEMPLATES, ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { AvisoDePreguntas } from './AvisoDePreguntas';
 import { ConversacionesRecientes } from './llegada/ConversacionesRecientes';
 import { FranjaDeMigracion } from './llegada/FranjaDeMigracion';
 import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
@@ -209,6 +210,10 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
               bandejaElevada={recientesAbiertas}
               aviso={aviso}
             />
+            {/* La línea fija de la cláusula (Nico, 04-10-2026: política v4.0 §16):
+                también debajo de la caja de la llegada, que es donde se hace la
+                primera pregunta. */}
+            <AvisoDePreguntas />
           </motion.div>
 
           {/* Atajos */}

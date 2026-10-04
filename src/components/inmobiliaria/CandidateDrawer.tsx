@@ -28,6 +28,7 @@ import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/comp
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -433,11 +434,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
         {/* El cuerpo: lo único que scrollea (trae data-lenis-prevent y overscroll contain) */}
         <SheetBody className="space-y-6">
           {/* Status */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-fg-muted">Estado:</span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
               {STATUS_LABELS[candidate.status]}
             </span>
+            {/* 🔴 El estudio es opcional (Nico, 04-10-2026): qué falta, a la
+                vista antes de decidir. */}
+            <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} />
             <span className="text-sm text-fg-muted ml-auto">
               Postulado el {new Date(candidate.submittedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
@@ -521,7 +525,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-foreground">Estudio de asegurabilidad</h3>
-                <p className="text-xs text-fg-muted">Resultado del estudio de asegurabilidad que ya pagó el candidato</p>
+                <p className="text-xs text-fg-muted">El estudio con que se postuló, si lo hizo: es opcional</p>
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
@@ -552,9 +556,9 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               </div>
             ) : noEvaluationYet ? (
               <div className="rounded-lg bg-surface-muted p-3 border border-border">
-                <p className="text-xs text-fg-muted">
-                  Este candidato aún no tiene un análisis de IA generado por el agente.
-                </p>
+                {/* El puntaje no está prendido (Nico, 04-10-2026): no se
+                    promete uno que no va a llegar. */}
+                <p className="text-xs text-fg-muted">Sin puntaje.</p>
               </div>
             ) : evaluacionDesactualizada(evaluation) ? (
               <AvisoDeEvaluacionDesactualizada />

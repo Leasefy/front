@@ -23,6 +23,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import type { PasoKey } from '@/lib/recorrido/pasos';
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -501,6 +502,9 @@ function CandidatosContent() {
                             <p className="text-xs text-fg-muted">
                               {candidate.tenantEmail || '—'}
                             </p>
+                            {/* 🔴 El estudio es opcional (Nico, 04-10-2026):
+                                qué falta, a la vista. */}
+                            <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} className="mt-1" />
                           </div>
                         </div>
                       </TableCell>

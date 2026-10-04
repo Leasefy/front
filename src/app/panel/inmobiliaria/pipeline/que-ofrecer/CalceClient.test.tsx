@@ -285,4 +285,58 @@ describe('CalceClient', () => {
       'sin fecha de salida',
     )
   })
+
+  // 🔴 El estudio es OPCIONAL (Nico, 04-10-2026): sin estudio se ofrece por el
+  // presupuesto, cada opción va marcada y el estudio se sugiere.
+  it('sin estudio: ofrece por el presupuesto, marca cada opción y sugiere el estudio', async () => {
+    const marca = 'Sin estudio: el tope asegurable se sabe cuando haga el estudio'
+    api.paraElLead = vi.fn(() =>
+      Promise.resolve({
+        lead: { pipelineItemId: 'p-1', nombre: 'QA DÍA Prospecto Pipeline', correo: null },
+        busca: { presupuestoCop: 1_800_000, topeAsegurableCop: null },
+        presupuestoDicho: true,
+        falta: null,
+        opciones: [
+          {
+            propertyId: 'inm-1',
+            puntaje: 80,
+            porQue: [],
+            marca,
+            inmueble: { title: 'Apto 402', neighborhood: 'Laureles', city: 'Medellín', monthlyRent: 1_400_000, adminFee: 0, bedrooms: 2 },
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await escribir('[data-testid="input-lead"]', 'p-1')
+    expect($('[data-testid="falta-requisito"]')).toBeNull()
+    expect(contenedor.textContent).not.toContain('Todavía no se le puede mandar nada')
+    expect($('[data-testid="marca-inm-1"]')?.textContent).toBe(marca)
+    expect($('[data-testid="sugerencia-del-estudio"]')?.textContent).toContain('Sugiérele')
+    expect(contenedor.textContent).toContain('sin estudio')
+  })
+
+  it('«Se liberó un inmueble»: el lead sin estudio aparece con su marca', async () => {
+    api.paraElInmueble = vi.fn(() =>
+      Promise.resolve({
+        ofrecible: true,
+        motivo: null,
+        leads: [
+          {
+            pipelineItemId: 'p-7',
+            nombre: 'QA DÍA Prospecto Pipeline',
+            correo: null,
+            propertyId: 'inm-9',
+            puntaje: 75,
+            porQue: [],
+            marca: 'Sin estudio: el tope asegurable se sabe cuando haga el estudio',
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await irAlLadoDelInmueble()
+    await escribir('[data-testid="input-inmueble"]', 'inm-9')
+    expect($('[data-testid="marca-lead-p-7"]')?.textContent).toContain('Sin estudio')
+  })
 })

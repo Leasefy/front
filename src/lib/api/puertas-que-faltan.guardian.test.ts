@@ -180,8 +180,10 @@ const DECLARADOS: readonly string[] = [
   'cobrosApi.generateOne',
   'cobrosApi.registerPayment',
   'conciliacionBancariaApi.conciliarSeguros',
-  'facturacionElectronicaService.crearProveedor',
-  'facturacionElectronicaService.notasDebito',
+  // 04-10 · `facturacionElectronicaService.crearProveedor` y `.notasDebito`
+  // salieron: ya tienen puerta (QA de Facturación, rondas 2 y 3 —
+  // `DocumentoSoporte` registra al proveedor ahí mismo y `FacturasEmitidas`
+  // lista las notas débito).
   'finanzasApi.asignarASede',
   'inmobiliariaConfigApi.getConfigBilling',
   'inmobiliariaConfigApi.getConfigInvoices',

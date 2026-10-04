@@ -168,6 +168,53 @@ function mockFetchSequence(
   return fn;
 }
 
+describe('propertiesApi.create — Idempotency-Key (T-0141)', () => {
+  it('sends the Idempotency-Key header when the caller passes a key', async () => {
+    const fetchMock = mockFetchOnce(BACKEND_PROPERTY);
+
+    await propertiesApi.create(CREATE_INPUT, { idempotencyKey: 'a1b2c3d4-0000-4000-8000-000000000001' });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = opts.headers as Record<string, string>;
+    expect(headers['Idempotency-Key']).toBe('a1b2c3d4-0000-4000-8000-000000000001');
+    expect(headers['Authorization']).toBe('Bearer test-token');
+  });
+
+  it('sends NO Idempotency-Key header when none is passed (older callers unchanged)', async () => {
+    const fetchMock = mockFetchOnce(BACKEND_PROPERTY);
+
+    await propertiesApi.create(CREATE_INPUT);
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((opts.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
+  });
+
+  it('does not put the key in the body (wire body unchanged)', async () => {
+    const fetchMock = mockFetchOnce(BACKEND_PROPERTY);
+
+    await propertiesApi.create(CREATE_INPUT, { idempotencyKey: 'a1b2c3d4-0000-4000-8000-000000000001' });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(opts.body as string).not.toContain('a1b2c3d4');
+  });
+});
+
+describe('createPublishedWithDraftFallback — Idempotency-Key (T-0141)', () => {
+  it('reuses the SAME key on the plan-limit DRAFT retry (the 403 created no row)', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { message: PLAN_LIMIT_MESSAGE }, ok: false, status: 403 },
+      { body: { ...BACKEND_PROPERTY, status: 'DRAFT' } },
+    ]);
+
+    await createPublishedWithDraftFallback(CREATE_INPUT, { idempotencyKey: 'a1b2c3d4-0000-4000-8000-000000000002' });
+
+    const keys = fetchMock.mock.calls.map(
+      (c) => ((c[1] as RequestInit).headers as Record<string, string>)['Idempotency-Key'],
+    );
+    expect(keys).toEqual(['a1b2c3d4-0000-4000-8000-000000000002', 'a1b2c3d4-0000-4000-8000-000000000002']);
+  });
+});
+
 describe('createPublishedWithDraftFallback', () => {
   it('publishes with status AVAILABLE when the plan allows it', async () => {
     const fetchMock = mockFetchSequence([{ body: BACKEND_PROPERTY }]);

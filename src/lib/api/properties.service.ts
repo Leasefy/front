@@ -41,6 +41,11 @@ function buildQueryString(filters: PropertyFiltersParams): string {
   return qs ? `?${qs}` : '';
 }
 
+export interface CreatePropertyOptions {
+  /** Sent as the `Idempotency-Key` header (8-64 chars, `[A-Za-z0-9-]`). */
+  idempotencyKey?: string;
+}
+
 export const propertiesApi = {
   /** List properties with filters and pagination */
   async list(filters: PropertyFiltersParams = {}): Promise<PaginatedProperties> {
@@ -80,7 +85,14 @@ export const propertiesApi = {
     await apiClient.delete(`/properties/${propertyId}/agents/${agentId}`);
   },
 
-  /** Create a new property */
+  /**
+   * Create a new property.
+   *
+   * `opts.idempotencyKey` (UUID v4, one per creation session) goes in the
+   * `Idempotency-Key` header, never in the body: a retry with the same key
+   * returns the existing property instead of creating a second one
+   * (T-0141 contract §3). Optional so older callers and older backs keep working.
+   */
   async create(data: {
     title: string;
     description: string;
@@ -118,7 +130,7 @@ export const propertiesApi = {
     salePrice?: number | null;
     /** contract.md T-0038 §3.2.6 — `"YYYY-MM-DD"`, agency-only, optional. */
     consignedAt?: string;
-  }): Promise<Property> {
+  }, opts?: CreatePropertyOptions): Promise<Property> {
     const body = {
       ...data,
       type: TYPE_TO_BACKEND[data.type as keyof typeof TYPE_TO_BACKEND] ?? data.type,
@@ -129,7 +141,12 @@ export const propertiesApi = {
       // keeps the mapping explicit rather than relying on that.
       ...(data.listingType ? { listingType: LISTING_TYPE_TO_BACKEND[data.listingType] } : {}),
     };
-    const bp = await apiClient.post<BackendProperty>('/properties', body);
+    const bp = await apiClient.post<BackendProperty>(
+      '/properties',
+      body,
+      undefined,
+      opts?.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : undefined,
+    );
     return mapBackendProperty(bp);
   },
 
@@ -230,13 +247,16 @@ export interface CreateWithFallbackResult {
  */
 export async function createPublishedWithDraftFallback(
   data: Omit<Parameters<typeof propertiesApi.create>[0], 'status'>,
+  opts?: CreatePropertyOptions,
 ): Promise<CreateWithFallbackResult> {
   try {
-    const property = await propertiesApi.create({ ...data, status: 'AVAILABLE' });
+    const property = await propertiesApi.create({ ...data, status: 'AVAILABLE' }, opts);
     return { property, publishBlocked: false };
   } catch (err) {
     if (!isPlanLimitError(err)) throw err;
-    const property = await propertiesApi.create(data);
+    // Same key on purpose: the plan-limit 403 created no row, so the DRAFT
+    // retry is still the one creation this session is allowed to make.
+    const property = await propertiesApi.create(data, opts);
     return { property, publishBlocked: true };
   }
 }

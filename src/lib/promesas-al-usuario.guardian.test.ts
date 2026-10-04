@@ -108,13 +108,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
       'Avisar al inquilino por push y por WhatsApp. El aviso dentro del portal sí ' +
       'es real; lo que falta es el canal, no la pantalla.',
   },
-  'app/panel/(landlord)/solicitudes/nueva/page.tsx': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota:
-      'Llama de verdad a `ownerSolicitudesApi.crear` y sólo dice «Próximamente» ' +
-      'cuando el portal del propietario no responde. Es degradación, no promesa.',
-  },
   'app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx': {
     estado: 'FALTA',
     de: 'back',
@@ -260,13 +253,6 @@ const EN_EL_DICCIONARIO: Record<string, Promesa> = {
     estado: 'FALTA',
     de: 'back',
     nota: 'Lo mismo del propietario: la exportación programada.',
-  },
-  'inmobiliaria.piloto.gobierno.proximamente': {
-    estado: 'HONESTO',
-    de: 'negocio',
-    nota:
-      'Los agentes en pausa de producto (`AGENTES_NO_DISPONIBLES`). La tarjeta se ' +
-      'lee como no disponible sin importar lo que diga el gobierno real.',
   },
 };
 

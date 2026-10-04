@@ -54,8 +54,7 @@ import {
   applicationStatusToTone,
   paymentStatusToLabel,
   paymentStatusToTone,
-  pqrsToCase,
-} from '@/lib/types/tenant-case';
+  pqrsToCase, casoAbierto } from '@/lib/types/tenant-case';
 
 const RESPONSABLE_INMOBILIARIA = 'Inmobiliaria';
 const PAGOS_LINK = '/inquilino/pagos';
@@ -312,7 +311,8 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
 
   return {
     cases,
-    openCasesCount: cases.length,
+    // SO-16: sólo los que siguen abiertos (no los resueltos ni los aprobados).
+    openCasesCount: cases.filter(casoAbierto).length,
     primaryLease: primaryLease ?? null,
     isLoading,
     error,

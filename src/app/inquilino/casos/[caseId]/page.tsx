@@ -55,6 +55,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
+import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivosDelCaso';
 
 // ============================================================================
 // Neutral mappers (view-only — never recompute a status)
@@ -162,7 +163,12 @@ function CaseDetail({
   // `slaVenceAt` wins; otherwise a soft, weekday-only estimate labeled "estimado".
   // Never blank, neutral tone — no live countdown, no red styling, no hard
   // deadline framing on the estimate (soft "hacia el …", not a due-date claim).
-  const sla = caso.solicitud
+  // SO-06: ya respondida, resuelta o cerrada, «Respuesta esperada» ya no aplica.
+  const yaRespondida =
+    !!caso.solicitud?.respuesta ||
+    caso.solicitud?.estado === 'resuelta' ||
+    caso.solicitud?.estado === 'cerrada';
+  const sla = caso.solicitud && !yaRespondida
     ? resolveExpectedResponse(caso.solicitud.createdAt, caso.solicitud.slaVenceAt)
     : null;
   const slaDate = sla
@@ -184,6 +190,11 @@ function CaseDetail({
           <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
             {caso.titulo}
           </h1>
+          {caso.solicitud?.radicado && (
+            <p className="mt-1 font-mono text-sm text-fg-muted" data-testid="caso-radicado">
+              {caso.solicitud.radicado}
+            </p>
+          )}
           <div className="mt-2">
             <Badge variant={badge.variant} className="inline-flex items-center gap-1">
               <ToneIcon className="w-3 h-3" aria-hidden="true" />
@@ -275,6 +286,11 @@ function CaseDetail({
           </Button>
         </div>
       </section>
+
+      {/* SO-06/SO-18 (PQRS-FIX): la respuesta de la inmobiliaria y los archivos. */}
+      {caso.solicitud && (caso.solicitud.respuesta || caso.solicitud.adjuntos !== undefined) && (
+        <RespuestaYArchivosDelCaso caseId={caso.id} solicitud={caso.solicitud} />
+      )}
 
       {/* Ley 820 cost responsibility + approve-only quote affordance (SOLI-04) —
           shown only for PQRS cases with a backend-set cost determination. */}

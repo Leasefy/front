@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -67,6 +67,13 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Aprobar reparaciones',
     href: '/panel/aprobaciones',
     icon: Wrench,
+  },
+  // SO-27 (PQRS-FIX, 04-10-2026): el propietario radica sus PQRS y reporta
+  // daños desde su portal (antes sólo podía escribir en Mensajes).
+  {
+    label: 'Solicitudes',
+    href: '/panel/solicitudes',
+    icon: Lifebuoy,
   },
   {
     label: 'Mensajes',
@@ -141,6 +148,8 @@ const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
   { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
   { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
+  // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
+  { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
   { label: 'Mis informes', href: '/panel/informes', icon: Receipt },
   { label: 'Certificados de retención', href: '/panel/certificados', icon: SealCheck },
   { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },

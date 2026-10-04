@@ -15,7 +15,13 @@ const { crearMock, toastMock } = vi.hoisted(() => ({
   toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 vi.mock('sonner', () => ({ toast: toastMock }))
-vi.mock('@/lib/api/pqrs-agencia.service', () => ({ pqrsApi: { crear: crearMock } }))
+// PQRS-FIX (04-10): los responsables salen de `GET /inmobiliaria/pqrs/responsables` (SO-22).
+vi.mock('@/lib/api/pqrs-agencia.service', () => ({
+  pqrsApi: {
+    crear: crearMock,
+    responsables: () => Promise.resolve([{ userId: 'u1', nombre: 'Ana Agente', rol: 'AGENTE' }]),
+  },
+}))
 // El responsable viene preelegido con quien radica: acá la sesión es de otra
 // persona (`u-otro`), así que la preelección no aplica y el campo arranca vacío.
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'u-otro' } }) }))

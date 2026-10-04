@@ -113,7 +113,11 @@ vi.mock('@/components/ui/alert-dialog', () => {
   };
 });
 
+// PQRS-FIX (04-10): el cajón de radicar desde un mensaje (SO-30) se prueba aparte.
+vi.mock('@/components/inmobiliaria/pqrs/NuevaPqrsDrawer', () => ({ NuevaPqrsDrawer: () => null }));
 vi.mock('@phosphor-icons/react', () => ({
+  Lifebuoy: () => null,
+  Wrench: () => null,
   Chat: () => null,
   ChatCircle: () => null,
   MagnifyingGlass: () => null,
@@ -620,8 +624,9 @@ describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
        Las tres pegaban a rutas que el back no tiene: el servicio devuelve
        'unavailable' por 404 y las tres terminaban en un toast «estará
        disponible próximamente». Se retiraron, así que sin «Ver ficha» el menú
-       queda vacío y el `⋮` no se pinta. */
-    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
+       queda vacío y el `⋮` no se pinta.
+       SO-30 (PQRS-FIX, 04-10): en el panel de la inmobiliaria el `⋮` queda aunque
+       no haya ficha: desde el mensaje se radica la PQRS o la reparación. */
     expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
   });
 

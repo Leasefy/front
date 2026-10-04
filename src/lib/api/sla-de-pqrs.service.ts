@@ -23,6 +23,9 @@ export interface SlaDePqrs {
   porTipo: SlaPorTipoDePqrs;
   /** Los días hábiles que aplican cuando no hay nada configurado. */
   legalDiasHabiles: number;
+  /** SO-26 (04-10-2026): a quién se le escalan las vencidas. `null` = a nadie. */
+  escalarAUserId?: string | null;
+  escalarANombre?: string | null;
 }
 
 const BASE = '/inmobiliaria/pqrs/sla';
@@ -42,5 +45,10 @@ export const slaDePqrsApi = {
       Object.entries(porTipo).filter(([, v]) => typeof v === 'number'),
     );
     return apiClient.put<SlaDePqrs>(BASE, soloNumeros);
+  },
+
+  /** SO-26: a quién se le escalan las PQRS vencidas (sólo administrador). */
+  guardarEscalamiento(userId: string | null): Promise<SlaDePqrs> {
+    return apiClient.put<SlaDePqrs>(`${BASE}/escalamiento`, { userId });
   },
 };

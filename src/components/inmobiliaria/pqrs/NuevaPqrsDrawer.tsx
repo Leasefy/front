@@ -30,7 +30,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble'
-import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria'
+import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector'
 import { useAuth } from '@/lib/auth'
 import { ApiError } from '@/lib/api/client'
@@ -59,7 +59,19 @@ interface Props {
   onOpenChange: (open: boolean) => void
   /** Se radicó: la pantalla recarga la lista. */
   onCreated: () => void
+  /**
+   * SO-30 (04-10-2026): lo que llega ya puesto (desde un mensaje: el texto y la
+   * persona). Se aplica en cada apertura sobre el formulario vacío.
+   */
+  inicial?: Partial<PqrsFormulario>
 }
+
+/** SO-24: los mismos tipos que ofrece el portal (con Reparación y Sugerencia). */
+const OPCIONES_DE_TIPO: Array<{ valor: string; tipo: PqrsTipo; subtipo?: 'REPARACION' | 'SUGERENCIA'; titulo: string; descripcion: string }> = [
+  ...PQRS_TIPOS.map((t) => ({ valor: t, tipo: t, titulo: TIPO_LABEL[t], descripcion: TIPO_DESCRIPCION[t] })),
+  { valor: 'REPARACION', tipo: 'SOLICITUD', subtipo: 'REPARACION', titulo: 'Reparación', descripcion: 'Un daño en el inmueble (se atiende como solicitud).' },
+  { valor: 'SUGERENCIA', tipo: 'PETICION', subtipo: 'SUGERENCIA', titulo: 'Sugerencia', descripcion: 'Una idea para mejorar (se atiende como petición).' },
+]
 
 /** Una persona de la lista: lo que se copia al formulario al elegirla. */
 export interface PersonaElegible {
@@ -82,6 +94,7 @@ export function armarPayload(form: PqrsFormulario): CrearPqrsInput {
   if (descripcion) payload.descripcion = descripcion
   if (form.consignacionId) payload.consignacionId = form.consignacionId
   if (form.asignadoAUserId) payload.asignadoAUserId = form.asignadoAUserId
+  if (form.subtipo) payload.subtipo = form.subtipo
   return payload
 }
 
@@ -121,7 +134,7 @@ const ID_DEL_CAMPO: Partial<Record<keyof PqrsFormulario, string>> = {
   descripcion: 'pqrs-descripcion',
 }
 
-export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
+export function NuevaPqrsDrawer({ open, onOpenChange, onCreated, inicial }: Props) {
   const [form, setForm] = useState<PqrsFormulario>(PQRS_FORMULARIO_VACIO)
   const [tocado, setTocado] = useState<Record<string, boolean>>({})
   const [enviando, setEnviando] = useState(false)
@@ -134,7 +147,15 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
      fallo disfrazado de vacío (21-09). */
   const { consignaciones, isLoading: cargandoInmuebles, errorCrudo: errorDeInmuebles } =
     useConsignaciones()
-  const { agentes } = useAgentes()
+  // SO-22: cualquier miembro activo que pueda responder PQRS, no sólo asesores.
+  const [agentes, setAgentes] = useState<Array<{ userId: string; name: string }>>([])
+  useEffect(() => {
+    if (!open) return
+    pqrsApi
+      .responsables()
+      .then((r) => setAgentes(r.map((x) => ({ userId: x.userId, name: x.nombre }))))
+      .catch(() => setAgentes([]))
+  }, [open])
   const { user } = useAuth()
 
   // Las listas se leen al abrir: inquilinos y propietarios de la agencia. Si
@@ -176,7 +197,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
   // de esta solicitud.
   useEffect(() => {
     if (open) {
-      setForm(PQRS_FORMULARIO_VACIO)
+      setForm({ ...PQRS_FORMULARIO_VACIO, ...(inicial ?? {}) })
       setTocado({})
       setPersonaId('')
       setDelServidor({})
@@ -304,19 +325,23 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-fg">Tipo</legend>
               <RadioCardGroup
-                value={form.tipo}
-                onValueChange={(v) => set('tipo', v as PqrsTipo)}
+                value={form.subtipo ?? form.tipo}
+                onValueChange={(v) => {
+                  const opcion = OPCIONES_DE_TIPO.find((o) => o.valor === v)
+                  if (!opcion) return
+                  setForm((f) => ({ ...f, tipo: opcion.tipo, subtipo: opcion.subtipo }))
+                }}
                 orientation="horizontal"
                 aria-label="Tipo de solicitud"
                 className="grid grid-cols-1 sm:grid-cols-2 gap-2"
               >
-                {PQRS_TIPOS.map((tipo) => (
+                {OPCIONES_DE_TIPO.map((o) => (
                   <RadioCard
-                    key={tipo}
-                    value={tipo}
-                    label={TIPO_LABEL[tipo]}
-                    description={TIPO_DESCRIPCION[tipo]}
-                    data-testid={`tipo-${tipo}`}
+                    key={o.valor}
+                    value={o.valor}
+                    label={o.titulo}
+                    description={o.descripcion}
+                    data-testid={`tipo-${o.valor}`}
                   />
                 ))}
               </RadioCardGroup>
@@ -421,7 +446,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   options={opcionesAgente}
                   value={form.asignadoAUserId || undefined}
                   onChange={(v) => set('asignadoAUserId', v ?? '')}
-                  placeholder={opcionesAgente.length ? 'Elegir un responsable' : 'Sin agentes activos'}
+                  placeholder={opcionesAgente.length ? 'Elegir un responsable' : 'Nadie del equipo puede responder PQRS'}
                   searchPlaceholder="Nombre del agente"
                   disabled={opcionesAgente.length === 0}
                   contentClassName="z-[400]"

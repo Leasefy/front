@@ -22,7 +22,12 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({ useAgentes: () => ({ agentes: [] }) }))
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
 vi.mock('@/lib/api/pqrs-agencia.service', () => ({
-  pqrsApi: { actualizar: (...a: unknown[]) => actualizar(...a) },
+  pqrsApi: {
+    actualizar: (...a: unknown[]) => actualizar(...a),
+    // PQRS-FIX (04-10): el cajón pide el detalle y los responsables al abrir.
+    detalle: () => Promise.reject(new Error('sin detalle en la prueba')),
+    responsables: () => Promise.resolve([]),
+  },
 }))
 // El selector de estados como un <select>: lo que importa es qué hace al elegir.
 vi.mock('@/components/ui/combobox', () => ({

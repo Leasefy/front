@@ -125,6 +125,12 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
               <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
                 {c.titulo}
               </h3>
+              {/* SO-20: el número de radicado también en la lista. */}
+              {c.solicitud?.radicado && (
+                <span className="font-mono text-xs text-fg-muted" data-testid="caso-radicado-lista">
+                  {c.solicitud.radicado}
+                </span>
+              )}
               <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                 <ToneIcon className="w-3 h-3" aria-hidden="true" />
                 {c.estadoLabel}

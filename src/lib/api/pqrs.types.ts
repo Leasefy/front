@@ -71,6 +71,21 @@ export interface SolicitudPqrs {
   cotizacionMonto?: number;
   /** Aditivo/opcional — ISO, fijado server-side cuando el inquilino aprueba la cotización (SOLI-04). */
   cotizacionAprobadaAt?: string;
+  /** PQRS-FIX (04-10-2026, SO-06/SO-18/SO-20): lo que la persona ve de su caso. */
+  historial?: EventoDelPortal[];
+  respuestaDetalle?: { texto: string; medio: 'PORTAL' | 'CORREO' | 'TELEFONO' | 'PRESENCIAL'; at: string } | null;
+  adjuntos?: Array<{ id: string; nombre: string; tipo: string; tamano: number; subidoAt: string }>;
+  subtipo?: 'REPARACION' | 'SUGERENCIA' | null;
+  /** SO-27: el mandato (inmueble) del propietario. */
+  consignacionId?: string;
+}
+
+/** Un paso del caso, como lo ve quien radicó (sin el escalamiento interno). */
+export interface EventoDelPortal {
+  tipo: 'RADICADA' | 'ASIGNADA' | 'REASIGNADA' | 'EN_PROCESO' | 'EN_COTIZACION' | 'RESPUESTA' | 'RESUELTA' | 'CERRADA' | 'ADJUNTO';
+  at: string;
+  /** Quién la atiende (asignada) o el nombre del archivo (adjunto). */
+  detalle: string | null;
 }
 
 /** Conteos por estado para el resumen del ciclo PQRS. */

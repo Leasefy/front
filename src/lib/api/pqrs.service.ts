@@ -26,6 +26,7 @@
  */
 
 import { apiClient, ApiError } from './client';
+import { subirAdjuntoDePqrs } from './pqrs-adjuntos';
 import type { SolicitudPqrs, PqrsTipo } from './pqrs.types';
 
 // ---------------------------------------------------------------------------
@@ -72,6 +73,8 @@ export interface NuevaSolicitudInput {
   descripcion: string;
   contratoId?: string;
   propiedadId?: string;
+  /** SO-27: el propietario radica sobre SU inmueble (mandato). */
+  consignacionId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +112,8 @@ async function listMineConDisponibilidad(): Promise<MisSolicitudes> {
 /** Un contrato vigente del inquilino sobre el que puede radicar. */
 export interface ContratoParaRadicar {
   contratoId: string;
+  /** SO-27: en el portal del propietario, el mandato (inmueble). */
+  consignacionId?: string;
   /** Cómo se llama el inmueble (para elegir si hay más de uno). */
   inmueble: string;
 }
@@ -204,4 +209,22 @@ async function approveCotizacion(id: string): Promise<SolicitudPqrs> {
   }
 }
 
-export const pqrsApi = { listMine, listMineConDisponibilidad, getMine, create, approveCotizacion };
+/** SO-18: una foto o un PDF a MI solicitud, ya radicada. */
+async function subirAdjunto(id: string, archivo: File) {
+  return subirAdjuntoDePqrs(`/pqrs/${id}/adjuntos`, archivo);
+}
+
+/** Abrir un adjunto de mi solicitud (URL firmada de una hora). */
+async function abrirAdjunto(id: string, adjuntoId: string): Promise<{ url: string; nombre: string }> {
+  return apiClient.get<{ url: string; nombre: string }>(`/pqrs/${id}/adjuntos/${adjuntoId}`);
+}
+
+export const pqrsApi = {
+  listMine,
+  listMineConDisponibilidad,
+  getMine,
+  create,
+  approveCotizacion,
+  subirAdjunto,
+  abrirAdjunto,
+};

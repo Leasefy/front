@@ -46,9 +46,11 @@ import {
   ESTADO_BADGE,
   ESTADO_LABEL,
   SOLICITANTE_LABEL,
-  TIPO_LABEL,
+  inmuebleSinRepetir,
+  nombreDelTipo,
   textoSla,
 } from '@/components/inmobiliaria/pqrs/pqrs-reglas';
+import { AvisoDeVencidas } from '@/components/inmobiliaria/pqrs/AvisoDeVencidas';
 
 /** Resumen por estado del ciclo PQRS — color por estado (token semántico). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQRS_VACIO }[] = [
@@ -207,6 +209,15 @@ function PqrsContent() {
       */}
       <BandejaDePropuestas onRadicada={load} />
 
+      {/* SO-25/SO-26: vencidas y por vencer, y a quién se le escalan. */}
+      {!isLoading && !error ? (
+        <AvisoDeVencidas
+          vencidas={resumen.vencidas ?? 0}
+          porVencer={resumen.porVencer ?? 0}
+          onVer={(estado) => setFiltros((f) => ({ ...f, estado }))}
+        />
+      ) : null}
+
       {/* Resumen por estado */}
       <section className="space-y-3">
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
@@ -302,6 +313,8 @@ function PqrsContent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value="vencidas">Vencidas</SelectItem>
+              <SelectItem value="porVencer">Vencen en 2 días hábiles</SelectItem>
               {PQRS_ESTADOS.map((e) => (
                 <SelectItem key={e} value={e}>
                   {ESTADO_LABEL[e]}
@@ -386,10 +399,10 @@ function PqrsContent() {
                         <p className="text-fg font-medium truncate">{p.solicitanteNombre}</p>
                         <p className="text-caption text-fg-muted">{SOLICITANTE_LABEL[p.solicitanteTipo]}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">{TIPO_LABEL[p.tipo]}</TableCell>
+                      <TableCell className="whitespace-nowrap text-fg-muted">{nombreDelTipo(p)}</TableCell>
                       <TableCell className="max-w-[240px]">
                         <span className="text-fg-muted truncate block">
-                          {p.inmuebleLabel ?? t(k('sinInmueble'))}
+                          {inmuebleSinRepetir(p.inmuebleLabel) ?? t(k('sinInmueble'))}
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-fg-muted">

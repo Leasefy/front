@@ -68,6 +68,25 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
  * chip with a clarifying tooltip. Neutral styling only (no red, no ticking timer).
  */
 function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string }) {
+  // SO-06 (PQRS-FIX, 04-10-2026): respondida, resuelta o cerrada ya no tiene
+  // «Respuesta a más tardar…»: se dice cuándo se respondió.
+  if (s.estado === 'resuelta' || s.estado === 'cerrada' || s.respuestaDetalle) {
+    const cuando = s.respuestaDetalle?.at ?? s.resueltaAt ?? s.updatedAt;
+    const fecha = new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(cuando));
+    return (
+      <span>
+        {locale === 'es'
+          ? s.respuestaDetalle
+            ? `Respondida el ${fecha}`
+            : `${s.estado === 'cerrada' ? 'Cerrada' : 'Resuelta'} el ${fecha}`
+          : `Answered on ${fecha}`}
+      </span>
+    );
+  }
   const { date, estimated } = resolveExpectedResponse(s.createdAt, s.slaVenceAt);
   const dateStr = new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
@@ -126,6 +145,12 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
               <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
                 {s.asunto}
               </h3>
+              {/* SO-20: el número de radicado. */}
+              {s.radicado && (
+                <span className="font-mono text-xs text-fg-muted" data-testid="solicitud-radicado">
+                  {s.radicado}
+                </span>
+              )}
               <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                 <ToneIcon className="w-3 h-3" aria-hidden="true" />
                 {pqrsStatusToLabel(s.estado)}

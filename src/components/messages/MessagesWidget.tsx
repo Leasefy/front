@@ -19,7 +19,11 @@ import {
   Plus,
   IdentificationCard,
   Warning,
+  Lifebuoy,
+  Wrench,
 } from '@phosphor-icons/react';
+import { NuevaPqrsDrawer } from '@/components/inmobiliaria/pqrs/NuevaPqrsDrawer';
+import type { PqrsFormulario } from '@/components/inmobiliaria/pqrs/pqrs-reglas';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -231,6 +235,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  /*
+   * SO-30 (PQRS-FIX, 04-10-2026): desde un mensaje se radica la PQRS o la
+   * reparación con el texto y la persona ya puestos (antes había que copiarlo a
+   * mano en Solicitudes). Sólo en el panel de la inmobiliaria.
+   */
+  const [radicarDesdeMensaje, setRadicarDesdeMensaje] = useState<Partial<PqrsFormulario> | null>(null);
   // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
   // conversación — sólo se llenaba si el otro escribía primero.
   const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
@@ -280,7 +290,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     ? (locale === 'es' ? 'propietarios' : 'landlords')
     : (locale === 'es' ? 'inquilinos' : 'tenants');
   const headerTitle = isTenant ? t('messages.title') : t('landlord.messages.title');
-  const headerSubtitle = isTenant ? t('messages.subtitle') : t('landlord.messages.subtitle');
+  // SO-28 (PQRS-FIX, 04-10-2026): el propietario habla con SU inmobiliaria, no
+  // con «inquilinos y candidatos» (ese texto es del panel de la inmobiliaria).
+  const headerSubtitle = isTenant
+    ? t('messages.subtitle')
+    : enPanelDeInmobiliaria
+      ? t('landlord.messages.subtitle')
+      : locale === 'es'
+        ? 'Comunicación con tu inmobiliaria'
+        : 'Messages with your agency';
 
   // Auto-select: URL (?conversationId= new, ?applicationId= legacy,
   // resolved to the matching thread) > current selection > first available.
@@ -864,10 +882,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
                       {/* Sin ficha a dónde ir, el menú queda vacío: entonces no
                           hay menú. Un `⋮` que abre una lista de nada es ruido. */}
-                      {fichaDeLaContraparte && (
+                      {(fichaDeLaContraparte || enPanelDeInmobiliaria) && (
                       <div className="relative" ref={optionsListRef}>
                         <IconButton
                           variant="ghost"
+                          aria-haspopup="menu"
+                          aria-expanded={showOptionsList}
+                          data-testid="mensajes-mas-opciones"
                           onClick={() => setShowOptionsList(!showOptionsList)}
                           className={cn(
                             'rounded-full',
@@ -909,6 +930,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 actúan sobre el hilo. Sólo aparece cuando hay a
                                 dónde ir; ver `fichaDeLaContraparte`.
                               */}
+                              {fichaDeLaContraparte && (
                               <button
                                 type="button"
                                 onClick={verFicha}
@@ -918,6 +940,40 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 <IdentificationCard className="h-4 w-4 flex-shrink-0 text-fg-muted" />
                                 {fichaDeLaContraparte.etiqueta}
                               </button>
+                              )}
+                              {enPanelDeInmobiliaria && (
+                                <>
+                                  {(['PQRS', 'REPARACION'] as const).map((que) => (
+                                    <button
+                                      key={que}
+                                      type="button"
+                                      role="menuitem"
+                                      data-testid={que === 'PQRS' ? 'radicar-como-pqrs' : 'crear-reparacion'}
+                                      onClick={() => {
+                                        setShowOptionsList(false)
+                                        const ultimo = [...messages].reverse().find((m) => !m.isMine)
+                                        const texto = (ultimo?.content ?? '').trim()
+                                        setRadicarDesdeMensaje({
+                                          solicitanteTipo:
+                                            selectedConversation.perfil === 'LANDLORD' ? 'PROPIETARIO' : selectedConversation.perfil === 'TENANT' ? 'INQUILINO' : 'TERCERO',
+                                          solicitanteNombre: selectedConversation.name ?? '',
+                                          asunto: (texto.split(/\n|\. /)[0] ?? '').slice(0, 120),
+                                          descripcion: texto.slice(0, 2000),
+                                          ...(que === 'REPARACION' ? { tipo: 'SOLICITUD' as const, subtipo: 'REPARACION' as const } : {}),
+                                        })
+                                      }}
+                                      className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
+                                    >
+                                      {que === 'PQRS' ? (
+                                        <Lifebuoy className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                      ) : (
+                                        <Wrench className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                      )}
+                                      {que === 'PQRS' ? 'Radicar como PQRS' : 'Crear solicitud de reparación'}
+                                    </button>
+                                  ))}
+                                </>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -1366,6 +1422,16 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         onCerrar={() => setNuevoMensajeAbierto(false)}
         onHiloAbierto={alAbrirHiloNuevo}
       />
+      {enPanelDeInmobiliaria && (
+        <NuevaPqrsDrawer
+          open={radicarDesdeMensaje !== null}
+          onOpenChange={(abierto) => {
+            if (!abierto) setRadicarDesdeMensaje(null)
+          }}
+          onCreated={() => setRadicarDesdeMensaje(null)}
+          inicial={radicarDesdeMensaje ?? undefined}
+        />
+      )}
     </div>
   );
 }

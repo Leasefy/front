@@ -58,6 +58,8 @@ import {
 } from '@/lib/api/pqrs.service';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
 
 interface NuevaSolicitudModalProps {
@@ -102,6 +104,10 @@ const TIPO_OPTIONS: { value: PqrsTipo; es: string; en: string }[] = [
 ];
 
 export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contratos = [] }: NuevaSolicitudModalProps) {
+  /** SO-27: en el portal del propietario las opciones son sus inmuebles (mandatos). */
+  const contratoDelPropietario = (id: string) =>
+    contratos.some((c) => c.contratoId === id && c.consignacionId === id);
+  const esDelPropietario = contratos.length > 0 && contratos.every((c) => !!c.consignacionId);
   const { locale } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,11 +161,16 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
       e.target.value = '';
       const accepted: File[] = [];
       for (const f of picked) {
-        if (f.size > MAX_BYTES) {
+        // SO-18: el mismo aviso que el back (tipo y 10 MB) ANTES de subir; un
+        // `.exe` ya no entra a la lista. La regla la pone el back por los bytes.
+        const problema = f.size > MAX_BYTES || problemaDelAdjunto(f);
+        if (problema) {
           toast.error(
             locale === 'es'
-              ? `"${f.name}" supera el límite de 10 MB.`
-              : `"${f.name}" exceeds the 10 MB limit.`,
+              ? typeof problema === 'string'
+                ? problema
+                : `"${f.name}" supera el límite de 10 MB.`
+              : `"${f.name}" is not a photo or PDF under 10 MB.`,
           );
           continue;
         }
@@ -185,7 +196,11 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
       const faltan: Partial<Record<CampoDeLaSolicitud, string>> = {};
       if (faltaElContrato) {
         faltan.contratoId =
-          locale === 'es' ? 'Elige sobre cuál contrato es tu solicitud.' : 'Choose which lease this is about.';
+          locale === 'es'
+            ? esDelPropietario
+              ? 'Elige sobre cuál inmueble es tu solicitud.'
+              : 'Elige sobre cuál contrato es tu solicitud.'
+            : 'Choose which lease this is about.';
       }
       if (!asuntoTrim) faltan.asunto = locale === 'es' ? 'Escribe el asunto.' : 'Write a subject.';
       if (!descripcionTrim) {
@@ -206,30 +221,50 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
         tipo,
         asunto: asuntoTrim,
         descripcion: descripcionTrim,
-        ...(contratoElegido ? { contratoId: contratoElegido } : {}),
+        ...(contratoElegido
+          ? contratoDelPropietario(contratoElegido)
+            ? { consignacionId: contratoElegido }
+            : { contratoId: contratoElegido }
+          : {}),
         ...(prefill?.propiedadId ? { propiedadId: prefill.propiedadId } : {}),
       };
 
-      await pqrsApi.create(input);
+      const creada = await pqrsApi.create(input);
 
-      // Adjuntos: el upload genérico POST /documents se retiró del front (las
-      // mutaciones de documentos vigentes son application-scoped) y todavía no
-      // existe una ruta pqrs-scoped para evidencia. Honesto: la solicitud SÍ se
-      // creó; las fotos avisan "próximamente" — nunca un upload huérfano ni un
-      // "adjuntado" fabricado.
-      if (files.length > 0) {
-        toast.info(
-          locale === 'es'
-            ? 'Tu solicitud se envió sin las fotos: los adjuntos estarán disponibles próximamente.'
-            : 'Your request was sent without the photos: attachments will be available soon.',
-        );
+      /*
+       * SO-18 (PQRS-FIX, 04-10-2026): las fotos y PDF se suben DE VERDAD, una por
+       * una, a la solicitud ya radicada (`POST /pqrs/:id/adjuntos`; el back mira
+       * los bytes y el tamaño). La solicitud ya existe: si un archivo no sube, se
+       * dice cuál y por qué, y se puede volver a mandar desde el caso.
+       */
+      const fallidos: string[] = [];
+      for (const archivo of files) {
+        try {
+          await pqrsApi.subirAdjunto(creada.id, archivo);
+        } catch (e) {
+          fallidos.push(
+            mensajeParaLaPersona(e, {
+              porDefecto: `No se pudo subir «${archivo.name}».`,
+              accion: 'subir el archivo',
+            }),
+          );
+        }
       }
 
+      const radicado = creada.radicado ? ` con el número ${creada.radicado}` : '';
       toast.success(
         locale === 'es'
-          ? 'Solicitud enviada. Te avisamos cuando avance.'
-          : 'Request submitted. We will let you know as it progresses.',
+          ? `Solicitud radicada${radicado}. Te avisamos en tu portal cuando avance.`
+          : `Request filed${radicado}. We will let you know as it progresses.`,
       );
+      if (fallidos.length > 0) {
+        toast.error(
+          locale === 'es'
+            ? `${fallidos.length === 1 ? 'Un archivo no se adjuntó' : `${fallidos.length} archivos no se adjuntaron`}: puedes volver a subirlo desde tu caso.`
+            : 'Some files were not attached: you can upload them again from your case.',
+          { description: fallidos.join(' · ') },
+        );
+      }
       onCreated?.();
       onClose();
     } catch (err) {
@@ -283,7 +318,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
         {variosContratos && !prefill?.contratoId && (
           <div>
             <label htmlFor="solicitud-contrato" className="block text-sm font-medium text-fg mb-1.5">
-              {locale === 'es' ? '¿Sobre cuál contrato?' : 'Which lease?'}
+              {locale === 'es' ? (esDelPropietario ? '¿Sobre cuál inmueble?' : '¿Sobre cuál contrato?') : 'Which lease?'}
             </label>
             <select
               id="solicitud-contrato"
@@ -399,7 +434,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,application/pdf"
+            accept={ACCEPT_DE_ADJUNTOS}
             className="hidden"
             onChange={handleFilesSelected}
           />

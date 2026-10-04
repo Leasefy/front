@@ -24,6 +24,8 @@ const RUTAS_DEL_PROPIETARIO_DE_INMOBILIARIA = [
   '/panel/informes',
   '/panel/certificados',
   '/panel/mensajes',
+  // SO-27 (PQRS-FIX, 04-10-2026): sus PQRS y reportes de daños a la inmobiliaria.
+  '/panel/solicitudes',
   '/panel/notificaciones',
   '/panel/perfil',
   '/panel/configuracion',

@@ -36,6 +36,7 @@ import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parse
 import { useAparecer } from './cuentas-del-extracto';
 import { leerLaRelacion, mapeoSugerido, pesos } from './cierre-del-mes';
 import { diaLegible } from './formato';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 
 const ESTADO_DE_LA_LINEA: Record<EstadoDeLaLinea, { texto: string; variante: 'success' | 'warning' | 'secondary' | 'destructive' }> = {
   CRUZADO: { texto: 'Cruzada', variante: 'success' },
@@ -57,6 +58,8 @@ export function resumenDeLaRelacion(r: { cruzadas: number; aLaPersona: number; s
 
 export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConciliar: boolean; onCambio: () => void }) {
   const aparecer = useAparecer();
+  // «Centavos en todo»: con la llave de la tesorería la relación trae sus centavos tal cual.
+  const conCentavos = usePlataConCentavos('tesoreria_y_conciliacion');
   const [datos, setDatos] = useState<AseguradorasDeLaConciliacion | null>(null);
   const [anteriores, setAnteriores] = useState<CabezaDeLaRelacion[]>([]);
   const [abierta, setAbierta] = useState(false);
@@ -107,7 +110,7 @@ export function RelacionDeAseguradora({ puedeConciliar, onCambio }: { puedeConci
   };
 
   const cargar = async () => {
-    const lectura = leerLaRelacion(filas, mapeo);
+    const lectura = leerLaRelacion(filas, mapeo, { conCentavos });
     setMalas(lectura.malas);
     if (lectura.malas.length > 0 || lectura.filas.length === 0) return;
     setOcupado('cargar');

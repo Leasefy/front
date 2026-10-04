@@ -56,6 +56,30 @@ describe('formatCurrency', () => {
     expect(formatCurrency(42)).toMatch(/^\$ /);
     expect(formatCurrency(42, 'en')).toMatch(/^\$ /);
   });
+
+  // 🔴 «Centavos en todo» (C1-C, riesgo 2 del diseño): la plata viaja como
+  // number. Un TEXTO pintaba «$ 0» callado; en una prueba, falla en voz alta.
+  describe('🔴 si recibe texto (plata que se escapó sin convertir)', () => {
+    it('LANZA en una prueba, en las dos copias y en el doble de i18n', async () => {
+      expect(() => formatCurrency('1500000' as never)).toThrow(TypeError);
+      expect(() => formatCurrency('1500000' as never)).toThrow(/recibió string/);
+      const { formatCurrency: deInmobiliaria } = await import('@/lib/types/inmobiliaria');
+      expect(() => deInmobiliaria('1500000' as never)).toThrow(TypeError);
+      const { useI18n } = await import('@/lib/i18n/i18n-test-stub');
+      expect(() => useI18n().formatCurrency('1500000' as never)).toThrow(TypeError);
+    });
+
+    it('un objeto (un Decimal que no pasó por JSON) también', () => {
+      expect(() => formatCurrency({ toFixed: () => '1500000' } as never)).toThrow(TypeError);
+    });
+
+    it('null, undefined y NaN siguen siendo «$ 0» (campo opcional), y un number no cambia', () => {
+      expect(formatCurrency(null)).toBe('$ 0');
+      expect(formatCurrency(undefined)).toBe('$ 0');
+      expect(formatCurrency(Number.NaN)).toBe('$ 0');
+      expect(formatCurrency(2500000)).toBe('$ 2.500.000');
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

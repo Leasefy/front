@@ -56,9 +56,13 @@ import {
   type ResultadoDelReproceso,
 } from '@/lib/api/cuentas-de-las-diferencias';
 import { EsqueletoDeSeccion } from './piezas';
+import { decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 
+/** P8 a («centavos en todo»): los centavos sólo si los hay (el 4×1000 los trae, P4 a). */
 function plata(cop: number): string {
-  return `$${Math.round(cop).toLocaleString('es-CO')}`;
+  return seMuestranLosCentavos(cop)
+    ? `$${cop.toLocaleString('es-CO', decimalesEnPantalla(cop))}`
+    : `$${Math.round(cop).toLocaleString('es-CO')}`;
 }
 
 /** Lo que dice el toast después de «Asentarlas» (seguimiento 6). */

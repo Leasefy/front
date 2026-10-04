@@ -254,7 +254,7 @@ describe('extracto con deducciones', () => {
       },
     });
 
-    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$0');
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$ 0');
     const bloque = container.querySelector('[data-testid="bloque-de-deducciones"]');
     expect(bloque?.textContent).toContain('Saldo en contra del mes anterior');
     expect(bloque?.textContent).toContain('Descuento: Predial 2026');
@@ -265,7 +265,7 @@ describe('extracto con deducciones', () => {
 
   it('sin deducciones el extracto se lee como siempre', async () => {
     await render({ extracto: { ...extracto, totals: { ...extracto.totals, totalNet: 720_000 } } });
-    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$720.000');
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$ 720.000');
     expect(container.querySelector('[data-testid="bloque-de-deducciones"]')).toBeNull();
   });
 });

@@ -650,6 +650,56 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - El «correo obligatorio» de Nuevo inquilino y del propietario sale de `terceros-sin-correo` con `cobros:view` y, sin él (el
   asesor), de `exigeCorreoDelTercero` de `GET /inmobiliaria/agency` (`lib/terceros/correo-obligatorio.ts`).
 
+## Centavos en todo: la plata con centavos detrás de las llaves del back (C3-FRONT, 03-10-2026)
+
+Nico: «que no se redondee, se trae tal cual» y «centavos en todo». El front NO decide: pregunta al back
+`GET /config/plata` → `{ conCentavos: { [area]: boolean } }` (9 áreas de C2; `src/lib/plata/con-centavos.ts`,
+servicio `src/lib/api/config-de-plata.service.ts`). Una pregunta cada 60 s compartida por todos; sólo un `true`
+literal prende un área; un back viejo (404), caído o raro = sin centavos, EXACTAMENTE como hoy.
+
+- **Hook** `usePlataConCentavos(areas)` (`lib/plata/use-plata-con-centavos.ts`): `false` en el servidor, en la
+  primera pintada y sin `areas`. Con varias áreas, TODAS. La deuda (canon, recibos, conceptos) pide las dos:
+  `AREAS_DE_LA_DEUDA`. Fuera de React (servicios, traductores) se mira la foto `configDePlataAhora()`.
+- **Campos**: `MoneyInput` con `areas` acepta coma decimal (hasta 2; el tercero se frena con una pista animada,
+  `Presence` de Cadence, i18n `plata.hastaDosDecimales`) y entrega `"1234567.29"`; sin `areas` es el de siempre.
+  `MoneyInputNumerico` (valor `number`, `NaN` = vacío) y `CampoDePlata` (= el `CurrencyInput` de Cadence con la
+  llave apagada) para las pantallas que guardaban número. Cableados: contrato nuevo/editar (deuda; el depósito al
+  editar sigue entero porque `UpdateContractDto.deposit` es `@IsInt`), conceptos, recibo de caja, deducciones
+  (`dispersion_y_liquidacion`), asiento manual y de apertura (`contabilidad_facturacion_y_exogena`), extracto,
+  saldo del cierre y relación de aseguradoras (`tesoreria_y_conciliacion`), migración de contratos
+  (`contratos_y_cuotas`).
+- **Espejos**: cada `limites-*` / regla de entero recibe la llave (`esPlataQueSeAcepta`, `fraseDeLaPlata`): la
+  frase «sin centavos» SÓLO con la llave apagada; prendida, `MENSAJE_PLATA_HASTA_EL_CENTAVO` (la del back). Las
+  cuentas espejo del back (`imputarPago`, `liquidar`, la partida doble, el cuadre del extracto, la apertura) van
+  en centavos enteros con la llave. Un espejo se prende SÓLO si el DTO del back ya usa `@EsPlataDeLasAreas`.
+- **Formatos (P8 a)** en `lib/plata/escribir-plata.ts`: en pantalla, centavos SÓLO si el valor los tiene Y
+  alguna llave está prendida (`seMuestranLosCentavos`; la respuesta la pide `components/plata/LlavesDeLaPlata`
+  en el layout raíz y el `formatCurrency` de `useI18n` se repinta al cambiar). Con TODAS apagadas, cada pantalla
+  es EXACTAMENTE la de hoy, también una cifra con fracción (regla de Nico «no dañar lo que ya estaba»).
+  `formatCurrency` de las dos copias, `plataEnPantalla(locale, opcionesDeHoy)` en lugar de un `Intl` con
+  `maximumFractionDigits: 0`; con un entero el texto es idéntico al de antes; en documentos (PDF del estado de
+  cuenta, Excel/PDF del cierre, PDF de la liquidación del recaudo) con la llave del área SIEMPRE dos decimales
+  (`formatCurrencyEnDocumento`, `plataEnDocumento`), sin ella como siempre. Precios del SaaS (P12), avalúos,
+  conteos y abreviaturas («$620 M») no se tocan.
+- **Wompi**: las rutas `wompi-session` (arriendo y acuerdo) calculan `amountInCents` con `aCentavosWompi`
+  ($1.234.567,29 → 123456729), nunca `pesos * 100`.
+
+
+### C4 — limpieza de los centavos (03-10-2026)
+- 🔴 **UNA sola `formatCurrency`**: la de `@/lib/types/inmobiliaria` delega en la de `@/lib/format` → «$ 1.234.567»
+  CON espacio en todas las pantallas (C1-ESQUEMA Q4 a; antes esa copia escribía «$1.234.567» y «$-2.500»). Una
+  prueba que busque la cifra la escribe con espacio (o con `\$ ?` en una regex).
+- **Renovación por IPC** (Q2 a): `calculateNewRent(canon, ipc, { conCentavos })` / `topeConIpc` = `canonConIncremento`
+  del back; `AREAS_DE_LA_RENOVACION` (`lib/renovaciones/reglas.ts`: `inmuebles_y_mandato` + la deuda) prende el tope,
+  el `MoneyInput` del canon y `erroresDeLosValores(…, { canonConCentavos })`. El depósito al EDITAR un contrato
+  acepta centavos con la deuda (como al crear).
+- **Documentos con la llave apagada (Q3 a)**: `decimalesEnDocumento` / `formatCurrencyEnDocumento` escriben los
+  centavos GUARDADOS (`lib/plata/centavos-guardados.ts`); un entero o una cuenta a medias, como hoy.
+- **La llave del MICRO** (Q4 a): `usePlataDelMicroConCentavos()` (`lib/plata/micro-con-centavos.ts`, `GET
+  /config/plata` del micro; micro viejo o falla = sin centavos). Todavía NO la usa ningún formulario (acuerdos de
+  pago y facturas de proveedor siguen en pesos enteros): falta que `MoneyInput` acepte una llave que no sea de áreas
+  del back.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

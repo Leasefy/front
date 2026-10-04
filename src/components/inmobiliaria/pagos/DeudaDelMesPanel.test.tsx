@@ -789,22 +789,22 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     montar()
 
     // Las cifras grandes no cambian: siguen siendo capital.
-    expect($('[data-testid="mes-falta"]').textContent).toBe('$6.000.000')
-    expect($('[data-testid="mes-cartera"]').textContent).toBe('$2.000.000')
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$ 6.000.000')
+    expect($('[data-testid="mes-cartera"]').textContent).toBe('$ 2.000.000')
     expect($('[data-testid="mes-intereses"]').textContent).toBe(
-      'cartera.interes.masIntereses:$52.000',
+      'cartera.interes.masIntereses:$ 52.000',
     )
     // `toContain` y no `toBe` desde el 21-09: el resumen del mes dejó de ser
     // tres fichas y pasó a ser una frase, así que este renglón vive dentro de
     // ella y trae el espacio y el punto de la oración. Lo que la prueba cuida
     // es que el interés se diga aparte del capital, no la puntuación.
     expect($('[data-testid="mes-falta-con-intereses"]').textContent).toContain(
-      'cartera.interes.conIntereses:$6.052.000',
+      'cartera.interes.conIntereses:$ 6.052.000',
     )
     expect(todos('[data-testid="cuota-intereses"]').map((e) => e.textContent)).toEqual(
       expect.arrayContaining([
-        'cartera.interes.masIntereses:$40.000',
-        'cartera.interes.masIntereses:$12.000',
+        'cartera.interes.masIntereses:$ 40.000',
+        'cartera.interes.masIntereses:$ 12.000',
       ]),
     )
   })

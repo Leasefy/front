@@ -17,6 +17,8 @@
  * tope de la corrección a mano. Una celda nunca tira el archivo.
  */
 
+import { esPlataQueSeAcepta, fraseDeLaPlata } from '@/lib/plata/con-centavos';
+
 /** El canon más alto al corregir una fila a mano: $2.000.000.000 al mes. */
 export const CANON_MAXIMO_AL_CORREGIR = 2_000_000_000;
 
@@ -64,10 +66,20 @@ export const DIAS_HACIA_ADELANTE_DE_LA_FECHA_DE_CORTE = 366;
 
 const M = MENSAJES_DE_LA_MIGRACION;
 
+/**
+ * La llave de los contratos (`contratos_y_cuotas`, la de `MigrarContratoDto` y
+ * `ResolverFilaDto` del back): con ella el canon acepta hasta dos decimales y
+ * la frase es la de «hasta dos decimales»; sin ella, pesos enteros y «sin
+ * centavos», como siempre («centavos en todo», C3-FRONT).
+ */
+export interface OpcionesDeLaPlata {
+  conCentavos?: boolean;
+}
+
 /** El error del canon escrito a mano, o `null` si sirve. */
-export function errorDelCanon(texto: string): string | null {
+export function errorDelCanon(texto: string, { conCentavos = false }: OpcionesDeLaPlata = {}): string | null {
   const n = Number(texto);
-  if (!Number.isFinite(n) || !Number.isInteger(n)) return M.canonEntero;
+  if (!esPlataQueSeAcepta(n, conCentavos)) return fraseDeLaPlata(M.canonEntero, conCentavos);
   if (n <= 0) return M.canonMinimo;
   if (n > CANON_MAXIMO_AL_CORREGIR) return M.canonMaximoAlCorregir;
   return null;
@@ -141,9 +153,12 @@ export function errorDeLaFechaDeCorte(dia: string, hoy: Date = new Date()): stri
  * que diga si el lector deja pasar algo que el back tumbaría con el archivo
  * entero.
  */
-export function errorDeLaPlataPorPropietario(lista: readonly number[] | null | undefined): string | null {
+export function errorDeLaPlataPorPropietario(
+  lista: readonly number[] | null | undefined,
+  { conCentavos = false }: OpcionesDeLaPlata = {},
+): string | null {
   if (!lista) return null;
-  if (lista.some((n) => !Number.isInteger(n))) return M.canonEntero;
+  if (lista.some((n) => !esPlataQueSeAcepta(n, conCentavos))) return fraseDeLaPlata(M.canonEntero, conCentavos);
   if (lista.some((n) => n < 0)) return M.canonPorPropietarioNegativo;
   return null;
 }

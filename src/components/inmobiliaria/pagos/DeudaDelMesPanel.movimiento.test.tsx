@@ -200,7 +200,7 @@ describe('Pagos — la deuda del mes se mueve', () => {
   })
 
   it('🔴 al cambiar de mes, «falta» CUENTA hasta la cifra nueva, con el mismo formato', async () => {
-    expect($('[data-testid="mes-falta"]').textContent).toBe('$6.000.000')
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$ 6.000.000')
     act(() => {
       const select = $('[data-testid="select-mes"]') as HTMLSelectElement
       const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
@@ -210,9 +210,9 @@ describe('Pagos — la deuda del mes se mueve', () => {
     await esperar(60)
     // A mitad del conteo: ya no es la vieja ni todavía la nueva.
     const aMitad = $('[data-testid="mes-falta"]').textContent
-    expect(aMitad).not.toBe('$3.000.000')
+    expect(aMitad).not.toBe('$ 3.000.000')
     await esperar(800)
-    expect($('[data-testid="mes-falta"]').textContent).toBe('$3.000.000')
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$ 3.000.000')
   })
 })
 

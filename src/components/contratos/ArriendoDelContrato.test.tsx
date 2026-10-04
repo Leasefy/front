@@ -158,16 +158,16 @@ describe('ArriendoDelContrato — un contrato AL DÍA, de arriba abajo', () => {
   })
 
   it('3 · cuánto paga y cuándo, sin «Día 21 / +2 de plazo»', () => {
-    expect(texto('canon-del-arriendo')).toBe('$1.650.000 al mes')
+    expect(texto('canon-del-arriendo')).toBe('$ 1.650.000 al mes')
     expect(texto('ritmo-de-pago')).toBe('Paga el 21 de cada mes, con 2 días de plazo.')
     expect(container.textContent).not.toContain('+2 de plazo')
   })
 
   it('4 · cómo va con la plata, desde el estado de cuenta', () => {
-    expect(texto('resta-por-pagar')).toBe('$19.214.516')
+    expect(texto('resta-por-pagar')).toBe('$ 19.214.516')
     expect(texto('cuotas-pagadas')).toBe('13 de 24 cuotas pagadas')
     expect(texto('proxima-cuota')).toBe('21 sep 2026')
-    expect(container.textContent).toContain('$1.650.000 · en 5 días')
+    expect(container.textContent).toContain('$ 1.650.000 · en 5 días')
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('AL_DIA')
     expect(texto('estado-nombre')).toBe('Al día')
     expect(texto('estado-detalle')).toBe('Nada vencido')
@@ -195,13 +195,13 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
 
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('VENCIDO_EN_PLAZO')
     expect(texto('estado-nombre')).toBe('Vencido, en plazo')
-    expect(texto('estado-detalle')).toBe('$1.650.000 vencido · le queda 1 día de plazo')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 vencido · le queda 1 día de plazo')
     expect(texto('proxima-cuota')).toBe('21 oct 2026')
   })
 
   it('el último día de plazo se dice así', async () => {
     await pintar(contrato(), '2026-09-23')
-    expect(texto('estado-detalle')).toBe('$1.650.000 vencido · hoy es su último día de plazo')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 vencido · hoy es su último día de plazo')
   })
 
   it('EN CARTERA: pasó el plazo, con los días de mora', async () => {
@@ -209,7 +209,7 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
 
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('EN_CARTERA')
     expect(texto('estado-nombre')).toBe('En cartera')
-    expect(texto('estado-detalle')).toBe('$1.650.000 en cartera · 12 días de mora')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 en cartera · 12 días de mora')
   })
 
   it('cartera y algo en plazo a la vez: dice cuánto es cartera y cuánto va vencido en total', async () => {
@@ -219,7 +219,7 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
     await pintar(contrato(), '2026-09-22')
 
     expect(texto('estado-nombre')).toBe('En cartera')
-    expect(texto('estado-detalle')).toBe('$1.650.000 en cartera · 30 días de mora $3.300.000 vencido en total')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 en cartera · 30 días de mora $ 3.300.000 vencido en total')
   })
 
   it('con el plazo heredado todavía por llegar, no afirma ningún estado', async () => {
@@ -255,7 +255,7 @@ describe('ArriendoDelContrato — cuando el estado de cuenta no está', () => {
 
     expect($('cuenta-cargando')).not.toBeNull()
     expect($('resta-por-pagar')).toBeNull()
-    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent).not.toContain('$ 0')
   })
 
   it('fallo: lo dice y deja reintentar', async () => {

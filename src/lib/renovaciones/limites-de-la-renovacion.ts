@@ -11,6 +11,7 @@
  * Si cambia uno, cambia el otro.
  */
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { esPlataQueSeAcepta, fraseDeLaPlata } from '@/lib/plata/con-centavos'
 
 /** El tope de la columna `int4`, en una cifra que se lee. */
 export const VALOR_MAXIMO_DE_LA_RENOVACION_COP = 2_000_000_000
@@ -98,12 +99,20 @@ const REGLAS: ReadonlyArray<{
  */
 export function erroresDeLosValores(
   valores: ValoresDeLaRenovacion,
+  /**
+   * «Centavos en todo» (C4): con las llaves de la renovación
+   * (`AREAS_DE_LA_RENOVACION`) el canon propuesto y el negociado aceptan hasta
+   * dos decimales, como `UpdateRenovacionStageDto`; la administración sigue en
+   * pesos enteros. Sin la opción, exactamente como hoy.
+   */
+  { canonConCentavos = false }: { canonConCentavos?: boolean } = {},
 ): Partial<Record<keyof ValoresDeLaRenovacion, string>> {
   const errores: Partial<Record<keyof ValoresDeLaRenovacion, string>> = {}
   for (const r of REGLAS) {
     const v = valores[r.campo]
     if (v === null || v === undefined) continue
-    if (!Number.isInteger(v)) errores[r.campo] = r.entero
+    const conCentavos = canonConCentavos && r.campo !== 'negotiatedAdminFee'
+    if (!esPlataQueSeAcepta(v, conCentavos)) errores[r.campo] = fraseDeLaPlata(r.entero, conCentavos)
     else if (v < 0) errores[r.campo] = r.negativo
     else if (v > VALOR_MAXIMO_DE_LA_RENOVACION_COP) errores[r.campo] = r.maximo
   }
@@ -115,8 +124,11 @@ export function erroresDeLosValores(
  * (`UpdateRenovacionStageDto`). Devuelve la primera frase que falle, o
  * `undefined` si todo cabe. Un valor ausente no opina.
  */
-export function revisarValoresDeLaRenovacion(valores: ValoresDeLaRenovacion): string | undefined {
-  const errores = erroresDeLosValores(valores)
+export function revisarValoresDeLaRenovacion(
+  valores: ValoresDeLaRenovacion,
+  opciones: { canonConCentavos?: boolean } = {},
+): string | undefined {
+  const errores = erroresDeLosValores(valores, opciones)
   for (const r of REGLAS) {
     if (errores[r.campo]) return errores[r.campo]
   }

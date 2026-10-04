@@ -131,6 +131,7 @@ import {
   MAX_CONTRATOS_POR_ARCHIVO,
   MENSAJES_DE_LA_MIGRACION,
 } from "@/components/migracion/limites-de-la-migracion";
+import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
@@ -314,6 +315,8 @@ export function MigrarContratos({
    * «hay uno y no se pudo leer» — el segundo caso también merece su tarjeta,
    * con «Descartar» a la mano.
    */
+  // «Centavos en todo» (C3-FRONT): la llave de los contratos (`MigrarContratoDto`).
+  const contratosConCentavos = usePlataConCentavos("contratos_y_cuotas");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Fila[]>([]);
@@ -799,7 +802,9 @@ export function MigrarContratos({
       // Cada campo mapeado viaja; lo que no se mapeó (o quedó vacío) viaja
       // ausente, nunca un default inventado — ver `armar-fila.ts`.
       duenosDelArchivo.current = duenosDe(filas, mapeo);
-      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo));
+      // «Centavos en todo»: con la llave de los contratos el canon y el
+      // depósito del archivo viajan tal cual, con sus centavos.
+      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo, { conCentavos: contratosConCentavos }));
 
       const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey);
       // El lote es SIEMPRE del servidor (contrato §3.2.A2) — generarlo acá
@@ -822,7 +827,7 @@ export function MigrarContratos({
     } finally {
       setCargando(false);
     }
-  }, [filas, mapeo, idempotencyKey]);
+  }, [filas, mapeo, idempotencyKey, contratosConCentavos]);
 
   /*
    * Volver a cruzar las filas pendientes contra lo que los otros pasos ya

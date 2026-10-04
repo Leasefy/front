@@ -13,6 +13,7 @@
  */
 
 import { MAX_COP_POR_MOVIMIENTO, type MovimientoNuevo } from '@/lib/api/contabilidad.service';
+import { aCentavos } from '@/lib/plata/plata';
 
 /** A quién se le imputa un saldo de cartera o de terceros. */
 export type TipoDeTerceroDeApertura = 'PROPIETARIO' | 'ARRENDATARIO';
@@ -91,13 +92,16 @@ export function totalesDeApertura(filas: readonly FilaDeApertura[]): {
   creditos: number;
   diferencia: number;
 } {
+  // En centavos enteros («centavos en todo»): con la llave de la contabilidad
+  // los saldos traen centavos y 0,1 + 0,2 tiene que cuadrar con 0,3. Con los
+  // pesos enteros de hoy da exactamente lo mismo.
   let debitos = 0;
   let creditos = 0;
   for (const f of filasConContenido(filas)) {
-    debitos += monto(f.debitoCop);
-    creditos += monto(f.creditoCop);
+    debitos += aCentavos(monto(f.debitoCop));
+    creditos += aCentavos(monto(f.creditoCop));
   }
-  return { debitos, creditos, diferencia: debitos - creditos };
+  return { debitos: debitos / 100, creditos: creditos / 100, diferencia: (debitos - creditos) / 100 };
 }
 
 /** `AAAA-MM-DD` y que el día exista: `aDiaContable` del back rechaza el resto. */

@@ -442,14 +442,14 @@ describe('P-02 — en copropiedad, cada tarjeta dice SU parte', () => {
     await render();
     const parte = container.querySelector('[data-testid="su-parte-del-canon"]')!;
     expect(parte).not.toBeNull();
-    expect(parte.textContent).toContain('$1.325.000');
-    expect(parte.textContent).toContain('inmobiliaria.propietarios.detail.suParteDe($2.650.000)');
+    expect(parte.textContent).toContain('$ 1.325.000');
+    expect(parte.textContent).toContain('inmobiliaria.propietarios.detail.suParteDe($ 2.650.000)');
   });
 
   it('sin `inmuebles` (un back anterior) queda el canon del mandato, como antes', async () => {
     datos.consignaciones = [consignacion];
     await render();
     expect(container.querySelector('[data-testid="su-parte-del-canon"]')).toBeNull();
-    expect(container.textContent).toContain('$2.650.000');
+    expect(container.textContent).toContain('$ 2.650.000');
   });
 });

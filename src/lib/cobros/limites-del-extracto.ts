@@ -18,6 +18,8 @@
  *   dividirlo.
  */
 
+import { fraseDeLaPlata } from '@/lib/plata/con-centavos';
+
 export const VALOR_MAXIMO_DEL_MOVIMIENTO_COP = 1_000_000_000_000;
 export const MAX_FILAS_DEL_EXTRACTO = 20_000;
 /**
@@ -42,14 +44,19 @@ export const MENSAJES_DEL_EXTRACTO = {
  * Lo que la persona escribe en «Saldo inicial» / «Saldo final»: `undefined` si
  * lo dejó vacío, el número si se lee, o la frase del error. Acepta «$ 1.230.000»,
  * «-45.000» y «(45.000)», como el archivo.
+ *
+ * «Centavos en todo» (C3-FRONT): con la llave de la tesorería, `parsear` lee
+ * los centavos tal cual y la frase de un saldo que no sirve es la de «hasta dos
+ * decimales» (la del back con `@EsPlataDeLasAreas`); sin ella, la de siempre.
  */
 export function leerSaldoEscrito(
   texto: string,
   parsear: (t: string) => number | null,
+  { conCentavos = false }: { conCentavos?: boolean } = {},
 ): { valor?: number; error?: string } {
   if (!texto.trim()) return {};
   const n = parsear(texto);
-  if (n === null) return { error: MENSAJES_DEL_EXTRACTO.saldoEntero };
+  if (n === null) return { error: fraseDeLaPlata(MENSAJES_DEL_EXTRACTO.saldoEntero, conCentavos) };
   if (Math.abs(n) > SALDO_MAXIMO_DEL_EXTRACTO_COP) return { error: MENSAJES_DEL_EXTRACTO.saldoFueraDeRango };
   return { valor: n };
 }

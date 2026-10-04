@@ -21,7 +21,9 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { toast } from '@/components/ui/toast';
 import { Plus, Trash } from '@phosphor-icons/react';
-import { Banner, CrossFade, CurrencyInput, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Banner, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CampoDePlata } from '@/components/ui/campo-de-plata';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -44,7 +46,7 @@ import {
 } from '@/lib/api/contabilidad.service';
 import {
   lineaVacia,
-  TEXTO_DE_ERROR_DE_LINEA,
+  textoDeErrorDeLinea,
   validarPartidaDoble,
   type LineaDelFormulario,
 } from '@/lib/contabilidad/partida-doble';
@@ -91,6 +93,9 @@ interface ErroresDelServidor {
 
 const SIN_ERRORES: ErroresDelServidor = { lineas: {} };
 
+/** La plata del asiento es de la contabilidad (`MovimientoDto` del back). */
+const AREA_DE_LA_CONTABILIDAD = 'contabilidad_facturacion_y_exogena' as const;
+
 /** `NaN` (campo vacío en `CurrencyInput`) → `null`. */
 function aMonto(v: number): number | null {
   return Number.isNaN(v) ? null : v;
@@ -130,7 +135,10 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
     }
   }, [abierto]);
 
-  const veredicto = useMemo(() => validarPartidaDoble(lineas), [lineas]);
+  // «Centavos en todo» (C3-FRONT): con la llave de la contabilidad los montos
+  // llevan centavos y la diferencia se cuenta exacta al centavo.
+  const conCentavos = usePlataConCentavos(AREA_DE_LA_CONTABILIDAD);
+  const veredicto = useMemo(() => validarPartidaDoble(lineas, { conCentavos }), [lineas, conCentavos]);
   const fechaCerrada = Boolean(cerradaHasta && diaDe(fecha) && fecha <= cerradaHasta);
   const listo =
     veredicto.valido && descripcion.trim().length > 0 && Boolean(diaDe(fecha)) && !fechaCerrada;
@@ -335,7 +343,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                     ? ('DOS_LADOS' as const)
                     : undefined;
                 const mensajeDeLinea = errorDeLinea
-                  ? TEXTO_DE_ERROR_DE_LINEA[errorDeLinea]
+                  ? textoDeErrorDeLinea(errorDeLinea, conCentavos)
                   : delServidor.lineas[l.clave];
                 const idDelError = `${id}-linea-${l.clave}-error`;
                 const describe = mensajeDeLinea ? idDelError : undefined;
@@ -361,7 +369,8 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                       </div>
                       <label className="space-y-1 md:contents">
                         <span className="block text-caption text-fg-muted md:hidden">Débito</span>
-                      <CurrencyInput
+                      <CampoDePlata
+                        areas={AREA_DE_LA_CONTABILIDAD}
                         id={`${id}-linea-${l.clave}-debito`}
                         aria-label={`Débito de la línea ${i + 1}`}
                         aria-describedby={describe}
@@ -377,7 +386,8 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                       </label>
                       <label className="space-y-1 md:contents">
                         <span className="block text-caption text-fg-muted md:hidden">Crédito</span>
-                      <CurrencyInput
+                      <CampoDePlata
+                        areas={AREA_DE_LA_CONTABILIDAD}
                         aria-label={`Crédito de la línea ${i + 1}`}
                         aria-describedby={describe}
                         value={l.creditoCop ?? undefined}

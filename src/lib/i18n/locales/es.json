@@ -13434,5 +13434,8 @@
         "plata": "No mueve plata"
       }
     }
+  },
+  "plata": {
+    "hastaDosDecimales": "Hasta dos decimales"
   }
 }

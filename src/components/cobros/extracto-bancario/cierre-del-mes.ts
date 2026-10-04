@@ -10,6 +10,8 @@
  */
 
 import { fechaEscritaComoIso } from '@/lib/fechas/fecha-escrita';
+import { decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
+import { aCentavos } from '@/lib/plata/plata';
 import {
   NOMBRE_DEL_ORIGEN,
   NOMBRE_DEL_RANGO,
@@ -22,10 +24,17 @@ import {
 
 // ── Formatos ─────────────────────────────────────────────────────────────
 
-/** $1.234.567 (con signo menos tipográfico). Sin centavos: así viene la plata. */
+/**
+ * $1.234.567 (con signo menos tipográfico). P8 a («centavos en todo»): los
+ * centavos SÓLO si el valor los tiene ($1.234.567,29); un entero, como siempre.
+ * Ya no redondea: la plata se trae tal cual.
+ */
 export function pesos(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-  const s = `$${Math.abs(Math.round(n)).toLocaleString('es-CO')}`;
+  const cifra = seMuestranLosCentavos(n)
+    ? Math.abs(n).toLocaleString('es-CO', decimalesEnPantalla(n))
+    : Math.abs(Math.round(n)).toLocaleString('es-CO');
+  const s = `$${cifra}`;
   return n < 0 ? `−${s}` : s;
 }
 
@@ -36,6 +45,23 @@ export function pesos(n: number | null | undefined): string {
  */
 export function conMayusculaInicial(texto: string): string {
   return texto ? texto.charAt(0).toLocaleUpperCase('es-CO') + texto.slice(1) : texto;
+}
+
+/**
+ * La plata del cierre como DOCUMENTO (Excel y PDF): con la llave de la
+ * tesorería (`conCentavos`), SIEMPRE dos decimales ($1.234.567,00); sin ella,
+ * igual que `pesos`.
+ */
+export function pesosEnDocumento(n: number | null | undefined, conCentavos: boolean): string {
+  if (!conCentavos) return pesos(n);
+  if (n === null || n === undefined || !Number.isFinite(n)) return '—';
+  const s = `$${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`;
+  return n < 0 ? `−${s}` : s;
+}
+
+/** La llave de la tesorería para los documentos del cierre. */
+export interface OpcionesDelDocumento {
+  conCentavos?: boolean;
 }
 
 export function porcentaje(n: number | null | undefined): string {
@@ -57,7 +83,11 @@ export interface SeccionDelCierre {
 }
 
 /** El cierre en secciones (mismo contenido para el Excel y el PDF). */
-export function seccionesDelCierre(c: CierreConFoto): SeccionDelCierre[] {
+export function seccionesDelCierre(
+  c: CierreConFoto,
+  { conCentavos = false }: OpcionesDelDocumento = {},
+): SeccionDelCierre[] {
+  const plata = (n: number | null | undefined) => pesosEnDocumento(n, conCentavos);
   const f: FotoDelCierre = c.foto;
   const firma = f.firma;
   const resumen: (string | number)[][] = [
@@ -67,13 +97,13 @@ export function seccionesDelCierre(c: CierreConFoto): SeccionDelCierre[] {
     ['Período', `${f.periodo.desde} a ${f.periodo.hasta}`],
     ['Versión del cierre', c.version],
     ['Estado', c.estado === 'CERRADO' ? 'Cerrado y firmado' : 'Reabierto'],
-    ['Saldo según el extracto', pesos(f.saldos.extracto.valorCop)],
+    ['Saldo según el extracto', plata(f.saldos.extracto.valorCop)],
     ['De dónde sale', f.saldos.extracto.fuente ? FUENTE_DEL_SALDO[f.saldos.extracto.fuente] : f.saldos.extracto.detalle],
-    ['Saldo en libros', pesos(f.saldos.libros.compartida ? null : f.saldos.libros.valorCop)],
+    ['Saldo en libros', plata(f.saldos.libros.compartida ? null : f.saldos.libros.valorCop)],
     ['Cuenta contable', f.saldos.libros.cuentaPuc ? `${f.saldos.libros.cuentaPuc.codigo} ${f.saldos.libros.cuentaPuc.nombre}` : 'Sin asignar'],
-    ['Diferencia (extracto − libros)', pesos(f.saldos.diferenciaCop)],
-    ['Partidas conciliatorias (neto)', pesos(f.saldos.efectoDeLasPartidasCop)],
-    ['Diferencia sin explicar', pesos(f.saldos.diferenciaSinExplicarCop)],
+    ['Diferencia (extracto − libros)', plata(f.saldos.diferenciaCop)],
+    ['Partidas conciliatorias (neto)', plata(f.saldos.efectoDeLasPartidasCop)],
+    ['Diferencia sin explicar', plata(f.saldos.diferenciaSinExplicarCop)],
     ['Conciliado por número', porcentaje(f.conciliado.porNumeroPct)],
     ['Conciliado por valor', porcentaje(f.conciliado.porValorPct)],
     ['Firmó', firma ? `${firma.nombre ?? 'Sin nombre'} (${firma.rol === 'CONTADOR' ? 'contador' : firma.rol})` : 'Sin firmar (borrador)'],
@@ -122,10 +152,10 @@ export function seccionesDelCierre(c: CierreConFoto): SeccionDelCierre[] {
     secciones.push({
       titulo: 'Plata de terceros (toda la inmobiliaria)',
       filas: [
-        ['Saldo de la cuenta de recaudo', pesos(f.terceros.saldoDeLaCuentaCop)],
-        ['Plata de terceros que debería haber', pesos(f.terceros.plataDeTercerosCop)],
-        ['Partidas por identificar', pesos(f.terceros.partidasPorIdentificarCop)],
-        ['Diferencia', pesos(f.terceros.diferenciaCop)],
+        ['Saldo de la cuenta de recaudo', plata(f.terceros.saldoDeLaCuentaCop)],
+        ['Plata de terceros que debería haber', plata(f.terceros.plataDeTercerosCop)],
+        ['Partidas por identificar', plata(f.terceros.partidasPorIdentificarCop)],
+        ['Diferencia', plata(f.terceros.diferenciaCop)],
         ['La diferencia es la comisión por trasladar', f.terceros.laDiferenciaEsLaComision ? 'Sí' : 'No'],
       ],
     });
@@ -140,10 +170,10 @@ export function nombreDelArchivoDelCierre(c: CierreConFoto, extension: 'xlsx' | 
 }
 
 /** El Excel: una hoja por sección. */
-export async function exportarElCierreAExcel(c: CierreConFoto): Promise<void> {
+export async function exportarElCierreAExcel(c: CierreConFoto, opciones: OpcionesDelDocumento = {}): Promise<void> {
   const XLSX = await import('xlsx');
   const libro = XLSX.utils.book_new();
-  for (const s of seccionesDelCierre(c)) {
+  for (const s of seccionesDelCierre(c, opciones)) {
     const hoja = XLSX.utils.aoa_to_sheet(s.filas);
     XLSX.utils.book_append_sheet(libro, hoja, s.titulo.slice(0, 31));
   }
@@ -162,7 +192,8 @@ export function textoParaElPdf(texto: string): string {
 }
 
 /** El PDF: texto plano, paginado, con la huella al pie de cada página. */
-export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
+export async function exportarElCierreAPdf(c: CierreConFoto, opciones: OpcionesDelDocumento = {}): Promise<void> {
+  const conCentavos = opciones.conCentavos === true;
   const { default: JsPdf } = await import('jspdf');
   const doc = new JsPdf({ unit: 'pt', format: 'letter' });
   const ancho = doc.internal.pageSize.getWidth();
@@ -186,7 +217,7 @@ export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
   doc.setFontSize(11);
   doc.text(textoParaElPdf(c.foto.cuenta.nombre), margen, y);
   y += 20;
-  for (const s of seccionesDelCierre(c)) {
+  for (const s of seccionesDelCierre(c, opciones)) {
     salto(30);
     doc.setFontSize(12);
     doc.text(textoParaElPdf(s.titulo), margen, y);
@@ -194,7 +225,7 @@ export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
     doc.setFontSize(9);
     for (const fila of s.filas) {
       const texto = textoParaElPdf(
-        fila.map((x) => (typeof x === 'number' ? pesosSiEsPlata(x) : x)).join('   ·   '),
+        fila.map((x) => (typeof x === 'number' ? pesosSiEsPlata(x, conCentavos) : x)).join('   ·   '),
       );
       const lineas = doc.splitTextToSize(texto, ancho - margen * 2) as string[];
       salto(lineas.length * 12);
@@ -207,17 +238,33 @@ export async function exportarElCierreAPdf(c: CierreConFoto): Promise<void> {
   doc.save(nombreDelArchivoDelCierre(c, 'pdf'));
 }
 
-/** En el PDF, un número grande es plata; uno chico (días, conteos) se deja como está. */
-function pesosSiEsPlata(n: number): string {
-  return Math.abs(n) >= 1_000 ? pesos(n) : String(n);
+/**
+ * En el PDF, un número grande es plata; uno chico (días, conteos) se deja como
+ * está. Uno con centavos también es plata: los días y los conteos son enteros.
+ */
+function pesosSiEsPlata(n: number, conCentavos: boolean): string {
+  return Math.abs(n) >= 1_000 || !Number.isInteger(n) ? pesosEnDocumento(n, conCentavos) : String(n);
 }
 
 // ── La relación de pagos de una aseguradora ──────────────────────────────
 
-/** «$ 1.234.567», «1234567», «1,234,567.00» → 1234567. Con centavos de verdad, `'mal'`. */
-export function aPesos(valor: unknown): number | null | 'mal' {
+/**
+ * «$ 1.234.567», «1234567», «1,234,567.00» → 1234567. Con centavos de verdad,
+ * `'mal'`… salvo con la llave de la tesorería (`conCentavos`, «centavos en
+ * todo»): entonces «1.234.567,29» → 1234567.29 tal cual (el back los acepta
+ * con la misma llave, `leerLaLinea({ conCentavos })`).
+ */
+export function aPesos(valor: unknown, conCentavos = false): number | null | 'mal' {
   if (valor === null || valor === undefined || valor === '') return null;
-  if (typeof valor === 'number') return Number.isInteger(valor) ? valor : 'mal';
+  if (typeof valor === 'number') {
+    if (Number.isInteger(valor)) return valor;
+    if (!conCentavos || !Number.isFinite(valor)) return 'mal';
+    try {
+      return aCentavos(valor, { talCual: true }) / 100;
+    } catch {
+      return 'mal';
+    }
+  }
   if (typeof valor !== 'string') return 'mal';
   let s = valor.replace(/[$\s]/g, '');
   if (!s) return null;
@@ -225,15 +272,24 @@ export function aPesos(valor: unknown): number | null | 'mal' {
   const ultimaComa = s.lastIndexOf(',');
   const decimal = ultimoPunto > ultimaComa ? '.' : ',';
   const partes = s.split(decimal);
+  let centavos = '';
   // Un separador decimal sólo si le siguen 1 o 2 cifras (si no, es de miles).
   if (partes.length > 1 && /^\d{1,2}$/.test(partes[partes.length - 1])) {
     const cent = partes.pop()!;
-    if (/[1-9]/.test(cent)) return 'mal';
+    if (/[1-9]/.test(cent)) {
+      if (!conCentavos) return 'mal';
+      centavos = cent;
+    }
     s = partes.join(decimal);
   }
   s = s.replace(/[.,]/g, '');
   if (!/^-?\d+$/.test(s)) return 'mal';
-  return Number(s);
+  if (!centavos) return Number(s);
+  try {
+    return aCentavos(`${s}.${centavos}`) / 100;
+  } catch {
+    return 'mal';
+  }
 }
 
 export interface LecturaDeLaRelacion {
@@ -249,6 +305,8 @@ export interface LecturaDeLaRelacion {
 export function leerLaRelacion(
   filas: readonly Record<string, unknown>[],
   mapeo: MapeoDeColumnas,
+  /** La llave de la tesorería («centavos en todo»): con ella, hasta dos decimales. */
+  { conCentavos = false }: { conCentavos?: boolean } = {},
 ): LecturaDeLaRelacion {
   const salida: Record<string, unknown>[] = [];
   const malas: { fila: number; motivo: string }[] = [];
@@ -259,16 +317,21 @@ export function leerLaRelacion(
   const texto = (v: unknown) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '');
   filas.forEach((fila, i) => {
     const n = i + 1;
-    const neto = aPesos(celda(fila, 'neto'));
+    const neto = aPesos(celda(fila, 'neto'), conCentavos);
     // Una fila del todo vacía (el total al pie, una línea en blanco) no cuenta.
     const algo = Object.values(fila).some((v) => texto(v) !== '');
     if (!algo) return;
     if (neto === null || neto === 'mal' || neto <= 0) {
-      malas.push({ fila: n, motivo: 'El valor pagado no es un número de pesos mayor que cero (sin centavos).' });
+      malas.push({
+        fila: n,
+        motivo: conCentavos
+          ? 'El valor pagado no es un número de pesos mayor que cero (con hasta dos decimales).'
+          : 'El valor pagado no es un número de pesos mayor que cero (sin centavos).',
+      });
       return;
     }
-    const bruto = aPesos(celda(fila, 'bruto'));
-    const retencion = aPesos(celda(fila, 'retencion'));
+    const bruto = aPesos(celda(fila, 'bruto'), conCentavos);
+    const retencion = aPesos(celda(fila, 'retencion'), conCentavos);
     if (bruto === 'mal' || retencion === 'mal') {
       malas.push({ fila: n, motivo: 'El valor bruto o la retención no son un número de pesos.' });
       return;

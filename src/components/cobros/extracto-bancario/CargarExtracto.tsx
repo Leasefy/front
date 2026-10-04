@@ -42,12 +42,13 @@ import {
   armarFilasDeExtracto,
   detectarFilaDeEncabezado,
   faltantesDelMapeo,
+  leerValorDelExtracto,
   mapearColumnasDeExtracto,
-  parsearValorCop,
   type CampoDeExtracto,
   type MapeoDeExtracto,
 } from '@/lib/cobros/extracto-bancario';
 import { errorDeLasFilasDelExtracto, leerSaldoEscrito } from '@/lib/cobros/limites-del-extracto';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { plata } from './formato';
 import {
@@ -119,15 +120,29 @@ export function CargarExtracto({ onCargado }: Props) {
   /** La cuenta elegida recauda por ARCHIVO: su extracto no se puede cargar. */
   const laCuentaEntraPorArchivo = cuenta?.via === 'ARCHIVO' ? cuenta : null;
 
-  const armadas = useMemo(() => armarFilasDeExtracto(crudas, mapeo), [crudas, mapeo]);
+  /*
+   * «Centavos en todo» (C3-FRONT): con la llave de la tesorería prendida, el
+   * extracto se trae TAL CUAL, con los centavos del banco (el 4×1000, los
+   * intereses); una celda con más de dos decimales se frena con su frase.
+   * Apagada, al peso como siempre.
+   */
+  const conCentavos = usePlataConCentavos('tesoreria_y_conciliacion');
+  const armadas = useMemo(
+    () => armarFilasDeExtracto(crudas, mapeo, { conCentavos }),
+    [crudas, mapeo, conCentavos],
+  );
   const faltan = faltantesDelMapeo(mapeo);
   /** 🔁 Espejo del tope del back: más de 20.000 líneas no se mandan. */
   const demasiadas = errorDeLasFilasDelExtracto(armadas.filas.length);
   const periodoDeLasLineas = useMemo(() => periodoDeLasFilas(armadas.filas), [armadas.filas]);
   const conColumnaDeSaldo = traeLaColumnaDeSaldo(armadas.filas);
 
-  const inicial = leerSaldoEscrito(saldoInicial, parsearValorCop);
-  const final = leerSaldoEscrito(saldoFinal, parsearValorCop);
+  const parsearSaldo = (texto: string): number | null => {
+    const leido = leerValorDelExtracto(texto, conCentavos);
+    return leido && 'valor' in leido ? leido.valor : null;
+  };
+  const inicial = leerSaldoEscrito(saldoInicial, parsearSaldo, { conCentavos });
+  const final = leerSaldoEscrito(saldoFinal, parsearSaldo, { conCentavos });
   const cuadre = cuadreEnVivo(armadas.filas, inicial.valor, final.valor);
   const periodoAlReves = !!desde && !!hasta && desde > hasta;
 

@@ -75,6 +75,7 @@ import {
   type ConciliacionQueueItem,
   type IngestBank,
 } from '@/lib/hooks/conciliacion/use-conciliacion-queue';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ── Summary card config ─────────────────────────────────────────────────────
 
@@ -115,7 +116,7 @@ function itemCaso(item: ConciliacionQueueItem): string {
 
 /** Format COP amounts */
 function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

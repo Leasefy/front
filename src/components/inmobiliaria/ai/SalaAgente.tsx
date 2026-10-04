@@ -25,6 +25,7 @@ import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -50,7 +51,7 @@ const percentFormatter = new Intl.NumberFormat('es-CO', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
-const copFormatter = new Intl.NumberFormat('es-CO', {
+const copFormatter = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

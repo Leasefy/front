@@ -80,3 +80,21 @@ describe('errorDelIpcDeLaRenovacion — el espejo de `ipcRate` (02-10-2026)', ()
     expect(M.ipcNumero).toBe('El IPC debe ser un número, por ejemplo 5,2.')
   })
 })
+
+describe('los valores de la renovación — «centavos en todo» (C4)', () => {
+  it('sin la llave, un canon con centavos se frena con la frase de siempre', () => {
+    expect(revisarValoresDeLaRenovacion({ proposedRent: 1_298_394.11 })).toBe(M.canonPropuestoEntero)
+  })
+
+  it('con la llave, el canon acepta hasta dos decimales; la administración sigue entera', () => {
+    expect(
+      revisarValoresDeLaRenovacion({ proposedRent: 1_298_394.11 }, { canonConCentavos: true }),
+    ).toBeUndefined()
+    expect(
+      revisarValoresDeLaRenovacion({ proposedRent: 1_298_394.111 }, { canonConCentavos: true }),
+    ).toBe('Escribe el valor en pesos, con hasta dos decimales (centavos).')
+    expect(
+      revisarValoresDeLaRenovacion({ negotiatedAdminFee: 350_000.5 }, { canonConCentavos: true }),
+    ).toBe(M.administracionEntera)
+  })
+})

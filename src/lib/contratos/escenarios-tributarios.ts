@@ -50,6 +50,8 @@
  * actual, para que migrar no cambie ni un peso.
  */
 
+import { alCentavo, restar, sumar } from '@/lib/plata/plata'
+
 export type TipoPersona = 'NATURAL' | 'JURIDICA'
 
 export type UsoDelInmueble = 'VIVIENDA' | 'COMERCIAL'
@@ -127,6 +129,13 @@ export interface Operacion {
   /** Quien recibe el dinero. Es quien cobra el IVA. */
   recibe: PerfilTributario
   tarifas?: Tarifas
+  /**
+   * «Centavos en todo» (C3-FRONT; P1–P3 a): las dos llaves de la deuda
+   * prendidas (`usePlataConCentavos(AREAS_DE_LA_DEUDA)`). El IVA y las
+   * retenciones se redondean al CENTAVO (la mitad hacia arriba), como el back
+   * (`calcularImpuestos({ conCentavos })`). Ausente = al peso, como hoy.
+   */
+  conCentavos?: boolean
 }
 
 export interface Renglon {
@@ -152,9 +161,12 @@ export interface Liquidacion {
   motivos: string[]
 }
 
-/** Redondeo al peso. La DIAN no recibe centavos. */
-function alPeso(n: number): number {
-  return Math.round(n)
+/**
+ * El redondeo de un impuesto: al peso como hoy (`Math.round`), o al centavo
+ * con las llaves de la deuda (P1 a: la mitad lejos del cero).
+ */
+function redondearImpuesto(n: number, conCentavos: boolean): number {
+  return conCentavos ? alCentavo(n) : Math.round(n)
 }
 
 /**
@@ -166,6 +178,8 @@ function alPeso(n: number): number {
  */
 export function liquidar(op: Operacion): Liquidacion {
   const t = op.tarifas ?? TARIFAS_2026
+  const conCentavos = op.conCentavos === true
+  const alPeso = (n: number) => redondearImpuesto(n, conCentavos)
   const renglones: Renglon[] = []
   const motivos: string[] = []
 
@@ -276,8 +290,11 @@ export function liquidar(op: Operacion): Liquidacion {
     renglones,
     // Quien paga entrega base + IVA: las retenciones no las paga, las descuenta
     // y las consigna a la DIAN por cuenta de quien recibe.
-    totalAPagarCop: op.baseCop + ivaCop,
-    netoQueRecibeCop: op.baseCop + ivaCop - rfCop - reteIvaCop - reteIcaCop,
+    // Con centavos, las sumas exactas al centavo (con pesos enteros dan lo mismo).
+    totalAPagarCop: conCentavos ? sumar(op.baseCop, ivaCop) : op.baseCop + ivaCop,
+    netoQueRecibeCop: conCentavos
+      ? restar(sumar(op.baseCop, ivaCop), sumar(rfCop, reteIvaCop, reteIcaCop))
+      : op.baseCop + ivaCop - rfCop - reteIvaCop - reteIcaCop,
     motivos,
   }
 }

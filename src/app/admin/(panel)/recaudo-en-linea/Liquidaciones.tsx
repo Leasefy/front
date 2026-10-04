@@ -27,6 +27,7 @@ import {
   exportarLiquidacionAPdf,
   pesos,
 } from '@/lib/admin/documento-de-la-liquidacion'
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos'
 import {
   desmarcarGirada,
   listarLiquidaciones,
@@ -264,12 +265,17 @@ function DetalleDeLiquidacion({
   const { data: l, isLoading, error } = useApiQuery((signal) => verLiquidacion(id, signal), [id, tick])
   const [exportando, setExportando] = useState<'xlsx' | 'pdf' | null>(null)
   const [errorDeAccion, setErrorDeAccion] = useState<string | null>(null)
+  // «Centavos en todo» (P8 a): con la llave de la tesorería el PDF escribe
+  // siempre los dos decimales; apagada, como siempre.
+  const conCentavos = usePlataConCentavos('tesoreria_y_conciliacion')
 
   async function exportar(formato: 'xlsx' | 'pdf', d: DetalleDeLaLiquidacion) {
     setExportando(formato)
     setErrorDeAccion(null)
     try {
       if (formato === 'xlsx') await exportarLiquidacionAExcel(d)
+      // Con la llave apagada, la llamada de siempre (sin opciones).
+      else if (conCentavos) await exportarLiquidacionAPdf(d, { conCentavos })
       else await exportarLiquidacionAPdf(d)
     } catch (err) {
       setErrorDeAccion(

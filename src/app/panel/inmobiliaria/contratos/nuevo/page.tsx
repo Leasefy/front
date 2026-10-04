@@ -44,6 +44,8 @@ import {
 } from '@/lib/contratos/valores-por-defecto';
 import { usoPorElTipo } from '@/lib/contratos/uso-del-inmueble';
 import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import {
   ariaDelCampoDelContrato,
   enfocarCampoDelContrato,
@@ -532,6 +534,9 @@ function NuevoContratoContent() {
   // puede prender. Sólo dentro del panel se vuelve a preguntar en cada cambio.
   const plantilla = useContratoDesdePlantilla(borrador, { activo: armadoPorElSistema });
 
+  // «Centavos en todo» (C3-FRONT): ¿la deuda ya se escribe al centavo?
+  const deudaConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
+
   // Validation
   const validation = useMemo(() => {
     const errors: Record<string, string> = {};
@@ -558,14 +563,19 @@ function NuevoContratoContent() {
      */
     Object.assign(
       errors,
-      revisarTerminosDelContrato({
-        startDate: form.startDate,
-        endDate: form.endDate,
-        monthlyRent: form.monthlyRent,
-        // Sin depósito en vivienda: un valor que no se ve no puede trabar el botón.
-        deposit: pideDeposito ? form.deposit : '',
-        paymentDay: form.paymentDay,
-      }),
+      revisarTerminosDelContrato(
+        {
+          startDate: form.startDate,
+          endDate: form.endDate,
+          monthlyRent: form.monthlyRent,
+          // Sin depósito en vivienda: un valor que no se ve no puede trabar el botón.
+          deposit: pideDeposito ? form.deposit : '',
+          paymentDay: form.paymentDay,
+        },
+        // «Centavos en todo»: canon y depósito con centavos sólo con las dos
+        // áreas de la deuda prendidas (`CreateContractDto`).
+        { canonConCentavos: deudaConCentavos, depositoConCentavos: deudaConCentavos },
+      ),
     );
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
@@ -598,6 +608,7 @@ function NuevoContratoContent() {
     armadoPorElSistema,
     plantilla.generado,
     plantilla.generadoQuedoViejo,
+    deudaConCentavos,
   ]);
 
   // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
@@ -1237,6 +1248,7 @@ function NuevoContratoContent() {
             >
               <MoneyInput
                 {...ariaDelCampoDelContrato('monthlyRent', errorDe('monthlyRent'))}
+                areas={AREAS_DE_LA_DEUDA}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
@@ -1245,6 +1257,7 @@ function NuevoContratoContent() {
               <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">
                 <MoneyInput
                   {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                  areas={AREAS_DE_LA_DEUDA}
                   value={form.deposit}
                   onChange={(crudo) => updateForm('deposit', crudo)}
                 />

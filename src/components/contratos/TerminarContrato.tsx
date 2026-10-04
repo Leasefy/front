@@ -47,13 +47,14 @@ import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formular
 import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limites-del-contrato-vigente";
 // QA-CONT C-10: las fechas con la fecha larga de la casa, nunca el ISO crudo.
 import { diaLegible, mesLegible } from "@/lib/mandato/textos";
+import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const PESOS = new Intl.NumberFormat("es-CO", {
+const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,

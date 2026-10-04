@@ -13,6 +13,7 @@
 import { normalizarEncabezado } from '@/lib/migracion/columnas-de-tercero';
 import type { FilaDeExtracto } from '@/lib/api/conciliacion-bancaria.types';
 import { errorDelValorDelMovimiento } from './limites-del-extracto';
+import { aCentavos, restar } from '@/lib/plata/plata';
 
 export type CampoDeExtracto =
   | 'fecha'
@@ -230,7 +231,21 @@ export function faltantesDelMapeo(mapeo: MapeoDeExtracto): string[] {
 export function parsearValorCop(texto: unknown): number | null {
   if (texto === null || texto === undefined) return null;
   if (typeof texto === 'number') return Number.isFinite(texto) ? Math.round(texto) : null;
-  let s = String(texto).trim();
+  const cifra = cifraDelTexto(String(texto));
+  if (!cifra) return null;
+  const n = Number.parseFloat(cifra.entero);
+  if (!Number.isFinite(n)) return null;
+  const redondeado = Math.round(n);
+  return cifra.negativo ? -redondeado : redondeado;
+}
+
+/**
+ * El texto de una celda de plata, normalizado: el signo aparte y la cifra con
+ * punto decimal (`«(1.230.000,50)»` → `{ negativo: true, entero: '1230000.50' }`).
+ * `null` si no hay número.
+ */
+function cifraDelTexto(original: string): { negativo: boolean; entero: string } | null {
+  let s = original.trim();
   if (!s) return null;
 
   let negativo = false;
@@ -262,10 +277,57 @@ export function parsearValorCop(texto: unknown): number | null {
     entero = s;
   }
 
-  const n = Number.parseFloat(entero);
-  if (!Number.isFinite(n)) return null;
-  const redondeado = Math.round(n);
-  return negativo ? -redondeado : redondeado;
+  return { negativo, entero };
+}
+
+/** Lo que se lee de una celda de plata del extracto. */
+export type ValorDelExtracto = { valor: number } | { frenado: string };
+
+/** La frase de una cifra con más de dos decimales (P14 a: se frena, no se redondea). */
+export function fraseDeDecimalesDeMas(original: unknown): string {
+  return `El valor «${String(original).trim()}» trae más de dos decimales: la plata va hasta el centavo.`;
+}
+
+/**
+ * Una celda de plata del extracto, según la llave de la tesorería
+ * («centavos en todo», C3-FRONT; `tesoreria_y_conciliacion`).
+ *
+ *   · Apagada: `parsearValorCop`, al peso, EXACTAMENTE como hoy.
+ *   · Prendida: TAL CUAL, con sus centavos («1.230.000,50» → 1230000.5), sin
+ *     pasar por el flotante. Con más de dos decimales («1.234,567») la celda
+ *     se FRENA con su frase: no se redondea (P14 a).
+ *
+ * `null` si no hay número.
+ */
+export function leerValorDelExtracto(original: unknown, conCentavos: boolean): ValorDelExtracto | null {
+  if (!conCentavos) {
+    const v = parsearValorCop(original);
+    return v === null ? null : { valor: v };
+  }
+  if (original === null || original === undefined) return null;
+  if (typeof original === 'number') {
+    if (!Number.isFinite(original)) return null;
+    try {
+      const c = aCentavos(original, { talCual: true });
+      return { valor: c === 0 ? 0 : c / 100 };
+    } catch {
+      return { frenado: fraseDeDecimalesDeMas(original) };
+    }
+  }
+  const cifra = cifraDelTexto(String(original));
+  if (!cifra || !Number.isFinite(Number.parseFloat(cifra.entero))) return null;
+  const decimales = (cifra.entero.split('.')[1] ?? '').replace(/0+$/, '');
+  if (decimales.length > 2) return { frenado: fraseDeDecimalesDeMas(original) };
+  let valor: number;
+  try {
+    valor = aCentavos(cifra.entero) / 100;
+  } catch {
+    // Fuera del rango exacto (más de $10 billones): el tope del extracto lo
+    // descarta después con SU frase.
+    valor = Number.parseFloat(cifra.entero);
+  }
+  if (cifra.negativo) valor = -valor;
+  return { valor: valor === 0 ? 0 : valor };
 }
 
 const DIA_EXCEL_CERO = Date.UTC(1899, 11, 30);
@@ -322,10 +384,16 @@ function texto(v: unknown): string {
   return String(v).trim();
 }
 
-/** Aplica el mapeo a las filas crudas. Lo que no se pueda leer se descarta CON motivo. */
+/**
+ * Aplica el mapeo a las filas crudas. Lo que no se pueda leer se descarta CON motivo.
+ *
+ * `conCentavos`: la llave de la tesorería (ver `leerValorDelExtracto`). Ausente
+ * = al peso, como hoy.
+ */
 export function armarFilasDeExtracto(
   crudas: readonly Record<string, unknown>[],
   mapeo: MapeoDeExtracto,
+  { conCentavos = false }: { conCentavos?: boolean } = {},
 ): FilasArmadas {
   const filas: FilaDeExtracto[] = [];
   const descartadas: FilaDescartada[] = [];
@@ -339,14 +407,31 @@ export function armarFilasDeExtracto(
     }
 
     let valor: number | null = null;
-    if (mapeo.valor) {
-      valor = parsearValorCop(cruda[mapeo.valor]);
-    } else {
-      const credito = mapeo.credito ? parsearValorCop(cruda[mapeo.credito]) : null;
-      const debito = mapeo.debito ? parsearValorCop(cruda[mapeo.debito]) : null;
-      if (credito !== null || debito !== null) {
-        valor = Math.abs(credito ?? 0) - Math.abs(debito ?? 0);
+    let frenado: string | null = null;
+    const leer = (celda: unknown): number | null => {
+      const leido = leerValorDelExtracto(celda, conCentavos);
+      if (leido === null) return null;
+      if ('frenado' in leido) {
+        frenado ??= leido.frenado;
+        return null;
       }
+      return leido.valor;
+    };
+    if (mapeo.valor) {
+      valor = leer(cruda[mapeo.valor]);
+    } else {
+      const credito = mapeo.credito ? leer(cruda[mapeo.credito]) : null;
+      const debito = mapeo.debito ? leer(cruda[mapeo.debito]) : null;
+      if (credito !== null || debito !== null) {
+        // Con centavos, la resta exacta al centavo (con enteros da lo mismo).
+        valor = conCentavos
+          ? restar(Math.abs(credito ?? 0), Math.abs(debito ?? 0))
+          : Math.abs(credito ?? 0) - Math.abs(debito ?? 0);
+      }
+    }
+    if (frenado) {
+      descartadas.push({ fila: numero, motivo: frenado });
+      return;
     }
     if (valor === null) {
       descartadas.push({ fila: numero, motivo: 'Valor ilegible.' });
@@ -384,8 +469,10 @@ export function armarFilasDeExtracto(
       return;
     }
 
-    // El saldo es un dato de control: si no se lee, la línea entra igual sin él.
-    const saldo = mapeo.saldo ? parsearValorCop(cruda[mapeo.saldo]) : null;
+    // El saldo es un dato de control: si no se lee (o trae decimales de más),
+    // la línea entra igual sin él.
+    const saldoLeido = mapeo.saldo ? leerValorDelExtracto(cruda[mapeo.saldo], conCentavos) : null;
+    const saldo = saldoLeido && 'valor' in saldoLeido ? saldoLeido.valor : null;
     filas.push({
       fecha,
       valorCop: valor,

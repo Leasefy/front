@@ -191,7 +191,7 @@ describe('🔴 sin mes anterior no hay porcentaje', () => {
     });
     await montar();
     const cuerpo = document.body.textContent ?? '';
-    expect(cuerpo).toContain('$8.200.000');
+    expect(cuerpo).toContain('$ 8.200.000');
     expect(cuerpo).not.toContain('vs mes anterior');
     expect(cuerpo).not.toContain('100%');
   });

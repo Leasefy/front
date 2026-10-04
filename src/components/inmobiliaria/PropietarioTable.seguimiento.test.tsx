@@ -112,14 +112,14 @@ describe('P-10 — la columna «Giro atrasado»', () => {
     const lineas = container.querySelector('[data-testid="lineas-del-giro"]')!;
     expect(lineas.textContent).toMatch(/inmobiliaria\.propietario\.giros\.variosDesde\(3,1 ago/);
     expect(container.querySelector('[data-testid="generado-sin-girar"]')!.textContent).toBe(
-      'inmobiliaria.propietario.giros.generado($400.000)',
+      'inmobiliaria.propietario.giros.generado($ 400.000)',
     );
   });
 
   it('🔴 al día pero con algo generado: «Al día» y lo generado, sin llamarlo atraso', () => {
     render([{ ...PAULA, pendingBalance: 0, girosVencidos: 0, generadoSinGirar: 1_200_000 }]);
     const celda = container.querySelector('[data-testid="generado-sin-girar"]')!;
-    expect(celda.textContent).toBe('inmobiliaria.propietario.giros.generado($1.200.000)');
+    expect(celda.textContent).toBe('inmobiliaria.propietario.giros.generado($ 1.200.000)');
     expect(container.textContent).toContain('inmobiliaria.propietario.table.upToDate');
   });
 

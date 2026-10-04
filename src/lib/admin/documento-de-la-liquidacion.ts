@@ -9,25 +9,50 @@
  * `xlsx` y `jspdf` sólo al apretar el botón.
  */
 
+import { decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+import { aCentavos } from '@/lib/plata/plata'
 import {
   NOMBRE_DE_QUIEN_CONCILIO,
   NOMBRE_DEL_ESTADO,
   type DetalleDeLaLiquidacion,
 } from './recaudo-en-linea'
 
-/** $1.234.567 (con signo menos tipográfico). Sin centavos: así viene la plata. */
+/**
+ * $1.234.567 (con signo menos tipográfico). P8 a («centavos en todo»): los
+ * centavos SÓLO si el valor los tiene ($1.234.567,29); un entero, como
+ * siempre. Ya no redondea: la plata se trae tal cual, como vino del back.
+ */
 export function pesos(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '—'
-  const s = `$${Math.abs(Math.round(n)).toLocaleString('es-CO')}`
+  const cifra = seMuestranLosCentavos(n)
+    ? Math.abs(n).toLocaleString('es-CO', decimalesEnPantalla(n))
+    : Math.abs(Math.round(n)).toLocaleString('es-CO')
+  const s = `$${cifra}`
   return n < 0 ? `−${s}` : s
 }
 
 /**
  * En el PDF el menos va con el guion de siempre: la letra estándar de jsPDF
  * (Helvetica, WinAnsi) no trae el «−» tipográfico y lo pinta como basura.
+ *
+ * Es un DOCUMENTO (P8 a): con la llave de la tesorería (`conCentavos`), SIEMPRE
+ * dos decimales ($1.234.567,00); sin ella, como `pesos`.
  */
-export function pesosEnPdf(n: number | null | undefined): string {
-  return pesos(n).replace('−', '-')
+export function pesosEnPdf(n: number | null | undefined, conCentavos = false): string {
+  if (!conCentavos || n === null || n === undefined || !Number.isFinite(n)) return pesos(n).replace('−', '-')
+  const s = `$${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`
+  return n < 0 ? `-${s}` : s
+}
+
+/**
+ * La suma exacta al centavo de una columna (con pesos enteros, la de siempre).
+ * Un valor que no es número suma como antes (en flotante): nada nuevo se rompe.
+ */
+function sumaExacta(valores: readonly number[]): number {
+  if (!valores.every((v) => typeof v === 'number' && Number.isFinite(v))) {
+    return valores.reduce((s, v) => s + v, 0)
+  }
+  return valores.reduce((s, v) => s + aCentavos(v), 0) / 100
 }
 
 /** Lo que dice la pantalla, el Excel y el PDF sobre la frecuencia (Nico: «POR DEFINIR»). */
@@ -96,11 +121,13 @@ export function seccionesDeLaLiquidacion(l: DetalleDeLaLiquidacion): SeccionDeLa
       '',
       '',
       '',
-      l.pagos.reduce((s, p) => s + p.brutoCop, 0),
-      l.pagos.reduce((s, p) => s + p.comisionCop, 0),
-      l.pagos.reduce((s, p) => s + p.ivaCop, 0),
-      l.pagos.reduce((s, p) => s + p.retencionesCop, 0),
-      l.pagos.reduce((s, p) => s + p.netoCop, 0),
+      // Exactas al centavo («centavos en todo»): en flotante, la suma de
+      // valores con centavos llegaba al Excel como 1500000.2900000001.
+      sumaExacta(l.pagos.map((p) => p.brutoCop)),
+      sumaExacta(l.pagos.map((p) => p.comisionCop)),
+      sumaExacta(l.pagos.map((p) => p.ivaCop)),
+      sumaExacta(l.pagos.map((p) => p.retencionesCop)),
+      sumaExacta(l.pagos.map((p) => p.netoCop)),
     ],
   ]
   return [
@@ -130,8 +157,15 @@ export async function exportarLiquidacionAExcel(l: DetalleDeLaLiquidacion): Prom
   XLSX.writeFile(libro, nombreDelArchivoDeLaLiquidacion(l, 'xlsx'))
 }
 
-/** El PDF: el resumen, las cuentas y la tabla de pagos con columnas alineadas. */
-export async function exportarLiquidacionAPdf(l: DetalleDeLaLiquidacion): Promise<void> {
+/**
+ * El PDF: el resumen, las cuentas y la tabla de pagos con columnas alineadas.
+ * `conCentavos`: la llave de la tesorería (`usePlataConCentavos`); con ella,
+ * toda cifra con dos decimales (P8 a).
+ */
+export async function exportarLiquidacionAPdf(
+  l: DetalleDeLaLiquidacion,
+  { conCentavos = false }: { conCentavos?: boolean } = {},
+): Promise<void> {
   const { default: JsPdf } = await import('jspdf')
   const doc = new JsPdf({ unit: 'pt', format: 'letter' })
   const ancho = doc.internal.pageSize.getWidth()
@@ -186,7 +220,7 @@ export async function exportarLiquidacionAPdf(l: DetalleDeLaLiquidacion): Promis
     const [concepto, fuente, valor] = fila
     doc.text(String(concepto), margen, y)
     doc.text(String(fuente), margen + 250, y)
-    doc.text(typeof valor === 'number' ? pesosEnPdf(valor) : String(valor), ancho - margen, y, { align: 'right' })
+    doc.text(typeof valor === 'number' ? pesosEnPdf(valor, conCentavos) : String(valor), ancho - margen, y, { align: 'right' })
     y += 13
   }
   y += 10
@@ -211,7 +245,7 @@ export async function exportarLiquidacionAPdf(l: DetalleDeLaLiquidacion): Promis
     salto(11)
     for (const c of columnas) {
       const v = fila[c.i]
-      const texto = k > 0 && typeof v === 'number' ? pesosEnPdf(v) : String(v ?? '')
+      const texto = k > 0 && typeof v === 'number' ? pesosEnPdf(v, conCentavos) : String(v ?? '')
       const corto = c.i === 1 && texto.length > 22 ? `${texto.slice(0, 21)}…` : texto
       doc.text(corto, c.x, y, c.alinear === 'right' ? { align: 'right' } : undefined)
     }

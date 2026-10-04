@@ -105,12 +105,15 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { Appear, Banner, Chip, CurrencyInput } from '@leasefy/cadence';
+import { Appear, Banner, Chip } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { MENSAJES_DEL_RECIBO, superaElTopeDelRecibo } from '@/lib/recaudo/limites-del-recibo';
+import { CampoDePlata } from '@/components/ui/campo-de-plata';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -354,6 +357,12 @@ export function RegistrarPagoModal({
   const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);
   /**
+   * «Centavos en todo» (C3-FRONT): el recibo es plata de la deuda. Con sus dos
+   * áreas prendidas el monto acepta centavos (coma decimal), viaja tal cual y
+   * el plan se reparte al centavo, como en el back. Apagadas, todo como hoy.
+   */
+  const deudaConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
+  /**
    * 🔴 QA 22-09: con un dedo de más el campo quedó en $7.480.366.500.000, el
    * diálogo dijo «superan TODA la deuda… quedan a su favor» y dejó pulsar
    * «Emitir». Pagar de más es legítimo (CEO, 15-09) y no se le pone un tope
@@ -460,7 +469,7 @@ export function RegistrarPagoModal({
     cargaDeLaPersona,
     recargar,
   } = useCarteraDelCliente(tenantId, cobroId, isOpen, fechaDeLaVistaPrevia);
-  const plan = usePlanDeImputacion(cartera, monto);
+  const plan = usePlanDeImputacion(cartera, monto, deudaConCentavos);
   const sinConciliar = React.useMemo(
     () => periodosSinConciliar(cartera, plan),
     [cartera, plan],
@@ -658,7 +667,7 @@ export function RegistrarPagoModal({
        */
       const res = await onSubmit({
         ...(cobroId ? { cobroId } : { tenantId: tenantId! }),
-        valorCop: Math.round(monto),
+        valorCop: deudaConCentavos ? monto : Math.round(monto),
         fecha,
         // El TIPO, no el nombre: es lo que juzga la regla de medios (QA 22-09).
         medio: opcionElegida?.codigo ?? medio,
@@ -841,6 +850,7 @@ export function RegistrarPagoModal({
   }, [
     cerrar,
     cobroId,
+    deudaConCentavos,
     fecha,
     forma,
     formatCurrency,
@@ -1092,8 +1102,12 @@ export function RegistrarPagoModal({
                     </Button>
                   </div>
                 </div>
-                <CurrencyInput
+                {/* «Centavos en todo»: con las dos áreas de la deuda prendidas el
+                    monto acepta coma decimal; apagadas, el `CurrencyInput` de
+                    siempre (`CampoDePlata`). */}
+                <CampoDePlata
                   id="monto-recibo"
+                  areas={AREAS_DE_LA_DEUDA}
                   value={Number.isFinite(monto) ? monto : undefined}
                   onChange={(v) => {
                     // El campo avisa también al perder el foco, con el mismo

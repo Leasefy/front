@@ -23,6 +23,8 @@
 
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
+import { conCentavosEn, configDePlataAhora } from '@/lib/plata/con-centavos';
+import { alCentavo } from '@/lib/plata/plata';
 
 const BASE = '/inmobiliaria/conciliacion-bancaria/salidas';
 
@@ -175,7 +177,11 @@ export const salidasDelExtractoApi = {
     const res = await apiClient.post<SalidasSegurasAplicadas>(`${BASE}/aplicar-seguras`, {
       movimientoIds: vista.salidas.map((s) => s.movimientoId),
       cantidad: vista.cantidad,
-      totalCop: Math.round(vista.totalCop),
+      // «Centavos en todo»: con la llave de la tesorería el total va tal cual
+      // (al centavo); sin ella, al peso como siempre (el back lo pide entero).
+      totalCop: conCentavosEn(configDePlataAhora(), 'tesoreria_y_conciliacion')
+        ? alCentavo(vista.totalCop)
+        : Math.round(vista.totalCop),
     });
     invalidar('cobros');
     return res;

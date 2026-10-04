@@ -90,14 +90,18 @@ import {
   erroresDelReglaje,
   type CampoDelReglaje,
 } from '@/lib/hooks/cobranza/limites-de-cobranza'
+import { decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
   { value: 'WHATSAPP', label: 'WhatsApp' },
 ]
 
+/** P8 a («centavos en todo»): los centavos sólo si los hay. */
 function pesos(valor: number): string {
-  return `$${Math.round(valor).toLocaleString('es-CO')}`
+  return seMuestranLosCentavos(valor)
+    ? `$${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
+    : `$${Math.round(valor).toLocaleString('es-CO')}`
 }
 
 /** `2026-10-04` → `sábado, 4 de octubre`. Sin husos: es un día del calendario. */

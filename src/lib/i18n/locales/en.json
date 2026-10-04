@@ -13400,5 +13400,8 @@
         "plata": "Doesn't move money"
       }
     }
+  },
+  "plata": {
+    "hastaDosDecimales": "Up to two decimals"
   }
 }

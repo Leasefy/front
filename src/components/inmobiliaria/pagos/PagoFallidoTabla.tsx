@@ -35,6 +35,7 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { WorkItem, WorkItemAction } from '@/lib/api/work-item'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ── Clasificación de motivo ──────────────────────────────────────────────────
 // El backend no tipa el motivo del fallo; lo inferimos del texto del WorkItem
@@ -112,7 +113,7 @@ export function esPagoFallido(item: WorkItem): boolean {
 
 // ── Formateador ──────────────────────────────────────────────────────────────
 
-const copFormatter = new Intl.NumberFormat('es-CO', {
+const copFormatter = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

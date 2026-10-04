@@ -53,6 +53,8 @@ import {
 } from '@/lib/api/cierre-de-conciliacion';
 import { useAparecer } from './cuentas-del-extracto';
 import { conMayusculaInicial, exportarElCierreAExcel, exportarElCierreAPdf, pesos, porcentaje } from './cierre-del-mes';
+import { leerValorDelExtracto } from '@/lib/cobros/extracto-bancario';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 
 const ESTADO: Record<MesDeLaCuenta['estado'], { texto: string; variante: 'success' | 'warning' | 'secondary' }> = {
   CERRADO: { texto: 'Cerrado y firmado', variante: 'success' },
@@ -321,6 +323,15 @@ export function CierreDelMes({ cuentaId, onCambio }: { cuentaId: string; onCambi
   );
 }
 
+/**
+ * El saldo escrito con centavos («12.345.678,90» → 12345678.9), con la misma
+ * lectura del extracto. Con más de dos decimales o ilegible: `NaN` (no viaja).
+ */
+function valorDelSaldoConCentavos(texto: string): number {
+  const leido = leerValorDelExtracto(texto, true);
+  return leido && 'valor' in leido ? leido.valor : NaN;
+}
+
 function DialogoDelCierre({
   abierto,
   cuentaId,
@@ -345,6 +356,12 @@ function DialogoDelCierre({
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [exportando, setExportando] = useState<'xlsx' | 'pdf' | null>(null);
+  /*
+   * «Centavos en todo» (C3-FRONT): con la llave de la tesorería, el saldo
+   * escrito lleva sus centavos (coma decimal) y el Excel y el PDF del cierre
+   * escriben siempre los dos decimales (P8 a). Apagada, como siempre.
+   */
+  const conCentavos = usePlataConCentavos('tesoreria_y_conciliacion');
 
   useEffect(() => {
     setConfirmo(false);
@@ -357,7 +374,12 @@ function DialogoDelCierre({
   if (!abierto) return null;
   const foto = abierto.tipo === 'borrador' ? abierto.foto : abierto.cierre?.foto ?? null;
   const sinSaldo = abierto.tipo === 'borrador' && foto?.saldos.extracto.valorCop === null;
-  const saldoEscrito = saldo.trim() === '' ? undefined : Number(saldo.replace(/[^\d-]/g, ''));
+  const saldoEscrito =
+    saldo.trim() === ''
+      ? undefined
+      : conCentavos
+        ? valorDelSaldoConCentavos(saldo)
+        : Number(saldo.replace(/[^\d-]/g, ''));
 
   const firmar = async () => {
     setEnviando(true);
@@ -403,7 +425,11 @@ function DialogoDelCierre({
     if (abierto.tipo !== 'cierre' || !abierto.cierre) return;
     setExportando(formato);
     try {
-      if (formato === 'xlsx') await exportarElCierreAExcel(abierto.cierre);
+      // Con la llave apagada, la llamada de siempre (sin opciones).
+      if (formato === 'xlsx') {
+        if (conCentavos) await exportarElCierreAExcel(abierto.cierre, { conCentavos });
+        else await exportarElCierreAExcel(abierto.cierre);
+      } else if (conCentavos) await exportarElCierreAPdf(abierto.cierre, { conCentavos });
       else await exportarElCierreAPdf(abierto.cierre);
     } catch (e) {
       toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo armar el archivo.', accion: 'exportar el cierre' }));
@@ -451,7 +477,13 @@ function DialogoDelCierre({
             {sinSaldo && (
               <div className="space-y-1">
                 <Label htmlFor="saldo-del-extracto">Saldo del extracto al último día del mes (opcional)</Label>
-                <Input id="saldo-del-extracto" inputMode="numeric" value={saldo} onChange={(e) => setSaldo(e.target.value)} placeholder="12.345.678" />
+                <Input
+                  id="saldo-del-extracto"
+                  inputMode={conCentavos ? 'decimal' : 'numeric'}
+                  value={saldo}
+                  onChange={(e) => setSaldo(e.target.value)}
+                  placeholder={conCentavos ? '12.345.678,90' : '12.345.678'}
+                />
               </div>
             )}
             <div className="space-y-1">

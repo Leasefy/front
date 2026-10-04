@@ -134,7 +134,7 @@ describe('<RenovacionesTable>', () => {
     // 2026-12-31 (DATE, medianoche UTC) sigue siendo 31 dic en Bogotá.
     expect(fila.textContent).toContain('31 dic 2026');
     expect(fila.textContent).toContain('45 días');
-    expect(fila.textContent).toContain('$2.100.000');
+    expect(fila.textContent).toContain('$ 2.100.000');
     expect(fila.textContent).toContain('Pendiente');
     // Sin propuesta no se pinta una: raya.
     expect(fila.textContent).toContain('—');

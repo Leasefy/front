@@ -44,6 +44,7 @@ import {
 } from '@/lib/api/ciclo-de-vida.service';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 /** La cola completa. El tablero lleva acá, con el estado en la URL. */
 export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
@@ -69,7 +70,7 @@ export function fechaCorta(iso: string | null | undefined): string {
     .replace(/\.$/, '');
 }
 
-export const PESOS = new Intl.NumberFormat('es-CO', {
+export const PESOS = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

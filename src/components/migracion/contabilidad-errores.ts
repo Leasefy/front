@@ -16,6 +16,7 @@
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatDate } from '@/lib/format';
+import { conCentavosEn, configDePlataAhora } from '@/lib/plata/con-centavos';
 
 const MENSAJES: Record<string, string> = {
   // puc.service.ts
@@ -94,6 +95,9 @@ function mensajeDeAperturaYaRegistrada(e: ApiError): string {
  * (`SIN_ACCESO_A_CONTABILIDAD`, los de nómina) trae su propio mensaje y lo
  * dice el traductor.
  */
+/** `MONTO_INVALIDO` con la llave de la contabilidad prendida (el back dice lo mismo). */
+const MONTO_INVALIDO_CON_CENTAVOS = 'Los montos van en pesos, con hasta dos decimales (centavos).';
+
 const SIN_PERMISO_DE_ESCRITURA =
   'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
 
@@ -116,6 +120,15 @@ function accionDelRespaldo(respaldo: string): string | undefined {
 export function mensajeDeContabilidad(e: unknown, respaldo: string, accion?: string): string {
   if (e instanceof ApiError) {
     if (e.code === 'APERTURA_YA_REGISTRADA') return mensajeDeAperturaYaRegistrada(e);
+    // «Centavos en todo»: «sin centavos» SÓLO con la llave de la contabilidad
+    // apagada (la que ya preguntó la pantalla del asiento); prendida, el monto
+    // inválido es el que trae más de dos decimales.
+    if (
+      e.code === 'MONTO_INVALIDO' &&
+      conCentavosEn(configDePlataAhora(), 'contabilidad_facturacion_y_exogena')
+    ) {
+      return MONTO_INVALIDO_CON_CENTAVOS;
+    }
     if (e.code && MENSAJES[e.code]) return MENSAJES[e.code];
     if (e.status === 403 && !e.code) return SIN_PERMISO_DE_ESCRITURA;
   }

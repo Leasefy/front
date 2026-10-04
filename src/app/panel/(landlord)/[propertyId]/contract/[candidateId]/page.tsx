@@ -23,6 +23,7 @@ import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { useLandlordProperty, useCandidate } from '@/lib/hooks/useLandlord';
 import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS, getContractTypeLabel } from '@/lib/types/contract';
 import type { Contract, ContractType } from '@/lib/types/contract';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ============================================================================
 // TextTs
@@ -404,7 +405,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
+    return plataEnPantalla(locale === 'es' ? 'es-CL' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,

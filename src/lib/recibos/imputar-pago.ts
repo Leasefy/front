@@ -32,6 +32,7 @@
  */
 
 import type { PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
+import { aCentavos } from '@/lib/plata/plata';
 
 /** Orden de imputación dentro de UN período (Código Civil, art. 1653). */
 export const ORDEN_DENTRO_DEL_PERIODO = ['INTERESES', 'CAPITAL'] as const;
@@ -107,15 +108,66 @@ export function interesesPendientes(deuda: DeudaImputable): number {
   return Math.min(Math.max(0, mora - abonado), Math.max(0, deuda.pendiente));
 }
 
+export interface OpcionesDeImputarPago {
+  /**
+   * «Centavos en todo» (C3-FRONT): las dos llaves de la deuda prendidas
+   * (`usePlataConCentavos(AREAS_DE_LA_DEUDA)`). La MISMA regla corre en
+   * CENTAVOS enteros, como el back (`imputarPago({ conCentavos })`): un abono
+   * de $1.500.000,29 salda una cuota de $1.500.000,29 sin dejar nada colgando.
+   * Ausente = en pesos enteros, exactamente como hoy.
+   */
+  conCentavos?: boolean;
+}
+
 /**
  * Reparte `valorCop` sobre la cartera, de la deuda más vieja a la más nueva.
  *
  * A diferencia del back, acá un monto inválido NO lanza: la pantalla llama a
  * esto en cada tecla y el campo puede estar a medio escribir. Un valor que no
- * es un entero positivo devuelve un plan vacío y la previsualización no se
- * pinta — que es justo lo que hay que mostrar mientras no hay monto.
+ * es un entero positivo (o, con centavos, un valor positivo) devuelve un plan
+ * vacío y la previsualización no se pinta — que es justo lo que hay que
+ * mostrar mientras no hay monto.
  */
 export function imputarPago(
+  deudas: readonly DeudaImputable[],
+  valorCop: number,
+  opciones: OpcionesDeImputarPago = {},
+): Imputacion {
+  if (opciones.conCentavos !== true || !Number.isFinite(valorCop) || valorCop <= 0) {
+    return imputarEnUnidades(deudas, valorCop);
+  }
+  // Todo entra multiplicado por 100 (exacto, `aCentavos`) y sale dividido por 100.
+  const enCentavos = (x: number | undefined): number | undefined =>
+    x === undefined || !Number.isFinite(x) ? x : aCentavos(x);
+  const r = imputarEnUnidades(
+    deudas.map((d) => ({
+      ...d,
+      pendiente: enCentavos(d.pendiente) as number,
+      interesesDeMora: enCentavos(d.interesesDeMora),
+      yaAbonado: enCentavos(d.yaAbonado),
+    })),
+    aCentavos(valorCop),
+  );
+  const aPesos = (c: number) => c / 100;
+  return {
+    partes: r.partes.map((p) => ({
+      ...p,
+      valorCop: aPesos(p.valorCop),
+      quedaPendiente: aPesos(p.quedaPendiente),
+      aIntereses: aPesos(p.aIntereses),
+      aCapital: aPesos(p.aCapital),
+    })),
+    sobrante: aPesos(r.sobrante),
+    deudaTotal: aPesos(r.deudaTotal),
+    deudaRestante: aPesos(r.deudaRestante),
+  };
+}
+
+/**
+ * La regla en UNA unidad entera: el peso (hoy) o el centavo (con las dos
+ * llaves de la deuda, ver `imputarPago`).
+ */
+function imputarEnUnidades(
   deudas: readonly DeudaImputable[],
   valorCop: number,
 ): Imputacion {

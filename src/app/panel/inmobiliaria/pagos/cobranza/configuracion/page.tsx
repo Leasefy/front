@@ -61,6 +61,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
@@ -158,7 +159,7 @@ function difieren(
   return keys.some((k) => JSON.stringify(saved[k]) !== JSON.stringify(draft[k]))
 }
 
-const pesos = new Intl.NumberFormat('es-CO', {
+const pesos = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

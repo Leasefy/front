@@ -26,10 +26,11 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { usePaymentDetail } from '@/lib/hooks/cobranza/use-payment-detail'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const BACK_HREF = '/panel/inmobiliaria/pagos/cobranza/pagos'
 
-const copFormat = new Intl.NumberFormat('es-CO', {
+const copFormat = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

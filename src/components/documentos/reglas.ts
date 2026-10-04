@@ -18,6 +18,7 @@ import type {
   RevisionDelCertificado,
 } from '@/lib/api/documentos.service';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ─── Etiquetas ───────────────────────────────────────────────────────────────
 
@@ -258,7 +259,7 @@ export function formatearPorcentaje(valor: number): string {
 
 /** `2500000` → «$ 2.500.000». Pesos enteros. */
 export function formatearPesos(valor: number): string {
-  return `$ ${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor)}`;
+  return `$ ${plataEnPantalla('es-CO', { maximumFractionDigits: 0 }).format(valor)}`;
 }
 
 // ─── Puede generarse ─────────────────────────────────────────────────────────

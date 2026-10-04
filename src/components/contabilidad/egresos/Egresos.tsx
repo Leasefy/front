@@ -93,6 +93,7 @@ import {
   type LoteDeEgreso,
 } from '@/lib/api/gastos.service';
 import {
+  ayudaDeLasAcciones,
   MOTIVO_DEL_MISMO_APROBADOR,
   egresosArmables,
   faltaParaGirar,
@@ -103,6 +104,7 @@ import {
   totalDelLote,
 } from '@/lib/contabilidad/egresos';
 import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { Presence } from '@leasefy/cadence';
@@ -148,6 +150,7 @@ export function parteDeEgresos(valor: string | null | undefined): ParteDeEgresos
 
 export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = {}) {
   const { t } = useI18n();
+  const esCelular = useIsMobile();
   const [parte, setParte] = useState<ParteDeEgresos>(inicial);
 
   const [egresos, setEgresos] = useState<Egreso[] | null>(null);
@@ -423,6 +426,76 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
   const pendientesSinDatos = armables.filter((e) => faltaParaGirar(e).length > 0);
 
+  /*
+   * 🔴 CB-07 (QA de Contabilidad, 03-10-2026): las tres acciones de un egreso,
+   * con su motivo en el `title` (y para el lector de pantalla) y UNA ayuda
+   * corta debajo. Antes cada botón apagado pintaba su párrafo: la fila medía
+   * ~300 px y la columna se cortaba («Comproban…»). Las usan la fila de la
+   * tabla y la tarjeta del celular.
+   */
+  const accionesDelEgreso = (e: Egreso) => {
+    const ayuda = ayudaDeLasAcciones(e, escritura);
+    return (
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap gap-2">
+          <AccionConMotivo
+            puede={e.numero !== null}
+            motivo="El comprobante se numera cuando el lote se marca pagado."
+            ocupado={ocupado === e.id}
+            onClick={() => void verComprobante(e)}
+            testId={`comprobante-${e.id}`}
+            motivoVisible={false}
+          >
+            <Printer className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Comprobante
+          </AccionConMotivo>
+          <AccionConMotivo
+            puede={escritura.puede && e.estado === 'PAGADO'}
+            motivo={
+              escritura.motivo ??
+              'Sólo un egreso pagado se concilia: antes no hay salida en el extracto que amarrar.'
+            }
+            onClick={() => {
+              setConciliando(e);
+              setMovimientoBancarioId(e.movimientoBancarioId ?? '');
+            }}
+            testId={`conciliar-${e.id}`}
+            motivoVisible={false}
+          >
+            <LinkSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Conciliar
+          </AccionConMotivo>
+          {/* 🔴 Un egreso PAGADO no se anula (back, 23-09-2026: 409
+              `EGRESO_PAGADO_NO_SE_ANULA`). Antes el botón se ofrecía y
+              el back reversaba el asiento del pago antes de reventar. */}
+          <AccionConMotivo
+            puede={escritura.puede && e.estado !== 'ANULADO' && e.estado !== 'PAGADO'}
+            motivo={
+              escritura.motivo ??
+              (e.estado === 'PAGADO'
+                ? t('inmobiliaria.egresos.anularPagado')
+                : t('inmobiliaria.egresos.anularAnulado'))
+            }
+            onClick={() => {
+              setAnulando({ tipo: 'egreso', egreso: e });
+              setMotivo('');
+            }}
+            testId={`anular-egreso-${e.id}`}
+            motivoVisible={false}
+          >
+            <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Anular
+          </AccionConMotivo>
+        </div>
+        {ayuda ? (
+          <p className="text-caption text-fg-muted" data-testid={`ayuda-de-acciones-${e.id}`}>
+            {ayuda}
+          </p>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6" data-testid="egresos">
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «switch tab afuera… deberían estar
@@ -459,7 +532,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
               {parte === 'egresos'
                 ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
-                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso: P-4), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
             </p>
           </div>
 
@@ -471,6 +544,69 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 Todavía no hay egresos. Se crean desde una factura de proveedor causada, o sueltos
                 para un anticipo.
               </p>
+            ) : esCelular ? (
+              /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se
+                 corría de lado. Bajo 768 px cada egreso es una tarjeta —
+                 beneficiario, concepto, valor, estado y sus acciones— que abre
+                 el mismo cajón; la casilla marca para el lote. */
+              <ul className="divide-y divide-border" data-testid="tarjetas-de-egresos">
+                {egresos.map((e) => (
+                  <li
+                    key={e.id}
+                    data-testid={`egreso-${e.id}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Abrir el egreso a ${e.beneficiarioNombre}`}
+                    onClick={() => setAbierto(e)}
+                    onKeyDown={(ev) => {
+                      if (ev.target !== ev.currentTarget) return;
+                      if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        setAbierto(e);
+                      }
+                    }}
+                    className="flex cursor-pointer gap-3 px-4 py-3.5 transition-colors hover:bg-surface-muted/60 focus-visible:bg-surface-muted focus-visible:outline-none"
+                  >
+                    {e.estado === 'PENDIENTE' ? (
+                      <span className="pt-0.5" onClick={(ev) => ev.stopPropagation()}>
+                        <Checkbox
+                          checked={elegidos.has(e.id)}
+                          onCheckedChange={() => alternar(e.id)}
+                          disabled={!escritura.puede || Boolean(e.revision)}
+                          aria-label={`Meter ${e.beneficiarioNombre} en el lote`}
+                          data-testid={`marcar-${e.id}`}
+                        />
+                      </span>
+                    ) : null}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 break-words font-medium text-fg">{e.beneficiarioNombre}</p>
+                        <Monto valor={e.netoCop} className="shrink-0 text-sm font-medium" />
+                      </div>
+                      <p className="line-clamp-2 text-sm text-fg-muted">{e.concepto}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={TONO_DEL_ESTADO[e.estado]}>
+                          {NOMBRE_DEL_ESTADO_DE_EGRESO[e.estado]}
+                        </Badge>
+                        {e.numero !== null ? (
+                          <span className="text-caption text-fg-muted">Comprobante N.º {e.numero}</span>
+                        ) : null}
+                        {e.valorCop !== e.netoCop ? (
+                          <span className="text-caption text-fg-muted">
+                            Valor <Monto valor={e.valorCop} className="text-caption" />
+                          </span>
+                        ) : null}
+                      </div>
+                      {e.revision ? (
+                        <p className="text-caption text-warning" data-testid={`en-revision-${e.id}`}>
+                          En revisión: se marca como revisada en el estado de cuenta del contrato.
+                        </p>
+                      ) : null}
+                      <div onClick={(ev) => ev.stopPropagation()}>{accionesDelEgreso(e)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -479,7 +615,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                       <TableHead className="w-10" />
                       <TableHead>Beneficiario</TableHead>
                       <TableHead>Concepto</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
+                      {/* CB-07: una columna (el neto, y el valor debajo si hay
+                          retenciones): con dos, la tabla no cabía a 1440. */}
                       <TableHead className="text-right">Se le paga</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Acciones</TableHead>
@@ -518,7 +655,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               />
                             ) : null}
                           </TableCell>
-                          <TableCell className="max-w-[16rem]">
+                          <TableCell className="max-w-[14rem]">
                             <p className="truncate text-sm text-fg" title={e.beneficiarioNombre}>
                               {e.beneficiarioNombre}
                             </p>
@@ -538,14 +675,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               <p
                                 className="text-caption text-warning"
                                 data-testid={`en-revision-${e.id}`}
-                                title={e.revision.motivo}
+                                title={`Llegó deuda nueva del inquilino después de registrar la devolución: no se gira hasta marcarla como revisada. ${e.revision.motivo}`}
                               >
-                                En revisión: llegó deuda nueva del inquilino después de registrar la devolución.
-                                No se gira hasta marcarla como revisada en el estado de cuenta del contrato.
+                                {/* CB-07: una línea; el porqué completo en el `title`. */}
+                                En revisión: se marca como revisada en el estado de cuenta del contrato.
                               </p>
                             ) : null}
                           </TableCell>
-                          <TableCell className="max-w-[18rem]">
+                          <TableCell className="max-w-[14rem]">
                             <p className="truncate text-sm text-fg" title={e.concepto}>
                               {e.concepto}
                             </p>
@@ -562,10 +699,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                             ) : null}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Monto valor={e.valorCop} className="text-sm" />
-                          </TableCell>
-                          <TableCell className="text-right">
                             <Monto valor={e.netoCop} className="text-sm" />
+                            {e.valorCop !== e.netoCop ? (
+                              <p className="whitespace-nowrap text-caption text-fg-muted">
+                                de <Monto valor={e.valorCop} className="text-caption" />
+                              </p>
+                            ) : null}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             <Badge variant={TONO_DEL_ESTADO[e.estado]}>
@@ -591,54 +730,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                             ) : null}
                           </TableCell>
                           {/* Los botones actúan; no abren el cajón. */}
-                          <TableCell onClick={(ev) => ev.stopPropagation()}>
-                            <div className="flex flex-wrap gap-2">
-                              <AccionConMotivo
-                                puede={e.numero !== null}
-                                motivo="El comprobante se numera cuando el lote se marca pagado."
-                                ocupado={ocupado === e.id}
-                                onClick={() => void verComprobante(e)}
-                                testId={`comprobante-${e.id}`}
-                              >
-                                <Printer className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Comprobante
-                              </AccionConMotivo>
-                              <AccionConMotivo
-                                puede={escritura.puede && e.estado === 'PAGADO'}
-                                motivo={
-                                  escritura.motivo ??
-                                  'Sólo un egreso pagado se concilia: antes no hay salida en el extracto que amarrar.'
-                                }
-                                onClick={() => {
-                                  setConciliando(e);
-                                  setMovimientoBancarioId(e.movimientoBancarioId ?? '');
-                                }}
-                                testId={`conciliar-${e.id}`}
-                              >
-                                <LinkSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Conciliar
-                              </AccionConMotivo>
-                              {/* 🔴 Un egreso PAGADO no se anula (back, 23-09-2026: 409
-                                  `EGRESO_PAGADO_NO_SE_ANULA`). Antes el botón se ofrecía y
-                                  el back reversaba el asiento del pago antes de reventar. */}
-                              <AccionConMotivo
-                                puede={escritura.puede && e.estado !== 'ANULADO' && e.estado !== 'PAGADO'}
-                                motivo={
-                                  escritura.motivo ??
-                                  (e.estado === 'PAGADO'
-                                    ? t('inmobiliaria.egresos.anularPagado')
-                                    : t('inmobiliaria.egresos.anularAnulado'))
-                                }
-                                onClick={() => {
-                                  setAnulando({ tipo: 'egreso', egreso: e });
-                                  setMotivo('');
-                                }}
-                                testId={`anular-egreso-${e.id}`}
-                              >
-                                <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Anular
-                              </AccionConMotivo>
-                            </div>
+                          <TableCell onClick={(ev) => ev.stopPropagation()} className="min-w-[19rem]">
+                            {accionesDelEgreso(e)}
                           </TableCell>
                         </TableRowAnimada>
                       );
@@ -658,9 +751,22 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             {/* La barra SALE animada cuando ya no queda nada por armar (D-MOV
                 4 a). La caja de `Presence` es la que se pega al borde de abajo:
                 adentro, la barra no tendría lugar para pegarse. */}
-            <Presence show={armables.length > 0} initial={false} className="sticky bottom-0 z-30">
+            {/* 🔴 CB-07 / CB-22: sin nada marcado la barra sólo explica, y pegada
+                al borde de abajo TAPABA la segunda fila (a 1440 y a 390). Se pega
+                sólo cuando hay algo marcado — ahí sí hay una acción a la mano —, y
+                en el celular encima de la barra de navegación (como «Por facturar»). */}
+            <Presence
+              show={armables.length > 0}
+              initial={false}
+              className={
+                marcados.length > 0
+                  ? 'sticky bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] z-30 lg:bottom-0'
+                  : undefined
+              }
+            >
               <BarraDeAccionesMasivas
                 variant="pie"
+                className={marcados.length > 0 ? undefined : 'static'}
                 testid="armar-lote"
                 marcadas={marcados.length}
                 queSon={['egreso', 'egresos']}
@@ -669,7 +775,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 ocupado={armando}
                 cuandoNoHayNada={
                   escritura.esAdministrador
-                    ? 'Marca los egresos pendientes que van juntos al banco. Como eres administrador, el lote queda aprobado al armarlo, sin código (P-4).'
+                    ? 'Marca los egresos pendientes que van juntos al banco. Como eres administrador, el lote queda aprobado al armarlo.'
                     : 'Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona.'
                 }
                 nota={

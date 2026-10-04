@@ -132,12 +132,14 @@ import { formatosConFilas, formatosSinVistoBueno } from '@/lib/contabilidad/exog
 // Sólo el nombre del archivo: armarlo ya no es tarea del navegador (CT3).
 import { nombreDelCsv } from '@/lib/contabilidad/csv';
 import {
+  diaDe,
   diaLegible,
   hoy,
   primerDiaDelMes,
   rangoDelMesAnterior,
   rangoInvertido,
 } from '@/lib/contabilidad/fechas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { clasificarFallo } from '@/lib/errores/clasificar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -418,12 +420,10 @@ const PINTURA: Record<AlertaDescrita['severidad'], { caja: string; icono: string
 function Alerta({
   alerta,
   onReprocesar,
-  onCerrarMes,
   ocupado,
 }: {
   alerta: AlertaDescrita;
   onReprocesar: () => void;
-  onCerrarMes: () => void;
   ocupado: boolean;
 }) {
   const { caja, icono, Icono } = PINTURA[alerta.severidad];
@@ -455,11 +455,12 @@ function Alerta({
           <ArrowsClockwise className="mr-1.5 h-4 w-4" aria-hidden="true" />
           {alerta.accion.label}
         </Button>
-      ) : (
-        <Button variant="outline" size="sm" hideArrow onClick={onCerrarMes}>
-          {alerta.accion.label}
-        </Button>
-      )}
+      ) : null}
+      {/* 🔴 CB-04 (QA de Contabilidad, 03-10-2026): «Cerrar el mes» de esta
+          alerta y «Cerrar período…» de la tarjeta del período, en la misma
+          pantalla, eran dos botones para lo mismo — y el de la alerta sólo
+          llevaba a la tarjeta. Queda uno: el de la tarjeta, que es donde se
+          elige el día y se confirma. La alerta dice qué mes falta cerrar. */}
     </div>
   );
 }
@@ -553,8 +554,10 @@ function UltimosAsientos({
                 className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_auto] items-baseline gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover"
                 data-testid={`ultimo-asiento-${a.id}`}
               >
-                <span className="truncate font-mono text-caption tabular-nums text-fg-muted">
-                  {diaLegible(a.fecha)}
+                {/* 🔴 CB-04: «4 de oct de …» se cortaba en la columna; la fecha
+                    corta de la casa («4 oct 2026») cabe entera. */}
+                <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
+                  {fechaCorta(diaDe(a.fecha))}
                 </span>
                 <span className="truncate text-sm text-fg" title={a.descripcion}>
                   {a.descripcion}
@@ -1081,16 +1084,6 @@ export function HubDeContabilidad() {
     }
   };
 
-  // El botón de la alerta no cierra nada solo: lleva al bloque de cierre, que
-  // es donde se escribe la fecha para confirmar. Cerrar un mes con un clic
-  // desde una alerta sería irreversible sin haberlo leído.
-  const irAlCierre = () => {
-    const nodo = cierreRef.current;
-    if (!nodo) return;
-    nodo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    nodo.focus({ preventScroll: true });
-  };
-
   // Un cero de este mes no significa un libro vacío: si el último asiento es
   // de agosto y estamos en septiembre, el 0 es correcto y engañoso a la vez.
   // `elLibroEnUnaFrase` es la que decide cómo se dice eso.
@@ -1189,7 +1182,6 @@ export function HubDeContabilidad() {
             <Alerta
               alerta={a}
               onReprocesar={() => setConfirmandoReproceso(true)}
-              onCerrarMes={irAlCierre}
               ocupado={reprocesando}
             />
             </StaggerItem>
@@ -1214,8 +1206,8 @@ export function HubDeContabilidad() {
           1.606 px. Las columnas de `lg` también son `minmax(0, …)` por lo
           mismo. */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        {/* `tabIndex={-1}`: la alerta «Cerrar el mes» trae el foco acá, y sin
-            esto un div no lo recibe. */}
+        {/* `tabIndex={-1}`: el bloque del cierre puede recibir el foco. (Desde
+            CB-04 la alerta «Cerrar el mes» ya no trae botón: la acción es ésta.) */}
         <div
           ref={cierreRef}
           tabIndex={-1}

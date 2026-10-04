@@ -71,6 +71,41 @@ vi.mock('@leasefy/cadence', async () => {
   };
 });
 
+// CB-04 (03-10-2026): la fecha es el selector del DS (`CampoDeDia`, un botón
+// con calendario). Este doble la vuelve un campo de texto con el MISMO
+// `data-testid`, `id`, `aria-invalid` y `aria-describedby`: lo que estas
+// pruebas miran de los errores no cambió. El campo de verdad se prueba en
+// `CampoDeDia.test.tsx`.
+vi.mock('../CampoDeDia', () => ({
+  CampoDeDia: ({
+    id,
+    value,
+    onChange,
+    disabled,
+    invalido,
+    describedBy,
+    testid,
+  }: {
+    id: string;
+    value: string;
+    onChange: (v: string) => void;
+    disabled?: boolean;
+    invalido?: boolean;
+    describedBy?: string;
+    testid?: string;
+  }) => (
+    <input
+      id={id}
+      value={value}
+      disabled={disabled}
+      aria-invalid={invalido || undefined}
+      aria-describedby={describedBy}
+      data-testid={testid}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 const { api, toastMock } = vi.hoisted(() => ({
   api: { asientos: { crear: vi.fn() } },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },

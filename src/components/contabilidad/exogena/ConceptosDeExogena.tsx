@@ -314,7 +314,7 @@ export function ConceptosDeExogena({
                         <Input
                           aria-label={`Concepto de la cuenta ${c.codigo}`}
                           className="w-28"
-                          value={cambio?.concepto ?? c.concepto}
+                          value={cambio?.concepto ?? c.concepto ?? ''}
                           disabled={!escritura.puede || !conceptos.disponible}
                           onChange={(e) =>
                             setCambios((previo) => ({

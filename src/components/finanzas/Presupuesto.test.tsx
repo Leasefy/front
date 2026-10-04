@@ -42,6 +42,56 @@ vi.mock('@/lib/api/finanzas.service', () => ({
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
+// CB-17 (03-10-2026): los selectores son el `Select` del DS (Radix), que no se
+// abre en happy-dom. Este doble lo vuelve un `<select>` nativo con el MISMO
+// `data-testid` del disparador, su valor y sus opciones: lo que estas pruebas
+// miran no cambió.
+vi.mock('@/components/ui/select', async () => {
+  const React = await import('react');
+  type Ctx = { value?: string; onValueChange?: (v: string) => void; trigger: Record<string, unknown> };
+  const Contexto = React.createContext<Ctx>({ trigger: {} });
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value?: string;
+      onValueChange?: (v: string) => void;
+      children?: React.ReactNode;
+    }) => {
+      const trigger = React.useRef<Record<string, unknown>>({}).current;
+      return <Contexto.Provider value={{ value, onValueChange, trigger }}>{children}</Contexto.Provider>;
+    },
+    SelectTrigger: (props: Record<string, unknown>) => {
+      Object.assign(React.useContext(Contexto).trigger, props);
+      return null;
+    },
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => {
+      const ctx = React.useContext(Contexto);
+      return (
+        <select
+          data-testid={ctx.trigger['data-testid'] as string | undefined}
+          aria-label={ctx.trigger['aria-label'] as string | undefined}
+          disabled={Boolean(ctx.trigger.disabled)}
+          value={ctx.value ?? ''}
+          onChange={(e) => ctx.onValueChange?.(e.target.value)}
+        >
+          {ctx.value ? null : <option value="" />}
+          {children}
+        </select>
+      );
+    },
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
+      <option value={value}>{children}</option>
+    ),
+    SelectGroup: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    SelectLabel: () => null,
+    SelectSeparator: () => null,
+  };
+});
+
 
 import { PresupuestoPanel } from './Presupuesto';
 
@@ -268,7 +318,12 @@ describe('cargar el presupuesto · errores en su campo', () => {
       (testId('cargar-presupuesto') as HTMLButtonElement).click();
     });
     await act(async () => {
-      escribir(enDoc('presupuesto-rubro') as HTMLInputElement, 'comisiones');
+      // CB-30 (03-10-2026): el rubro se ELIGE (Select del DS; aquí su doble nativo).
+      const rubro = enDoc('presupuesto-rubro') as HTMLSelectElement;
+      rubro.value = 'comisiones';
+      rubro.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
       escribir(enDoc('presupuesto-valor') as HTMLInputElement, valor);
     });
   }

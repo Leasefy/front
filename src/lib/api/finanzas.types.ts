@@ -380,6 +380,12 @@ export interface FilaDelCertificado {
   /** En cuántos períodos le retuvieron. */
   periodos: number;
   porMes: MesDelCertificado[];
+  /**
+   * CB-R17 (Nico, 03-10-2026): con copropietarios, UNA fila por copropietario
+   * con su parte. El porcentaje de esa parte (70 = 70 %). Opcional: lo agrega
+   * QA-CONTA-BACK; sin él, la fila es del propietario entero.
+   */
+  participacionPct?: number | null;
 }
 
 export interface CertificadoEmitido {
@@ -701,6 +707,21 @@ export interface FilaDelPresupuesto {
   cuentasDelRubro?: string[];
   /** `true` = hay real propio Y real del libro, y NO coinciden. */
   difiereDelLibro?: boolean;
+  /**
+   * CB-09 (Nico, 03-10-2026: la columna «Real» del presupuesto es la del
+   * LIBRO): el mismo mes del año anterior, leído del libro. En un rubro con
+   * fuente propia `anioAnteriorCop` viene de la operación; sin este campo, la
+   * pantalla no compara el libro de hoy con la operación del año pasado.
+   * Opcional: lo agrega QA-CONTA-BACK.
+   */
+  anioAnteriorDelLibroCop?: number | null;
+  /**
+   * QA-CONTA-BACK (26beefbc, Nico «El del libro»): con este campo, `realCop` YA
+   * es el del libro (también «contra el presupuesto», la variación y el año
+   * anterior) y esto es lo que dice la OPERACIÓN, como referencia. `null` = el
+   * rubro no tiene real propio. Opcional: un back anterior no lo manda.
+   */
+  realDeLaOperacionCop?: number | null;
 }
 
 export interface ComparacionDelPresupuesto {
@@ -721,6 +742,8 @@ export interface ComparacionDelPresupuesto {
 export interface NuevoPresupuesto {
   mes: string;
   rubro: string;
+  /** CB-30: con `rubro: 'otro'`, el nombre del rubro tal cual se va a ver. */
+  nombre?: string;
   valorCop: number;
   sedeId?: string;
   notas?: string;

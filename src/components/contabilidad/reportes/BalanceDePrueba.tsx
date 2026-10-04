@@ -40,6 +40,7 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { contabilidadApi, type BalanceDePrueba as Balance } from '@/lib/api/contabilidad.service';
 import { hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { FranjaDeInforme, TarjetaDeInforme } from '../piezas';
 import { Monto } from '../Monto';
@@ -57,6 +58,7 @@ export function TablaDeBalance({
   /** Dentro de `TarjetaDeInforme` la tabla no lleva borde propio. */
   sinMarco?: boolean;
 }) {
+  const esCelular = useIsMobile();
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(balance.filas, {
       resetKey: `${balance.desde ?? ''}|${balance.hasta ?? ''}|${balance.filas.length}`,
@@ -94,6 +96,57 @@ export function TablaDeBalance({
           !sinMarco && 'rounded-lg border border-border',
         )}
       >
+        {esCelular ? (
+          /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se
+             corría de lado y no se veía ni el saldo. Bajo 768 px cada cuenta es
+             una tarjeta con sus cuatro cifras, y los totales al final. */
+          <>
+            <ul className="divide-y divide-border" data-testid="tarjetas-de-balance">
+              {pageItems.map((f) => (
+                <li key={f.cuentaId} className="space-y-2 px-4 py-3" data-testid="tarjeta-de-balance">
+                  <p className="flex items-baseline gap-1.5">
+                    <span className="font-mono text-caption tabular-nums text-fg-muted">{f.codigo}</span>
+                    <span className="min-w-0 break-words text-sm text-fg">{f.nombre}</span>
+                    <span className="shrink-0 text-caption uppercase tracking-wide text-fg-subtle">
+                      {f.naturaleza === 'DEBITO' ? 'débito' : 'crédito'}
+                    </span>
+                  </p>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-caption">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="text-fg-muted">Saldo anterior</dt>
+                      <dd><Monto valor={f.saldoAnteriorCop} vacioSiCero /></dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="text-fg-muted">Débitos</dt>
+                      <dd><Monto valor={f.debitosCop} vacioSiCero /></dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="text-fg-muted">Créditos</dt>
+                      <dd><Monto valor={f.creditosCop} vacioSiCero /></dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="text-fg-muted">Saldo final</dt>
+                      <dd><Monto valor={f.saldoFinalCop} className="font-medium" /></dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+            <div className="space-y-1 border-t border-border bg-surface-muted px-4 py-3 text-sm">
+            <p className="font-medium text-fg">Totales del período</p>
+            <dl className="grid grid-cols-2 gap-x-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-caption text-fg-muted">Débitos</dt>
+                <dd data-testid="total-debitos"><Monto valor={balance.totalDebitosCop} className="font-medium" /></dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-caption text-fg-muted">Créditos</dt>
+                <dd data-testid="total-creditos"><Monto valor={balance.totalCreditosCop} className="font-medium" /></dd>
+              </div>
+            </dl>
+            </div>
+          </>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -149,6 +202,7 @@ export function TablaDeBalance({
             </TableRow>
           </TableFooter>
         </Table>
+        )}
 
         {shouldPaginate ? (
           <div className="border-t border-border px-4 py-3">

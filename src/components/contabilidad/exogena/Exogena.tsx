@@ -87,6 +87,8 @@ import {
   type ResumenDeExogena,
 } from '@/lib/api/exogena.service';
 import {
+  ayudaDelFormato,
+  estadoParaMostrarDelFormato,
   aniosDeExogena,
   frasesDeCuantiasMenores,
   nombreDelArchivoDeExogena,
@@ -94,7 +96,8 @@ import {
   totalesDelAnio,
 } from '@/lib/contabilidad/exogena';
 import { diaLegible } from '@/lib/contabilidad/fechas';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency, textoDelBack } from '@/lib/contabilidad/plata';
 import { Monto } from '../Monto';
 import { AccionConMotivo, Bloqueos, Nota, VistoBuenoDelContador } from '../piezas';
 import { usePuedeEscribir, usePuedeExportarContabilidad } from '../use-puede-escribir';
@@ -314,7 +317,13 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         <ul className="space-y-4">
           {resumen.formatos.map((f) => {
             const permiso = sePuedeAprobar(f, resumen.disponible);
-            const paraElContador = f.paraElContador ?? [];
+            // 🔴 CB-12: las frases del back sin los 🔴 (el cartel ya trae el
+            // ícono del DS) y con la plata de la casa.
+            const paraElContador = (f.paraElContador ?? []).map(textoDelBack);
+            const bloqueos = f.bloqueos.map(textoDelBack);
+            const avisosDelFormato = f.avisos.map(textoDelBack);
+            const estado = estadoParaMostrarDelFormato(f);
+            const ayuda = ayudaDelFormato(f, permiso, escritura);
             return (
               <li
                 key={f.formato}
@@ -339,29 +348,33 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                       </p>
                     ) : null}
                   </div>
+                  {/* 🔴 CB-12: el estado REAL. «Generada» al lado de «Esto impide
+                      presentar el formato» se leía como «lista». */}
                   <Badge
                     variant={
-                      f.estado === 'APROBADA'
-                        ? 'secondary'
-                        : f.estado === 'ANULADA'
-                          ? 'destructive'
+                      estado.tono === 'peligro'
+                        ? 'destructive'
+                        : estado.tono === 'listo'
+                          ? 'secondary'
                           : 'outline'
                     }
+                    title={NOMBRE_DEL_ESTADO_DE_FORMATO[f.estado]}
+                    data-testid={`estado-${f.formato}`}
                   >
-                    {NOMBRE_DEL_ESTADO_DE_FORMATO[f.estado]}
+                    {estado.texto}
                   </Badge>
                 </div>
 
                 {/* Rojo: impide. */}
                 <Bloqueos
-                  bloqueos={f.bloqueos}
+                  bloqueos={bloqueos}
                   titulo="Esto impide presentar el formato"
                   testId={`bloqueos-${f.formato}`}
                 />
 
                 {/* Amarillo: hay que mirarlo. */}
                 <Avisos
-                  avisos={f.avisos}
+                  avisos={avisosDelFormato}
                   testId={`avisos-${f.formato}`}
                   titulo="Para mirar antes de presentar"
                 />
@@ -383,6 +396,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                     textoOcupado="Armando…"
                     onClick={() => void abrir(f.formato)}
                     testId={`ver-${f.formato}`}
+                    motivoVisible={false}
                   >
                     Ver las filas
                   </AccionConMotivo>
@@ -396,6 +410,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                     textoOcupado="Generando…"
                     onClick={() => void descargar(f.formato)}
                     testId={`descargar-${f.formato}`}
+                    motivoVisible={false}
                   >
                     <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                     Descargar el CSV
@@ -405,13 +420,14 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                       apagado con el bloqueo textual del back como motivo. */}
                   <AccionConMotivo
                     puede={escritura.puede && permiso.puede}
-                    motivo={escritura.motivo ?? permiso.motivo}
+                    motivo={escritura.motivo ?? (permiso.motivo ? textoDelBack(permiso.motivo) : null)}
                     onClick={() => {
                       setAprobando(f.formato);
                       setObservaciones('');
                     }}
                     variant="default"
                     testId={`aprobar-${f.formato}`}
+                    motivoVisible={false}
                   >
                     <SealCheck className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                     Visto bueno del contador
@@ -427,11 +443,19 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                       setMotivo('');
                     }}
                     testId={`anular-${f.formato}`}
+                    motivoVisible={false}
                   >
                     <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                     Quitar el visto bueno
                   </AccionConMotivo>
                 </div>
+                {/* CB-12: UNA ayuda corta; cada botón guarda su motivo entero
+                    en el `title` y para el lector de pantalla. */}
+                {ayuda ? (
+                  <p className="text-caption text-fg-muted" data-testid={`ayuda-${f.formato}`}>
+                    {ayuda}
+                  </p>
+                ) : null}
               </li>
             );
           })}

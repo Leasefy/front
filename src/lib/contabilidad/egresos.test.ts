@@ -204,7 +204,8 @@ describe('🔴 la doble firma', () => {
     expect(p.aprobar).toEqual({ puede: true, motivo: null });
     // Y a quien no es administrador, el motivo lo dice.
     expect(permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo' }), 'u-yo', false).aprobar.motivo).toContain(
-      'Sólo lo que arma un administrador queda aprobado por él mismo (P-4)',
+      // CB-07 (03-10-2026): sin el código interno «(P-4)» y de tú («lo armaste tú»).
+      'Sólo lo que arma un administrador queda aprobado por él mismo',
     );
   });
 

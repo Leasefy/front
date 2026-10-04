@@ -47,7 +47,8 @@ import {
 } from '@/lib/api/estados-financieros.service';
 import { descuadreDelMayor, mesesConDatos } from '@/lib/contabilidad/estados-financieros';
 import { hoy, rangoDelMesAnterior } from '@/lib/contabilidad/fechas';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';

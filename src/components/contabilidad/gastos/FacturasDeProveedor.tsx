@@ -48,8 +48,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -86,11 +92,16 @@ import {
   type FacturaDeProveedor,
   type PaginaDeFacturas,
 } from '@/lib/api/gastos.service';
-import { diaLegible } from '@/lib/contabilidad/fechas';
+import { diaDe, diaLegible } from '@/lib/contabilidad/fechas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { CampoDeDia } from '../CampoDeDia';
 import { FormularioDeFactura } from './FormularioDeFactura';
+
+/** El valor de «todas» en los `Select` del DS (Radix no acepta `''`). */
+const TODOS = '__todos__';
 
 const TONO_DEL_ESTADO: Record<
   EstadoDeFacturaDeProveedor,
@@ -289,9 +300,10 @@ export function FacturasDeProveedor({
 
   return (
     <div className="space-y-6" data-testid="facturas-de-proveedor">
+      {/* 🔴 CB-17: la explicación ya la dice la cabecera de la pantalla, palabra
+          por palabra; acá se repetía a 80 px. Queda una vez, arriba. */}
       <TituloDeBloque
         titulo="Facturas de proveedor"
-        explicacion="Lo que la inmobiliaria gasta en sí misma: el contador, la luz de la oficina, las cerraduras. Es lo que le da gastos propios al P&G y filas al formato 1001 de la exógena. Lo que se le gira al propietario NO va acá: eso baja un pasivo y no es gasto."
         accion={
           <AccionConMotivo
             puede={escritura.puede}
@@ -308,61 +320,71 @@ export function FacturasDeProveedor({
 
       {/* ── Filtros ───────────────────────────────────────────────────── */}
       <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
-        <div className="space-y-1.5">
+        {/* 🔴 CB-04 / CB-17: el selector de fecha y el `Select` del DS, no el
+            `<input type="date">` ni el `<select>` del navegador. */}
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="facturas-desde">Desde</Label>
-          <Input
+          <CampoDeDia
             id="facturas-desde"
-            type="date"
             value={desde}
             max={hasta || undefined}
-            onChange={(e) => setDesde(e.target.value)}
-            data-testid="filtro-desde"
+            onChange={setDesde}
+            placeholder="Sin fecha"
+            quitable
+            etiquetaDeQuitar="Quitar la fecha «desde»"
+            testid="filtro-desde"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="facturas-hasta">Hasta</Label>
-          <Input
+          <CampoDeDia
             id="facturas-hasta"
-            type="date"
             value={hasta}
             min={desde || undefined}
-            onChange={(e) => setHasta(e.target.value)}
-            data-testid="filtro-hasta"
+            onChange={setHasta}
+            placeholder="Sin fecha"
+            quitable
+            etiquetaDeQuitar="Quitar la fecha «hasta»"
+            testid="filtro-hasta"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="facturas-estado">Estado</Label>
-          <select
-            id="facturas-estado"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={estado}
-            onChange={(e) => setEstado(e.target.value as EstadoDeFacturaDeProveedor | '')}
-            data-testid="filtro-estado"
+          <Label id="facturas-estado">Estado</Label>
+          <Select
+            value={estado || TODOS}
+            onValueChange={(v) => setEstado(v === TODOS ? '' : (v as EstadoDeFacturaDeProveedor))}
           >
-            <option value="">Todas</option>
-            {ESTADOS_DE_FACTURA.map((e) => (
-              <option key={e} value={e}>
-                {NOMBRE_DEL_ESTADO_DE_FACTURA[e]}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-labelledby="facturas-estado" data-testid="filtro-estado">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todas</SelectItem>
+              {ESTADOS_DE_FACTURA.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {NOMBRE_DEL_ESTADO_DE_FACTURA[e]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="facturas-rubro">Rubro</Label>
-          <select
-            id="facturas-rubro"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={rubroFiltro}
-            onChange={(e) => setRubroFiltro(e.target.value)}
-            data-testid="filtro-rubro"
+          <Label id="facturas-rubro">Rubro</Label>
+          <Select
+            value={rubroFiltro || TODOS}
+            onValueChange={(v) => setRubroFiltro(v === TODOS ? '' : v)}
           >
-            <option value="">Todos</option>
-            {rubros.map((r) => (
-              <option key={r.rubro} value={r.rubro}>
-                {r.nombre}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-labelledby="facturas-rubro" data-testid="filtro-rubro">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos</SelectItem>
+              {rubros.map((r) => (
+                <SelectItem key={r.rubro} value={r.rubro}>
+                  {r.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </section>
 
@@ -453,7 +475,9 @@ export function FacturasDeProveedor({
                           {NOMBRE_DEL_TIPO_DE_FACTURA[f.tipo]}
                         </p>
                       </TableCell>
-                      <TableCell className="max-w-[16rem]">
+                      {/* CB-17: la tabla no cabía a 1440 (las acciones se cortaban):
+                          columnas de texto más angostas y la fecha corta de la casa. */}
+                      <TableCell className="max-w-[14rem]">
                         <p className="truncate text-sm text-fg" title={f.proveedorNombre}>
                           {f.proveedorNombre}
                         </p>
@@ -463,9 +487,9 @@ export function FacturasDeProveedor({
                         </p>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-caption text-fg-muted">
-                        {diaLegible(f.fecha)}
+                        {fechaCorta(diaDe(f.fecha))}
                       </TableCell>
-                      <TableCell className="max-w-[18rem]">
+                      <TableCell className="max-w-[14rem]">
                         <p className="truncate text-sm text-fg" title={f.concepto}>
                           {f.concepto}
                         </p>

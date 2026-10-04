@@ -122,7 +122,7 @@ export const TEXTO_DE_ERROR_DE_LINEA: Record<ErrorDeLinea, string> = {
   SIN_MONTO: 'Falta el monto: débito o crédito.',
   DOS_LADOS: 'Una línea va por un solo lado: débito o crédito, no los dos.',
   MONTO_INVALIDO: 'El monto va en pesos enteros, en positivo.',
-  MONTO_FUERA_DE_RANGO: 'Demasiado grande para una línea. Partilo en dos.',
+  MONTO_FUERA_DE_RANGO: 'Demasiado grande para una línea. Pártelo en dos.',
 };
 
 /** Una línea nueva, vacía. */

@@ -40,6 +40,71 @@ vi.mock('@/lib/api/gastos.service', async () => {
   return { ...actual, gastosApi: gastos };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+// CB-17 (03-10-2026): los selectores son el `Select` del DS (Radix), que no se
+// abre en happy-dom. Este doble lo vuelve un `<select>` nativo con el MISMO
+// `data-testid` del disparador, su valor y sus opciones: lo que estas pruebas
+// miran no cambió.
+vi.mock('@/components/ui/select', async () => {
+  const React = await import('react');
+  type Ctx = { value?: string; onValueChange?: (v: string) => void; trigger: Record<string, unknown> };
+  const Contexto = React.createContext<Ctx>({ trigger: {} });
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value?: string;
+      onValueChange?: (v: string) => void;
+      children?: React.ReactNode;
+    }) => {
+      const trigger = React.useRef<Record<string, unknown>>({}).current;
+      return <Contexto.Provider value={{ value, onValueChange, trigger }}>{children}</Contexto.Provider>;
+    },
+    SelectTrigger: (props: Record<string, unknown>) => {
+      Object.assign(React.useContext(Contexto).trigger, props);
+      return null;
+    },
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => {
+      const ctx = React.useContext(Contexto);
+      return (
+        <select
+          data-testid={ctx.trigger['data-testid'] as string | undefined}
+          aria-label={ctx.trigger['aria-label'] as string | undefined}
+          disabled={Boolean(ctx.trigger.disabled)}
+          value={ctx.value ?? ''}
+          onChange={(e) => ctx.onValueChange?.(e.target.value)}
+        >
+          {children}
+        </select>
+      );
+    },
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
+      <option value={value}>{children}</option>
+    ),
+    SelectGroup: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    SelectLabel: () => null,
+    SelectSeparator: () => null,
+  };
+});
+// CB-21 (03-10-2026): las fechas son el selector del DS (`CampoDeDia`, un botón
+// con calendario). Este doble lo vuelve un campo de texto con el MISMO
+// `data-testid`: lo que estas pruebas miran no cambió.
+vi.mock('../CampoDeDia', () => ({
+  CampoDeDia: ({
+    id,
+    value,
+    onChange,
+    testid,
+  }: {
+    id: string;
+    value: string;
+    onChange: (v: string) => void;
+    testid?: string;
+  }) => <input id={id} value={value} data-testid={testid} onChange={(e) => onChange(e.target.value)} />,
+}));
+
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
 }));
@@ -371,7 +436,8 @@ describe('<FormularioDeFactura>', () => {
 
     const impuestos = q('impuestos-de-la-factura')!.textContent!;
     expect(impuestos).toContain('lo calculó Leasefy');
-    expect(impuestos).toContain('lo escribiste vos');
+    // De tú, nunca de vos (QA de Contabilidad, 03-10-2026).
+    expect(impuestos).toContain('lo escribiste tú');
     // 🔴 Y la explicación del BACK, que es la que sabe de dónde salió la tarifa.
     expect(impuestos).toContain('perfil tributario del proveedor');
   });

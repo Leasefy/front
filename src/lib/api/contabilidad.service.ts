@@ -259,6 +259,20 @@ export interface MovimientoContable {
   orden: number;
   /** Sólo en los listados y en `GET /:id`; `POST /` devuelve sin esto. */
   cuenta?: { codigo: string; nombre: string };
+  /**
+   * CB-13 (QA de Contabilidad, 03-10-2026): el NOMBRE del tercero de la línea,
+   * que el back agrega al detalle. Opcional: un back anterior no lo manda, y
+   * entonces la pantalla no pinta nada — nunca el `terceroId` (un uuid).
+   */
+  terceroNombre?: string | null;
+  /** CB-13: el documento del tercero (sin el tipo). Opcional. */
+  terceroDocumento?: string | null;
+}
+
+/** Otro asiento nombrado desde éste (CB-14): su id para abrirlo y su número para decirlo. */
+export interface ReferenciaDeAsiento {
+  id: string;
+  numero: number;
 }
 
 export interface AsientoContable {
@@ -274,6 +288,46 @@ export interface AsientoContable {
   creadoPorUserId: string | null;
   createdAt: string;
   movimientos: MovimientoContable[];
+  /**
+   * CB-14: si este asiento ES la reversa de otro, cuál («Reversa del N.º 18»).
+   * Opcional: un back anterior no lo manda (`undefined` = no se sabe).
+   */
+  reversaDe?: ReferenciaDeAsiento | null;
+  /** CB-14: si a este asiento ya lo reversaron, con cuál («Reversado por el N.º 165»). */
+  reversadoPor?: ReferenciaDeAsiento | null;
+  /**
+   * CB-13: lo que generó el asiento dicho para una persona: su tipo, el rótulo
+   * («Recibo de caja N.º 23», «Cobro de octubre de 2026 · Valentina Ospina») y
+   * el id del documento (no se pinta). Opcional: un back anterior no lo manda.
+   */
+  origenLegible?: OrigenLegible | null;
+  /** CB-14: ¿se ofrece «Reversar»? Lo decide el back (reversado, reversa, automático…). */
+  sePuedeReversar?: boolean;
+  /** CB-14: por qué no, en palabras («Ya tiene su reversa: el N.º 165»). */
+  porQueNoSeReversa?: string | null;
+}
+
+/** Los tipos de `origenLegible.tipo` (QA-CONTA-BACK, 03-10-2026). */
+export type TipoDeOrigenLegible =
+  | 'MANUAL'
+  | 'REVERSA'
+  | 'APERTURA'
+  | 'COBRO'
+  | 'RECIBO_DE_CAJA'
+  | 'DISPERSION'
+  | 'MIGRACION'
+  | 'EGRESO'
+  | 'FACTURA_DE_PROVEEDOR'
+  | 'CONCILIACION'
+  | 'TRASLADO_AL_BANCO'
+  | 'TRASLADO_DE_COMISION'
+  | 'GIRO_DEVUELTO'
+  | 'NOMINA';
+
+export interface OrigenLegible {
+  tipo: TipoDeOrigenLegible | string;
+  rotulo: string;
+  id: string | null;
 }
 
 /**
@@ -392,6 +446,20 @@ export interface ResultadoDeReversa {
 export interface Cierre {
   /** `AAAA-MM-DD`, el último día cerrado. */
   cerradaHasta: string | null;
+  /**
+   * QA-CONTA-BACK (26beefbc, CB-R06): el último día que se PUEDE cerrar — sólo
+   * meses terminados. Opcional: un back anterior no lo manda.
+   */
+  sePuedeCerrarHasta?: string | null;
+  /** Lo que todavía no tiene asiento hasta ese día (cerrarlo así lo dejaría afuera). */
+  sinAsentar?: SinAsentar | null;
+}
+
+export interface SinAsentar {
+  recibos: number;
+  lotes: number;
+  cobros: number;
+  total: number;
 }
 
 /** `CerrarPeriodoDto`: un solo campo. */
@@ -403,6 +471,8 @@ export interface ResultadoDeCierre {
   /** Asientos que quedaron bloqueados con este cierre. */
   cerrados: number;
   fronteraAnterior: string | null;
+  /** Back 26beefbc: lo que quedó sin asiento dentro del período cerrado. */
+  sinAsentar?: SinAsentar | null;
 }
 
 // ── Reabrir un mes cerrado (contrato del 19-09, §1) ────────────────────────
@@ -1157,6 +1227,12 @@ export interface MapeoDeEvento {
   opcional?: boolean;
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
+  /**
+   * CB-28 (QA de Contabilidad, 03-10-2026): cuántos movimientos ya asentó el
+   * evento con su cuenta. Opcional (lo puede agregar el back): sin él, cambiar
+   * una cuenta YA asignada se confirma igual.
+   */
+  movimientos?: number;
 }
 
 export interface MapeoContable {

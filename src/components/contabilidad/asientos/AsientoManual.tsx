@@ -4,6 +4,13 @@
  * El asiento manual: N líneas cuenta / débito / crédito, y la diferencia a la
  * vista mientras se escribe.
  *
+ * 🔴 CB-16 (QA de Contabilidad, 03-10-2026): era un modal centrado; los
+ * formularios de crear van en CAJÓN (decisión de Nico para «Hacer recibo de
+ * caja» y «Nuevo propietario»): cabecera fija, las líneas en el cuerpo que
+ * scrollea y «Crear asiento» en el pie, siempre a la vista. Y una línea con
+ * débito Y crédito a la vez lo dice EN la línea apenas pasa — antes el botón
+ * quedaba apagado sin decir por qué.
+ *
  * La validación es la de `partida-doble.ts` (la misma regla que el back); el
  * botón de enviar no se prende hasta que cuadre. 🔴 Los montos entran por
  * `CurrencyInput` de cadence: un `<input>` con «1.500.000» parseado a mano es
@@ -17,14 +24,7 @@ import { Plus, Trash } from '@phosphor-icons/react';
 import { Banner, CrossFade, CurrencyInput, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -48,8 +48,10 @@ import {
   validarPartidaDoble,
   type LineaDelFormulario,
 } from '@/lib/contabilidad/partida-doble';
-import { diaDe, hoy } from '@/lib/contabilidad/fechas';
+import { diaDe, diaLegible, hoy } from '@/lib/contabilidad/fechas';
+import { plata } from '@/lib/contabilidad/plata';
 import { cn } from '@/lib/utils';
+import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 
@@ -195,7 +197,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
         });
       } else {
         toast.success(`Asiento n.º ${creado.numero} creado`, {
-          description: `${lineas.length} líneas por ${veredicto.totales.debitos.toLocaleString('es-CO')} COP.`,
+          description: `${lineas.length} líneas por ${plata(veredicto.totales.debitos)}.`,
         });
       }
       onCreado(creado);
@@ -248,40 +250,40 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
   }, [listo, lineas, fecha, descripcion, veredicto.totales.debitos, onCreado, onCerrar, claveIdempotencia, id]);
 
   const errorDeFecha = fechaCerrada
-    ? `La contabilidad está cerrada hasta el ${cerradaHasta}. Usa una fecha posterior.`
+    ? `La contabilidad está cerrada hasta el ${diaLegible(cerradaHasta)}. Usa una fecha posterior.`
     : delServidor.fecha;
 
   const { diferencia } = veredicto.totales;
 
   return (
-    <Dialog open={abierto} onOpenChange={(open) => !open && cerrar()}>
-      {/* `xl`: la tabla de líneas. El scroll lo hace el cuerpo del modal (con
-          `overflow-y-auto` en el Content scrolleaba el panel y el título se iba). */}
-      <DialogContent size="xl" data-testid="asiento-manual">
-        <DialogHeader>
-          <DialogTitle>Asiento manual</DialogTitle>
-          <DialogDescription>
-            Mínimo dos líneas, y la suma de débitos igual a la de créditos. Una vez creado no se
-            edita: se reversa.
-          </DialogDescription>
-        </DialogHeader>
+    // `xl` (880): la tabla de líneas cabe sin correrse de lado en escritorio.
+    <Cajon
+      abierto={abierto}
+      onOpenChange={(open) => !open && cerrar()}
+      tamano="xl"
+      data-testid="asiento-manual"
+    >
+      <CajonCabecera
+        titulo="Asiento manual"
+        descripcion="Mínimo dos líneas, y la suma de débitos igual a la de créditos. Una vez creado no se edita: se reversa."
+      />
 
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+      <CajonCuerpo className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
             <div className="space-y-1.5">
               <Label htmlFor={`${id}-fecha`}>Fecha</Label>
-              <Input
+              {/* CB-04: el selector de fecha del DS, no el del navegador. */}
+              <CampoDeDia
                 id={`${id}-fecha`}
-                type="date"
                 value={fecha}
-                onChange={(e) => {
+                onChange={(valor) => {
                   setDelServidor((d) => (d.fecha ? { ...d, fecha: undefined } : d));
-                  setFecha(e.target.value);
+                  setFecha(valor);
                 }}
                 disabled={enviando}
-                aria-invalid={Boolean(errorDeFecha) || undefined}
-                aria-describedby={errorDeFecha ? `${id}-fecha-error` : undefined}
-                data-testid="asiento-fecha"
+                invalido={Boolean(errorDeFecha)}
+                describedBy={errorDeFecha ? `${id}-fecha-error` : undefined}
+                testid="asiento-fecha"
               />
               <ErrorDelCampo id={`${id}-fecha-error`} mensaje={errorDeFecha} />
             </div>
@@ -319,7 +321,16 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                   abajo suben), con el escalonado del sistema. */}
               <Stagger className="space-y-2">
               {lineas.map((l, i) => {
-                const errorDeLinea = intentado ? veredicto.porLinea[l.clave] : undefined;
+                // Débito Y crédito en la misma línea se dice apenas pasa (CB-16):
+                // no es un campo por llenar, es una contradicción. Lo demás
+                // (falta la cuenta, falta el monto) espera al intento.
+                // (Aunque todavía no tenga cuenta: el regaño es por los montos.)
+                const dosLados = Boolean(l.debitoCop) && Boolean(l.creditoCop);
+                const errorDeLinea = intentado
+                  ? veredicto.porLinea[l.clave]
+                  : dosLados
+                    ? ('DOS_LADOS' as const)
+                    : undefined;
                 const mensajeDeLinea = errorDeLinea
                   ? TEXTO_DE_ERROR_DE_LINEA[errorDeLinea]
                   : delServidor.lineas[l.clave];
@@ -470,23 +481,22 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
               {error}
             </Banner>
           ) : null}
-        </div>
+      </CajonCuerpo>
 
-        <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={cerrar} disabled={enviando}>
-            Cancelar
-          </Button>
-          <Button
-            hideArrow
-            onClick={() => void enviar()}
-            isLoading={enviando}
-            disabled={enviando || !listo}
-            data-testid="crear-asiento"
-          >
-            Crear asiento
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CajonPie>
+        <Button variant="ghost" hideArrow onClick={cerrar} disabled={enviando}>
+          Cancelar
+        </Button>
+        <Button
+          hideArrow
+          onClick={() => void enviar()}
+          isLoading={enviando}
+          disabled={enviando || !listo}
+          data-testid="crear-asiento"
+        >
+          Crear asiento
+        </Button>
+      </CajonPie>
+    </Cajon>
   );
 }

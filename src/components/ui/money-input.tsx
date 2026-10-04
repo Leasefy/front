@@ -75,10 +75,16 @@ export interface MoneyInputProps
   moneda?: Moneda;
   /** Prefijo dentro del campo. `false` lo apaga. */
   simbolo?: boolean;
+  /**
+   * Admite un valor NEGATIVO: un «-» al principio se conserva y viaja
+   * (`"-35000000"`). Opcional (QA de Contabilidad, CB-30, 03-10-2026: el
+   * presupuesto de un rubro puede ser negativo). Sin él, como siempre.
+   */
+  conSigno?: boolean;
 }
 
 export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function MoneyInput(
-  { value, onChange, moneda = 'COP', simbolo = true, className, ...props },
+  { value, onChange, moneda = 'COP', simbolo = true, conSigno = false, className, ...props },
   refExterna,
 ) {
   const refInterna = useRef<HTMLInputElement | null>(null);
@@ -86,7 +92,8 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
   const digitosAntesDelCursor = useRef<number | null>(null);
 
   const crudo = value === null || value === undefined ? '' : String(value);
-  const formateado = agrupar(crudo, moneda);
+  const negativo = conSigno && crudo.startsWith('-');
+  const formateado = negativo ? `-${agrupar(crudo.slice(1), moneda)}` : agrupar(crudo, moneda);
 
   const manejarCambio = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,9 +102,10 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
       // Contar dígitos a la izquierda del cursor ANTES de reformatear: las
       // posiciones absolutas se corren cuando entra o sale un separador.
       digitosAntesDelCursor.current = (el.value.slice(0, cursor).match(/[\d]/g) ?? []).length;
-      onChange(soloNumero(el.value, moneda));
+      const signo = conSigno && /^\s*[-−]/.test(el.value) ? '-' : '';
+      onChange(signo + soloNumero(el.value, moneda));
     },
-    [onChange, moneda],
+    [onChange, moneda, conSigno],
   );
 
   // Reponer el cursor después de que React repinta el texto agrupado.

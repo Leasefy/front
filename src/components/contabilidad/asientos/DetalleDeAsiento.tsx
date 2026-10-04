@@ -6,9 +6,21 @@ import Link from 'next/link';
  * Un asiento abierto en un cajón: sus líneas, sus totales y la única acción
  * que admite — reversar. No hay «editar» ni «borrar» porque el back no los
  * tiene, y no los tiene a propósito: un asiento es historia.
+ *
+ * 🔴 CB-13 / CB-14 (QA de Contabilidad, 03-10-2026): el cajón pintaba ids
+ * crudos («PROPIETARIO · 9e09fd33-…», «Reversa del asiento · 7d800802-…»,
+ * «Generado por cobro · d8e5b110-…») y ofrecía «Reversar» a un asiento ya
+ * reversado y a la reversa misma. Ahora:
+ *   · al abrir se lee el detalle (`GET /asientos/:id`), que trae el nombre del
+ *     tercero, `reversaDe`/`reversadoPor` y el rótulo del origen; mientras
+ *     tanto se ve lo que vino en la lista;
+ *   · nunca se pinta un uuid: sin nombre, nada;
+ *   · «Reversa del N.º 18» / «Reversado por el N.º 165» abren ese asiento en
+ *     el mismo cajón;
+ *   · sin «Reversar» cuando ya está reversado o cuando es una reversa.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { ArrowUUpLeft, LockSimple } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
@@ -23,7 +35,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTable, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -41,10 +52,21 @@ import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-error
 import {
   contabilidadApi,
   type AsientoContable,
+  type ReferenciaDeAsiento,
   type ResultadoDeReversa,
 } from '@/lib/api/contabilidad.service';
-import { NOMBRE_DE_ORIGEN, totalesDeAsiento } from '@/lib/contabilidad/asientos';
+import {
+  esReversa,
+  estadoDelAsiento,
+  nombreDelOrigen,
+  NOMBRE_DEL_ESTADO,
+  sePuedeReversar,
+  textoDelOrigen,
+  textoDelTercero,
+  totalesDeAsiento,
+} from '@/lib/contabilidad/asientos';
 import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
+import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
 
 const LARGO_MAXIMO_DEL_MOTIVO = 200;
@@ -57,9 +79,59 @@ export interface DetalleDeAsientoProps {
   onReversado?: (resultado: ResultadoDeReversa) => void;
 }
 
-export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: DetalleDeAsientoProps) {
+export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onReversado }: DetalleDeAsientoProps) {
   const { stop: pararLenis, start: seguirLenis } = useLenis();
   const [reversando, setReversando] = useState(false);
+  /**
+   * El asiento que se MUESTRA: el que eligió el padre, enriquecido con su
+   * detalle, o el que se abrió desde «Reversa del N.º …». Se queda montado al
+   * cerrar (el padre manda `null`) para que el cajón salga con su contenido.
+   */
+  const [asiento, setAsiento] = useState<AsientoContable | null>(delPadre);
+  const [abriendoOtro, setAbriendoOtro] = useState(false);
+  const leidos = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (delPadre) setAsiento(delPadre);
+  }, [delPadre]);
+
+  useEffect(() => {
+    if (!abierto) leidos.current.clear();
+  }, [abierto]);
+
+  // El detalle trae lo que la lista no: el nombre del tercero, la reversa y el
+  // rótulo del origen. Si falla, queda lo que vino en la lista (sin ids).
+  const idDelAsiento = asiento?.id;
+  useEffect(() => {
+    if (!abierto || !idDelAsiento || leidos.current.has(idDelAsiento)) return;
+    leidos.current.add(idDelAsiento);
+    let vivo = true;
+    Promise.resolve()
+      .then(() => contabilidadApi.asientos.detalle(idDelAsiento))
+      .then((detalle) => {
+        if (!vivo || !detalle || detalle.id !== idDelAsiento) return;
+        setAsiento((a) => (a && a.id === detalle.id ? { ...a, ...detalle } : a));
+      })
+      .catch(() => {
+        /* Se queda lo de la lista: ya dice todo menos los nombres. */
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [abierto, idDelAsiento]);
+
+  const abrirOtro = useCallback(async (ref: Pick<ReferenciaDeAsiento, 'id'>) => {
+    setAbriendoOtro(true);
+    try {
+      const otro = await contabilidadApi.asientos.detalle(ref.id);
+      leidos.current.add(otro.id);
+      setAsiento(otro);
+    } catch (e) {
+      toast.error(mensajeDeContabilidad(e, 'No se pudo abrir ese asiento.'));
+    } finally {
+      setAbriendoOtro(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (abierto) pararLenis();
@@ -71,6 +143,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
     () => (asiento ? totalesDeAsiento(asiento) : { debitos: 0, creditos: 0 }),
     [asiento],
   );
+  const estado = asiento ? estadoDelAsiento(asiento) : null;
 
   const reversado = useCallback(
     (r: ResultadoDeReversa) => {
@@ -89,7 +162,12 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
             <SheetHeader
               actions={
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Badge variant="secondary">{NOMBRE_DE_ORIGEN[asiento.origen] ?? asiento.origen}</Badge>
+                  <Badge variant="secondary">{nombreDelOrigen(asiento)}</Badge>
+                  {estado === 'REVERSADO' || (estado === 'REVERSA' && nombreDelOrigen(asiento) !== 'Reversa') ? (
+                    <Badge variant="outline" data-testid="estado-del-asiento">
+                      {NOMBRE_DEL_ESTADO[estado]}
+                    </Badge>
+                  ) : null}
                   {asiento.cerrado ? (
                     <Badge variant="outline" className="gap-1">
                       <LockSimple className="h-3 w-3" aria-hidden="true" />
@@ -129,13 +207,17 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                           <span className="font-mono text-caption tabular-nums text-fg-muted">
                             {m.cuenta?.codigo ?? '—'}
                           </span>
-                          <span className="block text-sm text-fg">{m.cuenta?.nombre ?? m.cuentaId}</span>
+                          {/* Sin el nombre de la cuenta, nada: el `cuentaId` es un uuid. */}
+                          <span className="block text-sm text-fg">{m.cuenta?.nombre ?? ''}</span>
                         </TableCell>
                         <TableCell muted>
                           <span className="block text-sm">{m.descripcion ?? ''}</span>
-                          {m.terceroTipo ? (
-                            <span className="block font-mono text-caption text-fg-subtle">
-                              {m.terceroTipo} · {m.terceroId}
+                          {textoDelTercero(m) ? (
+                            <span
+                              className="block text-caption text-fg-subtle"
+                              data-testid="tercero-de-la-linea"
+                            >
+                              {textoDelTercero(m)}
                             </span>
                           ) : null}
                         </TableCell>
@@ -164,45 +246,36 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                 </Table>
               </SheetTable>
 
-              {asiento.origenId ? (
-                <p className="font-mono text-caption text-fg-subtle" data-testid="origen-del-asiento">
-                  {asiento.origen === 'RECIBO_DE_CAJA' ? (
-                    <>Generado por el recibo de caja · {asiento.origenId}</>
-                  ) : asiento.origen === 'DISPERSION' ? (
-                    <>
-                      Generado por el lote de dispersión ·{' '}
-                      <Link
-                        href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${asiento.origenId}`}
-                        className="underline underline-offset-2 hover:text-fg"
-                      >
-                        abrir el lote
-                      </Link>
-                    </>
-                  ) : asiento.origen === 'MANUAL' ? (
-                    <>Reversa del asiento · {asiento.origenId}</>
-                  ) : (
-                    <>
-                      Generado por {NOMBRE_DE_ORIGEN[asiento.origen]?.toLowerCase() ?? asiento.origen} ·{' '}
-                      {asiento.origenId}
-                    </>
-                  )}
-                </p>
-              ) : null}
+              <LoQueGeneroElAsiento
+                asiento={asiento}
+                abriendoOtro={abriendoOtro}
+                onAbrir={(ref) => void abrirOtro(ref)}
+              />
 
             </SheetBody>
 
             <SheetFooter
-              note="Un asiento no se edita ni se borra. Si está mal, se reversa: se crea su espejo y los dos quedan en el libro."
+              note={
+                !sePuedeReversar(asiento) && asiento.porQueNoSeReversa
+                  ? asiento.porQueNoSeReversa
+                  : asiento.reversadoPor
+                  ? `Este asiento ya tiene su reversa (n.º ${asiento.reversadoPor.numero}): los dos quedan en el libro y se anulan entre sí.`
+                  : esReversa(asiento)
+                    ? 'Es la reversa de otro asiento: no se reversa. Si hace falta volver a registrar el original, se hace un asiento nuevo.'
+                    : 'Un asiento no se edita ni se borra. Si está mal, se reversa: se crea su espejo y los dos quedan en el libro.'
+              }
             >
-              <Button
-                variant="outline"
-                hideArrow
-                onClick={() => setReversando(true)}
-                data-testid="abrir-reversar"
-              >
-                <ArrowUUpLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Reversar
-              </Button>
+              {sePuedeReversar(asiento) ? (
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={() => setReversando(true)}
+                  data-testid="abrir-reversar"
+                >
+                  <ArrowUUpLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                  Reversar
+                </Button>
+              ) : null}
             </SheetFooter>
 
             <ReversarDialogo
@@ -279,12 +352,12 @@ function ReversarDialogo({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="reversa-fecha">Fecha de la reversa</Label>
-            <Input
+            <CampoDeDia
               id="reversa-fecha"
-              type="date"
               value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
+              onChange={setFecha}
               disabled={enviando}
+              testid="reversa-fecha"
             />
             <p className="text-caption text-fg-muted">
               Si el período del original ya está cerrado, la reversa va con una fecha posterior.
@@ -330,5 +403,90 @@ function ReversarDialogo({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── De dónde salió y con qué otro asiento se anula (CB-13 / CB-14) ──────────
+
+function LoQueGeneroElAsiento({
+  asiento,
+  abriendoOtro,
+  onAbrir,
+}: {
+  asiento: AsientoContable;
+  abriendoOtro: boolean;
+  onAbrir: (ref: Pick<ReferenciaDeAsiento, 'id'>) => void;
+}) {
+  const origen = textoDelOrigen(asiento);
+  const enlace =
+    'font-medium text-primary underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none disabled:opacity-60';
+  // Una reversa de un back anterior a CB-14: se sabe el id del original
+  // (`origenId`) pero no su número; se ofrece abrirlo sin pintar el id.
+  const reversaSinNumero =
+    asiento.reversaDe === undefined && esReversa(asiento) && asiento.origenId
+      ? { id: asiento.origenId }
+      : null;
+
+  if (!origen && !asiento.reversaDe && !asiento.reversadoPor && !reversaSinNumero) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-1.5 text-caption text-fg-muted" data-testid="origen-del-asiento">
+      {asiento.reversaDe ? (
+        <p data-testid="reversa-de">
+          Reversa del{' '}
+          <button
+            type="button"
+            className={enlace}
+            disabled={abriendoOtro}
+            onClick={() => onAbrir(asiento.reversaDe!)}
+          >
+            N.º {asiento.reversaDe.numero}
+          </button>
+        </p>
+      ) : reversaSinNumero ? (
+        <p data-testid="reversa-de">
+          Es la reversa de otro asiento ·{' '}
+          <button
+            type="button"
+            className={enlace}
+            disabled={abriendoOtro}
+            onClick={() => onAbrir(reversaSinNumero)}
+          >
+            Abrir el original
+          </button>
+        </p>
+      ) : null}
+      {asiento.reversadoPor ? (
+        <p data-testid="reversado-por">
+          Reversado por el{' '}
+          <button
+            type="button"
+            className={enlace}
+            disabled={abriendoOtro}
+            onClick={() => onAbrir(asiento.reversadoPor!)}
+          >
+            N.º {asiento.reversadoPor.numero}
+          </button>
+        </p>
+      ) : null}
+      {origen ? (
+        <p>
+          {origen}
+          {asiento.origen === 'DISPERSION' && asiento.origenId ? (
+            <>
+              {' · '}
+              <Link
+                href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${asiento.origenId}`}
+                className={enlace}
+              >
+                abrir el lote
+              </Link>
+            </>
+          ) : null}
+        </p>
+      ) : null}
+    </div>
   );
 }

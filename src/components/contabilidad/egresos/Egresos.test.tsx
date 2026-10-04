@@ -276,9 +276,15 @@ describe('<Egresos>', () => {
       const barra = q('armar-lote')!;
       expect(barra.querySelector('[data-testid="concepto-del-lote"]')).not.toBeNull();
       expect(barra.querySelector('[data-testid="crear-lote"]')).not.toBeNull();
-      // Pegada al borde de abajo mientras se recorren los egresos.
-      expect(barra.className).toContain('sticky');
-      expect(barra.className).toContain('bottom-0');
+      // 🔴 CB-07 (03-10-2026): sin nada marcado la barra sólo explica, y pegada
+      // abajo tapaba la segunda fila: va en su lugar, al final de la tabla.
+      expect(barra.className).not.toContain('sticky');
+      // Con algo marcado sí se pega al borde de abajo mientras se recorren los egresos.
+      await act(async () => {
+        (q('marcar-e1') as HTMLElement).click();
+      });
+      expect(q('armar-lote')!.className).toContain('sticky');
+      expect(q('armar-lote')!.className).toContain('bottom-0');
     });
 
     it('🔴 y la barra vive DENTRO de la tabla, como su último renglón', async () => {

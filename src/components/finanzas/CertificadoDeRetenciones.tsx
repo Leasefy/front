@@ -35,12 +35,32 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CaretDown, CaretRight, SealCheck } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, DownloadSimple, SealCheck } from '@phosphor-icons/react';
+
+import { AccionConMotivo } from '@/components/contabilidad/piezas';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, Cifra, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
 import { explicar } from '@/components/finanzas/TasasDeUsura';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -58,9 +78,24 @@ import type {
   FilaDelCertificado,
 } from '@/lib/api/finanzas.types';
 import { nombreDelMes } from '@/lib/recaudo/meses';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency, textoDelBack } from '@/lib/contabilidad/plata';
+
+/** CB-R17: por qué «Descargar PDF» está apagado: sin documento el certificado no sirve. */
+export const MOTIVO_SIN_PDF =
+  'Sin el documento del propietario en su ficha, el certificado no sirve para declarar: complétalo primero.';
 
 const NUMERO = new Intl.NumberFormat('es-CO');
+
+/**
+ * CB-32: «N.º 1» si el número es sólo la cifra; si trae prefijo, tal cual. El
+ * back lo manda como NÚMERO aunque el tipo diga texto (visto en el laboratorio):
+ * se aceptan los dos.
+ */
+export function numeroDelCertificado(numero: string | number): string {
+  const texto = String(numero ?? '').trim();
+  return /^\d+$/.test(texto) ? `N.º ${Number(texto)}` : texto;
+}
 
 /** Qué mide cada criterio, escrito. Va al lado del selector, no en un tooltip. */
 export const QUE_MIDE_EL_CRITERIO: Record<CriterioDeRetencion, string> = {
@@ -127,7 +162,36 @@ export function CertificadoDeRetencionesPanel() {
 
   const emitidos = new Map((datos?.emitidos ?? []).map((e) => [e.propietarioId, e]));
 
+  /**
+   * 🔴 CB-32 (QA de Contabilidad, 03-10-2026): «Emitir» fijaba número y fecha al
+   * primer clic. Ahora se confirma antes: a quién, qué año, cuánto se le retuvo
+   * y que el número queda fijo.
+   */
+  const [confirmandoEmision, setConfirmandoEmision] = useState<FilaDelCertificado | null>(null);
+  /** CB-R17: el PDF que se está preparando (por propietario). */
+  const [bajando, setBajando] = useState<string | null>(null);
+
+  async function bajarPdf(fila: FilaDelCertificado) {
+    setBajando(fila.propietarioId);
+    try {
+      const blob = await finanzasApi.pdfDelCertificado(anio, fila.propietarioId, criterio);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `certificado-de-retenciones-${anio}-${fila.nombre.replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error('No se pudo bajar el PDF del certificado.', {
+        description: explicar(e, 'No se pudo bajar el PDF del certificado.'),
+      });
+    } finally {
+      setBajando(null);
+    }
+  }
+
   async function emitir(fila: FilaDelCertificado) {
+    setConfirmandoEmision(null);
     setEmitiendo(fila.propietarioId);
     try {
       const e = await finanzasApi.emitirCertificado(anio, fila.propietarioId, criterio);
@@ -204,37 +268,80 @@ export function CertificadoDeRetencionesPanel() {
 
   return (
     <div className="space-y-5" data-testid="certificado-de-retenciones">
+      <AlertDialog
+        open={confirmandoEmision !== null}
+        onOpenChange={(abierto) => !abierto && emitiendo === null && setConfirmandoEmision(null)}
+      >
+        <AlertDialogContent variant="confirm" icon={<SealCheck weight="bold" />} data-testid="confirmar-emision-dialogo">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Emitir el certificado de {anio} de {confirmandoEmision?.nombre}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Le retuvieron{' '}
+              <span className="font-mono tabular-nums">
+                {formatCurrency(confirmandoEmision?.totalRetenidoCop ?? 0)}
+              </span>{' '}
+              en {NUMERO.format(confirmandoEmision?.periodos ?? 0)}{' '}
+              {confirmandoEmision?.periodos === 1 ? 'período' : 'períodos'}. Al emitirlo queda con su
+              número y la fecha de hoy: es el acto de entregarlo. Para corregirlo después hay que
+              regenerarlo, y el anterior queda anulado con su motivo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={emitiendo !== null}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmandoEmision) void emitir(confirmandoEmision);
+              }}
+              loading={emitiendo !== null}
+              data-testid="confirmar-emision"
+            >
+              Emitir el certificado
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* ── Año y criterio ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1.5 text-sm text-fg-muted">
-          <span>Año gravable</span>
-          <select
-            aria-label="Año gravable"
-            data-testid="selector-de-anio"
-            className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={String(anio)}
-            onChange={(e) => setAnio(Number(e.target.value))}
-          >
-            {aniosDisponibles().map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm text-fg-muted">
-          <span>Criterio</span>
-          <select
-            aria-label="Criterio"
-            data-testid="selector-de-criterio"
-            className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={criterio}
-            onChange={(e) => setCriterio(e.target.value as CriterioDeRetencion)}
-          >
-            <option value="CAUSADO">Por causación</option>
-            <option value="PAGADO">Por caja (pagado)</option>
-          </select>
-        </label>
+        {/* 🔴 CB-17 (QA de Contabilidad, 03-10-2026): el `Select` del DS, no
+            el `<select>` del navegador. */}
+        <div className="flex flex-col gap-1.5 text-sm text-fg-muted">
+          <span id="certificado-anio">Año gravable</span>
+          <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
+            <SelectTrigger
+              aria-labelledby="certificado-anio"
+              data-testid="selector-de-anio"
+              className="w-32 bg-surface"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {aniosDisponibles().map((a) => (
+                <SelectItem key={a} value={String(a)}>
+                  {a}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5 text-sm text-fg-muted">
+          <span id="certificado-criterio">Criterio</span>
+          <Select value={criterio} onValueChange={(v) => setCriterio(v as CriterioDeRetencion)}>
+            <SelectTrigger
+              aria-labelledby="certificado-criterio"
+              data-testid="selector-de-criterio"
+              className="w-52 bg-surface"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CAUSADO">Por causación</SelectItem>
+              <SelectItem value="PAGADO">Por caja (pagado)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <p className="max-w-xl text-caption leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
           {QUE_MIDE_EL_CRITERIO[criterio]}
         </p>
@@ -267,7 +374,7 @@ export function CertificadoDeRetencionesPanel() {
         {datos ? (
           <div className="space-y-5">
             <Avisos
-              avisos={datos.avisos}
+              avisos={datos.avisos.map(textoDelBack)}
               testId="avisos-del-certificado"
               titulo="Lo que hay que mirar antes de entregarlo"
             />
@@ -279,27 +386,31 @@ export function CertificadoDeRetencionesPanel() {
               />
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Cifra
+                  formato={formatCurrency}
                   id="base"
                   etiqueta="Base"
                   valor={datos.totales.baseCop}
                   definicion="El canon bruto de los períodos sobre los que se retuvo."
                 />
                 <Cifra
+                  formato={formatCurrency}
                   id="retefuente"
                   etiqueta="Retefuente"
                   valor={datos.totales.retefuenteCop}
                   definicion="Retención en la fuente practicada por los inquilinos."
                 />
                 <Cifra
+                  formato={formatCurrency}
                   id="total-retenido"
                   etiqueta="Total retenido"
                   valor={datos.totales.totalRetenidoCop}
                   definicion="Retefuente + ReteIVA + ReteICA. Es lo que va en los certificados."
                 />
-                <Cifra
+                {/* 🔴 CB-17: es un CONTEO, no plata (decía «$2»). */}
+                <CifraDeTexto
                   id="propietarios"
                   etiqueta="Propietarios"
-                  valor={datos.totales.propietarios}
+                  texto={datos.totales.propietarios.toLocaleString('es-CO')}
                   definicion="Cuántos propietarios tienen algo que certificar este año."
                 />
               </div>
@@ -352,29 +463,36 @@ export function CertificadoDeRetencionesPanel() {
                               <span className="block pl-5 text-caption text-fg-muted">
                                 {NUMERO.format(f.periodos)}{' '}
                                 {f.periodos === 1 ? 'período' : 'períodos'}
+                                {/* CB-R17: con copropietarios, cada uno con su parte. */}
+                                {typeof f.participacionPct === 'number' && f.participacionPct < 100 ? (
+                                  <span data-testid={`parte-${f.propietarioId}`}>
+                                    {' · '}su parte: {f.participacionPct.toLocaleString('es-CO')} %
+                                  </span>
+                                ) : null}
                               </span>
                             </TableCell>
-                            <TableCell className="font-mono text-caption">
+                            <TableCell className="whitespace-nowrap font-mono text-caption">
                               {f.documento || (
                                 <span className="text-warning">Sin documento</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums">
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                               {formatCurrency(f.baseCop)}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums">
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                               {formatCurrency(f.retefuenteCop)}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums">
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                               {formatCurrency(f.reteIvaCop)}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums">
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                               {formatCurrency(f.reteIcaCop)}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums font-medium">
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums font-medium">
                               {formatCurrency(f.totalRetenidoCop)}
                             </TableCell>
                             <TableCell>
+                              <div className="flex flex-wrap items-start gap-2">
                               {emitido ? (
                                 <span className="flex flex-col items-start gap-1">
                                   <span
@@ -382,7 +500,9 @@ export function CertificadoDeRetencionesPanel() {
                                     data-testid={`emitido-${f.propietarioId}`}
                                   >
                                     <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                    {emitido.numero} · {emitido.emitidoAt.slice(0, 10)}
+                                    {/* CB-32: «N.º 1 · 4 de octubre de 2026», no la fecha en ISO. */}
+                                    {numeroDelCertificado(emitido.numero)} ·{' '}
+                                    {fechaLarga(diaEnColombia(emitido.emitidoAt))}
                                   </span>
                                   {/* «Se puede regenerar» (Nico, 17-09): anula el
                                       anterior con motivo y emite otro. El viejo no
@@ -405,11 +525,27 @@ export function CertificadoDeRetencionesPanel() {
                                   hideArrow
                                   data-testid={`emitir-${f.propietarioId}`}
                                   isLoading={emitiendo === f.propietarioId}
-                                  onClick={() => void emitir(f)}
+                                  onClick={() => setConfirmandoEmision(f)}
                                 >
                                   Emitir
                                 </Button>
                               )}
+                              {/* 🔴 CB-R17 (Nico): el PDF del certificado, por fila
+                                  (back 26beefbc: `retenciones/certificado/pdf`). Sólo
+                                  con documento: sin él no sirve para declarar. */}
+                              <AccionConMotivo
+                                puede={Boolean(f.documento)}
+                                motivo={MOTIVO_SIN_PDF}
+                                ocupado={bajando === f.propietarioId}
+                                textoOcupado="Preparando…"
+                                onClick={() => void bajarPdf(f)}
+                                testId={`pdf-${f.propietarioId}`}
+                                motivoVisible={false}
+                              >
+                                <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                                Descargar PDF
+                              </AccionConMotivo>
+                              </div>
                             </TableCell>
                           </TableRow>,
                           abierto ? (
@@ -429,19 +565,19 @@ export function CertificadoDeRetencionesPanel() {
                         <TableCell colSpan={2} className="font-medium">
                           Total
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                           {formatCurrency(datos.totales.baseCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                           {formatCurrency(datos.totales.retefuenteCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                           {formatCurrency(datos.totales.reteIvaCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                           {formatCurrency(datos.totales.reteIcaCop)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums font-medium">
+                        <TableCell className="whitespace-nowrap text-right font-mono tabular-nums font-medium">
                           {formatCurrency(datos.totales.totalRetenidoCop)}
                         </TableCell>
                         <TableCell>&nbsp;</TableCell>
@@ -482,16 +618,16 @@ function DetalleMesAMes({ fila }: { fila: FilaDelCertificado }) {
           {fila.porMes.map((m) => (
             <TableRow key={m.mes}>
               <TableCell>{nombreDelMes(m.mes)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                 {formatCurrency(m.baseCop)}
               </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                 {formatCurrency(m.retefuenteCop)}
               </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                 {formatCurrency(m.reteIvaCop)}
               </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                 {formatCurrency(m.reteIcaCop)}
               </TableCell>
             </TableRow>

@@ -49,6 +49,40 @@ vi.mock('../use-puede-escribir', async () => {
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
+// CB-04 (03-10-2026): «Hasta el día» es el selector de fecha del DS
+// (`CampoDeDia`, un botón con calendario), que no se escribe. Este doble lo
+// vuelve un campo de texto con el MISMO `data-testid`, valor, `disabled`,
+// `aria-invalid` y `aria-describedby`: lo que estas pruebas miran del cierre no
+// cambió. El campo de verdad se prueba en `CampoDeDia.test.tsx`.
+vi.mock('../CampoDeDia', () => ({
+  CampoDeDia: ({
+    id,
+    value,
+    onChange,
+    disabled,
+    invalido,
+    describedBy,
+    testid,
+  }: {
+    id: string;
+    value: string;
+    onChange: (v: string) => void;
+    disabled?: boolean;
+    invalido?: boolean;
+    describedBy?: string;
+    testid?: string;
+  }) => (
+    <input
+      id={id}
+      value={value}
+      disabled={disabled}
+      aria-invalid={invalido || undefined}
+      aria-describedby={describedBy}
+      data-testid={testid}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
 
 import { ApiError } from '@/lib/api/client';
 import { CierreDePeriodo } from './CierreDePeriodo';
@@ -296,5 +330,27 @@ describe('<CierreDePeriodo> · errores en su campo', () => {
     const dialogo = document.querySelector<HTMLElement>('[role="dialog"]')!;
     expect(dialogo.textContent).toMatch(/conexi[oó]n/i);
     expect(dialogo.textContent).not.toContain('Failed to fetch');
+  });
+});
+
+describe('<CierreDePeriodo> · back 26beefbc (CB-R06)', () => {
+  it('🔴 más allá de `sePuedeCerrarHasta` no se ofrece cerrar, y lo dice', async () => {
+    await pintar({ cierre: { cerradaHasta: null, sePuedeCerrarHasta: '2000-01-31' } as Cierre });
+    expect(document.getElementById(q('cierre-hasta')!.getAttribute('aria-describedby')!)?.textContent).toMatch(
+      /Sólo se cierran meses terminados/,
+    );
+    expect((q('abrir-cierre') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('🔴 lo que está sin asentar se avisa antes de cerrar', async () => {
+    await pintar({
+      cierre: {
+        cerradaHasta: null,
+        sePuedeCerrarHasta: '2999-12-31',
+        sinAsentar: { recibos: 2, lotes: 0, cobros: 1, total: 3 },
+      } as Cierre,
+    });
+    expect(q('sin-asentar-al-cerrar')!.textContent).toContain('Hay 3 movimientos sin asiento');
+    expect(q('sin-asentar-al-cerrar')!.textContent).toContain('2 recibos, 1 cobro');
   });
 });

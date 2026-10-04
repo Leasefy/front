@@ -42,6 +42,12 @@ export interface CifraProps {
   tono?: 'warning' | 'danger' | 'success';
   /** Una línea extra debajo de la definición (comparaciones, detalles). */
   pie?: ReactNode;
+  /**
+   * Cómo se escribe la cifra. Por defecto, `formatCurrency` de siempre. Las
+   * pantallas de Contabilidad pasan la plata de la casa («$ 80.330.850»,
+   * «−$ 119.100»; CB-17, 03-10-2026). Opcional: las demás no cambian.
+   */
+  formato?: (n: number) => string;
 }
 
 const TONO: Record<NonNullable<CifraProps['tono']>, string> = {
@@ -51,7 +57,7 @@ const TONO: Record<NonNullable<CifraProps['tono']>, string> = {
 };
 
 /** Una cifra en pesos, con su definición debajo. */
-export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie }: CifraProps) {
+export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie, formato = formatCurrency }: CifraProps) {
   const medido = valor !== null && Number.isFinite(valor);
   return (
     <section
@@ -68,7 +74,7 @@ export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie }: 
       >
         {/* Si la cifra cambia sin recargar (otro período, otro filtro),
             cuenta desde la anterior; al montarse se muestra quieta. */}
-        {medido ? <AnimatedNumber value={valor as number} format={formatCurrency} /> : SIN_MEDIR}
+        {medido ? <AnimatedNumber value={valor as number} format={formato} /> : SIN_MEDIR}
       </p>
       <p className="text-caption leading-relaxed text-fg-muted">
         {medido ? definicion : (sinMedir ?? definicion)}
@@ -209,14 +215,20 @@ export function TituloDeBloque({
   accion,
 }: {
   titulo: string;
-  explicacion: string;
+  /**
+   * Opcional desde CB-17 (03-10-2026): un bloque cuya explicación ya la dice
+   * la cabecera de la pantalla no la repite debajo de su título.
+   */
+  explicacion?: string;
   accion?: ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-        <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">{explicacion}</p>
+        {explicacion ? (
+          <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">{explicacion}</p>
+        ) : null}
       </div>
       {accion ? <div className="shrink-0">{accion}</div> : null}
     </div>

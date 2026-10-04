@@ -46,6 +46,7 @@ import {
 } from '@/lib/api/contabilidad.service';
 import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-periodo-en-una-frase';
+import { CampoDeDia } from '../CampoDeDia';
 import { Reapertura } from './Reapertura';
 
 export interface CierreDePeriodoProps {
@@ -69,6 +70,20 @@ export interface CierreDePeriodoProps {
   onReabierto?: () => void;
 }
 
+/** «Hay 3 movimientos sin asiento hasta el 30 sep 2026 (2 recibos, 1 cobro): …». */
+function fraseDeLoSinAsentar(
+  s: { recibos: number; lotes: number; cobros: number; total: number },
+  hasta: string | null,
+): string {
+  const partes = [
+    s.recibos ? `${s.recibos} ${s.recibos === 1 ? 'recibo' : 'recibos'}` : null,
+    s.lotes ? `${s.lotes} ${s.lotes === 1 ? 'lote' : 'lotes'}` : null,
+    s.cobros ? `${s.cobros} ${s.cobros === 1 ? 'cobro' : 'cobros'}` : null,
+  ].filter(Boolean);
+  const cuantos = s.total === 1 ? 'Hay 1 movimiento sin asiento' : `Hay ${s.total.toLocaleString('es-CO')} movimientos sin asiento`;
+  return `${cuantos}${hasta ? ` hasta el ${diaLegible(hasta)}` : ''}${partes.length ? ` (${partes.join(', ')})` : ''}: asiéntalos («Reprocesar» en el inicio de Contabilidad) antes de cerrar, o quedan por fuera del período.`;
+}
+
 /** El último día del mes anterior: lo que normalmente se cierra. */
 function ultimoDiaDelMesAnterior(ahora: Date = new Date()): string {
   return aTextoDeDia(new Date(ahora.getFullYear(), ahora.getMonth(), 0));
@@ -90,6 +105,9 @@ export function CierreDePeriodo({
 }: CierreDePeriodoProps) {
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
+  /** Back 26beefbc (CB-R06): sólo se cierran meses terminados, hasta este día. */
+  const sePuedeCerrarHasta = cierre?.sePuedeCerrarHasta ?? null;
+  const sinAsentar = cierre?.sinAsentar ?? null;
   const [hasta, setHasta] = useState(ultimoDiaDelMesAnterior);
   const [confirmando, setConfirmando] = useState(false);
   const [escrito, setEscrito] = useState('');
@@ -107,8 +125,11 @@ export function CierreDePeriodo({
     if (cerradaHasta && hasta <= cerradaHasta) {
       return `Ya está cerrada hasta el ${diaLegible(cerradaHasta)}: la nueva fecha tiene que ser posterior.`;
     }
+    if (sePuedeCerrarHasta && hasta > sePuedeCerrarHasta) {
+      return `Sólo se cierran meses terminados: hasta el ${diaLegible(sePuedeCerrarHasta)}.`;
+    }
     return null;
-  }, [hasta, cerradaHasta]);
+  }, [hasta, cerradaHasta, sePuedeCerrarHasta]);
 
   const abrir = useCallback(() => {
     setEscrito('');
@@ -135,6 +156,10 @@ export function CierreDePeriodo({
             ? '1 asiento quedó bloqueado.'
             : `${r.cerrados.toLocaleString('es-CO')} asientos quedaron bloqueados.`,
       });
+      // Back 26beefbc: lo que quedó sin asiento adentro del período, se dice.
+      if (r.sinAsentar && r.sinAsentar.total > 0) {
+        toast.warning(fraseDeLoSinAsentar(r.sinAsentar, r.hasta));
+      }
       setConfirmando(false);
       // La fecha del control avanza al fin del mes siguiente al cierre. Si se
       // quedara en la fecha recién cerrada, `problema` diría en rojo «Ya está
@@ -246,17 +271,20 @@ export function CierreDePeriodo({
             <Label htmlFor={`${id}-hasta`} className="text-caption text-fg-muted">
               Hasta el día
             </Label>
-            <Input
+            {/* 🔴 CB-04: el selector de fecha del DS, no el `<input type="date">`
+                del navegador (se cortaba y decía «30/09/2026» en el formato del
+                sistema). */}
+            <CampoDeDia
               id={`${id}-hasta`}
-              type="date"
               value={hasta}
               min={cerradaHasta ?? undefined}
-              onChange={(e) => setHasta(e.target.value)}
+              max={sePuedeCerrarHasta ?? undefined}
+              onChange={setHasta}
               disabled={cargando || enviando}
-              aria-invalid={Boolean(problema) || undefined}
-              aria-describedby={problema && !cargando ? `${id}-hasta-error` : undefined}
-              className="w-44 bg-surface font-mono tabular-nums"
-              data-testid="cierre-hasta"
+              invalido={Boolean(problema) && !cargando}
+              describedBy={problema && !cargando ? `${id}-hasta-error` : undefined}
+              className="w-48 bg-surface"
+              testid="cierre-hasta"
             />
           </div>
           <Button
@@ -272,6 +300,12 @@ export function CierreDePeriodo({
           </Button>
         </div>
         <ErrorDelCampo id={`${id}-hasta-error`} mensaje={!cargando ? problema : null} />
+        {/* Back 26beefbc: cerrar con movimientos sin asiento los deja afuera del período. */}
+        {!cargando && sinAsentar && sinAsentar.total > 0 ? (
+          <p className="text-caption text-warning" role="status" data-testid="sin-asentar-al-cerrar">
+            {fraseDeLoSinAsentar(sinAsentar, sePuedeCerrarHasta)}
+          </p>
+        ) : null}
       </div>
 
       <Reapertura

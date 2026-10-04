@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Buildings, Plus } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ import { clasificarFallo } from '@/lib/errores/clasificar';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
-import { FaltaLaMigracion, TarjetaDeInforme } from '../piezas';
+import { FaltaLaMigracion, Nota, TarjetaDeInforme } from '../piezas';
 
 const COLUMNAS = 4;
 
@@ -120,6 +121,29 @@ export function Copropiedades() {
           </>
         }
       >
+        {/* 🔴 CB-29 (QA de Contabilidad, 03-10-2026): la fila no abre nada, y no
+            decía dónde se le asignan los inmuebles. Se asignan desde el
+            CONTRATO (Condiciones → «¿A qué copropiedad pertenece el
+            inmueble?»): la pantalla lo dice, con el enlace, y no inventa otra
+            forma de asignarlos. */}
+        {falta ? null : (
+          <div className="border-b border-border px-4 py-3">
+            <Nota testId="donde-se-asignan-los-inmuebles">
+              <p>
+                Cada inmueble se asigna a su copropiedad desde la ficha de su contrato: Condiciones →
+                «¿A qué copropiedad pertenece el inmueble?». La columna «Inmuebles» cuenta los que ya
+                están asignados.{' '}
+                <Link
+                  href="/panel/inmobiliaria/contratos"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Ir a Contratos
+                </Link>
+              </p>
+            </Nota>
+          </div>
+        )}
+
         {creando ? (
           <FormularioDeCopropiedad
             onListo={() => {
@@ -208,7 +232,8 @@ export function Copropiedades() {
                   </TableRow>
                 ) : (
                   pageItems.map((c) => (
-                    <TableRowAnimada key={c.id} data-testid="fila-de-copropiedad">
+                    // Sin hover: la fila no abre nada (CB-29), no debe parecer un botón.
+                    <TableRowAnimada key={c.id} data-testid="fila-de-copropiedad" className="hover:bg-transparent">
                       <TableCell>
                         <span className={cn('text-fg', !c.activa && 'text-fg-muted line-through')}>
                           {c.nombre}

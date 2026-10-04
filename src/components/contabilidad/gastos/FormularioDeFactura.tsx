@@ -3,6 +3,22 @@
 /**
  * Registrar la factura de un proveedor (contrato del 18-09, §3).
  *
+ * ── QA de Contabilidad (CB-20 / CB-21, 03-10-2026) ──────────────────────────
+ *
+ *   · Es un CAJÓN, no un modal (como «Asiento manual» y «Hacer recibo de
+ *     caja»): cabecera fija, el formulario en el cuerpo que scrollea y los
+ *     botones en el pie, siempre a la vista. Sus listas son el `Select` del DS
+ *     y sus fechas el selector de fecha del DS.
+ *   · Un rechazo del back (p. ej. `ASIENTO_DESCUADRADO` «débitos $100.000
+ *     contra créditos $119.000») se dice CON SUS NÚMEROS, en el formulario y
+ *     en el aviso — no la frase genérica «el asiento no cuadra».
+ *   · Las `notas` de la previsualización (lo que falta configurar: si la
+ *     inmobiliaria es responsable de IVA…) se ven ANTES de causar, arriba de
+ *     los botones, con el enlace a donde se configura.
+ *   · Elegir un proveedor del registro PROPONE su retefuente (`retefuentePct`
+ *     sobre la base) y, si no es responsable de IVA, las líneas sin IVA. Las
+ *     dos cosas se pueden cambiar.
+ *
  * ── 🔴 El proveedor se puede escribir a mano, y eso es una decisión ─────────
  *
  * El registro de proveedores ya existe
@@ -44,23 +60,27 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, SealCheck, Trash } from '@phosphor-icons/react';
+import Link from 'next/link';
+import { Plus, SealCheck, Trash, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ApiError } from '@/lib/api/client';
+import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
 import { Nota } from '../piezas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
@@ -94,7 +114,16 @@ import {
   type LineaEnCurso,
 } from '@/lib/contabilidad/factura-de-proveedor';
 import { hoy } from '@/lib/contabilidad/fechas';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency, plataEnElTexto, textoDelBack } from '@/lib/contabilidad/plata';
+import {
+  enlaceDeLaNota,
+  propuestaDelProveedor,
+  retefuentePropuesta,
+} from '@/lib/contabilidad/propuesta-del-proveedor';
+
+/** «A mano» / «sin rubro» / «sin sede» en los `Select` del DS (Radix no acepta `''`). */
+const NINGUNO = '__ninguno__';
 
 export interface FormularioDeFacturaProps {
   abierto: boolean;
@@ -179,6 +208,17 @@ export function FormularioDeFactura({
   const [rubro, setRubro] = useState('');
   const [sedeId, setSedeId] = useState('');
   const [lineas, setLineas] = useState<LineaEnCurso[]>(() => [lineaVacia()]);
+  /**
+   * CB-21: lo que propone el registro del proveedor elegido. `retefuentePct`
+   * se aplica sobre la base mientras la persona no escriba la retefuente a
+   * mano; `ivaPorDefecto` es el de las líneas nuevas (0 si no es responsable).
+   */
+  const [retefuentePct, setRetefuentePct] = useState<number | null>(null);
+  const [retefuenteEscrita, setRetefuenteEscrita] = useState(false);
+  const [ivaPorDefecto, setIvaPorDefecto] = useState(() => lineaVacia().ivaPct);
+  const [sinIvaPorElProveedor, setSinIvaPorElProveedor] = useState(false);
+  /** CB-20: el rechazo del back en palabras (con sus números), en el formulario. */
+  const [rechazoDelBack, setRechazoDelBack] = useState<string | null>(null);
   const [totalDelPapel, setTotalDelPapel] = useState<number | null>(null);
   const [retefuente, setRetefuente] = useState(0);
   const [reteiva, setReteiva] = useState(0);
@@ -306,16 +346,35 @@ export function FormularioDeFactura({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto, huellaDeLaLiquidacion]);
 
+  // CB-21: la retefuente propuesta sigue a la base mientras nadie la escriba.
+  useEffect(() => {
+    if (retefuentePct === null || retefuenteEscrita) return;
+    setRetefuente(retefuentePropuesta(totales.subtotalCop, retefuentePct));
+  }, [retefuentePct, retefuenteEscrita, totales.subtotalCop]);
+
   /** Elegir un proveedor del registro copia sus datos en la factura. */
   const elegirProveedor = (id: string) => {
     setProveedorId(id);
     const p = proveedores.find((x) => x.id === id);
-    if (!p) return;
+    if (!p) {
+      // A mano: lo propuesto por el registro deja de aplicar (lo escrito queda).
+      setRetefuentePct(null);
+      setSinIvaPorElProveedor(false);
+      setIvaPorDefecto(lineaVacia().ivaPct);
+      return;
+    }
     setProveedorNombre(p.nombre);
     if (p.tipoDocumento) setProveedorTipoDocumento(p.tipoDocumento);
     if (p.documento) setProveedorDocumento(p.documento);
     if (p.ciudad) setProveedorCiudad(p.ciudad);
     if (p.direccion) setProveedorDireccion(p.direccion);
+    // CB-21: su retefuente y, si no es responsable de IVA, las líneas sin IVA.
+    const propuesta = propuestaDelProveedor(p, lineaVacia().ivaPct);
+    setRetefuentePct(propuesta.retefuentePct);
+    setRetefuenteEscrita(false);
+    setIvaPorDefecto(propuesta.ivaPct);
+    setSinIvaPorElProveedor(propuesta.sinIva);
+    setLineas((previas) => previas.map((l) => ({ ...l, ivaPct: propuesta.ivaPct })));
   };
 
   const cambiarLinea = (indice: number, cambios: Partial<LineaEnCurso>) => {
@@ -339,6 +398,7 @@ export function FormularioDeFactura({
     setGuardando(true);
     setDescuadreDelBack(null);
     setErroresDelServidor({});
+    setRechazoDelBack(null);
     try {
       const cuerpo: FacturaNueva = {
         tipo,
@@ -396,7 +456,24 @@ export function FormularioDeFactura({
       setErroresDelServidor(reparto.porCampo);
       if (reparto.orden[0]) enfocar(reparto.orden[0]);
       if (reparto.delServidor.length === 0) {
-        toast.error(mensajeDeContabilidad(e, 'No se pudo registrar la factura.'));
+        /*
+         * 🔴 CB-20: `ASIENTO_DESCUADRADO` trae en su mensaje los débitos y los
+         * créditos; la frase fija del código («el asiento no cuadra…») los
+         * escondía. Se dice el mensaje del back (si se puede leer) y queda en
+         * el formulario, no sólo en un aviso que se va en cinco segundos.
+         */
+        const mensaje =
+          e instanceof ApiError && e.code === 'ASIENTO_DESCUADRADO'
+            ? plataEnElTexto(
+                mensajeParaLaPersona(e, {
+                  porDefecto: mensajeDeContabilidad(e, 'No se pudo registrar la factura.'),
+                }),
+              )
+            : mensajeDeContabilidad(e, 'No se pudo registrar la factura.');
+        toast.error(mensaje);
+        if (e instanceof ApiError && e.status >= 400 && e.status < 500 && !totalesQueNoCuadran(e)) {
+          setRechazoDelBack(mensaje);
+        }
       } else if (reparto.sueltos.length > 0) {
         toast.error(reparto.sueltos.join(' · '));
       }
@@ -406,58 +483,61 @@ export function FormularioDeFactura({
   };
 
   return (
-    <Dialog open={abierto} onOpenChange={(a) => !a && !guardando && onCerrar()}>
-      <DialogContent
-        className="max-h-[90vh] max-w-3xl overflow-y-auto"
-        data-lenis-prevent
-        data-testid="formulario-de-factura"
-      >
-        <DialogHeader>
-          <DialogTitle>Registrar una factura de proveedor</DialogTitle>
-          <DialogDescription>
-            Lo que la inmobiliaria gasta en sí misma. Esto NO es un giro al propietario: el canon
-            que se gira baja un pasivo y no es gasto de la inmobiliaria.
-          </DialogDescription>
-        </DialogHeader>
+    // CB-21: un CAJÓN (`xl`: las líneas de doce columnas caben sin correrse).
+    <Cajon
+      abierto={abierto}
+      onOpenChange={(a) => !a && !guardando && onCerrar()}
+      tamano="xl"
+      data-testid="formulario-de-factura"
+    >
+      <CajonCabecera
+        titulo="Registrar una factura de proveedor"
+        descripcion="Lo que la inmobiliaria gasta en sí misma. Esto NO es un giro al propietario: el canon que se gira baja un pasivo y no es gasto de la inmobiliaria."
+      />
 
-        <div className="space-y-6">
+      <CajonCuerpo className="space-y-6">
           {/* ── El proveedor ──────────────────────────────────────────── */}
           <section className="space-y-3">
             <h3 className="text-sm font-semibold text-fg">Proveedor</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="factura-proveedor">Del registro</Label>
-                <select
-                  id="factura-proveedor"
-                  className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                  value={proveedorId}
-                  onChange={(e) => elegirProveedor(e.target.value)}
-                  data-testid="factura-proveedor"
+                <Label id="factura-proveedor-rotulo" htmlFor="factura-proveedor">Del registro</Label>
+                <Select
+                  value={proveedorId || NINGUNO}
+                  onValueChange={(v) => elegirProveedor(v === NINGUNO ? '' : v)}
                 >
-                  <option value="">Escribir los datos a mano</option>
-                  {proveedores.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                      {p.documento ? ` · ${p.documento}` : ''}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id="factura-proveedor"
+                    aria-labelledby="factura-proveedor-rotulo"
+                    data-testid="factura-proveedor"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NINGUNO}>Escribir los datos a mano</SelectItem>
+                    {proveedores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nombre}
+                        {p.documento ? ` · ${p.documento}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="factura-tipo">Tipo de documento</Label>
-                <select
-                  id="factura-tipo"
-                  className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                  value={tipo}
-                  onChange={(e) => setTipo(e.target.value as TipoDeFacturaDeProveedor)}
-                  data-testid="factura-tipo"
-                >
-                  {TIPOS_DE_FACTURA.map((t) => (
-                    <option key={t} value={t}>
-                      {NOMBRE_DEL_TIPO_DE_FACTURA[t]}
-                    </option>
-                  ))}
-                </select>
+                <Label id="factura-tipo-rotulo" htmlFor="factura-tipo">Tipo de documento</Label>
+                <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeFacturaDeProveedor)}>
+                  <SelectTrigger id="factura-tipo" aria-labelledby="factura-tipo-rotulo" data-testid="factura-tipo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIPOS_DE_FACTURA.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {NOMBRE_DEL_TIPO_DE_FACTURA[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="factura-nombre">Nombre o razón social</Label>
@@ -577,31 +657,35 @@ export function FormularioDeFactura({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-fecha">Fecha</Label>
-                <Input
+                <CampoDeDia
                   id="factura-fecha"
-                  type="date"
                   value={fecha}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     olvidarError('fecha');
-                    setFecha(e.target.value);
+                    setFecha(v);
                   }}
-                  data-testid="factura-fecha"
-                  {...conError('fecha')}
+                  invalido={Boolean(errorDe('fecha'))}
+                  describedBy={errorDe('fecha') ? 'factura-fecha-error' : undefined}
+                  testid="factura-fecha"
                 />
                 <ErrorDelCampo id="factura-fecha-error" mensaje={errorDe('fecha')} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-vence">Vence</Label>
-                <Input
+                <CampoDeDia
                   id="factura-vence"
-                  type="date"
                   value={vencimiento}
                   min={fecha || undefined}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     olvidarError('fechaDeVencimiento');
-                    setVencimiento(e.target.value);
+                    setVencimiento(v);
                   }}
-                  {...conError('fechaDeVencimiento')}
+                  placeholder="Sin vencimiento"
+                  quitable
+                  etiquetaDeQuitar="Quitar el vencimiento"
+                  invalido={Boolean(errorDe('fechaDeVencimiento'))}
+                  describedBy={errorDe('fechaDeVencimiento') ? 'factura-vence-error' : undefined}
+                  testid="factura-vence"
                 />
                 <ErrorDelCampo id="factura-vence-error" mensaje={errorDe('fechaDeVencimiento')} />
               </div>
@@ -621,38 +705,36 @@ export function FormularioDeFactura({
                 <ErrorDelCampo id="factura-concepto-error" mensaje={errorDe('concepto')} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="factura-rubro">Rubro del P&G</Label>
-                <select
-                  id="factura-rubro"
-                  className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                  value={rubro}
-                  onChange={(e) => setRubro(e.target.value)}
-                  data-testid="factura-rubro"
-                >
-                  <option value="">Sin rubro</option>
-                  {rubros.map((r) => (
-                    <option key={r.rubro} value={r.rubro}>
-                      {r.nombre}
-                    </option>
-                  ))}
-                </select>
+                <Label id="factura-rubro-rotulo" htmlFor="factura-rubro">Rubro del P&G</Label>
+                <Select value={rubro || NINGUNO} onValueChange={(v) => setRubro(v === NINGUNO ? '' : v)}>
+                  <SelectTrigger id="factura-rubro" aria-labelledby="factura-rubro-rotulo" data-testid="factura-rubro">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NINGUNO}>Sin rubro</SelectItem>
+                    {rubros.map((r) => (
+                      <SelectItem key={r.rubro} value={r.rubro}>
+                        {r.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="factura-sede">Sede</Label>
-                <select
-                  id="factura-sede"
-                  className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-                  value={sedeId}
-                  onChange={(e) => setSedeId(e.target.value)}
-                  data-testid="factura-sede"
-                >
-                  <option value="">Sin sede</option>
-                  {sedes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre} ({s.codigo})
-                    </option>
-                  ))}
-                </select>
+                <Label id="factura-sede-rotulo" htmlFor="factura-sede">Sede</Label>
+                <Select value={sedeId || NINGUNO} onValueChange={(v) => setSedeId(v === NINGUNO ? '' : v)}>
+                  <SelectTrigger id="factura-sede" aria-labelledby="factura-sede-rotulo" data-testid="factura-sede">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NINGUNO}>Sin sede</SelectItem>
+                    {sedes.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre} ({s.codigo})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </section>
@@ -665,7 +747,7 @@ export function FormularioDeFactura({
                 variant="outline"
                 size="sm"
                 hideArrow
-                onClick={() => setLineas((p) => [...p, lineaVacia()])}
+                onClick={() => setLineas((p) => [...p, { ...lineaVacia(), ivaPct: ivaPorDefecto }])}
                 data-testid="agregar-linea"
               >
                 <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
@@ -673,6 +755,12 @@ export function FormularioDeFactura({
               </Button>
             </div>
 
+            {sinIvaPorElProveedor ? (
+              <p className="text-caption text-fg-muted" data-testid="lineas-sin-iva">
+                El proveedor no es responsable de IVA (su registro lo dice): las líneas van sin IVA.
+                Si el papel trae IVA, cámbialo en la línea.
+              </p>
+            ) : null}
             <ul className="space-y-3">
               {lineas.map((l, i) => (
                 <li
@@ -802,12 +890,21 @@ export function FormularioDeFactura({
                   value={String(retefuente)}
                   onChange={(e) => {
                     olvidarError('retefuenteCop');
+                    setRetefuenteEscrita(true);
                     setRetefuente(aNumero(e.target.value) ?? 0);
                   }}
                   data-testid="factura-retefuente"
                   {...conError('retefuenteCop')}
                 />
-                <ErrorDelCampo id="factura-retefuente-error" mensaje={errorDe('retefuenteCop')} />
+                <ErrorDelCampo
+                  id="factura-retefuente-error"
+                  mensaje={errorDe('retefuenteCop')}
+                  pista={
+                    retefuentePct !== null && !retefuenteEscrita
+                      ? `Propuesta: ${retefuentePct.toLocaleString('es-CO')} % de la base, del registro del proveedor.`
+                      : undefined
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-reteiva">ReteIVA</Label>
@@ -902,7 +999,7 @@ export function FormularioDeFactura({
                           {i.porcentaje !== null ? <span>{i.porcentaje}%</span> : null}
                           <Monto valor={i.valorCop} className="text-caption" />
                           <span className="rounded-sm bg-surface-muted px-1">
-                            {i.origen === 'CALCULADO' ? 'lo calculó Leasefy' : 'lo escribiste vos'}
+                            {i.origen === 'CALCULADO' ? 'lo calculó Leasefy' : 'lo escribiste tú'}
                           </span>
                           {i.explicacion ? (
                             <span className="text-fg-subtle">{i.explicacion}</span>
@@ -937,13 +1034,6 @@ export function FormularioDeFactura({
               </div>
             ) : null}
 
-            {liquidacion && liquidacion.notas.length > 0 ? (
-              <Nota testId="notas-de-la-liquidacion">
-                {liquidacion.notas.map((n) => (
-                  <p key={n}>{n}</p>
-                ))}
-              </Nota>
-            ) : null}
 
             {/* 🔴 El 400 del back: la autoridad, con sus cuatro números. Va
                 ARRIBA del aviso local — cuando los dos aparecen, el que importa
@@ -983,6 +1073,51 @@ export function FormularioDeFactura({
             ) : null}
           </section>
 
+          {/* 🔴 CB-20: lo que la previsualización dice que falta configurar, ANTES
+              de causar y con el enlace a donde se configura. */}
+          {liquidacion && liquidacion.notas.length > 0 ? (
+            <div
+              className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
+              role="status"
+              data-testid="notas-de-la-liquidacion"
+            >
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+              <ul className="space-y-1.5">
+                {liquidacion.notas.map((n) => {
+                  const enlace = enlaceDeLaNota(n);
+                  return (
+                    <li key={n}>
+                      {textoDelBack(n)}
+                      {enlace ? (
+                        <>
+                          {' '}
+                          <Link
+                            href={enlace.href}
+                            className="font-medium text-primary underline-offset-2 hover:underline"
+                          >
+                            {enlace.label}
+                          </Link>
+                        </>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          {/* 🔴 CB-20: el rechazo del back, con sus números, queda a la vista. */}
+          {rechazoDelBack ? (
+            <div
+              className="rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm text-fg"
+              role="alert"
+              data-testid="rechazo-del-back"
+            >
+              <p className="font-medium">No se registró la factura</p>
+              <p>{rechazoDelBack}</p>
+            </div>
+          ) : null}
+
           {problemas.length > 0 ? (
             <ul
               className="space-y-1 rounded-lg border border-border bg-surface-muted p-3 text-caption text-fg-muted"
@@ -993,9 +1128,9 @@ export function FormularioDeFactura({
               ))}
             </ul>
           ) : null}
-        </div>
+      </CajonCuerpo>
 
-        <DialogFooter className="flex-wrap gap-2">
+      <CajonPie>
           <Button variant="ghost" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
@@ -1018,8 +1153,7 @@ export function FormularioDeFactura({
           >
             {guardando ? 'Registrando…' : 'Registrar y causar'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </CajonPie>
+    </Cajon>
   );
 }

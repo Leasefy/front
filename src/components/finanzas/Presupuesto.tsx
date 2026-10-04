@@ -49,6 +49,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MoneyInput } from '@/components/ui/money-input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
@@ -77,9 +85,19 @@ import {
   problemaDelPresupuesto,
 } from '@/lib/finanzas/limites-de-finanzas';
 import { SIN_MEDIR } from '@/lib/tasas';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { mesActual } from '@/lib/recaudo/meses';
+import { plata, textoDelBack } from '@/lib/contabilidad/plata';
+import { presupuestoContraElLibro } from '@/lib/contabilidad/presupuesto-contra-el-libro';
+import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
+
+/** La opción «Otro rubro…» del `Select` de «Cargar un rubro» (CB-30). */
+const OTRO_RUBRO = '__otro__';
+
+/** «Octubre de 2025» (CB-09: el encabezado decía «2025-10»). */
+function mesConMayuscula(mes: string): string {
+  const nombre = nombreDelMes(mes);
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+}
 
 export function PresupuestoPanel() {
   const [mes, setMes] = useState(mesActual);
@@ -149,7 +167,7 @@ export function PresupuestoPanel() {
           <div className="space-y-1">
             <h2 className="text-base font-semibold text-fg">
               {comparacion
-                ? `Presupuesto vs. real vs. ${comparacion.mesDelAnioAnterior}`
+                ? `Presupuesto vs. real vs. ${nombreDelMes(comparacion.mesDelAnioAnterior)}`
                 : 'Presupuesto vs. real'}
             </h2>
             <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
@@ -161,7 +179,8 @@ export function PresupuestoPanel() {
           <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
             <SelectorDeMes mes={mes} onCambiar={setMes} />
             {puedeCargar ? (
-              <Button onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
+              /* CB-30: sin la ↗ — el botón abre un diálogo acá, no otra página. */
+              <Button hideArrow onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Cargar un rubro
               </Button>
@@ -180,6 +199,7 @@ export function PresupuestoPanel() {
             <Comparacion
               comparacion={comparacion}
               cargado={cargado?.filas ?? []}
+              rubros={rubros}
               onBorrar={setBorrando}
             />
           ) : null}
@@ -201,9 +221,10 @@ export function PresupuestoPanel() {
             <AlertDialogDescription>
               Se borran los{' '}
               <span className="font-mono tabular-nums">
-                {formatCurrency(borrando?.valorCop ?? 0)}
+                {plata(borrando?.valorCop ?? 0)}
               </span>{' '}
-              presupuestados para {borrando?.rubro.replace(/_/g, ' ')} en {borrando?.mes}, y la
+              presupuestados para {borrando?.rubro.replace(/_/g, ' ')} en{' '}
+              {borrando?.mes ? nombreDelMes(borrando.mes) : ''}, y la
               comparación de ese rubro deja de tener con qué medirse. El real no cambia: sólo se
               borra lo que se había planeado.
             </AlertDialogDescription>
@@ -230,24 +251,37 @@ export function PresupuestoPanel() {
 function Comparacion({
   comparacion,
   cargado,
+  rubros,
   onBorrar,
 }: {
   comparacion: ComparacionDelPresupuesto;
   cargado: readonly PresupuestoCargado[];
+  rubros: readonly RubroDelPresupuesto[];
   onBorrar: (fila: PresupuestoCargado) => void;
 }) {
   const porRubro = useMemo(
     () => new Map(cargado.map((f) => [f.rubro, f])),
     [cargado],
   );
+  // 🔴 CB-09 (Nico): «Real» es el LIBRO; la operación va al lado como referencia.
+  const tabla = useMemo(
+    () =>
+      presupuestoContraElLibro(
+        comparacion,
+        new Map(rubros.map((r) => [r.rubro, r.fuenteDelReal])),
+      ),
+    [comparacion, rubros],
+  );
+  // Las frases del back sin emojis (el cartel ya trae su ícono) y con la plata de la casa.
+  const avisos = useMemo(() => comparacion.avisos.map(textoDelBack), [comparacion.avisos]);
 
   return (
     <div>
       {/* El título ya lo dice la cabecera de la tarjeta: repetirlo acá era la
           misma frase dicha dos veces. */}
-      {comparacion.avisos.length > 0 ? (
+      {avisos.length > 0 ? (
         <div className="border-b border-border p-4">
-          <Avisos avisos={comparacion.avisos} testId="presupuesto-avisos" />
+          <Avisos avisos={avisos} testId="presupuesto-avisos" />
         </div>
       ) : null}
 
@@ -258,14 +292,22 @@ function Comparacion({
               <TableHead>Rubro</TableHead>
               <TableHead className="text-right">Presupuesto</TableHead>
               <TableHead className="text-right">Real</TableHead>
+              {tabla.hayOperacion ? (
+                <TableHead
+                  className="whitespace-nowrap text-right"
+                  title="Lo que dice la operación (la comisión causada, los recargos recaudados, los costos de la plata). Es una referencia: el real es el del libro."
+                >
+                  En la operación
+                </TableHead>
+              ) : null}
               <TableHead className="text-right">Contra el presupuesto</TableHead>
-              <TableHead className="text-right">{comparacion.mesDelAnioAnterior}</TableHead>
+              <TableHead className="whitespace-nowrap text-right">{mesConMayuscula(comparacion.mesDelAnioAnterior)}</TableHead>
               <TableHead className="text-right">Variación anual</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBodyAnimado>
-            {comparacion.filas.map((fila) => {
+            {tabla.filas.map((fila) => {
               const suFila = porRubro.get(fila.rubro);
               return (
                 <TableRowAnimada key={fila.rubro} data-testid={`rubro-${fila.rubro}`}>
@@ -297,6 +339,9 @@ function Comparacion({
                   </TableCell>
                   <Monto id={`presupuesto-${fila.rubro}`} valor={fila.presupuestoCop} />
                   <Monto id={`real-${fila.rubro}`} valor={fila.realCop} />
+                  {tabla.hayOperacion ? (
+                    <Monto id={`operacion-${fila.rubro}`} valor={fila.operacionCop} apagado />
+                  ) : null}
                   <Monto
                     id={`contra-${fila.rubro}`}
                     valor={fila.contraPresupuestoCop}
@@ -339,11 +384,14 @@ function Comparacion({
             })}
             <TableRow key="total" className="border-t-2 border-border font-medium">
               <TableCell>Total</TableCell>
-              <Monto id="total-presupuesto" valor={comparacion.totales.presupuestoCop} />
-              <Monto id="total-real" valor={comparacion.totales.realCop} />
+              <Monto id="total-presupuesto" valor={tabla.totales.presupuestoCop} />
+              <Monto id="total-real" valor={tabla.totales.realCop} />
+              {tabla.hayOperacion ? (
+                <Monto id="total-operacion" valor={tabla.totales.operacionCop} apagado />
+              ) : null}
               <TableCell colSpan={3} className="text-right text-caption text-fg-muted">
-                {comparacion.totales.rubrosSinReal > 0
-                  ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} ${comparacion.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${comparacion.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
+                {tabla.totales.rubrosSinReal > 0
+                  ? `El total del real NO incluye ${tabla.totales.rubrosSinReal} ${tabla.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${tabla.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
                   : 'Todos los rubros se pudieron medir.'}
               </TableCell>
               <TableCell />
@@ -355,26 +403,33 @@ function Comparacion({
   );
 }
 
-/** Una celda de plata. `null` = `—`, nunca `$0`. */
+/**
+ * Una celda de plata. `null` = `—`, nunca `$0`. Con el formato de la casa
+ * (CB-09 / CB-17): «$ 8.757.000» y «−$ 119.100», no «$-119.100».
+ * `apagado`: una cifra de referencia (la operación), en gris.
+ */
 function Monto({
   id,
   valor,
   tono,
+  apagado = false,
 }: {
   id: string;
   valor: number | null;
   tono?: 'danger' | 'success';
+  apagado?: boolean;
 }) {
   return (
     <TableCell
       className={cn(
-        'text-right font-mono tabular-nums',
+        'whitespace-nowrap text-right font-mono tabular-nums',
+        apagado && 'text-fg-muted',
         valor !== null && tono === 'danger' && 'text-danger',
         valor !== null && tono === 'success' && 'text-success',
       )}
       data-testid={id}
     >
-      {valor === null ? SIN_MEDIR : formatCurrency(valor)}
+      {valor === null ? SIN_MEDIR : plata(valor)}
     </TableCell>
   );
 }
@@ -392,20 +447,30 @@ function DialogoDeCarga({
   onCerrar: () => void;
   onGuardado: () => Promise<void>;
 }) {
-  const [rubro, setRubro] = useState('');
+  /**
+   * 🔴 CB-30 (QA de Contabilidad, 03-10-2026): el rubro era un texto libre con
+   * las claves internas sugeridas («comisiones»), y escribir otra cosa creaba
+   * un rubro basura. Ahora se ELIGE por su nombre, y «Otro rubro…» pide el
+   * nombre tal cual lo escriben (el back lo guarda así).
+   */
+  const [eleccion, setEleccion] = useState('');
+  const [otro, setOtro] = useState('');
   const [valor, setValor] = useState('');
   const [guardando, setGuardando] = useState(false);
   /** Lo que el back dijo de un campo (un 400 con `campos`). */
   const [delServidor, setDelServidor] = useState<{ rubro?: string; valorCop?: string }>({});
 
-  const elegido = rubros.find((r) => r.rubro === rubro);
+  const rubro = eleccion === OTRO_RUBRO ? otro : eleccion;
+  const elegido = rubros.find((r) => r.rubro === eleccion);
   // 🔁 El tope del back (±$2.000.000.000, puede ser negativo), con su frase.
-  const problemaDelValor = valor === '' ? null : problemaDelPresupuesto(Number(valor));
+  const numero = valor === '' || valor === '-' ? null : Number(valor);
+  const problemaDelValor = numero === null ? null : problemaDelPresupuesto(numero);
   const errorDelValor = problemaDelValor ?? delServidor.valorCop;
+  const idDelRubro = eleccion === OTRO_RUBRO ? 'presupuesto-rubro-otro' : 'presupuesto-rubro';
 
   const guardar = useCallback(async () => {
     const valorCop = Number(valor);
-    if (!rubro.trim() || !Number.isFinite(valorCop)) return;
+    if (!rubro.trim() || valor === '' || !Number.isFinite(valorCop)) return;
     if (problemaDelPresupuesto(valorCop)) {
       document.getElementById('presupuesto-valor')?.focus();
       return;
@@ -415,11 +480,16 @@ function DialogoDeCarga({
     try {
       await finanzasApi.guardarPresupuesto({
         mes,
-        rubro: rubro.trim(),
+        // CB-30 (back 26beefbc): «Otro rubro…» viaja como `rubro: 'otro'` con su
+        // nombre tal cual; un rubro de la lista, por su clave.
+        ...(eleccion === OTRO_RUBRO
+          ? { rubro: 'otro', nombre: otro.trim() }
+          : { rubro: rubro.trim() }),
         valorCop: Math.round(valorCop),
       });
       toast.success('Presupuesto cargado.');
-      setRubro('');
+      setEleccion('');
+      setOtro('');
       setValor('');
       onCerrar();
       await onGuardado();
@@ -433,7 +503,10 @@ function DialogoDeCarga({
       }
       // Lo que es de un campo va bajo ese campo; lo demás, al toast con la
       // regla de oro.
+      // `RUBRO_DESCONOCIDO` viene en `rubro`; `RUBRO_OTRO_SIN_NOMBRE`, en `nombre`
+      // (el campo «Nombre del rubro»): los dos van bajo el rubro.
       const reparto = repartirErroresDelServidor<'rubro' | 'valorCop'>(error, {
+        mapa: { nombre: 'rubro' },
         campos: ['rubro', 'valorCop'],
         porDefecto: 'No se pudo cargar el presupuesto.',
         accion: 'cargar el presupuesto',
@@ -441,13 +514,13 @@ function DialogoDeCarga({
       setDelServidor(reparto.porCampo);
       const primero = reparto.orden[0];
       if (primero) {
-        document.getElementById(primero === 'rubro' ? 'presupuesto-rubro' : 'presupuesto-valor')?.focus();
+        document.getElementById(primero === 'rubro' ? idDelRubro : 'presupuesto-valor')?.focus();
       }
       if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
-  }, [mes, onCerrar, onGuardado, rubro, valor]);
+  }, [mes, onCerrar, onGuardado, rubro, valor, idDelRubro, eleccion, otro]);
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
@@ -455,34 +528,58 @@ function DialogoDeCarga({
         <DialogHeader>
           <DialogTitle>Cargar el presupuesto de un rubro</DialogTitle>
           <DialogDescription>
-            Para {mes}. Cargar dos veces el mismo rubro lo corrige, no lo suma.
+            Para {nombreDelMes(mes)}. Cargar dos veces el mismo rubro lo corrige, no lo suma.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="presupuesto-rubro">Rubro</Label>
-            <Input
-              id="presupuesto-rubro"
-              list="rubros-sugeridos"
-              value={rubro}
-              maxLength={LARGO_MAXIMO_DEL_RUBRO}
-              onChange={(e) => {
+            <Label id="presupuesto-rubro-rotulo" htmlFor="presupuesto-rubro">Rubro</Label>
+            <Select
+              value={eleccion || undefined}
+              onValueChange={(v) => {
                 setDelServidor((d) => ({ ...d, rubro: undefined }));
-                setRubro(e.target.value);
+                setEleccion(v);
               }}
-              placeholder="comisiones"
-              aria-invalid={Boolean(delServidor.rubro) || undefined}
-              aria-describedby={delServidor.rubro ? 'presupuesto-rubro-error' : undefined}
-              data-testid="presupuesto-rubro"
-            />
+            >
+              <SelectTrigger
+                id="presupuesto-rubro"
+                aria-labelledby="presupuesto-rubro-rotulo"
+                aria-invalid={(eleccion !== OTRO_RUBRO && Boolean(delServidor.rubro)) || undefined}
+                aria-describedby={
+                  eleccion !== OTRO_RUBRO && delServidor.rubro ? 'presupuesto-rubro-error' : undefined
+                }
+                data-testid="presupuesto-rubro"
+              >
+                <SelectValue placeholder="Elige el rubro" />
+              </SelectTrigger>
+              <SelectContent>
+                {rubros.map((r) => (
+                  <SelectItem key={r.rubro} value={r.rubro}>
+                    {r.nombre}
+                  </SelectItem>
+                ))}
+                <SelectItem value={OTRO_RUBRO}>Otro rubro…</SelectItem>
+              </SelectContent>
+            </Select>
+            {eleccion === OTRO_RUBRO ? (
+              <div className="space-y-1.5 pt-1">
+                <Label htmlFor="presupuesto-rubro-otro">Nombre del rubro</Label>
+                <Input
+                  id="presupuesto-rubro-otro"
+                  value={otro}
+                  maxLength={LARGO_MAXIMO_DEL_RUBRO}
+                  onChange={(e) => {
+                    setDelServidor((d) => ({ ...d, rubro: undefined }));
+                    setOtro(e.target.value);
+                  }}
+                  placeholder="Publicidad"
+                  aria-invalid={Boolean(delServidor.rubro) || undefined}
+                  aria-describedby={delServidor.rubro ? 'presupuesto-rubro-error' : undefined}
+                  data-testid="presupuesto-rubro-otro"
+                />
+              </div>
+            ) : null}
             <ErrorDelCampo id="presupuesto-rubro-error" mensaje={delServidor.rubro} />
-            <datalist id="rubros-sugeridos">
-              {rubros.map((r) => (
-                <option key={r.rubro} value={r.rubro}>
-                  {r.nombre}
-                </option>
-              ))}
-            </datalist>
             {elegido?.motivoSinReal ? (
               <p className="text-caption leading-relaxed text-fg-muted" data-testid="aviso-sin-real">
                 {elegido.motivoSinReal}
@@ -490,15 +587,16 @@ function DialogoDeCarga({
             ) : null}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="presupuesto-valor">Valor del mes (COP)</Label>
-            <Input
+            <Label htmlFor="presupuesto-valor">Valor del mes</Label>
+            {/* CB-30: el campo de plata de la casa (agrupa mientras se escribe),
+                no `type="number"`. Admite negativo. */}
+            <MoneyInput
               id="presupuesto-valor"
-              type="number"
-              inputMode="numeric"
+              conSigno
               value={valor}
-              onChange={(e) => {
+              onChange={(crudo) => {
                 setDelServidor((d) => ({ ...d, valorCop: undefined }));
-                setValor(e.target.value);
+                setValor(crudo);
               }}
               aria-invalid={Boolean(errorDelValor) || undefined}
               aria-describedby={errorDelValor ? 'presupuesto-valor-error' : undefined}
@@ -512,8 +610,9 @@ function DialogoDeCarga({
             Cancelar
           </Button>
           <Button
+            hideArrow
             onClick={() => void guardar()}
-            disabled={!rubro.trim() || valor === ''}
+            disabled={!rubro.trim() || valor === '' || valor === '-'}
             isLoading={guardando}
             data-testid="guardar-presupuesto"
           >

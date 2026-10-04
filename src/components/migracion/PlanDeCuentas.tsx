@@ -86,6 +86,8 @@ import { ApiError } from '@/lib/api/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeDeContabilidad } from './contabilidad-errores';
 import { ImportarCuentas } from './ImportarCuentas';
+import { toast } from '@/components/ui/toast';
+import { avisoDeNaturaleza, naturalezaDeLaClase } from '@/lib/contabilidad/naturaleza-de-la-clase';
 
 export const RUTA_DEL_PASO_5 = '/panel/inmobiliaria/migracion/contables';
 
@@ -925,6 +927,19 @@ function FormularioDeCuenta({
   const [naturaleza, setNaturaleza] = useState<NaturalezaContable>(
     editando?.naturaleza ?? padreInicial?.naturaleza ?? 'DEBITO',
   );
+  /**
+   * 🔴 CB-27 (QA de Contabilidad, 03-10-2026): al crear, la naturaleza se
+   * PROPONE por la clase del código (1/5/6/7 débito; 2/3/4 crédito) mientras
+   * nadie la elija a mano; si se elige otra, se avisa (no se impide: existen las
+   * cuentas correctoras).
+   */
+  const [naturalezaAMano, setNaturalezaAMano] = useState(Boolean(editando));
+  useEffect(() => {
+    if (editando || naturalezaAMano) return;
+    const propuesta = naturalezaDeLaClase(codigo);
+    if (propuesta) setNaturaleza(propuesta);
+  }, [codigo, editando, naturalezaAMano]);
+  const avisoNaturaleza = avisoDeNaturaleza(editando?.codigo ?? codigo, naturaleza);
   const [padreId, setPadreId] = useState<string>(padreInicial?.id ?? SIN_PADRE);
   const [imputable, setImputable] = useState(editando?.imputable ?? true);
   const [activa, setActiva] = useState(editando?.activa ?? true);
@@ -980,6 +995,12 @@ function FormularioDeCuenta({
           ...(padreElegido ? { padreId: padreElegido.id } : {}),
         });
       }
+      // CB-27: que se vea que quedó (antes el formulario sólo se cerraba).
+      toast.success(
+        editando
+          ? `Cambios guardados en ${editando.codigo} · ${nombre.trim()}.`
+          : `Cuenta ${codigo} · ${nombre.trim()} creada.`,
+      );
       await onGuardado();
     } catch (e) {
       /*
@@ -1113,6 +1134,7 @@ function FormularioDeCuenta({
             value={naturaleza}
             onValueChange={(v) => {
               olvidar('naturaleza');
+              setNaturalezaAMano(true);
               setNaturaleza(v as NaturalezaContable);
             }}
           >
@@ -1131,6 +1153,11 @@ function FormularioDeCuenta({
             </SelectContent>
           </Select>
           <ErrorDelCampo id="puc-naturaleza-error" className="mt-0" mensaje={delServidor.naturaleza} />
+          {avisoNaturaleza ? (
+            <p className="text-caption text-warning" role="status" data-testid="puc-naturaleza-distinta">
+              {avisoNaturaleza}
+            </p>
+          ) : null}
         </div>
 
         {!editando ? (
@@ -1174,25 +1201,36 @@ function FormularioDeCuenta({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-6">
+        {/* CB-27: cada casilla con su nombre (`aria-labelledby`) y su
+            explicación (`aria-describedby`): el lector de pantalla decía
+            «casilla de verificación» y nada más. */}
         <label className="flex items-start gap-2 text-sm text-fg">
           <Checkbox
             checked={imputable}
             onCheckedChange={(c) => setImputable(c === true)}
+            aria-labelledby="puc-imputable-rotulo"
+            aria-describedby="puc-imputable-ayuda"
             data-testid="puc-imputable"
           />
           <span>
-            Recibe movimientos
-            <span className="block text-caption text-fg-subtle">
+            <span id="puc-imputable-rotulo">Recibe movimientos</span>
+            <span id="puc-imputable-ayuda" className="block text-caption text-fg-subtle">
               Las cuentas con subcuentas no: los movimientos van en la subcuenta.
             </span>
           </span>
         </label>
         {editando ? (
           <label className="flex items-start gap-2 text-sm text-fg">
-            <Checkbox checked={activa} onCheckedChange={(c) => setActiva(c === true)} />
+            <Checkbox
+              checked={activa}
+              onCheckedChange={(c) => setActiva(c === true)}
+              aria-labelledby="puc-activa-rotulo"
+              aria-describedby="puc-activa-ayuda"
+              data-testid="puc-activa"
+            />
             <span>
-              Activa
-              <span className="block text-caption text-fg-subtle">
+              <span id="puc-activa-rotulo">Activa</span>
+              <span id="puc-activa-ayuda" className="block text-caption text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
               </span>
             </span>
@@ -1206,11 +1244,13 @@ function FormularioDeCuenta({
               checked={noDeducible}
               disabled={!soportaLoNoDeducible}
               onCheckedChange={(c) => setNoDeducible(c === true)}
+              aria-labelledby="puc-no-deducible-rotulo"
+              aria-describedby="puc-no-deducible-ayuda"
               data-testid="puc-no-deducible"
             />
             <span>
-              {frasesNoDeducible.titulo}
-              <span className="block max-w-prose text-caption text-fg-subtle">
+              <span id="puc-no-deducible-rotulo">{frasesNoDeducible.titulo}</span>
+              <span id="puc-no-deducible-ayuda" className="block max-w-prose text-caption text-fg-subtle">
                 {frasesNoDeducible.explicacion}
               </span>
             </span>

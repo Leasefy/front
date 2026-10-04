@@ -148,6 +148,16 @@ export const finanzasApi = {
       `${BASE}/retenciones/certificado${query({ anio, criterio })}`,
     ),
 
+  /**
+   * QA-CONTA CB-R17 (back 26beefbc): el certificado de UN propietario en PDF
+   * (las mismas cifras de `certificado`), para entregárselo. Permiso
+   * `reportes:view`.
+   */
+  pdfDelCertificado: (anio: number, propietarioId: string, criterio: CriterioDeRetencion) =>
+    apiClient.getBlob(
+      `${BASE}/retenciones/certificado/pdf${query({ anio, propietarioId, criterio })}`,
+    ),
+
   /** Permiso `reportes:edit`. Fija número y fecha: es el ACTO de emitir. */
   emitirCertificado: (anio: number, propietarioId: string, criterio?: CriterioDeRetencion) =>
     apiClient.post<Emision>(`${BASE}/retenciones/certificado/emitir`, {

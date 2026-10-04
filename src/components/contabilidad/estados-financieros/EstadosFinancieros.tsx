@@ -56,6 +56,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
+// CB-17 (QA de Contabilidad, 03-10-2026): la plata de Contabilidad con UN formato.
+import { plata, textoDelBack } from '@/lib/contabilidad/plata';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
   estadosFinancierosApi,
@@ -247,7 +249,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
               <Avisos
                 avisos={[
                   ...(avisoDeLoQueFalta(pyg.sinAsentar) ? [avisoDeLoQueFalta(pyg.sinAsentar)!] : []),
-                  ...pyg.avisos,
+                  // CB-17: las frases del back sin emojis y con la plata de la casa.
+                  ...pyg.avisos.map(textoDelBack),
                 ]}
                 testId="avisos-del-pyg"
                 titulo="Lo que este informe no cuenta"
@@ -255,18 +258,21 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
 
               <dl className="grid gap-4 sm:grid-cols-4">
                 <Cifra
+                  formato={plata}
                   id="ingresos"
                   etiqueta="Ingresos del mes"
                   valor={pyg.resultado.ingresosMesCop}
                   definicion="Las cuentas de la clase 4 asentadas en el mes. No incluye el canon: ése es del propietario."
                 />
                 <Cifra
+                  formato={plata}
                   id="gastos"
                   etiqueta="Gastos del mes"
                   valor={pyg.resultado.gastosMesCop}
                   definicion="Las cuentas de las clases 5, 6 y 7 asentadas en el mes."
                 />
                 <Cifra
+                  formato={plata}
                   id="utilidad"
                   etiqueta="Utilidad del mes"
                   valor={pyg.resultado.utilidadMesCop}
@@ -477,8 +483,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   de esto: leerlo primero es leerlo en el orden correcto. */}
               <Bloqueos
                 bloqueos={
-                  descripcionDelDescuadre(balance, (n) => `$${n.toLocaleString('es-CO')}`)
-                    ? [descripcionDelDescuadre(balance, (n) => `$${n.toLocaleString('es-CO')}`)!]
+                  descripcionDelDescuadre(balance, plata)
+                    ? [descripcionDelDescuadre(balance, plata)!]
                     : []
                 }
                 titulo="El balance no cuadra"
@@ -496,31 +502,35 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
               </Nota>
 
               <Avisos
-                avisos={balance.avisos}
+                avisos={balance.avisos.map(textoDelBack)}
                 testId="avisos-del-balance"
                 titulo="Lo que este balance no cuenta"
               />
 
               <dl className="grid gap-4 sm:grid-cols-4">
                 <Cifra
+                  formato={plata}
                   id="activo"
                   etiqueta="Activo"
                   valor={balance.activo.totalCop}
                   definicion="Lo que la inmobiliaria tiene y le deben, al último día del mes."
                 />
                 <Cifra
+                  formato={plata}
                   id="pasivo"
                   etiqueta="Pasivo"
                   valor={balance.pasivo.totalCop}
                   definicion="Lo que debe, incluida la plata de los propietarios que todavía no se giró (2815)."
                 />
                 <Cifra
+                  formato={plata}
                   id="patrimonio"
                   etiqueta="Patrimonio"
                   valor={balance.patrimonio.totalCop}
                   definicion="El capital y las reservas. Lo crea el contador: el plan de cuentas que trae Leasefy no incluye la clase 3."
                 />
                 <Cifra
+                  formato={plata}
                   id="resultado-del-ejercicio"
                   etiqueta="Resultado del ejercicio"
                   valor={balance.resultadoDelEjercicioCop}

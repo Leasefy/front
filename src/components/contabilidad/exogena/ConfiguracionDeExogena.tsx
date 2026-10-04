@@ -51,7 +51,8 @@ import {
   topeVigente,
   type BorradorDeConfiguracion,
 } from '@/lib/contabilidad/configuracion-de-exogena';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 

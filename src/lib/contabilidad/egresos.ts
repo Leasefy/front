@@ -132,7 +132,7 @@ export function permisosDelLote(
            */
           usuarioId && lote.creadoPorUserId && usuarioId === lote.creadoPorUserId && !esAdministrador
           ? no(
-              'Este lote lo armaste vos: lo tiene que aprobar otra persona. Es plata que sale del banco y la aprobación es la segunda firma. Sólo lo que arma un administrador queda aprobado por él mismo (P-4).',
+              'Este lote lo armaste tú: lo tiene que aprobar otra persona. Es plata que sale del banco y la aprobación es la segunda firma. Sólo lo que arma un administrador queda aprobado por él mismo.',
             )
           : SI
       : no(`Este lote ${EN_ESTADO[estado]}.`);
@@ -182,4 +182,31 @@ export function faltaParaGirar(egreso: Egreso): string[] {
   if (!egreso.numeroDeCuenta) falta.push('el número de cuenta');
   if (!egreso.beneficiarioDocumento) falta.push('el documento del beneficiario');
   return falta;
+}
+
+/**
+ * 🔴 CB-07 (QA de Contabilidad, 03-10-2026): UNA ayuda corta debajo de las
+ * acciones de la fila de un egreso, en vez de un párrafo por cada botón apagado
+ * (tres motivos de tres renglones volvían la fila altísima y la columna se
+ * salía de la tabla). Cada botón conserva su motivo completo en el `title` y
+ * para el lector de pantalla (`AccionConMotivo motivoVisible={false}`).
+ *
+ * Sin rol para escribir, lo dice el motivo del rol; si no, el estado manda.
+ */
+export function ayudaDeLasAcciones(
+  egreso: Pick<Egreso, 'estado' | 'numero'>,
+  escritura: { puede: boolean; motivo: string | null },
+): string | null {
+  if (!escritura.puede && escritura.motivo) return escritura.motivo;
+  switch (egreso.estado) {
+    case 'PENDIENTE':
+    case 'EN_LOTE':
+      return 'El comprobante y la conciliación, cuando el lote se marque pagado.';
+    case 'PAGADO':
+      return 'Pagado: ya no se anula.';
+    case 'ANULADO':
+      return 'Anulado: no admite más acciones.';
+    default:
+      return null;
+  }
 }

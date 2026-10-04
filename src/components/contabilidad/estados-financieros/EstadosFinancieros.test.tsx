@@ -337,9 +337,10 @@ describe('<EstadosFinancieros> — balance', () => {
     await pintar('balance');
 
     const cartel = q('balance-no-cuadra')!.textContent!;
-    expect(cartel).toContain('$1.000.000.000');
-    expect(cartel).toContain('$944.000.000');
-    expect(cartel).toContain('$56.000.000');
+    // CB-17 (03-10-2026): la plata de Contabilidad con UN formato, «$ 1.000.000.000».
+    expect(cartel).toContain('$ 1.000.000.000');
+    expect(cartel).toContain('$ 944.000.000');
+    expect(cartel).toContain('$ 56.000.000');
     expect(cartel).toContain('defecto del libro');
   });
 

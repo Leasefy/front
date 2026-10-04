@@ -30,6 +30,9 @@ import {
 } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
+import { origenDelEvento } from '@/lib/agenda/origen-del-evento';
+import { AsesorDeLaVisita, MasAccionesDeLaVisita } from '@/components/inmobiliaria/agenda/AccionesDeLaVisita';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
@@ -109,6 +112,10 @@ export function EventoAgendaDrawer({
    * es el texto y a qué endpoint va.
    */
   const [pidiendoMotivo, setPidiendoMotivo] = useState<'cancelar' | 'rechazar' | null>(null);
+  /** AG-06: el asesor elegido para confirmar una visita que todavía no tiene. */
+  const [asesorElegido, setAsesorElegido] = useState<string | null>(null);
+  const miUserId = useMiUserId();
+  const { asesores } = useEquipo(!entrante || entrante.tipo !== 'visita');
   /** El rechazo del back al cancelar o rechazar: va bajo el campo del motivo. */
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   const pedirMotivo = (cual: 'cancelar' | 'rechazar') => {
@@ -233,7 +240,9 @@ export function EventoAgendaDrawer({
 
             <CajonCuerpo>
               <dl className="space-y-3 text-sm" data-testid="evento-detalle">
-                <Fila etiqueta={t(k('colOrigen'))}>{t(k(`origen_${evento.origen}`))}</Fila>
+                <Fila etiqueta={evento.tipo === 'tarea' ? 'Creada por' : t(k('colOrigen'))}>
+                  {origenDelEvento(evento, miUserId, (o) => t(k(`origen_${o}`)))}
+                </Fila>
                 <Fila etiqueta={t(k('colVinculo'))}>
                   {evento.vinculoLabel ? (
                     href ? (
@@ -255,6 +264,30 @@ export function EventoAgendaDrawer({
                   {evento.responsableNombre ?? '—'}
                 </Fila>
 
+                {esVisita && (
+                  <Fila etiqueta="Asesor">
+                    <AsesorDeLaVisita
+                      evento={evento}
+                      asesores={asesores}
+                      elegido={asesorElegido}
+                      onElegir={setAsesorElegido}
+                      puedeEditar={puedeEditar}
+                      onCambio={onCambio}
+                    />
+                  </Fila>
+                )}
+                {esVisita && evento.pipelineItemId && (
+                  <Fila etiqueta="Interesado">
+                    <Link
+                      href={`/panel/inmobiliaria/pipeline?lead=${evento.pipelineItemId}`}
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      data-testid="visita-interesado"
+                    >
+                      Ver en el embudo
+                      <ArrowSquareOut className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </Fila>
+                )}
                 {esVisita && evento.modalidad && (
                   <Fila etiqueta="Modalidad">
                     <span className="inline-flex items-center gap-1.5">
@@ -301,6 +334,15 @@ export function EventoAgendaDrawer({
                   </Fila>
                 )}
               </dl>
+              {esVisita && puedeEditar && (
+                <div className="mt-6 border-t border-border pt-4">
+                  <MasAccionesDeLaVisita
+                    evento={evento}
+                    onCambio={onCambio}
+                    onCerrar={() => onOpenChange(false)}
+                  />
+                </div>
+              )}
             </CajonCuerpo>
 
             {/* Las acciones, con su nombre arriba: antes eran dos botones
@@ -377,7 +419,13 @@ export function EventoAgendaDrawer({
                       size="sm"
                       hideArrow
                       disabled={actuando}
-                      onClick={() => void visita(() => agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')))}
+                      onClick={() =>
+                        void visita(() =>
+                          asesorElegido
+                            ? agendaApi.aceptarCita(evento.id.replace(/^visit-/, ''), asesorElegido)
+                            : agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')),
+                        )
+                      }
                       data-testid="cita-confirmar"
                     >
                       {t(k('citaConfirmar'))}

@@ -15,6 +15,18 @@ const { crear, toastSuccess } = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
 }));
 
+// PL-07 (04-10-2026): el inmueble se escoge con el Combobox (buscador): cada opción es un botón.
+vi.mock('@/components/ui/combobox', () => ({
+  Combobox: ({ options, onChange }: { options: { value: string; label: string }[]; onChange: (v?: string) => void }) => (
+    <div>
+      {options.map((o) => (
+        <button key={o.value} type="button" data-testid={`opcion-${o.value}`} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
   pipelineApi: { create: crear },
 }));

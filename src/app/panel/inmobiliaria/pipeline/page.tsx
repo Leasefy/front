@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import {
   Funnel,
   Users,
@@ -39,6 +39,9 @@ import {
   mensajeAlNoMoverElLead,
 } from '@/lib/pipeline/errores-del-pipeline';
 import { tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { useSearchParams } from 'next/navigation';
+import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
+import { useEquipo } from '@/lib/agenda/use-equipo';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
@@ -98,6 +101,25 @@ function PipelineContent() {
   const falloSinDatos = yaSeMostro ? null : errorCrudo;
 
   const [creandoLead, setCreandoLead] = useState(false);
+  /** PL-16: el interesado al que se le está agendando la visita. */
+  const [agendandoA, setAgendandoA] = useState<PipelineItem | null>(null);
+  /** PL-12: el equipo activo, con nombre (también el admin y quien no es asesor). */
+  const { equipo } = useEquipo();
+  const nombresDelEquipo = useMemo(
+    () => equipo.map((m) => ({ id: m.userId, userId: m.userId, name: m.nombre })),
+    [equipo],
+  );
+  /** Desde un aviso de la campana (`?lead=<id>`) se abre ese interesado. */
+  const parametros = useSearchParams();
+  const leadDelEnlace = parametros?.get('lead') ?? null;
+  useEffect(() => {
+    if (!leadDelEnlace) return;
+    const lead = items.find((i) => i.id === leadDelEnlace);
+    if (lead) {
+      setSelectedItem(lead);
+      setIsDetailOpen(true);
+    }
+  }, [leadDelEnlace, items]);
 
   // Calculate stats from all items
   const stats = useMemo(() => {
@@ -364,7 +386,7 @@ function PipelineContent() {
                 data-testid="pipeline-nuevo-lead"
               >
                 <Plus className="w-4 h-4" />
-                Nuevo lead
+                Nuevo interesado
               </Button>
             </PermissionGate>
           </div>
@@ -390,13 +412,13 @@ function PipelineContent() {
           cuandoVacio={
             <SinDatos
               hayFiltros={hayFiltros}
-              queSon="leads"
+              queSon="interesados"
               icono={Funnel}
-              titulo="Todavía no hay leads en el pipeline"
+              titulo="Todavía no hay interesados en el embudo"
               descripcion="Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano."
               crear={
                 puedeCrear
-                  ? { label: 'Nuevo lead', onClick: () => setCreandoLead(true) }
+                  ? { label: 'Nuevo interesado', onClick: () => setCreandoLead(true) }
                   : undefined
               }
               onLimpiarFiltros={limpiarFiltros}
@@ -406,10 +428,11 @@ function PipelineContent() {
           <div className="p-4">
             <PipelineBoard
               items={filteredItems}
-              agentes={agentes}
+              agentes={nombresDelEquipo.length ? nombresDelEquipo : agentes}
               onItemClick={handleCardClick}
               onStageChange={handleStageChange}
               puedeMover={puedeMover}
+              onPedirVisita={setAgendandoA}
             />
           </div>
         </EstadoDeDatos>
@@ -422,6 +445,25 @@ function PipelineContent() {
         item={selectedItem}
         onStageChange={handleStageChange}
         puedeEditar={puedeMover}
+        // El cajón se cierra antes: dos modales encima no dejan escoger el día.
+        onPedirVisita={(i) => {
+          setIsDetailOpen(false);
+          setAgendandoA(i);
+        }}
+        equipo={equipo}
+        onCambio={() => void refetch()}
+      />
+
+      {/* PL-16: «Visita programada» = la visita agendada en la Agenda. */}
+      <AgendarVisitaDialog
+        item={agendandoA}
+        consignaciones={consignaciones}
+        onCerrar={() => setAgendandoA(null)}
+        onAgendada={() => {
+          setAgendandoA(null);
+          setIsDetailOpen(false);
+          void refetch();
+        }}
       />
 
       {puedeCrear && (
@@ -442,7 +484,10 @@ function PipelineContent() {
 export default function PipelinePage() {
   return (
     <PageGuard module="pipeline">
-      <PipelineContent />
+      {/* `useSearchParams` (el `?lead=` de la campana) pide su Suspense. */}
+      <Suspense fallback={null}>
+        <PipelineContent />
+      </Suspense>
     </PageGuard>
   );
 }

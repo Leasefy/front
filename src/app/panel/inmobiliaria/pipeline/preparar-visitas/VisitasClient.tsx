@@ -25,7 +25,9 @@
  * los prenda (y el 14-09 ya costó ~680 correos reales desde un back local).
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { agendaApi } from '@/lib/api/agenda.service'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
 
@@ -82,6 +84,23 @@ export function VisitasClient() {
 
   const [tocando, setTocando] = useState<string | null>(null)
   const [marcando, setMarcando] = useState(false)
+
+  /*
+   * 🔴 PL-21 (04-10-2026): «Tus avisos no reciben visitas». Sin horario, el
+   * aviso público decía «Sin disponibilidad… vuelve pronto» y nadie en el
+   * panel se enteraba. Ahora se dice acá, con cuáles y cómo arreglarlo.
+   */
+  const [sinHorario, setSinHorario] = useState<Awaited<ReturnType<typeof agendaApi.avisosSinHorario>> | null>(null)
+  useEffect(() => {
+    let vivo = true
+    Promise.resolve()
+      .then(() => agendaApi.avisosSinHorario())
+      .then((r) => vivo && setSinHorario(r ?? null))
+      .catch(() => vivo && setSinHorario(null))
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   const visitas = porAtender.datos?.visitas ?? []
   const pendientes = recordatorios.datos?.visitas ?? []
@@ -182,6 +201,41 @@ export function VisitasClient() {
           completo está en Agenda.
         </p>
       </header>
+
+      {sinHorario && sinHorario.sinHorario > 0 && (
+        <div
+          role="status"
+          className="rounded-lg border border-warning/40 bg-warning-soft p-4"
+          data-testid="avisos-sin-horario"
+        >
+          <p className="font-medium text-fg">
+            {sinHorario.sinHorario === sinHorario.publicados
+              ? 'Tus avisos no reciben visitas'
+              : `${sinHorario.sinHorario} de tus ${sinHorario.publicados} avisos no reciben visitas`}
+          </p>
+          <p className="mt-1 text-sm text-fg-muted">
+            Ni el inmueble ni su asesor tienen horario de visitas, así que el aviso no ofrece turnos: quien
+            quiere visitar sólo puede dejar su nombre y su teléfono para que lo llamen. Pon el horario del
+            asesor (en su perfil) o el del inmueble (en su ficha, «Visitas»).
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {sinHorario.inmuebles.slice(0, 8).map((i) => (
+              <li key={i.id}>
+                <Link
+                  href={`/panel/inmobiliaria/inmuebles/${i.id}`}
+                  className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-caption text-fg hover:border-primary/40"
+                >
+                  {i.codigo != null ? `#${i.codigo} · ` : ''}
+                  {i.titulo}
+                </Link>
+              </li>
+            ))}
+            {sinHorario.inmuebles.length > 8 && (
+              <li className="px-1 py-1 text-caption text-fg-muted">y {sinHorario.sinHorario - 8} más</li>
+            )}
+          </ul>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

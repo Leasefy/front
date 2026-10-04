@@ -194,7 +194,6 @@ const DECLARADOS: readonly string[] = [
   'landlordApplicationsApi.triggerReevaluation',
   'leadsApi.buscarContactos',
   'leadsApi.reasignaciones',
-  'leadsApi.reasignar',
   'leadsApi.reasignarVencidos',
   'leadsApi.respondido',
   'mantenimientoApi.reabrirPorGarantia',

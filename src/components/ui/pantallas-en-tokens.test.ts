@@ -300,6 +300,10 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
  * verifica el test de abajo).
  */
 const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
+  'app/panel/inmobiliaria/agenda/page.tsx':
+    'Dos filas clickeables enteras que abren el cajón del evento: la ficha del ' +
+    'día en «Semana» y la tarjeta de la vista de celular (AG-03/AG-14). Las ' +
+    'pestañas y «Sólo lo mío» ya usan Button y Checkbox.',
   // ColaHumana ya no está: la cola pasó de tarjetas a la tabla de la casa
   // (2026-09-08), y la fila clickeable es un `<TableRow>` con `role="button"`,
   // no un `<button>` a mano.

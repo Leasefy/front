@@ -3143,12 +3143,12 @@
       }
     },
     "pipeline": {
-      "title": "Pipeline",
-      "subtitle": "Gestiona el flujo de leads y negociaciones",
-      "search": "Buscar lead...",
-      "addLead": "Nuevo lead",
-      "noLeads": "No hay leads en el pipeline",
-      "noLeadsDesc": "Comienza agregando tu primer lead",
+      "title": "Embudo comercial",
+      "subtitle": "Los interesados, de la primera pregunta al contrato",
+      "search": "Buscar interesado…",
+      "addLead": "Nuevo interesado",
+      "noLeads": "No hay interesados en el embudo",
+      "noLeadsDesc": "Comienza agregando tu primer interesado",
       "stages": {
         "newLead": "Nuevo Lead",
         "contacted": "Contactado",
@@ -3172,36 +3172,36 @@
         "dateRange": "Rango de fechas"
       },
       "detail": {
-        "title": "Detalle del Lead",
+        "title": "Detalle del interesado",
         "timeline": "Línea de tiempo",
         "notes": "Notas",
         "documents": "Documentos",
         "moveToStage": "Mover a etapa"
       },
       "stats": {
-        "totalLeads": "Total leads",
+        "totalLeads": "Interesados",
         "inProcess": "En proceso",
         "closedThisMonth": "Cerrados este mes",
         "conversionRate": "Tasa de conversión"
       },
       "board": {
-        "title": "Pipeline de Leads",
-        "count": "{{filtered}} de {{total}} leads"
+        "title": "Embudo de interesados",
+        "count": "{{filtered}} de {{total}} interesados"
       },
       "expandColumn": "Expandir columna",
       "collapseColumn": "Colapsar columna",
       "dragHere": "Arrastra aquí",
       "dropHere": "Soltar aquí",
       "viewAll": "Ver todo",
-      "leadSingular": "lead",
-      "leadPlural": "leads",
+      "leadSingular": "interesado",
+      "leadPlural": "interesados",
       "close": "Cerrar",
       "stageUpdated": "Etapa actualizada",
       "copied": "Copiado",
       "copiedToClipboard": "copiado al portapapeles",
-      "movedTo": "movido a",
+      "movedTo": "{{name}} pasó a «{{stage}}»",
       "markedAsLost": "Marcado como perdido",
-      "markedAsLostDesc": "El lead ha sido marcado como perdido",
+      "markedAsLostDesc": "{{name}} salió del embudo como perdido",
       "month": "/mes",
       "viewConsignment": "Ver consignación",
       "candidate": "Candidato",
@@ -3236,7 +3236,7 @@
       "allProperties": "Todas las propiedades",
       "to": "a",
       "clear": "Limpiar",
-      "enteredPipeline": "Ingresó al pipeline",
+      "enteredPipeline": "Entró al embudo",
       "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá."
     },
     "agente": {
@@ -8215,7 +8215,7 @@
           "matching": "Matching",
           "avaluos": "Avalúos",
           "gerente": "Gerente",
-        "equipo": "Tu equipo",
+          "equipo": "Tu equipo",
           "retencion": "Retención",
           "calidad": "Calidad de publicación",
           "prospectos": "Prospectos",

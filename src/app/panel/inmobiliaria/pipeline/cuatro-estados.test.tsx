@@ -185,7 +185,7 @@ describe('Pipeline — los dos vacíos (P2/P3)', () => {
 
     const vacio = $('[data-testid="sin-datos"]');
     expect(vacio?.getAttribute('data-caso')).toBe('vacio');
-    const crear = Array.from(vacio!.querySelectorAll('button')).find((b) => b.textContent?.includes('Nuevo lead'));
+    const crear = Array.from(vacio!.querySelectorAll('button')).find((b) => b.textContent?.includes('Nuevo interesado'));
     expect(crear).toBeDefined();
 
     await act(async () => {

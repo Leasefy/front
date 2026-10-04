@@ -130,7 +130,7 @@ export function PipelineCard({
               {item.monthlyRent != null ? (
                 <>
                   {formatCurrency(item.monthlyRent)}
-                  <span className="text-xs font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t('inmobiliaria.pipeline.month')}</span>
                 </>
               ) : (
                 '—'

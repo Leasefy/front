@@ -30,16 +30,9 @@ import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
-import {
-  MotivoDialog,
-  mensajeDelRechazoDelMotivo,
-} from '@/components/inmobiliaria/agenda/MotivoDialog';
-import {
-  AYUDA_DEL_MOTIVO_DE_PERDIDA,
-  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
-  MAX_LARGO_MOTIVO_DE_PERDIDA,
-  revisarMotivoDePerdida,
-} from '@/lib/pipeline/limites-del-pipeline';
+import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
+import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 // ============================================================================
 // Types
@@ -47,6 +40,11 @@ import {
 
 interface PipelineBoardProps {
   items: PipelineItem[];
+  /**
+   * PL-16 (04-10-2026): soltar en «Visita programada» NO mueve la tarjeta:
+   * pide el día, la hora y el asesor, y crea la visita en la Agenda.
+   */
+  onPedirVisita?: (item: PipelineItem) => void;
   /** El equipo, para poner nombre al agente de cada tarjeta. */
   agentes?: ReadonlyArray<{ id: string; userId?: string; name: string }>;
   onItemClick: (item: PipelineItem) => void;
@@ -370,6 +368,7 @@ export function PipelineBoard({
   onStageChange,
   puedeMover = true,
   agentes,
+  onPedirVisita,
 }: PipelineBoardProps) {
   const nombresDeAgentes = useMemo(() => {
     const m: Record<string, string> = {};
@@ -485,6 +484,12 @@ export function PipelineBoard({
         return;
       }
 
+      // PL-16: «Visita programada» se agenda (día, hora y asesor).
+      if (newStage === 'visit_scheduled' && onPedirVisita) {
+        onPedirVisita(item);
+        return;
+      }
+
       // Get stage info for toast
       const oldStageInfo = getPipelineStageInfo(item.stage);
       const newStageInfo = getPipelineStageInfo(newStage);
@@ -500,7 +505,7 @@ export function PipelineBoard({
         description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
       });
     },
-    [items, onStageChange, t, puedeMover]
+    [items, onStageChange, t, puedeMover, onPedirVisita]
   );
 
   /**
@@ -544,16 +549,13 @@ export function PipelineBoard({
     [perdiendo, onStageChange, t]
   );
 
-  // Get stages to display (all except lost at the end).
-  // Columns holding cards come first (funnel order preserved within each
-  // group) so real activity is visible without horizontal scrolling.
-  const mainStages = useMemo(() => {
-    const ordered = PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage);
-    return [
-      ...ordered.filter((stage) => itemsByStage[stage].length > 0),
-      ...ordered.filter((stage) => itemsByStage[stage].length === 0),
-    ];
-  }, [itemsByStage]);
+  // PL-02 (04-10-2026): las columnas van SIEMPRE en el orden del embudo
+  // (Interesado → Visita programada → … → Cerrado | Perdido). Antes las que
+  // tenían tarjetas se iban adelante y el tablero se leía al revés.
+  const mainStages = useMemo(
+    () => PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage),
+    [],
+  );
 
   return (
     <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
@@ -591,15 +593,10 @@ export function PipelineBoard({
       </div>
 
       {/* El mismo diálogo y el mismo mínimo que «Marcar perdido» en el cajón. */}
-      <MotivoDialog
+      <MotivoDePerdidaDialog
         abierto={perdiendo !== null}
-        titulo={`¿Marcar a ${perdiendo?.candidateName ?? ''} como perdido?`}
-        descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
-        etiquetaConfirmar="Marcar como perdido"
+        nombre={perdiendo?.candidateName ?? ''}
         enviando={enviandoMotivo}
-        ayuda={AYUDA_DEL_MOTIVO_DE_PERDIDA}
-        ejemplo={EJEMPLO_DEL_MOTIVO_DE_PERDIDA}
-        maximo={MAX_LARGO_MOTIVO_DE_PERDIDA}
         error={errorDelMotivo}
         onCerrar={() => {
           setPerdiendo(null);

@@ -23,6 +23,7 @@
  * tenerlo.
  */
 
+import { nombreDelOrigen } from '@/lib/pipeline/nombre-del-origen';
 import { useMemo, useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { TrendUp } from '@phosphor-icons/react'
@@ -198,7 +199,7 @@ export function OrigenesClient() {
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {configuracion.datos.origenesDeLead.map((o) => (
                     <Badge key={o} variant="secondary">
-                      {o}
+                      {nombreDelOrigen(o)}
                     </Badge>
                   ))}
                 </div>

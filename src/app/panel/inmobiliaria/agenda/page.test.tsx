@@ -36,12 +36,16 @@ vi.mock('sonner', () => ({ toast: toastMock }))
 
 // `operaciones:edit` decide si se dibujan las acciones que escriben. Controlado por test.
 let _puedeEditar = true
+/** AG-11: la asesora comercial: `pipeline` sí, `operaciones` no. */
+let _soloPipeline = false
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
     // Desde el 17-09-2026 escribe quien tiene `operaciones:edit` o `pipeline:edit`
     // (el asesor comercial): el doble de CONTADOR/VIEWER no tiene ninguno.
     canAccess: (m: string, a: string) =>
-      (m === 'operaciones' || m === 'pipeline') && a === 'edit' ? _puedeEditar : true,
+      _soloPipeline
+        ? m === 'pipeline'
+        : (m === 'operaciones' || m === 'pipeline') && a === 'edit' ? _puedeEditar : true,
     isLoading: false,
   }),
 }))
@@ -314,6 +318,31 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     expect(container.textContent).not.toContain('Agendar una visita')
   })
 
+  it('AG-11 (04-10-2026): la asesora (pipeline sin operaciones) también agenda y crea tareas', async () => {
+    _soloPipeline = true
+    try {
+      getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+      await montar()
+      expect(container.querySelector('[data-testid="pedir-cita"]')).not.toBeNull()
+      expect(container.querySelector('[data-testid="nueva-tarea"]')).not.toBeNull()
+      // Y arranca en «Sólo lo mío».
+      expect(container.querySelector('[data-testid="agenda-solo-lo-mio"]')?.getAttribute('aria-checked')).toBe('true')
+      expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ mias: true }))
+    } finally {
+      _soloPipeline = false
+    }
+  })
+
+  it('AG-02: «Vencidas» va aparte de «Próximas»', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ vista: 'proximas' }))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agenda-pestana-vencidas"]') as HTMLButtonElement).click()
+    })
+    expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
+  })
+
   it('con permiso: los botones están', async () => {
     getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
     await montar()
@@ -511,7 +540,7 @@ describe('agenda — la paginación la resuelve el servidor', () => {
     })
     await montar()
 
-    expect(getAgendaMock).toHaveBeenCalledWith({ page: 1, pageSize: 10 })
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10, vista: 'proximas' }))
     // El pie cuenta el feed ENTERO, no las filas que llegaron.
     expect(container.textContent).toContain('25')
   })
@@ -545,7 +574,7 @@ describe('agenda — la paginación la resuelve el servidor', () => {
       await Promise.resolve()
     })
 
-    expect(getAgendaMock).toHaveBeenCalledWith({ page: 2, pageSize: 10 })
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ page: 2, pageSize: 10 }))
     expect(container.textContent).toContain('Apto 10')
   })
 

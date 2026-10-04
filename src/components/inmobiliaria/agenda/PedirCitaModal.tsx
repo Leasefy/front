@@ -27,6 +27,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -219,6 +220,20 @@ export function PedirCitaModal({
    */
   const [modalidades, setModalidades] = useState<TipoDeVisita[] | null>(null);
   const [notes, setNotes] = useState('');
+  /**
+   * AG-06 (04-10-2026): la cita del panel nace CONFIRMADA, así que lleva su
+   * asesor («ninguna se confirma sin asesor»). Por defecto, quien la agenda si
+   * es asesor activo.
+   */
+  const { asesores } = useEquipo(!isOpen);
+  const miUserId = useMiUserId();
+  const [asesorUserId, setAsesorUserId] = useState('');
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!asesorUserId && miUserId && asesores.some((a) => a.userId === miUserId)) {
+      setAsesorUserId(miUserId);
+    }
+  }, [isOpen, asesores, miUserId, asesorUserId]);
   const [submitting, setSubmitting] = useState(false);
   /** Lo que rechazó el back, por campo. Cada campo borra el suyo al tocarse. */
   const [rechazos, setRechazos] = useState<Partial<Record<CampoDelRechazo, string>>>({});
@@ -312,6 +327,8 @@ export function PedirCitaModal({
   const canSubmit =
     !submitting &&
     propertyId !== '' &&
+    // Sin la lista del equipo (no cargó) decide el back: quien la agenda.
+    (asesores.length === 0 || asesorUserId !== '') &&
     contactName.trim() !== '' &&
     !correoMalo &&
     date !== '' &&
@@ -335,6 +352,7 @@ export function PedirCitaModal({
         contactEmail: contactEmail.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
         notes: notes.trim() || undefined,
+        asesorUserId: asesorUserId || undefined,
       });
       toast.success(t(k('citaSuccess')));
       onCreated();
@@ -571,6 +589,24 @@ export function PedirCitaModal({
                 Este inmueble todavía no tiene horarios de visita cargados: se ofrecen las
                 dos modalidades, pero conviene configurarlos en su ficha.
             </Presence>
+          </div>
+
+          {/* AG-06: quién la atiende. */}
+          <div data-campo="asesor">
+            <label className="mb-1.5 block text-caption text-muted-foreground">Asesor que la atiende</label>
+            <Combobox
+              data-testid="cita-asesor"
+              value={asesorUserId || undefined}
+              onChange={(v) => setAsesorUserId(v ?? '')}
+              options={asesores.map((a) => ({ value: a.userId, label: a.nombre }))}
+              placeholder={asesores.length ? 'Elige quién la atiende' : 'No hay asesores activos'}
+              searchPlaceholder="Nombre"
+              disabled={asesores.length === 0}
+              contentClassName="z-[400]"
+            />
+            {!asesorUserId && (
+              <p className="mt-1 text-caption text-muted-foreground">Ninguna visita se confirma sin asesor.</p>
+            )}
           </div>
 
           {/* Notes */}

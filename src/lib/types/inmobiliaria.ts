@@ -717,9 +717,9 @@ const _STAGE_SUCCESS = 'bg-success-soft text-success';
 const _STAGE_CRITICAL = 'bg-danger-soft text-danger';
 export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: string; color: string }[] = [
   { stage: 'lead', labelEs: 'Interesado', labelEn: 'Lead', color: _STAGE_NEUTRAL },
-  { stage: 'visit_scheduled', labelEs: 'Visita prog.', labelEn: 'Visit sched.', color: _STAGE_INFO },
+  { stage: 'visit_scheduled', labelEs: 'Visita programada', labelEn: 'Visit sched.', color: _STAGE_INFO },
   { stage: 'visit_done', labelEs: 'Visita hecha', labelEn: 'Visit done', color: _STAGE_NEUTRAL },
-  { stage: 'application', labelEs: 'Aplicación', labelEn: 'Application', color: _STAGE_NEUTRAL },
+  { stage: 'application', labelEs: 'Postulación', labelEn: 'Application', color: _STAGE_NEUTRAL },
   { stage: 'evaluation', labelEs: 'Evaluación', labelEn: 'Evaluation', color: _STAGE_INFO },
   { stage: 'approved', labelEs: 'Aprobado', labelEn: 'Approved', color: _STAGE_SUCCESS },
   { stage: 'contract', labelEs: 'Contrato', labelEn: 'Contract', color: _STAGE_INFO },

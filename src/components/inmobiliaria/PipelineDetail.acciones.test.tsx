@@ -74,10 +74,7 @@ vi.mock('@/components/ui/alert-dialog', () => {
 import { PipelineDetail } from './PipelineDetail';
 import { ApiError } from '@/lib/api/client';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
-import {
-  AYUDA_DEL_MOTIVO_DE_PERDIDA,
-  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
-} from '@/lib/pipeline/limites-del-pipeline';
+import { AYUDA_DEL_MOTIVO_DE_PERDIDA } from '@/lib/pipeline/limites-del-pipeline';
 
 void React;
 
@@ -173,67 +170,38 @@ describe('PipelineDetail — mover de etapa', () => {
   });
 });
 
-describe('PipelineDetail — marcar como perdido', () => {
-  it('no marca nada hasta que se escribe un motivo, y lo manda al back', async () => {
+async function abrirPerdido() {
+  await act(async () => {
+    (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
+  });
+}
+async function escoger(motivo: string) {
+  const b = Array.from(document.querySelectorAll('[data-testid="motivo-de-perdida-opcion"]')).find(
+    (x) => x.textContent === motivo,
+  ) as HTMLButtonElement;
+  await act(async () => b.click());
+}
+async function detalle(texto: string) {
+  const area = document.querySelector('#motivo-detalle') as HTMLTextAreaElement;
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(area, texto);
+    area.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+const confirmarPerdido = () => document.querySelector('[data-testid="motivo-de-perdida-confirmar"]') as HTMLButtonElement;
+
+describe('PipelineDetail — marcar como perdido (PL-17: motivos fijos)', () => {
+  it('no marca nada hasta escoger el motivo, y manda «motivo: detalle»', async () => {
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange as never);
-
-    await act(async () => {
-      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
-    });
-
-    // El clic abre el diálogo; todavía no movió nada.
+    await abrirPerdido();
     expect(onStageChange).not.toHaveBeenCalled();
-    const confirmar = container.querySelector(
-      '[data-testid="motivo-confirmar"]',
-    ) as HTMLButtonElement;
-    expect(confirmar).not.toBeNull();
-    // Sin motivo suficiente el botón está apagado.
-    expect(confirmar.disabled).toBe(true);
-
-    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      'value',
-    )!.set!;
-    await act(async () => {
-      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
-      texto.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-
-    await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
-    });
-
-    expect(onStageChange).toHaveBeenCalledWith(
-      'pi-1',
-      'lost',
-      'Se fue con otra inmobiliaria por el canon',
-    );
-  });
-});
-
-/**
- * 🔴 Nico (02-10-2026): el diálogo decía «…queda en el historial de la visita»
- * también acá, donde no hay visita. El motivo va a `lostReason` y el cajón lo
- * muestra en «Razón de pérdida»: eso es lo que dice la ayuda ahora.
- */
-describe('PipelineDetail — la ayuda del motivo dice dónde queda', () => {
-  it('pasa su ayuda y su ejemplo, no los de una visita', async () => {
-    montar(vi.fn(() => Promise.resolve()) as never);
-    await act(async () => {
-      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
-    });
-    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
-    expect(texto.getAttribute('placeholder')).toBe(EJEMPLO_DEL_MOTIVO_DE_PERDIDA);
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
-    await act(async () => {
-      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
-      texto.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
-    expect(dialogo.textContent).toContain(AYUDA_DEL_MOTIVO_DE_PERDIDA);
-    expect(dialogo.textContent).not.toContain('visita');
+    expect(confirmarPerdido().disabled).toBe(true);
+    await escoger('Arrendó en otro lado');
+    await detalle('con otra inmobiliaria por el canon');
+    await act(async () => confirmarPerdido().click());
+    expect(onStageChange).toHaveBeenCalledWith('pi-1', 'lost', 'Arrendó en otro lado: con otra inmobiliaria por el canon');
   });
 
   it('lo que dice la ayuda es cierto: un lead perdido muestra su motivo en «Razón de pérdida»', () => {
@@ -251,34 +219,6 @@ describe('PipelineDetail — la ayuda del motivo dice dónde queda', () => {
     expect(container.textContent).toContain('Razón de pérdida');
     expect(container.textContent).toContain('Tomó otro apartamento');
   });
-});
-
-describe('PipelineDetail — el motivo cabe en su columna', () => {
-  it('🔴 más de 500 caracteres se dice antes de mandar (la frase del back) y no se mueve nada', async () => {
-    const onStageChange = vi.fn(() => Promise.resolve());
-    montar(onStageChange as never);
-    toastError.mockReset();
-
-    await act(async () => {
-      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
-    });
-    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
-    await act(async () => {
-      setter.call(texto, 'm'.repeat(501));
-      texto.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
-    });
-
-    expect(onStageChange).not.toHaveBeenCalled();
-    // Bajo el campo, con la frase del back (02-10-2026: antes era un toast).
-    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(
-      'El motivo puede tener hasta 500 caracteres.',
-    );
-    expect(toastError).not.toHaveBeenCalled();
-  });
 
   it('🔴 si el back rechaza el motivo, su frase va bajo el campo y el diálogo sigue abierto', async () => {
     const frase = 'El motivo no puede ser sólo espacios.';
@@ -294,26 +234,14 @@ describe('PipelineDetail — el motivo cabe en su columna', () => {
     );
     montar(onStageChange as never);
     toastError.mockReset();
-
-    await act(async () => {
-      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
-    });
-    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
-    await act(async () => {
-      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
-      texto.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
-    });
+    await abrirPerdido();
+    await escoger('Dejó de responder');
+    await act(async () => confirmarPerdido().click());
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
     });
-
-    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(frase);
-    expect(texto.getAttribute('aria-invalid')).toBe('true');
-    expect(container.querySelector('[data-testid="motivo-dialog"]')).not.toBeNull();
+    expect(document.getElementById('motivo-de-perdida-error')?.textContent).toBe(frase);
+    expect(document.querySelector('[data-testid="motivo-de-perdida"]')).not.toBeNull();
     expect(toastError).not.toHaveBeenCalled();
     expect(toastInfo).not.toHaveBeenCalled();
   });

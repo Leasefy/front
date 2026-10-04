@@ -35,6 +35,18 @@ const { crm, pipeline } = vi.hoisted(() => ({
   pipeline: { create: vi.fn(async (_cuerpo: Record<string, unknown>) => ({ id: 'p-1' })) },
 }))
 
+// PL-07 (04-10-2026): el inmueble se escoge con el Combobox (buscador): cada opción es un botón.
+vi.mock('@/components/ui/combobox', () => ({
+  Combobox: ({ options, onChange }: { options: { value: string; label: string }[]; onChange: (v?: string) => void }) => (
+    <div>
+      {options.map((o) => (
+        <button key={o.value} type="button" data-testid={`opcion-${o.value}`} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 vi.mock('@/lib/api/crm.service', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/crm.service')>('@/lib/api/crm.service')
   return { ...real, leadsApi: { configuracion: () => crm.configuracion(), entra: crm.entra } }
@@ -146,7 +158,8 @@ describe('NuevoLeadDialog — el presupuesto al mes (Nico, 02-10-2026)', () => {
     await llenarLoMinimo()
     // Lo que no es dígito no entra (puntos, signo, espacios).
     await escribir('#nuevo-lead-presupuesto', '$ 2.500.000')
-    expect($<HTMLInputElement>('#nuevo-lead-presupuesto')!.value).toBe('2500000')
+    // PL-09 (04-10-2026): se ve con formato de la casa; viaja en pesos enteros.
+    expect($<HTMLInputElement>('#nuevo-lead-presupuesto')!.value).toBe('$ 2.500.000')
     await act(async () => guardar().click())
     expect(crm.entra).toHaveBeenCalledWith(expect.objectContaining({ presupuestoCop: 2_500_000 }))
   })

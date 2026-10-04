@@ -26,7 +26,8 @@ import { DatePicker, TimePicker } from '@leasefy/cadence';
 import { Button, Textarea } from '@/components/ui';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
-import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -114,7 +115,10 @@ export function loQueFalta(errores: Record<string, string>): string | null {
 /** Los pickers de cadence con la altura y el radio de los demás campos del cajón. */
 const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 
-export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
+export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = true }: Props & {
+  /** AG-11: quien coordina asigna a cualquiera; la asesora, sólo a sí misma. */
+  coordina?: boolean;
+}) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
   const [guardando, setGuardando] = useState(false);
   /**
@@ -130,7 +134,13 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
     isLoading: cargandoInmuebles,
     errorCrudo: errorDeInmuebles,
   } = useConsignaciones();
-  const { agentes } = useAgentes({ skip: !abierto });
+  /*
+   * AG-09 (04-10-2026): responsable = cualquier miembro ACTIVO del equipo
+   * (antes sólo los asesores: ni el administrador ni el contador). AG-11: la
+   * asesora crea tareas PARA SÍ; quien coordina (operaciones), para cualquiera.
+   */
+  const { equipo } = useEquipo(!abierto);
+  const miUserId = useMiUserId();
 
   useEffect(() => {
     if (abierto) {
@@ -148,10 +158,13 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   );
   const responsables = useMemo<ComboboxOption[]>(
     () =>
-      agentes
-        .filter((a) => a.userId)
-        .map((a) => ({ value: a.userId as string, label: a.name })),
-    [agentes],
+      equipo
+        .filter((m) => coordina || m.userId === miUserId)
+        .map((m) => ({
+          value: m.userId,
+          label: m.userId === miUserId ? `${m.nombre} (tú)` : m.nombre,
+        })),
+    [equipo, coordina, miUserId],
   );
 
   const errores = validarTarea(form);
@@ -290,7 +303,13 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
                 value={form.responsableUserId || undefined}
                 onChange={(v) => set('responsableUserId', v ?? '')}
                 options={responsables}
-                placeholder={responsables.length ? 'Elige a alguien del equipo' : 'Sin agentes con cuenta'}
+                placeholder={
+                  responsables.length
+                    ? coordina
+                      ? 'Elige a alguien del equipo'
+                      : 'Tú (sin elegir, queda para ti)'
+                    : 'Sin personas activas en el equipo'
+                }
                 searchPlaceholder="Nombre"
                 disabled={responsables.length === 0}
                 contentClassName="z-[400]"

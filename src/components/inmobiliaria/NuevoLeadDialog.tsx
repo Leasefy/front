@@ -78,6 +78,8 @@ import {
 import { revisarPresupuestoDelLead } from '@/lib/pipeline/limites-del-lead';
 import { pipelineApi } from '@/lib/api/inmobiliaria.service';
 import { leadsApi } from '@/lib/api/crm.service';
+import { Combobox } from '@/components/ui/combobox';
+import { useEquipo } from '@/lib/agenda/use-equipo';
 import { useCrm } from '@/lib/hooks/use-crm';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
@@ -151,7 +153,7 @@ const ID_DEL_CONTROL: Readonly<Record<Campo, string>> = {
 /** Lo que se ve al lado de cada campo cuando el back lo rechaza. */
 const MENSAJE_DEL_CAMPO: Record<Campo, string> = {
   consignacionId: 'Elige uno de tus inmuebles consignados.',
-  origen: 'Escoge de dónde vino el lead.',
+  origen: 'Escoge de dónde vino el interesado.',
   candidateName: 'Escribe el nombre de la persona.',
   candidateEmail: 'Ese correo no es válido.',
   candidatePhone: 'Ese teléfono no es válido.',
@@ -276,6 +278,11 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   const [origen, setOrigen] = useState('');
   /** El presupuesto al mes, sólo dígitos. Vacío = no lo dijo. */
   const [presupuesto, setPresupuesto] = useState('');
+  /** PL-11 (04-10-2026): escoger el asesor al cargarlo (vacío = la regla del turno). */
+  const [asesor, setAsesor] = useState('');
+  const { asesores } = useEquipo(!abierto);
+  /** PL-07: los avisos de «falta» salen después de escribir o de intentar, no al abrir. */
+  const [tocado, setTocado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErroresDelLead>({ porCampo: {} });
   // `enviando` llega en el render siguiente: un doble clic mandaba dos leads.
@@ -298,6 +305,8 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     setDocumento('');
     setOrigen('');
     setPresupuesto('');
+    setAsesor('');
+    setTocado(false);
     setErrores({ porCampo: {} });
   }, [abierto]);
 
@@ -331,6 +340,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   }, [errores]);
 
   const guardar = async () => {
+    setTocado(true);
     if (!listo || enviandoAhora.current) return;
     enviandoAhora.current = true;
     setEnviando(true);
@@ -345,8 +355,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
           ...(documento.trim() ? { documento: documento.trim() } : {}),
           ...(presupuestoCop !== null ? { presupuestoCop } : {}),
+          ...(asesor ? { agenteUserId: asesor } : {}),
         });
-        toast.success('Lead cargado', {
+        toast.success('Interesado cargado', {
           description: r.contactoUnido
             ? // B-07: «el duplicado se une al contacto existente y se avisa al
               // asesor dueño». El aviso es éste.
@@ -362,7 +373,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           ...(correo.trim() ? { candidateEmail: correo.trim() } : {}),
           ...(telefono.trim() ? { candidatePhone: telefono.trim() } : {}),
         });
-        toast.success('Lead cargado', {
+        toast.success('Interesado cargado', {
           description: `${nombre.trim()} entró al pipeline como «Interesado».`,
         });
       }
@@ -380,7 +391,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   const idDelError = (campo: Campo) => `${ID_DEL_CONTROL[campo]}-error`;
   const mensajeDe = (campo: Campo): string | undefined => {
     if (campo === 'candidateEmail' && correoMalo) return MENSAJE_DEL_CAMPO.candidateEmail;
-    if (campo === 'documento' && faltaLlave) return FALTA_LA_LLAVE;
+    if (campo === 'documento' && faltaLlave && tocado) return FALTA_LA_LLAVE;
     if (campo === 'presupuestoCop' && presupuestoMalo) return presupuestoMalo;
     return errores.porCampo[campo];
   };
@@ -394,9 +405,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     <Dialog open={abierto} onOpenChange={(a) => !a && !enviando && onCerrar()}>
       <DialogContent data-testid="nuevo-lead-dialog">
         <DialogHeader>
-          <DialogTitle>Nuevo lead</DialogTitle>
+          <DialogTitle>Nuevo interesado</DialogTitle>
           <DialogDescription>
-            Anota a quien preguntó por un inmueble. Entra al pipeline como «Interesado».
+            Anota a quien preguntó por un inmueble. Entra al embudo como «Interesado».
           </DialogDescription>
         </DialogHeader>
 
@@ -413,18 +424,22 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-inmueble">
                 Inmueble
               </label>
-              <Select value={consignacionId} onValueChange={setConsignacionId}>
-                <SelectTrigger id="nuevo-lead-inmueble" className="w-full" {...aria('consignacionId')}>
-                  <span className="truncate">{elegida?.propertyTitle ?? 'Elige un inmueble'}</span>
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {consignaciones.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.propertyTitle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* PL-07: con código y dirección, con buscador, y sólo los que
+                  se pueden ofrecer (ni arrendados ni borradores). */}
+              <Combobox
+                data-testid="nuevo-lead-inmueble"
+                value={consignacionId || undefined}
+                onChange={(v) => setConsignacionId(v ?? '')}
+                options={consignaciones
+                  .filter((c) => !c.arrendado && c.propertyStatus !== 'RENTED' && c.propertyStatus !== 'DRAFT')
+                  .map((c) => ({
+                    value: c.id,
+                    label: `${c.propertyCode != null ? `#${c.propertyCode} · ` : ''}${c.propertyTitle} · ${c.propertyAddress}`,
+                  }))}
+                placeholder="Elige un inmueble"
+                searchPlaceholder="Código, título o dirección"
+                contentClassName="z-[400]"
+              />
               {errorDe('consignacionId')}
             </div>
           )}
@@ -472,7 +487,10 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             <Input
               id="nuevo-lead-nombre"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                setNombre(e.target.value);
+                setTocado(true);
+              }}
               placeholder="Ana Restrepo"
               maxLength={120}
               {...aria('candidateName')}
@@ -504,7 +522,10 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               id="nuevo-lead-telefono"
               type="tel"
               value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              onChange={(e) => {
+                setTelefono(e.target.value);
+                setTocado(true);
+              }}
               placeholder="300 123 4567"
               maxLength={MAX_LARGO_TELEFONO_DEL_CANDIDATO}
               {...aria('candidatePhone')}
@@ -523,7 +544,10 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               <Input
                 id="nuevo-lead-documento"
                 value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
+                onChange={(e) => {
+                  setDocumento(e.target.value);
+                  setTocado(true);
+                }}
                 placeholder="1.017.234.567"
                 maxLength={40}
                 data-testid="nuevo-lead-documento"
@@ -543,9 +567,11 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               <Input
                 id="nuevo-lead-presupuesto"
                 inputMode="numeric"
-                value={presupuesto}
+                // PL-09: «$ 1.800.000» mientras se escribe, con tope de
+                // cifras (lo que pase del tope del back se dice bajo el campo).
+                value={presupuesto ? `$ ${Number(presupuesto).toLocaleString('es-CO')}` : ''}
                 onChange={(e) => {
-                  setPresupuesto(soloDigitos(e.target.value));
+                  setPresupuesto(soloDigitos(e.target.value).replace(/^0+/, '').slice(0, 10));
                   // Lo que el servidor rechazó ya no es lo que está escrito.
                   if (errores.porCampo.presupuestoCop) {
                     setErrores((prev) => ({ ...prev, porCampo: { ...prev.porCampo, presupuestoCop: undefined } }));
@@ -566,6 +592,23 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               />
             </div>
           ) : null}
+
+          {/* PL-11: quién lo atiende (si no se escoge, la regla del turno). */}
+          {asesores.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-fg">
+                Asesor <span className="font-normal text-fg-subtle">(opcional: si no, le toca al del inmueble o al del turno)</span>
+              </label>
+              <Combobox
+                data-testid="nuevo-lead-asesor"
+                value={asesor || undefined}
+                onChange={(v) => setAsesor(v ?? '')}
+                options={asesores.map((a) => ({ value: a.userId, label: a.nombre }))}
+                placeholder="Lo decide la regla del turno"
+                contentClassName="z-[400]"
+              />
+            </div>
+          )}
 
           {errores.general && (
             <p className="text-sm text-danger" role="alert" data-testid="nuevo-lead-error">

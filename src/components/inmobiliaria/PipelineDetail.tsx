@@ -27,7 +27,6 @@ import { cn } from '@/lib/utils';
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import {
   type PipelineItem,
@@ -38,16 +37,16 @@ import {
 } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import {
-  MotivoDialog,
-  mensajeDelRechazoDelMotivo,
-} from '@/components/inmobiliaria/agenda/MotivoDialog';
-import {
-  AYUDA_DEL_MOTIVO_DE_PERDIDA,
-  EJEMPLO_DEL_MOTIVO_DE_PERDIDA,
-  MAX_LARGO_MOTIVO_DE_PERDIDA,
-  revisarMotivoDePerdida,
-} from '@/lib/pipeline/limites-del-pipeline';
+import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
+import { NotasDelLead } from '@/components/inmobiliaria/NotasDelLead';
+import { Combobox } from '@/components/ui/combobox';
+import { embudoApi } from '@/lib/api/embudo.service';
+import type { MiembroDelEquipo } from '@/lib/api/agenda.types';
+import { useMiUserId } from '@/lib/agenda/use-equipo';
+import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -68,6 +67,12 @@ interface PipelineDetailProps {
    * no cambiar a quien ya lo usa; la página pasa el permiso real.
    */
   puedeEditar?: boolean;
+  /** PL-16: pasar a «Visita programada» agenda la visita (día, hora, asesor). */
+  onPedirVisita?: (item: PipelineItem) => void;
+  /** PL-12: el equipo, para ver y cambiar el asesor del interesado. */
+  equipo?: MiembroDelEquipo[];
+  /** Después de reasignar: la página relee el tablero. */
+  onCambio?: () => void;
 }
 
 /**
@@ -179,9 +184,14 @@ export function PipelineDetail({
   item,
   onStageChange,
   puedeEditar = true,
+  onPedirVisita,
+  equipo = [],
+  onCambio,
 }: PipelineDetailProps) {
   const { t, formatDate: formatDateI18n } = useI18n();
-  const [notes, setNotes] = useState('');
+  const [reasignando, setReasignando] = useState(false);
+  const miUserId = useMiUserId();
+  const [errorDelAsesor, setErrorDelAsesor] = useState<string | null>(null);
   const [isMoving, setIsMoving] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
   const [pidiendoMotivo, setPidiendoMotivo] = useState(false);
@@ -240,6 +250,11 @@ export function PipelineDetail({
    */
   const handleMoveToNext = useCallback(async () => {
     if (!item || !nextStage) return;
+    // PL-16: «Visita programada» se agenda, no se marca.
+    if (nextStage === 'visit_scheduled' && onPedirVisita) {
+      onPedirVisita(item);
+      return;
+    }
 
     setIsMoving(true);
     try {
@@ -255,7 +270,29 @@ export function PipelineDetail({
     });
 
     setIsMoving(false);
-  }, [item, nextStage, nextStageInfo, onStageChange, t]);
+  }, [item, nextStage, nextStageInfo, onStageChange, t, onPedirVisita]);
+
+  /** PL-12: reasignar el interesado desde el cajón. */
+  const reasignar = useCallback(
+    async (aUserId: string | undefined) => {
+      if (!item || !aUserId || aUserId === item.agenteId) return;
+      setReasignando(true);
+      setErrorDelAsesor(null);
+      try {
+        await embudoApi.reasignar(item.id, aUserId);
+        toast.success('Interesado reasignado', {
+          description: `Ahora lo atiende ${equipo.find((m) => m.userId === aUserId)?.nombre ?? 'otra persona'}.`,
+        });
+        onCambio?.();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) return;
+        setErrorDelAsesor(mensajeParaLaPersona(err, { porDefecto: 'No se pudo reasignar.', accion: 'reasignar el interesado' }));
+      } finally {
+        setReasignando(false);
+      }
+    },
+    [item, equipo, onCambio],
+  );
 
   /**
    * Marcar perdido — con el motivo, que es el dato por el que existe la
@@ -306,7 +343,7 @@ export function PipelineDetail({
   }, [item, onStageChange, onClose, t]);
 
   const handleClose = useCallback(() => {
-    setNotes('');
+    setErrorDelAsesor(null);
     onClose();
   }, [onClose]);
 
@@ -361,7 +398,7 @@ export function PipelineDetail({
                   {item.monthlyRent != null ? (
                     <>
                       {formatCurrency(item.monthlyRent)}
-                      <span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                      <span className="text-sm font-normal text-muted-foreground">{t('inmobiliaria.pipeline.month')}</span>
                     </>
                   ) : (
                     '—'
@@ -376,6 +413,28 @@ export function PipelineDetail({
               <span>{t('inmobiliaria.pipeline.viewConsignment')}</span>
               <CaretRight className="w-4 h-4" />
             </Link>
+            {/* Punto 8 (04-10-2026): pasar el interesado a «Postulación» es
+                que se postule. Su enlace, con el asesor (`?ref=`), para que la
+                postulación llegue a esta tarjeta con su asesor. */}
+            {item.propertyId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const enlace = `${window.location.origin}/aplicar/${item.propertyId}${
+                    item.agenteId || miUserId ? `?ref=${item.agenteId || miUserId}` : ''
+                  }`;
+                  void navigator.clipboard?.writeText(enlace);
+                  toast.success('Enlace copiado', {
+                    description: 'Mándaselo para que se postule: la postulación llega a su tarjeta con su asesor.',
+                  });
+                }}
+                className="flex w-full items-center justify-between px-4 py-3 border-t border-border text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
+                data-testid="lead-enlace-postularse"
+              >
+                <span>Copiar el enlace para que se postule</span>
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Candidate Section */}
@@ -458,6 +517,30 @@ export function PipelineDetail({
                   {stageInfo?.labelEs}
                 </span>
               </div>
+
+              {/* PL-11/PL-12: quién lo atiende, y cambiarlo desde acá. */}
+              <div className="flex items-center justify-between gap-3 px-4 py-3" data-testid="lead-asesor">
+                <span className="shrink-0 text-sm text-muted-foreground">Asesor</span>
+                {puedeEditar && equipo.some((m) => m.asesor) ? (
+                  <div className="w-56 max-w-full">
+                    <Combobox
+                      data-testid="lead-asesor-select"
+                      value={item.agenteId || undefined}
+                      onChange={(v) => void reasignar(v ?? undefined)}
+                      options={equipo.filter((m) => m.asesor).map((m) => ({ value: m.userId, label: m.nombre }))}
+                      placeholder="Sin asignar"
+                      disabled={reasignando}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-sm font-medium text-foreground">
+                    {equipo.find((m) => m.userId === item.agenteId)?.nombre ?? 'Sin asignar'}
+                  </span>
+                )}
+              </div>
+              {errorDelAsesor && (
+                <p className="px-4 pb-3 text-caption text-danger" role="alert">{errorDelAsesor}</p>
+              )}
 
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.daysInStage')}</span>
@@ -574,18 +657,7 @@ export function PipelineDetail({
               <Note className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.notes')}
             </h4>
-            {item.notes && (
-              <div className="p-3 rounded-md bg-muted text-sm text-foreground">
-                {item.notes}
-              </div>
-            )}
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t('inmobiliaria.pipeline.addNotePlaceholder')}
-              rows={3}
-              className="w-full resize-none"
-            />
+            <NotasDelLead pipelineItemId={item.id} notasViejas={item.notes} puedeEscribir={puedeEditar} />
           </div>
 
           {/* Lost Reason */}
@@ -649,15 +721,10 @@ export function PipelineDetail({
 
         {/* El motivo es obligatorio: un lead perdido sin razón no se puede leer
             después. Mismo diálogo y mismo mínimo que cancelar una visita. */}
-        <MotivoDialog
+        <MotivoDePerdidaDialog
           abierto={pidiendoMotivo}
-          titulo={`¿Marcar a ${item.candidateName} como perdido?`}
-          descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
-          etiquetaConfirmar="Marcar como perdido"
+          nombre={item.candidateName}
           enviando={isMarking}
-          ayuda={AYUDA_DEL_MOTIVO_DE_PERDIDA}
-          ejemplo={EJEMPLO_DEL_MOTIVO_DE_PERDIDA}
-          maximo={MAX_LARGO_MOTIVO_DE_PERDIDA}
           error={errorDelMotivo}
           onCerrar={() => {
             setPidiendoMotivo(false);

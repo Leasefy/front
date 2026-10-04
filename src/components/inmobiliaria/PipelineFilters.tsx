@@ -15,7 +15,8 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, IconButton, Presence } from '@leasefy/cadence';
+import { Chip, DatePicker, IconButton, Presence } from '@leasefy/cadence';
+import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -273,18 +274,22 @@ export function PipelineFilters({
 
         {/* Custom Date Range */}
         <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={filters.dateFrom || ''}
-            onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-            className="w-auto"
+          {/* PL-03: el calendario de la casa (días en español), no el
+              `type="date"` del navegador («dd/mm/yyyy» en inglés). */}
+          <DatePicker
+            id="pipeline-desde"
+            value={fechaLocal(filters.dateFrom ?? null)}
+            onChange={(d) => updateFilter('dateFrom', d ? aFechaIso(d) : undefined)}
+            placeholder="Desde"
+            className="w-40"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
-          <Input
-            type="date"
-            value={filters.dateTo || ''}
-            onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-            className="w-auto"
+          <DatePicker
+            id="pipeline-hasta"
+            value={fechaLocal(filters.dateTo ?? null)}
+            onChange={(d) => updateFilter('dateTo', d ? aFechaIso(d) : undefined)}
+            placeholder="Hasta"
+            className="w-40"
           />
         </div>
 

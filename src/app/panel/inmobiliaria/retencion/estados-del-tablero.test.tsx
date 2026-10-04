@@ -48,7 +48,7 @@ function render(estado: Record<string, unknown>) {
     data: null,
     isLoading: false,
     error: null,
-    usingMock: false,
+    apagado: false,
     refetch: vi.fn(),
     ...estado,
   });

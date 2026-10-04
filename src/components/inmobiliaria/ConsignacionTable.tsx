@@ -408,9 +408,12 @@ export function ConsignacionTable({
                       <p className="font-medium text-foreground truncate max-w-[200px]">
                         {row.propertyTitle}
                       </p>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {row.propertyAddress}
-                      </p>
+                      {/* IN-02: si el título ES la dirección, no se repite debajo. */}
+                      {row.propertyAddress && row.propertyAddress.trim() !== row.propertyTitle.trim() ? (
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {row.propertyAddress}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </TableCell>

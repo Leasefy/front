@@ -41,11 +41,20 @@ import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 
 import { VentaDelInmueble } from './VentaDelInmueble'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { diaLegible } from '@/lib/mandato/textos'
 
 interface Props {
   consignacionId: string
   /** El nombre del propietario, para la firma electrónica. */
   propietarioNombre?: string | null
+  /**
+   * El correo de la ficha del propietario: a ése manda el servidor el enlace
+   * (IN-12, QA 04-10: se muestra ANTES de mandar, en el cajón de confirmar).
+   */
+  propietarioCorreo?: string | null
+  /** La dirección del inmueble, para decir qué documento se firma. */
+  direccionDelInmueble?: string | null
   puedeEditar?: boolean
 }
 
@@ -101,6 +110,8 @@ function Puerta({
 export function MandatoDelInmueble({
   consignacionId,
   propietarioNombre,
+  propietarioCorreo,
+  direccionDelInmueble,
   puedeEditar = false,
 }: Props) {
   const documentos = useCrm(
@@ -114,6 +125,10 @@ export function MandatoDelInmueble({
     ['portafolio'],
   )
   const [pidiendo, setPidiendo] = useState(false)
+  // IN-12 (QA 04-10): «Crear enlace de firma» mandaba el correo de una, sin
+  // decir a quién ni qué. Ahora abre un cajón con el correo y el documento, y
+  // el enlace sale sólo al confirmar.
+  const [confirmando, setConfirmando] = useState(false)
   const [envio, setEnvio] = useState<{
     enviadoA: string
     envio: 'ENVIADO' | 'SIMULADO' | 'FALLIDO'
@@ -156,6 +171,7 @@ export function MandatoDelInmueble({
         envio: r.envio,
         enlaceDePrueba: r.enlaceDePrueba,
       })
+      setConfirmando(false)
       invalidar('portafolio')
     } catch (e) {
       // 🔴 Acá no había `catch` (Nico, 18-09-2026: «cuando uno le da lo de
@@ -267,12 +283,12 @@ export function MandatoDelInmueble({
                 {laFirma.estado === 'FIRMADA'
                   ? `Firmado por ${laFirma.firmanteNombre}${
                       laFirma.firmadaEl
-                        ? ` el ${laFirma.firmadaEl.slice(0, 10)}`
+                        ? ` el ${diaLegible(laFirma.firmadaEl)}`
                         : ''
                     }${laFirma.forma === 'PDF_CARGADO' ? ' (PDF cargado)' : ''}.`
                   : `Enlace de firma pendiente${
                       laFirma.venceEl
-                        ? `, vence el ${laFirma.venceEl.slice(0, 10)}`
+                        ? `, vence el ${diaLegible(laFirma.venceEl)}`
                         : ''
                     }.`}
               </p>
@@ -299,18 +315,74 @@ export function MandatoDelInmueble({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => void pedirFirma()}
+                onClick={() => setConfirmando(true)}
                 disabled={pidiendo}
                 data-testid="pedir-firma"
               >
-                {pidiendo ? 'Creando…' : 'Crear enlace de firma'}
+                Crear enlace de firma
               </Button>
             ) : null}
 
+            <Cajon abierto={confirmando} onOpenChange={(a) => !pidiendo && setConfirmando(a)} tamano="sm" data-testid="cajon-enlace-de-firma">
+              <CajonCabecera
+                titulo="Mandar el enlace de firma"
+                descripcion="Revisa a quién le llega y qué va a firmar antes de mandarlo."
+              />
+              <CajonCuerpo className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-fg-muted">Le llega a</p>
+                  <p className="text-sm font-medium text-fg">{propietarioNombre ?? 'El propietario'}</p>
+                  {propietarioCorreo ? (
+                    <p className="font-mono text-sm text-fg" data-testid="correo-destino">{propietarioCorreo}</p>
+                  ) : (
+                    <p className="text-sm text-danger" data-testid="sin-correo-destino">
+                      La ficha del propietario no tiene correo. Agrégalo en su ficha para poder mandarle el enlace.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-fg-muted">El documento</p>
+                  <p className="flex items-start gap-2 text-sm text-fg">
+                    <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+                    <span>
+                      Mandato de administración y arrendamiento
+                      {direccionDelInmueble ? ` de ${direccionDelInmueble}` : ''}: con él te autoriza a
+                      administrar y arrendar el inmueble.
+                    </span>
+                  </p>
+                </div>
+                <p className="text-sm text-fg-muted">
+                  Le enviamos un correo con el enlace. Para firmar, le pedimos un código que le llega a ese
+                  mismo correo. Nadie del equipo ve el enlace.
+                </p>
+              </CajonCuerpo>
+              <CajonPie
+                izquierda={
+                  <Button variant="ghost" size="sm" hideArrow onClick={() => setConfirmando(false)} disabled={pidiendo}>
+                    Cancelar
+                  </Button>
+                }
+              >
+                <Button
+                  size="sm"
+                  hideArrow
+                  onClick={() => void pedirFirma()}
+                  disabled={pidiendo || !propietarioCorreo}
+                  isLoading={pidiendo}
+                  data-testid="confirmar-enlace-de-firma"
+                >
+                  {pidiendo ? 'Mandando…' : 'Mandar el enlace'}
+                </Button>
+              </CajonPie>
+            </Cajon>
+
             {envio ? (
               <div className="space-y-1" data-testid="enlace-de-firma">
-                <p className="flex items-center gap-1.5 text-sm">
-                  <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+                {/* IN-13: el texto va en UN solo hijo del flex; antes cada
+                    pedazo era una columna angosta. */}
+                <p className="flex items-start gap-1.5 text-sm">
+                  <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="min-w-0">
                   {envio.envio === 'FALLIDO' ? (
                     <>
                       No pudimos mandarle el correo a{' '}
@@ -324,6 +396,7 @@ export function MandatoDelInmueble({
                       firmar, le pediremos un código que le llega a ese correo.
                     </>
                   )}
+                  </span>
                 </p>
                 {envio.enlaceDePrueba ? (
                   <a

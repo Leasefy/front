@@ -505,11 +505,19 @@ function AvaluosSala() {
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <EstadoDeDatos
             cargando={isLoading}
-            error={errorCrudo}
-            vacio={avaluos.length === 0}
+            // IA-C-03 (QA 04-10): con el servicio desconectado (502) el aviso de
+            // arriba ya lo explica; la lista no dice «vuelve a intentar en unos
+            // minutos» como si fuera una caída pasajera.
+            error={servicioCaido ? null : errorCrudo}
+            vacio={servicioCaido || avaluos.length === 0}
             queEs={t(`${NS}.queEs`)}
             onReintentar={refetch}
             cuandoVacio={
+              servicioCaido ? (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground" data-testid="avaluos-lista-sin-servicio">
+                  Los avalúos aparecen aquí cuando el servicio de avalúos esté conectado.
+                </p>
+              ) :
               // El vacío son DOS: nunca pediste uno, o el filtro de estado no
               // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay
               // tres firmados y estás mirando «Rechazado» es afirmar algo falso,

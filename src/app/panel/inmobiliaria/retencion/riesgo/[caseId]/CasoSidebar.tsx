@@ -1,7 +1,7 @@
 'use client'
 
 import { Scales, Clock, UserGear, CurrencyDollar, Warning } from '@phosphor-icons/react'
-import { formatCop } from '@/lib/data/mock-retencion'
+import { formatCurrency as formatCop } from '@/lib/types/inmobiliaria'
 import type { CaseBundle } from '@/lib/types/retencion'
 
 export function CasoSidebar({ bundle }: { bundle: CaseBundle }) {

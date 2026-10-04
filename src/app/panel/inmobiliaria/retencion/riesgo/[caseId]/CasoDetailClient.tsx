@@ -1,6 +1,7 @@
 'use client'
 
-import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useId, useState } from 'react'
 import { CrossFade, MotionIndicator } from '@leasefy/cadence'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useRetencionCaso } from '@/lib/hooks/retencion/use-retencion'
-import { formatCop } from '@/lib/data/mock-retencion'
+import { formatCurrency as formatCop } from '@/lib/types/inmobiliaria'
 import type { CaseBundle, NoSource, RetentionState, TaskStatus } from '@/lib/types/retencion'
 import { CasoSidebar } from './CasoSidebar'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
@@ -32,7 +33,7 @@ const TABS: { key: TabKey; label: string; icon: Icon }[] = [
 ]
 
 export default function CasoDetailClient({ caseId }: { caseId: string }) {
-  const { data, isLoading, error, usingMock } = useRetencionCaso(caseId)
+  const { data, isLoading, error, apagado } = useRetencionCaso(caseId)
   const [tab, setTab] = useState<TabKey>('perfil')
   // El subrayado de la pestaña activa es UNO que se desliza a la nueva.
   const subrayado = `${useId()}-pestana`
@@ -46,11 +47,21 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
     )
   }
 
+  // 🔴 IA-C-01: apagada no hay caso que mostrar (antes, uno inventado).
+  if (apagado) {
+    return (
+      <div className="p-6 lg:p-8 space-y-5">
+        <VolverALaLista href={RETENCION_RIESGO} label="Volver a la bandeja de riesgos" />
+        <RetencionApagada />
+      </div>
+    )
+  }
+
   if (error && !data) {
     return (
       <div className="p-6 lg:p-8">
         <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-          No pude cargar el caso: {error}
+          {mensajeParaLaPersona(error, { porDefecto: 'No se pudo cargar el caso.' })}
         </div>
       </div>
     )
@@ -79,13 +90,6 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
         </div>
 
       </header>
-
-      {usingMock ? (
-        <AvisoDatosDeEjemplo
-          queEsInventado="El propietario, su historial, el plan propuesto y los montos en pesos"
-          queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
-        />
-      ) : null}
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main */}
@@ -290,7 +294,7 @@ function PlanTab({ bundle }: { bundle: CaseBundle }) {
         </ul>
         {plan.proposed ? (
           <p className="mt-3 text-xs text-fg-subtle">
-            Plan generado por Laura. Al confirmarlo se crean las tareas internas asignadas a cada responsable.
+            Plan generado por Retención. Al confirmarlo se crean las tareas internas asignadas a cada responsable.
           </p>
         ) : null}
       </Section>

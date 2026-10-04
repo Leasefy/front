@@ -18,6 +18,7 @@ import {
   SignOut,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -57,6 +58,7 @@ import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMan
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
+import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
@@ -106,7 +108,11 @@ function PortafolioContent() {
   } = useInmueblesSinConsignacion();
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // IN-19 (QA 04-10): en el celular abre en TARJETAS (la tabla no cabe a
+  // 390 px); lo que la persona elija con el selector manda.
+  const esCelular = useIsMobile();
+  const [vistaElegida, setViewMode] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode = vistaElegida ?? (esCelular ? 'grid' : 'table');
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
   const [mandatoFor, setMandatoFor] = useState<InmuebleSinConsignacion | null>(null);
 
@@ -176,14 +182,10 @@ function PortafolioContent() {
 
     let result: PortafolioRow[] = [...portafolioRows];
 
-    // Search filter
+    // 🔴 IN-09 (QA 04-10): código (con y sin «#»), propietario, inquilino,
+    // barrio y ciudad, además de título y dirección — sin tildes ni mayúsculas.
     if (filters.search) {
-      const query = filters.search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.propertyTitle.toLowerCase().includes(query) ||
-          c.propertyAddress.toLowerCase().includes(query)
-      );
+      result = result.filter((c) => coincideConLaBusqueda(c, filters.search, propietariosMap));
     }
 
     /*
@@ -220,7 +222,7 @@ function PortafolioContent() {
     }
 
     return result;
-  }, [filters, portafolioRows]);
+  }, [filters, portafolioRows, propietariosMap]);
 
   /**
    * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tienes
@@ -472,7 +474,9 @@ function PortafolioContent() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* IN-19: a 390 px los botones van apilados a lo ancho; antes «Nueva
+            consignación» se salía por la derecha. */}
+        <div className="flex flex-col-reverse gap-2 shrink-0 sm:flex-row sm:items-center [&>button]:w-full sm:[&>button]:w-auto">
           {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
               de Nico (2026-09-02: «eso no sirve ahora»). Desde el 15-09 la ruta
               /inmuebles/captura REDIRIGE acá (W6): estaba viva sin un solo

@@ -3474,7 +3474,7 @@
       },
       "views": {
         "table": "Tabla",
-        "cards": "Cards"
+        "cards": "Tarjetas"
       },
       "degradedNotice": {
         "title": "No pudimos cargar los inmuebles importados sin propietario",
@@ -3519,7 +3519,7 @@
         }
       },
       "new": {
-        "title": "Nueva Consignación",
+        "title": "Nueva consignación",
         "backToOwner": "Volver al propietario",
         "subtitle": "Agregar una nueva propiedad al portafolio",
         "step1": "Propietario",
@@ -3835,7 +3835,7 @@
         }
       },
       "filters": {
-        "searchPlaceholder": "Buscar por título o dirección...",
+        "searchPlaceholder": "Código, dirección, propietario, inquilino, barrio o ciudad",
         "all": "Todos",
         "available": "Disponible",
         "rented": "Arrendado",
@@ -4091,7 +4091,7 @@
         "steps": {
           "owner": "Propietario",
           "property": "Propiedad",
-          "commission": "Comision",
+          "commission": "Comisión",
           "agent": "Agente",
           "inventory": "Inventario",
           "photos": "Fotos",
@@ -4103,7 +4103,7 @@
         "next": "Siguiente",
         "creating": "Creando...",
         "uploadingPhotos": "Subiendo fotos...",
-        "confirmConsignment": "Confirmar Consignación",
+        "confirmConsignment": "Confirmar consignación",
         "cancelDialog": {
           "title": "¿Cancelar la consignación?",
           "description": "Se pierde lo que llevas cargado en este inmueble, fotos incluidas, y se borra el borrador que se guardaba en este navegador. No se puede deshacer.",
@@ -4135,62 +4135,62 @@
           "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {
-          "title": "Datos de la Propiedad",
-          "subtitle": "Ingresa la informacion basica del inmueble",
+          "title": "Datos del inmueble",
+          "subtitle": "Ingresa la información básica del inmueble. Los campos con * son obligatorios.",
           "propertyTypeLabel": "Tipo de inmueble",
-          "propertyTitleLabel": "Titulo del inmueble",
+          "propertyTitleLabel": "Título del inmueble",
           "propertyTitlePlaceholder": "Ej: Apartamento moderno en Chapinero Alto",
-          "addressLabel": "Direccion",
+          "addressLabel": "Dirección",
           "addressPlaceholder": "Cra 15 #93-45, Apto 802",
           "cityLabel": "Ciudad",
-          "cityPlaceholder": "Bogota",
+          "cityPlaceholder": "Bogotá",
           "zoneLabel": "Zona/Barrio",
           "zonePlaceholder": "Chapinero Alto",
           "departmentLabel": "Departamento",
           "departmentPlaceholder": "Selecciona un departamento",
-          "listingTypeLabel": "Tipo de operacion",
+          "listingTypeLabel": "Tipo de operación",
           "listingTypeRent": "Arriendo",
           "listingTypeSale": "Venta",
           "monthlyRentLabel": "Canon mensual",
           "monthlyRentPlaceholder": "2.500.000",
           "salePriceLabel": "Precio de venta",
           "salePricePlaceholder": "350.000.000",
-          "adminFeeLabel": "Administracion (opcional)",
+          "adminFeeLabel": "Administración (opcional)",
           "adminFeePlaceholder": "450.000",
           "bedroomsLabel": "Habitaciones",
-          "bathroomsLabel": "Banos",
-          "areaLabel": "Area (m2)",
-          "descriptionLabel": "Descripcion",
-          "descriptionPlaceholder": "Describe el inmueble: distribucion, acabados, estado, cercanias...",
-          "descriptionCounter": "{{count}}/{{max}} caracteres (minimo {{min}})",
-          "consignedAtLabel": "Fecha de consignacion (opcional)",
-          "consignedAtHint": "Solo la ve tu inmobiliaria — no aparece en el aviso publico.",
+          "bathroomsLabel": "Baños",
+          "areaLabel": "Área (m²)",
+          "descriptionLabel": "Descripción (opcional)",
+          "descriptionPlaceholder": "Describe el inmueble: distribución, acabados, estado, cercanías…",
+          "descriptionCounter": "{{count}}/{{max}} caracteres (si la escribes, mínimo {{min}})",
+          "consignedAtLabel": "Fecha de consignación (opcional)",
+          "consignedAtHint": "Sólo la ve tu inmobiliaria: no aparece en el aviso público.",
           "validation": {
-            "titleRequired": "El titulo es requerido",
-            "addressRequired": "La direccion es requerida",
-            "cityRequired": "La ciudad es requerida",
-            "zoneRequired": "La zona es requerida",
-            "departmentRequired": "El departamento es requerido",
-            "rentRequired": "El canon es requerido",
-            "salePriceRequired": "El precio de venta es requerido",
+            "titleRequired": "Escribe el título",
+            "addressRequired": "Escribe la dirección",
+            "cityRequired": "Escribe la ciudad",
+            "zoneRequired": "Escribe la zona o el barrio",
+            "departmentRequired": "Elige el departamento",
+            "rentRequired": "Escribe el canon",
+            "salePriceRequired": "Escribe el precio de venta",
             "bedroomsRequired": "Las habitaciones deben estar entre 0 y 20",
-            "bathroomsRequired": "Los banos deben estar entre 1 y 10",
-            "areaRequired": "El area debe estar entre 10 y 10.000 m2",
-            "descriptionRequired": "La descripcion debe tener entre 20 y 5.000 caracteres"
+            "bathroomsRequired": "Los baños deben estar entre 0 y 10",
+            "areaRequired": "El área debe estar entre 10 y 10.000 m²",
+            "descriptionRequired": "Si escribes la descripción, debe tener entre 20 y 5.000 caracteres"
           }
         },
         "step3": {
-          "title": "Terminos de Comision",
-          "subtitle": "Define las condiciones del contrato de consignacion",
+          "title": "Términos de la comisión",
+          "subtitle": "Define las condiciones del contrato de consignación",
           "commissionLabel": "Porcentaje de comisión",
           "commissionHelper": "Ingresa el porcentaje de comisión que cobrará la agencia",
           "saleCommissionLabel": "Comisión de venta",
           "saleCommissionHelper": "Ingresa el porcentaje de comisión sobre el precio de venta",
           "monthlySummary": "Resumen mensual",
           "monthlyRent": "Canon mensual",
-          "agencyCommission": "Comision agencia ({{percent}}%)",
+          "agencyCommission": "Comisión de la inmobiliaria ({{percent}} %)",
           "ownerNet": "Neto propietario",
-          "minimumTermLabel": "Termino minimo de arrendamiento",
+          "minimumTermLabel": "Término mínimo de arrendamiento",
           "contractStartLabel": "Fecha de inicio del contrato",
           "months6": "6 meses",
           "months12": "12 meses (recomendado)",
@@ -4223,33 +4223,33 @@
           "conditionPoor": "Malo"
         },
         "step6": {
-          "title": "Confirmar Consignacion",
-          "subtitle": "Revisa la informacion antes de crear la consignacion",
+          "title": "Confirmar la consignación",
+          "subtitle": "Revisa la información antes de crear la consignación",
           "ownerSection": "Propietario",
           "propertySection": "Propiedad",
-          "termsSection": "Terminos",
-          "agentSection": "Agente Asignado",
+          "termsSection": "Términos",
+          "agentSection": "Agente asignado",
           "inventorySection": "Inventario",
           "edit": "Editar",
           "new": "Nuevo",
           "notSelected": "No seleccionado",
-          "noTitle": "Sin titulo",
+          "noTitle": "Sin título",
           "noSalePrice": "Sin precio de venta",
-          "noTermsForSale": "Esta propiedad esta en venta: no aplica comision de arriendo ni termino minimo.",
+          "noTermsForSale": "Este inmueble está en venta: no aplica comisión de arriendo ni término mínimo.",
           "saleCommission": "Comisión de venta",
           "perMonth": "/mes",
           "admin": "admin",
-          "commission": "Comision",
-          "minimumTerm": "Termino minimo",
+          "commission": "Comisión",
+          "minimumTerm": "Término mínimo",
           "months": "meses",
-          "monthlyCommission": "Comision mensual",
+          "monthlyCommission": "Comisión mensual",
           "ownerNetLabel": "Neto propietario",
-          "agentCommission": "comision",
+          "agentCommission": "comisión",
           "selfAssigned": "A cargo del perfil que crea la consignación (sin agente asignado)",
-          "itemsRegistered": "{{count}} item registrado",
-          "itemsRegisteredPlural": "{{count}} items registrados",
+          "itemsRegistered": "{{count}} ítem registrado",
+          "itemsRegisteredPlural": "{{count}} ítems registrados",
           "noName": "Sin nombre",
-          "moreItems": "+{{count}} mas",
+          "moreItems": "+{{count}} más",
           "noInventory": "Sin inventario registrado"
         },
         "sinFotosDialog": {
@@ -4538,11 +4538,11 @@
       "sections": {
         "financial": {
           "title": "Financiero",
-          "description": "Ingresos, comisiones y metricas financieras"
+          "description": "Ingresos, comisiones y métricas financieras"
         },
         "operational": {
           "title": "Operacional",
-          "description": "Ocupacion, rotacion y metricas de gestion"
+          "description": "Ocupación, rotación y métricas de gestión"
         },
         "performance": {
           "title": "Rendimiento",
@@ -8600,7 +8600,7 @@
             "comoFunciona": {
               "title": "¿Cómo funciona?",
               "step1": {
-                "title": "Generás y compartes el link",
+                "title": "Generas y compartes el enlace",
                 "desc": "Envías el link a tu cliente; se cargan los datos del inmueble y el pago en línea."
               },
               "step2": {

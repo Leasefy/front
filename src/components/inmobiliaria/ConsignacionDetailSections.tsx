@@ -39,6 +39,7 @@ import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 // Bank name mapping
 const BANK_NAMES: Record<string, string> = {
@@ -114,7 +115,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
             <p className="text-sm font-medium text-fg">
-              {consignacion.propertyZone}, {consignacion.propertyCity}
+              {barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity) || '—'}
             </p>
           </div>
         </div>

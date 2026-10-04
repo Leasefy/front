@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Hooks de la cola de revisión de decisiones autónomas de Laura (T-323).
+ * Hooks de la cola de revisión de decisiones autónomas de Retención (T-323).
  * Patrón calcado de `useRetencionBandeja`: useAuth → agencyId, fetch con bearer,
- * estados { data, isLoading, error, usingMock, refetch }. Mock-first vía el
- * cliente (`usingMock`). Las deps de useCallback son PRIMITIVOS para que el
+ * estados { data, isLoading, error, apagado, refetch }. Sin mock (QA 04-10,
+ * IA-C-01). Las deps de useCallback son PRIMITIVOS para que el
  * efecto no se reejecute por identidad de objeto.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,8 +19,10 @@ import type {
 interface AsyncState<T> {
   data: T | null
   isLoading: boolean
-  error: string | null
-  usingMock: boolean
+  /** El error ENTERO (lo lee `EstadoDeDatos`), no su texto. */
+  error: unknown
+  /** Retención no está activada: no hay datos y la pantalla lo dice. */
+  apagado: boolean
 }
 
 const TIMEOUT_MS = 12_000
@@ -43,7 +45,7 @@ export function useDecisiones(opts: UseDecisionesOpts = {}) {
     data: null,
     isLoading: true,
     error: null,
-    usingMock: false,
+    apagado: false,
   })
   const abortRef = useRef<AbortController | null>(null)
 
@@ -54,7 +56,7 @@ export function useDecisiones(opts: UseDecisionesOpts = {}) {
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
     setState((s) => ({ ...s, isLoading: true }))
     try {
-      const { data, usingMock } = await fetchDecisions(
+      const { data, apagado } = await fetchDecisions(
         agencyId ?? 'demo',
         {
           reviewableOnly,
@@ -64,10 +66,10 @@ export function useDecisiones(opts: UseDecisionesOpts = {}) {
         controller.signal,
       )
       if (controller.signal.aborted) return
-      setState({ data, isLoading: false, error: null, usingMock })
+      setState({ data, isLoading: false, error: null, apagado })
     } catch (err) {
       if (controller.signal.aborted) return
-      setState((s) => ({ ...s, isLoading: false, error: err instanceof Error ? err.message : 'error' }))
+      setState((s) => ({ ...s, isLoading: false, error: err }))
     } finally {
       clearTimeout(timer)
     }
@@ -94,11 +96,10 @@ export function useReviewDecision() {
     ): Promise<PatchDecisionResult> => {
       setIsReviewing(true)
       try {
-        const { data } = await patchDecisionReview(agencyId ?? 'demo', decisionId, {
+        return await patchDecisionReview(agencyId ?? 'demo', decisionId, {
           reviewOutcome: outcome,
           reviewedBy,
         })
-        return data
       } finally {
         setIsReviewing(false)
       }

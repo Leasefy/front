@@ -1,27 +1,21 @@
 /**
- * Retención — nada de plata inventada sin cartel.
+ * Retención — sin datos inventados (QA 04-10, IA-C-01 e IA-C-02).
  *
- * Las cuatro pantallas de Retención (`/retencion`, `/riesgo`,
- * `/riesgo/[caseId]`, `/aprobar`) caen SIEMPRE al mock: el microservicio no
- * publica `/api/agency/:id/retencion/*` —sólo el webhook de WhatsApp— y
- * `src/lib/api/retencion.ts` atrapa cualquier fallo y devuelve
- * `mock-retencion.ts`, que trae nombres de personas («Ana María Restrepo»),
- * ciudades y comisiones en pesos escritas a mano.
+ * Antes las cuatro pantallas caían a `mock-retencion.ts` (propietarios,
+ * puntajes y pesos escritos a mano) cuando el micro respondía 404 «Retención no
+ * está habilitada», con un aviso que nombraba archivos del código y rutas. Y el
+ * título decía «Retención · Laura» (Laura es la voz de cobranza).
  *
- * Lo que había para avisarlo era una pastillita amber que decía «Datos de
- * demostración» al lado del título: se lee como una etiqueta de sección, no
- * como una advertencia, y quedaba ARRIBA a la izquierda mientras los números
- * inventados ocupaban la pantalla entera.
- *
- * La prueba muerde las dos mitades: que con mock salga `AvisoDatosDeEjemplo`,
- * y que con datos reales NO salga (un cartel que aparece siempre deja de
- * significar algo).
+ * Ahora, apagada: «Retención no está activada todavía para tu inmobiliaria»,
+ * qué haría y a quién pedirla; sin cifras, sin rutas, sin nombres de archivo.
  */
 
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const { dashboardMock } = vi.hoisted(() => ({ dashboardMock: vi.fn() }));
 
@@ -42,8 +36,8 @@ const DATA = {
   cards: [{ key: 'propietarios_riesgo', label: 'Propietarios en riesgo', value: '3' }],
   urgent: [
     {
-      caseId: 'owner:ana-restrepo',
-      ownerName: 'Ana María Restrepo',
+      caseId: 'owner:o1',
+      ownerName: 'Propietaria real del lab',
       score: 84,
       rootCauseLabel: 'Pago retrasado',
       nextActionLabel: 'Llamada prioritaria',
@@ -67,26 +61,36 @@ afterEach(() => {
   container.remove();
 });
 
-function render(usingMock: boolean) {
-  dashboardMock.mockReturnValue({ data: DATA, isLoading: false, error: null, usingMock });
+function render(estado: Record<string, unknown>) {
+  dashboardMock.mockReturnValue({ data: null, isLoading: false, error: null, apagado: false, refetch: vi.fn(), ...estado });
   act(() => root.render(<RetencionDashboardPage />));
 }
 
 describe('Retención — tablero', () => {
-  it('con datos inventados lo dice a lo ancho, nombrando qué es falso', () => {
-    render(true);
-    const aviso = container.querySelector('[data-testid="aviso-datos-de-ejemplo"]');
-    expect(aviso).not.toBeNull();
-    // No alcanza con «demo»: tiene que nombrar de qué número desconfiar.
-    expect(aviso!.textContent).toContain('comisión');
-    // Y decir qué falta para que sea real.
-    expect(aviso!.textContent).toContain('retencion');
+  it('🔴 apagada: lo dice, dice qué haría y a quién pedirla, sin cifras ni texto técnico', () => {
+    render({ apagado: true });
+    const apagada = container.querySelector('[data-testid="retencion-apagada"]');
+    expect(apagada).not.toBeNull();
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('Retención no está activada todavía para tu inmobiliaria');
+    expect(texto).toContain('contacto de Leasefy');
+    expect(texto).toContain('riesgo de salir del portafolio');
+    // Nada técnico ni inventado.
+    expect(texto).not.toMatch(/mock|src\/|\/api\/|retencion\/\*|\.ts\b|microservicio/i);
+    expect(texto).not.toMatch(/\$\s?\d/);
+    expect(container.querySelector('[data-testid="aviso-datos-de-ejemplo"]')).toBeNull();
   });
 
-  it('con datos reales no hay cartel', () => {
-    render(false);
-    expect(container.querySelector('[data-testid="aviso-datos-de-ejemplo"]')).toBeNull();
-    // La pantalla sigue pintando lo suyo.
-    expect(container.textContent).toContain('Ana María Restrepo');
+  it('IA-C-02: el agente no se llama «Laura»', () => {
+    render({ apagado: true });
+    expect(container.querySelector('h1')?.textContent).toBe('Retención');
+    expect(container.textContent).not.toContain('Laura');
+  });
+
+  it('con datos reales los pinta, sin cartel de «apagada»', () => {
+    render({ data: DATA });
+    expect(container.querySelector('[data-testid="retencion-apagada"]')).toBeNull();
+    expect(container.textContent).toContain('Propietaria real del lab');
+    expect(container.textContent).toContain('$980.000');
   });
 });

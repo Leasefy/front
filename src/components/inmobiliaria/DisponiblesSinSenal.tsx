@@ -20,7 +20,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CloudCheck, X } from '@phosphor-icons/react';
+import { CaretDown, CloudCheck, X } from '@phosphor-icons/react';
+import { Collapse } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import {
   borrarCopia,
@@ -55,6 +56,7 @@ interface Props {
 export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
   const { t } = useI18n();
   const [copias, setCopias] = useState<CopiaDeInmueble[]>([]);
+  const [abierto, setAbierto] = useState(false);
 
   const cargar = useCallback(() => {
     void listarCopias()
@@ -74,40 +76,56 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
   // una función que nadie usó todavía le saca el lugar a la tabla.
   if (copias.length === 0 && !aviso) return null;
 
+  /*
+   * IN-01 (QA 04-10): el bloque abría desplegado arriba de la tabla —nueve
+   * filas, media pantalla— antes de los inmuebles. Ahora es UNA línea plegada
+   * («9 inmuebles guardados para trabajar sin señal · Ver») y la lista se abre
+   * a pedido. El aviso de lo recién guardado se ve siempre.
+   */
   return (
     <div
-      className="rounded-md border border-border bg-surface p-4 space-y-3"
+      className="rounded-md border border-border bg-surface px-4 py-3"
       data-testid="disponibles-sin-senal"
     >
-      <div className="flex items-center gap-2">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 text-left"
+        aria-expanded={abierto}
+        onClick={() => setAbierto((a) => !a)}
+        data-testid="disponibles-sin-senal-ver"
+      >
         <CloudCheck className="w-5 h-5 text-fg-muted flex-shrink-0" />
-        <h2 className="text-sm font-medium text-fg">
-          {t('inmobiliaria.sinSenal.listaTitulo')}
-        </h2>
-        {/* 🔴 «2 / 25» no significa nada por sí solo (Nico, 18-09-2026: «¿qué
-            significa esto?»). Son inmuebles que este teléfono ya tiene
-            descargados para abrirlos sin internet, y 25 es el tope. Se dice
-            con palabras. */}
-        <span className="text-xs text-fg-muted">
-          {copias.length} de {MAXIMO_DE_COPIAS}
+        {/* 🔴 «2 / 25» no significa nada por sí solo (Nico, 18-09-2026): se
+            dice con palabras, y el tope de 25 va adentro. */}
+        <span className="min-w-0 flex-1 text-sm text-fg">
+          {copias.length === 1
+            ? '1 inmueble guardado para trabajar sin señal'
+            : `${copias.length} inmuebles guardados para trabajar sin señal`}
         </span>
-      </div>
-
-      <p className="text-xs text-fg-muted">
-        {copias.length === 1
-          ? 'Este inmueble ya está descargado en este dispositivo: puedes abrirlo y llenar su inventario aunque no haya señal, y se sube cuando vuelvas a tener.'
-          : 'Estos inmuebles ya están descargados en este dispositivo: puedes abrirlos y llenar su inventario aunque no haya señal, y se suben cuando vuelvas a tener.'}
-      </p>
+        <span className="flex shrink-0 items-center gap-1 text-sm text-primary">
+          {abierto ? 'Ocultar' : 'Ver'}
+          <CaretDown className={`h-3.5 w-3.5 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
 
       {aviso && (
         <p
-          className={`text-xs ${aviso.ok ? 'text-success' : 'text-warning'}`}
+          className={`mt-2 text-xs ${aviso.ok ? 'text-success' : 'text-warning'}`}
           role="status"
           data-testid="aviso-sin-senal"
         >
           {aviso.texto}
         </p>
       )}
+
+      <Collapse open={abierto}>
+      <div className="space-y-3 pt-3">
+      <p className="text-xs text-fg-muted">
+        {copias.length === 1
+          ? 'Este inmueble ya está descargado en este dispositivo: puedes abrirlo y llenar su inventario aunque no haya señal, y se sube cuando vuelvas a tener.'
+          : 'Estos inmuebles ya están descargados en este dispositivo: puedes abrirlos y llenar su inventario aunque no haya señal, y se suben cuando vuelvas a tener.'}{' '}
+        Caben hasta {MAXIMO_DE_COPIAS}.
+      </p>
 
       <ul className="divide-y divide-border">
         {copias.map((copia) => {
@@ -140,9 +158,14 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
                 {copia.titulo}
               </p>
               <p className="text-xs text-fg-muted truncate">
-                {copia.direccion} · {t('inmobiliaria.sinSenal.guardado', { cuando: cuando(copia.guardadoEn) })}
+                {/* La dirección sólo si no es el mismo título (antes salía dos veces). */}
+                {copia.direccion && copia.direccion.trim() !== copia.titulo.trim() ? `${copia.direccion} · ` : ''}
+                {t('inmobiliaria.sinSenal.guardado', { cuando: cuando(copia.guardadoEn) })}
               </p>
             </Link>
+            {/* «Se abre desde» sólo cuando hay algo que decir: con la ficha del
+                inmueble sola, el renglón ya lleva ahí. */}
+            {delContrato && (
             <p className="text-xs text-fg-muted truncate" data-testid="se-abre-desde">
               {t('inmobiliaria.sinSenal.seAbreDesde')}{' '}
               {delInmueble && (
@@ -157,6 +180,7 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
                 </Link>
               )}
             </p>
+            )}
             </div>
             <button
               type="button"
@@ -170,6 +194,8 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
           );
         })}
       </ul>
+      </div>
+      </Collapse>
     </div>
   );
 }

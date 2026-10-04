@@ -1,6 +1,6 @@
 'use client'
 
-import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -165,7 +165,7 @@ const ACTIONS: ActionMeta[] = [
     variant: 'default',
     icon: CheckCircle,
     dialogVariant: 'confirm',
-    confirmTitle: '¿Confirmar la decisión de Laura?',
+    confirmTitle: '¿Confirmar la decisión de Retención?',
     confirmBody: 'La decisión queda registrada como correcta. Esto la marca como revisada y no se podrá cambiar.',
   },
   {
@@ -175,7 +175,7 @@ const ACTIONS: ActionMeta[] = [
     icon: ArrowUUpLeft,
     // Sigue, pero con riesgo: el caso vuelve a manos del equipo.
     dialogVariant: 'warning',
-    confirmTitle: '¿Revertir la decisión de Laura?',
+    confirmTitle: '¿Revertir la decisión de Retención?',
     confirmBody: 'Marcas la decisión como incorrecta. El equipo deberá retomar el caso manualmente.',
   },
   {
@@ -206,7 +206,7 @@ export default function RevisionesClient() {
   const [search, setSearch] = useState('')
   const [pending, setPending] = useState<PendingAction | null>(null)
 
-  const { data, isLoading, error, usingMock, refetch } = useDecisiones({
+  const { data, isLoading, error, apagado, refetch } = useDecisiones({
     reviewableOnly: tab === 'pendientes',
   })
   const { review, isReviewing } = useReviewDecision()
@@ -224,7 +224,7 @@ export default function RevisionesClient() {
   }, [data, chip, search])
 
   // Paginación — la cola de revisión es una lista de registros que crece con
-  // cada decisión autónoma de Laura, no un detalle fijo. `resetKey` lleva los
+  // cada decisión autónoma de Retención, no un detalle fijo. `resetKey` lleva los
   // tres filtros (pestaña, chip de tipo y búsqueda) para no dejar al usuario
   // mirando una página vacía después de filtrar.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -261,16 +261,12 @@ export default function RevisionesClient() {
           Cola de revisión de decisiones
         </h1>
         <p className="text-sm text-fg-muted">
-          Decisiones autónomas tomadas por Laura, listas para confirmar, revertir o escalar.
+          Decisiones que Retención tomó sola, listas para confirmar, revertir o escalar.
         </p>
-        {usingMock ? (
-          <AvisoDatosDeEjemplo
-            className="mt-3"
-            queEsInventado="Las decisiones del agente, los propietarios a los que dice haber escrito y sus montos"
-            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
-          />
-        ) : null}
       </header>
+
+      {/* 🔴 IA-C-01: apagada no hay decisiones (antes, unas inventadas). */}
+      {apagado ? <RetencionApagada /> : (<>
 
       {/* Tabs — mismo patrón que la bandeja de riesgos: pill sólida cuando
           está activa, pill blanca con hairline cuando no. */}
@@ -469,6 +465,7 @@ export default function RevisionesClient() {
           )}
         </div>
       </EstadoDeDatos>
+      </>)}
 
       {/* Confirmación de revisión */}
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>

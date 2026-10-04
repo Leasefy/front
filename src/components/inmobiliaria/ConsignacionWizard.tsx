@@ -70,6 +70,7 @@ import {
   topesDelPasoDelInmueble,
   type CampoDelAsistente,
 } from '@/lib/inmuebles/errores-del-asistente';
+import { datosOpcionalesParaCrear, llevaHabitaciones, pasoDelInmuebleCompleto } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
 
 interface ConsignacionWizardProps {
   propietarios: Propietario[];
@@ -235,32 +236,21 @@ export function ConsignacionWizard({
           ) === null
         );
       case 2: {
-        // Must have property details — thresholds mirror CreatePropertyDto
-        // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
-        // description 20-5000 chars. T-0038: department is required in this
-        // UI (§3.2.1), and the price field is conditional on listingType
-        // (§3.2.2/§3.2.4) — a sale listing validates salePrice, not monthlyRent.
-        const isSaleListing = formData.listingType === 'sale';
-        const priceValid = isSaleListing
-          ? Boolean(formData.salePrice && formData.salePrice > 0)
-          : Boolean(formData.monthlyRent && formData.monthlyRent > 0);
-        return Boolean(
-          formData.propertyTitle &&
-          formData.propertyAddress &&
-          formData.propertyCity &&
-          formData.propertyZone &&
-          formData.department &&
-          formData.propertyType &&
-          priceValid &&
-          formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
-          formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
-          formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
-          formData.propertyDescription &&
-          formData.propertyDescription.length >= 20 &&
-          formData.propertyDescription.length <= 5000 &&
-          // Los topes del back (`limites-del-inmueble.ts`): lo que el servidor
-          // rechazaría no se deja mandar.
-          Object.keys(topesDelPasoDelInmueble(formData)).length === 0
+        // 🔴 IN-16 (QA 04-10): sólo tipo, título, dirección, ciudad y canon (o
+        // precio de venta) son obligatorios; habitaciones y baños según el tipo,
+        // barrio, departamento, área y descripción opcionales (la descripción,
+        // si se escribe, entre 20 y 5.000 como en «Editar»). Los topes del back
+        // (`limites-del-inmueble.ts`) valen para lo que SÍ se escribió.
+        return (
+          pasoDelInmuebleCompleto(formData) &&
+          // Habitaciones y baños escondidos (el tipo no los tiene) no frenan.
+          Object.keys(
+            topesDelPasoDelInmueble(
+              llevaHabitaciones(formData.propertyType)
+                ? formData
+                : { ...formData, bedrooms: undefined, bathrooms: undefined },
+            ),
+          ).length === 0
         );
       }
       case 3:
@@ -550,10 +540,8 @@ export function ConsignacionWizard({
         try {
           property = await propertiesApi.create({
             title:        formData.propertyTitle ?? '',
-            description:  formData.propertyDescription ?? '',
             type:         wizardType,
             city:         formData.propertyCity ?? '',
-            neighborhood: formData.propertyZone ?? '',
             address:      formData.propertyAddress ?? '',
             latitude:     latitud,
             longitude:    longitud,
@@ -562,9 +550,10 @@ export function ConsignacionWizard({
             monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
             salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
             consignedAt:  formData.consignedAt,
-            bedrooms:     formData.bedrooms ?? 0,
-            bathrooms:    formData.bathrooms ?? 1,
-            area:         formData.area ?? 10,
+            // IN-16: barrio, descripción, habitaciones, baños y área sólo si se
+            // escribieron (y habitaciones/baños sólo si el tipo los tiene).
+            // Antes viajaban 0 / 1 / 10 de relleno: datos inventados.
+            ...datosOpcionalesParaCrear(formData),
             adminFee:     formData.adminFee,
           });
         } catch (error) {

@@ -27,6 +27,7 @@ import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { agendaApi } from '@/lib/api/agenda.service';
 import type { EventoAgenda, EventoTipo } from '@/lib/api/agenda.types';
 import { consignacionesApi, type EventoDelInmueble } from '@/lib/api/inmobiliaria.service';
+import { periodosEnPalabras } from '@/lib/inmuebles/periodo-en-palabras';
 
 /**
  * Cómo se dibuja cada tipo de evento de la agenda en esta línea de tiempo.
@@ -303,8 +304,9 @@ export function ConsignacionTimeline({
         id: `hist-${e.id}`,
         type: TIPO_DEL_HISTORIAL[e.tipo] ?? 'data_edited',
         date: e.fecha,
-        title: e.titulo,
-        description: e.detalle ?? '',
+        // IN-06: «Cobro de 2026-07» → «Cobro de julio de 2026».
+        title: periodosEnPalabras(e.titulo),
+        description: periodosEnPalabras(e.detalle ?? ''),
         actor: e.esSistema ? t('inmobiliaria.consignaciones.timeline.actors.system') : e.actor,
       });
     }

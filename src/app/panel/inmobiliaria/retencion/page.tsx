@@ -1,13 +1,13 @@
 'use client'
 
-import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import Link from 'next/link'
 import { Users, House, CurrencyDollar, HeartStraight, ArrowsClockwise, Warning, CaretRight, FolderOpen } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { useRetencionDashboard } from '@/lib/hooks/retencion/use-retencion'
-import { formatCop } from '@/lib/data/mock-retencion'
+import { formatCurrency as formatCop } from '@/lib/types/inmobiliaria'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 import type { CardTone, DashboardCard } from '@/lib/types/retencion'
 
@@ -43,25 +43,21 @@ function KpiCard({ card }: { card: DashboardCard }) {
 }
 
 export default function RetencionDashboardPage() {
-  const { data, isLoading, error, usingMock, refetch } = useRetencionDashboard()
+  const { data, isLoading, error, apagado, refetch } = useRetencionDashboard()
   const hayIndicadores = (data?.cards.length ?? 0) > 0
   const urgentes = data?.urgent ?? []
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">Retención · Laura</h1>
+        <h1 className="text-xl font-semibold text-fg">Retención</h1>
         <p className="text-sm text-fg-muted">
-          Detecto propietarios e inmuebles en riesgo de salir del portafolio, explico la causa raíz y propongo qué hacer.
+          Detecta propietarios e inmuebles en riesgo de salir del portafolio, explica la causa y propone qué hacer.
         </p>
-        {usingMock ? (
-          <AvisoDatosDeEjemplo
-            className="mt-3"
-            queEsInventado="Los indicadores, los propietarios en riesgo y la comisión en pesos"
-            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
-          />
-        ) : null}
       </header>
+
+      {/* 🔴 IA-C-01: apagada no hay datos — antes caía a un tablero inventado. */}
+      {apagado ? <RetencionApagada /> : (<>
 
       {/* Cargando → falló → vacío → datos, en ese orden. Antes, con la
           consulta caída, la pantalla afirmaba «Sin datos de portafolio» y «No
@@ -129,13 +125,14 @@ export default function RetencionDashboardPage() {
           {urgentes.length === 0 ? (
             <EmptyState
               icon={HeartStraight}
-              title="No hay casos urgentes ahora mismo. 🎉"
+              title="No hay casos urgentes ahora mismo."
               description="Ningún propietario del portafolio quedó priorizado por comisión en riesgo."
             />
           ) : null}
         </div>
       </section>
       </EstadoDeDatos>
+      </>)}
     </div>
   )
 }

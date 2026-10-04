@@ -19,6 +19,7 @@
 // frontend disabled-submit is pre-emptive UX; a stale client that bypasses it
 // still receives the 429 codepath which presents the same banner.
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -238,7 +239,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
     footerText = t('inmobiliaria.ai.cotizador.askWhy.calculating')
   } else if (result) {
     footerText =
-      t('inmobiliaria.ai.cotizador.askWhy.costActual', { cost: result.cost_usd.toFixed(5) }) +
+      t('inmobiliaria.ai.cotizador.askWhy.costActual', { cost: formatCurrency(result.cost_cop) }) +
       ' · ' +
       t('inmobiliaria.ai.cotizador.askWhy.remaining', { n: usedCount, m: capCount })
   } else {

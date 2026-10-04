@@ -79,6 +79,7 @@ import {
   type NumerosDelMandato,
 } from '../mandato/ElMandatoEnLaLiquidacion';
 import { FalloDelAsistente, MesSinGiros } from './FalloDelAsistente';
+import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje';
 import {
   NADA_FUERA,
   elTotalDeLaCorrida,
@@ -458,6 +459,10 @@ export function GenerarDispersion({
         </div>
         <SelectorDeMes mes={mes} onCambiar={cambiarMes} testId="mes-de-la-liquidacion" />
       </div>
+
+      {/* 🔴 Los inmuebles que no se giran porque les falta el porcentaje de
+          cada propietario (copropiedad migrada sin %, Nico 04-10-2026). */}
+      <AvisoSinPorcentaje inmuebles={previa?.sinPorcentaje} />
 
       <Presence show={previa != null && previa.yaGenerados > 0} initial={false}>
       {previa != null && previa.yaGenerados > 0 && (

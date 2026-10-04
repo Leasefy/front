@@ -14,6 +14,7 @@
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
 import { CrossFade, IconButton } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import {
   Tooltip,
   TooltipContent,
@@ -26,10 +27,11 @@ import {
 // =============================================================================
 
 interface CostKpiStripProps {
+  /** 🔴 En pesos (Nico, 04-10-2026): ninguna pantalla de la inmobiliaria con dólares. */
   kpis: {
-    costPerQuoteUsd: number | null
-    monthlyBurnUsd: number | null
-    forecast30dUsd: number | null
+    costPerQuoteCop: number | null
+    monthlyBurnCop: number | null
+    forecast30dCop: number | null
   } | null
   isLoading?: boolean
 }
@@ -43,17 +45,14 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
 
   // Null-guard rule (T-35-14): use != null to catch both null and undefined.
   // NEVER render "0" or "$0.00" for a null forecast value.
-  const formatUsd4 = (v: number | null | undefined): string =>
-    v != null ? `$${v.toFixed(4)}` : '—'
-
-  const formatUsd2 = (v: number | null | undefined): string =>
-    v != null ? `$${v.toFixed(2)}` : '—'
+  const enPesos = (v: number | null | undefined): string =>
+    v != null ? formatCurrency(v) : '—'
 
   const cards = [
     {
       key: 'costPerQuote',
       label: t('inmobiliaria.ai.cotizador.costos.kpiCostPerQuote'),
-      value: formatUsd4(kpis?.costPerQuoteUsd),
+      value: enPesos(kpis?.costPerQuoteCop),
       Icon: CurrencyDollar,
       iconColor: 'text-primary',
       caption: null,
@@ -61,7 +60,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
     {
       key: 'monthlyBurn',
       label: t('inmobiliaria.ai.cotizador.costos.kpiMonthlyBurn'),
-      value: formatUsd2(kpis?.monthlyBurnUsd),
+      value: enPesos(kpis?.monthlyBurnCop),
       Icon: Wallet,
       iconColor: 'text-fg-muted',
       caption: null,
@@ -70,7 +69,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       key: 'forecast30d',
       label: t('inmobiliaria.ai.cotizador.costos.kpiForecast30d'),
       // Explicit null check: != null catches both null and undefined (T-35-14)
-      value: kpis?.forecast30dUsd != null ? `$${kpis.forecast30dUsd.toFixed(2)}` : '—',
+      value: enPesos(kpis?.forecast30dCop),
       Icon: TrendUp,
       iconColor: 'text-fg-muted',
       caption: t('inmobiliaria.ai.cotizador.costos.forecastCaption'),

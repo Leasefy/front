@@ -78,6 +78,13 @@ function tablero(extra: Partial<TableroFinanciero> = {}): TableroFinanciero {
     },
     propietarios: {
       porGirarCop: 210_000_000,
+      porGirarHastaMes: '2026-10',
+      proximosGiros: {
+        desdeMes: '2026-11',
+        hastaMes: '2027-01',
+        totalCop: 96_000_000,
+        cuotas: 40,
+      },
       retenidoCop: 4_500_000,
       enLotesPorAprobarCop: 88_000_000,
       lotesPorAprobar: 2,
@@ -197,11 +204,16 @@ describe('tablero financiero', () => {
     );
   });
 
-  it('🔴 «Por girar» y «Girado» dicen su período y su base (CONSISTENCIA 04-10)', async () => {
+  it('🔴 «Por girar» es UNA sola cifra hasta el mes EN CURSO, y los próximos giros van aparte (Nico, 04-10)', async () => {
     await pintar();
+    // El tablero mira septiembre; «Por girar» es lo que se debe hoy (octubre).
     const porGirar = container.querySelector('[data-testid="cifra-por-girar"]')?.textContent ?? '';
-    expect(porGirar).toContain('Por girar hasta septiembre de 2026');
-    expect(porGirar).toContain('Los meses futuros no entran');
+    expect(porGirar).toContain('Por girar hasta octubre de 2026');
+    expect(porGirar).toContain('la misma cifra en el Tablero, en Cartera → Por pagar y en Liquidaciones');
+    const proximos =
+      container.querySelector('[data-testid="cifra-proximos-giros"]')?.textContent ?? '';
+    expect(proximos).toContain('Próximos giros · noviembre de 2026 a enero de 2027');
+    expect(proximos).toContain('96.000.000');
     const girado = container.querySelector('[data-testid="cifra-girado-del-mes"]')?.textContent ?? '';
     expect(girado).toContain('Girado en septiembre de 2026');
     expect(girado).toContain('Dispersado');

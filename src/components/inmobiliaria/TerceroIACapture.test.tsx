@@ -125,7 +125,7 @@ const respuesta = (over: Partial<TerceroExtractResponse> = {}): TerceroExtractRe
   ],
   confidence: 0.9,
   tokensUsed: 1200,
-  estimatedCostUsd: 0.006,
+  estimatedCostCop: 25.2,
   ...over,
 });
 

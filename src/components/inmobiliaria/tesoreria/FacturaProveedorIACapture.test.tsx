@@ -159,7 +159,7 @@ const respuesta = (over: Partial<FacturaExtractResponse> = {}): FacturaExtractRe
   },
   adjuntoUrl: 'https://storage.example.co/sign/ap/factura.jpg?token=abc',
   tokensUsed: 1000,
-  estimatedCostUsd: 0.004,
+  estimatedCostCop: 16.8,
   ...over,
 });
 

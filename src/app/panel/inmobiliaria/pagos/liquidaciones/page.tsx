@@ -76,6 +76,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoIndicadores, EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { AvisoLiquidacionFrenada } from '@/components/inmobiliaria/AvisoLiquidacionFrenada';
+import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje';
+import { PorGirarDeLaInmobiliaria } from '@/components/liquidaciones/PorGirarDeLaInmobiliaria';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
@@ -388,6 +390,11 @@ function TesoreriaContent() {
             Acá se lee el neto de cada propietario, no se crean documentos. */}
       </header>
 
+      {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
+          curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
+          04-10-2026). La tabla de abajo es el neto de UN mes. */}
+      <PorGirarDeLaInmobiliaria />
+
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />
       ) : (
@@ -442,6 +449,9 @@ function TesoreriaContent() {
                 otro… eso con scroll infinito es horrible». El resumen del mes
                 va arriba, ancho, y la tabla se queda con la pantalla entera. */}
             <div className="space-y-6">
+              {/* 🔴 Lo que NO se liquida porque al inmueble le falta el
+                  porcentaje de cada propietario (copropiedad migrada sin %). */}
+              <AvisoSinPorcentaje inmuebles={vista?.sinPorcentaje} />
               {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
               <section className="rounded-lg border border-border bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">

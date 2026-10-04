@@ -3,6 +3,7 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
+import type { InmuebleSinPorcentaje } from '@/lib/inmuebles/participaciones-desconocidas';
 import type {
   CargoAlInquilino,
   DeduccionesDeLaLiquidacion,
@@ -107,6 +108,12 @@ export interface Propietario {
    * completa; un back anterior a T-0128 no lo manda.
    */
   datosPendientes?: DatoPendienteDelPropietario[];
+  /**
+   * 🔴 Sus inmuebles en copropiedad que vinieron de la migración sin el
+   * porcentaje de cada dueño (Nico, 04-10-2026): no se giran hasta ponerlo.
+   * Ausente con un back anterior.
+   */
+  inmueblesSinPorcentaje?: InmuebleSinPorcentaje[];
   address?: string;
   city?: string;
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
@@ -359,6 +366,14 @@ export interface Consignacion {
    * hay que caer a `propietarioId`, nunca fabricar una participación.
    */
   copropietarios: Copropietario[];
+  /**
+   * 🔴 Copropiedad sin porcentaje (Nico, 04-10-2026: «vacío y giro
+   * bloqueado»): `true` = vino de la migración con varios dueños y sin decir
+   * cuánto es de cada uno. Los `participacionBps` son PROVISIONALES (partes
+   * iguales) y no se muestran: la ficha dice «Falta el porcentaje de cada
+   * propietario» y el giro no sale hasta ponerlo. Ausente con un back anterior.
+   */
+  participacionesDesconocidas?: boolean;
   agenteId: string;
 
   // Property info (denormalized for convenience)
@@ -1029,6 +1044,12 @@ export interface CuotasTardias {
 
 export interface VistaPreviaDeDispersiones {
   month: string;
+  /**
+   * 🔴 Los inmuebles que NO se giran este mes porque les falta el porcentaje
+   * de cada propietario (copropiedad migrada sin %). Un back anterior no lo
+   * manda.
+   */
+  sinPorcentaje?: InmuebleSinPorcentaje[];
   /**
    * Con qué regla se liquidó: `CAUSADO` (el default del back: el canon del mes,
    * haya pagado el inquilino o no) o `RECAUDADO` (sólo lo que el inquilino ya

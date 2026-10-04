@@ -33,7 +33,8 @@ export interface AskWhyNewValue {
 
 export interface AskWhyResult {
   narrative_es: string
-  cost_usd: number
+  /** 🔴 En pesos (Nico, 04-10-2026): el micro ya no manda dólares. */
+  cost_cop: number
   hypothetical_carriers: CarrierState[]
 }
 

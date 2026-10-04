@@ -235,6 +235,45 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(estado?.className).not.toContain('text-danger');
   });
 
+  it('🔴 «Por girar» del propietario: UNA sola cifra hasta el mes en curso, neta de deducciones, y los próximos giros aparte (Nico, 04-10-2026)', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-09-01', valorNeto: 4_000_000 }),
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2027-06-01', valorNeto: 50_000_000 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={{
+          ...estadoDeCuenta({
+            cliente: { nombre: 'Paula Propietaria Ruiz', documento: '52123456', tipo: 'PROPIETARIO' },
+            contratos: [c],
+          }),
+          porGirar: {
+            hastaMes: '2026-10',
+            porGirarCop: 3_770_000,
+            cuotas: 1,
+            deduccionesCop: 230_000,
+            proximosGirosCop: 15_835_975,
+            proximosGirosHastaMes: '2027-01',
+          },
+        }}
+        hoy={HOY}
+      />,
+    );
+    const resumen = host.querySelector('[data-testid="estado-resumen"]')?.textContent ?? '';
+    expect(resumen).toContain('Por girar hasta octubre de 2026');
+    expect(host.querySelector('[data-testid="resta-por-pagar"]')?.textContent).toContain('3.770.000');
+    const proximos =
+      host.querySelector('[data-testid="proximos-giros-del-propietario"]')?.textContent ?? '';
+    expect(proximos).toContain('Próximos giros · noviembre de 2026 a enero de 2027');
+    expect(proximos).toContain('15.835.975');
+    expect(proximos).toContain('230.000');
+  });
+
   it('🔴 ola E: el saldo a favor del inquilino y en qué va su devolución, aparte de lo que debe', () => {
     const c = contrato({
       vigente: false,

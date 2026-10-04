@@ -5,7 +5,7 @@
  *   1. populated=true → hero ratio text + SVG sparkline present
  *   2. populated=false + reason='insufficient-data' → EmptyState (honest empty, no stub ratio/svg)
  *   3. populated=false + reason='agency-gate' → returns null (nothing rendered)
- *   4. Intl format — costPerPeso=5.20 renders USD string + COP string
+ *   4. En pesos (04-10-2026) — costPerPeso=0.0052 dice «$ 5.200 por cada $ 1.000.000»
  *
  * NOTE: @testing-library/react is not installed in this project.
  * Uses createRoot + act pattern (same as CadenceChannelMixChart.test.tsx baseline).
@@ -50,7 +50,7 @@ function makeSparkline(n = 90): Array<{ day: string; cost_per_peso: number }> {
 const POPULATED_DATA = {
   populated: true as const,
   cost_per_peso: 0.041,
-  numerator_usd_voice: 950,
+  numerator_cop_voice: 3_990_000,
   denominator_cop_paid: 23_170_731_707,
   sparkline_90d: makeSparkline(),
 }
@@ -112,20 +112,21 @@ describe('<CostPerPesoKpi>', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('Intl format: costPerPeso=5.20 renders USD string and COP reference amount', () => {
+  it('🔴 en PESOS (Nico, 04-10-2026): costPerPeso=0.0052 dice «$ 5.200 por cada $ 1.000.000», nunca dólares', () => {
     const data = {
       populated: true as const,
-      cost_per_peso: 5.20,
-      numerator_usd_voice: 100,
-      denominator_cop_paid: 20,
+      cost_per_peso: 0.0052,
+      numerator_cop_voice: 104_000,
+      denominator_cop_paid: 20_000_000,
       sparkline_90d: makeSparkline(),
     }
     act(() => {
       root.render(React.createElement(CostPerPesoKpi, { data }))
     })
     const text = container.textContent ?? ''
-    // USD amount: $5.20 (en-US style)
-    expect(text).toMatch(/\$5[.,]20/)
+    // Lo que costó la voz por cada millón recuperado, en pesos.
+    expect(text).toMatch(/5[.,]200/)
+    expect(text).not.toMatch(/USD|US\$/)
     // COP reference: 1.000.000 (es-CO locale) or 1,000,000 (fallback)
     expect(text).toMatch(/1[.,]000[.,]000/)
   })

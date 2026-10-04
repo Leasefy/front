@@ -17,6 +17,7 @@
  * micro para esa fuente, sin nombres internos de etapas del roadmap.
  */
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   Tooltip as ShadcnTooltip,
@@ -211,7 +212,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: unknown) => [`$${Number(value).toFixed(4)}`, '']}
+          formatter={(value: unknown) => [formatCurrency(Number(value) || 0), '']}
         />
         <Legend
           layout="vertical"

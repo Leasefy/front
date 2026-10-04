@@ -87,6 +87,8 @@ import { formatCurrency, formatParticipacion } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { datosPendientesDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 import { CajonDelFormularioDelPropietario } from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
@@ -166,6 +168,7 @@ function PropertyCard({
   consignacion,
   propietarioId,
   inmueble,
+  sinPorcentaje = false,
 }: {
   consignacion: Consignacion;
   propietarioId: string;
@@ -175,11 +178,18 @@ function PropertyCard({
    * anterior, o la plata oculta), lo de siempre: el canon del mandato.
    */
   inmueble?: InmuebleDelPropietario | null;
+  /**
+   * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): su % es
+   * provisional; se dice «Sin porcentaje» y no se calcula «su parte».
+   */
+  sinPorcentaje?: boolean;
 }) {
   const { t } = useI18n();
   // Copropiedad: su parte del canon del contrato, con el entero al lado.
   const suParteDelCanon =
-    inmueble && inmueble.participacionBps < 10_000 && inmueble.canonCop !== null ? inmueble : null;
+    !sinPorcentaje && inmueble && inmueble.participacionBps < 10_000 && inmueble.canonCop !== null
+      ? inmueble
+      : null;
   // El canon que se cobra es el del CONTRATO vigente (P-01), si lo hay.
   const canonDelContrato = inmueble?.arrendado ? inmueble.canonDelContratoCop : null;
   const direccionDistinta =
@@ -243,7 +253,14 @@ function PropertyCard({
                   {consignacion.propertyAddress}
                 </p>
               )}
-              {suParte != null && (
+              {sinPorcentaje ? (
+                <span
+                  className="mt-1 inline-block rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning"
+                  data-testid="copropiedad-sin-porcentaje"
+                >
+                  Copropiedad · {FALTA_EL_PORCENTAJE.toLowerCase()}
+                </span>
+              ) : suParte != null && (
                 <span
                   className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
                   data-testid="copropiedad-del-inmueble"
@@ -818,6 +835,8 @@ function PropietarioDetailContent() {
               }
               onCompletar={puedeEditar ? () => setShowEditModal(true) : undefined}
             />
+            {/* 🔴 Copropiedad migrada sin porcentaje: no se le gira (Nico, 04-10). */}
+            <SinPorcentajeDelPropietario inmuebles={propietario.inmueblesSinPorcentaje} />
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
               {[
                 // 🔴 23-09 (QA): quitarle la «s» a «Propiedades» daba «1 propiedade».
@@ -1149,6 +1168,11 @@ function PropietarioDetailContent() {
                         consignacion={consignacion}
                         propietarioId={propietario.id}
                         inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
+                        sinPorcentaje={
+                          propietario.inmueblesSinPorcentaje?.some(
+                            (i) => i.consignacionId === consignacion.id,
+                          ) ?? false
+                        }
                       />
                     </StaggerItem>
                   ))}

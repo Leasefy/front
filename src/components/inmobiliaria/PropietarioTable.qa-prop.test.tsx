@@ -217,3 +217,21 @@ describe('PropietarioCard (vista «Tarjetas») — P-08 y P-21', () => {
     expect(texto).toContain('inmobiliaria.propietario.table.sinAccesoALaPlata');
   });
 });
+
+describe('🔴 copropiedad migrada sin porcentaje (Nico, 04-10-2026)', () => {
+  it('en el celular la tarjeta también dice que falta el porcentaje y que no se gira', () => {
+    pantalla.celular = true;
+    render([
+      {
+        ...PAULA,
+        inmueblesSinPorcentaje: [
+          { consignacionId: 'cons-9', propertyId: 'prop-9', propertyTitle: 'Apartaestudio en Manila' },
+        ],
+      } as Propietario,
+    ]);
+    const tarjeta = container.querySelector('[data-testid="propietarios-tarjetas"]')!;
+    expect(tarjeta.querySelector('[data-testid="sin-porcentaje-del-propietario"]')?.textContent).toContain(
+      'Apartaestudio en Manila',
+    );
+  });
+});

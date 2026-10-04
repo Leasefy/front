@@ -21,7 +21,8 @@ export interface CarrierDetailPayload {
     latencyP95Ms: number
     errorRate24h: number       // 0–1 fraction
     approvalRate30d: number    // 0–1 fraction
-    costPerQuoteUsd30d: number
+    /** 🔴 En pesos (04-10-2026): el micro convierte con la tasa de la plataforma. */
+    costPerQuoteCop30d: number
   }
   latencySparkline: Array<{ hour: string; p95LatencyMs: number }>      // 30d hourly
   errorRateSeries: Array<{ date: string; errorRate: number }>           // 30d daily

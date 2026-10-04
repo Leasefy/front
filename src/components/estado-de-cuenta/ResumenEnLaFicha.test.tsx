@@ -99,3 +99,39 @@ describe('<ResumenEnLaFicha> — las palabras de cada lado', () => {
     expect(texto).toContain('1.982.250');
   });
 });
+
+describe('🔴 «Por girar» del propietario: UNA sola cifra, hasta el mes en curso (Nico, 04-10-2026)', () => {
+  it('con `porGirar` del back, la ficha dice esa cifra y los próximos giros aparte (no todo lo que falta del contrato)', async () => {
+    api.resumen.mockResolvedValue({
+      ...RESUMEN,
+      porGirar: {
+        hastaMes: '2026-10',
+        porGirarCop: 9_108_600,
+        cuotas: 4,
+        deduccionesCop: 230_000,
+        proximosGirosCop: 15_835_975,
+        proximosGirosHastaMes: '2027-01',
+      },
+    });
+    await pintar('propietario');
+    expect(host.querySelector('[data-testid="resumen-en-la-ficha"]')?.textContent).toContain(
+      'Por girar hasta octubre de 2026',
+    );
+    expect(host.querySelector('[data-testid="ficha-resta-por-pagar"]')?.textContent).toContain(
+      '9.108.600',
+    );
+    expect(host.querySelector('[data-testid="ficha-resta-por-pagar"]')?.textContent).not.toContain(
+      '51.538.500',
+    );
+    expect(host.querySelector('[data-testid="ficha-proximos-giros"]')?.textContent).toContain(
+      'Próximos giros · noviembre de 2026 a enero de 2027',
+    );
+  });
+
+  it('del lado del inquilino no cambia nada', async () => {
+    api.resumen.mockResolvedValue({ ...RESUMEN, porGirar: undefined });
+    await pintar('inquilino');
+    expect(host.querySelector('[data-testid="ficha-proximos-giros"]')).toBeNull();
+  });
+});
+

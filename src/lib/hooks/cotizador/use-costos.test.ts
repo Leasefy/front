@@ -26,9 +26,9 @@ const ORIGINAL_AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL
 
 const MOCK_SUMMARY: CostosSummaryResponse = {
   kpis: {
-    costPerQuoteUsd: 0.0025,
-    monthlyBurnUsd: 1.5,
-    forecast30dUsd: 2.1,
+    costPerQuoteCop: 10.5,
+    monthlyBurnCop: 6300,
+    forecast30dCop: 8820,
   },
   sources: {
     anthropicTotal: 1.5,
@@ -157,12 +157,12 @@ describe('useCostos', () => {
     consoleSpy.mockRestore()
   })
 
-  it('Test 4 — on successful fetch, summaryData.kpis.forecast30dUsd preserves null (no transform)', async () => {
+  it('Test 4 — on successful fetch, summaryData.kpis.forecast30dCop preserves null (no transform)', async () => {
     const summaryWithNullForecast: CostosSummaryResponse = {
       ...MOCK_SUMMARY,
       kpis: {
         ...MOCK_SUMMARY.kpis,
-        forecast30dUsd: null,
+        forecast30dCop: null,
       },
     }
 
@@ -180,9 +180,9 @@ describe('useCostos', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
     })
 
-    expect(result.current?.summaryData?.kpis.forecast30dUsd).toBeNull()
+    expect(result.current?.summaryData?.kpis.forecast30dCop).toBeNull()
     // NEVER 0 — must remain null
-    expect(result.current?.summaryData?.kpis.forecast30dUsd).not.toBe(0)
+    expect(result.current?.summaryData?.kpis.forecast30dCop).not.toBe(0)
   })
 
   it('Test 5 — summaryData and seriesData are fetched independently (separate intervals)', async () => {

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
 import { plataOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
 // P-06: un NIT con su dígito de verificación.
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 
@@ -117,6 +118,10 @@ export function PropietarioCard({
               {tipoDeDocumentoEnPalabras(t, propietario.documentType) ?? 'Documento'}: {documentoParaMostrar(documentoDelPropietarioConDv(propietario))}
             </p>
             <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-1 flex" />
+            <SinPorcentajeDelPropietario
+              inmuebles={propietario.inmueblesSinPorcentaje}
+              className="mt-1 flex flex-wrap items-center gap-2"
+            />
           </div>
         </div>
         {hasPendingBalance && (

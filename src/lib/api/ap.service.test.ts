@@ -61,7 +61,7 @@ describe('apApi.extractBill', () => {
         confidence: 0.8,
         sugerencia: { vendorId: null, invoiceNumber: '', amountCop: null },
         tokensUsed: 1,
-        estimatedCostUsd: 0,
+        estimatedCostCop: 0,
       }),
     );
     const res = await apApi.extractBill(AGENCY, [archivo('factura.jpg', 'image/jpeg', 4), archivo('p2.pdf', '', 4)]);

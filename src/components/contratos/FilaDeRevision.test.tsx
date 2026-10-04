@@ -514,19 +514,25 @@ describe('<FilaDeRevision> — el reparto entre los dueños', () => {
     expect(filas[1]).toContain('59 %')
   })
 
-  it('en partes iguales lo dice, para que no se lea como un dato del archivo', () => {
+  it('🔴 sin porcentaje en el archivo: «Falta el porcentaje de cada propietario», sin un 50/50 y con el giro frenado (Nico, 04-10-2026)', () => {
+    // Desde el 04-10 el back ya no manda el 50 % provisional: los dueños van
+    // sin % (`bps: null`) y la revisión dice qué pasa.
     montar(
       conReparto({
         explicito: false,
         problema: null,
         duenos: [
-          { documento: '1', nombre: 'A', bps: 5000, canon: 550000 },
-          { documento: '2', nombre: 'B', bps: 5000, canon: 550000 },
+          { documento: '1', nombre: 'A', bps: null, canon: null },
+          { documento: '2', nombre: 'B', bps: null, canon: null },
         ],
       }),
     )
-    expect(document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent).toContain(
-      'partes iguales',
+    const texto = document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent ?? ''
+    expect(texto).toContain('falta el porcentaje de cada propietario')
+    expect(texto).not.toContain('partes iguales')
+    expect(texto).not.toMatch(/\d+ %/)
+    expect(document.querySelector('[data-testid="reparto-sin-porcentaje"]')?.textContent).toContain(
+      'el giro de este inmueble no sale',
     )
   })
 

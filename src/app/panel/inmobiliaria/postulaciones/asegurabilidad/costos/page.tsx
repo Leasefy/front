@@ -15,6 +15,7 @@
  *   - Charts: 60s (via useCostos → fetchSeries)
  */
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { Coins } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCostos } from '@/lib/hooks/cotizador/use-costos'
@@ -195,7 +196,7 @@ export default function CostosPage() {
                     {row.label}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm font-mono tabular-nums text-right text-fg">
-                    {row.total > 0 ? `$${row.total.toFixed(4)}` : '—'}
+                    {row.total > 0 ? formatCurrency(row.total) : '—'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
                     {/* QA-IA-A: «Con datos» al lado de «—» se contradecía; con

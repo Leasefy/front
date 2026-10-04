@@ -1,5 +1,6 @@
 'use client';
 
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { useId, useState } from 'react';
 import {
   Check,
@@ -151,8 +152,16 @@ export function DuenosDelInmueble({ owners }: { owners?: DuenoDelArchivo[] }) {
     <div className="space-y-1" data-testid={`duenos-${owners.length}`}>
       <span className="block text-xs text-fg-muted dark:text-fg-subtle">
         {owners.length} propietarios
-        {todos ? ' · con su porcentaje' : conPlata ? ' · con su plata' : ' · en partes iguales (el archivo no trae porcentajes)'}
+        {todos ? ' · con su porcentaje' : conPlata ? ' · con su plata' : ` · ${FALTA_EL_PORCENTAJE.toLowerCase()}`}
       </span>
+      {/* 🔴 Sin porcentaje en el archivo (Nico, 04-10-2026: «vacío y giro
+          bloqueado»): el inmueble se crea, pero no se gira hasta ponerlo. */}
+      {!todos && !conPlata ? (
+        <span className="block text-caption text-warning" data-testid="duenos-sin-porcentaje">
+          El archivo no dice cuánto es de cada dueño: el inmueble se crea, pero su giro no sale
+          hasta que pongas el porcentaje en la ficha.
+        </span>
+      ) : null}
       <ul className="space-y-0.5">
         {owners.map((o, i) => (
           <li key={`${o.documento ?? o.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-xs">

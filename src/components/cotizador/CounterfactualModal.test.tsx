@@ -216,7 +216,7 @@ describe('<CounterfactualModal>', () => {
     renderModal()
     mockMutate.mockResolvedValueOnce({
       narrative_es: 'El canon más alto reduciría la probabilidad…',
-      cost_usd: 0.00087,
+      cost_cop: 3.65,
       hypothetical_carriers: ORIGINAL_CARRIERS,
     })
     const canonInput = $('[data-testid="cf-canon-input"]') as HTMLInputElement
@@ -236,7 +236,7 @@ describe('<CounterfactualModal>', () => {
     renderModal()
     mockMutate.mockResolvedValueOnce({
       narrative_es: 'x',
-      cost_usd: 0.001,
+      cost_cop: 4.2,
       hypothetical_carriers: ORIGINAL_CARRIERS,
     })
     const canonInput = $('[data-testid="cf-canon-input"]') as HTMLInputElement

@@ -3,6 +3,7 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
+import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
 import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
 import { actaDelBack, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
@@ -1658,6 +1659,15 @@ export const dispersionesApi = {
         ...(seleccion.propertyIds ? { propertyIds: seleccion.propertyIds } : {}),
       },
     );
+  },
+
+  /**
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La misma
+   * función del back que leen el Tablero, «Cartera → Por pagar» y el chat.
+   */
+  async porGirar(): Promise<PorGirarDelBack> {
+    return apiClient.get<PorGirarDelBack>(`${BASE}/dispersiones/por-girar`);
   },
 
   async getSummary(month: string): Promise<DispersionSummary> {

@@ -4,6 +4,7 @@
  * su definición allá, al lado de la consulta que lo produce.
  */
 
+import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
 import type { InteresDeMora } from '@/lib/types/inmobiliaria';
 
 export type TipoDeConcepto =
@@ -364,6 +365,12 @@ export interface CarteraConPropietarios {
   avisos: Array<{ month: string; mensaje: string }>;
   totalesPorMes: Array<{ month: string } & TotalesDelGiro>;
   totales: TotalesDelGiro;
+  /**
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La misma del
+   * Tablero, Liquidaciones y el chat. Un back anterior no la manda.
+   */
+  porGirar?: PorGirarDelBack;
   /** De mayor a menor pendiente. */
   propietarios: PropietarioEnCartera[];
 }

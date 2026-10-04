@@ -5952,8 +5952,8 @@
         },
         "askWhy": {
           "title": "¿Qué pasaría si…?",
-          "costEstimate": "Costo estimado: $0.001 USD",
-          "costActual": "Costo: ${{cost}} USD",
+          "costEstimate": "Costo estimado: unos pocos pesos por explicación",
+          "costActual": "Costo: {{cost}}",
           "remaining": "Te quedan {{n}} de {{m}} hoy",
           "calculating": "Calculando…",
           "tardando": "Tardando más de lo esperado…",
@@ -6003,7 +6003,7 @@
             "timeoutPill": "Tiempo de espera"
           },
           "banner": {
-            "allReadyTemplate": "{count} de {total} listos · Total ${cost}",
+            "allReadyTemplate": "{count} de {total} listos · Total {cost}",
             "stubModeWarning": "Modo demostración — sin conexión real a aseguradoras",
             "reQuoteButton": "Re-cotizar",
             "reQuoteTooltip": "Disponible en la próxima actualización",
@@ -6442,7 +6442,7 @@
             },
             "monthlyCostTrend": {
               "xAxisLabel": "Mes",
-              "yAxisLabel": "Costo (USD)",
+              "yAxisLabel": "Costo (COP)",
               "tooltip": "${{value}}",
               "todayLabel": "Hoy"
             }
@@ -6515,7 +6515,7 @@
             "monthlyCostTrend": {
               "title": "Tendencia mensual de costos",
               "xAxisLabel": "Mes",
-              "yAxisLabel": "Costo (USD)",
+              "yAxisLabel": "Costo (COP)",
               "tooltip": "${{value}}",
               "historicalSeries": "Histórico",
               "forecastSeries": "Proyección",
@@ -6524,7 +6524,7 @@
           },
           "sourceBreakdown": {
             "colSource": "Fuente",
-            "colTotal": "Total (USD)",
+            "colTotal": "Total (COP)",
             "colStatus": "Estado",
             "statusPopulated": "Con datos",
             "statusEmpty": "Sin datos aún"
@@ -7678,7 +7678,7 @@
             },
             "costPerPeso": {
               "title": "Costo por peso recuperado",
-              "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
+              "subtitle": "Lo que costó la voz por cada $ 1.000.000 recuperados (últimos 30 días)",
               "sparklineLabel": "Tendencia 90 días",
               "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
             }
@@ -12701,13 +12701,14 @@
       "cerrar": "Cerrar y seguir después",
       "eyebrow": "Puesta en marcha",
       "titulo": "Trae tu operación antes de empezar",
-      "subtitulo": "Todo pasa acá adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior.",
+      "subtitulo": "Todo pasa acá adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior, salvo el plan de cuentas, que puedes subir cuando quieras.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "falta": "Queda por hacer: {{detalle}}",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
       "primero": "Primero termina {{paso}}",
+      "esperanTercerosYContratos": "Los saldos iniciales y los movimientos esperan a {{paso}}: cada saldo y cada movimiento se imputa a un propietario, un inquilino o un contrato, y esos tienen que estar cargados primero. El plan de cuentas no espera: puedes subirlo cuando quieras.",
       "yaTermine": "Entrar al panel",
       "arrancarDeCero": "No vengo de otro sistema, arranco de cero",
       "fallo": "No pudimos guardar eso. Intenta de nuevo en un momento.",
@@ -12842,7 +12843,7 @@
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado: un asiento de apertura con los saldos, o el histórico desde un archivo.",
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Un asiento de apertura con los saldos, o el histórico desde un archivo.",
         "corto": "Registros contables"
       }
     },
@@ -12894,7 +12895,7 @@
     "sinEmisor": "Inmobiliaria sin datos de contacto cargados",
     "restaPorPagar": "Resta por pagar",
     "delPropietario": {
-      "restaPorPagar": "Por girar",
+      "restaPorPagar": "Por girar hasta el fin del contrato",
       "cancelado": "Girado",
       "vencido": "Atrasado",
       "enMoraDias": "Giro atrasado · {{dias}} días",

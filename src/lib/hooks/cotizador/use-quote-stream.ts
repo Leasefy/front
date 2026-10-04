@@ -55,7 +55,7 @@ export type PartialRanking = z.infer<typeof SSEPartialRankingSchema>
 export interface UseQuoteStreamResult {
   events: ParsedSSEEvent[]
   carriers: CarrierState[]     // ordered per current sort rule
-  totalCostUsd: number         // running total from agent.cost_recorded events
+  totalCostCop: number         // running total from agent.cost_recorded events
   finalVerdict: FinalVerdict | null    // agent.final_verdict (natural-language conclusion + best option)
   partialRanking: PartialRanking | null  // agent.partial_ranking (carrier ordering + accepting_count)
   isConnected: boolean
@@ -124,7 +124,7 @@ export function useQuoteStream(
 ): UseQuoteStreamResult {
   const [events, setEvents] = useState<ParsedSSEEvent[]>([])
   const [carriersMap, setCarriersMap] = useState<Map<string, CarrierState>>(new Map())
-  const [totalCostUsd, setTotalCostUsd] = useState(0)
+  const [totalCostCop, setTotalCostCop] = useState(0)
   const [finalVerdict, setFinalVerdict] = useState<FinalVerdict | null>(null)
   const [partialRanking, setPartialRanking] = useState<PartialRanking | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -242,7 +242,7 @@ export function useQuoteStream(
     }
 
     if (parsed.type === 'agent.cost_recorded') {
-      setTotalCostUsd(parsed.data.running_total_usd)
+      setTotalCostCop(parsed.data.running_total_cop)
     }
 
     // agent.partial_ranking can arrive multiple times as carriers settle —
@@ -395,5 +395,5 @@ export function useQuoteStream(
   // Derive sorted carriers array
   const carriers = sortCarriers(Array.from(carriersMap.values()), allFinal)
 
-  return { events, carriers, totalCostUsd, finalVerdict, partialRanking, isConnected, error, reconnect }
+  return { events, carriers, totalCostCop, finalVerdict, partialRanking, isConnected, error, reconnect }
 }

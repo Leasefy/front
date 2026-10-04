@@ -223,8 +223,9 @@ describe('CarteraDePropietarios', () => {
     const filas = todos('[data-testid="fila-propietario"]')
     expect(filas).toHaveLength(2)
     expect(filas[0]!.textContent).toContain('Marta Cifuentes')
-    // Neto · girado · se le debe.
-    expect(pesosDe(filas[0]!)).toEqual([3_680_000, 1_840_000, 1_840_000])
+    // Neto · girado · se le debe (hasta el mes en curso) · próximos giros
+    // (Nico, 04-10-2026: lo de los meses siguientes va aparte; acá no hay).
+    expect(pesosDe(filas[0]!)).toEqual([3_680_000, 1_840_000, 1_840_000, 0])
   })
 
   it('el mes a mes explica el neto y lo que se le cobra al dueño RESTA', () => {
@@ -305,11 +306,12 @@ describe('CarteraDePropietarios', () => {
       3_680_000 + 900_000,
       1_840_000,
       1_840_000 + 900_000,
+      0,
     ])
 
     escribir($('[data-testid="buscar-propietario"]') as HTMLInputElement, 'jorge')
     expect(todos('[data-testid="fila-propietario"]')).toHaveLength(1)
-    expect(pesosDe($('[data-testid="totales-por-pagar"]'))).toEqual([900_000, 0, 900_000])
+    expect(pesosDe($('[data-testid="totales-por-pagar"]'))).toEqual([900_000, 0, 900_000, 0])
   })
 
   it('un mes que no se pudo liquidar sale con su aviso, no en cero', () => {

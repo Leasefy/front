@@ -1,5 +1,6 @@
 'use client';
 
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useRef, useState } from 'react';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
@@ -178,6 +179,12 @@ interface PropietarioSectionProps {
    * administrador o el contador: sin esto no se ofrece.
    */
   onElegirPrincipal?: (propietarioId: string) => Promise<void>;
+  /**
+   * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): los % guardados
+   * son provisionales; se dice «Falta el porcentaje de cada propietario», no
+   * se muestran como dato y el giro está frenado hasta ponerlos.
+   */
+  participacionesDesconocidas?: boolean;
 }
 
 export function PropietarioSection({
@@ -186,6 +193,7 @@ export function PropietarioSection({
   onCambiar,
   rutaDeOrigen,
   onElegirPrincipal,
+  participacionesDesconocidas = false,
 }: PropietarioSectionProps) {
   const { t } = useI18n();
   // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
@@ -302,6 +310,32 @@ export function PropietarioSection({
             El principal (el de mayor participación) lleva el chip, como el
             inquilino principal en la tarjeta «Partes» del contrato: es el que
             figura como dueño en todo lo que sigue leyendo un solo id. */}
+        {variosDuenos && participacionesDesconocidas && (
+          <div
+            className="rounded-lg border border-border bg-warning-soft p-3 text-sm text-fg"
+            data-testid="falta-el-porcentaje"
+            role="status"
+          >
+            <p className="font-medium text-warning">{FALTA_EL_PORCENTAJE}</p>
+            <p className="mt-1 text-fg-muted">
+              Este inmueble vino de la migración con {copropietarios!.length} dueños y el archivo no
+              dice cuánto es de cada uno. No se reparte en partes iguales a ciegas: hasta que pongas
+              el porcentaje de cada uno (que sumen 100 %), el giro de este inmueble no sale.
+            </p>
+            {onCambiar && (
+              <Button
+                size="sm"
+                hideArrow
+                className="mt-2"
+                onClick={onCambiar}
+                data-testid="poner-los-porcentajes"
+              >
+                Poner los porcentajes
+              </Button>
+            )}
+          </div>
+        )}
+
         {variosDuenos && (
           <div
             className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
@@ -336,6 +370,7 @@ export function PropietarioSection({
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
                   {onElegirPrincipal &&
+                    !participacionesDesconocidas &&
                     empatados.length > 1 &&
                     c.participacionBps === mayorParticipacion &&
                     c.propietarioId !== propietario.id && (
@@ -352,9 +387,18 @@ export function PropietarioSection({
                         Hacer principal
                       </Button>
                     )}
-                  <span className="font-mono text-sm tabular-nums text-fg">
-                    {formatParticipacion(c.participacionBps)}
-                  </span>
+                  {participacionesDesconocidas ? (
+                    <span
+                      className="text-sm text-warning"
+                      data-testid="copropietario-sin-porcentaje"
+                    >
+                      Sin porcentaje
+                    </span>
+                  ) : (
+                    <span className="font-mono text-sm tabular-nums text-fg">
+                      {formatParticipacion(c.participacionBps)}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}

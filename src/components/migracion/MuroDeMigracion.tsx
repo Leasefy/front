@@ -1282,6 +1282,19 @@ export function PanelDeMigracion({
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
+ * 🔴 Por qué espera un paso (Nico, 04-10-2026: «soltar sólo el Plan de
+ * cuentas»). Los registros contables no esperan «al anterior» sin más: esperan
+ * a los terceros y a los contratos, porque cada saldo y cada movimiento se
+ * imputa a uno de ellos. El plan de cuentas no espera a nadie
+ * (`PASOS_QUE_NO_ESPERAN`), así que nunca llega acá.
+ */
+function claveDelPorque(pasoId: PasoDeMigracion["id"]): string {
+  return pasoId === "contables"
+    ? "migracion.muro.esperanTercerosYContratos"
+    : "migracion.muro.primero";
+}
+
+/**
  * La barra numerada del onboarding de creación de cuenta
  * (`OnboardingWizardStepper`), con el mismo lenguaje visual: círculo, número,
  * check al terminar, conector. En columnas iguales, con la etiqueta DEBAJO
@@ -1430,7 +1443,7 @@ function BarraDePasos({
                 «Primero termina “Propiedades”». En pantalla lo dice el orden. */}
             {!hecho && !apagado && !habilitado && frena ? (
               <span className="sr-only" data-testid={`muro-porque-${paso.id}`}>
-                {t("migracion.muro.primero", {
+                {t(claveDelPorque(paso.id), {
                   paso: t(`migracion.pasos.${frena.id}.titulo`),
                 })}
               </span>
@@ -1598,7 +1611,7 @@ function PasoEnFoco({
           </Aviso>
         ) : !habilitado && frena ? (
           <Aviso testid="muro-aviso-frenado">
-            {t("migracion.muro.primero", {
+            {t(claveDelPorque(paso.id), {
               paso: t(`migracion.pasos.${frena.id}.titulo`),
             })}
             <Button

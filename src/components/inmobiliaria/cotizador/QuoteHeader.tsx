@@ -3,6 +3,7 @@
 // Sticky header for the cotizador streaming detail page.
 // T-30-06-D: cedula is rendered masked only — raw cedula never present in mvp runtime (D-08).
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/lib/cartera'
 import { ChartLineUp } from '@phosphor-icons/react'
@@ -17,8 +18,8 @@ interface QuoteHeaderProps {
   ciudad: string | null
   tipo: string | null
   codeudores: number | null
-  /** Growing live from agent.cost_recorded events ($USD, 3 decimal places) */
-  totalCostUsd: number
+  /** Growing live from agent.cost_recorded events — 🔴 en PESOS (04-10-2026). */
+  totalCostCop: number
   isConnected: boolean
 }
 
@@ -30,7 +31,7 @@ export function QuoteHeader({
   ciudad,
   tipo,
   codeudores,
-  totalCostUsd,
+  totalCostCop,
   isConnected,
 }: QuoteHeaderProps) {
   const { t, locale } = useI18n()
@@ -99,7 +100,7 @@ export function QuoteHeader({
               className="w-3.5 h-3.5 text-primary shrink-0"
             />
             <span className="font-mono text-numeric text-sm text-primary">
-              ${totalCostUsd.toFixed(3)}
+              {formatCurrency(totalCostCop)}
             </span>
             <span
               className={[

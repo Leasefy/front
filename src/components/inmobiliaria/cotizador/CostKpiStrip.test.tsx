@@ -51,9 +51,9 @@ function renderStrip(props: Parameters<typeof CostKpiStrip>[0]) {
 }
 
 describe('CostKpiStrip', () => {
-  it('Test 1 — renders em dash when forecast30dUsd is null (never 0 or $0.00)', () => {
+  it('Test 1 — renders em dash when forecast30dCop is null (never 0 or $0.00)', () => {
     const el = renderStrip({
-      kpis: { costPerQuoteUsd: 0.0025, monthlyBurnUsd: 1.5, forecast30dUsd: null },
+      kpis: { costPerQuoteCop: 10.5, monthlyBurnCop: 6300, forecast30dCop: null },
       isLoading: false,
     })
 
@@ -72,9 +72,9 @@ describe('CostKpiStrip', () => {
     expect(afterForecast).not.toContain('$0.00')
   })
 
-  it('Test 2 — forecast caption renders even when forecast30dUsd is null', () => {
+  it('Test 2 — forecast caption renders even when forecast30dCop is null', () => {
     const el = renderStrip({
-      kpis: { costPerQuoteUsd: 0.0025, monthlyBurnUsd: 1.5, forecast30dUsd: null },
+      kpis: { costPerQuoteCop: 10.5, monthlyBurnCop: 6300, forecast30dCop: null },
       isLoading: false,
     })
 
@@ -93,14 +93,15 @@ describe('CostKpiStrip', () => {
     expect(skeletons.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('Test 4 — renders formatted value when forecast30dUsd is a positive number', () => {
+  it('Test 4 — 🔴 renders the forecast EN PESOS (Nico, 04-10-2026), never in dollars', () => {
     const el = renderStrip({
-      kpis: { costPerQuoteUsd: 0.0025, monthlyBurnUsd: 1.5, forecast30dUsd: 2.85 },
+      kpis: { costPerQuoteCop: 10.5, monthlyBurnCop: 6300, forecast30dCop: 11970 },
       isLoading: false,
     })
 
     const text = el.textContent ?? ''
-    // Should contain the formatted forecast value
-    expect(text).toContain('$2.85')
+    // Should contain the formatted forecast value, en pesos
+    expect(text).toContain('11.970')
+    expect(text).not.toMatch(/USD|US\$/)
   })
 })

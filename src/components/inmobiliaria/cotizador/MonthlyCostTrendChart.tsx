@@ -16,6 +16,7 @@
  * Cost values from backend arrive as numbers; use parseFloat() if needed upstream.
  */
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import {
   LineChart,
   Line,
@@ -98,14 +99,14 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
           tickLine={false}
         />
         <YAxis
-          tickFormatter={(v: number) => `$${v}`}
+          tickFormatter={(v: number) => formatCurrency(v)}
           tick={{ fontSize: 10, fill: EJE }}
           axisLine={false}
           tickLine={false}
           width={40}
         />
         <Tooltip
-          formatter={(value: unknown) => [`$${Number(value).toFixed(4)}`, '']}
+          formatter={(value: unknown) => [formatCurrency(Number(value) || 0), '']}
           contentStyle={{
             fontSize: 12,
             borderRadius: 8,

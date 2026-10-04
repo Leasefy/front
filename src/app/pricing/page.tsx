@@ -50,7 +50,7 @@ const AGENCY_PLAN_DETAILS: Record<NonNullable<AgencyPlan>, PlanDetail> = {
       {
         category: 'Evaluaciones AI',
         items: [
-          { name: 'Scoring básico con IA', description: 'Evaluación automática del perfil de cada candidato con score de riesgo. Se cobra $42.000 COP ($10 USD) por cada consulta.' },
+          { name: 'Scoring básico con IA', description: 'Evaluación automática del perfil de cada candidato con score de riesgo. Se cobra $42.000 COP por cada consulta.' },
         ],
       },
       {
@@ -81,7 +81,7 @@ const AGENCY_PLAN_DETAILS: Record<NonNullable<AgencyPlan>, PlanDetail> = {
       {
         category: 'Evaluaciones AI',
         items: [
-          { name: 'Evaluaciones con 50% descuento', description: 'Cada evaluación AI a $21.000 COP ($5 USD) en lugar de $42.000. Hasta 30 evaluaciones/mes.' },
+          { name: 'Evaluaciones con 50% descuento', description: 'Cada evaluación AI a $21.000 COP en lugar de $42.000. Hasta 30 evaluaciones/mes.' },
           { name: 'Scoring + Matching + Reportes', description: 'Scoring avanzado, matching inteligente de candidatos con propiedades, y reportes PDF completos.' },
         ],
       },

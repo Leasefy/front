@@ -675,6 +675,61 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-porque-contables')?.textContent).toContain('migracion.pasos.puc.titulo');
   });
 
+  it('🔴 recién llegada: el Plan de cuentas se puede abrir sin terminar Contratos (Nico, 04-10)', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA,
+    });
+
+    await pintar();
+
+    expect(q('muro-paso-puc')?.getAttribute('data-habilitado')).toBe('true');
+    expect(q('muro-porque-puc')).toBeNull();
+    await click('muro-ir-puc');
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
+    expect(q('contenido-puc')).not.toBeNull();
+    expect(q('muro-aviso-frenado')).toBeNull();
+    // Los registros contables siguen esperando, y no por el plan.
+    expect(q('muro-ir-contables')).toBeNull();
+    expect(q('muro-paso-contables')?.getAttribute('data-habilitado')).toBe('false');
+  });
+
+  it('🔴 los registros contables dicen POR QUÉ esperan a los terceros y los contratos', async () => {
+    // Estaba en «contables» con todo listo; el refresco trae Contratos
+    // pendiente y el plan listo: el aviso explica la espera.
+    estadoMock.estado.mockResolvedValueOnce({
+      bloquea: true,
+      resuelta: null,
+      pasos: [...TODO_MIGRADO.slice(0, 5), paso('contables', 'pendiente')],
+    });
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        ...TODO_MIGRADO.slice(0, 3),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'listo', 75),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contables');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
+      });
+      const aviso = q('muro-aviso-frenado')?.textContent ?? '';
+      expect(aviso).toContain('migracion.muro.esperanTercerosYContratos');
+      expect(aviso).toContain('migracion.pasos.contratos.titulo');
+      expect(q('contenido-contables')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('los saltos entre el 5 y el 6 se quedan ADENTRO del muro', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,

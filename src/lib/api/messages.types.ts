@@ -505,8 +505,22 @@ export interface TotalesDelHilo {
   vencidoCop: number;
   /** De eso, lo que pasó el plazo. */
   enCarteraCop: number;
-  /** Todo lo que falta girarle como propietario (su parte). */
+  /**
+   * 🔴 Lo que falta girarle como propietario (su parte) HASTA EL MES EN CURSO,
+   * neto de sus deducciones (Nico, 04-10-2026: «Por girar» es una sola cifra).
+   * La misma regla del back que el Tablero y su estado de cuenta.
+   */
   porGirarCop: number;
+  /** `AAAA-MM`: el mes en curso. Un back anterior no lo manda. */
+  porGirarHastaMes?: string;
+  /** Sus deducciones vivas ya descontadas de `porGirarCop`. */
+  deduccionesCop?: number;
+  /** Cuántos giros suma `porGirarCop` (la lista se corta en 20). */
+  girosPorGirar?: number;
+  /** Su parte de los meses siguientes, aparte («Próximos giros»). */
+  proximosGirosCop?: number;
+  /** `AAAA-MM`: el último mes de los próximos giros. */
+  proximosGirosHastaMes?: string;
 }
 
 /** Un archivo que ya existe y se puede compartir en el hilo. */

@@ -129,7 +129,21 @@ export interface CarteraDelTablero {
 }
 
 export interface PropietariosDelTablero {
+  /**
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de
+   * deducciones (Nico, 04-10-2026). La misma de «Cartera → Por pagar»,
+   * Liquidaciones y el chat (`dispersiones/por-girar.ts` del back).
+   */
   porGirarCop: number;
+  /** `AAAA-MM`: el mes en curso. Un back anterior no lo manda. */
+  porGirarHastaMes?: string;
+  /** Lo de los meses siguientes, aparte. Un back anterior no lo manda. */
+  proximosGiros?: {
+    desdeMes: string;
+    hastaMes: string;
+    totalCop: number;
+    cuotas: number;
+  };
   /** Giros retenidos por cambio de cuenta o devueltos. */
   retenidoCop: number;
   enLotesPorAprobarCop: number;

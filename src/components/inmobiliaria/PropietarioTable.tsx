@@ -45,6 +45,7 @@ import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
 import type {
   CampoDeOrden,
   ConteosDePropietarios,
@@ -416,6 +417,11 @@ export function PropietarioTable({
                           onCompletar={() => onEdit(propietario)}
                           className="mt-1 flex flex-wrap items-center gap-2"
                         />
+                        {/* 🔴 Copropiedad migrada sin porcentaje: no se gira (04-10). */}
+                        <SinPorcentajeDelPropietario
+                          inmuebles={propietario.inmueblesSinPorcentaje}
+                          className="mt-1 flex flex-wrap items-center gap-2"
+                        />
                       </div>
                     </div>
                   </TableCell>
@@ -726,6 +732,11 @@ function TarjetasDePropietarios({
               </span>
             </button>
             <DatosPorCompletar pendientes={datosPendientesDelPropietario(propietario)} className="mt-2 flex flex-wrap items-center gap-2" />
+            {/* 🔴 Copropiedad migrada sin porcentaje: no se gira (04-10). En el celular también. */}
+            <SinPorcentajeDelPropietario
+              inmuebles={propietario.inmueblesSinPorcentaje}
+              className="mt-2 flex flex-wrap items-center gap-2"
+            />
             <div className="absolute right-2 top-2.5">{menu(propietario)}</div>
           </StaggerItem>
         );

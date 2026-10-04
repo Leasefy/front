@@ -5918,8 +5918,8 @@
         },
         "askWhy": {
           "title": "What would happen if…?",
-          "costEstimate": "Estimated cost: $0.001 USD",
-          "costActual": "Cost: ${{cost}} USD",
+          "costEstimate": "Estimated cost: a few pesos per explanation",
+          "costActual": "Cost: {{cost}}",
           "remaining": "{{n}} of {{m}} left today",
           "calculating": "Calculating…",
           "tardando": "Taking longer than expected…",
@@ -5969,7 +5969,7 @@
             "timeoutPill": "Timeout"
           },
           "banner": {
-            "allReadyTemplate": "{count} of {total} ready · Total ${cost}",
+            "allReadyTemplate": "{count} of {total} ready · Total {cost}",
             "stubModeWarning": "Demo mode — not connected to real insurers",
             "reQuoteButton": "Re-quote",
             "reQuoteTooltip": "Available in the next update",
@@ -6408,7 +6408,7 @@
             },
             "monthlyCostTrend": {
               "xAxisLabel": "Month",
-              "yAxisLabel": "Cost (USD)",
+              "yAxisLabel": "Cost (COP)",
               "tooltip": "${{value}}",
               "todayLabel": "Today"
             }
@@ -6481,7 +6481,7 @@
             "monthlyCostTrend": {
               "title": "Monthly cost trend",
               "xAxisLabel": "Month",
-              "yAxisLabel": "Cost (USD)",
+              "yAxisLabel": "Cost (COP)",
               "tooltip": "${{value}}",
               "historicalSeries": "Historical",
               "forecastSeries": "Forecast",
@@ -6490,7 +6490,7 @@
           },
           "sourceBreakdown": {
             "colSource": "Source",
-            "colTotal": "Total (USD)",
+            "colTotal": "Total (COP)",
             "colStatus": "Status",
             "statusPopulated": "With data",
             "statusEmpty": "No data yet"
@@ -12666,13 +12666,14 @@
       "cerrar": "Close and continue later",
       "eyebrow": "Getting started",
       "titulo": "Bring your operation over first",
-      "subtitulo": "Everything happens in here: load what you already have in your current system, in order — each step needs the previous one.",
+      "subtitulo": "Everything happens in here: load what you already have in your current system, in order — each step needs the previous one, except the chart of accounts, which you can upload whenever you want.",
       "progreso": "Migration progress",
       "hecho": "Done",
       "falta": "Still to do: {{detalle}}",
       "enEspera": "Waiting",
       "noDisponible": "Unavailable right now. Won't hold you back.",
       "primero": "Finish {{paso}} first",
+      "esperanTercerosYContratos": "Opening balances and movements wait for {{paso}}: each balance and each movement is assigned to an owner, a tenant or a contract, and those have to be loaded first. The chart of accounts does not wait: you can upload it whenever you want.",
       "yaTermine": "Enter the panel",
       "arrancarDeCero": "I'm not coming from another system, starting from scratch",
       "fallo": "We couldn't save that. Try again in a moment.",
@@ -12859,7 +12860,7 @@
     "sinEmisor": "Agency without contact details on file",
     "restaPorPagar": "Remaining balance",
     "delPropietario": {
-      "restaPorPagar": "To be paid out",
+      "restaPorPagar": "To be paid out until the end of the contract",
       "cancelado": "Paid out",
       "vencido": "Late",
       "enMoraDias": "Payout late · {{dias}} days",

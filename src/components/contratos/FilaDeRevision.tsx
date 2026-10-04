@@ -34,6 +34,7 @@
  *    filas, es un error que nadie vio.
  */
 
+import { FALTA_EL_PORCENTAJE } from "@/lib/inmuebles/participaciones-desconocidas";
 import { useEffect, useRef, useState } from "react";
 import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
@@ -542,8 +543,16 @@ function RepartoEntreDuenos({
           ? " · el reparto no cuadra"
           : reparto.explicito
             ? " · reparto del archivo"
-            : " · partes iguales (el archivo no trae porcentajes)"}
+            : ` · ${FALTA_EL_PORCENTAJE.toLowerCase()}`}
       </p>
+      {/* 🔴 Sin porcentaje en el archivo (Nico, 04-10-2026: «vacío y giro
+          bloqueado»): no se inventa un 50/50; se dice qué pasa. */}
+      {!reparto.problema && !reparto.explicito ? (
+        <p className="text-caption text-warning" data-testid="reparto-sin-porcentaje">
+          El archivo no dice cuánto es de cada dueño: el contrato entra igual, pero el giro
+          de este inmueble no sale hasta que pongas el porcentaje en su ficha.
+        </p>
+      ) : null}
       <ul className="space-y-0.5">
         {reparto.duenos.map((d, i) => (
           <li

@@ -30,6 +30,7 @@
  * del contrato: un solo lugar donde se edita el mismo dato.
  */
 
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { useEffect, useMemo, useState } from 'react';
 import { Presence } from '@leasefy/cadence';
 
@@ -116,7 +117,18 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
   useEffect(() => {
     if (!open) return;
     setSeleccion(actuales.map((d) => d.propietarioId));
-    setFilas(actuales.slice(1).map((d) => ({ propietarioId: d.propietarioId, participacionBps: d.participacionBps })));
+    /*
+     * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): las partes
+     * iguales guardadas son provisionales y no se ofrecen como si fueran un
+     * dato. Los campos arrancan VACÍOS: hay que escribir cuánto es de cada
+     * uno (que sumen 100 %) para guardar y desbloquear el giro.
+     */
+    setFilas(
+      actuales.slice(1).map((d) => ({
+        propietarioId: d.propietarioId,
+        participacionBps: consignacion.participacionesDesconocidas ? 0 : d.participacionBps,
+      })),
+    );
     setPendiente(undefined);
     setError(null);
     setCargando(true);
@@ -125,7 +137,7 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
       .then(setPropietarios)
       .catch(() => toast.error('No pudimos cargar los propietarios. Prueba de nuevo.'))
       .finally(() => setCargando(false));
-  }, [open, actuales]);
+  }, [open, actuales, consignacion.participacionesDesconocidas]);
 
   // Cambiar QUIÉNES son vuelve a repartir en partes iguales; los porcentajes
   // se afinan después en `RepartoEntreDuenos`.
@@ -141,7 +153,14 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
 
   const principalId = seleccion[0] ?? null;
   const problema = principalId ? motivoInvalido(filas, principalId) : 'Elige al menos un propietario.';
-  const sinCambio = !pendiente && principalId !== null && mismoReparto(listaParaGuardar(filas, principalId), actuales);
+  // Con «Falta el porcentaje» guardar siempre cambia algo (apaga la marca y
+  // desbloquea el giro), aunque lo escrito sea igual a lo provisional: un
+  // mitad y mitad de verdad también tiene que poder guardarse.
+  const sinCambio =
+    !consignacion.participacionesDesconocidas &&
+    !pendiente &&
+    principalId !== null &&
+    mismoReparto(listaParaGuardar(filas, principalId), actuales);
 
   const guardar = async () => {
     if (!principalId || problema || sinCambio || guardando) return;
@@ -188,6 +207,16 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
           <p className="py-6 text-center text-sm text-fg-muted">Cargando propietarios…</p>
         ) : (
           <div className="space-y-4">
+            {consignacion.participacionesDesconocidas && (
+              <p
+                className="rounded-md bg-warning-soft px-3 py-2 text-sm text-fg"
+                data-testid="editar-propietarios-sin-porcentaje"
+              >
+                {FALTA_EL_PORCENTAJE}: el archivo de la migración no decía cuánto es de cada
+                uno. Escríbelo abajo (el principal se queda con el resto) y el giro de este
+                inmueble se desbloquea al guardar.
+              </p>
+            )}
             <SelectorDePropietarios
               propietarios={propietarios}
               seleccion={seleccion}

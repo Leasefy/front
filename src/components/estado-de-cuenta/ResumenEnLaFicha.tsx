@@ -36,10 +36,12 @@ import {
   estadoDeCuentaApi,
   rutaDelEstadoDeCuenta,
 } from '@/lib/api/estado-de-cuenta.service';
-import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import type { EstadoDeCuenta, PorGirarDelPropietario } from '@/lib/types/estado-de-cuenta';
 import { fechaLegible, hoyLocal, sumarTotales } from './filas';
 import { resumirElCliente } from './resumen';
 import { claveDelLado, useTextoDelEstado } from './textos';
+import { rotuloDePorGirar, rotuloDeProximosGiros } from '@/lib/propietarios/por-girar';
+import { sumarMeses } from '@/lib/recaudo/meses';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 /** Lo que pinta la tarjeta, venga del resumen barato o del documento entero. */
@@ -61,6 +63,12 @@ export interface NumerosDeLaFicha {
   interesDeMora?: number;
   /** `false` cuando el cliente no tiene nada que mostrar acá. */
   hayAlgo: boolean;
+  /**
+   * 🔴 Sólo del propietario: «Por girar» hasta el mes en curso, neto de sus
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). Ausente con
+   * un back anterior o recortado a un contrato: entonces `restaPorPagar`.
+   */
+  porGirar?: PorGirarDelPropietario;
 }
 
 /** El documento entero, recortado a un contrato si hace falta, en tres números. */
@@ -93,6 +101,7 @@ export function numerosDelDocumento(
     sinPlazoFijado: r.sinPlazoFijado,
     interesDeMora,
     hayAlgo: contratos.length > 0,
+    ...(!soloContrato && doc.porGirar ? { porGirar: doc.porGirar } : {}),
   };
 }
 
@@ -186,6 +195,7 @@ export function ResumenEnLaFicha({
             plazoSinFijar: r.plazoSinFijar === true,
             interesDeMora: (r as { interesDeMora?: number }).interesDeMora,
             hayAlgo: r.contratos > 0,
+            ...(r.porGirar ? { porGirar: r.porGirar } : {}),
           }))
           .catch(documentoEntero);
 
@@ -249,14 +259,37 @@ export function ResumenEnLaFicha({
         <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
           <div>
             <p className="text-label uppercase tracking-wide text-fg-subtle">
-              {t('estadoDeCuenta.restaPorPagar')}
+              {esPropietario && numeros.porGirar
+                ? rotuloDePorGirar(numeros.porGirar.hastaMes)
+                : t('estadoDeCuenta.restaPorPagar')}
             </p>
             <p
               data-testid="ficha-resta-por-pagar"
               className="mt-1 font-mono text-2xl font-medium tabular-nums text-fg"
             >
-              <AnimatedNumber value={numeros.restaPorPagar} from={0} format={formatCurrency} />
+              <AnimatedNumber
+                value={
+                  esPropietario && numeros.porGirar
+                    ? numeros.porGirar.porGirarCop
+                    : numeros.restaPorPagar
+                }
+                from={0}
+                format={formatCurrency}
+              />
             </p>
+            {/* 🔴 Lo de los meses siguientes, aparte (Nico, 04-10-2026). */}
+            {esPropietario && numeros.porGirar && (
+              <p className="mt-1 text-caption text-fg-muted" data-testid="ficha-proximos-giros">
+                {rotuloDeProximosGiros(
+                  sumarMeses(numeros.porGirar.hastaMes, 1),
+                  numeros.porGirar.proximosGirosHastaMes,
+                )}
+                :{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(numeros.porGirar.proximosGirosCop)}
+                </span>
+              </p>
+            )}
             {/* Capital arriba; el interés de mora, aparte y debajo. Nunca del
                 lado del propietario: el interés de mora es de la inmobiliaria. */}
             {/* CR-31: sin plazo fijado no corre interés: aunque llegue un

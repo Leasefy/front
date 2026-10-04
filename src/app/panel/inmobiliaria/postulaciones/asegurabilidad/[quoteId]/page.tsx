@@ -48,7 +48,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   const canView = canAccess('cotizador', 'view')
 
-  const { events, carriers, totalCostUsd, finalVerdict, partialRanking, isConnected, error, reconnect } = useQuoteStream(
+  const { events, carriers, totalCostCop, finalVerdict, partialRanking, isConnected, error, reconnect } = useQuoteStream(
     quoteId,
     agency?.id ?? null,
   )
@@ -229,7 +229,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         ciudad={metadata?.ciudad ?? null}
         tipo={metadata?.tipoInmueble ?? null}
         codeudores={null}
-        totalCostUsd={totalCostUsd}
+        totalCostCop={totalCostCop}
         isConnected={isConnected}
       />
 
@@ -317,7 +317,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             <Presence show={allFinal}>
               <StreamCompleteBanner
                 carrierCount={carriers.length}
-                totalCostUsd={totalCostUsd}
+                totalCostCop={totalCostCop}
                 isStubMode={isStubMode}
                 onReQuote={handleReQuote}
                 onBack={handleBack}

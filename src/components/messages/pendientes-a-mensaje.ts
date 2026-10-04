@@ -132,6 +132,33 @@ export function mensajeDeGiro(giro: GiroPendienteDelHilo, nombre: string): strin
 }
 
 /**
+ * 🔴 Todos los giros que le debemos, en UN mensaje y con la MISMA cifra del
+ * titular (Nico, 04-10-2026: «Por girar» es una sola cifra, hasta el mes en
+ * curso, neta de deducciones). Lo de los meses siguientes no entra: todavía
+ * no se le debe.
+ */
+export function mensajeDeLosGiros(
+  totales: {
+    porGirarCop: number;
+    porGirarHastaMes?: string;
+    deduccionesCop?: number;
+  },
+  nombre: string,
+): string {
+  const hasta = totales.porGirarHastaMes
+    ? ` hasta ${mesEnPalabras(totales.porGirarHastaMes)}`
+    : '';
+  const deducciones =
+    totales.deduccionesCop && totales.deduccionesCop > 0
+      ? `, ya descontados ${formatearPesos(totales.deduccionesCop)} de deducciones`
+      : '';
+  return (
+    `Hola ${nombre}, te cuento cómo van tus giros: ${formatearPesos(totales.porGirarCop)} netos${hasta}${deducciones}. ` +
+    'Te aviso apenas salgan.'
+  );
+}
+
+/**
  * El documento. El enlace va TAL CUAL viene del back: acá no se arma ninguna
  * URL a mano, porque el acceso al archivo lo decide el servidor.
  */

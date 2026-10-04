@@ -26,11 +26,17 @@ export interface CostSourceRow {
   notes: string | null
 }
 
+/*
+ * 🔴 TODO EN PESOS (Nico, 04-10-2026: «todo lo estamos manejando en COP por
+ * ahora, ¿para qué manejar dólares?»). El micro convierte el costo del
+ * proveedor (que nace en dólares) con la tasa de la plataforma
+ * (`COSTOS_TASA_COP_POR_USD`) y ya no manda dólares a la inmobiliaria.
+ */
 export interface CostosSummaryResponse {
   kpis: {
-    costPerQuoteUsd: number | null      // null when no quotes processed
-    monthlyBurnUsd: number | null
-    forecast30dUsd: number | null       // null when <7d of data (T-35-09)
+    costPerQuoteCop: number | null      // null when no quotes processed
+    monthlyBurnCop: number | null
+    forecast30dCop: number | null       // null when <7d of data (T-35-09)
   }
   sources: {
     anthropicTotal: number
@@ -77,13 +83,13 @@ export interface CostSeriesResponse {
 
 /** La respuesta de `/costos/summary` tal como la manda el agente. */
 export interface ResumenDeCostosDelAgente {
-  costPerQuoteUsd: number
-  monthlyBurnUsd: number
-  forecast30dUsd: number | null
-  anthropicTotal: string
-  carrierApiTotal: string
-  sekureCommissionTotal: string
-  datacreditoTotal: string
+  costPerQuoteCop: number
+  monthlyBurnCop: number
+  forecast30dCop: number | null
+  anthropicTotalCop: number
+  carrierApiTotalCop: number
+  sekureCommissionTotalCop: number
+  datacreditoTotalCop: number
   costSources: Array<{ source: string; populated: boolean; computationStrategyNote: string | null }>
   generatedAt: string
 }
@@ -91,11 +97,11 @@ export interface ResumenDeCostosDelAgente {
 /** Una fila de `/costos/series?group_by=day` tal como la manda el agente. */
 export interface DiaDeCostosDelAgente {
   day: string
-  anthropicCostUsd: string
-  carrierApiCostUsd: string
-  sekureCommissionUsd: string
-  datacreditoCostUsd: string
-  totalCostUsd: string
+  anthropicCostCop: number
+  carrierApiCostCop: number
+  sekureCommissionCop: number
+  datacreditoCostCop: number
+  totalCostCop: number
   quoteCount: number
 }
 
@@ -115,21 +121,25 @@ export function resumenDesdeElAgente(r: ResumenDeCostosDelAgente): CostosSummary
   return {
     kpis: {
       // Sin cotizaciones el costo por cotización no existe: no es un cero.
-      costPerQuoteUsd: Number.isFinite(r.costPerQuoteUsd) ? r.costPerQuoteUsd : null,
-      monthlyBurnUsd: Number.isFinite(r.monthlyBurnUsd) ? r.monthlyBurnUsd : null,
-      forecast30dUsd: r.forecast30dUsd ?? null,
+      costPerQuoteCop: Number.isFinite(r.costPerQuoteCop) ? r.costPerQuoteCop : null,
+      monthlyBurnCop: Number.isFinite(r.monthlyBurnCop) ? r.monthlyBurnCop : null,
+      forecast30dCop: r.forecast30dCop ?? null,
     },
     sources: {
-      anthropicTotal: numero(r.anthropicTotal),
-      carrierApiTotal: numero(r.carrierApiTotal),
-      sekureCommissionTotal: numero(r.sekureCommissionTotal),
-      datacreditoTotal: numero(r.datacreditoTotal),
+      anthropicTotal: numero(r.anthropicTotalCop),
+      carrierApiTotal: numero(r.carrierApiTotalCop),
+      sekureCommissionTotal: numero(r.sekureCommissionTotalCop),
+      datacreditoTotal: numero(r.datacreditoTotalCop),
     },
     costSources: (r.costSources ?? []).map((f) => ({
       key: f.source,
       label: NOMBRE_DE_LA_FUENTE[f.source] ?? f.source,
       populated: f.populated,
-      notes: f.computationStrategyNote,
+      // 🔴 La nota del registro es interna (en inglés, con columnas y variables
+      // en dólares: «value_usd=$0 until ops fills COTIZADOR_*_COST_USD…»). No
+      // es para la inmobiliaria (Nico, 04-10-2026: ninguna pantalla en dólares):
+      // la gráfica dice en palabras que la fuente no registra gasto.
+      notes: null,
     })),
     generatedAt: r.generatedAt,
   }
@@ -155,11 +165,11 @@ export function serieMensualDesdeDias(dias: DiaDeCostosDelAgente[]): CostSeriesR
       datacredito: 0,
       total: 0,
     }
-    fila.anthropic += numero(d.anthropicCostUsd)
-    fila.carrier_api += numero(d.carrierApiCostUsd)
-    fila.sekure_commission += numero(d.sekureCommissionUsd)
-    fila.datacredito += numero(d.datacreditoCostUsd)
-    fila.total += numero(d.totalCostUsd)
+    fila.anthropic += numero(d.anthropicCostCop)
+    fila.carrier_api += numero(d.carrierApiCostCop)
+    fila.sekure_commission += numero(d.sekureCommissionCop)
+    fila.datacredito += numero(d.datacreditoCostCop)
+    fila.total += numero(d.totalCostCop)
     porMes.set(clave, fila)
   }
   return { rows: [...porMes.values()] }

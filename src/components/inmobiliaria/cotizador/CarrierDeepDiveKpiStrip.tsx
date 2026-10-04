@@ -8,6 +8,7 @@
  * Latency and cost values use font-mono tabular-nums (UI-SPEC §Typography).
  */
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { Timer, Warning, CheckCircle, CurrencyDollar } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierDetailPayload } from '@/lib/hooks/cotizador/use-carrier-detail'
@@ -53,7 +54,8 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
     },
     {
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.costPerQuote'),
-      value: kpis ? `$${kpis.costPerQuoteUsd30d.toFixed(3)}` : '—',
+      // 🔴 En pesos (Nico, 04-10-2026); un micro anterior mandaba dólares.
+      value: kpis && typeof kpis.costPerQuoteCop30d === 'number' ? formatCurrency(kpis.costPerQuoteCop30d) : '—',
       Icon: CurrencyDollar,
       iconColor: 'text-primary',
       valueMono: true,

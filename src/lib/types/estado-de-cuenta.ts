@@ -347,6 +347,25 @@ export interface EstadoDeCuenta {
    * = nada por vencer; ausente del lado del inquilino (o un back anterior).
    */
   proximaCuota?: { fecha: string; monto: number; contratos: number } | null;
+  /**
+   * 🔴 Sólo del PROPIETARIO: «Por girar» hasta el mes en curso, neto de sus
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La misma
+   * cifra del chat y de las pantallas de la inmobiliaria. Un back anterior no
+   * la manda: entonces se muestra `totales.restaPorPagar`, como antes.
+   */
+  porGirar?: PorGirarDelPropietario;
+}
+
+/** «Por girar» de UN propietario, como lo manda el back (`porGirarDeLasPartes`). */
+export interface PorGirarDelPropietario {
+  /** `AAAA-MM`: el mes en curso. */
+  hastaMes: string;
+  porGirarCop: number;
+  cuotas: number;
+  deduccionesCop: number;
+  proximosGirosCop: number;
+  /** `AAAA-MM`: el último mes de los próximos giros. */
+  proximosGirosHastaMes: string;
 }
 
 /**
@@ -436,6 +455,8 @@ export interface ResumenDelEstadoDeCuenta {
   sinReglasDeMora?: boolean;
   /** QA-CONT CR-31: la inmobiliaria no fijó sus días de plazo: `interesDeMora` es 0 por eso. Ausente en un back anterior. */
   plazoSinFijar?: boolean;
+  /** 🔴 Sólo del PROPIETARIO: ver `EstadoDeCuenta.porGirar`. */
+  porGirar?: PorGirarDelPropietario;
 }
 
 /*

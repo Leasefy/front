@@ -32,6 +32,7 @@
  *   cosas distintas y el cliente tendría razón en no creerle a ninguno de los dos.
  */
 
+import { rotuloDePorGirar } from '@/lib/propietarios/por-girar';
 import type { JSX } from "react"
 import {
   Document,
@@ -551,7 +552,13 @@ function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
     fraseGeneral(claveDelLado(clave, doc.cliente.tipo), params);
   const resumen = resumirElCliente(doc, hoy);
   const interesesDelDoc = interesesDelEstado(doc);
-  const heroe = formatCurrency(resumen.restaPorPagar);
+  /*
+   * 🔴 Del PROPIETARIO, el héroe es «Por girar» hasta el mes en curso, neto de
+   * sus deducciones (Nico, 04-10-2026): la misma cifra de la pantalla y del
+   * chat. Con un filtro o un back anterior, la cuenta de las filas.
+   */
+  const porGirar = esPropietario && !doc.filtro ? doc.porGirar : undefined;
+  const heroe = formatCurrency(porGirar ? porGirar.porGirarCop : resumen.restaPorPagar);
   const logo = urlDeLogoUsable(doc.inmobiliaria.logoUrl);
   const ciudadYFecha = doc.inmobiliaria.ciudad
     ? frase('estadoDeCuenta.ciudadYFecha', {
@@ -611,7 +618,9 @@ function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
       {/* El héroe: el número que el CEO dijo de memoria. Todo lo demás baja la voz. */}
       <View style={estilos.heroe}>
         <View style={{ width: 299, paddingRight: 14 }}>
-          <Text style={estilos.rotulo}>{frase('estadoDeCuenta.restaPorPagar')}</Text>
+          <Text style={estilos.rotulo}>
+            {porGirar ? rotuloDePorGirar(porGirar.hastaMes) : frase('estadoDeCuenta.restaPorPagar')}
+          </Text>
           <Text
             data-testid="resta-por-pagar"
             style={[estilos.heroeNumero, { fontSize: tamanoDelHeroe(heroe) }]}

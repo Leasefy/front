@@ -49,6 +49,11 @@ import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { TableroFinanciero as Tablero, TramoDeCartera } from '@/lib/api/finanzas.types';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
+import {
+  definicionDePorGirar,
+  rotuloDePorGirar,
+  rotuloDeProximosGiros,
+} from '@/lib/propietarios/por-girar';
 import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
@@ -387,13 +392,27 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
           </Link>
         }
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {/* 🔴 «Por girar» → UNA sola cifra: hasta el mes EN CURSO, aunque el
+            tablero mire otro mes (Nico, 04-10-2026). La manda el back con la
+            misma función de las otras pantallas. */}
         <Cifra
           id="por-girar"
-          etiqueta={`Por girar hasta ${nombreDelMes(tablero.mes)}`}
+          etiqueta={rotuloDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
           valor={propietarios.porGirarCop}
-          definicion={`Lo causado a favor de los propietarios de ${nombreDelMes(tablero.mes)} y los meses anteriores que todavía no ha salido (también lo que ya está en un lote sin pagar). Los meses futuros no entran; «Liquidaciones» muestra sólo el mes y «Cartera → Por pagar» suma además los 3 meses siguientes.`}
+          definicion={definicionDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
         />
+        {propietarios.proximosGiros && (
+          <Cifra
+            id="proximos-giros"
+            etiqueta={rotuloDeProximosGiros(
+              propietarios.proximosGiros.desdeMes,
+              propietarios.proximosGiros.hastaMes,
+            )}
+            valor={propietarios.proximosGiros.totalCop}
+            definicion="Lo de los meses siguientes al mes en curso. Va aparte: todavía no se debe girar y no se suma a «Por girar»."
+          />
+        )}
         <Cifra
           id="retenido"
           etiqueta="Retenido"

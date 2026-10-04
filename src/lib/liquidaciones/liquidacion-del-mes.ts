@@ -17,6 +17,7 @@
  * funcionando con la vista previa.
  */
 
+import type { InmuebleSinPorcentaje } from '@/lib/inmuebles/participaciones-desconocidas';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 
 /** Los números de una liquidación, siempre con la misma forma (espejo del back). */
@@ -54,6 +55,11 @@ export interface LiquidacionDelMesCompleto {
   month: string;
   base: 'CAUSADO';
   propietarios: FilaDeLaLiquidacion[];
+  /**
+   * 🔴 Lo que no se liquida este mes porque al inmueble le falta el
+   * porcentaje de cada propietario. Un back anterior no lo manda.
+   */
+  sinPorcentaje?: InmuebleSinPorcentaje[];
   resumen: {
     mes: BloqueDeLaLiquidacion;
     generado: BloqueDeLaLiquidacion;
@@ -142,5 +148,7 @@ export function comoLiquidacionDeLaPantalla(l: LiquidacionDelMesCompleto): Liqui
     totalSaldoEnContra: l.resumen?.mes.saldoEnContraCop ?? 0,
     propietarios,
     mesCompleto: true,
+    // 🔴 Lo que no se liquida por falta del porcentaje de cada propietario.
+    ...(l.sinPorcentaje ? { sinPorcentaje: l.sinPorcentaje } : {}),
   };
 }

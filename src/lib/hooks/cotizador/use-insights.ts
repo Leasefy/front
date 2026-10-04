@@ -58,11 +58,12 @@ export interface AssumptionRow {
 
 export interface MonthlyCostTrendRow {
   month: string           // ISO "2026-01"
-  anthropic: string       // string — parse via parseFloat (Decimal/BigInt safety)
-  carrier_api: string
-  sekure_commission: string
-  datacredito: string
-  total: string
+  /** 🔴 En pesos desde el 04-10-2026 (el micro convierte: ninguna pantalla con dólares). */
+  anthropic: number | string
+  carrier_api: number | string
+  sekure_commission: number | string
+  datacredito: number | string
+  total: number | string
 }
 
 export interface InsightsData {

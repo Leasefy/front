@@ -602,10 +602,11 @@ function ConsignacionDetailContent() {
             </div>
           )}
 
-          <div>
+          <div id="propietarios" className="scroll-mt-20">
             <PropietarioSection
               propietario={propietario ?? undefined}
               copropietarios={consignacion.copropietarios}
+              participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
               onCambiar={() => setShowCambiarPropietario(true)}
               rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
               onElegirPrincipal={

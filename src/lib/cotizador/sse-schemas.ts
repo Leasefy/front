@@ -75,9 +75,14 @@ export const SSEHeartbeatSchema = z.object({
 // Custom schema (not in original 7 — emitted by the agent pipeline)
 // ---------------------------------------------------------------------------
 
+/**
+ * 🔴 En PESOS (Nico, 04-10-2026: ninguna pantalla de la inmobiliaria con
+ * dólares). Quien emita el costo de una cotización en vivo lo manda en COP,
+ * ya convertido con la tasa de la plataforma (`COSTOS_TASA_COP_POR_USD`).
+ */
 export const SSECostRecordedSchema = z.object({
-  cost_usd: z.number(),
-  running_total_usd: z.number(),
+  cost_cop: z.number(),
+  running_total_cop: z.number(),
 })
 
 // ---------------------------------------------------------------------------

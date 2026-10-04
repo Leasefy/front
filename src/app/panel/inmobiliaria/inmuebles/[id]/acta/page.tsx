@@ -101,15 +101,18 @@ export default function ActaDeEntregaPage() {
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6">
       <style>{ESTILO_DE_IMPRESION}</style>
 
-      <div className="mb-4 flex items-center justify-between gap-3" data-acta-oculto>
+      {/* IN-20 (QA 04-10): a 390 px «Descargar PDF» se salía y «Volver a la
+          ficha» quedaba en tres renglones: en el celular, el enlace arriba y
+          los dos botones debajo, a lo ancho. */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-acta-oculto>
         <Link
           href={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
-          className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
+          className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-fg-muted hover:text-fg"
         >
           <ArrowLeft className="h-4 w-4" />
           {t('inmobiliaria.acta.backToProperty')}
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button variant="outline" hideArrow onClick={() => window.print()} disabled={!consignacion} data-testid="acta-imprimir">
             <Printer className="h-4 w-4" />
             {t('inmobiliaria.acta.print')}
@@ -131,7 +134,7 @@ export default function ActaDeEntregaPage() {
       >
         {consignacion && (
           <article
-            className="acta-hoja rounded-lg border border-border bg-surface p-8 text-fg shadow-sm print:p-0"
+            className="acta-hoja rounded-lg border border-border bg-surface p-4 sm:p-8 text-fg shadow-sm print:p-0"
             data-testid="acta-hoja"
           >
             <header className="mb-6 border-b border-border pb-5">

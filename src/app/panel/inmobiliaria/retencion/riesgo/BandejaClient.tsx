@@ -1,6 +1,6 @@
 'use client'
 
-import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Warning } from '@phosphor-icons/react'
@@ -21,8 +21,9 @@ import { CrossFade, Presence } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useRetencionBandeja } from '@/lib/hooks/retencion/use-retencion'
-import { formatCop } from '@/lib/data/mock-retencion'
+import { formatCurrency as formatCop } from '@/lib/types/inmobiliaria'
 import type { RetentionCase, RetentionState } from '@/lib/types/retencion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 
 type Tab =
@@ -115,7 +116,7 @@ function matchesTab(c: RetentionCase, tab: Tab): boolean {
 
 export default function BandejaClient() {
   const router = useRouter()
-  const { data, isLoading, error, usingMock } = useRetencionBandeja('todos')
+  const { data, isLoading, error, apagado } = useRetencionBandeja('todos')
   const [tab, setTab] = useState<Tab>('todos')
   const [search, setSearch] = useState('')
 
@@ -144,14 +145,10 @@ export default function BandejaClient() {
         <p className="text-sm text-fg-muted">
           Propietarios e inmuebles priorizados por comisión en riesgo.
         </p>
-        {usingMock ? (
-          <AvisoDatosDeEjemplo
-            className="mt-3"
-            queEsInventado="Los propietarios, las ciudades, los puntajes de riesgo y los montos en pesos"
-            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
-          />
-        ) : null}
       </header>
+
+      {/* 🔴 IA-C-01: apagada no hay bandeja que mostrar (antes, una inventada). */}
+      {apagado ? <RetencionApagada /> : (<>
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtros de bandeja">
@@ -282,8 +279,9 @@ export default function BandejaClient() {
         initial={false}
         className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
       >
-        No pude cargar la bandeja: {error}
+        {mensajeParaLaPersona(error, { porDefecto: 'No se pudo cargar la bandeja de riesgos.' })}
       </Presence>
+      </>)}
     </div>
   )
 }

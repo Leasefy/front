@@ -200,6 +200,16 @@ describe('Avalúos — la pantalla no se contradice', () => {
     ).toContain('502')
   })
 
+  it('IA-C-03: con el servicio desconectado (502) la lista no dice «vuelve a intentar en unos minutos»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    _lista.errorCrudo = new ApiError(502, 'Avaluo service unreachable', 'SERVICIO_NO_DISPONIBLE', { servicio: 'avaluos' })
+    await montar()
+    expect(container.querySelector('[data-testid="avaluos-lista-sin-servicio"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+    expect(container.textContent).not.toContain('unos minutos')
+    expect(container.textContent).not.toContain('Todavía no hay avalúos')
+  })
+
   it('(5) el aviso no promete que los avalúos anteriores se siguen viendo', async () => {
     _lista.errorCrudo = { status: 502, message: 'Avaluo service unreachable' }
     await montar()

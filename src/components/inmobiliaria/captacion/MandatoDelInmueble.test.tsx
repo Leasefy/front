@@ -114,18 +114,32 @@ const DOCUMENTOS = {
 let root: Root | null = null
 let contenedor: HTMLDivElement
 
-async function pintar(puedeEditar = true) {
+async function pintar(puedeEditar = true, propietarioCorreo: string | null = 'jorge@correo.co') {
   await act(async () => {
     root!.render(
       <MandatoDelInmueble
         consignacionId="cons-1"
         propietarioNombre="Juan Pérez"
+        propietarioCorreo={propietarioCorreo}
+        direccionDelInmueble="Calle 45 # 70-12 Apto 301"
         puedeEditar={puedeEditar}
       />,
     )
   })
 }
 const $ = (sel: string) => contenedor.querySelector(sel)
+/** El cajón va en un portal: se busca en todo el documento. */
+const $$ = (sel: string) => document.querySelector<HTMLElement>(sel)
+async function clic(el: HTMLElement | null) {
+  await act(async () => {
+    el?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+/** «Crear enlace de firma» abre el cajón; «Mandar el enlace» lo manda. */
+async function pedirYConfirmar() {
+  await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+  await clic($$('[data-testid="confirmar-enlace-de-firma"]'))
+}
 
 beforeEach(() => {
   api.documentos = vi.fn(() => Promise.resolve(DOCUMENTOS))
@@ -167,13 +181,27 @@ describe('MandatoDelInmueble', () => {
     ).toContain('3 días')
   })
 
+  it('🔴 IN-12: «Crear enlace de firma» NO manda nada: abre un cajón con el correo y el documento', async () => {
+    await pintar()
+    await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+    expect(api.pedirFirma).not.toHaveBeenCalled()
+    expect($$('[data-testid="correo-destino"]')?.textContent).toBe('jorge@correo.co')
+    const cajon = document.body.textContent ?? ''
+    expect(cajon).toContain('Mandato de administración y arrendamiento de Calle 45 # 70-12 Apto 301')
+    await clic($$('[data-testid="confirmar-enlace-de-firma"]'))
+    expect(api.pedirFirma).toHaveBeenCalledTimes(1)
+  })
+
+  it('IN-12: sin correo en la ficha no deja mandar y dice por qué', async () => {
+    await pintar(true, null)
+    await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+    expect($$('[data-testid="sin-correo-destino"]')).not.toBeNull()
+    expect($$('[data-testid="confirmar-enlace-de-firma"]')?.hasAttribute('disabled')).toBe(true)
+  })
+
   it('🔴 el enlace va al correo del propietario: la tarjeta dice a cuál y no muestra ningún enlace', async () => {
     await pintar()
-    await act(async () => {
-      contenedor
-        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await pedirYConfirmar()
     const aviso = $('[data-testid="enlace-de-firma"]')?.textContent ?? ''
     expect(aviso).toContain('Le enviamos el enlace a jor***@correo.co')
     expect(aviso).not.toContain('/mandato/firma/')
@@ -189,11 +217,7 @@ describe('MandatoDelInmueble', () => {
       enlaceDePrueba: 'http://localhost:3011/mandato/firma/tok',
     })
     await pintar()
-    await act(async () => {
-      contenedor
-        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await pedirYConfirmar()
     expect(
       $('[data-testid="enlace-de-prueba"]')?.getAttribute('href'),
     ).toBe('http://localhost:3011/mandato/firma/tok')
@@ -292,11 +316,7 @@ describe('MandatoDelInmueble', () => {
 describe('MandatoDelInmueble — el error al pedir la firma', () => {
   async function pedirLaFirma() {
     await pintar()
-    await act(async () => {
-      contenedor
-        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await pedirYConfirmar()
     return String(toastError.mock.calls[0]?.[0] ?? '')
   }
 

@@ -647,7 +647,11 @@ function ConsignacionDetailContent() {
               otro que pasa mientras el inmueble está disponible — y sin esto
               el aviso del marketplace dice «Sin disponibilidad» siempre. */}
           <div>
-            <VisitasDelInmueble propertyId={consignacion.propertyId} />
+            <VisitasDelInmueble
+              propertyId={consignacion.propertyId}
+              arrendado={Boolean(consignacion.arrendado)}
+              arrendadoHasta={consignacion.leaseEndDate ?? null}
+            />
           </div>
 
           <div>
@@ -707,6 +711,8 @@ function ConsignacionDetailContent() {
             <MandatoDelInmueble
               consignacionId={consignacion.id}
               propietarioNombre={propietario?.name ?? null}
+              propietarioCorreo={propietario?.email ?? null}
+              direccionDelInmueble={consignacion.propertyAddress ?? null}
               puedeEditar={puedeEditarInventario}
             />
           </div>

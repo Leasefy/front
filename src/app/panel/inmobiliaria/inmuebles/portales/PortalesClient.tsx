@@ -559,8 +559,9 @@ function DialogoDePublicar({
                         <span className="block truncate text-sm font-medium text-fg">
                           {i.titulo}
                           {i.codigo != null ? (
-                            <span className="ml-1.5 font-normal text-fg-subtle">
-                              #{i.codigo}
+                            <span className="font-normal text-fg-subtle">
+                              {/* IN-23: con separador, no «Local en Laureles#46». */}
+                              {' · #'}{i.codigo}
                             </span>
                           ) : null}
                         </span>
@@ -1231,8 +1232,8 @@ export function PortalesClient() {
                               {f.inmueble?.title ?? 'Inmueble'}
                             </span>
                             {f.inmueble?.code ? (
-                              <span className="ml-1.5 text-fg-subtle">
-                                #{f.inmueble.code}
+                              <span className="text-fg-subtle">
+                                {' · #'}{f.inmueble.code}
                               </span>
                             ) : null}
                             <div className="text-fg-muted">

@@ -45,6 +45,17 @@ import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { diaLegible } from '@/lib/mandato/textos';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
 import {
   type AvailabilitySchedule,
@@ -58,6 +69,14 @@ export interface VisitasDelInmuebleProps {
    * un 400, y un «Reintentar» que nunca iba a funcionar (F6).
    */
   propertyId?: string;
+  /**
+   * IN-10 (QA 04-10): el inmueble tiene un contrato vigente. Prender las
+   * visitas ya no guarda de una: avisa que está arrendado (hasta cuándo, si se
+   * sabe) y pregunta antes de abrir horarios.
+   */
+  arrendado?: boolean;
+  /** Hasta cuándo va el contrato vigente (`YYYY-MM-DD…`), si se sabe. */
+  arrendadoHasta?: string | null;
 }
 
 /** Cuántas franjas quedaron cargadas: lo que decide si hay visitas o no. */
@@ -145,7 +164,8 @@ function ModalidadCard({
 
 type Estado = 'cargando' | 'listo' | 'error';
 
-export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
+export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null }: VisitasDelInmuebleProps) {
+  const [preguntarSiArrendado, setPreguntarSiArrendado] = useState(false);
   // La pestaña de horarios elegida lleva su píldora, que se DESLIZA a la otra.
   const indicadorDeLaModalidad = `${useId()}-modalidad`;
   const [estado, setEstado] = useState<Estado>('cargando');
@@ -296,7 +316,10 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             onCheckedChange={(activar) => {
               // Prender sin modalidad dejaría cupos que nadie puede reservar:
               // si no había ninguna, entra presencial, que es el caso normal.
-              if (activar) {
+              if (activar && arrendado) {
+                // IN-10: nada se guarda sin confirmar.
+                setPreguntarSiArrendado(true);
+              } else if (activar) {
                 void guardar(
                   DEFAULT_AVAILABILITY_SCHEDULE,
                   modalidades.length === 0 ? ['IN_PERSON'] : undefined,
@@ -315,6 +338,36 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
           />
         )}
       </header>
+
+      <AlertDialog open={preguntarSiArrendado} onOpenChange={setPreguntarSiArrendado}>
+        <AlertDialogContent data-testid="visitas-arrendado">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Este inmueble está arrendado</AlertDialogTitle>
+            <AlertDialogDescription>
+              {arrendadoHasta
+                ? `Tiene un contrato vigente hasta el ${diaLegible(arrendadoHasta)}.`
+                : 'Tiene un contrato vigente.'}{' '}
+              ¿Quieres abrir visitas (de lunes a viernes de 9:00 a 18:00 y los sábados de 10:00 a 14:00) para mostrarlo a quien lo arriende cuando quede libre? Después puedes cambiar los horarios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No abrir visitas</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="visitas-arrendado-confirmar"
+              onClick={() => {
+                setPreguntarSiArrendado(false);
+                void guardar(
+                  DEFAULT_AVAILABILITY_SCHEDULE,
+                  modalidades.length === 0 ? ['IN_PERSON'] : undefined,
+                  'IN_PERSON',
+                );
+              }}
+            >
+              Abrir visitas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Cargando → apagadas → prendidas (o → fallo): al usar el interruptor
           el contenido se cruza con un fundido en vez de saltar. */}

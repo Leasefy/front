@@ -27,6 +27,7 @@ import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 interface ConsignacionCardProps {
   consignacion: Consignacion;
@@ -266,7 +267,7 @@ export function ConsignacionCard({
           </h3>
           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{consignacion.propertyZone}, {consignacion.propertyCity}</span>
+            <span className="truncate">{barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)}</span>
           </div>
         </div>
 

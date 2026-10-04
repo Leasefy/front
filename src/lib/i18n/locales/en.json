@@ -3801,7 +3801,7 @@
         }
       },
       "filters": {
-        "searchPlaceholder": "Search by title or address...",
+        "searchPlaceholder": "Code, address, owner, tenant, neighborhood or city",
         "all": "All",
         "available": "Available",
         "rented": "Rented",

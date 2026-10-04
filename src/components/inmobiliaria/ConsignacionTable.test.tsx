@@ -447,3 +447,16 @@ describe('<ConsignacionTable> — el menú de la fila respeta permisos y ocupaci
     expect(onCompletarMandato).not.toHaveBeenCalled();
   });
 });
+
+describe('<ConsignacionTable> — IN-02 (QA 04-10): la dirección no se repite', () => {
+  it('cuando el título ES la dirección, la segunda línea no la repite', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ propertyTitle: 'Calle 12 # 42-12 Apto 102', propertyAddress: 'Calle 12 # 42-12 Apto 102' }) }]);
+    expect((container.textContent ?? '').split('Calle 12 # 42-12 Apto 102').length - 1).toBe(1);
+  });
+
+  it('cuando son distintos, se ven los dos', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion() }]);
+    expect(container.textContent).toContain('Depto con mandato');
+    expect(container.textContent).toContain('Cra 1 #1-1');
+  });
+});

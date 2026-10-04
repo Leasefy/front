@@ -277,9 +277,14 @@ export interface EstadoDeLoteInmuebles {
  */
 export interface CreacionDeLote {
   total: number;
+  /** Filas ya creadas (incluye las que re-apuntaron un inmueble que ya estaba). */
   creadas: number;
   fallidas: number;
   pendientes: number;
+  /** Inmuebles distintos que dejaron esas filas. Ausente con un back anterior. */
+  inmuebles?: number;
+  /** De ésos, los que nacieron con esta carga (QA-MIG-A, MG-36). */
+  nuevos?: number;
 }
 
 /** `POST .../lotes/:lote/crear` — 202. Llamarlo con el lote ya CREANDO devuelve lo mismo. */

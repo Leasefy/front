@@ -23,12 +23,17 @@ import type { AsientoMigrado, MovimientoMigrado } from '@/lib/api/contabilidad.s
 import type { MapeoDeColumna } from './columnas-de-tercero';
 
 export type CampoDeAsiento =
+  | 'tipoComprobante'
   | 'numero'
   | 'fecha'
   | 'descripcion'
   | 'codigoCuenta'
   | 'debito'
   | 'credito'
+  | 'valor'
+  | 'naturalezaDelValor'
+  | 'terceroDocumento'
+  | 'terceroNombre'
   | 'detalle';
 
 /**
@@ -37,6 +42,21 @@ export type CampoDeAsiento =
  * igualdad exacta.
  */
 export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoDeAsiento })[] = [
+  /*
+   * 🔴 QA-MIG-B (04-10). World Office, Alegra y Helisa exportan el TIPO del
+   * comprobante (RC, CE, FV, NC…) y el NÚMERO en columnas separadas, y el
+   * número se repite entre tipos: RC 1, CE 1 y FV 1 del mismo día. Sin el
+   * tipo en la llave, los tres se fundían en UN asiento que cuadra —cada uno
+   * cuadra solo— y entraba mal sin que nadie lo viera (24 comprobantes → 6).
+   */
+  {
+    campo: 'tipoComprobante',
+    titulo: 'Tipo de comprobante',
+    obligatoria: false,
+    ejemplo: 'RC',
+    alias: ['tipo', 'tipo doc', 'tipo documento', 'tipo de documento', 'tipo comprobante', 'tipo de comprobante', 'clase de documento', 'clase documento', 'prefijo', 'fuente', 'codigo comprobante', 'cod comprobante'],
+    ayuda: 'RC, CE, FV, NC… Si el número se repite entre tipos, el tipo y el número juntos forman el asiento.',
+  },
   {
     campo: 'numero',
     titulo: 'Número del comprobante',
@@ -82,6 +102,52 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
     ejemplo: '',
     alias: ['credito', 'haber', 'creditos', 'valor credito', 'valor haber', 'cr', 'movimiento credito'],
   },
+  /*
+   * QA-MIG-B (04-10): el valor en UNA columna. Muchos saldos iniciales y
+   * libros auxiliares traen «Valor» con signo (negativo = crédito) o «Valor»
+   * más una columna «D/C». Antes no había dónde decirlo y el archivo entero
+   * salía «el movimiento está en cero». El back lo lee (`valor` +
+   * `naturalezaDelValor`) sólo cuando Débito y Crédito vienen vacíos.
+   */
+  {
+    campo: 'valor',
+    titulo: 'Valor (una sola columna)',
+    obligatoria: false,
+    ejemplo: '-1.500.000',
+    alias: ['valor', 'monto', 'importe', 'valor movimiento', 'valor neto', 'valor del movimiento'],
+    ayuda: 'Cuando débito y crédito vienen en una sola columna: con signo (positivo débito, negativo crédito) o con la columna D/C al lado.',
+  },
+  {
+    campo: 'naturalezaDelValor',
+    titulo: 'D/C del valor',
+    obligatoria: false,
+    ejemplo: 'C',
+    alias: ['d c', 'dc', 'naturaleza', 'nat', 'debito credito', 'db cr', 'tipo movimiento', 'signo', 'naturaleza movimiento'],
+    ayuda: 'D o C (Débito o Crédito) para la columna «Valor».',
+  },
+  /*
+   * QA-MIG-B (04-10): el tercero de la línea. En los saldos iniciales por
+   * tercero (la cartera de cada inquilino, lo que se le debe a cada
+   * propietario) es lo que dice DE QUIÉN es el saldo; antes la columna
+   * quedaba «Ignorar» y se perdía. El back lo enlaza si el documento es de
+   * un propietario o inquilino de la inmobiliaria y, si no, lo guarda en el
+   * detalle de la línea y lo dice.
+   */
+  {
+    campo: 'terceroDocumento',
+    titulo: 'Documento del tercero',
+    obligatoria: false,
+    ejemplo: '1036111001',
+    alias: ['nit', 'nit tercero', 'tercero nit', 'identificacion', 'identificacion tercero', 'documento tercero', 'documento del tercero', 'cedula', 'cc nit', 'nit cc', 'numero identificacion', 'id tercero', 'nro identificacion'],
+    ayuda: 'Cédula o NIT de quien es el saldo de esa línea.',
+  },
+  {
+    campo: 'terceroNombre',
+    titulo: 'Nombre del tercero',
+    obligatoria: false,
+    ejemplo: 'Laura Mejía',
+    alias: ['tercero', 'nombre tercero', 'nombre del tercero', 'razon social', 'nombre razon social', 'beneficiario'],
+  },
   {
     campo: 'detalle',
     titulo: 'Detalle de la línea',
@@ -108,7 +174,7 @@ function texto(v: unknown): string {
  * (las 40.000 filas buenas incluidas). Se recorta ACÁ para que el archivo
  * sucio llegue al back, y sea el back el que diga fila por fila qué entra.
  */
-const LIMITES_DTO = { numero: 60, fecha: 30, descripcion: 1000, codigo: 40, detalle: 1000 } as const;
+const LIMITES_DTO = { numero: 60, fecha: 30, descripcion: 1000, codigo: 40, detalle: 1000, naturalezaDelValor: 40, terceroDocumento: 40, terceroNombre: 200 } as const;
 
 function cap(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n);
@@ -142,9 +208,13 @@ export function armarAsientos(
     const codigoCuenta = cap(texto(leer(fila, 'codigoCuenta')), LIMITES_DTO.codigo);
     const debito = montoCrudo(leer(fila, 'debito'));
     const credito = montoCrudo(leer(fila, 'credito'));
-    if (!codigoCuenta && debito === undefined && credito === undefined) continue;
+    const valor = montoCrudo(leer(fila, 'valor'));
+    if (!codigoCuenta && debito === undefined && credito === undefined && valor === undefined) continue;
 
-    const numero = cap(texto(leer(fila, 'numero')), LIMITES_DTO.numero);
+    const numero = numeroDelComprobante(
+      texto(leer(fila, 'tipoComprobante')),
+      texto(leer(fila, 'numero')),
+    );
     const fecha = cap(texto(leer(fila, 'fecha')), LIMITES_DTO.fecha);
     const descripcion = cap(texto(leer(fila, 'descripcion')), LIMITES_DTO.descripcion);
     /*
@@ -152,28 +222,63 @@ export function armarAsientos(
      * consecutivo por mes, así que el «CE-1» de enero y el de febrero son
      * asientos distintos. Agruparlos sólo por número los fundía en uno — y
      * como cada uno cuadra solo, el fundido también cuadra y entraba MAL
-     * sin que nadie lo viera.
+     * sin que nadie lo viera. El número ya trae el tipo (`numeroDelComprobante`).
      */
     const clave = numero ? `n:${numero}|${fecha}` : `fd:${fecha}|${descripcion}`;
 
     let asiento = asientos.get(clave);
     if (!asiento) {
       asiento = { fecha, descripcion, movimientos: [] };
-      if (numero) asiento.numeroOriginal = numero;
+      if (numero) asiento.numeroOriginal = cap(numero, LIMITES_DTO.numero);
       asientos.set(clave, asiento);
     }
 
     const movimiento: MovimientoMigrado = { codigoCuenta };
     if (debito !== undefined) movimiento.debito = debito;
     if (credito !== undefined) movimiento.credito = credito;
+    // El valor de una sola columna viaja SÓLO si débito y crédito vienen
+    // vacíos: dos fuentes para el mismo monto sería adivinar cuál manda.
+    if (valor !== undefined && debito === undefined && credito === undefined) {
+      movimiento.valor = valor;
+      const dc = cap(texto(leer(fila, 'naturalezaDelValor')), LIMITES_DTO.naturalezaDelValor);
+      if (dc) movimiento.naturalezaDelValor = dc;
+    }
     const detalle = cap(texto(leer(fila, 'detalle')), LIMITES_DTO.detalle);
     if (detalle) movimiento.descripcion = detalle;
+    const terceroDocumento = cap(texto(leer(fila, 'terceroDocumento')), LIMITES_DTO.terceroDocumento);
+    const terceroNombre = cap(texto(leer(fila, 'terceroNombre')), LIMITES_DTO.terceroNombre);
+    if (terceroDocumento) movimiento.terceroDocumento = terceroDocumento;
+    if (terceroNombre) movimiento.terceroNombre = terceroNombre;
     asiento.movimientos.push(movimiento);
   }
   return [...asientos.values()];
 }
 
+/**
+ * El número del comprobante tal como lo identifica el sistema viejo: el tipo
+ * y el número juntos («RC-1») cuando vienen en columnas separadas. Si el
+ * número ya empieza por el tipo («RC-1», «RC00001»), no se repite.
+ */
+export function numeroDelComprobante(tipo: string, numero: string): string {
+  if (!numero) return '';
+  if (!tipo) return numero;
+  const t = tipo.trim();
+  if (numero.toUpperCase().startsWith(t.toUpperCase())) return numero;
+  return `${t}-${numero}`;
+}
+
+/**
+ * ¿Hay de dónde sacar la plata? Débito o crédito, o el valor de una sola
+ * columna. Sin ninguno, ninguna línea traería monto.
+ */
+export function montosSinMapear(mapeo: readonly MapeoDeColumna[]): boolean {
+  return !mapeo.some((m) => m.campo === 'debito' || m.campo === 'credito' || m.campo === 'valor');
+}
+
 export function nombreDeLoteDeAsientos(ahora = new Date()): string {
-  const sello = ahora.toISOString().slice(0, 16).replace('T', '-').replace(':', '');
+  // QA-MIG-B: la hora de la PERSONA, no la UTC (a la 1:40 a. m. el lote salía
+  // «…-0640»). Sigue siendo `AAAA-MM-DD-HHMM`.
+  const d = (n: number) => String(n).padStart(2, '0');
+  const sello = `${ahora.getFullYear()}-${d(ahora.getMonth() + 1)}-${d(ahora.getDate())}-${d(ahora.getHours())}${d(ahora.getMinutes())}`;
   return `asientos-${sello}`.slice(0, 60);
 }

@@ -71,7 +71,7 @@ const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
   SIN_MONTO: "Hay una línea con cuenta pero sin monto.",
   AMBIGUA: "Una línea tiene débito y crédito a la vez: elige uno.",
   FUERA_DE_RANGO:
-    "Un monto es demasiado grande para una sola línea: partilo en dos.",
+    "Un monto es demasiado grande para una sola línea: pártelo en dos líneas.",
   CUENTA_REPETIDA:
     "La misma cuenta aparece dos veces: suma los saldos en una línea.",
   DESCUADRADO: "No cuadra: los débitos tienen que ser iguales a los créditos.",

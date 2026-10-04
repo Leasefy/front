@@ -123,9 +123,12 @@ describe('CrearInmueblesFaltantes', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
+    // QA-MIG-A MG-34: sin elegir tipo NO viaja ninguno (el back usa el de la
+    // dirección o deja la fila sin crear, diciéndolo — nunca un apartamento).
     expect(contractsApi.migracion.crearInmueblesFaltantes).toHaveBeenCalledWith(
       { lote: 'lote-1' },
       'Bello',
+      undefined,
     )
     const resultado = document.querySelector('[data-testid="crear-inmuebles-faltantes-resultado"]')
     expect(resultado?.textContent).toContain('2 inmuebles creados')
@@ -138,6 +141,20 @@ describe('CrearInmueblesFaltantes', () => {
     // Se volvió a contar: quedó 1.
     expect(boton('crear-inmuebles-faltantes-abrir')?.textContent).toContain('1')
     expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  it('QA-MIG-A MG-34: el diálogo ofrece elegir el tipo para las que la dirección no lo dice, sin uno por defecto', async () => {
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 2, activadas: 0, ambiguas: 0, sinDireccion: 0,
+    })
+    await render()
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-abrir')?.click()
+    })
+    const tipo = document.querySelector('[data-testid="crear-inmuebles-faltantes-tipo"]')
+    expect(tipo).not.toBeNull()
+    expect(tipo?.textContent).toContain('Ninguno')
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain('No se pone un tipo que nadie dijo')
   })
 
   it('un fallo del back se queda en el diálogo y no refresca', async () => {

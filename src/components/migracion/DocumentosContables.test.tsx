@@ -355,3 +355,36 @@ describe('aviso antes de cerrar la pestaña', () => {
   });
 });
 
+
+/*
+ * QA-MIG-B (04-10): un Excel (.xlsx es un ZIP) se leía como texto y el
+ * encabezado salía «PK…»: el archivo entero frenado. Ahora va por el lector
+ * de planillas y por los mismos lotes.
+ */
+describe('QA-MIG-B — comprobantes en Excel', () => {
+  it('🔴 un .xlsx se lee como planilla y sus filas llegan a la revisión', async () => {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet([
+        ['EMPRESA'],
+        [],
+        ['Comprobante', 'Fecha', 'Detalle', 'Total débito', 'Total crédito'],
+        ['FV-1-5521', '2026-09-08', 'Factura de comisión', 608910, 608910],
+        ['RC-1-3310', '2026-09-07', 'Recaudo canon', 2350000, 2350000],
+      ]),
+      'Comprobantes',
+    );
+    const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+    api.migracion.documentos.revisar.mockResolvedValue(revision(2, 2));
+    await montar();
+    await subir(new File([bytes], 'comprobantes.xlsx'));
+
+    expect(api.migracion.documentos.revisar).toHaveBeenCalledTimes(1);
+    const enviados = api.migracion.documentos.revisar.mock.calls[0][0];
+    expect(enviados).toHaveLength(2);
+    expect(enviados[0]).toMatchObject({ prefijo: 'FV-1', consecutivo: '5521', fecha: '2026-09-08', concepto: 'Factura de comisión' });
+    expect(contenedor.textContent).not.toContain('PK');
+  });
+});

@@ -74,7 +74,12 @@ import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
-import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
+import {
+  leerPrimerasFilasDeCadaHoja,
+  parseSpreadsheetFile,
+} from '@/components/inmobiliaria/import/lib/parseFile';
+import { elegirDondeEstaLaTabla, fraseDeDondeSeLeyo } from '@/lib/migracion/donde-esta-la-tabla';
+import { MENSAJES_DE_LA_MIGRACION } from './limites-de-la-migracion';
 import {
   migracionTercerosApi,
   CAMPOS_NO_MASIVOS,
@@ -421,15 +426,45 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
   // ── Leer el archivo ───────────────────────────────────────────────────────
 
+  /** Dónde se leyó la tabla, si no fue A1 de la primera hoja (MG-01/02). */
+  const [dondeSeLeyo, setDondeSeLeyo] = useState<string | null>(null);
+
   const leerArchivo = useCallback(
     async (archivo: File) => {
       setError(null);
+      setDondeSeLeyo(null);
       setAplicacion(null);
       setArchivo(archivo);
       setNombreDeArchivo(archivo.name);
       setLeyendo(true);
       try {
-        const { rows, headers } = await parseSpreadsheetFile(archivo);
+        /*
+         * En qué hoja y en qué fila empieza la tabla (QA-MIG-A, MG-01/02): un
+         * Excel hecho a mano con el título arriba dejaba todas las filas
+         * vacías, y un libro con «Instrucciones» primero creaba a un
+         * propietario llamado «No modificar.». Si la exploración falla, se lee
+         * como siempre: es una mejora, no un requisito.
+         */
+        let donde: { hoja?: string; fila: number } = { fila: 0 };
+        try {
+          donde = elegirDondeEstaLaTabla(
+            await leerPrimerasFilasDeCadaHoja(archivo, 15),
+            (celdas) => mapearColumnas(columnas, celdas).filter((m) => m.campo).length,
+          );
+        } catch {
+          donde = { fila: 0 };
+        }
+        const { rows, headers } = await parseSpreadsheetFile(archivo, donde.hoja, {
+          filaDeEncabezado: donde.fila,
+        });
+        setDondeSeLeyo(fraseDeDondeSeLeyo(donde));
+        if (rows.length === 0) {
+          setError(MENSAJES_DE_LA_MIGRACION.archivoSinFilas(archivo.name));
+          setFilas([]);
+          setEncabezados([]);
+          setMapeo([]);
+          return;
+        }
         setFilas(rows as Fila[]);
         setEncabezados(headers);
         setMapeo(mapearColumnas(columnas, headers));
@@ -452,6 +487,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const soltarArchivo = useCallback(() => {
     setArchivo(null);
     setLeyendo(false);
+    setDondeSeLeyo(null);
     setNombreDeArchivo('');
     setFilas([]);
     setEncabezados([]);
@@ -872,6 +908,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         setProgreso,
       );
       setAplicacion(informe);
+      // El aviso de la última decisión («…se crea con el botón de arriba»)
+      // ya se cumplió: dejarlo después de crear dice lo contrario de lo que
+      // pasó (QA-MIG-A, MG-20).
+      setAvisoMasivo(null);
       await refrescar(loteAbierto, 1);
     } catch (e) {
       /*
@@ -1506,6 +1546,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 archivo. Revisa el mapeo antes de seguir: lo que se mapea mal no falla, se guarda
                 en el campo de al lado.
               </p>
+              {dondeSeLeyo ? (
+                <p className="text-caption text-fg-muted" data-testid="donde-se-leyo">
+                  {dondeSeLeyo}
+                </p>
+              ) : null}
             </div>
             <Button
               variant="link"

@@ -81,7 +81,11 @@ const DTO_REABRIR = ['hasta', 'motivo'];
 /** `MigrarLoteDto` + `MigrarAsientoDto` + `MigrarMovimientoDto` (…/migracion/dto/index.ts). */
 const DTO_LOTE = ['lote', 'asientos', 'totalDelArchivo', 'desde'];
 const DTO_ASIENTO_MIGRADO = ['numeroOriginal', 'fecha', 'descripcion', 'movimientos'];
-const DTO_MOVIMIENTO_MIGRADO = ['codigoCuenta', 'debito', 'credito', 'descripcion', 'terceroTipo', 'terceroId'];
+const DTO_MOVIMIENTO_MIGRADO = [
+  'codigoCuenta', 'debito', 'credito', 'descripcion', 'terceroTipo', 'terceroId',
+  // QA-MIG-B (04-10, back 80494745): el valor en una sola columna (con signo o D/C) y el tercero tal como viene.
+  'valor', 'naturalezaDelValor', 'terceroDocumento', 'terceroNombre',
+];
 
 // ── Infraestructura ─────────────────────────────────────────────────────────
 

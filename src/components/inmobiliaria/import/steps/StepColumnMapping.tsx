@@ -164,8 +164,10 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      {/* A 390 px el resumen y «Restablecer» bajan: en fila empujaban la
+          página a 530 px de ancho (QA-MIG-A, MG-29). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
             {t('inmobiliaria.import.mapping.title')}
           </h2>
@@ -174,7 +176,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
           {/* Mapped summary badge */}
           <Badge variant={mappedCount === totalCount ? 'success' : 'warning'}>
             {t('inmobiliaria.import.mapping.mapped', { count: mappedCount, total: totalCount })}
@@ -216,7 +218,10 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
             <div
               key={mapping.sourceColumn}
               className={cn(
-                'animate-content-reveal flex items-center gap-4 p-3 rounded-md',
+                // En el celular la fila se apila: columna, campo y certeza
+                // uno debajo del otro; en fila se aplastaban y el campo se
+                // montaba sobre «DETECTADO».
+                'animate-content-reveal flex flex-col gap-2 p-3 rounded-md sm:flex-row sm:items-center sm:gap-4',
                 index % 2 === 0
                   ? 'bg-surface-muted'
                   : 'bg-transparent'
@@ -224,7 +229,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               style={{ animationDelay: retrasoEscalonado(index) }}
             >
               {/* Source Column */}
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 sm:flex-1">
                 <span className="inline-block font-mono text-xs bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle px-2 py-1 rounded-sm truncate max-w-full">
                   {mapping.sourceColumn}
                 </span>
@@ -237,11 +242,11 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               </div>
 
               {/* Arrow */}
-              <ArrowRight className="w-4 h-4 text-fg-subtle shrink-0" />
+              <ArrowRight className="hidden w-4 h-4 text-fg-subtle shrink-0 sm:block" />
 
               {/* Target Field Dropdown — o las dos partes de una columna compuesta */}
               {mapping.partes ? (
-                <div className="flex-1 min-w-0 space-y-1.5" data-testid={`partes-${mapping.sourceColumn}`}>
+                <div className="w-full min-w-0 space-y-1.5 sm:flex-1" data-testid={`partes-${mapping.sourceColumn}`}>
                   <p className="text-xs text-fg-subtle">
                     Dos datos en una celda, partidos por el guion de la izquierda:
                   </p>
@@ -286,7 +291,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                   </button>
                 </div>
               ) : (
-                <div className="flex-1 min-w-0 space-y-1">
+                <div className="w-full min-w-0 space-y-1 sm:flex-1">
                   <Select
                     value={mapping.targetField ?? '__ignore__'}
                     onValueChange={(v) =>
@@ -320,7 +325,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               )}
 
               {/* Confidence Badge */}
-              <div className="shrink-0 w-24 text-right">
+              <div className="sm:shrink-0 sm:w-24 sm:text-right">
                 <ConfidenceBadge level={confidenceLevel} label={confidenceLabels[confidenceLevel]} />
               </div>
             </div>

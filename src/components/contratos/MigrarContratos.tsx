@@ -72,12 +72,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  leerPrimerasFilas,
+  leerPrimerasFilasDeCadaHoja,
   parseSpreadsheetFile,
 } from "@/components/inmobiliaria/import/lib/parseFile";
+import { elegirDondeEstaLaTabla } from "@/lib/migracion/donde-esta-la-tabla";
+import {
+  fechasConMesPrimero,
+  fraseDeFechasConMesPrimero,
+} from "@/lib/migracion/fechas-con-mes-primero";
 import {
   mapearColumnas,
-  mejorFilaDeEncabezado,
   remapear,
   sinMapear,
   type CampoDeContrato,
@@ -321,6 +325,10 @@ export function MigrarContratos({
    * acá y no cuando falten dos contratos.
    */
   const [filaDeEncabezado, setFilaDeEncabezado] = useState(0);
+  /** La hoja que se leyó, si no fue la primera del libro (MG-13). */
+  const [hojaLeida, setHojaLeida] = useState<string | undefined>(undefined);
+  /** Qué columnas de fechas venían mes/día/año y se leyeron así (MG-08). */
+  const [avisoDeFechas, setAvisoDeFechas] = useState<string | null>(null);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
   /*
    * 🔴 DESMARCADA por defecto (QA 22-09). El comentario de Nico del 09-09 ya
@@ -532,6 +540,8 @@ export function MigrarContratos({
     setEncabezados([]);
     setMapeo([]);
     setFilaDeEncabezado(0);
+    setHojaLeida(undefined);
+    setAvisoDeFechas(null);
     setIdempotencyKey("");
     setError(null);
   }, []);
@@ -554,18 +564,40 @@ export function MigrarContratos({
        * Se hace acá y no en `parseSpreadsheetFile` a propósito: ese lector lo
        * comparte el importador de inmuebles, que tiene otro diccionario.
        */
+      /*
+       * Y en qué HOJA (MG-13): un libro con «Resumen» antes de «Contratos
+       * 2026» se leía desde la primera hoja y entraba un contrato vacío.
+       */
       let fila = 0;
+      let hoja: string | undefined;
       try {
-        fila = mejorFilaDeEncabezado(await leerPrimerasFilas(archivo, 15));
+        const donde = elegirDondeEstaLaTabla(
+          await leerPrimerasFilasDeCadaHoja(archivo, 15),
+          (celdas) => mapearColumnas(celdas).filter((m) => m.campo).length,
+        );
+        fila = donde.fila;
+        hoja = donde.hoja;
       } catch {
         // Si la exploración falla, se lee como siempre desde la primera fila:
         // es una mejora, no un requisito para poder leer el archivo.
       }
-      const { rows, headers } = await parseSpreadsheetFile(archivo, undefined, {
+      const { rows, headers } = await parseSpreadsheetFile(archivo, hoja, {
         filaDeEncabezado: fila,
       });
+      // Fechas mes/día/año (un export en inglés): se leen así POR COLUMNA y
+      // se dice; nunca se corren un mes en silencio (MG-08).
+      if (rows.length === 0) {
+        setError(MENSAJES_DE_LA_MIGRACION.archivoSinFilas(archivo.name));
+        setFilas([]);
+        setEncabezados([]);
+        setMapeo([]);
+        return;
+      }
+      const fechas = fechasConMesPrimero(rows as Fila[]);
       setFilaDeEncabezado(fila);
-      setFilas(rows as Fila[]);
+      setHojaLeida(hoja);
+      setAvisoDeFechas(fraseDeFechasConMesPrimero(fechas));
+      setFilas(fechas.filas);
       setEncabezados(headers);
       setMapeo(mapearColumnas(headers));
       setIdempotencyKey(generarIdempotencyKey());
@@ -1454,10 +1486,21 @@ export function MigrarContratos({
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
               </p>
+              {hojaLeida ? (
+                <p className="text-caption text-fg-muted" data-testid="hoja-leida">
+                  Leímos la hoja «{hojaLeida}» de tu archivo: es la que trae los
+                  contratos.
+                </p>
+              ) : null}
               {filaDeEncabezado > 0 ? (
                 <p className="text-caption text-fg-muted" data-testid="fila-de-encabezado">
                   Los encabezados los leímos de la fila {filaDeEncabezado + 1}:
                   arriba había títulos, no datos.
+                </p>
+              ) : null}
+              {avisoDeFechas ? (
+                <p className="text-caption text-warning" data-testid="aviso-de-fechas">
+                  {avisoDeFechas}
                 </p>
               ) : null}
             </div>
@@ -2441,11 +2484,16 @@ function ListaDeTrabajo({
       {activacion && !verLaListaIgual ? (
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-muted-foreground">
+            {/* Una fila frenada (sin fecha, sin documento) también «quedó»:
+                decir «no quedó ninguna» con una pendiente es mentir sobre el
+                archivo (QA-MIG-A, MG-26). */}
             {resumen.activables > 0
               ? `Quedaron ${resumen.activables} sin activar.`
-              : "No quedó ninguna fila por activar."}
+              : resumen.pendientes > 0
+                ? `${resumen.pendientes === 1 ? "Queda 1 fila que necesita" : `Quedan ${resumen.pendientes} filas que necesitan`} algo antes de activarse.`
+                : "No quedó ninguna fila por activar."}
           </p>
-          {resumen.activables > 0 ? (
+          {resumen.activables > 0 || resumen.pendientes > 0 ? (
             <Button
               type="button"
               variant="link"

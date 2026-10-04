@@ -28,6 +28,9 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+const { celular } = vi.hoisted(() => ({ celular: { es: false } }));
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => celular.es }));
+
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   parseSpreadsheetFile: vi.fn(),
 }));
@@ -589,5 +592,81 @@ describe('revisar que falla · la regla de oro', () => {
     const campo = q('nombre-del-lote-asientos') as HTMLInputElement;
     expect(campo.getAttribute('aria-invalid')).toBe('true');
     expect(container.querySelector('#lote-asientos-error')?.textContent).toBe(mensaje);
+  });
+});
+
+/*
+ * QA-MIG-B (04-10) — archivos de otros sistemas: el valor en una columna, los
+ * avisos de lo que entra con nota, el número de ASIENTO y el balance de prueba.
+ */
+describe('QA-MIG-B — otros sistemas contables', () => {
+  it('sin Débito, Crédito ni Valor lo dice y no deja revisar', async () => {
+    await pintar();
+    await subirArchivo({
+      headers: ['Fecha', 'Descripcion', 'Cuenta', 'Plata'],
+      rows: [{ Fecha: '2026-01-15', Descripcion: 'x', Cuenta: '110505', 'Plata': '100' }],
+    });
+    expect(q('asientos-sin-montos')?.textContent).toContain('Valor (una sola columna)');
+    expect(boton('Revisar')?.disabled).toBe(true);
+  });
+
+  it('con «Valor» en una sola columna sí deja revisar', async () => {
+    await pintar();
+    await subirArchivo({
+      headers: ['Fecha', 'Descripcion', 'Cuenta', 'Valor'],
+      rows: [
+        { Fecha: '2026-01-15', Descripcion: 'x', Cuenta: '110505', Valor: '100' },
+        { Fecha: '2026-01-15', Descripcion: 'x', Cuenta: '310505', Valor: '-100' },
+      ],
+    });
+    expect(q('asientos-sin-montos')).toBeNull();
+    expect(boton('Revisar')?.disabled).toBe(false);
+  });
+
+  it('un balance de prueba (saldos, sin fecha) dice cómo cargarlo', async () => {
+    await pintar();
+    await subirArchivo({
+      headers: ['Cuenta', 'Nombre cuenta', 'Saldo anterior', 'Débitos', 'Créditos', 'Nuevo saldo'],
+      rows: [{ Cuenta: '110505', 'Nombre cuenta': 'Caja', 'Saldo anterior': '0', Débitos: '100', Créditos: '0', 'Nuevo saldo': '100' }],
+    });
+    expect(q('asientos-parece-balance')?.textContent).toContain('Saldos iniciales');
+  });
+
+  it('🔴 lo que entra con una nota se muestra, y la tabla habla de ASIENTOS, no de filas del Excel', async () => {
+    api.migracion.revisar.mockResolvedValue({
+      ...REVISION,
+      rechazadas: 1,
+      avisos: [{ motivo: 'el tercero no está registrado en Leasefy como propietario ni como inquilino: el movimiento entra con su documento y nombre en el detalle, sin enlazarlo.', filas: [1] }],
+      motivos: [{ motivo: 'El asiento no trae fecha.', filas: [2] }],
+      filas: [{ fila: 2, numeroOriginal: 'RC-2', estado: 'RECHAZADA', errores: ['El asiento no trae fecha.'], advertencias: [], clave: 'k' }],
+    });
+    await pintar();
+    await subirArchivo();
+    await click(boton('Revisar'));
+    expect(q('avisos-de-revision')?.textContent).toContain('no está registrado en Leasefy');
+    expect(container.textContent).toContain('Asiento');
+    const encabezados = [...container.querySelectorAll('th')].map((th) => th.textContent);
+    expect(encabezados).not.toContain('Fila');
+  });
+});
+
+describe('QA-MIG-B — rechazadas a 390 px', () => {
+  afterEach(() => {
+    celular.es = false;
+  });
+  it('🟠 las rechazadas van en tarjetas con su número de asiento y su motivo', async () => {
+    celular.es = true;
+    api.migracion.revisar.mockResolvedValue({
+      ...REVISION,
+      rechazadas: 1,
+      motivos: [{ motivo: 'El asiento no trae fecha.', filas: [2] }],
+      filas: [{ fila: 2, numeroOriginal: 'RC-2', estado: 'RECHAZADA', errores: ['El asiento no trae fecha.'], advertencias: [], clave: 'k' }],
+    });
+    await pintar();
+    await subirArchivo();
+    await click(boton('Revisar'));
+    const tarjetas = q('rechazadas-tarjetas');
+    expect(tarjetas?.textContent).toContain('Asiento 2');
+    expect(tarjetas?.textContent).toContain('El asiento no trae fecha.');
   });
 });

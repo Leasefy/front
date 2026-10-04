@@ -25,6 +25,7 @@ import {
   contractsApi,
   type FilaDeMigracion,
 } from "@/lib/api/contracts.service";
+import { SIN_TIPO, TIPOS_DE_INMUEBLE_FALTANTE } from "@/lib/contratos/tipos-de-inmueble-faltante";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -63,6 +64,8 @@ const CAMPOS_CON_LUGAR = [
   "comisionPorcentaje",
   "address",
   "city",
+  // El tipo del inmueble que se crea desde la fila (QA-MIG-A, MG-34).
+  "tipo",
 ] as const;
 
 /** El `id` del control de un campo de la fila (y `${id}-error`, el de su error). */
@@ -74,6 +77,36 @@ export function idDelCampo(filaId: string, campo: string): string {
 type ErroresPorCampo = Partial<Record<string, string>>;
 
 /** El nombre humano de cada faltante, y por qué importa. */
+/**
+ * La explicación de un faltante mirando lo que la fila TRAE, no sólo el
+ * código. «fechas» y «canon» los da el back igual cuando el dato está mal y
+ * cuando no vino: decir «la de fin no es posterior a la de inicio» a una fila
+ * sin fecha de fin, o «el canon está en cero» a un «2.1M» que no se pudo leer,
+ * manda a buscar el error donde no está (QA-MIG-A, MG-25).
+ */
+export function explicacionDe(
+  fila: { datos?: unknown },
+  faltante: string,
+): { titulo: string; porque: string } | undefined {
+  const datos = (fila.datos ?? {}) as { startDate?: unknown; endDate?: unknown; monthlyRent?: unknown }
+  const vacio = (v: unknown) => v === undefined || v === null || String(v).trim() === ''
+  if (faltante === 'fechas') {
+    const sinInicio = vacio(datos.startDate)
+    const sinFin = vacio(datos.endDate)
+    const porque = 'El archivo no la trae o no se pudo leer como fecha (día/mes/año). Escríbela acá.'
+    if (sinInicio && sinFin) return { titulo: 'Faltan las fechas del contrato', porque: 'El archivo no las trae o no se pudieron leer como fecha (día/mes/año). Escríbelas acá.' }
+    if (sinInicio) return { titulo: 'Falta la fecha de inicio', porque }
+    if (sinFin) return { titulo: 'Falta la fecha de terminación', porque }
+  }
+  if (faltante === 'canon' && vacio(datos.monthlyRent)) {
+    return {
+      titulo: 'Falta el canon',
+      porque: 'El archivo no lo trae o no se pudo leer como pesos (por ejemplo «2.1M»). Escríbelo acá.',
+    }
+  }
+  return EXPLICACION[faltante]
+}
+
 export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble: {
     titulo: "No encontramos el inmueble",
@@ -112,10 +145,15 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Los cobros se generan desde la consignación: sin ella no habrá cartera.",
   },
+  /*
+   * El back frena con `inquilino_correo` cuando la fila no trae NI documento NI
+   * correo: el documento basta para identificarlo (Nico, 09-09). Pedir sólo
+   * el correo escondía la salida buena (QA-MIG-A, MG-35).
+   */
   inquilino_correo: {
-    titulo: "Falta el correo del inquilino",
+    titulo: "Falta el documento o el correo del inquilino",
     porque:
-      "Sin correo no hay a quién invitar ni cómo distinguirlo de un homónimo.",
+      "Con el documento basta para saber quién es; el correo sirve para invitarlo al portal. Escribe uno de los dos.",
   },
   inquilino_nombre: { titulo: "Falta el nombre del inquilino", porque: "" },
   consecutivo_repetido: {
@@ -297,11 +335,11 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
         <div key={f} className="rounded-lg border border-border p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Warning className="h-4 w-4 text-warning" />
-            {EXPLICACION[f]?.titulo ?? f}
+            {explicacionDe(fila, f)?.titulo ?? f}
           </p>
-          {EXPLICACION[f]?.porque ? (
+          {explicacionDe(fila, f)?.porque ? (
             <p className="mt-0.5 text-caption text-muted-foreground">
-              {EXPLICACION[f].porque}
+              {explicacionDe(fila, f)?.porque}
             </p>
           ) : null}
           {celdaDelFaltante(fila, f) ? (
@@ -344,20 +382,35 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
               />
             ) : null}
             {f === "inquilino_correo" ? (
-              <CampoSimple
-                {...campo("inquilinoCorreo")}
-                icono={Envelope}
-                etiqueta="Correo del inquilino"
-                tipo="email"
-                ocupado={ocupado}
-                onGuardar={(v) =>
-                  correr(() =>
-                    contractsApi.migracion.resolver(fila.id, {
-                      inquilinoCorreo: v,
-                    }),
-                  )
-                }
-              />
+              <div className="space-y-2">
+                <CampoSimple
+                  {...campo("inquilinoDocumento")}
+                  icono={User}
+                  etiqueta="Documento del inquilino"
+                  ocupado={ocupado}
+                  onGuardar={(v) =>
+                    correr(() =>
+                      contractsApi.migracion.resolver(fila.id, {
+                        inquilinoDocumento: v,
+                      }),
+                    )
+                  }
+                />
+                <CampoSimple
+                  {...campo("inquilinoCorreo")}
+                  icono={Envelope}
+                  etiqueta="Correo del inquilino"
+                  tipo="email"
+                  ocupado={ocupado}
+                  onGuardar={(v) =>
+                    correr(() =>
+                      contractsApi.migracion.resolver(fila.id, {
+                        inquilinoCorreo: v,
+                      }),
+                    )
+                  }
+                />
+              </div>
             ) : null}
             {f === "inquilino_nombre" ? (
               <CampoSimple
@@ -475,6 +528,8 @@ function ElegirInmueble({
   const direccion = fila.datos.direccion ?? "";
   const dir = campo("address");
   const ciu = campo("city");
+  const tip = campo("tipo");
+  const [tipoNuevo, setTipoNuevo] = useState<string>(SIN_TIPO);
   /*
    * El portafolio entero, para elegir a mano. Se pide una vez y lo comparten
    * todas las filas de la pantalla (ver `usePortafolioDeLaAgencia`).
@@ -613,6 +668,36 @@ function ElegirInmueble({
             />
             <ErrorDelCampo id={`${ciu.id}-error`} mensaje={ciu.mensaje} />
           </div>
+          <div className="w-44">
+            <label htmlFor={tip.id} className="text-caption text-muted-foreground">
+              Tipo
+            </label>
+            <Select
+              value={tipoNuevo}
+              onValueChange={(v) => {
+                setTipoNuevo(v);
+                tip.onEditar();
+              }}
+            >
+              <SelectTrigger
+                id={tip.id}
+                aria-invalid={tip.mensaje ? true : undefined}
+                aria-describedby={tip.mensaje ? `${tip.id}-error` : undefined}
+                data-testid={`tipo-del-inmueble-${fila.id}`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SIN_TIPO}>El que diga la dirección</SelectItem>
+                {TIPOS_DE_INMUEBLE_FALTANTE.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ErrorDelCampo id={`${tip.id}-error`} mensaje={tip.mensaje} />
+          </div>
           <Button
             size="sm"
             hideArrow
@@ -624,6 +709,10 @@ function ElegirInmueble({
                 const r = await contractsApi.migracion.crearInmueble(fila.id, {
                   address: el?.value?.trim() || direccion,
                   city: ciudad.trim(),
+                  // Sólo si la persona lo eligió: si la dirección lo dice, manda
+                  // la dirección; si no dice nada y no se eligió, el back pide
+                  // el tipo bajo este campo (QA-MIG-A, MG-34).
+                  ...(tipoNuevo !== SIN_TIPO ? { tipo: tipoNuevo } : {}),
                 });
                 // El recién creado tiene que aparecer en el desplegable de las
                 // OTRAS filas; si no, alguien lo crearía por segunda vez.

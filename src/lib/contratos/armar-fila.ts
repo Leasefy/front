@@ -41,6 +41,24 @@ import {
 } from './leer-celdas'
 
 /**
+ * 🔴 Una cifra con letras de magnitud no se lee. «2.1M», «1,5 millones»,
+ * «850k» o «2 mil» son plata escrita por una persona, y `comoEntero` tira las
+ * letras: «2.1M» quedaba en **$2** — un canon inventado que se ve como dato
+ * (QA-MIG-A, MG-07). Lo único escrito que se tolera es la moneda («COP»,
+ * «pesos», «M/CTE»); cualquier otra letra deja la celda sin leer y la fila
+ * pide el canon, en vez de cobrar una cifra que nadie escribió.
+ */
+export function plataConLetras(v: unknown): boolean {
+  if (typeof v === 'number') return false
+  const sinMoneda = String(v ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\b(cop|col|pesos?|m\s*\/\s*cte|mcte|cte)\b/g, '')
+  return /[a-z]/.test(sinMoneda)
+}
+
+/**
  * Plata de contrato: además de legible tiene que ser POSIBLE. Un canon
  * negativo no es un canon (y contra el `@Min(0)` del back tumba el lote
  * entero con 400, no la fila), y uno que supera el INT4 de Postgres tampoco.
@@ -48,6 +66,7 @@ import {
  */
 function plataDeContrato(v: unknown): number | undefined {
   if (!hayValor(v)) return undefined
+  if (plataConLetras(v)) return undefined
   const n = comoEntero(v)
   if (n === undefined || n < 0 || n > MAX_COP_POR_MOVIMIENTO) return undefined
   return n
@@ -213,8 +232,38 @@ export function leerFilaDelArchivo(
    * para que la pantalla los muestre y el back los cree como copropietarios /
    * co-inquilinos cuando tenga el campo.
    */
-  const propietarios = listaDePersonas(v('propietarioNombre'))
-  const inquilinos = listaDePersonas(v('inquilinoNombre'))
+  /*
+   * 🔴 Dos personas en la MISMA celda de documento (QA-MIG-A, MG-11): un
+   * archivo hecho a mano escribe los copropietarios «Ana / Luis» con
+   * «43987654 / 98765432», o los co-arrendatarios «Juan y Daniela» con
+   * «1128444555 y 1128444556». Leída como un documento, la llave quedaba
+   * «4398765498765432»: un documento que no es de nadie. Si nombres y
+   * documentos se parten en la misma cantidad, son esas personas, en orden;
+   * si no se pueden emparejar, el documento NO viaja (la fila pide el dato).
+   */
+  const propietariosDeDosColumnas = personasEnDosColumnas(v('propietarioNombre'), v('propietarioDocumento'))
+  const inquilinosDeDosColumnas = personasEnDosColumnas(v('inquilinoNombre'), v('inquilinoDocumento'))
+  const propietarios = propietariosDeDosColumnas?.length
+    ? propietariosDeDosColumnas
+    : listaDePersonas(v('propietarioNombre'))
+  const inquilinos = inquilinosDeDosColumnas?.length
+    ? inquilinosDeDosColumnas
+    : listaDePersonas(v('inquilinoNombre'))
+  const vDocumento = (campo: CampoDeContrato): unknown => {
+    if (campo === 'propietarioDocumento' && propietariosDeDosColumnas) {
+      return propietariosDeDosColumnas[0]?.documento
+    }
+    if (campo === 'inquilinoDocumento' && inquilinosDeDosColumnas) {
+      return inquilinosDeDosColumnas[0]?.documento
+    }
+    if (campo === 'propietarioNombre' && propietariosDeDosColumnas?.length) {
+      return propietariosDeDosColumnas[0].nombre
+    }
+    if (campo === 'inquilinoNombre' && inquilinosDeDosColumnas?.length) {
+      return inquilinosDeDosColumnas[0].nombre
+    }
+    return v(campo)
+  }
 
   /*
    * El canon: manda «Canon Total». «Valor Canon» es el mismo canon repartido
@@ -272,10 +321,12 @@ export function leerFilaDelArchivo(
     // llevan `@IsOptional()`).
     direccion,
     inquilino: {
-      nombre: inquilinoPrincipal(inquilinos, v),
+      nombre: inquilinoPrincipal(inquilinos, vDocumento),
       correo: String(v('inquilinoCorreo') ?? ''),
       telefono: textoOpcional(v('inquilinoTelefono')),
-      documento: textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento,
+      documento: inquilinosDeDosColumnas
+        ? inquilinosDeDosColumnas[0]?.documento
+        : (textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento),
     },
     startDate: hayValor(rawInicio) ? comoFecha(rawInicio) : undefined,
     /*
@@ -319,7 +370,7 @@ export function leerFilaDelArchivo(
     codigoInmueble:
       codigoDeInmueble(v('codigoInmueble')) ?? codigoDeInmueble(propiedad.codigo),
     ciudad: textoOpcional(v('ciudadInmueble'))?.slice(0, 50),
-    ...propietarioDe(v, propietarios),
+    ...propietarioDe(vDocumento, propietarios),
     // La llave de idempotencia del contrato: sin ella, reimportar duplica el
     // historial y los comprobantes viejos no saben de qué contrato colgarse.
     externalId: consecutivo,
@@ -395,6 +446,44 @@ export function conSuParte(
   if (canon !== undefined && Math.abs(suma - canon) > propietarios.length) return base
   const bps = repartoEnBps(plata)
   return base.map((p, i) => ({ ...p, participacionBps: bps[i] }))
+}
+
+/** Separadores con los que una persona escribe a dos en la misma celda. */
+const SEPARADORES_DE_PERSONAS = [/\s*\/\s*/, /\s*\|\s*/, /\s*;\s*/, /\s+y\s+/i, /\s*,\s*/]
+
+/** ¿Tiene cara de UN documento? (con o sin tipo, puntos o DV): «CC 43.987.654», «900456789-1». */
+const CARA_DE_DOCUMENTO = /^(?:[A-Za-z]{1,3}\.?\s*)?\d[\d.\s]{4,}(?:-\s*\d)?$/
+
+/**
+ * Las personas de una fila que trae nombres y documentos en columnas
+ * separadas y VARIAS personas en la celda del documento.
+ *
+ * - `null`: la celda del documento trae un solo documento (o ninguno): el
+ *   camino de siempre.
+ * - `[]`: trae varios documentos y los nombres no se dejan emparejar: no hay
+ *   documento que mandar sin inventarlo.
+ * - la lista: cada nombre con su documento, en el orden del archivo.
+ */
+export function personasEnDosColumnas(nombre: unknown, documento: unknown): PersonaDeOrigen[] | null {
+  const doc = String(documento ?? '').replace(/\s+/g, ' ').trim()
+  if (!doc) return null
+  let documentos: string[] | null = null
+  for (const sep of SEPARADORES_DE_PERSONAS) {
+    const trozos = doc.split(sep).map((t) => t.trim()).filter(Boolean)
+    if (trozos.length >= 2 && trozos.every((t) => CARA_DE_DOCUMENTO.test(t))) {
+      documentos = trozos
+      break
+    }
+  }
+  if (!documentos) return null
+  const nom = String(nombre ?? '').replace(/\s+/g, ' ').trim()
+  for (const sep of SEPARADORES_DE_PERSONAS) {
+    const nombres = nom.split(sep).map((t) => t.trim()).filter(Boolean)
+    if (nombres.length === documentos.length) {
+      return nombres.map((n, i) => ({ nombre: n, documento: documentos![i].replace(/[.\s]/g, ''), orden: i + 1 }))
+    }
+  }
+  return []
 }
 
 /**

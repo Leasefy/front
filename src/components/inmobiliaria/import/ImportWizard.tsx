@@ -610,7 +610,9 @@ export function ImportWizard({
           // —más redondo que la tarjeta— y en las dos esquinas de abajo asomaba
           // el fondo: dos medias lunas blancas. Si el radio de la tarjeta
           // cambia, éste cambia con ella.
-          <div className="px-6 py-4 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
+          // A 390 px los tres botones no caben en fila con `px-6`: el pie
+          // empujaba la página a 458 px (QA-MIG-A, MG-29). Se envuelve.
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -622,7 +624,7 @@ export function ImportWizard({
             </Button>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
               {/* Acción que acompaña a «Siguiente» — la llena el paso. */}
               <div ref={setRanuraSecundaria} className="flex items-center" />
               {/* Con el lote ya en el servidor pasada la subida, «Anterior» no

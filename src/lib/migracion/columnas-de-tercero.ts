@@ -302,7 +302,16 @@ export function mapearColumnas(
       if (usados.has(columna.campo)) continue;
       if (columna.campo === 'nombre' && esParteNumerada(n)) continue;
       for (const termino of terminosDe(columna)) {
-        if (termino.length < LARGO_MINIMO_PARA_CONTENER) continue;
+        if (termino.length < LARGO_MINIMO_PARA_CONTENER) {
+          /*
+           * Un alias corto («cc», «nit») no se busca adentro de otra palabra,
+           * pero SÍ como palabra completa: «Nit/CC», «CC propietario» o
+           * «NIT o CC» son la columna del documento, y sin esto quedaban sin
+           * mapear y TODAS las filas sin documento (QA-MIG-A, MG-03).
+           */
+          if (` ${n} `.includes(` ${termino} `)) candidatos.push({ i, campo: columna.campo, termino });
+          continue;
+        }
         if (n.includes(termino)) candidatos.push({ i, campo: columna.campo, termino });
       }
     }

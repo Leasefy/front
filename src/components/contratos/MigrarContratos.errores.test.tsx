@@ -19,6 +19,7 @@ void React
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   parseSpreadsheetFile: vi.fn(),
   leerPrimerasFilas: vi.fn(async () => [] as string[][]),
+  leerPrimerasFilasDeCadaHoja: vi.fn(async () => [] as Array<{ hoja: string; filas: string[][] }>),
 }))
 
 vi.mock('@/lib/api/inmuebles-importacion.service', () => ({

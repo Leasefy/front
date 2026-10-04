@@ -53,8 +53,8 @@ import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from "@/lib/hooks/use-table-pagination";
-import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   contabilidadApi,
   LARGO_MAXIMO_DE_LOTE,
@@ -75,10 +75,17 @@ import { REGLA_DE_CORRECCION } from "@/lib/migracion/regla-de-correccion";
 import {
   armarAsientos,
   COLUMNAS_DE_ASIENTO,
+  montosSinMapear,
   nombreDeLoteDeAsientos,
 } from "@/lib/migracion/columnas-de-asiento";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import {
+  fraseDelArchivoVacio,
+  leerTablaDelArchivo,
+  type HojaYEncabezado,
+} from "./encabezado-del-archivo";
+import { HojaDelLibro } from "./ImportarCuentas";
 import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
@@ -126,6 +133,9 @@ export function MigrarAsientos({
 }) {
   /** El archivo tal cual. `null` = no hay nada subido; ver TarjetaDeArchivo. */
   const [archivo, setArchivo] = useState<File | null>(null);
+  /** QA-MIG-B: hoja y fila de encabezados de donde se leyó (títulos arriba, varias hojas). */
+  const [donde, setDonde] = useState<HojaYEncabezado | null>(null);
+  const [fraseDonde, setFraseDonde] = useState<string | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Record<string, unknown>[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
@@ -213,9 +223,8 @@ export function MigrarAsientos({
     setError(null);
   };
 
-  const onDrop = useCallback(async (aceptados: File[]) => {
-    const archivo = aceptados[0];
-    if (!archivo) return;
+  /** Lee el archivo (u otra hoja del mismo libro) desde su tabla de verdad. */
+  const leer = useCallback(async (elArchivo: File, hoja?: string) => {
     setError(null);
     setRevision(null);
     setInforme(null);
@@ -223,20 +232,23 @@ export function MigrarAsientos({
     // el resumen del PRIMERO en pantalla — Nico lo vio el 2026-09-10: el
     // feedback no se reiniciaba al cambiar de archivo.
     setAsientos([]);
-    setArchivo(archivo);
-    setNombreDeArchivo(archivo.name);
     setLeyendo(true);
     try {
-      const r = await parseSpreadsheetFile(archivo);
-      setFilas(r.rows as Record<string, unknown>[]);
+      const r = await leerTablaDelArchivo(elArchivo, COLUMNAS_DE_ASIENTO, hoja);
+      setFilas(r.rows);
       setEncabezados(r.headers);
       setMapeo(mapearColumnas(COLUMNAS_DE_ASIENTO, r.headers));
+      setDonde(r.donde);
+      setFraseDonde(r.frase);
+      if (r.vacio) setError(fraseDelArchivoVacio(elArchivo.name, r.vacio, "asientos"));
       // Continuar una carga = su mismo lote; si no, uno nuevo con el reloj.
       setLote(loteDeLaCarga.current ?? nombreDeLoteDeAsientos());
     } catch (e) {
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+      setDonde(null);
+      setFraseDonde(null);
       // El archivo se lee en el navegador: su error es un texto propio (o un
       // `TypeError` que no es para nadie, y entonces va la frase de respaldo).
       setError(
@@ -246,6 +258,14 @@ export function MigrarAsientos({
       setLeyendo(false);
     }
   }, []);
+
+  const onDrop = useCallback(async (aceptados: File[]) => {
+    const archivo = aceptados[0];
+    if (!archivo) return;
+    setArchivo(archivo);
+    setNombreDeArchivo(archivo.name);
+    await leer(archivo);
+  }, [leer]);
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
@@ -281,9 +301,19 @@ export function MigrarAsientos({
    * que cambia es quién parte el archivo. Ver `asientosPorTandas`.
    */
   const cuantasTandas = tandasDe(armados.length);
+  /** QA-MIG-B: ¿un balance de prueba? Saldo anterior / nuevo saldo y sin fecha. */
+  const pareceBalance = useMemo(
+    () =>
+      !mapeo.some((m) => m.campo === "fecha") &&
+      encabezados.some((h) => /saldo (anterior|inicial|final)|nuevo saldo/i.test(h)),
+    [mapeo, encabezados],
+  );
+  /** QA-MIG-B: sin Débito, Crédito ni Valor ninguna línea traería plata. */
+  const sinMontos = encabezados.length > 0 && montosSinMapear(mapeo);
   const puedeRevisar =
     armados.length > 0 &&
     sinMapear.length === 0 &&
+    !sinMontos &&
     lote.trim().length > 0 &&
     !cargando;
 
@@ -353,13 +383,13 @@ export function MigrarAsientos({
       onAplicado(r);
       if (vuelta.detenidoPorPersona) {
         setError(
-          `Se aplicaron ${r.aplicados} asientos y quedaron ${asientos.length - r.total}. ` +
+          `Se aplicaron ${numero(r.aplicados)} asientos y quedaron ${numero(asientos.length - r.total)}. ` +
             "Tu avance está guardado y nada se duplica: vuelve a aplicar el mismo lote " +
             "—o sube el mismo archivo otro día— y sigue donde quedó.",
         );
       } else if (vuelta.detenidoSinAvance) {
         setError(
-          `Se aplicaron ${r.aplicados} asientos y el lote dejó de avanzar: ` +
+          `Se aplicaron ${numero(r.aplicados)} asientos y el lote dejó de avanzar: ` +
             "la última vuelta no escribió ninguno. Revisa el informe de abajo.",
         );
       }
@@ -386,6 +416,7 @@ export function MigrarAsientos({
       <Informe
         enElMuro={enElMuro}
         informe={informe}
+        asientosDelArchivo={armados.length}
         onOtro={() => {
           // Una carga que quedó COMPLETA ya no se continúa: el próximo archivo
           // es otra cosa y no puede heredar su nombre de lote. Una que sigue
@@ -513,6 +544,15 @@ export function MigrarAsientos({
             <p className="text-sm text-fg">{error}</p>
           </div>
         ) : null}
+
+        {archivo && donde ? (
+          <HojaDelLibro
+            donde={donde}
+            frase={fraseDonde}
+            ocupado={leyendo || cargando}
+            onElegir={(hoja) => void leer(archivo, hoja)}
+          />
+        ) : null}
         </div>
 
       {encabezados.length > 0 ? (
@@ -524,7 +564,8 @@ export function MigrarAsientos({
             <div>
               <h2 className="text-sm font-medium text-fg">Qué es cada columna</h2>
               <p className="text-sm text-fg-muted">
-                {filas.length} filas → {armados.length} asientos. Revisa lo que
+                {numero(filas.length)} {filas.length === 1 ? "fila" : "filas"} →{" "}
+                {numero(armados.length)} {armados.length === 1 ? "asiento" : "asientos"}. Revisa lo que
                 adivinamos.
               </p>
             </div>
@@ -663,10 +704,36 @@ export function MigrarAsientos({
                   </p>
                 ))}
                 <p className="text-fg-muted">
-                  Sin esa columna no podemos saber a qué cuenta va cada
-                  movimiento, así que no entraría ninguna fila.
+                  {sinMapear.length === 1
+                    ? "Sin esa columna no se puede armar ningún asiento: no entraría ninguna fila."
+                    : "Sin esas columnas no se puede armar ningún asiento: no entraría ninguna fila."}
                 </p>
+                {/* QA-MIG-B: un balance de prueba (saldos por cuenta, sin
+                    fecha) no es un libro diario; se dice cómo cargarlo. */}
+                {pareceBalance ? (
+                  <p className="text-fg-muted" data-testid="asientos-parece-balance">
+                    Este archivo parece un balance de prueba: saldos por cuenta,
+                    sin fecha ni comprobante. Para empezar con esos saldos usa
+                    «Saldos iniciales»; si prefieres subirlo como un asiento,
+                    agrégale una columna con la fecha de corte y otra con la
+                    descripción.
+                  </p>
+                ) : null}
               </div>
+            </div>
+          ) : null}
+
+          {sinMontos && sinMapear.length === 0 ? (
+            <div
+              className="mt-4 flex items-start gap-2 rounded-md bg-warning-soft p-3"
+              data-testid="asientos-sin-montos"
+            >
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <p className="text-sm text-fg">
+                Falta decir en qué columna viene la plata: «Débito» y «Crédito»,
+                o «Valor (una sola columna)» si tu archivo trae un solo valor con
+                signo o con una columna D/C al lado.
+              </p>
             </div>
           ) : null}
 
@@ -754,7 +821,7 @@ export function MigrarAsientos({
               hideArrow
               data-testid="revisar-asientos"
             >
-              Revisar {armados.length} asientos
+              Revisar {numero(armados.length)} {armados.length === 1 ? "asiento" : "asientos"}
             </Button>
           </div>
 
@@ -829,6 +896,8 @@ function Revision({
   const pag = useTablePagination(rechazadas, {
     resetKey: `${revision.lote}|${rechazadas.length}`,
   });
+  /* QA-MIG-B (MC-28): bajo 768 px, tarjetas (el motivo quedaba fuera de la vista). */
+  const enCelular = useIsMobile();
 
   return (
     <div className="space-y-6" data-testid="revision-asientos">
@@ -861,8 +930,10 @@ function Revision({
             className="mt-3 text-caption text-fg-muted"
             data-testid="revision-ya-estaban"
           >
-            Los {numero(revision.yaMigradas)} que ya estaban cargados no se
-            vuelven a escribir ni cuentan como error. {REGLA_DE_CORRECCION}
+            {revision.yaMigradas === 1
+              ? "El que ya estaba cargado no se vuelve a escribir ni cuenta como error."
+              : `Los ${numero(revision.yaMigradas)} que ya estaban cargados no se vuelven a escribir ni cuentan como error.`}{" "}
+            {REGLA_DE_CORRECCION}
           </p>
         ) : null}
       </section>
@@ -930,6 +1001,26 @@ function Revision({
         </section>
       ) : null}
 
+      {/* QA-MIG-B (04-10): lo que ENTRA con una nota. Un tercero que no está
+          en Leasefy queda con su documento en el detalle de la línea; antes
+          esas notas viajaban dentro de cada fila y nadie las veía. */}
+      {revision.avisos && revision.avisos.length > 0 ? (
+        <section
+          className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
+          data-testid="avisos-de-revision"
+        >
+          <h3 className="text-sm font-medium text-fg">Entran, con una nota</h3>
+          <ul className="mt-2 space-y-1 text-sm text-fg-muted">
+            {revision.avisos.map((a) => (
+              <li key={a.motivo}>
+                <span className="font-mono tabular-nums text-fg">{numero(a.filas.length)}</span>{" "}
+                {a.filas.length === 1 ? "asiento" : "asientos"} · {a.motivo}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {revision.motivos.length > 0 ? (
         <section className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
           <h3 className="text-sm font-medium text-fg">Por qué no entran</h3>
@@ -957,11 +1048,27 @@ function Revision({
           ) : null}
           {rechazadas.length > 0 ? (
             <div className="mt-4 overflow-hidden rounded-lg border border-border">
+              {enCelular ? (
+                <ul className="divide-y divide-border" data-testid="rechazadas-tarjetas">
+                  {pag.pageItems.map((f) => (
+                    <li key={f.clave} className="space-y-1 p-3">
+                      <p className="flex flex-wrap gap-x-2 text-caption text-fg-subtle">
+                        <span className="font-mono tabular-nums">Asiento {numero(f.fila)}</span>
+                        {f.numeroOriginal ? <span className="font-mono text-fg">{f.numeroOriginal}</span> : null}
+                      </p>
+                      <p className="text-sm text-fg">{f.errores.join(" · ")}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">Fila</TableHead>
+                      {/* QA-MIG-B: es el N.º del ASIENTO en el archivo (las
+                          líneas de un comprobante se juntan), no la fila del
+                          Excel: «Fila 3» mandaba a buscar a otra parte. */}
+                      <TableHead className="w-20">Asiento</TableHead>
                       <TableHead className="w-32">Comprobante</TableHead>
                       <TableHead>Qué pasa</TableHead>
                     </TableRow>
@@ -983,6 +1090,7 @@ function Revision({
                   </TableBody>
                 </Table>
               </div>
+              )}
               {pag.shouldPaginate ? (
                 <div className="border-t border-border px-4 py-3">
                   <TablePagination
@@ -1020,7 +1128,7 @@ function Revision({
         >
           {progreso
             ? `Aplicando… ${progreso.hechos} de ${progreso.total}`
-            : `Aplicar ${revision.listas} ${revision.listas === 1 ? "asiento" : "asientos"}`}
+            : `Aplicar ${numero(revision.listas)} ${revision.listas === 1 ? "asiento" : "asientos"}`}
         </Button>
         {/* 🔴 La barra (Nico, 2026-09-12): 116.469 filas sin un dato de avance
             eran media hora de spinner. El total es el del ARCHIVO, no el de la
@@ -1045,9 +1153,11 @@ function Revision({
         ) : null}
         {revision.rechazadas > 0 ? (
           <p className="text-sm text-fg-muted">
-            Los {revision.rechazadas} con problemas quedan afuera; puedes
-            corregir el archivo y subirlo de nuevo con el mismo nombre de lote
-            sin duplicar los que ya entraron.
+            {revision.rechazadas === 1
+              ? "El que tiene problemas queda afuera"
+              : `Los ${numero(revision.rechazadas)} con problemas quedan afuera`}
+            ; puedes corregir el archivo y subirlo de nuevo con el mismo nombre
+            de lote sin duplicar los que ya entraron.
           </p>
         ) : null}
         <Button
@@ -1072,8 +1182,14 @@ function Informe({
   cargando = false,
   error = null,
   enElMuro = false,
+  asientosDelArchivo,
 }: {
   informe: InformeDeMigracion;
+  /**
+   * QA-MIG-B: cuántos asientos arma el archivo ENTERO. Detenida a mitad,
+   * `informe.total` es sólo lo procesado («15000 en el archivo» de 25.000).
+   */
+  asientosDelArchivo?: number;
   onOtro: () => void;
   /** Volver a aplicar el MISMO lote: lo escrito vuelve como «ya migrado». */
   onReintentar?: () => void;
@@ -1095,15 +1211,17 @@ function Informe({
           <h2 className="text-sm font-medium text-fg">
             {informe.aplicados === 1
               ? "Entró 1 asiento"
-              : `Entraron ${informe.aplicados} asientos`}
+              : `Entraron ${numero(informe.aplicados)} asientos`}
             {informe.primerNumero !== null && informe.ultimoNumero !== null
               ? ` (N.º ${informe.primerNumero} a ${informe.ultimoNumero})`
               : ""}
           </h2>
           <p className="mt-1 text-sm text-fg-muted">
-            Lote «{informe.lote}»: {informe.total} en el archivo ·{" "}
-            {informe.aplicados} aplicados · {informe.omitidos} omitidos ·{" "}
-            {informe.yaMigrados} ya estaban cargados.
+            Lote «{informe.lote}»:{" "}
+            {numero(Math.max(asientosDelArchivo ?? 0, informe.total))} en el
+            archivo · {numero(informe.aplicados)} aplicados ·{" "}
+            {numero(informe.omitidos)} omitidos · {numero(informe.yaMigrados)}{" "}
+            ya estaban cargados.
           </p>
           {informe.yaMigrados > 0 ? (
             <p

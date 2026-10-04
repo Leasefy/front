@@ -201,7 +201,8 @@ export interface CuentaImportada {
    * archivo no pierda columnas en el camino es lo que permite decirlo.
    */
   ultimoNivel?: boolean;
-  habilitado?: boolean;
+  /** QA-MIG-B: SI/NO como booleano; «Inactiva», «I»… crudo (lo lee el back). */
+  habilitado?: boolean | string;
   controlDeTerceros?: boolean;
   cajaOBanco?: boolean;
 }
@@ -226,6 +227,14 @@ export interface CuentaRevisada {
    * de cuentas como deshabilitada.
    */
   activa?: boolean;
+  /**
+   * QA-MIG-B (04-10): de dónde salió la naturaleza. `ARCHIVO` = la traía;
+   * `CLASE` = se dedujo del código; `PADRE` = de la cuenta de la que cuelga;
+   * `PLAN` = la cuenta ya estaba. Un back viejo no lo manda.
+   */
+  naturalezaDe?: 'ARCHIVO' | 'CLASE' | 'PADRE' | 'PLAN';
+  /** QA-MIG-B: subcuenta sin su cuenta mayor en el archivo ni en el plan (entra suelta). */
+  sinPadre?: boolean;
   /** El mismo veredicto en el vocabulario de las otras migraciones. */
   estado?: EstadoDeFilaMigrada | 'YA_EXISTE';
   /** La fila del archivo, 1-based, cuando el back la manda. */
@@ -237,6 +246,12 @@ export interface RevisionDeImportacionPuc {
   nuevas: number;
   existentes: number;
   invalidas: number;
+  /**
+   * QA-MIG-B (04-10): lo que el archivo no traía y se completó con una regla
+   * fija (naturaleza por la clase, todas activas), o lo que no se guarda.
+   * Opcional: un back anterior puede no mandarlo.
+   */
+  advertencias?: string[];
 }
 
 export interface ResultadoImportacionPuc extends RevisionDeImportacionPuc {
@@ -654,6 +669,12 @@ export const CLAVES_DE_MOVIMIENTO_MIGRADO = [
   'descripcion',
   'terceroTipo',
   'terceroId',
+  // QA-MIG-B (04-10): el valor en una sola columna (con signo o con D/C) y el
+  // tercero de la línea tal como viene en el archivo.
+  'valor',
+  'naturalezaDelValor',
+  'terceroDocumento',
+  'terceroNombre',
 ] as const;
 
 export interface MovimientoMigrado {
@@ -663,6 +684,13 @@ export interface MovimientoMigrado {
   descripcion?: string;
   terceroTipo?: string;
   terceroId?: string;
+  /** El valor de una sola columna; el back lo lee sólo si débito y crédito vienen vacíos. */
+  valor?: number | string;
+  /** «D»/«C» (Débito/Crédito) para `valor`. Sin él, el signo decide. */
+  naturalezaDelValor?: string;
+  /** Cédula o NIT del tercero de la línea, tal cual. */
+  terceroDocumento?: string;
+  terceroNombre?: string;
 }
 
 /** `MigrarAsientoDto`. `fecha` es texto libre (`AAAA-MM-DD`, `DD/MM/AAAA`,
@@ -756,6 +784,12 @@ export interface RevisionDeLote {
   /** 🔴 Se reportan, nunca se crean: la UI manda al paso 4. */
   cuentasFaltantes: CuentaFaltante[];
   motivos: MotivoDeRechazo[];
+  /**
+   * QA-MIG-B (04-10): lo que ENTRA pero con una nota (un tercero que no está
+   * en Leasefy y queda en el detalle, un comprobante repetido…), agrupado
+   * como los motivos. Opcional: un back anterior no lo manda.
+   */
+  avisos?: MotivoDeRechazo[];
   filas: FilaRevisada[];
 }
 
@@ -876,6 +910,9 @@ export interface DocumentoMigrado {
   valorRestanteAnticipo?: unknown;
   creadoPor?: string;
   fechaCreacionOrigen?: string;
+  /** QA-MIG-B: el tercero de su propia columna (asocia y queda en el concepto). */
+  terceroDocumento?: string;
+  terceroNombre?: string;
 }
 
 export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';

@@ -1435,13 +1435,13 @@ export function StepConfirmImport({
            * completa como un fracaso de 679.
            */}
           <p className="text-fg-muted dark:text-fg-subtle" data-testid="resumen-creadas">
-            Se crearon{" "}
-            <span className="font-semibold text-fg dark:text-white">
-              {nCreadas.toLocaleString("es-CO")}{" "}
-              {nCreadas === 1 ? "inmueble" : "inmuebles"}
-            </span>{" "}
-            en tu portafolio
+            {lineaDeCreados(creacion, nCreadas)}
           </p>
+          {detalleDeReusados(creacion) ? (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="resumen-reusados">
+              {detalleDeReusados(creacion)}
+            </p>
+          ) : null}
           {(resumenLote?.pendientes ?? 0) > 0 && (
             <div className="space-y-2" data-testid="quedan-por-revisar">
               <p className="text-sm text-warning">
@@ -2462,4 +2462,47 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       </ul>
     </section>
   );
+}
+
+/**
+ * «Se crearon N inmuebles» contaba FILAS: una reimportación de 4 inmuebles que
+ * ya estaban decía «4 creados» con 0 nuevos, y dos filas con el mismo código
+ * decían 2 donde quedó 1 (QA-MIG-A, MG-36). Con un back que manda `nuevos`,
+ * la frase dice los nuevos y el detalle dice el resto; con uno anterior, lo de
+ * siempre.
+ */
+export function lineaDeCreados(
+  creacion: { creadas: number; nuevos?: number } | null | undefined,
+  nCreadas: number,
+): string {
+  const n = typeof creacion?.nuevos === 'number' ? creacion.nuevos : nCreadas
+  const cifra = n.toLocaleString('es-CO')
+  if (typeof creacion?.nuevos === 'number') {
+    return n === 1 ? 'Se creó 1 inmueble nuevo en tu portafolio' : `Se crearon ${cifra} inmuebles nuevos en tu portafolio`
+  }
+  return `Se crearon ${cifra} ${n === 1 ? 'inmueble' : 'inmuebles'} en tu portafolio`
+}
+
+export function detalleDeReusados(
+  creacion: { creadas: number; inmuebles?: number; nuevos?: number } | null | undefined,
+): string | null {
+  if (typeof creacion?.nuevos !== 'number' || typeof creacion.inmuebles !== 'number') return null
+  const yaEstaban = Math.max(0, creacion.inmuebles - creacion.nuevos)
+  const repetidas = Math.max(0, creacion.creadas - creacion.inmuebles)
+  const partes: string[] = []
+  if (yaEstaban > 0) {
+    partes.push(
+      yaEstaban === 1
+        ? '1 ya estaba en tu portafolio con el mismo código: no se duplicó.'
+        : `${yaEstaban.toLocaleString('es-CO')} ya estaban en tu portafolio con el mismo código: no se duplicaron.`,
+    )
+  }
+  if (repetidas > 0) {
+    partes.push(
+      repetidas === 1
+        ? '1 fila repetía el código de otra fila del archivo: quedaron en el mismo inmueble.'
+        : `${repetidas.toLocaleString('es-CO')} filas repetían el código de otra fila del archivo: quedaron en el mismo inmueble.`,
+    )
+  }
+  return partes.length > 0 ? partes.join(' ') : null
 }

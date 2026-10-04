@@ -60,6 +60,18 @@ import {
 
 import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { fraseDelArchivoVacio, leerTablaDelArchivo } from "./encabezado-del-archivo";
+
+/**
+ * 🔴 QA-MIG-B (04-10): el lector por trozos es de TEXTO. Un Excel (.xlsx es
+ * un ZIP) se leía como si fuera un CSV y el encabezado salía «PK…»: el
+ * archivo entero frenado con un nombre de columna basura. Un Excel va por el
+ * lector de planillas de la casa (con la hoja y la fila de encabezados
+ * correctas) y después por los mismos lotes.
+ */
+function esPlanilla(nombre: string): boolean {
+  return /\.(xlsx|xlsm|xls|ods|fods)$/i.test(nombre);
+}
 
 /** El acumulado de todos los lotes: es lo que la persona lee al final. */
 interface Acumulado {
@@ -175,6 +187,34 @@ export function DocumentosContables({
       let mapeoDelArchivo: MapeoDeColumna[] = mapeo;
 
       try {
+        if (esPlanilla(elArchivo.name)) {
+          const tabla = await leerTablaDelArchivo(elArchivo, COLUMNAS_DE_DOCUMENTO);
+          setEncabezados(tabla.headers);
+          mapeoDelArchivo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, tabla.headers);
+          setMapeo(mapeoDelArchivo);
+          if (tabla.vacio) {
+            setError(fraseDelArchivoVacio(elArchivo.name, tabla.vacio, "comprobantes"));
+            setFase("elegir");
+            return;
+          }
+          for (let i = 0; i < tabla.rows.length; i += MAX_DOCUMENTOS_POR_LOTE) {
+            if (cancelar.current) break;
+            const filas = tabla.rows.slice(i, i + MAX_DOCUMENTOS_POR_LOTE);
+            setLeidas(i + filas.length);
+            const documentos: DocumentoMigrado[] = armarDocumentos(filas, mapeoDelArchivo);
+            if (documentos.length === 0) continue;
+            const r =
+              modo === "revisar"
+                ? await contabilidadApi.migracion.documentos.revisar(documentos)
+                : await contabilidadApi.migracion.documentos.migrar(documentos);
+            acc = sumar(acc, r);
+            setAcumulado(acc);
+          }
+          setLeidas(tabla.rows.length);
+          setFase(modo === "revisar" ? "revisado" : "listo");
+          if (modo === "migrar") setMigraciones((v) => v + 1);
+          return;
+        }
         const resultado = await leerCsvEnTrozos(elArchivo, {
           tamanoDeLote: MAX_DOCUMENTOS_POR_LOTE,
           cancelado: () => cancelar.current,

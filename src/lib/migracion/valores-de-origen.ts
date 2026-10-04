@@ -470,8 +470,13 @@ export function porcentajeDeOrigen(v: unknown): number | undefined {
 
 // ── Banderas SI / NO ────────────────────────────────────────────────────────
 
-const SI = new Set(['si', 'sí', 's', 'yes', 'y', 'true', 'verdadero', 'x', '1']);
-const NO = new Set(['no', 'n', 'false', 'falso', '0']);
+/*
+ * «Activo/Inactivo», «Activa/Inactiva» y «A/I» son como los exportan varios
+ * sistemas contables la columna de habilitada (QA-MIG-B, 04-10): sin ellas la
+ * bandera volvía `undefined` y la cuenta entraba con lo que dijera el default.
+ */
+const SI = new Set(['si', 'sí', 's', 'yes', 'y', 'true', 'verdadero', 'x', '1', 'activo', 'activa', 'a', 'habilitado', 'habilitada']);
+const NO = new Set(['no', 'n', 'false', 'falso', '0', 'inactivo', 'inactiva', 'i', 'deshabilitado', 'deshabilitada']);
 
 /**
  * «SI»/«NO» → `true`/`false`. Lo que no es ninguna de las dos vuelve

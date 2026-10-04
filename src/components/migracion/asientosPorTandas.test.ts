@@ -118,11 +118,12 @@ describe('revisarPorTandas', () => {
     expect(r.revision.rechazadas).toBe(1_000);
     expect(r.revision.yaMigradas).toBe(500);
     // «240805 no está en el PUC» se dice UNA vez, con sus tres filas juntas.
+    // QA-MIG-B: las de la segunda tanda con su número en el ARCHIVO (5.000 + n).
     expect(r.revision.cuentasFaltantes).toEqual([
-      { codigo: '240805', filas: [3, 7, 9] },
-      { codigo: '415510', filas: [11] },
+      { codigo: '240805', filas: [3, 7, 5_009] },
+      { codigo: '415510', filas: [5_011] },
     ]);
-    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 9] }]);
+    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 5_009] }]);
   });
 
   /*
@@ -365,3 +366,21 @@ describe('aplicarPorTandas · declara el avance del archivo', () => {
   });
 });
 
+describe('QA-MIG-B — números de asiento del archivo entero', () => {
+  it('🔴 una rechazada de la segunda tanda se muestra con su número en el archivo, y los avisos se unen', async () => {
+    const revisar = vi
+      .fn()
+      .mockResolvedValueOnce(revision({ total: 5_000, listas: 5_000, avisos: [{ motivo: 'nota', filas: [2] }] }))
+      .mockResolvedValueOnce(
+        revision({
+          total: 10,
+          rechazadas: 1,
+          avisos: [{ motivo: 'nota', filas: [4] }],
+          filas: [{ fila: 4, numeroOriginal: 'X', estado: 'RECHAZADA', errores: ['x'], advertencias: [], clave: 'c' }],
+        }),
+      );
+    const r = await revisarPorTandas('L', asientos(5_010), revisar);
+    expect(r.revision.filas[0].fila).toBe(5_004);
+    expect(r.revision.avisos).toEqual([{ motivo: 'nota', filas: [2, 5_004] }]);
+  });
+});

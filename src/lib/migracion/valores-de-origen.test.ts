@@ -264,6 +264,15 @@ describe('banderaDeOrigen', () => {
     expect(banderaDeOrigen('NO')).toBe(false);
   });
 
+  it('QA-MIG-B: lee Activo/Inactivo, Activa/Inactiva y A/I', () => {
+    expect(banderaDeOrigen('Activo')).toBe(true);
+    expect(banderaDeOrigen('ACTIVA')).toBe(true);
+    expect(banderaDeOrigen('A')).toBe(true);
+    expect(banderaDeOrigen('Inactivo')).toBe(false);
+    expect(banderaDeOrigen('inactiva')).toBe(false);
+    expect(banderaDeOrigen('I')).toBe(false);
+  });
+
   it('lo que no es ni SI ni NO queda sin decidir', () => {
     expect(banderaDeOrigen('')).toBeUndefined();
     expect(banderaDeOrigen('tal vez')).toBeUndefined();

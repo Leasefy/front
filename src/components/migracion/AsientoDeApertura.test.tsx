@@ -383,3 +383,14 @@ describe('AsientoDeApertura — la regla de oro', () => {
     expect(texto).toMatch(/no se registra dos veces/);
   });
 });
+
+/* QA-MIG-B (04-10): español de Colombia, sin voseo («partilo» → «pártelo»). */
+describe('QA-MIG-B — los textos de la apertura', () => {
+  it('no usan voseo', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const fuente = readFileSync(resolve(__dirname, 'AsientoDeApertura.tsx'), 'utf8');
+    expect(fuente).not.toMatch(/\b(partilo|elegí|tenés|podés|revisá|cargá)\b/);
+    expect(fuente).toContain('pártelo en dos líneas');
+  });
+});

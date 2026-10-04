@@ -68,7 +68,17 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   ownerName:        ['nombre del propietario', 'nombre propietario', 'propietario', 'arrendador', 'dueno', 'owner'],
   // Más específico que ownerName ('propietario', 11) y que cualquier 'documento'
   // suelto: la cédula del dueño resuelve la ficha sin adivinar por nombre.
-  ownerDocument:    ['cedula del propietario', 'documento del propietario', 'nit del propietario', 'cedula propietario', 'documento propietario', 'nit propietario', 'cc propietario', 'identificacion del propietario', 'identificacion propietario', 'cedula del arrendador', 'documento del arrendador'],
+  ownerDocument:    ['cedula del propietario', 'documento del propietario', 'nit del propietario', 'cedula propietario', 'documento propietario', 'nit propietario', 'cc propietario', 'identificacion del propietario', 'identificacion propietario', 'cedula del arrendador', 'documento del arrendador',
+    /*
+     * A secas (QA-MIG-A, MG-17): en un archivo de inmuebles la única persona
+     * es el dueño —inquilino y codeudor están bloqueados arriba—, y sin estos
+     * «Cédula» llegaba al nivel 2 y por parecido de letras terminaba en
+     * «Celular»: la cédula guardada como TELÉFONO y el dueño sin documento.
+     */
+    'identificacion', 'documento', 'cedula', 'nit', 'cc',
+    // «Propietario (C.C.)»: el rol primero y el documento entre paréntesis
+    // se mapeaba al NOMBRE del dueño y la cédula entraba como su nombre.
+    'propietario (cc)', 'propietario cc', 'propietario (nit)', 'propietario nit', 'propietario cedula', 'propietario documento', 'propietario (cedula)', 'propietario (documento)'],
   // OJO: el nivel 1 gana por LONGITUD de la palabra clave, así que cualquier
   // variante «<algo> propietario» tiene que ser MÁS LARGA que 'propietario'
   // (11) o el teléfono termina en el campo del nombre. Pasó con
@@ -136,6 +146,9 @@ export const ENCABEZADOS_SIN_CAMPO = [
   // y «Consecutivo» dejaron de estar bloqueados —son `externalId`— así que las
   // dos columnas que se les parecen y no lo son se nombran acá.
   'codigo postal', 'codigo catastral', 'servicios publicos',
+  // El TIPO de documento (CC/NIT) no es el número: sin bloquearlo,
+  // «Tipo de documento» empataba con 'documento' y se llevaba la cédula.
+  'tipo de documento', 'tipo documento', 'tipo de identificacion', 'tipo identificacion',
   // No hay campo de correo en la importación. Sin bloquearlo,
   // «Correo propietario» caía en ownerName por el mismo problema de longitud.
   'correo', 'email', 'e-mail',
@@ -166,6 +179,9 @@ function normalize(str: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    // «C.C. propietario» es «cc propietario»: con los puntos no empataba con
+    // nada y la cédula del dueño quedaba sin mapear (QA-MIG-A, MG-16).
+    .replace(/\bc\s*\.\s*c\b\.?/g, 'cc')
     .trim();
 }
 

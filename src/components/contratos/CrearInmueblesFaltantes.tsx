@@ -37,6 +37,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { SIN_TIPO, TIPOS_DE_INMUEBLE_FALTANTE } from '@/lib/contratos/tipos-de-inmueble-faltante'
+import {
   contractsApi,
   type PrevisualizacionInmueblesFaltantes,
   type ResultadoInmueblesFaltantes,
@@ -56,6 +64,12 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   const [previa, setPrevia] = useState<PrevisualizacionInmueblesFaltantes | null>(null)
   const [confirmando, setConfirmando] = useState(false)
   const [ciudad, setCiudad] = useState('')
+  /**
+   * El tipo para las filas cuya dirección no lo dice. Sin elegir, esas filas
+   * NO se crean (se dicen omitidas): antes nacían todas como apartamento
+   * (QA-MIG-A, MG-34).
+   */
+  const [tipo, setTipo] = useState<string>(SIN_TIPO)
   const [corriendo, setCorriendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   /** Lo que el back dijo de la ciudad (`CrearInmueblesFaltantesDto.ciudad`). */
@@ -87,7 +101,11 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
     setError(null)
     setErrorDeLaCiudad(null)
     try {
-      const r = await contractsApi.migracion.crearInmueblesFaltantes({ lote }, ciudad)
+      const r = await contractsApi.migracion.crearInmueblesFaltantes(
+        { lote },
+        ciudad,
+        tipo === SIN_TIPO ? undefined : tipo,
+      )
       setResultado(r)
       setConfirmando(false)
       await contar()
@@ -193,6 +211,28 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               data-testid="crear-inmuebles-faltantes-ciudad"
             />
             <ErrorDelCampo id={`${ID_DE_LA_CIUDAD}-error`} mensaje={errorDeLaCiudad} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-caption text-muted-foreground" htmlFor="tipo-inmuebles-faltantes">
+              Tipo para las que la dirección no lo dice
+            </label>
+            <Select value={tipo} onValueChange={setTipo} disabled={corriendo}>
+              <SelectTrigger id="tipo-inmuebles-faltantes" data-testid="crear-inmuebles-faltantes-tipo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[400]">
+                <SelectItem value={SIN_TIPO}>Ninguno: ésas las creo fila por fila</SelectItem>
+                {TIPOS_DE_INMUEBLE_FALTANTE.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-caption text-muted-foreground">
+              Si la dirección lo dice («CASA 7», «AP 801», «LC 101»), se usa el de la
+              dirección. No se pone un tipo que nadie dijo.
+            </p>
           </div>
           {/* El aviso de la acción (no es de un campo): un 409, un 5xx, la red. */}
           <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="flex items-center gap-1.5 text-sm text-destructive" role="alert">

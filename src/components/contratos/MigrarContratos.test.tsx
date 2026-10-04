@@ -30,6 +30,7 @@ vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   // encabezados (un export puede traer un título arriba). Sin filas de
   // muestra se queda en la primera, que es el caso de estos tests.
   leerPrimerasFilas: vi.fn(async () => [] as string[][]),
+  leerPrimerasFilasDeCadaHoja: vi.fn(async () => [] as Array<{ hoja: string; filas: string[][] }>),
 }))
 
 /*
@@ -83,7 +84,7 @@ vi.mock('@/lib/api/contracts.service', () => ({
 }))
 
 import {
-  leerPrimerasFilas,
+  leerPrimerasFilasDeCadaHoja,
   parseSpreadsheetFile,
 } from '@/components/inmobiliaria/import/lib/parseFile'
 import {
@@ -320,7 +321,8 @@ describe('<MigrarContratos> — la compuerta de lo esencial', () => {
 
     const aviso = container.querySelector('[data-testid="faltan-esenciales"]')
     const texto = aviso?.textContent ?? ''
-    // Los siete requisitos, cada uno nombrado.
+    // Los seis requisitos, cada uno nombrado (el día de pago dejó de serlo:
+    // QA-MIG-A, MG-18 — el arriendo se genera el día 1 con su plazo).
     for (const clave of [
       'inmueble',
       'inquilino',
@@ -328,10 +330,10 @@ describe('<MigrarContratos> — la compuerta de lo esencial', () => {
       'fechaInicio',
       'fechaFin',
       'canon',
-      'diaDePago',
     ]) {
       expect(container.querySelector(`[data-testid="falta-${clave}"]`)).toBeTruthy()
     }
+    expect(container.querySelector('[data-testid="falta-diaDePago"]')).toBeNull()
     // Y dice qué hacer: el archivo no las trae, no es que haya que elegirlas.
     expect(texto).toContain('Tu archivo no trae ninguna columna de canon')
     expect(texto).toContain('vuelve a subirlo')
@@ -340,24 +342,33 @@ describe('<MigrarContratos> — la compuerta de lo esencial', () => {
   it('cuando la columna existe pero no se reconoció, manda al desplegable', async () => {
     render()
     await esperar()
-    // «Corte facturación» no se reconoce, pero habla de un corte de cobro:
-    // hay una columna que elegir, así que el consejo no es «vuelve a subirlo».
+    // «Vigencia» no se reconoce sola, pero habla de la fecha de inicio: hay
+    // una columna que elegir, así que el consejo no es «vuelve a subirlo».
     await subirArchivo(
-      [...ENCABEZADOS_MINIMOS.filter((h) => h !== 'Día de pago'), 'Corte facturación'],
-      [{ ...filaMinima(), 'Corte facturación': '5' }],
+      [...ENCABEZADOS_MINIMOS.filter((h) => h !== 'Fecha de inicio'), 'Vigencia'],
+      [{ ...filaMinima(), Vigencia: '2026-01-01' }],
     )
 
     const texto =
       container.querySelector('[data-testid="faltan-esenciales"]')?.textContent ?? ''
     expect(texto).toContain(
-      'Elige en el desplegable la columna de tu archivo que trae el día de pago',
+      'Elige en el desplegable la columna de tu archivo que trae la fecha de inicio',
     )
     expect(texto).not.toContain('vuelve a subirlo')
     expect(botonRevisar()?.disabled).toBe(true)
     // La columna sigue estando, con su desplegable, para elegirla.
-    expect(
-      container.querySelector('[data-testid="mapeo-Corte facturación"]'),
-    ).toBeTruthy()
+    expect(container.querySelector('[data-testid="mapeo-Vigencia"]')).toBeTruthy()
+  })
+
+  it('QA-MIG-A MG-18: un archivo sin columna de día de pago (el de Nui) NO se frena', async () => {
+    render()
+    await esperar()
+    await subirArchivo(
+      ENCABEZADOS_MINIMOS.filter((h) => h !== 'Día de pago'),
+      [filaMinima()],
+    )
+    expect(container.querySelector('[data-testid="faltan-esenciales"]')).toBeNull()
+    expect(botonRevisar()?.disabled).toBe(false)
   })
 
   it('con lo esencial mapeado sigue de largo, y no inventa lo que no está', async () => {
@@ -1626,6 +1637,38 @@ describe('<MigrarContratos> — activar apaga la lista', () => {
 
     expect(container.querySelector('[data-testid="fila-revision-0"]')).toBeTruthy()
   })
+
+  it('QA-MIG-A MG-26: con una fila frenada no dice «no quedó ninguna» y deja volver a ella', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 29,
+      activadas: 29,
+      fallidas: 0,
+      invitados: 0,
+      resultados: [],
+    })
+    // Lo que el back dice DESPUÉS de activar: 29 activados y 1 frenada.
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-1',
+      total: 30,
+      pendientes: 1,
+      listos: 0,
+      activados: 29,
+      descartados: 0,
+      activables: 0,
+    })
+    await act(async () => {
+      boton('Activar 30 contratos')?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('Queda 1 fila que necesita algo antes de activarse')
+    expect(texto).not.toContain('No quedó ninguna fila por activar')
+    expect(container.querySelector('[data-testid="ver-lista-igual"]')).toBeTruthy()
+  })
 })
 
 describe('<MigrarContratos> — errores visibles y recuperables', () => {
@@ -1866,11 +1909,16 @@ describe('<MigrarContratos> — vista previa honesta antes de guardar', () => {
     render()
     await esperar()
     // Un export con el título de la inmobiliaria arriba y una fila en blanco.
-    vi.mocked(leerPrimerasFilas).mockResolvedValue([
-      ['INMOBILIARIA X — CONTRATOS VIGENTES', '', '', ''],
-      ['', '', '', ''],
-      ['Dirección', 'Arrendatario', 'Canon', 'Fecha de inicio'],
-      ['Calle 1', 'Ana', '1800000', '2026-01-01'],
+    vi.mocked(leerPrimerasFilasDeCadaHoja).mockResolvedValue([
+      {
+        hoja: 'Hoja1',
+        filas: [
+          ['INMOBILIARIA X — CONTRATOS VIGENTES', '', '', ''],
+          ['', '', '', ''],
+          ['Dirección', 'Arrendatario', 'Canon', 'Fecha de inicio'],
+          ['Calle 1', 'Ana', '1800000', '2026-01-01'],
+        ],
+      },
     ])
     await subirArchivoMinimo()
 
@@ -1889,9 +1937,57 @@ describe('<MigrarContratos> — vista previa honesta antes de guardar', () => {
   it('cuando los encabezados están en la primera fila no dice nada', async () => {
     render()
     await esperar()
-    vi.mocked(leerPrimerasFilas).mockResolvedValue([])
+    vi.mocked(leerPrimerasFilasDeCadaHoja).mockResolvedValue([])
     await subirArchivoMinimo()
     expect(container.querySelector('[data-testid="fila-de-encabezado"]')).toBeNull()
+    expect(container.querySelector('[data-testid="hoja-leida"]')).toBeNull()
+  })
+
+  it('QA-MIG-A MG-37: un archivo sin filas (vacío o sólo encabezados) lo dice y no muestra el mapeo', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Inquilino', 'Canon'], [])
+    expect(container.textContent).toContain('no trae ninguna fila de datos')
+    expect(container.textContent).not.toContain('Así entendimos tus columnas')
+  })
+
+  it('QA-MIG-A MG-13: con «Resumen» antes de la hoja de contratos, lee la hoja buena y lo dice', async () => {
+    render()
+    await esperar()
+    vi.mocked(leerPrimerasFilasDeCadaHoja).mockResolvedValue([
+      { hoja: 'Resumen', filas: [['Contratos vigentes', '3'], ['Generado', 'qa']] },
+      {
+        hoja: 'Contratos 2026',
+        filas: [
+          ['Inquilino', 'Documento inquilino', 'Código inmueble', 'Canon', 'Fecha inicio', 'Fecha fin'],
+          ['Ana', '123', '9001', '1800000', '01/02/2026', '31/01/2027'],
+        ],
+      },
+    ])
+    await subirArchivoMinimo()
+    const llamada = vi.mocked(parseSpreadsheetFile).mock.calls.at(-1)
+    expect(llamada?.[1]).toBe('Contratos 2026')
+    expect(llamada?.[2]).toEqual({ filaDeEncabezado: 0 })
+    expect(container.querySelector('[data-testid="hoja-leida"]')?.textContent).toContain(
+      'Contratos 2026',
+    )
+    vi.mocked(leerPrimerasFilasDeCadaHoja).mockResolvedValue([])
+  })
+
+  it('QA-MIG-A MG-08: fechas mes/día/año se leen así por columna y se dice, sin correr el contrato un mes', async () => {
+    render()
+    await esperar()
+    await subirArchivo(ENCABEZADOS_MINIMOS, [
+      { ...filaMinima(0), 'Fecha de inicio': '02/01/2026' },
+      { ...filaMinima(1), 'Fecha de inicio': '11/15/2025' },
+    ])
+    const aviso = container.querySelector('[data-testid="aviso-de-fechas"]')?.textContent ?? ''
+    expect(aviso).toContain('Fecha de inicio')
+    expect(aviso).toContain('11/15/2025')
+    // 02/01/2026 en un archivo mes/día es el 1 de febrero, no el 2 de enero.
+    const texto =
+      container.querySelector('[data-testid="vista-previa-migracion"]')?.textContent ?? ''
+    expect(texto).not.toContain('2 de enero')
   })
 
   it('avisa con el número exacto cuántas filas quedan sin un dato esencial', async () => {

@@ -98,6 +98,20 @@ function unirPorLlave<T extends { filas: number[] }>(
   return [...porLlave.values()];
 }
 
+/** La revisión de una tanda con los números de asiento del ARCHIVO entero. */
+function conNumerosDelArchivo(r: RevisionDeLote, base: number): RevisionDeLote {
+  if (base === 0) return r;
+  const correr = <T extends { filas: number[] }>(xs: readonly T[] | undefined): T[] =>
+    (xs ?? []).map((x) => ({ ...x, filas: x.filas.map((f) => f + base) }));
+  return {
+    ...r,
+    cuentasFaltantes: correr(r.cuentasFaltantes),
+    motivos: correr(r.motivos),
+    avisos: correr(r.avisos),
+    filas: r.filas.map((f) => ({ ...f, fila: f.fila + base })),
+  };
+}
+
 const porCodigo = (c: CuentaFaltante) => c.codigo;
 const porMotivo = (m: MotivoDeRechazo) => m.motivo;
 
@@ -126,6 +140,7 @@ export async function revisarPorTandas(
     yaMigradas: 0,
     cuentasFaltantes: [],
     motivos: [],
+    avisos: [],
     filas: [],
   };
   let rechazadasNoListadas = 0;
@@ -133,7 +148,13 @@ export async function revisarPorTandas(
   let hechos = 0;
 
   for (const [i, parte] of partes.entries()) {
-    const r = await revisar({ lote, asientos: parte });
+    const r0 = await revisar({ lote, asientos: parte });
+    /*
+     * 🔴 QA-MIG-B (04-10): el back numera los asientos DENTRO de la tanda
+     * (1…5.000). Sin correrlos, el asiento 9 de la segunda tanda se mostraba
+     * como «9» y el contador buscaba en otro lado: es el 5.009 del archivo.
+     */
+    const r = conNumerosDelArchivo(r0, i * tamano);
 
     acumulada.total += r.total;
     acumulada.listas += r.listas;
@@ -141,6 +162,8 @@ export async function revisarPorTandas(
     acumulada.yaMigradas += r.yaMigradas;
     acumulada.cuentasFaltantes = unirPorLlave(acumulada.cuentasFaltantes, r.cuentasFaltantes, porCodigo);
     acumulada.motivos = unirPorLlave(acumulada.motivos, r.motivos, porMotivo);
+    // QA-MIG-B: lo que entra con una nota se une igual que los motivos.
+    acumulada.avisos = unirPorLlave(acumulada.avisos ?? [], r.avisos ?? [], porMotivo);
 
     // Sólo las rechazadas, y hasta el tope: son las únicas que se dibujan.
     for (const fila of r.filas) {
@@ -261,9 +284,16 @@ export async function aplicarPorTandas(
     acumulado.omitidos += r.omitidos;
     acumulado.yaMigrados += Math.max(0, r.yaMigrados - escritoAntesEnEstaTanda);
     acumulado.restantes = (acumulado.restantes ?? 0) + (r.restantes ?? 0);
-    acumulado.cuentasFaltantes = unirPorLlave(acumulado.cuentasFaltantes, r.cuentasFaltantes, porCodigo);
-    acumulado.motivos = unirPorLlave(acumulado.motivos, r.motivos, porMotivo);
-    acumulado.fallasAlEscribir = [...acumulado.fallasAlEscribir, ...r.fallasAlEscribir];
+    // QA-MIG-B: números de asiento del ARCHIVO, no de la tanda (ver revisar).
+    const base = i * tamano;
+    const correr = <T extends { filas: number[] }>(xs: readonly T[]): T[] =>
+      base === 0 ? [...xs] : xs.map((x) => ({ ...x, filas: x.filas.map((f) => f + base) }));
+    acumulado.cuentasFaltantes = unirPorLlave(acumulado.cuentasFaltantes, correr(r.cuentasFaltantes), porCodigo);
+    acumulado.motivos = unirPorLlave(acumulado.motivos, correr(r.motivos), porMotivo);
+    acumulado.fallasAlEscribir = [
+      ...acumulado.fallasAlEscribir,
+      ...r.fallasAlEscribir.map((f) => ({ ...f, fila: f.fila + base })),
+    ];
     // El primero de todo el archivo y el último: los números de asiento los
     // emite el back en orden, así que el primero no nulo manda y el último
     // gana.

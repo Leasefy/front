@@ -477,7 +477,7 @@ export const contractsApi = {
     /** Crear el inmueble que el contrato dice tener y no está cargado. */
     async crearInmueble(
       id: string,
-      datos: { address: string; city: string; neighborhood?: string },
+      datos: { address: string; city: string; neighborhood?: string; tipo?: string },
     ): Promise<FilaDeMigracion> {
       return apiClient.post<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/inmueble`,
@@ -506,10 +506,12 @@ export const contractsApi = {
     async crearInmueblesFaltantes(
       seleccion: { lote: string } | { ids: string[] },
       ciudad?: string,
+      /** Para las filas cuya dirección no dice el tipo (QA-MIG-A, MG-34). */
+      tipo?: string,
     ): Promise<ResultadoInmueblesFaltantes> {
       return apiClient.post<ResultadoInmueblesFaltantes>(
         '/contracts/migrar/inmuebles-faltantes',
-        { ...seleccion, ciudad: ciudad?.trim() || undefined },
+        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...(tipo ? { tipo } : {}) },
       );
     },
 

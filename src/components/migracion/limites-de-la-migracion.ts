@@ -33,6 +33,12 @@ export const FECHA_DEL_CONTRATO_DESDE = '1900-01-01';
 export const FECHA_DEL_CONTRATO_HASTA = '2100-12-31';
 
 export const MENSAJES_DE_LA_MIGRACION = {
+  /*
+   * Un archivo de 0 bytes o con sólo los encabezados mostraba la tarjeta con
+   * «0 B» y nada más: la persona no sabía qué había pasado (QA-MIG-A, MG-37).
+   */
+  archivoSinFilas: (nombre: string) =>
+    `«${nombre}» no trae ninguna fila de datos (está vacío o sólo tiene los encabezados). Revisa que exportaste los datos y vuelve a subirlo.`,
   // Sólo pesos enteros, con la frase del inmueble (Nico, 02-10-2026).
   canonEntero: 'Escribe el canon en pesos enteros, sin centavos.',
   canonMinimo: 'El canon tiene que ser mayor que cero.',

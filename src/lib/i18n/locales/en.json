@@ -10215,7 +10215,11 @@
         "propiedades": "Properties",
         "contratos": "Contracts",
         "cotizaciones": "Quotes",
-        "apBills": "AP Bills"
+        "apBills": "Vendor bills",
+        "pqrs": "Requests",
+        "mantenimientos": "Maintenance",
+        "proveedores": "Vendors",
+        "facturas": "Sales invoices"
       },
       "quickActions": {
         "title": "Quick actions",
@@ -10225,7 +10229,17 @@
         "reportes": "View reports",
         "portafolio": "View portfolio",
         "hoy": "View Today",
+        "facturacion": "Go to Invoicing",
+        "contabilidad": "Go to Accounting",
+        "conciliacion": "Go to Reconciliation",
+        "postulaciones": "View applications",
+        "cartera": "View receivables",
         "detalles": {
+          "facturacion": "This month’s invoices and the DIAN",
+          "contabilidad": "Entries, accounts and financial statements",
+          "conciliacion": "Bank statement against receipts",
+          "postulaciones": "Candidates and their studies",
+          "cartera": "What each tenant owes",
           "nuevaConsignacion": "A new property with its owner",
           "cobranza": "Debtors, calls and payment plans",
           "cotizador": "Quotes with insurers",

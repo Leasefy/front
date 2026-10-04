@@ -226,7 +226,7 @@ export function CuentasDeLasDiferencias() {
               {datos.eventos.map((e) => (
                 <li
                   key={e.evento}
-                  className="grid gap-2 rounded-md border border-border p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-start"
+                  className="grid grid-cols-[minmax(0,1fr)] gap-2 rounded-md border border-border p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-start"
                   data-testid={`cuenta-de-${e.evento}`}
                 >
                   <div className="space-y-1">

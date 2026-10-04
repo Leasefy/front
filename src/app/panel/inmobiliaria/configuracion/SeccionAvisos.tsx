@@ -174,8 +174,9 @@ toast.error(
                   className="rounded-lg border border-border bg-surface p-4"
                   data-testid={`aviso-${aviso.codigo}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                  {/* A 390 px los dos botones bajan debajo del texto (QA 04-10: desbordaban). */}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-fg">{aviso.titulo}</p>
                       <p className="mt-1 text-xs text-fg-muted">
                         {A_QUIEN[aviso.destinatario]} · {aviso.cuando}

@@ -30,6 +30,10 @@ export type EventLocale = 'es' | 'en';
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const AUDIT_EVENT_LABELS_ES: Readonly<Record<string, string>> = {
+  // BU-08 (04-10-2026): salía «Pricing config update». Es Leasefy cambiando,
+  // desde /admin, el modelo de cobro del plan de la inmobiliaria (ella lo ve en
+  // sólo lectura): se dice qué pasó, en español.
+  'pricing_config.update': 'Leasefy cambió el modelo de cobro de tu plan',
   // Marcación (pre-call workflow, dialer, speed-to-lead)
   'precall.scheduled': 'Llamada programada',
   'precall.held_for_approval': 'Llamada retenida para aprobación',
@@ -199,6 +203,7 @@ export const AUDIT_EVENT_LABELS_ES: Readonly<Record<string, string>> = {
 };
 
 export const AUDIT_EVENT_LABELS_EN: Readonly<Record<string, string>> = {
+  'pricing_config.update': 'Leasefy changed your plan billing model',
   'precall.scheduled': 'Call scheduled',
   'precall.held_for_approval': 'Call held for approval',
   'dialer.call_placed': 'Call placed',

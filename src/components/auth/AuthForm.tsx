@@ -567,8 +567,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     // Onboarding sin terminar: retomar donde lo dejó — el onboarding del
     // perfil que eligió, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      window.location.href = rutaDeOnboarding(perfilElegido);
-      return;
+      // 🟡 BU-06 (04-10-2026): la asesora (miembro INVITADO, su registro es el
+      // de la inmobiliaria: «onboarding una vez por inmobiliaria») pasaba un
+      // instante por /onboarding/seleccionar-rol antes del panel. Mismo criterio
+      // que `ProtectedRoute`: un miembro activo de una inmobiliaria no hace el
+      // onboarding personal; se espera la membresía y sigue a su panel (si el
+      // registro de la inmobiliaria está a medias, el candado del panel lo lleva).
+      const deUnaInmobiliaria = user.role === 'agency' || user.backendRole === 'AGENT';
+      if (deUnaInmobiliaria && !agencyMembershipChecked && !probeWaitElapsed) return;
+      if (!(deUnaInmobiliaria && hasActiveAgencyMembership)) {
+        window.location.href = rutaDeOnboarding(perfilElegido);
+        return;
+      }
     }
     if (returnUrl && returnUrl !== '/') {
       window.location.href = returnUrl;

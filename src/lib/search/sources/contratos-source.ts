@@ -13,6 +13,15 @@
 
 import { getAccessToken } from '@/lib/api/client';
 import type { BackendContract } from '@/lib/api/contracts.types';
+import { formatoPesos } from '@/lib/plata/formato';
+import { esElMismoTelefono, numeroDeLaConsulta, telefonoDeLaConsulta } from '@/lib/search/consulta-del-buscador';
+
+/** BU-01 (04-10-2026): «#3», «Contrato 3» y «contrato #3» buscan el número 3. */
+const PALABRAS_DEL_CONTRATO = ['contrato', 'ctto'] as const;
+
+function comoNumero(q: string): string {
+  return numeroDeLaConsulta(q, PALABRAS_DEL_CONTRATO) ?? q;
+}
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { FileText } from '@phosphor-icons/react';
 
@@ -35,18 +44,26 @@ export function numeroQueCoincide(
   item: Pick<BackendContract, 'code' | 'externalId'>,
   q: string,
 ): string | null {
-  const n = norm(q.trim());
+  const n = norm(comoNumero(q.trim()));
   if (!n) return null;
   const externo = (item.externalId ?? '').trim();
   if (externo && norm(externo).includes(n)) return externo;
-  if (item.code != null && String(item.code).includes(n)) {
+  if (item.code != null && (/^\d+$/.test(n) ? item.code === Number(n) : String(item.code).includes(n))) {
     return externo ? `Leasefy #${item.code}` : `#${item.code}`;
   }
   return null;
 }
 
 export function matchesQuery(item: BackendContract, q: string): boolean {
-  const n = norm(q);
+  // BU-09 (04-10-2026): por el celular del inquilino, escrito como sea.
+  const telefono = telefonoDeLaConsulta(q);
+  if (telefono && esElMismoTelefono(item.tenantPhone, telefono)) return true;
+  const n = norm(comoNumero(q.trim()));
+  // «#3» o «Contrato 3» es un número de contrato: no se busca en la cédula ni
+  // en la dirección (el «3» está en casi todas).
+  if (numeroDeLaConsulta(q, PALABRAS_DEL_CONTRATO) !== null && !/^\s*\d+\s*$/.test(q)) {
+    return (item.code != null && item.code === Number(n)) || norm(item.externalId ?? '') === n;
+  }
   return (
     norm(item.tenantName ?? '').includes(n) ||
     norm(item.propertyAddress ?? '').includes(n) ||
@@ -56,7 +73,11 @@ export function matchesQuery(item: BackendContract, q: string): boolean {
     // contrato: escribir «14» encuentra el contrato #14. Es filtrado en
     // cliente sobre la respuesta que `GET /contracts` ya devuelve — sin
     // parámetro de query nuevo y sin costo en el back.
-    norm(String(item.code ?? '')).includes(n) ||
+    // BU-01: un código escrito como código («#3», «Contrato 3», «3») es ESE
+    // contrato, no el 13 ni el 30.
+    (numeroDeLaConsulta(q, PALABRAS_DEL_CONTRATO) !== null
+      ? item.code != null && item.code === Number(n)
+      : norm(String(item.code ?? '')).includes(n)) ||
     // 🔴 Nico, 2026-09-12: el número que la inmobiliaria conoce es el de SU
     // sistema (`externalId`), no nuestro consecutivo. Buscar «1686» tiene que
     // encontrar el contrato que en Leasefy es el #1839.
@@ -64,12 +85,9 @@ export function matchesQuery(item: BackendContract, q: string): boolean {
   );
 }
 
+/** BU-03 (04-10-2026): la plata completa, como la escribe la casa («$ 1.100.000»), no «$1.1M». */
 function formatCOP(amount: number): string {
-  if (amount === 0) return '$0';
-  const millions = amount / 1_000_000;
-  if (millions >= 1) return `$${millions.toFixed(1)}M`;
-  const thousands = amount / 1_000;
-  return `$${Math.round(thousands)}k`;
+  return formatoPesos(amount);
 }
 
 const STATUS_COLORS: Record<string, 'green' | 'amber' | 'red' | 'violet' | 'neutral'> = {
@@ -88,10 +106,10 @@ const STATUS_COLORS: Record<string, 'green' | 'amber' | 'red' | 'violet' | 'neut
 const STATUS_LABELS_ES: Record<string, string> = {
   ACTIVE: 'Activo',
   SIGNED: 'Firmado',
-  PENDING_TENANT: 'Pdte. inquilino',
-  PENDING_TENANT_SIGNATURE: 'Pdte. inquilino',
-  PENDING_LANDLORD: 'Pdte. propietario',
-  PENDING_LANDLORD_SIGNATURE: 'Pdte. propietario',
+  PENDING_TENANT: 'Falta la firma del inquilino',
+  PENDING_TENANT_SIGNATURE: 'Falta la firma del inquilino',
+  PENDING_LANDLORD: 'Falta la firma del propietario',
+  PENDING_LANDLORD_SIGNATURE: 'Falta la firma del propietario',
   DRAFT: 'Borrador',
   EXPIRED: 'Expirado',
   CANCELLED: 'Cancelado',

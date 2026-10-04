@@ -91,8 +91,15 @@ function PostLoginResolver() {
     // Onboarding sin terminar → retomar donde lo dejó: el onboarding del
     // perfil elegido, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      router.replace(rutaDeOnboarding(perfilElegido));
-      return;
+      // 🟡 BU-06 (04-10-2026): un miembro activo de una inmobiliaria (la asesora
+      // invitada) no hace el onboarding personal: antes pasaba un instante por
+      // /onboarding/seleccionar-rol. Mismo criterio que `ProtectedRoute`.
+      const deUnaInmobiliaria = user.role === 'agency' || user.backendRole === 'AGENT';
+      if (deUnaInmobiliaria && !agencyMembershipChecked && !probeWaitElapsed) return;
+      if (!(deUnaInmobiliaria && hasActiveAgencyMembership)) {
+        router.replace(rutaDeOnboarding(perfilElegido));
+        return;
+      }
     }
     // Explicit destination wins over the role default.
     if (returnUrl && returnUrl !== '/') {

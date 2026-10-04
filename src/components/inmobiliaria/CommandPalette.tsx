@@ -83,6 +83,11 @@ import {
   Scales,
   UserCircle,
   Bell,
+  Receipt,
+  BookOpen,
+  Bank,
+  UsersThree,
+  Wallet,
 } from '@phosphor-icons/react';
 
 import { AspaDeCierre, Dialog, DialogBody, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -103,7 +108,8 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { useFederatedSearch } from '@/lib/hooks/useFederatedSearch';
 import type { SearchResult, SearchSource, SearchSourceContext } from '@/lib/hooks/useFederatedSearch';
-import { navigationSource } from '@/lib/search/sources/navigation-source';
+import { navigationSource, seVeEnElBuscador } from '@/lib/search/sources/navigation-source';
+import { accionesDelRol } from '@/lib/search/acciones-rapidas-por-rol';
 import { debtorsSource } from '@/lib/search/sources/debtors-source';
 import { propietariosSource } from '@/lib/search/sources/propietarios-source';
 import { agentesSource } from '@/lib/search/sources/agentes-source';
@@ -111,6 +117,12 @@ import { propiedadesSource } from '@/lib/search/sources/propiedades-source';
 import { contratosSource } from '@/lib/search/sources/contratos-source';
 import { cotizacionesSource } from '@/lib/search/sources/cotizaciones-source';
 import { apBillsSource } from '@/lib/search/sources/ap-bills-source';
+import {
+  pqrsSource,
+  mantenimientosSource,
+  proveedoresSource,
+  facturasSource,
+} from '@/lib/search/sources/operacion-source';
 import { useAuditLog, type AuditLogFilters } from '@/lib/hooks/cobranza/use-audit-log';
 import { agruparNovedades, type FamiliaDeNovedad } from '@/lib/search/novedades-del-buscador';
 import { tramosDeCoincidencia } from '@/lib/search/tramos-de-coincidencia';
@@ -440,6 +452,47 @@ const ACCIONES_RAPIDAS: AccionRapida[] = [
     href: '/panel/inmobiliaria/inmuebles',
     permission: { module: 'portafolio', action: 'view' },
   },
+  // BU-12 (04-10-2026): las del contador, la asesora y el auxiliar de cartera.
+  {
+    id: 'qa-facturacion',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.facturacion',
+    detalleKey: 'inmobiliaria.commandPalette.quickActions.detalles.facturacion',
+    icono: Receipt,
+    href: '/panel/inmobiliaria/facturacion',
+    permission: { module: 'cobros', action: 'view' },
+  },
+  {
+    id: 'qa-contabilidad',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.contabilidad',
+    detalleKey: 'inmobiliaria.commandPalette.quickActions.detalles.contabilidad',
+    icono: BookOpen,
+    href: '/panel/inmobiliaria/contabilidad',
+    permission: { module: 'reportes', action: 'view' },
+  },
+  {
+    id: 'qa-conciliacion',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.conciliacion',
+    detalleKey: 'inmobiliaria.commandPalette.quickActions.detalles.conciliacion',
+    icono: Bank,
+    href: '/panel/inmobiliaria/conciliacion',
+    permission: { module: 'cobros', action: 'view' },
+  },
+  {
+    id: 'qa-postulaciones',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.postulaciones',
+    detalleKey: 'inmobiliaria.commandPalette.quickActions.detalles.postulaciones',
+    icono: UsersThree,
+    href: '/panel/inmobiliaria/postulaciones',
+    permission: { module: 'pipeline', action: 'view' },
+  },
+  {
+    id: 'qa-cartera',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.cartera',
+    detalleKey: 'inmobiliaria.commandPalette.quickActions.detalles.cartera',
+    icono: Wallet,
+    href: '/panel/inmobiliaria/pagos/cartera',
+    permission: { module: 'cobros', action: 'view' },
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -619,6 +672,12 @@ export function CommandPalette() {
       agentesSource,
       propiedadesSource,
       contratosSource,
+      // BU-07 (04-10-2026): lo que antes no se encontraba —PQRS,
+      // mantenimientos, proveedores y facturas— con UNA petición al back.
+      pqrsSource,
+      mantenimientosSource,
+      proveedoresSource,
+      facturasSource,
       cotizacionesSource,
       apBillsSource,
     ];
@@ -651,9 +710,16 @@ export function CommandPalette() {
   // tecla: sin esto, «Sin resultados» parpadea antes de que salga la consulta.
   const buscando = hayBusqueda && (isAnyLoading || Object.keys(bySource).length === 0);
 
+  // BU-12 (04-10-2026): las del ROL de quien busca, en su orden, y cada una
+  // con su permiso y el mismo gate del menú (nunca una puerta cerrada).
   const accionesVisibles = useMemo(
-    () => ACCIONES_RAPIDAS.filter((a) => !a.permission || canAccess(a.permission.module, a.permission.action)),
-    [canAccess],
+    () =>
+      accionesDelRol(isAdmin, agencyRole)
+        .map((id) => ACCIONES_RAPIDAS.find((a) => a.id === id))
+        .filter((a): a is AccionRapida => Boolean(a))
+        .filter((a) => !a.permission || canAccess(a.permission.module, a.permission.action))
+        .filter((a) => seVeEnElBuscador({ href: a.href, permission: a.permission }, ctx)),
+    [canAccess, isAdmin, agencyRole, ctx],
   );
 
   const grupos = useMemo((): GrupoDeFilas[] => {

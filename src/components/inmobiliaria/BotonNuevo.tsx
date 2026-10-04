@@ -42,7 +42,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowSquareOut, Check, CloudArrowUp } from '@phosphor-icons/react'
+import { Plus, ArrowSquareOut, Check, CloudArrowUp, Receipt, Wallet } from '@phosphor-icons/react'
 // SplitButton del DS: separa la acción principal del menú en dos segmentos,
 // que es su respuesta a la tensión "+ o chevron, no los dos" (§SplitButton).
 import { Button, SplitButton } from '@leasefy/cadence'
@@ -73,6 +73,7 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useMigracion } from '@/components/migracion/migracion-context'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
+import { botonPrincipalDelRol } from '@/lib/search/acciones-rapidas-por-rol'
 import { SelectorPostulacion } from '@/components/inmobiliaria/SelectorPostulacion'
 import {
   FLUJOS,
@@ -100,7 +101,7 @@ export interface BotonNuevoProps {
 export function BotonNuevo({ className }: BotonNuevoProps) {
   const { t } = useI18n()
   const router = useRouter()
-  const { canAccess, agentPermsResolved, refetch, isAdmin } = usePermissionsContext()
+  const { canAccess, agentPermsResolved, refetch, isAdmin, agencyRole } = usePermissionsContext()
   const migracion = useMigracion()
   const [porExplicar, setPorExplicar] = useState<FlujoNuevo | null>(null)
   const [selectorAbierto, setSelectorAbierto] = useState(false)
@@ -194,6 +195,31 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
     abrir(porExplicar)
     setPorExplicar(null)
   }, [porExplicar, abrir])
+
+  // 🟡 BU-12 (04-10-2026): el contador veía «Nueva asegurabilidad» como botón
+  // principal. Un rol sin flujos comerciales tiene el suyo (Facturación para el
+  // contador, la cartera para el auxiliar); el administrador y la asesora, el
+  // «Nuevo» de siempre.
+  const delRol = botonPrincipalDelRol(isAdmin, agencyRole)
+  if (delRol && canAccess(delRol.permiso.module, delRol.permiso.action)) {
+    const IconoDelRol = delRol.icono === 'factura' ? Receipt : Wallet
+    return (
+      <div data-tour-target="nuevo">
+        <Button
+          variant="primary"
+          size="sm"
+          className={cn('w-full', className)}
+          data-testid="boton-principal-del-rol"
+          onClick={() => router.push(delRol.href)}
+        >
+          <span className="flex items-center gap-1.5">
+            <IconoDelRol className="h-4 w-4" weight="bold" />
+            {t(delRol.labelKey)}
+          </span>
+        </Button>
+      </div>
+    )
+  }
 
   // Sin nada que ofrecer no se muestra un botón que abre un menú vacío.
   if (disponibles.length === 0) return null

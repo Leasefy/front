@@ -1303,7 +1303,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.lateFeePercent')}
                 error={errors.defaultLateFeePercent}
-                hint="% mensual fijo (sólo si el motor de cobros con reglas de mora está apagado)"
+                hint="Porcentaje mensual. Se cobra sólo si no usas reglas de mora (Pagos → Cartera → Reglas de mora)"
                 campo="defaultLateFeePercent"
               >
                 <div className="relative">
@@ -1385,7 +1385,8 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-semibold">
                 {agency.defaultLateFeePercent ?? '—'}%
               </div>
-              <div className="text-[11px] text-muted-foreground">% mensual fijo · sólo con el motor apagado</div>
+              {/* CF-02 (QA 04-10): «sólo con el motor apagado» no se entendía. */}
+              <div className="text-[11px] text-muted-foreground">Mensual. Se cobra sólo si no usas reglas de mora</div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>

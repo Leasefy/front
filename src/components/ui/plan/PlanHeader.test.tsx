@@ -83,6 +83,11 @@ const agencyPlansState: { value: { plans: unknown[]; isLoading: boolean; error?:
   value: { plans: [], isLoading: false, error: null },
 };
 
+// La campana de la inmobiliaria (QA 04-10) pide su propia bandeja agrupada;
+// estas pruebas miran la suscripción y el equipo, no la campana.
+vi.mock('@/components/notificaciones/CampanaDeLaInmobiliaria', () => ({
+  CampanaDeLaInmobiliaria: () => null,
+}));
 vi.mock('@/lib/hooks/useNotifications', () => ({
   useLandlordNotifications: () => ({
     notifications: [],

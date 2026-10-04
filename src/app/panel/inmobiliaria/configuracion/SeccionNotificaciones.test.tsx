@@ -107,7 +107,7 @@ describe('SeccionNotificaciones — nunca los valores de fábrica como si fueran
 
     expect(h.getNotificationSettings).toHaveBeenCalledTimes(2)
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
-    expect(perillas()).toHaveLength(5)
+    expect(perillas()).toHaveLength(6)
   })
 
   it('con la lectura bien, cada perilla muestra lo guardado, no lo de fábrica', async () => {
@@ -118,5 +118,23 @@ describe('SeccionNotificaciones — nunca los valores de fábrica como si fueran
     // De fábrica las dos vienen activadas; lo guardado las tiene apagadas.
     expect(aplicaciones!.getAttribute('aria-checked')).toBe('false')
     expect(pagos!.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('CF-11 (QA 04-10): una perilla por tema, ninguna de push, y lo obligatorio se dice', async () => {
+    h.getNotificationSettings.mockResolvedValue(GUARDADO)
+    await render()
+
+    const nombres = perillas().map((p) => p.getAttribute('aria-label'))
+    expect(nombres).toEqual([
+      'Postulaciones por correo',
+      'Pagos y cobros por correo',
+      'Contratos por correo',
+      'Visitas por correo',
+      'Mensajes por correo',
+      'Novedades de Leasefy por correo',
+    ])
+    expect(container.textContent).not.toMatch(/push/i)
+    expect(container.querySelector('[data-testid="notificaciones-obligatorias"]')).not.toBeNull()
+    expect(container.textContent).toContain('no se pueden apagar')
   })
 })

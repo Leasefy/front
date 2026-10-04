@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, House, Clock, Heart, Compass, Receipt, Lifebuoy, Handshake } from '@phosphor-icons/react';
 import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -35,16 +35,22 @@ import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
 import { InvitarAlEquipo } from '@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo';
 import { useMovimiento } from '@/components/inmobiliaria/invitar-al-equipo/movimiento';
 import { toast } from '@/components/ui/toast';
+import { CampanaDeLaInmobiliaria } from '@/components/notificaciones/CampanaDeLaInmobiliaria';
+import { etiquetaDeCategoria, iconoDelAviso } from '@/lib/notificaciones/aviso';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+// 🔴🔴 BU-11 (04-10-2026): el buscador del portal del inquilino busca en LO
+// SUYO (cuotas, recibos, contrato, solicitudes, acuerdos); el mock de
+// `lib/constants/search-data.ts` —pagos, inmuebles y personas inventadas— se borró.
 import {
-  searchData,
-  groupSearchResults,
-  getCategoryLabel,
-  getRecentSearches,
-  getQuickLinks,
-  type SearchCategory,
-  type SearchResult,
-} from '@/lib/constants/search-data';
+  accesosRapidos,
+  buscarEnElPortal,
+  NOMBRE_DE_CATEGORIA,
+  ORDEN_DE_CATEGORIAS,
+  type CategoriaDelPortal,
+  type ResultadoDelPortal,
+} from '@/lib/search/portal-inquilino/buscador-del-inquilino';
+import { useBuscadorDelInquilino } from '@/lib/search/portal-inquilino/use-buscador-del-inquilino';
+import { guardarReciente, leerRecientes } from '@/lib/search/portal-inquilino/busquedas-recientes';
 import {
   DropdownList,
   DropdownListContent,
@@ -81,9 +87,9 @@ export interface PlanHeaderProps {
 // Get category label for notification popover
 function getNotifCategoryLabel(category: string, isLandlord: boolean): string {
   if (isLandlord) {
-    return LANDLORD_CATEGORIES[category as LandlordNotificationCategory]?.label ?? category;
+    return LANDLORD_CATEGORIES[category as LandlordNotificationCategory]?.label ?? etiquetaDeCategoria(category);
   }
-  return TENANT_CATEGORIES[category as TenantNotificationCategory]?.label ?? category;
+  return TENANT_CATEGORIES[category as TenantNotificationCategory]?.label ?? etiquetaDeCategoria(category);
 }
 
 export function PlanHeader({
@@ -112,8 +118,8 @@ export function PlanHeader({
   // Mobile (<sm) search pattern: the inline input is hidden and replaced by an
   // icon button that toggles an absolute full-width search row under the header.
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [recientes, setRecientes] = useState<string[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [equipoAbierto, setEquipoAbierto] = useState(false);
@@ -286,17 +292,24 @@ export function PlanHeader({
   } = useAgencyUsers(puedeVerElEquipo);
   const pendingInvites = teamMembers.filter((m) => m.status === 'invited');
 
-  // MagnifyingGlass functionality
+  // 🔴🔴 BU-11: el buscador sólo existe donde hay algo REAL que buscar — el
+  // portal del inquilino. En el panel del propietario independiente buscaba en
+  // candidatos y pagos inventados: ahí no se pinta (decidido con la recomendada).
+  const conBuscador = showMagnifyingGlass && !isLandlord;
+  const buscador = useBuscadorDelInquilino(conBuscador && (searchFocused || mobileSearchOpen));
+  const consultaLista = searchQuery.trim().length >= 2;
+  const searchResults: ResultadoDelPortal[] =
+    consultaLista && buscador.indice ? buscarEnElPortal(buscador.indice, searchQuery) : [];
+
+  // Reset keyboard navigation whenever the query changes.
   useEffect(() => {
-    if (searchQuery.length >= 2) {
-      const results = searchData(searchQuery, isLandlord);
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
-    // Reset keyboard navigation whenever the query / result set changes.
     setActiveIndex(-1);
-  }, [searchQuery, isLandlord]);
+  }, [searchQuery]);
+
+  // Las recientes son de quien busca, en este navegador (se leen al abrir).
+  useEffect(() => {
+    if (conBuscador && searchFocused) setRecientes(leerRecientes(user?.id ?? user?.email ?? null));
+  }, [conBuscador, searchFocused, user?.id, user?.email]);
 
   // Close search on click outside (the mobile toggle button is excluded so it
   // can toggle the row without the outside-click handler racing it closed).
@@ -329,25 +342,32 @@ export function PlanHeader({
     onMagnifyingGlass?.(value);
   };
 
-  const handleMagnifyingGlassSelect = (result: SearchResult) => {
+  const handleMagnifyingGlassSelect = (result: ResultadoDelPortal) => {
+    if (consultaLista) setRecientes(guardarReciente(user?.id ?? user?.email ?? null, searchQuery));
     setMagnifyingGlassQuery('');
     setMagnifyingGlassFocused(false);
     setMobileSearchOpen(false);
+    // Si el resultado es la página en la que ya está, el campo seguía con el
+    // foco y un clic no lo volvía a abrir.
+    searchInputRef.current?.blur();
     router.push(result.href);
   };
 
-  const groupedResults = groupSearchResults(searchResults, isLandlord);
-  const recentSearches = getRecentSearches(isLandlord);
-  const quickLinks = getQuickLinks(isLandlord);
+  const groupedResults: Partial<Record<CategoriaDelPortal, ResultadoDelPortal[]>> = {};
+  for (const categoria of ORDEN_DE_CATEGORIAS) {
+    const deEsta = searchResults.filter((r) => r.categoria === categoria);
+    if (deEsta.length > 0) groupedResults[categoria] = deEsta;
+  }
+  const recentSearches = recientes;
+  const quickLinks = accesosRapidos();
 
   // Flatten the navigable items in render order so ArrowUp/ArrowDown index math
   // matches what the listbox shows. When the query is < 2 chars we show quick
   // links; otherwise we show the grouped results (recent searches are not
   // included here because they re-fill the query rather than navigate).
-  const flatResults: SearchResult[] =
-    searchQuery.length >= 2
-      ? Object.values(groupedResults).flat()
-      : quickLinks;
+  const flatResults: ResultadoDelPortal[] = consultaLista
+    ? ORDEN_DE_CATEGORIAS.flatMap((c) => groupedResults[c] ?? [])
+    : quickLinks;
   const activeOptionId =
     activeIndex >= 0 && flatResults[activeIndex]
       ? `plan-search-opt-${flatResults[activeIndex].id}`
@@ -375,19 +395,18 @@ export function PlanHeader({
     }
   };
 
-  const getCategoryIcon = (category: SearchCategory) => {
-    const icons: Record<SearchCategory, React.ReactNode> = {
-      property: <Buildings className="w-4 h-4" />,
-      candidate: <Users className="w-4 h-4" />,
-      contract: <FileText className="w-4 h-4" />,
-      lease: <House className="w-4 h-4" />,
-      payment: <CreditCard className="w-4 h-4" />,
-      application: <FileText className="w-4 h-4" />,
-      document: <FileText className="w-4 h-4" />,
-      message: <Chat className="w-4 h-4" />,
+  const getCategoryIcon = (category: CategoriaDelPortal) => {
+    const icons: Record<CategoriaDelPortal, React.ReactNode> = {
+      pago: <CreditCard className="w-4 h-4" />,
+      recibo: <Receipt className="w-4 h-4" />,
+      contrato: <House className="w-4 h-4" />,
+      solicitud: <Lifebuoy className="w-4 h-4" />,
+      acuerdo: <Handshake className="w-4 h-4" />,
+      pagina: <Compass className="w-4 h-4" />,
     };
     return icons[category];
   };
+  const getCategoryLabel = (category: CategoriaDelPortal) => NOMBRE_DE_CATEGORIA[category];
 
   const handleLogout = async () => {
     try {
@@ -416,7 +435,7 @@ export function PlanHeader({
             pushes the right-side cluster off-screen. */}
         {leftSlot && <div className="min-w-0 flex-1 truncate">{leftSlot}</div>}
 
-        {showMagnifyingGlass && (
+        {conBuscador && (
           <div
             ref={searchRef}
             className={cn(
@@ -440,16 +459,13 @@ export function PlanHeader({
               aria-controls="plan-search-listbox"
               aria-autocomplete="list"
               aria-activedescendant={activeOptionId}
-              aria-label={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
-                : t('header.search')}
+              aria-label={locale === 'es' ? 'Busca tus pagos, recibos y solicitudes' : 'Search your payments, receipts and requests'}
               value={searchQuery}
               onChange={handleMagnifyingGlass}
               onFocus={() => setMagnifyingGlassFocused(true)}
+              onClick={() => setMagnifyingGlassFocused(true)}
               onKeyDown={handleSearchKeyDown}
-              placeholder={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
-                : t('header.search')}
+              placeholder={locale === 'es' ? 'Busca tus pagos, recibos, solicitudes…' : 'Search your payments, receipts, requests…'}
               className={cn(
                 'w-full h-10 pl-10 pr-4',
                 'bg-surface-muted border border-border rounded-full',
@@ -466,7 +482,7 @@ export function PlanHeader({
                 id="plan-search-listbox"
                 role="listbox"
                 className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border shadow-lg rounded-lg max-h-[min(400px,60dvh)] overflow-y-auto overscroll-contain z-50 overflow-hidden">
-                {searchQuery.length >= 2 ? (
+                {consultaLista ? (
                   // Show search results
                   searchResults.length > 0 ? (
                     <div>
@@ -474,7 +490,7 @@ export function PlanHeader({
                         <div key={category}>
                           <div className="px-4 py-2.5 bg-surface-muted border-b border-border-faint">
                             <p className="text-[11px] font-medium text-fg-muted uppercase tracking-wider">
-                              {getCategoryLabel(category as SearchCategory)}
+                              {getCategoryLabel(category as CategoriaDelPortal)}
                             </p>
                           </div>
                           {items.map((result) => {
@@ -494,14 +510,14 @@ export function PlanHeader({
                               )}
                             >
                               <div className="w-9 h-9 bg-surface-muted rounded-full flex items-center justify-center text-fg-muted">
-                                {getCategoryIcon(result.category)}
+                                {getCategoryIcon(result.categoria)}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[13px] font-medium text-fg truncate">
-                                  {result.title}
+                                  {result.titulo}
                                 </p>
                                 <p className="text-[11px] text-fg-muted truncate">
-                                  {result.subtitle}
+                                  {result.detalle}
                                 </p>
                               </div>
                             </button>
@@ -509,6 +525,12 @@ export function PlanHeader({
                           })}
                         </div>
                       ))}
+                    </div>
+                  ) : buscador.cargando || !buscador.indice ? (
+                    <div className="px-4 py-10 text-center" role="status">
+                      <p className="text-[13px] text-fg-muted">
+                        {locale === 'es' ? 'Buscando en lo tuyo…' : 'Searching your things…'}
+                      </p>
                     </div>
                   ) : (
                     // No results
@@ -522,6 +544,13 @@ export function PlanHeader({
                       <p className="text-[12px] text-fg-subtle mt-1">
                         {locale === 'es' ? `No encontramos "${searchQuery}"` : `We couldn't find "${searchQuery}"`}
                       </p>
+                      {buscador.incompleto && (
+                        <p className="text-[12px] text-fg-subtle mt-1">
+                          {locale === 'es'
+                            ? 'Parte de tu información no se pudo leer: puede que esté y no salga. Vuelve a intentarlo en un momento.'
+                            : 'Part of your information could not be read. Try again in a moment.'}
+                        </p>
+                      )}
                     </div>
                   )
                 ) : (
@@ -550,14 +579,14 @@ export function PlanHeader({
                         )}
                       >
                         <div className="w-9 h-9 bg-surface-muted rounded-full flex items-center justify-center text-fg-muted">
-                          {getCategoryIcon(link.category)}
+                          {getCategoryIcon(link.categoria)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-medium text-fg">
-                            {link.title}
+                            {link.titulo}
                           </p>
                           <p className="text-[11px] text-fg-muted">
-                            {link.subtitle}
+                            {link.detalle}
                           </p>
                         </div>
                       </button>
@@ -595,7 +624,7 @@ export function PlanHeader({
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
           {/* Mobile search toggle — replaces the inline input below sm */}
-          {showMagnifyingGlass && (
+          {conBuscador && (
             <button
               ref={mobileSearchBtnRef}
               type="button"
@@ -920,6 +949,15 @@ export function PlanHeader({
                 onNavigate={() => setNotificationsOpen(false)}
               />
 
+              {/* QA 04-10 (NO-01…NO-08): en el panel de la inmobiliaria, la bandeja
+                  agrupada con el total real, el contenido y «Ver todas» a su página. */}
+              {isInmobiliaria ? (
+                <CampanaDeLaInmobiliaria
+                  onCerrar={() => setNotificationsOpen(false)}
+                  onCambio={() => { void activeNotifs.refetch(); }}
+                />
+              ) : (
+              <>
               {/* Tabs — Cadence SegmentedControl */}
               <div className="px-5 py-3 border-b border-border-faint">
                 <SegmentedControl
@@ -932,9 +970,9 @@ export function PlanHeader({
                       label: (
                         <span className="inline-flex items-center">
                           {locale === 'es' ? 'Todas' : 'All'}
-                          {notifications.length > 0 && (
+                          {activeNotifs.total > 0 && (
                             <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
-                              {notifications.length}
+                              {activeNotifs.total}
                             </span>
                           )}
                         </span>
@@ -995,7 +1033,11 @@ export function PlanHeader({
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      {notification.title.charAt(0).toUpperCase()}
+                      {(() => {
+                        // NO-03 (QA 04-10): el ícono del tipo, no la primera letra.
+                        const Icono = iconoDelAviso(notification.type, notification.category, (notification as { metadata?: unknown }).metadata);
+                        return <Icono className="w-[18px] h-[18px]" weight={notification.read ? 'regular' : 'fill'} aria-hidden="true" />;
+                      })()}
                     </div>
 
                     {/* Content */}
@@ -1023,9 +1065,11 @@ export function PlanHeader({
 
                     {/* Actions */}
                     <div className="flex-shrink-0 flex items-center">
-                      {!notification.read ? (
+                      {/* «Eliminar» en todas, leídas o no (QA 04-10). */}
+                      {!notification.read && (
                         <div className="w-2 h-2 rounded-full bg-plan-status-blue" />
-                      ) : (
+                      )}
+                      {(
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1040,6 +1084,7 @@ export function PlanHeader({
                           }}
                           className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-[opacity,color,background-color] duration-fast"
                           title="Eliminar"
+                          aria-label="Eliminar la notificación"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -1064,6 +1109,8 @@ export function PlanHeader({
                   {t('header.viewAll')}
                 </button>
               </div>
+              </>
+              )}
             </PopoverContent>
           </Popover>
 

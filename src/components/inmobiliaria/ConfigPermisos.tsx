@@ -73,6 +73,7 @@ import {
   PERMISOS_PUNTUALES,
   ROLES_DEL_SISTEMA,
 } from '@/lib/types/inmobiliaria';
+import { queCambiaEnLosPermisos } from '@/lib/permisos/que-cambia';
 
 // Los siete roles del sistema (22-09 noche); sólo se muestran los que el back devolvió.
 type AgencyRole = RolDeLaMatriz;
@@ -181,12 +182,15 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
                 checked={isEnabled}
                 onChange={(e) => !isLocked && onChange(e.target.checked)}
                 disabled={isLocked}
+                // CF-09 (QA 04-10): el lector de pantalla oía «casilla» sin más.
+                aria-label={`${getModuleLabel(module)} · ${getActionLabel(action)}`}
                 className="sr-only"
               />
+              {/* El ícono no se traga el clic: llega a la casilla por el <label>. */}
               {isEnabled ? (
-                <Check className="w-4 h-4" weight="bold" />
+                <Check className="w-4 h-4 pointer-events-none" weight="bold" aria-hidden="true" />
               ) : (
-                <ActionIcon className="w-4 h-4" />
+                <ActionIcon className="w-4 h-4 pointer-events-none" aria-hidden="true" />
               )}
               {isDangerous && isEnabled && (
                 <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-warning" weight="fill" />
@@ -257,6 +261,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             checked={allEnabled ? true : someEnabled ? 'indeterminate' : false}
             onCheckedChange={(checked) => onToggleAll(module, checked === true)}
             disabled={isAdmin}
+            aria-label={`${getModuleLabel(module)} · todas las acciones`}
             className={cn(isAdmin && 'opacity-60 cursor-not-allowed')}
           />
         </div>
@@ -298,6 +303,10 @@ export function ConfigPermisos({
     [initialPermissions],
   );
   const [activeRole, setActiveRole] = useState<AgencyRole>('admin');
+  const cambios = useMemo(
+    () => queCambiaEnLosPermisos(initialPermissions, permissions),
+    [initialPermissions, permissions],
+  );
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -694,6 +703,17 @@ export function ConfigPermisos({
               {t('inmobiliaria.config.permissions.confirmDescription')}
             </DialogDescription>
           </DialogHeader>
+          {/* CF-09 (QA 04-10): qué cambia, no sólo «Confirmar cambios». */}
+          {cambios.length > 0 && (
+            <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto text-sm text-fg" data-testid="permisos-que-cambia">
+              {cambios.map((c) => (
+                <li key={c} className="flex gap-2">
+                  <span aria-hidden="true" className="text-fg-subtle">•</span>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}

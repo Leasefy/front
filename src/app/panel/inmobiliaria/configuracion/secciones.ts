@@ -235,7 +235,10 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.notificaciones',
     descKey: 'inmobiliaria.config.tabs.notificacionesDesc',
     icon: Bell,
-    gate: { tipo: 'admin' },
+    // QA 04-10 (CF-11): son las de CADA persona (qué le llega a ella por
+    // correo) y ahora el back las respeta: todo miembro las maneja. Antes la
+    // asesora veía «No tienes acceso» y no podía apagar sus correos.
+    gate: { tipo: 'todos' },
   },
   {
     id: 'preferencias',

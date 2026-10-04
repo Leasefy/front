@@ -180,3 +180,32 @@ describe('post-login — sin el veredicto del segundo factor no se navega (Nico,
   })
 })
 
+
+describe('post-login — BU-06 (04-10-2026): la asesora no pasa por el selector de perfil', () => {
+  afterEach(() => {
+    authState.hasActiveAgencyMembership = false
+    authState.agencyRole = null
+  })
+
+  it('miembro activo de una inmobiliaria sin onboarding personal → su panel, nunca /onboarding/seleccionar-rol', async () => {
+    authState.user = { role: 'agency', backendRole: 'AGENT', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.hasActiveAgencyMembership = true
+    authState.agencyRole = 'AGENTE'
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledTimes(1)
+    expect(replaceMock.mock.calls[0][0]).toMatch(/^\/panel\/inmobiliaria/)
+  })
+
+  it('sin membresía activa sigue yendo al onboarding (nada cambia para los demás)', async () => {
+    authState.user = { role: 'agency', backendRole: 'AGENT', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.hasActiveAgencyMembership = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+  })
+})

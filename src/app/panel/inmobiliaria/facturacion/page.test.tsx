@@ -67,6 +67,13 @@ vi.mock('@/components/facturacion/CertificacionDelMandatario', () => ({
 vi.mock('@/components/facturacion/TercerosSinCorreo', () => ({
   TercerosSinCorreo: () => <div data-testid="sin-correo-simulado" />,
 }));
+vi.mock('@/components/contabilidad/gastos/CuentasPorPagar', () => ({
+  CuentasPorPagar: ({ conRegistrar }: { conRegistrar?: boolean }) => (
+    <div data-testid="cxp-simulada" data-con-registrar={String(conRegistrar)}>
+      <table />
+    </div>
+  ),
+}));
 
 import FacturacionPage from './page';
 
@@ -214,22 +221,20 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="sin-correo-simulado"]')).not.toBeNull();
   });
 
-  it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', async () => {
-    // Se mira en «Compras»: desde el 17-09 es la única sin listado propio.
+  it('🔴 CB-R21 · «Compras» muestra las facturas de proveedor de Gastos (una sola fuente)', async () => {
     const compras = qa('[role="tab"]').find(
       (t) => t.textContent === `${K}tab_compras`,
     )!;
     await activarPestana(compras);
-    expect(qa('thead th')).toHaveLength(7);
-
-    const celda = q('tbody td');
-    expect(celda).not.toBeNull();
-    expect(celda!.getAttribute('colspan')).toBe('7');
-
-    const vacio = celda!.querySelector('[data-testid="sin-datos"]');
-    expect(vacio).not.toBeNull();
-    // La descripción de la pestaña vive en el vacío, no en una franja aparte.
-    expect(vacio!.textContent).toContain(`${K}desc_compras`);
+    const cxp = q('[data-testid="cxp-simulada"]');
+    expect(cxp).not.toBeNull();
+    // El «Registrar» de la pestaña ya está arriba: la lista no repite el suyo.
+    expect(cxp!.getAttribute('data-con-registrar')).toBe('false');
+    expect(q('[data-testid="sin-datos"]')).toBeNull();
+    // Registrar una compra lleva a Contabilidad → Gastos, no al formulario del agente.
+    expect(q('[data-testid="facturacion-registrar-compra"]')!.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contabilidad/gastos',
+    );
   });
 
   it('🔴 «Ventas» y «Notas» listan lo emitido, con su selector de mes', async () => {
@@ -242,14 +247,12 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="emitidas-simulada-notas"]')).not.toBeNull();
   });
 
-  it('cambiar de pestaña cambia las columnas y el vacío', async () => {
+  it('cambiar de pestaña a «Compras» la marca y pinta su lista', async () => {
     const compras = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_compras`)!;
     await activarPestana(compras);
 
     expect(compras.getAttribute('aria-selected')).toBe('true');
-    expect(qa('thead th')).toHaveLength(7);
-    expect(q('tbody td')!.getAttribute('colspan')).toBe('7');
-    expect(q('[data-testid="sin-datos"]')!.textContent).toContain(`${K}desc_compras`);
+    expect(q('[data-testid="cxp-simulada"]')).not.toBeNull();
   });
 
   it('no queda ningún control sin comportamiento; el banner del M2 sigue', async () => {
@@ -296,11 +299,10 @@ describe('/panel/inmobiliaria/facturacion', () => {
       await activarPestana(pestana);
     }
 
-    it('Compras tampoco dice «no tienes»: manda a cuentas por pagar, que es donde viven', async () => {
+    it('🔴 CB-R21 · Compras ya no es un vacío: lista las facturas de Gastos', async () => {
       await ir('compras');
-      const vacio = q('[data-testid="sin-datos"]')!;
-      expect((vacio.textContent ?? '').toLowerCase()).not.toContain('no tienes');
-      expect(vacio.querySelector('a[href="/panel/inmobiliaria/pagos/cxp"]')).not.toBeNull();
+      expect(q('[data-testid="sin-datos"]')).toBeNull();
+      expect(q('[data-testid="cxp-simulada"]')).not.toBeNull();
     });
   });
 });

@@ -63,16 +63,6 @@ export function objetivoDesdeElCampo(escrito: string, unidad: string): number | 
   return unidad === 'porcentaje' ? Math.round(n * 10) / 1000 : n
 }
 
-/** Dólares con dos decimales (lo único técnico que la inmobiliaria ve del modelo: cuánto cuesta). */
-export function formatoUsd(usd: number, idioma: Idioma = 'es'): string {
-  return new Intl.NumberFormat(localeDe(idioma), {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(usd)
-}
-
 /** `claude-fable-5-1` → «Claude Fable 5.1». Un id que no se reconoce se muestra tal cual. */
 export function nombreDelModelo(id: string | null): string | null {
   if (!id) return null

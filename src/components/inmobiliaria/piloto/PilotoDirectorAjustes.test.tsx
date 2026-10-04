@@ -46,19 +46,19 @@ import es from '@/lib/i18n/locales/es.json'
 const GASTO = normalizarGasto({
   encendido: true,
   mes: '2026-09',
-  topeUsd: 40,
+  topeCop: 168_000,
   tramo: 'mediana',
-  gastadoUsd: 6.12,
-  excluidoUsd: 3.4,
+  gastadoCop: 25_704,
+  excluidoCop: 14_280,
   escalon: 'normal',
   porComponente: [
-    { componente: 'director.plan', usd: 4.1, cuentaParaTope: true },
-    { componente: 'chat', usd: 2.02, cuentaParaTope: true },
-    { componente: 'cobranza', usd: 3.4, cuentaParaTope: false },
+    { componente: 'director.plan', cop: 17_220, cuentaParaTope: true },
+    { componente: 'chat', cop: 8_484, cuentaParaTope: true },
+    { componente: 'cobranza', cop: 14_280, cuentaParaTope: false },
   ],
   porDia: [
-    { fecha: '2026-09-01', usd: 0.4 },
-    { fecha: '2026-09-02', usd: 0.5 },
+    { fecha: '2026-09-01', cop: 1_680 },
+    { fecha: '2026-09-02', cop: 2_100 },
   ],
 })
 
@@ -128,8 +128,10 @@ describe('PilotoDirectorAjustes — gasto de IA', () => {
     render()
     expect(q('piloto-director-gasto')?.textContent).toContain('inmobiliaria.piloto.director.gasto.tituloDelMes(septiembre de 2026)')
     const total = q('piloto-director-gasto-total')?.textContent ?? ''
-    expect(total).toMatch(/6,12/)
-    expect(total).toMatch(/40,00/)
+    // En PESOS, nunca en dólares (Nico, 04-10-2026).
+    expect(total).toMatch(/\$ 25\.704/)
+    expect(total).toMatch(/\$ 168\.000/)
+    expect(total).not.toMatch(/US|USD/)
     expect(q('piloto-director-gasto-tramo')?.textContent).toBe('inmobiliaria.piloto.director.gasto.tramo.mediana')
     expect(q('piloto-director-gasto-escalon')?.textContent).toBe('inmobiliaria.piloto.director.gasto.escalon.normal')
     const componentes = q('piloto-director-gasto-componentes')?.textContent ?? ''

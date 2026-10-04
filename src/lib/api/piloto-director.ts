@@ -54,7 +54,8 @@ export interface CicloDelDirector {
   fin: string | null
   modelo: string | null
   esfuerzo: string | null
-  costoUsd: number | null
+  /** Lo que costó el plan, en PESOS (ninguna pantalla con dólares, 04-10-2026). */
+  costoCop: number | null
   /** Con `sin_modelo`: por qué planearon las reglas («tope de IA al 92 %»…). */
   sinModeloPorque: string | null
 }
@@ -214,21 +215,22 @@ export type EscalonDelGasto = 'normal' | 'ahorro' | 'sinModelo'
 
 export interface GastoPorComponente {
   componente: string
-  usd: number
+  cop: number
   cuentaParaTope: boolean
 }
 
 export interface DirectorGasto {
   encendido: boolean
   mes: string | null
-  topeUsd: number | null
+  /** En PESOS: el micro convierte el tope y el gasto (ninguna pantalla con dólares, 04-10-2026). */
+  topeCop: number | null
   tramo: TramoDelTope | string | null
-  gastadoUsd: number
+  gastadoCop: number
   /** Lo que no cuenta para el tope (cobranza: se cobra aparte). */
-  excluidoUsd: number
+  excluidoCop: number
   escalon: EscalonDelGasto | string | null
   porComponente: GastoPorComponente[]
-  porDia: Array<{ fecha: string; usd: number }>
+  porDia: Array<{ fecha: string; cop: number }>
 }
 
 export interface DirectorExperimento {
@@ -303,7 +305,7 @@ function normalizarCiclo(v: unknown): CicloDelDirector | null {
     fin: texto(v.fin),
     modelo: texto(v.modelo),
     esfuerzo: texto(v.esfuerzo),
-    costoUsd: numero(v.costoUsd),
+    costoCop: numero(v.costoCop),
     sinModeloPorque: texto(v.sinModeloPorque),
   }
 }
@@ -443,21 +445,21 @@ export function normalizarGasto(raw: unknown): DirectorGasto {
   return {
     encendido: r.encendido === true,
     mes: texto(r.mes),
-    topeUsd: numero(r.topeUsd),
+    topeCop: numero(r.topeCop),
     tramo: texto(r.tramo),
-    gastadoUsd: numero(r.gastadoUsd) ?? 0,
-    excluidoUsd: numero(r.excluidoUsd) ?? 0,
+    gastadoCop: numero(r.gastadoCop) ?? 0,
+    excluidoCop: numero(r.excluidoCop) ?? 0,
     escalon: texto(r.escalon),
     porComponente: lista(r.porComponente)
       .filter(esObjeto)
       .map((c) => ({
         componente: texto(c.componente) ?? '',
-        usd: numero(c.usd) ?? 0,
+        cop: numero(c.cop) ?? 0,
         cuentaParaTope: c.cuentaParaTope !== false,
       })),
     porDia: lista(r.porDia)
       .filter(esObjeto)
-      .map((d) => ({ fecha: texto(d.fecha) ?? '', usd: numero(d.usd) ?? 0 })),
+      .map((d) => ({ fecha: texto(d.fecha) ?? '', cop: numero(d.cop) ?? 0 })),
   }
 }
 

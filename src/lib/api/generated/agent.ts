@@ -15498,22 +15498,22 @@ export interface components {
         DirectorGasto: {
             encendido: boolean;
             mes: string;
-            topeUsd: number;
+            topeCop: number;
             /** @enum {string|null} */
             tramo: "pequena" | "mediana" | "grande" | null;
-            gastadoUsd: number;
-            excluidoUsd: number;
+            gastadoCop: number;
+            excluidoCop: number;
             /** @enum {string|null} */
             escalon: "normal" | "ahorro" | "sinModelo" | null;
             porComponente: {
                 /** @enum {string} */
                 componente: "director.plan" | "director.replan" | "director.chat" | "director.resumen" | "chat" | "cobranza" | "otro";
-                usd: number;
+                cop: number;
                 cuentaParaTope: boolean;
             }[];
             porDia: {
                 fecha: string;
-                usd: number;
+                cop: number;
             }[];
         };
         DirectorGastoError: {
@@ -15548,7 +15548,7 @@ export interface components {
                 fin: string | null;
                 modelo: string | null;
                 esfuerzo: string | null;
-                costoUsd: number;
+                costoCop: number;
                 sinModeloPorque: string | null;
             } | null;
             resumen: string | null;

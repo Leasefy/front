@@ -38,7 +38,7 @@ const hoyCon = (estado: string) => ({
   data: {
     encendido: true,
     fecha: '2026-09-29',
-    ciclo: { id: 'c-1', tipo: 'replan', estado, inicio: null, fin: null, modelo: null, esfuerzo: null, costoUsd: null, sinModeloPorque: null },
+    ciclo: { id: 'c-1', tipo: 'replan', estado, inicio: null, fin: null, modelo: null, esfuerzo: null, costoCop: null, sinModeloPorque: null },
     resumen: null,
     pensamiento: null,
     prioridades: [],

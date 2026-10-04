@@ -54,7 +54,7 @@ const PLAN = {
     fin: '2026-09-29T10:03:40.000Z',
     modelo: 'claude-fable-5-1',
     esfuerzo: 'medium',
-    costoUsd: 0.41,
+    costoCop: 1_722,
     sinModeloPorque: null,
   },
   resumen: 'Hoy el foco es el recaudo: 12 cuotas vencen mañana.',
@@ -239,13 +239,14 @@ describe('PilotoDirector — estados', () => {
     const ciclo = q('piloto-director-ciclo')?.textContent ?? ''
     expect(ciclo).toContain('inmobiliaria.piloto.director.ciclo.listo(las 5:03')
     expect(ciclo).toContain('Claude Fable 5.1')
-    expect(q('piloto-director-costo')?.textContent).toMatch(/0,41/)
+    expect(q('piloto-director-costo')?.textContent).toMatch(/\$ 1\.722/)
+    expect(q('piloto-director-costo')?.textContent).not.toMatch(/US/)
     expect(q('piloto-director-resumen')?.textContent).toBe('Hoy el foco es el recaudo: 12 cuotas vencen mañana.')
     expect(q('piloto-director')?.getAttribute('data-estado')).toBe('listo')
   })
 
   it('en curso: lo dice y «Volver a planear» queda en «Planeando…»', () => {
-    render(hoyCon(conCiclo({ estado: 'en_curso', fin: null, costoUsd: null })))
+    render(hoyCon(conCiclo({ estado: 'en_curso', fin: null, costoCop: null })))
     expect(q('piloto-director')?.getAttribute('data-estado')).toBe('en_curso')
     expect(q('piloto-director-ciclo')?.textContent).toContain('inmobiliaria.piloto.director.ciclo.enCurso')
     const boton = q('piloto-director-replanear') as HTMLButtonElement
@@ -254,7 +255,7 @@ describe('PilotoDirector — estados', () => {
   })
 
   it('🔴 sin modelo: planeó con reglas fijas, y dice POR QUÉ', () => {
-    render(hoyCon(conCiclo({ estado: 'sin_modelo', modelo: null, costoUsd: 0, sinModeloPorque: 'tope de IA al 92 %' })))
+    render(hoyCon(conCiclo({ estado: 'sin_modelo', modelo: null, costoCop: 0, sinModeloPorque: 'tope de IA al 92 %' })))
     expect(q('piloto-director-sin-modelo')?.textContent).toContain('inmobiliaria.piloto.director.ciclo.sinModeloTitulo')
     expect(q('piloto-director-sin-modelo')?.textContent).toContain('tope de IA al 92 %')
     // No se nombra un modelo que no se usó.
@@ -262,7 +263,7 @@ describe('PilotoDirector — estados', () => {
   })
 
   it('fallido: lo dice; sólo al administrador le sugiere volver a planear', () => {
-    const plan = conCiclo({ estado: 'fallido', costoUsd: null }, { resumen: null, ordenes: [] })
+    const plan = conCiclo({ estado: 'fallido', costoCop: null }, { resumen: null, ordenes: [] })
     render(hoyCon(plan), { isAdmin: true })
     expect(q('piloto-director-fallido')?.textContent).toContain('inmobiliaria.piloto.director.ciclo.fallidoAdmin')
     act(() => root.unmount())

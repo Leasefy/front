@@ -54,12 +54,12 @@ import type { DirectorDeLaAccion } from '@/lib/api/piloto'
 import {
   fechaDeHoyEnBogota,
   fechaLarga,
-  formatoUsd,
   horaConArticulo,
   humanizarClave,
   nombreDelModelo,
 } from '@/lib/piloto/director'
 import { EvidenciaDelDirectorLista } from './PilotoDirectorPorQue'
+import { formatCurrency } from '@/lib/format'
 
 /** Cuántas órdenes se ven antes de «Ver todas». */
 const ORDENES_A_LA_VISTA = 5
@@ -229,12 +229,12 @@ function EstadoDelCiclo({ hoy, isAdmin, hoyEnBogota }: { hoy: DirectorHoy; isAdm
             <span>{modelo}</span>
           </>
         )}
-        {typeof ciclo.costoUsd === 'number' && ciclo.estado !== 'en_curso' && (
+        {typeof ciclo.costoCop === 'number' && ciclo.estado !== 'en_curso' && (
           <>
             <span aria-hidden="true">·</span>
             <span data-testid="piloto-director-costo">
               {t('inmobiliaria.piloto.director.ciclo.costo')}{' '}
-              <span className="font-mono tabular-nums text-fg">{formatoUsd(ciclo.costoUsd, idioma)}</span>
+              <span className="font-mono tabular-nums text-fg">{formatCurrency(ciclo.costoCop, idioma)}</span>
             </span>
           </>
         )}

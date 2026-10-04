@@ -41,7 +41,8 @@ import {
   useDirectorGasto,
   type LecturaDelDirector,
 } from '@/lib/hooks/piloto/use-piloto-director'
-import { fechaLarga, formatoUsd, humanizarClave, mesLargo } from '@/lib/piloto/director'
+import { fechaLarga, humanizarClave, mesLargo } from '@/lib/piloto/director'
+import { formatCurrency } from '@/lib/format'
 
 /** Los componentes del gasto que tienen nombre propio en pantalla. */
 const COMPONENTE_CONOCIDO: Record<string, string> = {
@@ -87,7 +88,7 @@ function GastoDeIa({ lectura }: { lectura: LecturaDelDirector<DirectorGasto> }) 
   if (notAvailable || !data || !data.encendido) return null
 
   const mes = mesLargo(data.mes, idioma)
-  const tope = data.topeUsd
+  const tope = data.topeCop
   const tramo = data.tramo && TRAMOS.has(data.tramo) ? data.tramo : null
   const escalon = data.escalon && ESCALONES.has(data.escalon) ? data.escalon : null
 
@@ -100,18 +101,18 @@ function GastoDeIa({ lectura }: { lectura: LecturaDelDirector<DirectorGasto> }) 
             : t('inmobiliaria.piloto.director.gasto.titulo')}
         </p>
         <p className="text-body-sm" data-testid="piloto-director-gasto-total">
-          <span className="font-mono tabular-nums text-fg">{formatoUsd(data.gastadoUsd, idioma)}</span>
+          <span className="font-mono tabular-nums text-fg">{formatCurrency(data.gastadoCop, idioma)}</span>
           {typeof tope === 'number' && (
             <span className="text-fg-muted">
               {' '}
               {t('inmobiliaria.piloto.director.gasto.de')}{' '}
-              <span className="font-mono tabular-nums">{formatoUsd(tope, idioma)}</span>
+              <span className="font-mono tabular-nums">{formatCurrency(tope, idioma)}</span>
             </span>
           )}
         </p>
         {typeof tope === 'number' && tope > 0 && (
           <Progress
-            value={Math.min(data.gastadoUsd, tope)}
+            value={Math.min(data.gastadoCop, tope)}
             max={tope}
             size="sm"
             variant={escalon ? VARIANTE_DEL_ESCALON[escalon] : 'default'}
@@ -148,7 +149,7 @@ function GastoDeIa({ lectura }: { lectura: LecturaDelDirector<DirectorGasto> }) 
                     {!c.cuentaParaTope && (
                       <Badge variant="secondary">{t('inmobiliaria.piloto.director.gasto.noCuenta')}</Badge>
                     )}
-                    <span className="font-mono text-caption tabular-nums text-fg">{formatoUsd(c.usd, idioma)}</span>
+                    <span className="font-mono text-caption tabular-nums text-fg">{formatCurrency(c.cop, idioma)}</span>
                   </span>
                 </li>
               )
@@ -160,17 +161,17 @@ function GastoDeIa({ lectura }: { lectura: LecturaDelDirector<DirectorGasto> }) 
       {data.porDia.length >= 2 && (
         <div className="space-y-1">
           <p className="text-label text-fg-muted">{t('inmobiliaria.piloto.director.gasto.porDia')}</p>
-          <Sparkline values={data.porDia.map((d) => d.usd)} width={200} height={32} color="hsl(var(--primary))" />
+          <Sparkline values={data.porDia.map((d) => d.cop)} width={200} height={32} color="hsl(var(--primary))" />
         </div>
       )}
 
       <p className="text-caption text-fg-muted" data-testid="piloto-director-gasto-laura">
         {t('inmobiliaria.piloto.director.gasto.laura')}
-        {data.excluidoUsd > 0 && (
+        {data.excluidoCop > 0 && (
           <>
             {' '}
             {t('inmobiliaria.piloto.director.gasto.excluido')}{' '}
-            <span className="font-mono tabular-nums text-fg">{formatoUsd(data.excluidoUsd, idioma)}</span>.
+            <span className="font-mono tabular-nums text-fg">{formatCurrency(data.excluidoCop, idioma)}</span>.
           </>
         )}
       </p>

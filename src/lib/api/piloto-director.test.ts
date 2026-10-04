@@ -210,7 +210,7 @@ describe('normalizar: lo que falta se lee vacío', () => {
     expect(hoy.retenciones).toEqual([])
     expect(hoy.rechazadas).toEqual([])
     expect(hoy.pensamiento).toBeNull()
-    expect(hoy.ciclo?.costoUsd).toBeNull()
+    expect(hoy.ciclo?.costoCop).toBeNull()
     expect(hoy.ordenes[0]?.evidencia).toEqual([])
     expect(hoy.ordenes[0]?.accionId).toBeNull()
     expect(hoy.grupoDeControl).toEqual({ activo: false, omitidas: 0 })

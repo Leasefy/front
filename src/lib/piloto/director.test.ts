@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest'
 import {
   fechaDeHoyEnBogota,
   elPlanReemplazaLaLectura,
-  formatoUsd,
   horaConArticulo,
   mesLargo,
   humanizarClave,
@@ -72,12 +71,6 @@ describe('valores de una meta', () => {
 })
 
 describe('lo demás', () => {
-  it('USD con dos decimales', () => {
-    expect(formatoUsd(0.41)).toMatch(/0,41/)
-    expect(formatoUsd(40)).toMatch(/40,00/)
-    expect(formatoUsd(6.125, 'en')).toMatch(/6\.13/)
-  })
-
   it('el modelo con su nombre de producto, no con su id', () => {
     expect(nombreDelModelo('claude-fable-5-1')).toBe('Claude Fable 5.1')
     expect(nombreDelModelo('claude-opus-5-5')).toBe('Claude Opus 5.5')

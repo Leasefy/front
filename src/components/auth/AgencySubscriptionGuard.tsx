@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
+import { laSuscripcionSePideConElRol } from '@/lib/auth/quien-ve-la-suscripcion';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
@@ -38,8 +39,11 @@ const EXEMPT_PREFIXES = [
 export function AgencySubscriptionGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { hasPanelAccess, indeterminate } = useAgencySubscription();
   const { agencyRole } = useAuth();
+  // COBRANZA-MANUAL (04-10-2026): el auxiliar de cartera y el abogado no la
+  // pueden ver; pedirla era un 403 al entrar. Sin pedirla queda indeterminada
+  // y el guard deja pasar (falla abierto, como siempre).
+  const { hasPanelAccess, indeterminate } = useAgencySubscription(laSuscripcionSePideConElRol(agencyRole));
 
   const isAdmin = agencyRole === AGENCY_ROLES.ADMIN;
   const isExempt = EXEMPT_PREFIXES.some((prefix) => pathname?.startsWith(prefix));

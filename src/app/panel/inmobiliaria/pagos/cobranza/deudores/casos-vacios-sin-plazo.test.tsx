@@ -37,6 +37,11 @@ vi.mock('@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza', () =>
 vi.mock('@/components/inmobiliaria/cobranza/CobranzaImportCard', () => ({
   CobranzaImportCard: () => <div data-testid="importar-cartera-csv" />,
 }))
+vi.mock('@/components/cobranza-manual/TraerLaCartera', () => ({
+  TraerLaCartera: ({ compacto }: { compacto?: boolean }) => (
+    <div data-testid={compacto ? 'traer-compacto' : 'traer-la-cartera'} />
+  ),
+}))
 vi.mock('@/components/data-display/EmptyState', () => ({
   EmptyState: ({ title, description }: { title: string; description: string }) => (
     <div data-testid="vacio">
@@ -77,10 +82,20 @@ describe('Cobranza → Casos vacía', () => {
     expect(container.querySelector('[data-testid="importar-cartera-csv"]')).toBeNull()
   })
 
-  it('con el plazo fijado: el vacío de siempre, con la importación', () => {
+  it('con el plazo fijado: la puerta es la cartera de los contratos; el CSV, una opción extra abajo', () => {
     h.sinFijar = false
     pintar()
     expect(container.querySelector('[data-testid="casos-vacio-sin-plazo"]')).toBeNull()
-    expect(container.querySelector('[data-testid="importar-cartera-csv"]')).not.toBeNull()
+    // COBRANZA-MANUAL (04-10-2026): «Cobranza se llena con la cartera de los
+    // contratos». El vacío ya no manda a importar un CSV como única puerta.
+    const vacio = container.querySelector('[data-testid="casos-vacio-de-la-cartera"]')
+    expect(vacio?.textContent).toContain('Todavía no hay deudores en Cobranza')
+    expect(container.textContent).not.toContain('Importa una cartera CSV')
+    const traer = container.querySelector('[data-testid="traer-la-cartera"]')
+    const csv = container.querySelector('[data-testid="importar-cartera-csv"]')
+    expect(traer).not.toBeNull()
+    expect(csv).not.toBeNull()
+    // El CSV va DESPUÉS de traer la cartera.
+    expect(traer!.compareDocumentPosition(csv!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

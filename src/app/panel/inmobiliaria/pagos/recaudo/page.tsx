@@ -9,12 +9,14 @@
 
 import { SectionLabel } from '@/components/ui/section-label';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { SIN_EL_AUXILIAR_DE_CARTERA } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 import { Recaudo } from '@/components/recaudo/Recaudo';
 import Link from 'next/link';
 
 export default function RecaudoPage() {
   return (
-    <PageGuard module="cobros" action="view">
+    // COBRANZA-MANUAL (04-10-2026): el auxiliar de cartera no ve lo que salió en giros.
+    <PageGuard module="cobros" action="view" roles={[...SIN_EL_AUXILIAR_DE_CARTERA]} seccion="Recaudo">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Pagos · inquilinos</SectionLabel>

@@ -28,6 +28,7 @@ import { FeedbackCta } from '@/components/feedback/FeedbackCta';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
@@ -203,7 +204,11 @@ export function PlanHeader({
     error: agencyError,
     refetch: agencySubscriptionRefetch,
     state: agencySubscriptionState,
-  } = useAgencySubscription(isInmobiliaria);
+  } = useAgencySubscription(
+    // COBRANZA-MANUAL (04-10-2026): sólo quien la puede ver (el auxiliar de
+    // cartera y el abogado recibían un 403 en la consola al entrar).
+    isInmobiliaria && !!permsCtx && !permsCtx.isLoading && puedeVerLaSuscripcion(permsCtx),
+  );
   // The LIVE agency plan catalog — an admin-created tier (contrato 29, e.g.
   // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
   // Same source `upgrade/page.tsx` and `ConfigFacturacion.tsx` resolve

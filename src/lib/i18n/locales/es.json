@@ -6939,6 +6939,7 @@
             "memos": "Memos",
             "compromisos": "Compromisos",
             "acciones": "Acciones",
+            "gestiones": "Gestiones",
             "switcher": "Cambiar pestaña",
             "closeSwitcher": "Cerrar"
           },
@@ -7408,7 +7409,7 @@
           "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
           "empty": {
             "title": "Sin cartas generadas",
-            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+            "description": "El agente no ha preparado cartas por aprobar. Para hacer una a mano, abre un deudor en Casos y usa «Generar carta prejurídica»: sale en PDF, con los datos reales, y no se envía."
           },
           "columns": {
             "kind": "Tipo",

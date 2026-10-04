@@ -102,10 +102,10 @@ export const contratosSource: SearchSource = {
   id: 'contratos',
   labelKey: 'inmobiliaria.commandPalette.sources.contratos',
   icon: FileText,
-  // NOTE: The inmobiliaria nav uses no specific permission module for contratos
-  // (the nav item doesn't list a module guard). We use 'contratos' to align
-  // with any future permission gate; if absent the source still renders.
-  // No permission gate set here — contracts are visible to all agency members.
+  // 🔴 COBRANZA-MANUAL (04-10-2026): la fila «Contratos» del menú sí pide
+  // `contratos:view` (y la pantalla también); sin ese gate el buscador le traía
+  // contratos a quien no los puede abrir (el auxiliar de cartera).
+  permission: { module: 'contratos', action: 'view' },
 
   async run(query, _ctx, signal) {
     if (!BACKEND_URL) return [];

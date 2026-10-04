@@ -28,6 +28,7 @@ import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
+import { TraerLaCartera } from '@/components/cobranza-manual/TraerLaCartera'
 import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
 import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
@@ -237,16 +238,27 @@ export default function DeudoresListClient() {
           </div>
         ) : (
           <>
-            <EmptyState
-              icon={Users}
-              title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
-              description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
-            />
-            {/* Importar cartera — cableada al endpoint POST /cartera/import.
-                FAIL-SOFT: si el backend no está desplegado (404/red), el card
-                degrada a "Próximamente — requiere despliegue" sin romper. Tras un
-                import exitoso refrescamos la lista para salir del empty state. */}
-            <CobranzaImportCard onImported={() => void refetch()} />
+            {/* COBRANZA-MANUAL (04-10-2026; Nico: «Cobranza se llena con la
+                cartera de los contratos»): la puerta principal es la cartera de
+                los contratos; el CSV queda como opción extra, abajo. */}
+            <div data-testid="casos-vacio-de-la-cartera">
+              <EmptyState
+                icon={Users}
+                title="Todavía no hay deudores en Cobranza"
+                description="Aquí aparecen solos los inquilinos que pasan sus días de plazo sin pagar. Si acabas de fijar el plazo o de cargar contratos, tráelos ahora."
+              />
+            </div>
+            <TraerLaCartera onTraida={() => void refetch()} />
+            <section className="space-y-2" aria-labelledby="importar-otros-deudores">
+              <h2 id="importar-otros-deudores" className="text-sm font-medium text-fg-muted">
+                Otra opción: deudores que no están en Leasefy
+              </h2>
+              {/* Importar cartera — cableada al endpoint POST /cartera/import.
+                  FAIL-SOFT: si el backend no está desplegado (404/red), el card
+                  degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+                  import exitoso refrescamos la lista para salir del empty state. */}
+              <CobranzaImportCard onImported={() => void refetch()} />
+            </section>
           </>
         )}
       </div>
@@ -291,13 +303,18 @@ export default function DeudoresListClient() {
   return (
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.deudores.title')}
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-h2 text-fg">
+            {t('inmobiliaria.ai.cobranza.deudores.title')}
+          </h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+            {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
+          </p>
+        </div>
+        {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; este
+            botón la trae ya. No contacta a nadie. */}
+        <TraerLaCartera compacto onTraida={() => void refetch()} />
       </header>
 
       <AvisoPlazoSinFijarEnCobranza />

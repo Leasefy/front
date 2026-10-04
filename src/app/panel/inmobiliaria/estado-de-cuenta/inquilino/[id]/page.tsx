@@ -22,6 +22,7 @@ import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAnularRecibo } from '@/components/estado-de-cuenta/AnularReciboDeLaFila';
+import { GestionesDeLaPersona } from '@/components/cobranza-manual/GestionesDeLaPersona';
 
 const LISTA = '/panel/inmobiliaria/inquilinos';
 
@@ -36,6 +37,11 @@ function Contenido() {
   // Al anular se vuelve a montar la pantalla, que relee el documento.
   const { isAdmin } = usePermissions();
   const [version, setVersion] = React.useState(0);
+  // COBRANZA-MANUAL (04-10-2026): las gestiones de cobro de la persona, con
+  // «Registrar gestión», debajo del documento. La persona es la del documento
+  // que devolvió el back (su número de documento), no el `id` de la ruta, que
+  // puede ser la cuenta del portal.
+  const [cliente, setCliente] = React.useState<{ documento: string; nombre: string } | null>(null);
 
   return (
     <ProveedorDeAnularRecibo habilitado={isAdmin} onAnulado={() => setVersion((v) => v + 1)}>
@@ -44,7 +50,13 @@ function Contenido() {
         /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
            el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
            quien abre el enlace compartido. */
-        cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
+        cargar={(filtro) =>
+          estadoDeCuentaApi.inquilino(id, filtro).then((doc) => {
+            const documento = doc.cliente?.documento?.trim();
+            setCliente(documento ? { documento, nombre: doc.cliente.nombre } : null);
+            return doc;
+          })
+        }
         volverA={{ href: volver }}
         /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
            a configurar las reglas. El portal y el enlace no lo pasan. */
@@ -69,6 +81,15 @@ function Contenido() {
           />
         )}
       />
+      {cliente ? (
+        <div className="mx-auto w-full max-w-[1200px] px-4 pb-8 sm:px-6 lg:px-8 print:hidden">
+          <GestionesDeLaPersona
+            quien={{ documento: cliente.documento }}
+            nombre={cliente.nombre}
+            className="rounded-lg border border-border bg-card p-4 sm:p-5"
+          />
+        </div>
+      ) : null}
     </ProveedorDeAnularRecibo>
   );
 }

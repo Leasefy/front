@@ -15,10 +15,22 @@
  *
  * Per-item permission gating uses ctx.canAccess when provided; items with
  * `module: null` are visible to every role (their pages self-guard).
+ *
+ * 🔴 COBRANZA-MANUAL (04-10-2026): «el buscador respeta lo que el rol ve». Con
+ * `ctx.nav`, una entrada cuya ruta vive en el menú pasa ADEMÁS por el MISMO gate
+ * que su fila (`pasaGateDeFila` + el encuadre por rol): Facturación, Contabilidad,
+ * Conciliación o Liquidaciones ya no le salen a quien el menú no se las muestra
+ * (antes sólo miraba `permission`, y casi todas esas no tenían). Lo que no está
+ * en el menú (Inicio, Chat, Configuración, Migraciones) se gatea con su
+ * `permission` o sus `roles`.
  */
 
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { Compass } from '@phosphor-icons/react';
+import { pantallaDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
+import { pasaGateDeFila, type NavFilterContext } from '@/lib/nav/agency-nav-filter';
+import { canSeeBusinessModule } from '@/lib/nav/agency-module-scope';
+import { SIN_EL_AUXILIAR_DE_CARTERA } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 
 interface NavEntry {
   /** Label as shown in the sidebar / tab / page. */
@@ -30,6 +42,8 @@ interface NavEntry {
   keywords?: string;
   /** Permission gate, mirrors the nav item's module (null = everyone). */
   permission?: { module: string; action: string };
+  /** Role gate for routes outside the sidebar tree (isAdmin always passes). */
+  roles?: readonly string[];
   /** Actions get an "Acción" badge; pages a "Página" badge. */
   kind: 'page' | 'action';
 }
@@ -39,7 +53,7 @@ const P = '/panel/inmobiliaria';
 const NAV_CATALOG: NavEntry[] = [
   // ── Cabecera ──────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Inicio', context: 'Inicio', href: `${P}/piloto`, keywords: 'inicio piloto automatico torre control bandeja briefing autonomia agentes home' },
-  { kind: 'page', title: 'Chat', context: 'Inicio', href: P, keywords: 'asistente chat ia preguntar' },
+  { kind: 'page', title: 'Chat', context: 'Inicio', href: P, keywords: 'asistente chat ia preguntar', roles: SIN_EL_AUXILIAR_DE_CARTERA },
 
   // ── Agentes IA ────────────────────────────────────────────────────────────
   // Nico, 2026-09-16: una sección sólo de agentes, arriba de Captación. El
@@ -148,6 +162,32 @@ function norm(s: string): string {
     .toLowerCase();
 }
 
+/**
+ * ¿Esta entrada la ve quien busca? Su `permission` y sus `roles`, y —si su ruta
+ * vive en el menú— el MISMO gate que su fila (la pantalla, o el módulo si la
+ * ruta es la de su raíz) más el encuadre por rol de su módulo. Sin `nav` (un
+ * llamador viejo), como antes: sólo `permission`.
+ */
+export function seVeEnElBuscador(
+  entry: Pick<NavEntry, 'href' | 'permission' | 'roles'>,
+  ctx: { canAccess?: (module: string, action: string) => boolean; nav?: NavFilterContext },
+): boolean {
+  if (entry.permission && ctx.canAccess && !ctx.canAccess(entry.permission.module, entry.permission.action)) {
+    return false;
+  }
+  const nav = ctx.nav;
+  if (!nav) return true;
+  if (entry.roles && entry.roles.length > 0) {
+    const pasa = nav.isAdmin || (nav.agencyRole !== null && entry.roles.includes(nav.agencyRole));
+    if (!pasa) return false;
+  }
+  const enElMenu = pantallaDeLaRuta(entry.href);
+  if (!enElMenu) return true;
+  const fila = enElMenu.pantalla.href === enElMenu.modulo.href ? enElMenu.modulo : enElMenu.pantalla;
+  if (!pasaGateDeFila(fila, nav)) return false;
+  return canSeeBusinessModule(enElMenu.modulo.scope, { isAdmin: nav.isAdmin, agencyRole: nav.agencyRole });
+}
+
 export const navigationSource: SearchSource = {
   id: 'navegacion',
   labelKey: 'inmobiliaria.commandPalette.sources.navegacion',
@@ -156,9 +196,7 @@ export const navigationSource: SearchSource = {
   async run(query, ctx) {
     const q = norm(query);
     return NAV_CATALOG.filter((entry) => {
-      if (entry.permission && ctx.canAccess && !ctx.canAccess(entry.permission.module, entry.permission.action)) {
-        return false;
-      }
+      if (!seVeEnElBuscador(entry, ctx)) return false;
       return (
         norm(entry.title).includes(q) ||
         norm(entry.context).includes(q) ||

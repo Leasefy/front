@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Envelope, Warning } from '@phosphor-icons/react'
 
@@ -174,12 +175,20 @@ function CartasContent() {
   if (!isLoading && !hasFilters && artifacts.length === 0 && !error) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-3">
         <EmptyState
           icon={Envelope}
           title={t('inmobiliaria.ai.cobranza.cartas.empty.title')}
           description={t('inmobiliaria.ai.cobranza.cartas.empty.description')}
         />
+        {/* COBRANZA-MANUAL (04-10-2026): la carta a mano sale desde el deudor. */}
+        <div className="flex justify-center">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/cobranza/deudores" data-testid="cartas-ir-a-casos">
+              Ir a los casos para generar una carta
+            </Link>
+          </Button>
+        </div>
       </div>
       </CrossFade>
     )

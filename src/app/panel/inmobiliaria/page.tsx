@@ -3,6 +3,8 @@
 import { BetaLayout } from '@/components/beta/BetaLayout';
 import { BetaErrorBoundary } from '@/components/beta/BetaErrorBoundary';
 import { ChatContainer } from '@/components/beta/ChatContainer';
+import { PageGuard } from '@/components/auth/PageGuard';
+import { SIN_EL_AUXILIAR_DE_CARTERA } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 
 /**
  * Agency INICIO — the Manus-style AI chat home (AI CHAT HOME F3).
@@ -20,10 +22,14 @@ import { ChatContainer } from '@/components/beta/ChatContainer';
  */
 export default function InmobiliariaInicioPage() {
   return (
-    <BetaErrorBoundary>
-      <BetaLayout basePath="/panel/inmobiliaria" variant="embedded" dentroDelPanel>
-        <ChatContainer />
-      </BetaLayout>
-    </BetaErrorBoundary>
+    // COBRANZA-MANUAL (04-10-2026): el chat responde sobre TODO el negocio; el
+    // auxiliar de cartera sólo cobra (`el-auxiliar-de-cartera-no-ve-los-bancos.ts`).
+    <PageGuard roles={[...SIN_EL_AUXILIAR_DE_CARTERA]} seccion="Chat">
+      <BetaErrorBoundary>
+        <BetaLayout basePath="/panel/inmobiliaria" variant="embedded" dentroDelPanel>
+          <ChatContainer />
+        </BetaLayout>
+      </BetaErrorBoundary>
+    </PageGuard>
   );
 }

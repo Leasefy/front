@@ -33,10 +33,20 @@ import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention/ManualCallModal'
 import { CrossFade } from '@leasefy/cadence'
+import { RegistrarGestion } from '@/components/cobranza-manual/RegistrarGestion'
+import { GenerarCarta } from '@/components/cobranza-manual/GenerarCarta'
 
 void React
 
-type OpenModal = 'pause' | 'reanudar' | 'forceStage' | 'manualWA' | 'manualCall' | null
+type OpenModal =
+  | 'pause'
+  | 'reanudar'
+  | 'forceStage'
+  | 'manualWA'
+  | 'manualCall'
+  | 'gestion'
+  | 'carta'
+  | null
 
 const NS = 'inmobiliaria.ai.cobranza'
 
@@ -45,6 +55,8 @@ interface DebtorActionRailProps {
   debtorId: string
   debtorName: string
   onIntervention: () => void
+  /** COBRANZA-MANUAL: se registró una gestión (el detalle muestra «Gestiones»). */
+  onGestionRegistrada?: () => void
 }
 
 /** Future-aware relative time (the sidebar's old formatter — moved here with
@@ -88,6 +100,7 @@ export function DebtorActionRail({
   debtorId,
   debtorName,
   onIntervention,
+  onGestionRegistrada,
 }: DebtorActionRailProps) {
   const { t, locale } = useI18n()
   const perms = usePermissionsContextSafe()
@@ -122,6 +135,11 @@ export function DebtorActionRail({
   const forceStageEnabled = canForceStage && isAdmin
   const manualWAEnabled = canIntervene
   const manualCallEnabled = canIntervene && isAdmin
+  // COBRANZA-MANUAL (04-10-2026): registrar una gestión pide `cobros:create`
+  // del back (administrador, contador y auxiliar de cartera); generar la carta
+  // a mano, ver la cobranza. Ninguna de las dos le manda nada a nadie.
+  const gestionEnabled = isAdmin || (perms?.canAccess('cobros', 'create') ?? false)
+  const cartaEnabled = isAdmin || (perms?.canAccess('cobranza', 'view') ?? false)
 
   const handleSuccess = () => {
     setOpenModal(null)
@@ -223,6 +241,20 @@ export function DebtorActionRail({
           )}
           </CrossFade>
           <RailAction
+            label="Registrar gestión"
+            disabled={!gestionEnabled}
+            disabledTooltip="Registrar gestiones lo hacen el administrador, el contador y el auxiliar de cartera."
+            onClick={() => setOpenModal('gestion')}
+            testId="rail-registrar-gestion"
+          />
+          <RailAction
+            label="Generar carta prejurídica"
+            disabled={!cartaEnabled}
+            disabledTooltip="Tu rol no puede ver la cobranza."
+            onClick={() => setOpenModal('carta')}
+            testId="rail-generar-carta"
+          />
+          <RailAction
             label={t(`${NS}.detail.acciones.forceStage.cta`)}
             disabled={!forceStageEnabled}
             disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
@@ -295,6 +327,20 @@ export function DebtorActionRail({
         debtorId={debtorId}
         debtorName={debtorName}
         onSuccess={handleSuccess}
+      />
+      <RegistrarGestion
+        abierto={openModal === 'gestion'}
+        onCerrar={() => setOpenModal(null)}
+        quien={{ deudorId: debtorId }}
+        nombre={debtorName}
+        onRegistrada={() => onGestionRegistrada?.()}
+      />
+      <GenerarCarta
+        abierto={openModal === 'carta'}
+        onCerrar={() => setOpenModal(null)}
+        debtorId={debtorId}
+        debtorName={debtorName}
+        onGenerada={() => onGestionRegistrada?.()}
       />
       <ManualCallModal
         open={openModal === 'manualCall'}

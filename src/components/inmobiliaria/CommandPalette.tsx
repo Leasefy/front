@@ -598,7 +598,7 @@ export function CommandPalette() {
   const router = useRouter();
   const { t } = useI18n();
   const { agency } = useAuth();
-  const { canAccess } = usePermissionsContext();
+  const { canAccess, isAdmin, agencyRole, agentAccessStatus, modulosPagos } = usePermissionsContext();
 
   const [query, setQuery] = useState('');
   const [indiceActivo, setIndiceActivo] = useState(0);
@@ -625,7 +625,22 @@ export function CommandPalette() {
     return todas.filter((s) => !s.permission || canAccess(s.permission.module, s.permission.action));
   }, [canAccess]);
 
-  const ctx = useMemo((): SearchSourceContext => ({ agencyId, canAccess }), [agencyId, canAccess]);
+  // COBRANZA-MANUAL (04-10-2026): el buscador respeta lo que el menú muestra
+  // (`seVeEnElBuscador`), con el mismo contexto que el layout le da al menú.
+  const ctx = useMemo(
+    (): SearchSourceContext => ({
+      agencyId,
+      canAccess,
+      nav: {
+        canAccess,
+        isAdmin,
+        agencyRole,
+        modulosPagos,
+        agentUnverified: agentAccessStatus === 'sin-verificar',
+      },
+    }),
+    [agencyId, canAccess, isAdmin, agencyRole, modulosPagos, agentAccessStatus],
+  );
 
   const { bySource, isAnyLoading } = useFederatedSearch(query, sources, ctx);
 

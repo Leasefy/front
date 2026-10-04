@@ -50,12 +50,15 @@ import { LlamadasTab } from './tabs/LlamadasTab'
 import { MemosTab } from './tabs/MemosTab'
 import { CompromisosTab } from './tabs/CompromisosTab'
 import { AccionesTab } from './tabs/AccionesTab'
+import { GestionesDeLaPersona } from '@/components/cobranza-manual/GestionesDeLaPersona'
 import { CobranzaDeudorDetailSkeleton } from '@/components/skeleton/panel/CobranzaDeudorDetailSkeleton'
 
 void React
 
-type TabKey = 'timeline' | 'llamadas' | 'memos' | 'compromisos' | 'acciones'
-const TAB_KEYS: TabKey[] = ['timeline', 'llamadas', 'memos', 'compromisos', 'acciones']
+// COBRANZA-MANUAL (04-10-2026): «Gestiones» junta lo del equipo (registrado a
+// mano, también desde la Cartera y el estado de cuenta) y lo del agente.
+type TabKey = 'timeline' | 'gestiones' | 'llamadas' | 'memos' | 'compromisos' | 'acciones'
+const TAB_KEYS: TabKey[] = ['timeline', 'gestiones', 'llamadas', 'memos', 'compromisos', 'acciones']
 
 /** Payment-plan statuses that count as an OPEN promise (agent state machine:
  * offered → accepted → active; defaulted = broken). */
@@ -98,6 +101,8 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     : 'timeline'
 
   const [activeTab, setTab] = useState<TabKey>(initialTab)
+  // Se vuelve a leer el historial de gestiones al registrar desde el riel.
+  const [gestionesKey, setGestionesKey] = useState(0)
   const [tabSwitcherOpen, setTabSwitcherOpen] = useState<boolean>(false)
 
   // Single shared PII reveal modal — driven by lifted state (Task 6).
@@ -391,6 +396,14 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           {activeTab === 'llamadas' && (
             <LlamadasTab debtorId={debtorId} refetchKey={callsRefetchKey} />
           )}
+          {activeTab === 'gestiones' && (
+            <GestionesDeLaPersona
+              key={gestionesKey}
+              quien={{ deudorId: debtorId }}
+              nombre={debtorName}
+              titulo="Gestiones de cobro"
+            />
+          )}
           {activeTab === 'memos' && <MemosTab debtorId={debtorId} />}
           {activeTab === 'compromisos' && <CompromisosTab debtorId={debtorId} />}
           {activeTab === 'acciones' && (
@@ -413,6 +426,10 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
             debtorId={debtorId}
             debtorName={debtorName}
             onIntervention={onIntervention}
+            onGestionRegistrada={() => {
+              setGestionesKey((k) => k + 1)
+              onTabChange('gestiones')
+            }}
           />
         </div>
       </div>

@@ -42,6 +42,7 @@ import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
+import { PromesasDelEquipo } from '@/components/cobranza-manual/PromesasDelEquipo'
 import {
   PromesaCard,
   PROMESA_ESTADO_TOKEN,
@@ -142,8 +143,8 @@ function PromesasContent() {
           Promesas de pago
         </h1>
         <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las promesas de pago que los inquilinos hicieron al agente, con su estado y
-          la acción sugerida. El seguimiento real se hace desde el detalle del deudor.
+          Las que registró tu equipo y las que los inquilinos le hicieron al agente, con su
+          estado de hoy. El seguimiento se hace desde el detalle del deudor.
         </p>
       </div>
     </header>
@@ -173,6 +174,10 @@ function PromesasContent() {
     <CrossFade swapKey="promesas">
     <div className="p-6 lg:p-8 space-y-6">
       {header}
+
+      {/* COBRANZA-MANUAL (04-10-2026): las promesas del equipo, primero las
+          incumplidas («sale en un aviso/lista para quien cobra»). */}
+      <PromesasDelEquipo />
 
       {/* Error de carga */}
       <Presence

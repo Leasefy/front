@@ -66,6 +66,7 @@ import {
   SortAscending,
   SortDescending,
   WhatsappLogo,
+  NotePencil,
 } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
@@ -85,6 +86,7 @@ import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
+import { CajonDeGestiones } from '@/components/cobranza-manual/CajonDeGestiones'
 import {
   RUTA_DE_REGLAS_DE_MORA,
   CLAVE_DE_MORA,
@@ -210,6 +212,9 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
    * filas no contesta eso.
    */
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeCartera>(ORDEN_POR_DEFECTO)
+  // COBRANZA-MANUAL (04-10-2026): «Registrar gestión» en cada fila abre el
+  // cajón con el historial de la persona (lo del equipo y lo del agente).
+  const [gestionesDe, setGestionesDe] = useState<CarteraItem | null>(null)
   const { campo, sentido } = orden ?? ordenPropio
 
   // Con el orden controlado las filas ya vienen ordenadas; reordenarlas con el
@@ -254,6 +259,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
   }
 
   return (
+    <>
     <Table className="min-w-[1220px]" data-testid="cartera-tabla">
       <TableHeader>
         <TableRow>
@@ -271,7 +277,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
           <Ordenable campo="total" alineado="right">
             {t(CLAVE_DE_MORA.columnaTotal)}
           </Ordenable>
-          <TableHead className="w-16" />
+          <TableHead className="w-24" />
         </TableRow>
       </TableHeader>
       {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
@@ -288,20 +294,36 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
               key={item.cuotaId}
               item={item}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
+              onGestiones={() => setGestionesDe(item)}
             />
           ))
         )}
       </TableBodyAnimado>
     </Table>
+      {gestionesDe ? (
+        <CajonDeGestiones
+          abierto
+          onCerrar={() => setGestionesDe(null)}
+          quien={{ contractId: gestionesDe.contractId, cuotaId: gestionesDe.cuotaId }}
+          nombre={gestionesDe.tenantName}
+          detalle={[gestionesDe.propertyAddress ?? gestionesDe.propertyTitle, gestionesDe.contrato ? `Contrato ${gestionesDe.contrato}` : null]
+            .filter(Boolean)
+            .join(' · ')}
+        />
+      ) : null}
+    </>
   )
 }
 
 function FilaDeCartera({
   item,
   onVerCobro,
+  onGestiones,
 }: {
   item: CarteraItem
   onVerCobro?: () => void
+  /** Abrir las gestiones de cobro de la persona (COBRANZA-MANUAL). */
+  onGestiones?: () => void
 }) {
   const { t, locale, formatCurrency, formatDate } = useI18n()
 
@@ -504,6 +526,23 @@ function FilaDeCartera({
       </TableCell>
 
       <TableCell className="align-middle text-right">
+        <div className="flex items-center justify-end gap-1">
+        {onGestiones ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
+            title="Registrar gestión"
+            onClick={(e) => {
+              e.stopPropagation()
+              onGestiones()
+            }}
+            data-testid="cartera-registrar-gestion"
+          >
+            <NotePencil className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Registrar gestión con {item.tenantName ?? 'esta persona'}</span>
+          </Button>
+        ) : null}
         {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña.
 
             🔴 Sin cobro emitido no hay cobro que abrir: el enlace va al
@@ -521,6 +560,7 @@ function FilaDeCartera({
             </span>
           </Link>
         </Button>
+        </div>
       </TableCell>
     </TableRowAnimada>
   )

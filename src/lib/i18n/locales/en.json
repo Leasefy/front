@@ -6905,6 +6905,7 @@
             "memos": "Memos",
             "compromisos": "Compromises",
             "acciones": "Actions",
+            "gestiones": "Collection log",
             "switcher": "Switch tab",
             "closeSwitcher": "Close"
           },
@@ -7374,7 +7375,7 @@
           "pageSubtitle": "AI-generated letters pending review and approval",
           "empty": {
             "title": "No letters generated",
-            "description": "The AI has not yet generated pre-judicial letters for this portfolio."
+            "description": "The agent has no letters waiting for approval. To write one by hand, open a debtor in Cases and use «Generate pre-judicial letter»: it downloads as a PDF with the real data and is not sent."
           },
           "columns": {
             "kind": "Type",

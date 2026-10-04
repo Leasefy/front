@@ -684,9 +684,14 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     // Ninguna de las que venían de Cobros gana un gate de rol nuevo: si lo
     // ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
     // (Cobranza, la tercera, se cuida en el bloque de «Agentes IA».)
-    for (const seg of ['/pagos/recaudo', '/pagos/cartera']) {
-      expect(porHref(seg)?.roles, seg).toBeUndefined();
-    }
+    expect(porHref('/pagos/cartera')?.roles, '/pagos/cartera').toBeUndefined();
+    // 🔴 COBRANZA-MANUAL (04-10-2026), a propósito: el RECAUDO (dice lo que salió
+    // en giros) se le cierra SÓLO al auxiliar de cartera; todos los demás roles
+    // lo conservan.
+    const delRecaudo = porHref('/pagos/recaudo')?.roles ?? [];
+    expect([...delRecaudo].sort()).toEqual(
+      (Object.values(AGENCY_ROLES) as string[]).filter((r) => r !== AGENCY_ROLES.AUXILIAR_CARTERA).sort(),
+    );
   });
 
   it('🔴 PERMISOS: quien sólo tiene `cobros` entra igual, y no ve la dispersión', () => {

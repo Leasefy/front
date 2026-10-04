@@ -46,6 +46,7 @@ import {
   HeartStraight,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
+import { ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
 import type { BusinessModule } from './agency-module-scope';
 
 /**
@@ -623,11 +624,13 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', labelEnElRielKey: 'inmobiliaria.nav.deudaDelMes', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: DEUDA_DEL_MES_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
-          { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
+          { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', roles: SIN_EL_AUXILIAR_DE_CARTERA, cara: 'inquilinos' },
           // El recaudo por convenio con el banco SÍ es de la cara inquilinos:
           // importar el archivo del banco termina en recibos de caja, y por eso
           // pide `cobros` como Recaudo y Cartera, no `dispersiones`.
-          { labelKey: 'inmobiliaria.nav.recaudoBancario', href: r('/pagos/recaudo-bancario'), icon: Bank, module: 'cobros', cara: 'inquilinos' },
+          // 🔴 COBRANZA-MANUAL (04-10-2026): el archivo del banco es un BANCO; el
+          // auxiliar de cartera no entra (`el-auxiliar-de-cartera-no-ve-los-bancos.ts`).
+          { labelKey: 'inmobiliaria.nav.recaudoBancario', href: r('/pagos/recaudo-bancario'), icon: Bank, module: 'cobros', roles: ROLES_QUE_VEN_LOS_BANCOS, cara: 'inquilinos' },
           { labelKey: 'inmobiliaria.nav.cartera', href: r('/pagos/cartera'), icon: CurrencyCircleDollar, module: 'cobros', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se

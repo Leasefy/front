@@ -62,6 +62,7 @@ import {
   type PaymentsFunnelItem,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
+import { TraerLaCartera } from '@/components/cobranza-manual/TraerLaCartera'
 import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
 import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
@@ -316,7 +317,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
 
   // Deudor → fuente real de debtorId + etapa (requeridos por el endpoint). Sólo
   // se ofrecen deudores en etapas con superficie de negociación (S0..S3).
-  const { pages: debtors, isLoading: debtorsLoading } = useDebtorList()
+  const { pages: debtors, isLoading: debtorsLoading, refetch: releerDeudores } = useDebtorList()
   const debtoresNegociables = useMemo(
     () => debtors.filter((d) => !NEGOTIATION_UNAVAILABLE_STAGES.has(d.currentStage)),
     [debtors],
@@ -430,7 +431,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
                     : debtoresNegociables.length === 0
                       ? plazoSinFijar
                         ? 'Sin días de plazo fijados no hay deudores en cobranza'
-                        : 'No hay deudores con acuerdo disponible'
+                        : 'Todavía no hay deudores en Cobranza'
                       : 'Selecciona un deudor'
                 }
               />
@@ -447,6 +448,16 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             <p className="text-xs text-fg-muted">
               Etapa actual: {STAGE_LABELS_ES[selectedDebtor.currentStage]}
             </p>
+          )}
+          {/* COBRANZA-MANUAL (04-10-2026): los deudores salen de la cartera de
+              los contratos; si todavía no llegaron, se traen desde aquí. */}
+          {!debtorsLoading && debtoresNegociables.length === 0 && !plazoSinFijar && (
+            <div className="space-y-2" data-testid="acuerdo-sin-deudores">
+              <p className="text-sm text-fg-muted">
+                Los deudores salen solos de la cartera de los contratos (quien pasa sus días de plazo sin pagar).
+              </p>
+              <TraerLaCartera compacto onTraida={() => void releerDeudores()} />
+            </div>
           )}
           {!debtorsLoading && debtoresNegociables.length === 0 && plazoSinFijar && (
             <p className="text-sm text-fg-muted" data-testid="acuerdo-sin-plazo">

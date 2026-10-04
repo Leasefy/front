@@ -167,7 +167,7 @@ describe('ArriendoDelContrato — un contrato AL DÍA, de arriba abajo', () => {
     expect(texto('resta-por-pagar')).toBe('$ 19.214.516')
     expect(texto('cuotas-pagadas')).toBe('13 de 24 cuotas pagadas')
     expect(texto('proxima-cuota')).toBe('21 sep 2026')
-    expect(container.textContent).toContain('$ 1.650.000 · en 5 días')
+    expect(container.textContent).toContain('$\u00a01.650.000 · en 5 días')
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('AL_DIA')
     expect(texto('estado-nombre')).toBe('Al día')
     expect(texto('estado-detalle')).toBe('Nada vencido')

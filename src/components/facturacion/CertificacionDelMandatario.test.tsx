@@ -230,7 +230,7 @@ describe('CertificacionDelMandatario', () => {
     expect(resultado.textContent).toContain('Ana Propietaria');
     expect(resultado.textContent).toContain('12 facturas');
     // FA-R28 (03-10): la plata con un solo formato en la sección, «$ 420.000».
-    expect(resultado.textContent).toContain('$ 420.000');
+    expect(resultado.textContent).toContain('$\u00a0420.000');
     expect(q('[data-testid="cert-exportar"]')).not.toBeNull();
   });
 

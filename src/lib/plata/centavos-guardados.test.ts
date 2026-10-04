@@ -22,7 +22,7 @@ describe('documentos del front con TODAS las llaves apagadas (C4, Q3 a)', () => 
   });
 
   it('un valor con centavos guardados se escribe con sus dos decimales, sin redondear', () => {
-    expect(formatCurrencyEnDocumento(1_500_000.29, false)).toBe('$ 1.500.000,29');
+    expect(formatCurrencyEnDocumento(1_500_000.29, false)).toBe('$\u00a01.500.000,29');
   });
 
   it('una cuenta a medias (más de dos decimales) sigue al peso, como hoy', () => {
@@ -35,6 +35,6 @@ describe('UNA sola formatCurrency (C4: «$ 1.234.567» con espacio)', () => {
     for (const v of [0, 1, 2_500_000, -2_500, 1_234_567]) {
       expect(formatCurrencyDeInmobiliaria(v)).toBe(formatCurrency(v));
     }
-    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$ 2.500.000');
+    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$\u00a02.500.000');
   });
 });

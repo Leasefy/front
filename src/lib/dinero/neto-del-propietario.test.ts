@@ -15,7 +15,7 @@ describe('netoDelPropietario', () => {
   it('un neto positivo se escribe y queda neutro (ni verde ni rojo)', () => {
     const n = netoDelPropietario(1_620_000)
     expect(n.quedaDebiendo).toBe(false)
-    expect(n.texto).toBe('$1.620.000')
+    expect(n.texto).toBe('$\u00a01.620.000')
     expect(n.clase).toBe('text-fg')
     expect(n.explicacion).toBeNull()
   })
@@ -23,7 +23,7 @@ describe('netoDelPropietario', () => {
   it('🔴 un neto negativo NUNCA se pinta como plata a favor: rojo y «queda debiendo»', () => {
     const n = netoDelPropietario(-340_000)
     expect(n.quedaDebiendo).toBe(true)
-    expect(n.texto).toBe('queda debiendo $340.000')
+    expect(n.texto).toBe('queda debiendo $\u00a0340.000')
     // Ni verde, ni un «−$340.000» pelado entre columnas alineadas.
     expect(n.clase).toBe('text-danger')
     expect(n.texto).not.toContain('-')
@@ -33,7 +33,7 @@ describe('netoDelPropietario', () => {
 
   it('el cero es cero: no debe nada y no se anuncia como deuda', () => {
     expect(netoDelPropietario(0).quedaDebiendo).toBe(false)
-    expect(netoDelPropietario(0).texto).toBe('$0')
+    expect(netoDelPropietario(0).texto).toBe('$\u00a00')
   })
 
   it('acepta el formateador de la pantalla sin cambiar la regla', () => {
@@ -42,7 +42,7 @@ describe('netoDelPropietario', () => {
   })
 
   it('pesos redondea y agrupa a la colombiana', () => {
-    expect(pesos(1234567.4)).toBe('$1.234.567')
+    expect(pesos(1234567.4)).toBe('$\u00a01.234.567')
   })
 })
 

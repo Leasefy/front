@@ -16,11 +16,11 @@ describe('formatCanon (lista de contratos del inquilino)', () => {
   })
 
   it('un canon real de $0 sigue siendo un dato', () => {
-    expect(formatCanon(0)).toBe('$ 0')
+    expect(formatCanon(0)).toBe('$\u00a00')
   })
 
   it('formatea un canon real', () => {
-    expect(formatCanon(2500000)).toBe('$ 2.500.000')
+    expect(formatCanon(2500000)).toBe('$\u00a02.500.000')
   })
 })
 

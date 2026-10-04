@@ -128,7 +128,7 @@ describe('Desempeño IA', () => {
     expect(t).toContain('Casos en curso6')
     // La plata de la casa: UNA sola `formatCurrency`, «$ 1.234.567» con espacio
     // (C1-ESQUEMA Q4 a, unificada en C4 de «centavos en todo»).
-    expect(t).toContain('$ 1.500.000')
+    expect(t).toContain('$\u00a01.500.000')
   })
 
   it('🔴 sin actividad dice «Sin actividad todavía», no una fila de ceros', async () => {

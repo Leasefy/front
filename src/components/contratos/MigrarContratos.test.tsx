@@ -1886,7 +1886,7 @@ describe('<MigrarContratos> — vista previa honesta antes de guardar', () => {
     expect(previa).toBeTruthy()
     const texto = previa?.textContent ?? ''
     // Sale de `armarFilaAMigrar`: lo mismo que va a viajar al back.
-    expect(texto).toContain('$ 1.800.000')
+    expect(texto).toContain('$\u00a01.800.000')
     expect(texto).toContain('el 5 de cada mes')
     expect(texto).toContain('Calle 10 # 20-30')
     // Tres filas, aunque el archivo traiga cinco.

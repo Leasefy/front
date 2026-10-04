@@ -241,7 +241,7 @@ describe('<ConsignacionTable> — T-0038 property code + SALE listing display', 
         adminFee: 0,
       }),
     ]);
-    expect(container.textContent).toContain('$ 350.000.000');
+    expect(container.textContent).toContain('$\u00a0350.000.000');
     expect(container.textContent).not.toContain('$ 0');
     expect(container.textContent).not.toContain('$ 0');
   });

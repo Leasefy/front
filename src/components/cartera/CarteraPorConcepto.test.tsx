@@ -250,7 +250,7 @@ function pesosDe(fila: HTMLElement): number[] {
   return Array.from(fila.querySelectorAll('td')).flatMap((td) => {
     const texto = (td.textContent ?? '').trim()
     if (texto === '—') return [0]
-    const m = /\$ ?(-?[\d.]+)/.exec(texto)
+    const m = /\$\u00a0(-?[\d.]+)/.exec(texto)
     return m ? [Number(m[1]!.replace(/\./g, ''))] : []
   })
 }

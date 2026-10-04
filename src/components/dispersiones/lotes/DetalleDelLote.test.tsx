@@ -1086,7 +1086,7 @@ describe('<DetalleDelLote> — liquidaciones que se cierran en $ 0', () => {
     const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
     expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
     expect(seccion?.textContent).toContain('Elena Mora');
-    expect(seccion?.textContent).toContain('$ 250.000');
+    expect(seccion?.textContent).toContain('$\u00a0250.000');
     expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
     expect(container.textContent).toContain('Se cierra en $0');
   });

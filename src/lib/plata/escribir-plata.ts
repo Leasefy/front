@@ -27,6 +27,13 @@ import { hayPlataConCentavos } from './con-centavos';
 import { aCentavos } from './plata';
 import { traeCentavosGuardados } from './centavos-guardados';
 
+/**
+ * El espacio entre el «$» y la cifra (Nico, 04-10-2026: la casa escribe
+ * «$ 1.234.567»). Es DURO (U+00A0): en una tarjeta angosta el «$» nunca queda
+ * solo al final de una línea con la cifra en la siguiente.
+ */
+export const ESPACIO_DE_LA_PLATA = '\u00a0';
+
 /** ¿El valor tiene centavos (al centavo: `1234.004` no los tiene)? */
 export function tieneCentavos(valor: unknown): boolean {
   if (typeof valor !== 'number' || !Number.isFinite(valor)) return false;

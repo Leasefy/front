@@ -20,7 +20,7 @@ describe('la plata de un archivo', () => {
   });
 
   it('dice la plata y los porcentajes como se leen acá', () => {
-    expect(pesos(-4000)).toBe('−$4.000');
+    expect(pesos(-4000)).toBe('−$\u00a04.000');
     expect(pesos(null)).toBe('—');
     expect(porcentaje(83.15)).toBe('83,15 %');
   });
@@ -99,7 +99,7 @@ describe('el Excel y el PDF salen de la foto firmada', () => {
     const s = seccionesDelCierre(cierre);
     expect(s.map((x) => x.titulo)).toEqual(['Resumen', 'Partidas por tipo y antigüedad', 'Partidas conciliatorias', 'Quién concilió', 'Avisos']);
     const resumen = Object.fromEntries(s[0].filas.map((f) => [f[0], f[1]]));
-    expect(resumen['Saldo según el extracto']).toBe('$12.345.678');
+    expect(resumen['Saldo según el extracto']).toBe('$\u00a012.345.678');
     expect(resumen['Conciliado por valor']).toBe('83,15 %');
     expect(resumen['Firmó']).toBe('Carla (contador)');
     expect(resumen['Huella (sha256)']).toBe('a'.repeat(64));

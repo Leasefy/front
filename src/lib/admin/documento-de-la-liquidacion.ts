@@ -9,7 +9,7 @@
  * `xlsx` y `jspdf` sólo al apretar el botón.
  */
 
-import { decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 import { aCentavos } from '@/lib/plata/plata'
 import {
   NOMBRE_DE_QUIEN_CONCILIO,
@@ -27,20 +27,25 @@ export function pesos(n: number | null | undefined): string {
   const cifra = seMuestranLosCentavos(n)
     ? Math.abs(n).toLocaleString('es-CO', decimalesEnPantalla(n))
     : Math.abs(Math.round(n)).toLocaleString('es-CO')
-  const s = `$${cifra}`
+  const s = `$${ESPACIO_DE_LA_PLATA}${cifra}`
   return n < 0 ? `−${s}` : s
 }
 
 /**
  * En el PDF el menos va con el guion de siempre: la letra estándar de jsPDF
  * (Helvetica, WinAnsi) no trae el «−» tipográfico y lo pinta como basura.
+ * Y el espacio después del «$» va NORMAL: jsPDF mide el U+00A0 casi el doble de
+ * lo que lo pinta, y la cifra alineada a la derecha queda corrida del borde
+ * (04-10-2026). En el PDF cada cifra es un `text` de una sola línea: no se parte.
  *
  * Es un DOCUMENTO (P8 a): con la llave de la tesorería (`conCentavos`), SIEMPRE
  * dos decimales ($1.234.567,00); sin ella, como `pesos`.
  */
 export function pesosEnPdf(n: number | null | undefined, conCentavos = false): string {
-  if (!conCentavos || n === null || n === undefined || !Number.isFinite(n)) return pesos(n).replace('−', '-')
-  const s = `$${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`
+  if (!conCentavos || n === null || n === undefined || !Number.isFinite(n)) {
+    return pesos(n).replace('−', '-').replace(ESPACIO_DE_LA_PLATA, ' ')
+  }
+  const s = `$ ${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`
   return n < 0 ? `-${s}` : s
 }
 

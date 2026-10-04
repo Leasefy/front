@@ -99,7 +99,7 @@ describe('el cajón de la liquidación con el IVA de la comisión', () => {
 
   it('el renglón del inmueble también lo dice', () => {
     montar(propietario())
-    expect(texto('cajon-liquidacion-inmuebles')).toContain('IVA $ 39.027') // C4: «$ 1.234.567» con espacio (C1-ESQUEMA Q4 a)
+    expect(texto('cajon-liquidacion-inmuebles')).toContain('IVA $\u00a039.027') // C4: «$ 1.234.567» con espacio (C1-ESQUEMA Q4 a)
   })
 
   it('sin IVA (inmobiliaria no responsable, o un back anterior) no aparece la línea', () => {

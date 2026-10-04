@@ -262,7 +262,7 @@ describe('QA de Contabilidad (CB-17, 03-10-2026)', () => {
   it('🔴 «Propietarios» es un conteo: sin signo de pesos; la plata con el formato de la casa', async () => {
     await pintar();
     expect(texto('valor-propietarios')).not.toContain('$');
-    expect(texto('valor-base')).toMatch(/^\$ \d/);
+    expect(texto('valor-base')).toMatch(/^\$\u00a0\d/);
   });
 
   it('🔴 año y criterio son el Select del DS, no el <select> del navegador', async () => {
@@ -321,7 +321,7 @@ describe('QA de Contabilidad (CB-32, 03-10-2026)', () => {
     const dialogo = document.body.querySelector('[data-testid="confirmar-emision-dialogo"]')!.textContent ?? '';
     expect(dialogo).toContain('2026');
     expect(dialogo).toContain('Jorge Restrepo');
-    expect(dialogo).toMatch(/\$ [\d.]+/);
+    expect(dialogo).toMatch(/\$\u00a0[\d.]+/);
     expect(dialogo).toContain('queda con su número');
   });
 

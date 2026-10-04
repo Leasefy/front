@@ -85,8 +85,8 @@ describe('el PDF del cierre escribe el menos con el guion', () => {
     await exportarElCierreAPdf(cierre);
     expect(textos.length).toBeGreaterThan(5);
     expect(textos.filter((t) => t.includes('−'))).toEqual([]);
-    expect(textos.some((t) => t.includes('-$1.432.170'))).toBe(true);
-    expect(textos.some((t) => t.includes('-$2.070.350'))).toBe(true);
+    expect(textos.some((t) => t.includes('-$\u00a01.432.170'))).toBe(true);
+    expect(textos.some((t) => t.includes('-$\u00a02.070.350'))).toBe(true);
     expect(textos.some((t) => t.includes('Diferencia (extracto - libros)'))).toBe(true);
   });
 

@@ -234,7 +234,7 @@ describe('DocumentoSoporte', () => {
 
     const previa = q('[data-testid="ds-previa"]')!;
     // FA-R28: la plata con un solo formato, «$ 200.000».
-    expect(previa.textContent).toContain('se le paga $ 200.000');
+    expect(previa.textContent).toContain('se le paga $\u00a0200.000');
     expect(q('[data-testid="ds-sin-confirmar"]')).not.toBeNull();
     expect(previa.textContent).toContain('SIN retención');
     // 🔴 Pero sale igual: al técnico hay que pagarle.
@@ -314,8 +314,8 @@ describe('DocumentoSoporte', () => {
     );
     const fila = q('[data-testid="documento-soporte-ds-1"]')!;
     expect(fila.textContent).toContain('DS-1');
-    expect(fila.textContent).toContain('$ 9.400');
-    expect(fila.textContent).toContain('$ 190.600');
+    expect(fila.textContent).toContain('$\u00a09.400');
+    expect(fila.textContent).toContain('$\u00a0190.600');
     expect(fila.textContent).toContain('Sin proveedor configurado');
   });
 

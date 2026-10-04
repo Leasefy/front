@@ -319,7 +319,7 @@ describe('formatos', () => {
   });
 
   it('los pesos van con punto de miles y sin centavos', () => {
-    expect(formatearPesos(2_102_000)).toBe('$ 2.102.000');
+    expect(formatearPesos(2_102_000)).toBe('$\u00a02.102.000');
   });
 
   it('parsearPorcentaje acepta coma y punto, y rechaza lo que no es número', () => {

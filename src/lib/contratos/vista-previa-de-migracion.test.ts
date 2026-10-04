@@ -44,7 +44,7 @@ describe('las tres filas de muestra', () => {
   it('muestra el dato ya interpretado, no la celda cruda', () => {
     const renglones = vistaPreviaDeFilas([fila()], mapeo)
     const porCampo = new Map(renglones.map((r) => [r.campo, r.valores[0]]))
-    expect(porCampo.get('canon')).toBe('$ 1.800.000')
+    expect(porCampo.get('canon')).toBe('$\u00a01.800.000')
     expect(porCampo.get('diaDePago')).toBe('el 5 de cada mes')
     expect(porCampo.get('fechaInicio')).toBe('2026-01-01')
     expect(porCampo.get('inquilinoNombre')).toBe('Ana Pérez')

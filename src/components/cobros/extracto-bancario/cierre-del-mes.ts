@@ -10,7 +10,7 @@
  */
 
 import { fechaEscritaComoIso } from '@/lib/fechas/fecha-escrita';
-import { decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
+import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 import { aCentavos } from '@/lib/plata/plata';
 import {
   NOMBRE_DEL_ORIGEN,
@@ -34,7 +34,7 @@ export function pesos(n: number | null | undefined): string {
   const cifra = seMuestranLosCentavos(n)
     ? Math.abs(n).toLocaleString('es-CO', decimalesEnPantalla(n))
     : Math.abs(Math.round(n)).toLocaleString('es-CO');
-  const s = `$${cifra}`;
+  const s = `$${ESPACIO_DE_LA_PLATA}${cifra}`;
   return n < 0 ? `−${s}` : s;
 }
 
@@ -55,7 +55,7 @@ export function conMayusculaInicial(texto: string): string {
 export function pesosEnDocumento(n: number | null | undefined, conCentavos: boolean): string {
   if (!conCentavos) return pesos(n);
   if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-  const s = `$${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`;
+  const s = `$${ESPACIO_DE_LA_PLATA}${Math.abs(n).toLocaleString('es-CO', decimalesEnDocumento(n, true))}`;
   return n < 0 ? `−${s}` : s;
 }
 

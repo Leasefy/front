@@ -206,7 +206,7 @@ describe('ExtractoBancario — pendientes', () => {
 
     const fila = $('[data-testid="movimiento-m-1"]');
     expect(fila.textContent).toContain('TRANSFERENCIA PEREZ GOMEZ');
-    expect(fila.textContent).toContain('$ 1.800.000');
+    expect(fila.textContent).toContain('$\u00a01.800.000');
     const seguro = $('[data-testid="candidato-m-1-ct-1"]');
     expect(seguro.getAttribute('data-seguro')).toBe('true');
     expect(seguro.textContent).toContain('Seguro');
@@ -260,7 +260,7 @@ describe('ExtractoBancario — pendientes', () => {
     expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-9' });
     // El aviso dice QUÉ pasó con la plata, no «listo».
     expect(toastMock.success).toHaveBeenCalledWith(
-      '1 recibo emitido y $ 800.000 a favor del cliente.',
+      '1 recibo emitido y $\u00a0800.000 a favor del cliente.',
     );
     expect(api.listar).toHaveBeenCalledTimes(2);
   });
@@ -295,7 +295,7 @@ describe('ExtractoBancario — pendientes', () => {
     await clic($('[data-testid="confirmar-conciliar-cliente"]'));
 
     expect(toastMock.success).toHaveBeenCalledWith(
-      'Quedaron $ 1.800.000 a favor del cliente: no debía nada.',
+      'Quedaron $\u00a01.800.000 a favor del cliente: no debía nada.',
     );
   });
 
@@ -360,7 +360,7 @@ describe('ExtractoBancario — pendientes', () => {
     await montar();
     const fila = $('[data-testid="movimiento-m-s"]');
     expect(fila.textContent).toContain('Salida');
-    expect(fila.textContent).toContain('−$ 45.000');
+    expect(fila.textContent).toContain('−$\u00a045.000');
     // Seguimiento 6: el cajón del movimiento con lo que propone el agente (las salidas también).
     expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([
       'Ignorar',

@@ -146,7 +146,7 @@ describe('<LibroMayor>', () => {
     const cartel = q('mayor-no-cuadra')!.textContent!;
     expect(cartel).toContain('partida doble');
     // CB-17 (03-10-2026): la plata de Contabilidad con UN formato, «$ 1.000».
-    expect(cartel).toContain('$ 1.000');
+    expect(cartel).toContain('$\u00a01.000');
   });
 
   it('el nivel por defecto es la cuenta de 4 dígitos', async () => {

@@ -112,7 +112,7 @@ describe('FacturasDeIntereses (Q6)', () => {
     await montar();
     const seccion = q('[data-testid="facturas-de-intereses"]')!;
     expect(seccion.textContent).toContain('Intereses pagados por facturar');
-    expect(seccion.textContent).toContain('2 facturas · $ 53.500');
+    expect(seccion.textContent).toContain('2 facturas · $\u00a053.500');
     expect(q('[data-testid="interes-fi-1"]')!.textContent).toContain('Intereses de agosto de 2026');
 
     await act(async () => {
@@ -122,7 +122,7 @@ describe('FacturasDeIntereses (Q6)', () => {
       '¿Emitir la factura de intereses LABQA-10?',
     );
     expect(emitirIntereses).toHaveBeenCalledWith(['fi-1']);
-    expect(toastOk).toHaveBeenCalledWith('1 factura de intereses emitida · $ 41.000');
+    expect(toastOk).toHaveBeenCalledWith('1 factura de intereses emitida · $\u00a041.000');
     expect(onEmitidas).toHaveBeenCalled();
   });
 

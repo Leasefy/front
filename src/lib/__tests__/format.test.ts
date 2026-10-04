@@ -14,23 +14,23 @@ import {
 describe('formatCurrency', () => {
   describe('es locale (default)', () => {
     it('formats zero', () => {
-      expect(formatCurrency(0)).toBe('$ 0');
+      expect(formatCurrency(0)).toBe('$\u00a00');
     });
 
     it('formats thousands', () => {
       const result = formatCurrency(1000);
       // es-CL uses period as thousands separator
-      expect(result).toBe('$ 1.000');
+      expect(result).toBe('$\u00a01.000');
     });
 
     it('formats millions', () => {
       const result = formatCurrency(2500000);
-      expect(result).toBe('$ 2.500.000');
+      expect(result).toBe('$\u00a02.500.000');
     });
 
     it('truncates decimals', () => {
       const result = formatCurrency(1234.56);
-      expect(result).toBe('$ 1.235');
+      expect(result).toBe('$\u00a01.235');
     });
 
     it('explicit es locale matches default', () => {
@@ -40,21 +40,21 @@ describe('formatCurrency', () => {
 
   describe('en locale', () => {
     it('formats zero', () => {
-      expect(formatCurrency(0, 'en')).toBe('$ 0');
+      expect(formatCurrency(0, 'en')).toBe('$\u00a00');
     });
 
     it('formats thousands with comma separator', () => {
-      expect(formatCurrency(1000, 'en')).toBe('$ 1,000');
+      expect(formatCurrency(1000, 'en')).toBe('$\u00a01,000');
     });
 
     it('formats millions with comma separator', () => {
-      expect(formatCurrency(2500000, 'en')).toBe('$ 2,500,000');
+      expect(formatCurrency(2500000, 'en')).toBe('$\u00a02,500,000');
     });
   });
 
   it('always prefixes with "$ "', () => {
-    expect(formatCurrency(42)).toMatch(/^\$ /);
-    expect(formatCurrency(42, 'en')).toMatch(/^\$ /);
+    expect(formatCurrency(42)).toMatch(/^\$\u00a0/);
+    expect(formatCurrency(42, 'en')).toMatch(/^\$\u00a0/);
   });
 
   // 🔴 «Centavos en todo» (C1-C, riesgo 2 del diseño): la plata viaja como
@@ -74,11 +74,22 @@ describe('formatCurrency', () => {
     });
 
     it('null, undefined y NaN siguen siendo «$ 0» (campo opcional), y un number no cambia', () => {
-      expect(formatCurrency(null)).toBe('$ 0');
-      expect(formatCurrency(undefined)).toBe('$ 0');
-      expect(formatCurrency(Number.NaN)).toBe('$ 0');
-      expect(formatCurrency(2500000)).toBe('$ 2.500.000');
+      expect(formatCurrency(null)).toBe('$\u00a00');
+      expect(formatCurrency(undefined)).toBe('$\u00a00');
+      expect(formatCurrency(Number.NaN)).toBe('$\u00a00');
+      expect(formatCurrency(2500000)).toBe('$\u00a02.500.000');
     });
+  });
+
+  // \ud83d\udd34 Nico, 04-10-2026: la casa escribe \u00ab$ 1.234.567\u00bb. Con un espacio normal,
+  // en una tarjeta angosta (Cartera, Tablero a 390 px) el \u00ab$\u00bb quedaba solo al
+  // final de una l\u00ednea y la cifra en la siguiente. El espacio es DURO (U+00A0).
+  it('entre el \u00ab$\u00bb y la cifra va un espacio duro: el \u00ab$\u00bb nunca queda solo en una l\u00ednea', () => {
+    for (const valor of [0, 2_500_000, -45_000, 1_526_120_883]) {
+      const texto = formatCurrency(valor);
+      expect(texto.startsWith('$\u00a0')).toBe(true);
+      expect(texto).not.toContain(' ');
+    }
   });
 });
 

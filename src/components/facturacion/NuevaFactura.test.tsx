@@ -747,13 +747,13 @@ describe('NuevaFactura', () => {
       await montar();
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       const texto = fila.textContent ?? '';
-      expect(texto).toContain('$ 1.800.000');
-      expect(texto).toContain('$ 342.000');
+      expect(texto).toContain('$\u00a01.800.000');
+      expect(texto).toContain('$\u00a0342.000');
       // 🔴 La retención resta del NETO, no del total: se ve con signo menos y
       // el total sigue siendo base + IVA.
-      expect(texto).toContain('−$ 63.000');
-      expect(texto).toContain('$ 2.142.000');
-      expect(texto).toContain('Neto $ 2.079.000');
+      expect(texto).toContain('−$\u00a063.000');
+      expect(texto).toContain('$\u00a02.142.000');
+      expect(texto).toContain('Neto $\u00a02.079.000');
     });
 
     it('🔴 una factura con el escenario sin confirmar se marca, no dice «$0»', async () => {
@@ -850,8 +850,8 @@ describe('NuevaFactura', () => {
       );
       expect(cab).toEqual(['', 'Cliente', 'Concepto', 'Valor', 'Estado']);
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
-      expect(fila.textContent).toContain('Base $ 1.800.000');
-      expect(fila.textContent).toContain('IVA $ 342.000');
+      expect(fila.textContent).toContain('Base $\u00a01.800.000');
+      expect(fila.textContent).toContain('IVA $\u00a0342.000');
       expect(fila.textContent).toContain('Contrato 1686 · Leasefy #1839');
     });
 
@@ -1901,7 +1901,7 @@ describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasa
       raiz.render(<>{pregunta.descripcion}</>);
     });
     expect(cuerpo.textContent).toContain('Juliana Sin Correo Patiño');
-    expect(cuerpo.textContent).toContain('$ 4.100.000');
+    expect(cuerpo.textContent).toContain('$\u00a04.100.000');
     expect(cuerpo.textContent).toContain('nota crédito');
     act(() => raiz.unmount());
     expect(generarMock).toHaveBeenCalledTimes(1);
@@ -2099,7 +2099,7 @@ describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasa
       expect(tarjeta.tagName).toBe('LI');
       expect(tarjeta.textContent).toContain('Nubia Amparo David');
       expect(tarjeta.textContent).toContain('Canon de arrendamiento');
-      expect(tarjeta.textContent).toContain('$ 1.800.000');
+      expect(tarjeta.textContent).toContain('$\u00a01.800.000');
       expect(tarjeta.querySelector('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
     } finally {
       window.matchMedia = original;

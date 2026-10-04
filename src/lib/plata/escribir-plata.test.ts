@@ -44,11 +44,11 @@ describe('con TODAS las llaves apagadas, exactamente como hoy', () => {
   beforeEach(() => fijarConfigDePlataParaPruebas(null));
 
   it('una cifra con fracción se redondea al peso como siempre, en todos los formatos', () => {
-    expect(formatCurrency(1_234.56)).toBe('$ 1.235');
-    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$ 1.234.567');
-    expect(pesosDelCierre(1_234_567.29)).toBe('$1.234.567');
-    expect(pesosDeLaLiquidacion(2_350_000.29)).toBe('$2.350.000');
-    expect(pesosDelNeto(1_234_567.4)).toBe('$1.234.567');
+    expect(formatCurrency(1_234.56)).toBe('$\u00a01.235');
+    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$\u00a01.234.567');
+    expect(pesosDelCierre(1_234_567.29)).toBe('$\u00a01.234.567');
+    expect(pesosDeLaLiquidacion(2_350_000.29)).toBe('$\u00a02.350.000');
+    expect(pesosDelNeto(1_234_567.4)).toBe('$\u00a01.234.567');
     expect(formatearPesos(1_234_567.29)).toBe('$1.234.567');
     const opciones: Intl.NumberFormatOptions = { style: 'currency', currency: 'COP', maximumFractionDigits: 0 };
     expect(plataEnPantalla('es-CO', opciones).format(3_625_317.5)).toBe(
@@ -58,8 +58,8 @@ describe('con TODAS las llaves apagadas, exactamente como hoy', () => {
   });
 
   it('un documento sin su llave tampoco cambia', () => {
-    expect(formatCurrencyEnDocumento(2_500_000, false)).toBe('$ 2.500.000');
-    expect(pesosEnPdf(2_350_000.29)).toBe('$2.350.000');
+    expect(formatCurrencyEnDocumento(2_500_000, false)).toBe('$\u00a02.500.000');
+    expect(pesosEnPdf(2_350_000.29)).toBe('$ 2.350.000');
   });
 });
 
@@ -83,29 +83,29 @@ describe('tieneCentavos', () => {
 
 describe('P8 a en pantalla — formatCurrency (las dos copias)', () => {
   it('un entero sale EXACTAMENTE como siempre', () => {
-    expect(formatCurrency(2_500_000)).toBe('$ 2.500.000');
-    expect(formatCurrency(0)).toBe('$ 0');
-    expect(formatCurrency(-45_000)).toBe('$ -45.000');
-    expect(formatCurrency(null)).toBe('$ 0');
+    expect(formatCurrency(2_500_000)).toBe('$\u00a02.500.000');
+    expect(formatCurrency(0)).toBe('$\u00a00');
+    expect(formatCurrency(-45_000)).toBe('$\u00a0-45.000');
+    expect(formatCurrency(null)).toBe('$\u00a00');
     // C4: una sola formatCurrency, «$ 1.234.567» con espacio (C1-ESQUEMA Q4 a).
-    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$ 2.500.000');
-    expect(formatCurrencyDeInmobiliaria(-2_500)).toBe('$ -2.500');
+    expect(formatCurrencyDeInmobiliaria(2_500_000)).toBe('$\u00a02.500.000');
+    expect(formatCurrencyDeInmobiliaria(-2_500)).toBe('$\u00a0-2.500');
   });
 
   it('con centavos, los dos decimales — ya no se redondea al peso', () => {
-    expect(formatCurrency(1_234_567.29)).toBe('$ 1.234.567,29');
-    expect(formatCurrency(1_500_000.5)).toBe('$ 1.500.000,50');
-    expect(formatCurrency(0.1 + 0.2)).toBe('$ 0,30');
-    expect(formatCurrency(1_234_567.29, 'en')).toBe('$ 1,234,567.29');
-    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$ 1.234.567,29');
+    expect(formatCurrency(1_234_567.29)).toBe('$\u00a01.234.567,29');
+    expect(formatCurrency(1_500_000.5)).toBe('$\u00a01.500.000,50');
+    expect(formatCurrency(0.1 + 0.2)).toBe('$\u00a00,30');
+    expect(formatCurrency(1_234_567.29, 'en')).toBe('$\u00a01,234,567.29');
+    expect(formatCurrencyDeInmobiliaria(1_234_567.29)).toBe('$\u00a01.234.567,29');
   });
 
   it('los formatos a mano de las pantallas: sin redondear', () => {
-    expect(pesosDelCierre(1_234_567)).toBe('$1.234.567');
-    expect(pesosDelCierre(-1_234_567.29)).toBe('−$1.234.567,29');
-    expect(pesosDeLaLiquidacion(2_350_000.29)).toBe('$2.350.000,29');
-    expect(pesosDeLaLiquidacion(2_350_000)).toBe('$2.350.000');
-    expect(pesosDelNeto(980_000.5)).toBe('$980.000,50');
+    expect(pesosDelCierre(1_234_567)).toBe('$\u00a01.234.567');
+    expect(pesosDelCierre(-1_234_567.29)).toBe('−$\u00a01.234.567,29');
+    expect(pesosDeLaLiquidacion(2_350_000.29)).toBe('$\u00a02.350.000,29');
+    expect(pesosDeLaLiquidacion(2_350_000)).toBe('$\u00a02.350.000');
+    expect(pesosDelNeto(980_000.5)).toBe('$\u00a0980.000,50');
     expect(formatearPesos(1_234_567)).toBe('$1.234.567');
     expect(formatearPesos(1_234_567.29)).toBe('$1.234.567,29');
     expect(formatearPesos(-1_500.5)).toBe('-$1.500,50');
@@ -124,10 +124,10 @@ describe('P8 a en pantalla — formatCurrency (las dos copias)', () => {
 
 describe('P8 a en documentos — siempre dos decimales con la llave', () => {
   it('formatCurrencyEnDocumento', () => {
-    expect(formatCurrencyEnDocumento(2_500_000, true)).toBe('$ 2.500.000,00');
-    expect(formatCurrencyEnDocumento(1_234_567.29, true)).toBe('$ 1.234.567,29');
+    expect(formatCurrencyEnDocumento(2_500_000, true)).toBe('$\u00a02.500.000,00');
+    expect(formatCurrencyEnDocumento(1_234_567.29, true)).toBe('$\u00a01.234.567,29');
     // Sin la llave, el documento sale como hoy.
-    expect(formatCurrencyEnDocumento(2_500_000, false)).toBe('$ 2.500.000');
+    expect(formatCurrencyEnDocumento(2_500_000, false)).toBe('$\u00a02.500.000');
   });
 
   it('plataEnDocumento', () => {
@@ -139,11 +139,11 @@ describe('P8 a en documentos — siempre dos decimales con la llave', () => {
   });
 
   it('el cierre de la conciliación y la liquidación del recaudo', () => {
-    expect(pesosDelCierreEnDocumento(1_234_567, true)).toBe('$1.234.567,00');
-    expect(pesosDelCierreEnDocumento(1_234_567, false)).toBe('$1.234.567');
-    expect(pesosEnPdf(2_350_000, true)).toBe('$2.350.000,00');
-    expect(pesosEnPdf(-2_350_000.29, true)).toBe('-$2.350.000,29');
-    expect(pesosEnPdf(2_350_000)).toBe('$2.350.000');
+    expect(pesosDelCierreEnDocumento(1_234_567, true)).toBe('$\u00a01.234.567,00');
+    expect(pesosDelCierreEnDocumento(1_234_567, false)).toBe('$\u00a01.234.567');
+    expect(pesosEnPdf(2_350_000, true)).toBe('$ 2.350.000,00');
+    expect(pesosEnPdf(-2_350_000.29, true)).toBe('-$ 2.350.000,29');
+    expect(pesosEnPdf(2_350_000)).toBe('$ 2.350.000');
   });
 });
 
@@ -190,8 +190,8 @@ describe('el estado de cuenta en PDF', () => {
 
   it('con las llaves de la deuda, toda cifra con dos decimales', () => {
     const texto = textosDe(EstadoDeCuentaPDF({ doc, hoy: '2026-09-13', conCentavos: true })).join('\n');
-    expect(texto).toContain('$ 2.350.000,29');
-    const cifras = texto.match(/\$ [\d.]+(,\d{2})?/g) ?? [];
+    expect(texto).toContain('$\u00a02.350.000,29');
+    const cifras = texto.match(/\$\u00a0[\d.]+(,\d{2})?/g) ?? [];
     expect(cifras.length).toBeGreaterThan(0);
     for (const c of cifras) expect(c).toMatch(/,\d{2}$/);
   });
@@ -201,7 +201,7 @@ describe('el estado de cuenta en PDF', () => {
     const texto = textosDe(EstadoDeCuentaPDF({ doc: entero, hoy: '2026-09-13' })).join('\n');
     expect(texto).not.toMatch(/\$ [\d.]+,00/);
     const conCentavos = textosDe(EstadoDeCuentaPDF({ doc, hoy: '2026-09-13' })).join('\n');
-    expect(conCentavos).toContain('$ 2.350.000,29');
+    expect(conCentavos).toContain('$\u00a02.350.000,29');
   });
 
   it('con todas las llaves apagadas, el PDF es el de hoy; un valor con centavos GUARDADOS los escribe (C4, Q3 a)', () => {
@@ -209,6 +209,6 @@ describe('el estado de cuenta en PDF', () => {
     const enteros = textosDe(EstadoDeCuentaPDF({ doc: estadoDeCuenta(), hoy: '2026-09-13' })).join('\n');
     expect(enteros).not.toMatch(/,\d{2}\b/);
     const texto = textosDe(EstadoDeCuentaPDF({ doc, hoy: '2026-09-13' })).join('\n');
-    expect(texto).toContain('$ 2.350.000,29');
+    expect(texto).toContain('$\u00a02.350.000,29');
   });
 });

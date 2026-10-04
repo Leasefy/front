@@ -91,6 +91,6 @@ describe('Retención — tablero', () => {
     render({ data: DATA });
     expect(container.querySelector('[data-testid="retencion-apagada"]')).toBeNull();
     expect(container.textContent).toContain('Propietaria real del lab');
-    expect(container.textContent).toContain('$ 980.000');
+    expect(container.textContent).toContain('$\u00a0980.000');
   });
 });

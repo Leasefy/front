@@ -352,7 +352,7 @@ describe('RecaudoEnLineaAdminPage', () => {
   it('la lista muestra bruto, comisión, IVA, retenciones, neto y estado; filtra por estado; abre los pagos y descarga Excel y PDF', async () => {
     await pintar()
     const fila = q('liquidacion-LQ261015-0A1B2C-9F3A01')!
-    for (const t of ['$2.700.000', '$70.000', '$13.300', '$15.000', '$2.601.700', 'generada', 'Inmobiliaria Andina']) {
+    for (const t of ['$\u00a02.700.000', '$\u00a070.000', '$\u00a013.300', '$\u00a015.000', '$\u00a02.601.700', 'generada', 'Inmobiliaria Andina']) {
       expect(fila.textContent).toContain(t)
     }
 
@@ -380,7 +380,7 @@ describe('RecaudoEnLineaAdminPage', () => {
     await clic(q('abrir-LQ261015-0A1B2C-9F3A01')!)
     await clic(q('marcar-girada')!)
     expect(marcarGirada).not.toHaveBeenCalled()
-    expect(q('confirmar-girada')!.textContent).toContain('$2.601.700')
+    expect(q('confirmar-girada')!.textContent).toContain('$\u00a02.601.700')
 
     await escribir('fecha-del-giro', '2999-01-01')
     expect((q('confirmar-girada-si') as HTMLButtonElement).disabled).toBe(true)
@@ -430,7 +430,7 @@ describe('RecaudoEnLineaAdminPage', () => {
 
     await clic(q('desmarcar-girada')!)
     expect(desmarcarGirada).not.toHaveBeenCalled()
-    expect(q('confirmar-desmarcar')!.textContent).toContain('$2.601.700')
+    expect(q('confirmar-desmarcar')!.textContent).toContain('$\u00a02.601.700')
     expect((q('confirmar-desmarcar-si') as HTMLButtonElement).disabled).toBe(true)
     await escribir('motivo-de-desmarcar', 'corto')
     expect((q('confirmar-desmarcar-si') as HTMLButtonElement).disabled).toBe(true)
@@ -541,7 +541,7 @@ describe('RecaudoEnLineaAdminPage', () => {
     await pintar()
     await clic(q('pestana-cuadre')!)
     expect(cuadreDelRecaudo).toHaveBeenCalled()
-    expect(q('totales-del-cuadre')!.textContent).toContain('$5.200.000')
+    expect(q('totales-del-cuadre')!.textContent).toContain('$\u00a05.200.000')
     expect(q('desembolsos-del-cuadre')!.textContent).toContain('con diferencias')
     expect(q('diferencia-tx-4')!.textContent).toContain('No cuadra con la plataforma')
     expect(q('diferencia-tx-9')!.textContent).toContain('ningún reporte de Wompi subido la trae')

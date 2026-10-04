@@ -6,7 +6,7 @@
 
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
-import { decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
+import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
 import { traeCentavosGuardados } from '@/lib/plata/centavos-guardados';
 
 type SupportedLocale = 'es-CO' | 'en-US';
@@ -31,7 +31,7 @@ function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
 export function formatCurrency(amount: number | null | undefined, locale?: 'es' | 'en'): string {
   plataQueNoEsNumero('formatCurrency', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
-  return '$ ' + safe.toLocaleString(getLocaleString(locale), decimalesEnPantalla(safe));
+  return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(getLocaleString(locale), decimalesEnPantalla(safe));
 }
 
 /**
@@ -49,7 +49,7 @@ export function formatCurrencyEnDocumento(
   if (!conCentavos && !traeCentavosGuardados(amount)) return formatCurrency(amount, locale);
   plataQueNoEsNumero('formatCurrencyEnDocumento', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
-  return '$ ' + safe.toLocaleString(getLocaleString(locale), decimalesEnDocumento(safe, true));
+  return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(getLocaleString(locale), decimalesEnDocumento(safe, true));
 }
 
 /**

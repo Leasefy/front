@@ -742,7 +742,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     await renderPage()
 
     expect(container.querySelector('h1')!.textContent).toBe('Contrato #99')
-    expect($('canon-del-arriendo')!.textContent).toContain('$ 2.100.000')
+    expect($('canon-del-arriendo')!.textContent).toContain('$\u00a02.100.000')
     expect($('ritmo-de-pago')!.textContent).toBe('Paga el 5 de cada mes, con 3 días de plazo.')
     expect($('fecha-de-fin')!.textContent).toBe('31 dic 2099')
     // Las tres cajas de antes ya no están.
@@ -762,7 +762,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     expect(container.textContent).not.toContain('Saldo del inquilino')
     expect(container.textContent).not.toContain('sin cobros todavía')
     // Lo que resta sale del estado de cuenta de ESTE contrato.
-    expect($('resta-por-pagar')!.textContent).toBe('$ 8.000.000')
+    expect($('resta-por-pagar')!.textContent).toBe('$\u00a08.000.000')
     expect($('cuotas-pagadas')!.textContent).toBe('2 de 6 cuotas pagadas')
   })
 
@@ -772,7 +772,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
 
     await renderPage()
 
-    expect($('resta-por-pagar')!.textContent).toBe('$ 8.000.000')
+    expect($('resta-por-pagar')!.textContent).toBe('$\u00a08.000.000')
     expect(container.textContent).not.toContain('No se pudo traer el saldo')
   })
 

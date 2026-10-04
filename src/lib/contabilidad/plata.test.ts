@@ -9,9 +9,9 @@ import { plata, plataEnElTexto, sinEmojis, textoDelBack } from './plata';
 
 describe('plata', () => {
   it('con espacio después del símbolo y el menos tipográfico adelante', () => {
-    expect(plata(80330850)).toBe('$ 80.330.850');
-    expect(plata(-119100)).toBe('−$ 119.100');
-    expect(plata(0)).toBe('$ 0');
+    expect(plata(80330850)).toBe('$\u00a080.330.850');
+    expect(plata(-119100)).toBe('−$\u00a0119.100');
+    expect(plata(0)).toBe('$\u00a00');
   });
 });
 

@@ -184,7 +184,7 @@ describe('CorregirFactura', () => {
     );
     // Desde el 02-10 el error es `<ErrorDelCampo>` (FormError de Cadence): por su id.
     // FA-R28 (03-10): la plata con un solo formato, «$ 1».
-    expect(q('#corregir-valor-error')?.textContent).toContain('Escribe un valor entre $ 1 y');
+    expect(q('#corregir-valor-error')?.textContent).toContain('Escribe un valor entre $\u00a01 y');
     expect(
       (q('[data-testid="corregir-confirmar"]') as HTMLButtonElement).disabled,
     ).toBe(true);
@@ -276,7 +276,7 @@ describe('CorregirFactura · el sistema de errores (02-10)', () => {
     await debitoCon('11900');
     await confirmar();
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      'Nota débito ND-3 emitida por $ 11.900 (IVA $ 1.900). La deuda de la cuota de octubre sube en $ 11.900.',
+      'Nota débito ND-3 emitida por $\u00a011.900 (IVA $\u00a01.900). La deuda de la cuota de octubre sube en $ 11.900.',
     );
   });
 

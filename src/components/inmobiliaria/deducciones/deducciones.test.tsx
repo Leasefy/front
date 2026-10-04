@@ -499,7 +499,7 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
     const b = porTestId('bloque-de-deducciones');
     expect(b.textContent).toContain('Neto del mes');
     expect(b.textContent).toContain('Descuento: Predial 2026');
-    expect(porTestId('bloque-a-girar').textContent).toBe('$ 550.000');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$\u00a0550.000');
     expect(document.body.querySelector('[data-testid="bloque-saldo-en-contra"]')).toBeNull();
     expect(document.body.querySelector('[data-testid="soporte-ded-1"]')).not.toBeNull();
   });
@@ -517,9 +517,9 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
       />,
     );
 
-    expect(porTestId('bloque-a-girar').textContent).toBe('$ 0');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$\u00a00');
     expect(porTestId('bloque-saldo-en-contra').textContent).toContain(
-      '$ 150.000 pasan a su siguiente liquidación',
+      '$\u00a0150.000 pasan a su siguiente liquidación',
     );
   });
 });

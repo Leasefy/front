@@ -149,15 +149,17 @@ describe('archivos', () => {
     pdf.textos = []
     await exportarLiquidacionAPdf(detalle())
     expect(pdf.guardado).toBe('liquidacion-LQ261015-0A1B2C-9F3A01-bienes-raices-del-valle.pdf')
-    expect(pdf.textos).toEqual(expect.arrayContaining(['$2.028.500', '-$12.000', '$1.164.300', 'Por definir']))
+    expect(pdf.textos).toEqual(expect.arrayContaining(['$ 2.028.500', '-$ 12.000', '$ 1.164.300', 'Por definir']))
     // 🔴 El «−» tipográfico no existe en la letra del PDF: nunca llega allá.
     expect(pdf.textos.some((t) => t.includes('−'))).toBe(false)
+    // 🔴 Ni el espacio duro: jsPDF lo mide de más y corre las cifras alineadas a la derecha.
+    expect(pdf.textos.some((t) => t.includes('\u00a0'))).toBe(false)
     expect(pdf.textos.some((t) => t.includes('frecuencia del giro: por definir'))).toBe(true)
   })
 
   it('pesos: con puntos de miles y el menos tipográfico', () => {
-    expect(pesos(2_028_500)).toBe('$2.028.500')
-    expect(pesos(-12_000)).toBe('−$12.000')
+    expect(pesos(2_028_500)).toBe('$\u00a02.028.500')
+    expect(pesos(-12_000)).toBe('−$\u00a012.000')
     expect(pesos(null)).toBe('—')
   })
 })

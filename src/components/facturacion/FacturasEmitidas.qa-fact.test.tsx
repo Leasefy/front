@@ -164,7 +164,7 @@ describe('FacturasEmitidas · QA-FACT', () => {
 
   it('🔴 FA-R28: el total con el formato de la casa, «$ 4.100.000»', async () => {
     await pintar('ventas', { mes: '2026-10', anulacionDisponible: true, facturas: [factura()] });
-    expect(q('[data-testid="factura-3"]')!.textContent).toContain('$ 4.100.000');
+    expect(q('[data-testid="factura-3"]')!.textContent).toContain('$\u00a04.100.000');
   });
 
   it('🔴 FA-11 (Nico): anular dice que la DEUDA baja, no que el neteo lo hace el contador', async () => {
@@ -192,7 +192,7 @@ describe('FacturasEmitidas · QA-FACT', () => {
       motivo: 'El contrato se terminó el 3 y el mes se facturó completo.',
     });
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      'Nota crédito NC-2 por $ 4.100.000. La deuda de la cuota baja en ese valor.',
+      'Nota crédito NC-2 por $\u00a04.100.000. La deuda de la cuota baja en ese valor.',
     );
   });
 
@@ -217,7 +217,7 @@ describe('FacturasEmitidas · QA-FACT', () => {
     });
     expect(emitirNotaCredito.mock.calls[0][1]).toMatchObject({ efecto: 'SOLO_EL_DOCUMENTO' });
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      'Nota crédito NC-2 por $ 4.100.000 y factura corregida LABQA-3. La deuda queda igual.',
+      'Nota crédito NC-2 por $\u00a04.100.000 y factura corregida LABQA-3. La deuda queda igual.',
     );
   });
 
@@ -252,8 +252,8 @@ describe('FacturasEmitidas · QA-FACT', () => {
     await pintar('notas', { mes: '2026-10', anulacionDisponible: true, facturas: [factura()] });
     const fila = q('[data-testid="nota-debito-nd-1"]')!;
     expect(fila.textContent).toContain('Nota débito');
-    expect(fila.textContent).toContain('$ 119.000');
-    expect(fila.textContent).toContain('IVA $ 19.000');
+    expect(fila.textContent).toContain('$\u00a0119.000');
+    expect(fila.textContent).toContain('IVA $\u00a019.000');
     expect(q('[data-testid="nota-debito-nd-otro-mes"]')).toBeNull();
   });
 
@@ -406,8 +406,8 @@ describe('FacturasEmitidas · Notas con `notas/lista`', () => {
       expect(host.querySelector('table')).toBeNull();
       const tarjeta = q('[data-testid="nota-del-mes-nc-2"]')!;
       expect(tarjeta.tagName).toBe('LI');
-      expect(tarjeta.textContent).toContain('$ 11.900');
-      expect(tarjeta.textContent).toContain('IVA $ 1.900');
+      expect(tarjeta.textContent).toContain('$\u00a011.900');
+      expect(tarjeta.textContent).toContain('IVA $\u00a01.900');
       expect(tarjeta.textContent).toContain('3 oct 2026');
       expect(q('[data-testid="nota-deuda-nc-2"]')).not.toBeNull();
       await act(async () => {
@@ -508,7 +508,7 @@ describe('FacturasEmitidas · Ventas en el celular', () => {
       expect(tarjeta.tagName).toBe('LI');
       expect(tarjeta.textContent).toContain('Juliana Sin Correo Patiño');
       expect(tarjeta.textContent).toContain('LABQA-1');
-      expect(tarjeta.textContent).toContain('$ 4.100.000');
+      expect(tarjeta.textContent).toContain('$\u00a04.100.000');
       expect(tarjeta.querySelector('[data-testid="anular-3"]')).not.toBeNull();
       await act(async () => {
         (tarjeta.querySelector('[data-testid="ventas-pdf-3"]') as HTMLButtonElement).click();

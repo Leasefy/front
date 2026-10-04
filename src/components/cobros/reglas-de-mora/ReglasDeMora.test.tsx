@@ -212,7 +212,7 @@ describe('ReglasDeMora — la tabla', () => {
       'Gasto administrativo de cobranzaGasto administrativo',
       'A los 15 días de moraDías de mora',
       '10 % del canonPorcentaje de la base',
-      'Hasta $ 500.000',
+      'Hasta $\u00a0500.000',
     ]);
 
     // La frase entera no se pierde: queda en el `title` de la fila.
@@ -220,7 +220,7 @@ describe('ReglasDeMora — la tabla', () => {
       'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, sin tope.',
     );
     expect(filas[1].getAttribute('title')).toBe(
-      'Se dispara a los 15 días de mora y cobra 10 % del canon, hasta $ 500.000.',
+      'Se dispara a los 15 días de mora y cobra 10 % del canon, hasta $\u00a0500.000.',
     );
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
   });
@@ -561,7 +561,7 @@ describe('ReglasDeMora — el editor', () => {
     expect(nombre.value).toBe('Interés de mora');
     expect(($('#regla-valor') as HTMLInputElement).value).toBe('0.0667');
     expect($('[data-testid="vista-previa"]').textContent).toContain(
-      'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, hasta $ 500.000.',
+      'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, hasta $\u00a0500.000.',
     );
 
     escribir(nombre, 'Interés de mora (nuevo)');

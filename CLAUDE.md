@@ -687,8 +687,12 @@ literal prende un área; un back viejo (404), caído o raro = sin centavos, EXAC
 
 ### C4 — limpieza de los centavos (03-10-2026)
 - 🔴 **UNA sola `formatCurrency`**: la de `@/lib/types/inmobiliaria` delega en la de `@/lib/format` → «$ 1.234.567»
-  CON espacio en todas las pantallas (C1-ESQUEMA Q4 a; antes esa copia escribía «$1.234.567» y «$-2.500»). Una
-  prueba que busque la cifra la escribe con espacio (o con `\$ ?` en una regex).
+  CON espacio en todas las pantallas (C1-ESQUEMA Q4 a; antes esa copia escribía «$1.234.567» y «$-2.500»).
+  🔴 Ese espacio es DURO (U+00A0, `ESPACIO_DE_LA_PLATA` de `lib/plata/escribir-plata.ts`; Nico, 04-10): en una
+  tarjeta angosta el «$» ya no queda solo en una línea. También lo llevan los `pesos()` de cierre, liquidación,
+  neto del propietario y facturación electrónica. Una prueba que compare el texto exacto (`toBe`, `toContain`
+  sobre `textContent`) escribe `'$\u00a01.234.567'`; `getByText`/`toHaveTextContent` normalizan y aceptan
+  «$ 1.234.567». En el PDF de jsPDF (`pesosEnPdf`) va espacio normal: jsPDF mide de más el U+00A0.
 - **Renovación por IPC** (Q2 a): `calculateNewRent(canon, ipc, { conCentavos })` / `topeConIpc` = `canonConIncremento`
   del back; `AREAS_DE_LA_RENOVACION` (`lib/renovaciones/reglas.ts`: `inmuebles_y_mandato` + la deuda) prende el tope,
   el `MoneyInput` del canon y `erroresDeLosValores(…, { canonConCentavos })`. El depósito al EDITAR un contrato

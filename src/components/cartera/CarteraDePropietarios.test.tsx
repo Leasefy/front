@@ -162,7 +162,7 @@ function pesosDe(fila: HTMLElement): number[] {
     const texto = (td.textContent ?? '').trim()
     if (texto === '—') return [0]
     // C4 (03-10-2026): una sola `formatCurrency` dice «$ 1.234.567», con espacio (C1-ESQUEMA Q4 a).
-    const m = /^\$ ?(-?[\d.]+)$/.exec(texto)
+    const m = /^\$\u00a0(-?[\d.]+)$/.exec(texto)
     return m ? [Number(m[1]!.replace(/\./g, ''))] : []
   })
 }

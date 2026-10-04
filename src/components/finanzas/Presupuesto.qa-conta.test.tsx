@@ -256,9 +256,9 @@ describe('Presupuesto · CB-09', () => {
       ],
     });
     await pintar();
-    expect(testId('real-comisiones')?.textContent).toBe('$ 358.000');
-    expect(testId('operacion-comisiones')?.textContent).toBe('$ 8.757.000');
-    expect(testId('real-costos_de_la_plata')?.textContent).toBe('−$ 119.100');
+    expect(testId('real-comisiones')?.textContent).toBe('$\u00a0358.000');
+    expect(testId('operacion-comisiones')?.textContent).toBe('$\u00a08.757.000');
+    expect(testId('real-costos_de_la_plata')?.textContent).toBe('−$\u00a0119.100');
     expect(container.textContent).toContain('En la operación');
     const aviso = testId('presupuesto-avisos')!.textContent ?? '';
     expect(aviso).not.toContain('🔴');

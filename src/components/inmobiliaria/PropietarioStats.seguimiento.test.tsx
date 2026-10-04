@@ -87,9 +87,9 @@ describe('<PropietarioStats> — P-10: el giro atrasado y lo generado, cada uno 
       consignaciones: [],
     });
     const a = container.querySelector('[data-testid="alerta-pendiente-de-giro"]')!;
-    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($ 23.698.900)');
+    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($\u00a023.698.900)');
     expect(a.textContent).toContain('inmobiliaria.propietario.giros.variosDesde(13,1 nov 2025)');
-    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.generado($ 3.656.150)');
+    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.generado($\u00a03.656.150)');
     // El generado NO es otra alerta cuando ya hay atraso: va dicho dentro.
     expect(container.querySelector('[data-testid="alerta-generado-sin-girar"]')).toBeNull();
   });
@@ -100,7 +100,7 @@ describe('<PropietarioStats> — P-10: el giro atrasado y lo generado, cada uno 
       consignaciones: [],
     });
     const franja = container.querySelector('[data-testid="resumen-del-propietario"]')!.textContent ?? '';
-    expect(franja).toContain('$ 500.000');
+    expect(franja).toContain('$\u00a0500.000');
     expect(franja).toMatch(/inmobiliaria\.propietario\.giros\.unoDesde\(1 oct/);
   });
 
@@ -113,7 +113,7 @@ describe('<PropietarioStats> — P-10: el giro atrasado y lo generado, cada uno 
     const a = container.querySelector<HTMLElement>('[data-testid="alerta-generado-sin-girar"]')!;
     expect(a).not.toBeNull();
     expect(a.getAttribute('data-severidad')).toBe('info');
-    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.generadoSinGirar.titulo($ 1.200.000)');
+    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.generadoSinGirar.titulo($\u00a01.200.000)');
     expect(container.querySelector('[data-testid="resumen-del-propietario"]')!.textContent).toContain(
       'inmobiliaria.propietario.stats.upToDate',
     );

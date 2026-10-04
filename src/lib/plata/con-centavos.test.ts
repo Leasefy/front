@@ -27,8 +27,8 @@ import {
   fijarConfigDePlataParaPruebas,
   fraseDeLaPlata,
   leerConfigDePlata,
-  refrescarConfigDePlata,
 } from './con-centavos';
+import { refrescarConfigDePlata } from './refrescar-config-de-plata';
 import { usePlataConCentavos } from './use-plata-con-centavos';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

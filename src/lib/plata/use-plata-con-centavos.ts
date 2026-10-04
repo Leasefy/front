@@ -21,10 +21,10 @@ import {
   NINGUNA_CON_CENTAVOS,
   conCentavosEn,
   configDePlataAhora,
-  refrescarConfigDePlata,
   suscribirseALaConfigDePlata,
   type AreasDePlata,
 } from './con-centavos'
+import { refrescarConfigDePlata } from './refrescar-config-de-plata'
 
 const sinRespuestaTodavia = () => NINGUNA_CON_CENTAVOS
 

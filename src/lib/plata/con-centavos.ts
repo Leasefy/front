@@ -169,16 +169,24 @@ export function suscribirseALaConfigDePlata(oyente: () => void): () => void {
 }
 
 /**
- * Pregunta al back si la respuesta ya venció (60 s). Nunca lanza: una falla
- * (back viejo, caído, sin red) es «ninguna con centavos» por 60 s.
+ * Pregunta al back si la respuesta ya venció (60 s), con `pedir` (la llamada a
+ * `GET /config/plata`). Nunca lanza: una falla (back viejo, caído, sin red) es
+ * «ninguna con centavos» por 60 s.
+ *
+ * 🔴 La llamada la pone `refrescar-config-de-plata.ts`, NO este módulo: los
+ * formatos de plata (`escribir-plata.ts` → `lib/format.ts`) leen este archivo y
+ * los usa también código del SERVIDOR (rutas de `app/api`). Si aquí quedaba el
+ * cliente HTTP —aunque fuera con `import()`—, el servidor arrastraba
+ * `lib/api/client.ts` y su gancho de React y `next build` fallaba (integración
+ * de `centavos`, 04-10-2026).
  */
-export function refrescarConfigDePlata(): Promise<ConCentavosPorArea> {
+export function preguntarLaConfigDePlata(
+  pedir: () => Promise<unknown>,
+): Promise<ConCentavosPorArea> {
   if (Date.now() < venceEn) return Promise.resolve(estado)
   if (enVuelo) return enVuelo
-  // El cliente HTTP se carga recién al preguntar: los formatos de plata leen
-  // este módulo (`escribir-plata.ts`) y no tienen por qué arrastrar la red.
-  const pregunta = import('@/lib/api/config-de-plata.service')
-    .then(({ pedirConfigDePlata }) => pedirConfigDePlata())
+  const pregunta = Promise.resolve()
+    .then(pedir)
     .then(leerConfigDePlata, () => NINGUNA_CON_CENTAVOS)
     .then((nuevo) => {
       fijar(nuevo, Date.now() + VIGENCIA_DE_LA_CONFIG_DE_PLATA_MS)

@@ -13,7 +13,7 @@
 
 import { useEffect } from 'react';
 
-import { refrescarConfigDePlata } from '@/lib/plata/con-centavos';
+import { refrescarConfigDePlata } from '@/lib/plata/refrescar-config-de-plata';
 
 export function LlavesDeLaPlata(): null {
   useEffect(() => {

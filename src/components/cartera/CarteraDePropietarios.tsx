@@ -149,7 +149,9 @@ export function CarteraDePropietarios() {
           data-testid="resumen-por-pagar"
         >
           <div className="p-4">
-            <p className="text-xs text-fg-muted">Pendiente de girar</p>
+            <p className="text-xs text-fg-muted" title="Los meses atrasados sin girar, el mes en curso y los 3 siguientes. El tablero cuenta hasta el mes en curso y «Liquidaciones», sólo el mes.">
+              Pendiente de girar · atrasado, este mes y los 3 siguientes
+            </p>
             <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
               {formatCurrency(datos?.totales.pendienteCop ?? 0)}
             </p>

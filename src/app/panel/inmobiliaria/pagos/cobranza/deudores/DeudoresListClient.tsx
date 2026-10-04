@@ -29,6 +29,7 @@ import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -159,6 +160,9 @@ export default function DeudoresListClient() {
 
   const { pages, isLoading, isLoadingMore, error, hasMore, loadMore, refetch } =
     useDebtorList(filters)
+  // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado, que la lista esté vacía
+  // es lo correcto; el vacío dice por qué y no manda a importar un CSV.
+  const plazoSinFijar = usePlazoSinFijar()
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // hasActiveFilters distinguishes "filtered empty" (Sin deudores con estos filtros)
@@ -223,16 +227,28 @@ export default function DeudoresListClient() {
         {/* QA-IA-B (04-10-2026): sin días de plazo fijados la lista queda
             vacía aunque haya cuotas vencidas: se dice por qué. */}
         <AvisoPlazoSinFijarEnCobranza />
-        <EmptyState
-          icon={Users}
-          title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
-          description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
-        />
-        {/* Importar cartera — cableada al endpoint POST /cartera/import.
-            FAIL-SOFT: si el backend no está desplegado (404/red), el card
-            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
-            import exitoso refrescamos la lista para salir del empty state. */}
-        <CobranzaImportCard onImported={() => void refetch()} />
+        {plazoSinFijar ? (
+          <div data-testid="casos-vacio-sin-plazo">
+            <EmptyState
+              icon={Users}
+              title="Todavía no hay casos de cobranza"
+              description="Es lo esperado: sin días de plazo fijados, las cuotas vencidas no entran a la cobranza. Cuando los fije, quienes sigan debiendo pasado el plazo aparecen aquí solos."
+            />
+          </div>
+        ) : (
+          <>
+            <EmptyState
+              icon={Users}
+              title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
+              description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
+            />
+            {/* Importar cartera — cableada al endpoint POST /cartera/import.
+                FAIL-SOFT: si el backend no está desplegado (404/red), el card
+                degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+                import exitoso refrescamos la lista para salir del empty state. */}
+            <CobranzaImportCard onImported={() => void refetch()} />
+          </>
+        )}
       </div>
       </CrossFade>
     )

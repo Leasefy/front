@@ -14,6 +14,7 @@ import {
   faltaEnLaBase,
   moraDelMes,
   numerosQueSalen,
+  porQueNoSeEmite,
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
@@ -157,5 +158,28 @@ describe('textos', () => {
   it('plurales reales', () => {
     expect(cuantos(1, 'documento', 'documentos')).toBe('1 documento')
     expect(cuantos(1200, 'documento', 'documentos')).toBe('1.200 documentos')
+  })
+})
+
+/*
+ * 🔴 CONSISTENCIA (04-10-2026): LABQA-1 (Juliana) seguía «Emitida» en Por
+ * facturar con la NC-1 encima; Ventas decía que ya se anuló. El back manda
+ * `saldadaPorNota` en por-generar: la fila se lee anulada, con su nota.
+ */
+describe('una factura emitida y anulada con una nota crédito', () => {
+  it('con `saldadaPorNota` la fila es «anulada», aunque siga en estado EMITIDA', () => {
+    const anulada = fila({
+      estado: 'EMITIDA',
+      numero: 1,
+      saldadaPorNota: { notaCreditoId: 'nc-1', numero: 'NC-1' },
+    } as Partial<FacturaDelMes>)
+    expect(estadoDeLaFila(anulada)).toBe('anulada')
+    expect(porQueNoSeEmite(anulada)).toContain('NC-1')
+  })
+
+  it('sin nota, la emitida sigue «emitida»', () => {
+    expect(
+      estadoDeLaFila(fila({ estado: 'EMITIDA', numero: 1, saldadaPorNota: null } as Partial<FacturaDelMes>)),
+    ).toBe('emitida')
   })
 })

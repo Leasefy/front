@@ -149,7 +149,7 @@ export function frasesDeCuantiasMenores(
   return (
     `${cuantias.filas} ${cuantias.filas === 1 ? 'fila se agrupa' : 'filas se agrupan'} en cuantías menores ` +
     `(pagos por debajo de ${formatoDeMonto(cuantias.topeCop)}) bajo el NIT ${cuantias.nit}. ` +
-    'El tope y la agrupación los fija la resolución de la DIAN del año: confirmalos con el contador.'
+    'El tope y la agrupación los fija la resolución de la DIAN del año: confírmalos con el contador.'
   );
 }
 

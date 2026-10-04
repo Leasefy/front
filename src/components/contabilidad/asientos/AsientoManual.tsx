@@ -54,6 +54,8 @@ import { cn } from '@/lib/utils';
 import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
+import { TerceroDeApertura } from '@/components/migracion/TerceroDeApertura';
+import type { TerceroDeApertura as TerceroDeLaApertura } from '@/lib/migracion/asiento-de-apertura';
 
 export interface AsientoManualProps {
   abierto: boolean;
@@ -176,6 +178,10 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
         if (l.debitoCop) m.debitoCop = l.debitoCop;
         if (l.creditoCop) m.creditoCop = l.creditoCop;
         if (l.descripcion.trim()) m.descripcion = l.descripcion.trim();
+        if (l.tercero) {
+          m.terceroTipo = l.tercero.tipo;
+          m.terceroId = l.tercero.id;
+        }
         return m;
       });
       const creado = await contabilidadApi.asientos.crear({
@@ -411,6 +417,16 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                       >
                         <Trash className="h-4 w-4" aria-hidden="true" />
                       </Button>
+                    </div>
+                    {/* CONSISTENCIA (04-10-2026): el tercero de la línea, el mismo
+                        selector del asiento de apertura. Sin él, la exógena no se
+                        puede presentar. */}
+                    <div className="px-1 pt-1" data-testid="linea-tercero">
+                      <TerceroDeApertura
+                        valor={l.tercero as TerceroDeLaApertura | null | undefined}
+                        onCambio={(t) => cambiar(l.clave, { tercero: t })}
+                        testId={`tercero-linea-${i + 1}`}
+                      />
                     </div>
                     <ErrorDelCampo
                       id={idDelError}

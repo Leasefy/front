@@ -171,7 +171,7 @@ export function CajonDeLaFactura({
               ) : bloqueada ? (
                 <Badge variant="secondary">Todavía no se puede emitir</Badge>
               ) : factura.estado === 'GENERADA' ? (
-                <Badge variant="outline">Generada · sin número</Badge>
+                <Badge variant="outline">Sin número todavía: falta emitirla</Badge>
               ) : (
                 <Badge variant="outline">Por emitir</Badge>
               )}

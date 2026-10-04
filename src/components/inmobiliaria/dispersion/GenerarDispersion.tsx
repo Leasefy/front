@@ -241,6 +241,24 @@ export function GenerarDispersion({
     ? elTotalDeLaCorrida({ previa, ajustada: ajustadaVigente, seleccion })
     : null;
 
+  /*
+   * 🔴 CONSISTENCIA (04-10-2026): quién de los marcados NO tiene cuenta
+   * bancaria se dice ANTES de generar, como en «Lotes al banco». Antes se
+   * generaba igual y el problema aparecía al armar el lote (un Borrador con
+   * «0 pagos por $0»).
+   */
+  const sinCuenta = useMemo(
+    () => dentro.filter((p) => !p.propietarioBankAccount),
+    [dentro],
+  );
+  const dejarAfueraLosSinCuenta = useCallback(() => {
+    setSeleccion((prev) => {
+      const fuera = new Set(prev.propietariosFuera);
+      for (const p of sinCuenta) fuera.add(p.propietarioId);
+      return { ...prev, propietariosFuera: fuera };
+    });
+  }, [sinCuenta]);
+
   // ── Marcar y destildar ──────────────────────────────────────────────────
   const alternarPropietario = useCallback((p: PropietarioDeLaPrevia) => {
     setSeleccion((prev) => {
@@ -515,6 +533,28 @@ export function GenerarDispersion({
                 les gira. Lo que dejes afuera no se pierde: vuelve el mes que
                 viene.
               </p>
+              {sinCuenta.length > 0 && (
+                <div
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-fg"
+                  data-testid="marcados-sin-cuenta"
+                >
+                  <p className="min-w-0 flex-1">
+                    {sinCuenta.length === 1
+                      ? `${sinCuenta[0].propietarioName} no tiene cuenta bancaria registrada: su liquidación se genera, pero no se le puede girar ni entra a un lote hasta registrar la cuenta en su ficha.`
+                      : `${sinCuenta.length} de los marcados no tienen cuenta bancaria registrada (${nombresEnLista(sinCuenta.map((p) => p.propietarioName))}): sus liquidaciones se generan, pero no se les puede girar ni entran a un lote hasta registrar la cuenta en su ficha.`}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    onClick={dejarAfueraLosSinCuenta}
+                    data-testid="dejar-afuera-sin-cuenta"
+                  >
+                    {sinCuenta.length === 1 ? 'Dejarlo afuera' : 'Dejarlos afuera'}
+                  </Button>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-[16rem] flex-1">
                   <MagnifyingGlass
@@ -1019,3 +1059,12 @@ function FilaDelPropietario({
 }
 
 export default GenerarDispersion;
+
+/** «Ana, Luis y Marta» (hasta 4 nombres; si hay más, «y N más»). */
+function nombresEnLista(nombres: readonly string[]): string {
+  const visibles = nombres.slice(0, 4);
+  const resto = nombres.length - visibles.length;
+  if (resto > 0) return `${visibles.join(', ')} y ${resto} más`;
+  if (visibles.length <= 1) return visibles.join('');
+  return `${visibles.slice(0, -1).join(', ')} y ${visibles[visibles.length - 1]}`;
+}

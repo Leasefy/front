@@ -116,9 +116,16 @@ export interface CarteraDelTablero {
   totalCop: number;
   /** 1-30 · 31-60 · 61-90 · 90+ */
   tramos: TramoDeCartera[];
+  /** Lo que ya está en siniestro: va APARTE del total y de los tramos. */
   enSiniestroCop: number;
   /** Los 20 más grandes. */
   deudores: DeudorDelTablero[];
+  /**
+   * 🔴 CR-31: la inmobiliaria no ha fijado sus días de plazo, así que nada es
+   * cartera (la misma regla de la Cartera y la Deuda del mes). Un back
+   * anterior no lo manda.
+   */
+  plazoSinFijar?: boolean;
 }
 
 export interface PropietariosDelTablero {

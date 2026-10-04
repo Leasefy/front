@@ -1039,3 +1039,58 @@ describe('<ConfigPerfilAgencia> — errores en su campo', () => {
     expect(findButton('Guardar cambios')).toBeTruthy()
   })
 })
+
+/*
+ * 🔴 CONSISTENCIA (04-10-2026): «Fijar los días de plazo» caía al tope del
+ * Perfil y el campo estaba escondido detrás del «Editar» de todo el perfil.
+ * Con `#perfil-diasDePlazo` quien puede editar entra directo y el foco queda en
+ * el campo; y un plazo nunca fijado se dice «Sin fijar», no «0».
+ */
+describe('<ConfigPerfilAgencia> · llegar al campo de los días de plazo', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  async function pintarConAncla(props: Partial<React.ComponentProps<typeof ConfigPerfilAgencia>> = {}) {
+    window.history.replaceState(null, '', '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo')
+    render(props)
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30))
+    })
+  }
+
+  it('con el ancla y permiso: abre la edición y deja el foco en el campo', async () => {
+    await pintarConAncla()
+    const campo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')
+    expect(campo).not.toBeNull()
+    expect(document.activeElement).toBe(campo)
+  })
+
+  it('con el ancla y sin permiso: no abre la edición, resalta el dato', async () => {
+    await pintarConAncla({ canEdit: false })
+    expect(container.querySelector('[data-testid="dias-de-plazo"]')).toBeNull()
+    const dato = container.querySelector('[data-testid="plazo-de-lectura"]')
+    expect(dato?.id).toBe('perfil-diasDePlazo')
+    expect(dato?.className).toContain('ring-2')
+  })
+
+  it('sin el ancla: el perfil abre en lectura como siempre', () => {
+    render()
+    expect(container.querySelector('[data-testid="dias-de-plazo"]')).toBeNull()
+  })
+
+  it('un plazo nunca fijado se lee «Sin fijar», no «0»', () => {
+    render({ agency: { ...AGENCY, diasDePlazo: 0, plazoDePagoFijadoAt: null } as AgencyProfile })
+    const dato = container.querySelector('[data-testid="plazo-de-lectura"]')
+    expect(dato?.textContent).toContain('Sin fijar')
+  })
+
+  it('un plazo fijado en 0 se lee 0', () => {
+    render({
+      agency: { ...AGENCY, diasDePlazo: 0, plazoDePagoFijadoAt: '2026-10-01T00:00:00.000Z' } as AgencyProfile,
+    })
+    const dato = container.querySelector('[data-testid="plazo-de-lectura"]')
+    expect(dato?.textContent).not.toContain('Sin fijar')
+    expect(dato?.textContent).toContain('0')
+  })
+})

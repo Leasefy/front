@@ -356,7 +356,7 @@ describe('NuevaFactura', () => {
     await montar();
     const boton = q('[data-testid="facturacion-generar"]')!;
     // Es la tanda de ESTA tabla: la de propietarios se emite en su pestaña.
-    expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+    expect(boton.textContent).toContain('Emitir 1 factura de inquilinos');
   });
 
   it('🔴 FA-R13: las comisiones de propietarios NO vienen marcadas; se marcan a mano', async () => {
@@ -365,14 +365,14 @@ describe('NuevaFactura', () => {
     await verA('Propietarios');
     const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
-    expect(boton.textContent).toContain('Generar facturas');
+    expect(boton.textContent).toContain('Emitir facturas');
     const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
     expect(casilla.disabled).toBe(false);
     await act(async () => {
       casilla.click();
     });
     expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
-      'Generar 1 factura de propietarios',
+      'Emitir 1 factura de propietarios',
     );
   });
 
@@ -545,7 +545,7 @@ describe('NuevaFactura', () => {
     });
     // Sin nada marcado el botón queda A LA VISTA y apagado, sin decir «0».
     const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
-    expect(boton.textContent).toContain('Generar facturas');
+    expect(boton.textContent).toContain('Emitir facturas');
     expect(boton.disabled).toBe(true);
   });
 
@@ -1176,7 +1176,7 @@ describe('NuevaFactura', () => {
       // Diciembre existe en la respuesta y NO suma al botón: siguen siendo las
       // de septiembre de esta tabla.
       const boton = q('[data-testid="facturacion-generar"]')!;
-      expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+      expect(boton.textContent).toContain('Emitir 1 factura de inquilinos');
     });
 
     it('🔴 y el mes dice POR QUÉ todavía no se emite, con las palabras del back', async () => {
@@ -1420,7 +1420,7 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     // un campo sería mucho peor que no tener buscador. Las dos de inquilinos
     // siguen marcadas aunque sólo se vea una.
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain(
-      'Generar 2 facturas de inquilinos',
+      'Emitir 2 facturas de inquilinos',
     );
   });
 
@@ -1471,7 +1471,7 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
     await clic('[data-testid="facturacion-inquilinos-todas"]');
     // Se fueron las dos de inquilinos. La del propietario vive en su pestaña.
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Generar facturas');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Emitir facturas');
     // Y volver a apretarla las marca de nuevo.
     await clic('[data-testid="facturacion-inquilinos-todas"]');
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
@@ -1641,7 +1641,7 @@ describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-
       fila.querySelector('[data-testid="confirmar-escenario-ct-151|2026-09|INQUILINO"]')?.getAttribute('href'),
     ).toBe('/panel/inmobiliaria/contratos/ct-151#escenario-tributario');
     // Sólo la confirmada viene marcada.
-    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Generar 1 factura de inquilinos');
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitir 1 factura de inquilinos');
   });
 
   it('«Ver sólo esas» deja en la tabla únicamente las que salen sin impuestos', async () => {

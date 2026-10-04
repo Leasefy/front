@@ -119,6 +119,13 @@ export interface FacturaDelMes {
    * terna que identifica la cuota: por eso emitir dos veces no puede facturar
    * dos veces el mismo mes.
    */
+  /**
+   * 🔴 La nota crédito total que dejó la cuota en $0 (COLA-BACK, 04-10-2026;
+   * `null` si no hay). Una factura YA emitida y anulada con una nota sigue en
+   * estado EMITIDA: esto es lo que dice que quedó sin efecto. Un back anterior
+   * no lo manda.
+   */
+  saldadaPorNota?: { notaCreditoId: string; numero: string } | null
   clave: string
   /** La cuota del estado de cuenta de la que sale esta factura. */
   cuotaId: string

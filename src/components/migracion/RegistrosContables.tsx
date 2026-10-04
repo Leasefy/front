@@ -335,7 +335,7 @@ export function RegistrosContables({
             />
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
-                ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operás acá. El detalle histórico queda en tu sistema anterior."
+                ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operas aquí. El detalle histórico queda en tu sistema anterior."
                 : camino === "historico"
                   ? "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."
                   : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}

@@ -319,6 +319,37 @@ describe('la pregunta del flujo está al abrir', () => {
     expect(host.textContent).toContain('Sin cuenta registrada');
     expect(host.textContent).not.toContain('****0000');
   });
+
+  it('🔴 quiénes de los marcados no tienen cuenta se dice ANTES de generar, y se pueden dejar afuera (CONSISTENCIA 04-10)', async () => {
+    const sinCuenta = (id: string, nombre: string) =>
+      propietario({
+        id,
+        nombre,
+        cuenta: null,
+        banco: null,
+        inmuebles: [{ propertyId: `inm-${id}`, titulo: 'Casa', canon: 1_000_000, comision: 100_000 }],
+      });
+    preview.mockResolvedValue(previaCon([JORGE, sinCuenta('p-ana', 'Ana Gómez'), sinCuenta('p-luis', 'Luis Mora')]));
+    await montar();
+
+    const aviso = q('marcados-sin-cuenta');
+    expect(aviso?.textContent).toContain('2 de los marcados no tienen cuenta bancaria registrada');
+    expect(aviso?.textContent).toContain('Ana Gómez y Luis Mora');
+
+    await act(async () => {
+      (q('dejar-afuera-sin-cuenta') as HTMLButtonElement).click();
+    });
+    await asentar();
+    expect(q('marcados-sin-cuenta')).toBeNull();
+    expect(q('cuantos-seleccionados')?.textContent).toContain('de 3');
+  });
+
+  it('con todos los marcados con cuenta no sale el aviso', async () => {
+    preview.mockResolvedValue(previaCon([JORGE, MARCELA]));
+    await montar();
+    expect(q('a-quien')).not.toBeNull();
+    expect(q('marcados-sin-cuenta')).toBeNull();
+  });
 });
 
 describe('los inmuebles de un propietario', () => {

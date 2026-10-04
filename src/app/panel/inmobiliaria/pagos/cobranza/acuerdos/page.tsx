@@ -62,6 +62,8 @@ import {
   type PaymentsFunnelItem,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
+import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { useAgreementOffer } from '@/lib/hooks/cobranza/use-agreement-offer'
 import { reformatearMiles, parseMiles, formatMiles } from '@/lib/cobranza/formato-miles'
@@ -307,6 +309,9 @@ const CONSECUENCIAS = [
 const NUM_CUOTAS_OPCIONES = [2, 3, 4, 6, 9, 12]
 
 function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
+  // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado no hay deudores en
+  // cobranza, y el selector tiene que decir POR QUÉ (no un vacío mudo).
+  const plazoSinFijar = usePlazoSinFijar()
   const { formatCurrency } = useI18n()
 
   // Deudor → fuente real de debtorId + etapa (requeridos por el endpoint). Sólo
@@ -423,7 +428,9 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
                   debtorsLoading
                     ? 'Cargando deudores…'
                     : debtoresNegociables.length === 0
-                      ? 'No hay deudores con acuerdo disponible'
+                      ? plazoSinFijar
+                        ? 'Sin días de plazo fijados no hay deudores en cobranza'
+                        : 'No hay deudores con acuerdo disponible'
                       : 'Selecciona un deudor'
                 }
               />
@@ -439,6 +446,14 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           {selectedDebtor && (
             <p className="text-xs text-fg-muted">
               Etapa actual: {STAGE_LABELS_ES[selectedDebtor.currentStage]}
+            </p>
+          )}
+          {!debtorsLoading && debtoresNegociables.length === 0 && plazoSinFijar && (
+            <p className="text-sm text-fg-muted" data-testid="acuerdo-sin-plazo">
+              Las cuotas vencidas entran a la cobranza cuando la inmobiliaria fija sus días de plazo.{' '}
+              <Link href={FIJAR_EL_PLAZO_HREF} className="font-medium text-primary hover:underline">
+                Fijar los días de plazo
+              </Link>
             </p>
           )}
         </div>

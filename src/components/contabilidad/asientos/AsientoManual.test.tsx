@@ -76,6 +76,20 @@ vi.mock('@leasefy/cadence', async () => {
 // `data-testid`, `id`, `aria-invalid` y `aria-describedby`: lo que estas
 // pruebas miran de los errores no cambió. El campo de verdad se prueba en
 // `CampoDeDia.test.tsx`.
+// El tercero de la línea: un doble que elige a «Ana» de una (la búsqueda real
+// vive en su propio componente y tiene sus pruebas).
+vi.mock('@/components/migracion/TerceroDeApertura', () => ({
+  TerceroDeApertura: ({ onCambio, testId }: { onCambio: (t: unknown) => void; testId: string }) => (
+    <button
+      type="button"
+      data-testid={testId}
+      onClick={() => onCambio({ tipo: 'ARRENDATARIO', id: 'ten-ana', nombre: 'Ana Gómez' })}
+    >
+      elegir
+    </button>
+  ),
+}));
+
 vi.mock('../CampoDeDia', () => ({
   CampoDeDia: ({
     id,
@@ -274,5 +288,27 @@ describe('<AsientoManual> · errores en su campo', () => {
 
     expect(textoDelBanner()).toMatch(/conexi[oó]n/i);
     expect(textoDelBanner()).not.toContain('Failed to fetch');
+  });
+});
+
+/*
+ * 🔴 CONSISTENCIA (04-10-2026): el asiento manual no tenía tercero y cada
+ * línea entraba «sin tercero», que es lo que bloquea la exógena (107
+ * movimientos). Ahora cada línea puede llevar el suyo y viaja como
+ * `terceroTipo + terceroId`, igual que el asiento de apertura.
+ */
+describe('<AsientoManual> · el tercero de la línea', () => {
+  it('la línea con tercero lo manda; la que no, sale sin tercero', async () => {
+    await pintar();
+    await llenar();
+    await act(async () => {
+      (q('tercero-linea-1') as HTMLButtonElement).click();
+    });
+    await crear();
+    const enviado = api.asientos.crear.mock.calls[0][0] as {
+      movimientos: { terceroTipo?: string; terceroId?: string }[];
+    };
+    expect(enviado.movimientos[0]).toMatchObject({ terceroTipo: 'ARRENDATARIO', terceroId: 'ten-ana' });
+    expect(enviado.movimientos[1].terceroId).toBeUndefined();
   });
 });

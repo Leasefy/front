@@ -24,6 +24,12 @@ export interface LineaDelFormulario {
   debitoCop: number | null;
   creditoCop: number | null;
   descripcion: string;
+  /**
+   * 🔴 CONSISTENCIA (04-10-2026): de quién es el movimiento (propietario o
+   * inquilino). Sin tercero la línea bloquea la exógena («107 movimientos sin
+   * tercero»). Opcional: un movimiento global sigue siendo válido.
+   */
+  tercero?: { tipo: string; id: string; nombre: string } | null;
 }
 
 export interface Totales {

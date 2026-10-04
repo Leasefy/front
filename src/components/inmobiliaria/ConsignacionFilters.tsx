@@ -42,7 +42,14 @@ export interface ConsignacionFiltersState {
   propietarioId: string | 'all';
   city: string | 'all';
   propertyType: Consignacion['propertyType'] | 'all';
+  /**
+   * COMERCIAL (Nico, 04-10-2026): «más de 30 días vacante» y «mandato por
+   * vencer o vencido». Opcional: sin él, ninguno.
+   */
+  comercial?: FiltroComercial;
 }
+
+export type FiltroComercial = 'vacante30' | 'mandato';
 
 interface ConsignacionFiltersProps {
   filters: ConsignacionFiltersState;
@@ -57,6 +64,8 @@ interface ConsignacionFiltersProps {
    */
   conteo: Record<CajonDelInmueble, number> | null;
   total: number | null;
+  /** COMERCIAL: cuántos hay en cada filtro comercial; sin él no se muestran. */
+  conteoComercial?: Record<FiltroComercial, number> | null;
 }
 
 const ROTULO_DEL_CAJON: Record<CajonDelInmueble, string> = {
@@ -71,6 +80,11 @@ const ROTULO_DEL_CAJON: Record<CajonDelInmueble, string> = {
   // la tabla y en ningún número. Sin este chip no se podían mirar solos.
   sinMandato: 'inmobiliaria.consignaciones.filters.sinMandato',
 };
+
+const FILTROS_COMERCIALES: { id: FiltroComercial; rotulo: string }[] = [
+  { id: 'vacante30', rotulo: 'Vacantes hace más de 30 días' },
+  { id: 'mandato', rotulo: 'Mandato por vencer o vencido' },
+];
 
 const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; labelKey: string; icon: React.ElementType }[] = [
   { value: 'all', labelKey: 'inmobiliaria.consignaciones.filters.allTypes', icon: Buildings },
@@ -96,6 +110,7 @@ export function ConsignacionFilters({
   agentes,
   conteo,
   total,
+  conteoComercial,
 }: ConsignacionFiltersProps) {
   const { t } = useI18n();
 
@@ -115,7 +130,8 @@ export function ConsignacionFilters({
     return count;
   }, [filters]);
 
-  const hasAnyFilter = filters.search || filters.cajon !== 'all' || activeFiltersCount > 0;
+  const hasAnyFilter =
+    filters.search || filters.cajon !== 'all' || activeFiltersCount > 0 || Boolean(filters.comercial);
 
   const updateFilter = <K extends keyof ConsignacionFiltersState>(
     key: K,
@@ -316,6 +332,24 @@ export function ConsignacionFilters({
             {conteo === null ? '' : ` ${conteo[cajon].toLocaleString('es-CO')}`}
           </Chip>
         ))}
+        {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
+            que se vencen. Un segundo clic quita el filtro. */}
+        {conteoComercial ? (
+          <>
+            <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+            {FILTROS_COMERCIALES.map((f) => (
+              <Chip
+                key={f.id}
+                selected={filters.comercial === f.id}
+                onClick={() => updateFilter('comercial', filters.comercial === f.id ? undefined : f.id)}
+                className="whitespace-nowrap"
+                data-testid={`filtro-${f.id}`}
+              >
+                {f.rotulo} {conteoComercial[f.id].toLocaleString('es-CO')}
+              </Chip>
+            ))}
+          </>
+        ) : null}
       </div>
     </div>
   );

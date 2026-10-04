@@ -1042,6 +1042,7 @@
       "requisitosDePostulacion": "Requirements",
       "calceDeLeads": "What to offer",
       "visitasDelPipeline": "Get visits ready",
+      "comisionesYMetas": "Commissions and goals",
       "reclamosDeCandidatos": "Claims",
       "invitacionesAFirmar": "Signatures",
       "listasRestrictivas": "Lists",
@@ -1643,7 +1644,9 @@
         "proteccionDeDatos": "Data protection",
         "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
-        "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
+        "slaDePqrsDesc": "How long you take to answer a PQRS, by type.",
+        "comercial": "Sales",
+        "comercialDesc": "Your agents' commission: for listing and for closing, or a fixed amount per deal."
       },
       "notifications": {
         "title": "Notifications",

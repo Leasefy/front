@@ -1,5 +1,7 @@
 'use client';
 
+import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
+import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { useState, useMemo } from 'react';
 import {
   Buildings,
@@ -95,6 +97,8 @@ interface ConsignacionTableProps {
    * tiene). Ver contract.md T-0030 §3.4.
    */
   onCompletarMandato?: (inmueble: InmuebleSinConsignacion) => void;
+  /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence, por consignación. */
+  comercialPorConsignacion?: Record<string, VacanciaYMandato>;
 }
 
 // Property type icons. Total lookup vía `getPropertyIcon` — nunca indexar
@@ -173,6 +177,7 @@ export function ConsignacionTable({
   onEliminar,
   onPrepararSinSenal,
   onCompletarMandato,
+  comercialPorConsignacion,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   /*
@@ -580,9 +585,13 @@ export function ConsignacionTable({
                     disparador que manda a llenar el mandato. */}
                 <TableCell className="p-4">
                   {availability ? (
-                    <Badge variant={availability.variant}>
-                      {t(availability.labelKey)}
-                    </Badge>
+                    <>
+                      <Badge variant={availability.variant}>
+                        {t(availability.labelKey)}
+                      </Badge>
+                      {/* COMERCIAL: «Vacante hace 42 días» / «Mandato vence el …». */}
+                      <SituacionComercialCorta className="max-w-[7.5rem]" datos={row.kind === 'consignacion' ? comercialPorConsignacion?.[row.id] : undefined} />
+                    </>
                   ) : (
                     <Button
                       variant="ghost"

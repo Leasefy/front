@@ -30,6 +30,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
 import { PermisosDeLaPersona } from '@/components/inmobiliaria/PermisosDeLaPersona';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
+import { MetasEnElRanking } from '@/components/comercial/MetasEnElRanking';
 import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
@@ -347,7 +348,11 @@ export function SeccionEquipo() {
           esqueleto={<EsqueletoDeSeccion filas={3} />}
         >
           {vista === 'ranking' ? (
-            <AgenteLeaderboard agentes={agentes} />
+            <div className="space-y-4">
+              {/* COMERCIAL (04-10-2026): el avance de las metas del mes. */}
+              <MetasEnElRanking />
+              <AgenteLeaderboard agentes={agentes} />
+            </div>
           ) : (
             <AgenteWorkloadChart agentes={agentes} />
           )}

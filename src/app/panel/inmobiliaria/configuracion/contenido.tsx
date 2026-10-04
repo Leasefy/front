@@ -34,6 +34,7 @@ import { SeccionSedes } from './SeccionSedes';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
 import { SeccionPermisos } from './SeccionPermisos';
+import { SeccionComercial } from './SeccionComercial';
 import { SeccionPreferencias } from './SeccionPreferencias';
 import { SeccionSeguridad } from './SeccionSeguridad';
 import { seccionPorId, type SeccionId } from './secciones';
@@ -50,6 +51,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionEquipo />;
     case 'permisos':
       return <SeccionPermisos />;
+    case 'comercial':
+      return <SeccionComercial />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
     case 'medios-de-recibo':

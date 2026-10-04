@@ -20,6 +20,7 @@ import {
   Clock,
   ClockCounterClockwise,
   IdentificationBadge,
+  Handshake,
 } from '@phosphor-icons/react';
 
 /**
@@ -60,6 +61,7 @@ export type SeccionId =
   | 'facturacion'
   | 'equipo'
   | 'permisos'
+  | 'comercial'
   | 'medios-de-pago'
   | 'medios-de-recibo'
   | 'costos-de-la-plata'
@@ -154,6 +156,18 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.permisos',
     descKey: 'inmobiliaria.config.tabs.permisosDesc',
     icon: ShieldCheck,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // COMERCIAL (Nico, 04-10-2026): la regla de comisión de los asesores. Sólo
+    // el ADMIN (el gerente), igual que el back (`SOLO_EL_ADMINISTRADOR`): lo que
+    // se le paga a un asesor no lo decide el asesor.
+    id: 'comercial',
+    grupo: 'equipo',
+    slug: 'comercial',
+    labelKey: 'inmobiliaria.config.tabs.comercial',
+    descKey: 'inmobiliaria.config.tabs.comercialDesc',
+    icon: Handshake,
     gate: { tipo: 'admin' },
   },
   {

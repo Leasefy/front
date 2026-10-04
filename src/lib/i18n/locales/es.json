@@ -1042,6 +1042,7 @@
       "requisitosDePostulacion": "Requisitos",
       "calceDeLeads": "Qué ofrecer",
       "visitasDelPipeline": "Preparar visitas",
+      "comisionesYMetas": "Comisiones y metas",
       "reclamosDeCandidatos": "Reclamos",
       "invitacionesAFirmar": "Firmas",
       "listasRestrictivas": "Listas",
@@ -1677,7 +1678,9 @@
         "proteccionDeDatos": "Protección de datos",
         "proteccionDeDatosDesc": "Las solicitudes de los titulares (habeas data): plazos, sus datos y la constancia de la respuesta",
         "slaDePqrs": "Tiempo de respuesta",
-        "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo."
+        "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo.",
+        "comercial": "Comercial",
+        "comercialDesc": "La comisión de tus asesores: por captar y por cerrar, o fija por cierre."
       },
       "notifications": {
         "title": "Notificaciones",

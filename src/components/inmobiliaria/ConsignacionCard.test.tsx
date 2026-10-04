@@ -140,4 +140,30 @@ describe('<ConsignacionCard> — guarded map lookups (confirmed crash-on-missing
     expect(container.textContent).toContain('inmobiliaria.portafolio.card.availability.draft');
     expect(container.textContent).not.toContain('inmobiliaria.portafolio.card.availability.available');
   });
+
+  /* COMERCIAL (QA 04-10, 390 px): con administración en $ 0 la tarjeta pintaba un «0» suelto al lado de «/mes». */
+  it('sin administración no queda un «0» suelto junto al canon', () => {
+    render(makeConsignacion({ adminFee: 0 }));
+    const canon = container.querySelector('.text-xl')?.parentElement?.textContent ?? '';
+    expect(canon).not.toMatch(/0$/);
+  });
+
+  /* COMERCIAL (Nico, 04-10): «Vacante hace 42 días» y el mandato que se vence, en la tarjeta. */
+  it('muestra los días de vacancia y el mandato que se vence', () => {
+    act(() => {
+      root.render(
+        <ConsignacionCard
+          consignacion={makeConsignacion()}
+          comercial={{
+            consignacionId: 'x',
+            agenteUserId: null,
+            vacancia: { vacante: true, desde: '2026-08-23', dias: 42, fuente: 'FIN_DEL_CONTRATO' },
+            mandato: { estado: 'POR_VENCER', vence: '2026-10-25', dias: 21 },
+          }}
+        />,
+      );
+    });
+    expect(container.querySelector('[data-testid="dias-vacante"]')?.textContent).toBe('Vacante hace 42 días');
+    expect(container.querySelector('[data-testid="mandato-se-vence"]')?.textContent).toBe('Mandato vence en 21 días');
+  });
 });

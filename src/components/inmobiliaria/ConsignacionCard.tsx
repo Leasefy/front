@@ -1,5 +1,7 @@
 'use client';
 
+import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
+import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { useMemo } from 'react';
@@ -40,6 +42,8 @@ interface ConsignacionCardProps {
   onAgendarCita?: () => void;
   selected?: boolean;
   variant?: 'default' | 'compact';
+  /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence. */
+  comercial?: VacanciaYMandato;
 }
 
 // Property type icons
@@ -69,6 +73,7 @@ export function ConsignacionCard({
   onAgendarCita,
   selected,
   variant = 'default',
+  comercial,
 }: ConsignacionCardProps) {
   const { t, locale } = useI18n();
 
@@ -278,6 +283,7 @@ export function ConsignacionCard({
             <MapPin className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)}</span>
           </div>
+          <SituacionComercialCorta datos={comercial} />
         </div>
 
         {/* Rent Info — a SALE mandate has no canon (§A.2): show the sale
@@ -301,7 +307,8 @@ export function ConsignacionCard({
             ) : (
               <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
             )}
-            {consignacion.adminFee && consignacion.adminFee > 0 && (
+            {/* COMERCIAL (QA 04-10): con `adminFee === 0` pintaba un «0» suelto al lado del canon. */}
+            {consignacion.adminFee != null && consignacion.adminFee > 0 && (
               <span className="text-xs text-fg-subtle dark:text-fg-muted">
                 + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
               </span>

@@ -422,6 +422,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
           // siendo el calendario.
           { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/preparar-visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
+          // COMERCIAL (Nico, 04-10-2026): «su comisión del mes» y las metas. El
+          // módulo es `agentes`, el mismo que exige el back y que el asesor ya tiene.
+          { labelKey: 'inmobiliaria.nav.comisionesYMetas', href: r('/pipeline/comisiones'), icon: Wallet, module: 'agentes', scope: 'comercial' },
         ],
       },
       // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda

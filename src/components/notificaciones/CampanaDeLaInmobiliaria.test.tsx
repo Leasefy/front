@@ -50,7 +50,7 @@ const BANDEJA = {
       category: 'payment',
       title: '107 cobros generados hoy',
       message: 'Todos sin leer. El último: Cobro de $ 1.500.000 para Apto 101 (2026-10)',
-      actionUrl: '/panel/inmobiliaria/cobros',
+      actionUrl: '/panel/inmobiliaria/pagos/cartera/cobros',
       metadata: {},
       cantidad: 107,
       sinLeer: 107,

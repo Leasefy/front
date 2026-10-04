@@ -238,8 +238,8 @@ function ComisionesAgentePreview({ t }: { t: Traductor }) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          La comisión de los asesores se liquida por fuera de Leasefy. Quién captó y quién
-          arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
+          La comisión de cada asesor está en Captación y arriendo › Comisiones y metas. Quién captó y
+          quién arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
         </p>
       </div>
     </div>

@@ -19,6 +19,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
+import { esVacanciaLarga, mandatoPorVencerOVencido } from '@/lib/comercial/comercial';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -108,6 +110,9 @@ function PortafolioContent() {
   } = useInmueblesSinConsignacion();
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
+  // COMERCIAL (Nico, 04-10-2026): días de vacancia y mandatos que se vencen.
+  // Fuente aparte: si falla, la lista sigue igual, sin esos datos.
+  const { porConsignacion: comercialPorConsignacion } = useVacanciaYMandatos();
   // IN-19 (QA 04-10): en el celular abre en TARJETAS (la tabla no cabe a
   // 390 px); lo que la persona elija con el selector manda.
   const esCelular = useIsMobile();
@@ -221,8 +226,28 @@ function PortafolioContent() {
       result = result.filter((c) => normalize(c.propertyType) === normalize(filters.propertyType));
     }
 
+    // COMERCIAL: más de 30 días vacante / mandato por vencer o vencido.
+    if (filters.comercial === 'vacante30') {
+      result = result.filter(
+        (c) => c.kind === 'consignacion' && esVacanciaLarga(comercialPorConsignacion[c.id]?.vacancia),
+      );
+    } else if (filters.comercial === 'mandato') {
+      result = result.filter(
+        (c) => c.kind === 'consignacion' && mandatoPorVencerOVencido(comercialPorConsignacion[c.id]?.mandato),
+      );
+    }
+
     return result;
-  }, [filters, portafolioRows, propietariosMap]);
+  }, [filters, portafolioRows, propietariosMap, comercialPorConsignacion]);
+
+  /** Cuántos hay en cada filtro comercial, sobre el portafolio entero (como los cajones). */
+  const conteoComercial = useMemo(() => {
+    const mandatos = portafolioRows.filter((c) => c.kind === 'consignacion');
+    return {
+      vacante30: mandatos.filter((c) => esVacanciaLarga(comercialPorConsignacion[c.id]?.vacancia)).length,
+      mandato: mandatos.filter((c) => mandatoPorVencerOVencido(comercialPorConsignacion[c.id]?.mandato)).length,
+    };
+  }, [portafolioRows, comercialPorConsignacion]);
 
   /**
    * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tienes
@@ -239,7 +264,8 @@ function PortafolioContent() {
     filters.agenteId !== 'all' ||
     filters.propietarioId !== 'all' ||
     filters.city !== 'all' ||
-    filters.propertyType !== 'all';
+    filters.propertyType !== 'all' ||
+    Boolean(filters.comercial);
 
   const elVacioEsPorLosFiltros = hayFiltrosPuestos && portafolioRows.length > 0;
 
@@ -590,6 +616,7 @@ function PortafolioContent() {
           agentes={allAgentes}
           conteo={conteoPorCajon}
           total={sePudoContar ? portafolioRows.length : null}
+          conteoComercial={sePudoContar ? conteoComercial : null}
         />
 
         {/* Content */}
@@ -637,6 +664,7 @@ function PortafolioContent() {
                             onView={() => handleView(row)}
                             onEdit={() => handleEdit(row)}
                             onAgendarCita={() => handleAgendarCita(row)}
+                            comercial={comercialPorConsignacion[row.id]}
                           />
                         ) : (
                           <InmuebleSinMandatoCard
@@ -675,6 +703,7 @@ function PortafolioContent() {
                     onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
+                    comercialPorConsignacion={comercialPorConsignacion}
                   />
                 ) : (
                   <SinDatos

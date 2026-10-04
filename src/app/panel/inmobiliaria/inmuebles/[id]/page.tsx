@@ -1,4 +1,5 @@
 'use client';
+import { SituacionComercialDelInmueble } from '@/components/comercial/SituacionComercial';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -572,6 +573,10 @@ function ConsignacionDetailContent() {
           contratoVigente={contratoVigente}
         />
       </div>
+
+      {/* COMERCIAL (Nico, 04-10-2026): «Vacante hace 42 días» y el mandato
+          que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
+      {!terminada && <SituacionComercialDelInmueble consignacionId={consignacionId} />}
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

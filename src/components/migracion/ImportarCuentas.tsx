@@ -15,6 +15,7 @@
  * toca** — nunca se pisa un nombre que la inmobiliaria ya editó.
  */
 
+import { porQueDelMapeo } from "@/lib/migracion/por-que-del-mapeo";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -548,7 +549,7 @@ export function ImportarCuentas({
                       </Select>
                     </TableCell>
                     <TableCell className="text-caption text-fg-muted">
-                      {m.isManual ? "elegido a mano" : m.porque}
+                      {porQueDelMapeo(m)}
                     </TableCell>
                   </TableRow>
                 ))}

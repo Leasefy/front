@@ -22,7 +22,8 @@ export type FaltanteInmueble =
   | 'departamento'
   | 'fecha_consignacion'
   | 'posible_duplicado'
-  | 'reparto';
+  | 'reparto'
+  | 'codigo_repetido';
 
 const ETIQUETAS: Record<FaltanteInmueble, string> = {
   titulo: 'título',
@@ -38,6 +39,7 @@ const ETIQUETAS: Record<FaltanteInmueble, string> = {
   departamento: 'departamento',
   fecha_consignacion: 'fecha de consignación',
   posible_duplicado: 'posible duplicado — revisar antes de continuar',
+  codigo_repetido: 'código repetido en el archivo',
   reparto: 'reparto entre los dueños (los porcentajes o la plata no cuadran; corrige el archivo o quita esa columna del mapeo para que queden en partes iguales)',
 };
 
@@ -47,6 +49,19 @@ const GENERICA = 'falta un dato';
  * instead of being dropped from the list (wu-4-report.md §6). */
 export function etiquetaDeFaltante(faltante: string): string {
   return ETIQUETAS[faltante as FaltanteInmueble] ?? GENERICA;
+}
+
+/**
+ * El nombre del GRUPO en «Completar de golpe»: «Sin título», «Sin dirección»…
+ * Los que no son un dato que falta (un posible duplicado, el código repetido
+ * en el archivo, el reparto que no cuadra) no llevan «Sin»: «Sin el código
+ * viene otra vez…» no se entiende (MIG-C, 04-10).
+ */
+const NO_SON_UN_DATO_QUE_FALTA = new Set(['posible_duplicado', 'codigo_repetido', 'precio_inconsistente', 'reparto']);
+export function etiquetaDelGrupoDeFaltante(faltante: string): string {
+  const etiqueta = etiquetaDeFaltante(faltante);
+  if (!NO_SON_UN_DATO_QUE_FALTA.has(faltante)) return `Sin ${etiqueta}`;
+  return etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
 }
 
 /** `posible_duplicado` is the one faltante whose only exit is a dedicated
@@ -90,4 +105,71 @@ export function celdaDelFaltanteInmueble(
     default:
       return null;
   }
+}
+
+/**
+ * MG-36 — los datos de una fila de inmuebles con el nombre que les da la
+ * persona. Una clave nueva del back se dice «otro dato», nunca la clave cruda.
+ */
+const NOMBRES_DE_CAMPO: Record<string, string> = {
+  title: 'título',
+  description: 'descripción',
+  type: 'tipo de inmueble',
+  listingType: 'operación',
+  address: 'dirección',
+  city: 'ciudad',
+  department: 'departamento',
+  neighborhood: 'barrio',
+  monthlyRent: 'canon',
+  salePrice: 'precio de venta',
+  adminFee: 'administración',
+  deposit: 'depósito',
+  consignedAt: 'fecha de consignación',
+  bedrooms: 'habitaciones',
+  bathrooms: 'baños',
+  area: 'área',
+  floor: 'piso',
+  parkingSpaces: 'parqueaderos',
+  stratum: 'estrato',
+  yearBuilt: 'año de construcción',
+  amenities: 'comodidades',
+  propietarioDocumento: 'documento del propietario',
+  propietarioNombre: 'propietario',
+  propietarioTelefono: 'teléfono del propietario',
+  propietarios: 'propietarios',
+  estadoOrigen: 'estado',
+  urbanizacion: 'urbanización',
+  llavesEn: 'llaves en',
+  creadaPor: 'creado por',
+  comisionPorcentaje: 'comisión',
+};
+
+const CAMPOS_DE_PLATA = new Set(['monthlyRent', 'salePrice', 'adminFee', 'deposit']);
+
+export function nombreDelCampoInmueble(campo: string): string {
+  return NOMBRES_DE_CAMPO[campo] ?? 'otro dato';
+}
+
+/** El valor como lo lee una persona: plata con puntos, vacío dicho, listas resumidas. */
+export function valorDelCampoInmueble(campo: string, texto: string): string {
+  const t = texto.trim();
+  if (!t) return 'vacío';
+  if (CAMPOS_DE_PLATA.has(campo) && /^\d+$/.test(t)) {
+    return `$${Number(t).toLocaleString('es-CO')}`;
+  }
+  if (t.startsWith('[') || t.startsWith('{')) {
+    try {
+      const v: unknown = JSON.parse(t);
+      if (Array.isArray(v)) {
+        const nombres = v
+          .map((x) => (x && typeof x === 'object' ? (x as { nombre?: unknown; documento?: unknown }) : null))
+          .map((x) => String(x?.nombre ?? x?.documento ?? '').trim())
+          .filter(Boolean);
+        return nombres.length > 0 ? nombres.join(', ') : `${v.length}`;
+      }
+    } catch {
+      /* se muestra recortado */
+    }
+  }
+  return t.length > 60 ? `${t.slice(0, 60)}…` : t;
 }

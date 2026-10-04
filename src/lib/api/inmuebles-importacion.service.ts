@@ -81,7 +81,9 @@ export type Faltante =
   | 'fecha_consignacion'
   | 'posible_duplicado'
   /** Varios dueños y los porcentajes (o la plata) no cuadran. */
-  | 'reparto';
+  | 'reparto'
+  /** MG-36: el mismo código viene en otra fila del archivo con otros datos. */
+  | 'codigo_repetido';
 
 /**
  * Un dueño de `propietarios[]`. Espejo de `PropietarioDelInmuebleDto` del
@@ -228,6 +230,20 @@ export interface FilaDeImportacion {
   ubicacion?: UbicacionDeFila;
   /** T-0130 — por qué falló la creación de esta fila, si falló. */
   errorDeActivacion?: string | null;
+  /**
+   * MG-36 — sólo con `codigo_repetido`: las otras filas del archivo con el
+   * mismo código y en qué datos difieren de ésta. Ausente = back anterior.
+   */
+  repetidas?: FilaRepetidaDelArchivo[];
+}
+
+/** MG-36 — otra fila del archivo con el mismo código y datos distintos. */
+export interface FilaRepetidaDelArchivo {
+  id: string;
+  /** La fila del archivo (como la cuenta la persona). */
+  fila: number;
+  /** `campo` es la clave del dato; `aqui`/`alla` el texto de cada fila (`''` = vacío). */
+  diferencias: { campo: string; aqui: string; alla: string }[];
 }
 
 export interface EstadoDeLoteInmuebles {

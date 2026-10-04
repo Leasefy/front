@@ -30,6 +30,8 @@ import {
 import {
   celdaDelFaltanteInmueble,
   etiquetaDeFaltante,
+  nombreDelCampoInmueble,
+  valorDelCampoInmueble,
   esPosibleDuplicado,
 } from './lib/faltantesInmuebles';
 import {
@@ -292,6 +294,33 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           >
             Usar de todos modos
           </Button>
+        </div>
+      )}
+
+      {/* MG-36 — el mismo código en otra fila del archivo, con otros datos.
+          Al crear se quedaría UNA sola; aquí la persona elige cuál. */}
+      {fila.faltantes.includes('codigo_repetido') && (fila.repetidas?.length ?? 0) > 0 && (
+        <div className="rounded-md bg-warning-soft border border-border p-3 space-y-2" data-testid="codigo-repetido">
+          <p className="text-sm text-warning font-medium">
+            {`El código ${String(fila.datos.externalId ?? '').trim()} viene ${(fila.repetidas?.length ?? 0) + 1} veces en el archivo con datos distintos: elige cuál va.`}
+          </p>
+          <ul className="space-y-2">
+            {fila.repetidas?.map((r) => (
+              <li key={r.id} className="text-sm text-fg-muted space-y-0.5">
+                <p className="text-fg">{`Esta es la fila ${fila.fila}; la otra es la fila ${r.fila}:`}</p>
+                <ul className="space-y-0.5 pl-3">
+                  {r.diferencias.map((d) => (
+                    <li key={d.campo} className="break-words">
+                      {`${nombreDelCampoInmueble(d.campo)}: aquí «${valorDelCampoInmueble(d.campo, d.aqui)}», en la fila ${r.fila} «${valorDelCampoInmueble(d.campo, d.alla)}»`}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p className="text-caption text-fg-muted">
+            Descarta la fila que no va con el botón de la papelera, y la otra queda lista. Si son dos inmuebles distintos, corrige el código de uno de ellos en el archivo.
+          </p>
         </div>
       )}
 

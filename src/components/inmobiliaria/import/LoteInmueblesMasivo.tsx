@@ -43,7 +43,7 @@ import {
 } from '@/lib/api/inmuebles-importacion.service';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { AVISO_CANON_POR_DEFECTO } from '@/lib/inmuebles/canon-por-confirmar';
-import { etiquetaDeFaltante } from './lib/faltantesInmuebles';
+import { etiquetaDeFaltante, etiquetaDelGrupoDeFaltante } from './lib/faltantesInmuebles';
 
 const N = (n: number) => n.toLocaleString('es-CO');
 
@@ -143,9 +143,15 @@ interface Props {
   deshabilitado?: boolean;
   /** Algo cambió en las filas: que la pantalla recargue su lista y sus totales. */
   onCambio: () => void;
+  /**
+   * Los totales del lote como los ve la pantalla. Cuando cambian por fuera de
+   * este panel (se descartó o se corrigió una fila suelta, y con ella se liberó
+   * su repetida), los grupos se vuelven a contar (MIG-C, 04-10).
+   */
+  firmaDelLote?: string;
 }
 
-export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: Props) {
+export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, firmaDelLote }: Props) {
   const permisos = usePermissionsContextSafe();
   const puedeDescartar = permisos === null || permisos.canAccess('portafolio', 'delete');
 
@@ -182,7 +188,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
 
   useEffect(() => {
     void cargarMotivos();
-  }, [cargarMotivos]);
+  }, [cargarMotivos, firmaDelLote]);
 
   const campo = CAMPOS.find((c) => c.clave === clave) ?? CAMPOS[0];
   const cantidad = cuantasDe(alcanceElegido, motivos);
@@ -200,7 +206,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
       : []),
     ...motivosQueBloquean.map((m) => ({
       id: `motivo:${m.codigo}` as AlcanceId,
-      etiqueta: `Sin ${etiquetaDeFaltante(m.codigo)}`,
+      etiqueta: etiquetaDelGrupoDeFaltante(m.codigo),
       filas: m.filas,
     })),
   ].filter((a) => a.id === 'pendientes' || a.filas > 0);

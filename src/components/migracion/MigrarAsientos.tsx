@@ -11,6 +11,7 @@
  * una naturaleza y un lugar en el árbol, y eso lo decide el contador.
  */
 
+import { porQueDelMapeo } from "@/lib/migracion/por-que-del-mapeo";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   aplicarPorTandas,
@@ -628,7 +629,7 @@ export function MigrarAsientos({
                       </Select>
                     </TableCell>
                     <TableCell className="text-caption text-fg-muted">
-                      {m.isManual ? "elegido a mano" : m.porque}
+                      {porQueDelMapeo(m)}
                     </TableCell>
                   </TableRow>
                 ))}

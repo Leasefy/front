@@ -79,6 +79,7 @@ import {
   parseSpreadsheetFile,
 } from '@/components/inmobiliaria/import/lib/parseFile';
 import { elegirDondeEstaLaTabla, fraseDeDondeSeLeyo } from '@/lib/migracion/donde-esta-la-tabla';
+import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
 import { MENSAJES_DE_LA_MIGRACION } from './limites-de-la-migracion';
 import {
   migracionTercerosApi,
@@ -300,6 +301,11 @@ function filasVivas(l: LoteDeTerceros): number {
   return l.borradores + l.requierenAtencion + l.listos;
 }
 
+/** MG-28: el back dice así a la fila «misma persona» que no se volvió a crear. */
+function esLaMismaPersonaYaCargada(motivo?: string): boolean {
+  return Boolean(motivo?.startsWith('Es la misma persona'));
+}
+
 export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTercerosProps = {}) {
   const [tipo, setTipo] = useState<TipoDeTercero>(tipoFijo ?? tipoInicial ?? 'PROPIETARIO');
   const [plantilla, setPlantilla] = useState<PlantillaDeTerceros | null>(null);
@@ -454,10 +460,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         } catch {
           donde = { fila: 0 };
         }
-        const { rows, headers } = await parseSpreadsheetFile(archivo, donde.hoja, {
+        const { rows, headers, filasDeTotales } = await parseSpreadsheetFile(archivo, donde.hoja, {
           filaDeEncabezado: donde.fila,
         });
-        setDondeSeLeyo(fraseDeDondeSeLeyo(donde));
+        setDondeSeLeyo(
+          [fraseDeDondeSeLeyo(donde), fraseDeFilasDeTotales(filasDeTotales ?? [])].filter(Boolean).join(' ') || null,
+        );
         if (rows.length === 0) {
           setError(MENSAJES_DE_LA_MIGRACION.archivoSinFilas(archivo.name));
           setFilas([]);
@@ -2102,12 +2110,23 @@ function ListaDeTrabajo({
               )}
             </p>
           ) : null}
-          {aplicacion.resultados.some((r) => r.estado === 'omitido') ? (
+          {aplicacion.resultados.some((r) => r.estado === 'omitido' && !esLaMismaPersonaYaCargada(r.motivo)) ? (
             /* Otra pestaña o un reintento ya la había creado: ni fallo ni aviso. */
             <p className="text-sm text-fg-muted" data-testid="omitidas">
-              {aplicacion.resultados.filter((r) => r.estado === 'omitido').length} ya las había creado
+              {aplicacion.resultados.filter((r) => r.estado === 'omitido' && !esLaMismaPersonaYaCargada(r.motivo)).length} ya las había creado
               otra pestaña o un reintento: no se repitieron.
             </p>
+          ) : null}
+          {/* MG-28 (MIG-C, 04-10): «es la misma persona» que ya estaba cargada
+              sin correo en otra carga: no se creó otra vez, y se dice por qué. */}
+          {aplicacion.resultados.some((r) => r.estado === 'omitido' && esLaMismaPersonaYaCargada(r.motivo)) ? (
+            <ul className="space-y-1 text-sm text-fg-muted" data-testid="ya-estaban-cargadas">
+              {aplicacion.resultados
+                .filter((r) => r.estado === 'omitido' && esLaMismaPersonaYaCargada(r.motivo))
+                .map((r) => (
+                  <li key={r.id}>{`Fila ${r.fila}: ${r.motivo}`}</li>
+                ))}
+            </ul>
           ) : null}
           {aplicacion.fallidas > 0 ? (
             <ul className="space-y-2 text-sm text-fg-muted" data-testid="fallidas-de-aplicacion">

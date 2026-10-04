@@ -76,6 +76,7 @@ import {
   parseSpreadsheetFile,
 } from "@/components/inmobiliaria/import/lib/parseFile";
 import { elegirDondeEstaLaTabla } from "@/lib/migracion/donde-esta-la-tabla";
+import { fraseDeFilasDeTotales } from "@/lib/migracion/fila-de-totales";
 import {
   fechasConMesPrimero,
   fraseDeFechasConMesPrimero,
@@ -581,7 +582,7 @@ export function MigrarContratos({
         // Si la exploración falla, se lee como siempre desde la primera fila:
         // es una mejora, no un requisito para poder leer el archivo.
       }
-      const { rows, headers } = await parseSpreadsheetFile(archivo, hoja, {
+      const { rows, headers, filasDeTotales } = await parseSpreadsheetFile(archivo, hoja, {
         filaDeEncabezado: fila,
       });
       // Fechas mes/día/año (un export en inglés): se leen así POR COLUMNA y
@@ -596,7 +597,12 @@ export function MigrarContratos({
       const fechas = fechasConMesPrimero(rows as Fila[]);
       setFilaDeEncabezado(fila);
       setHojaLeida(hoja);
-      setAvisoDeFechas(fraseDeFechasConMesPrimero(fechas));
+      // La fila de TOTALES del final no es un contrato: se apartó y se dice.
+      setAvisoDeFechas(
+        [fraseDeFechasConMesPrimero(fechas), fraseDeFilasDeTotales(filasDeTotales ?? [])]
+          .filter(Boolean)
+          .join(' ') || null,
+      );
       setFilas(fechas.filas);
       setEncabezados(headers);
       setMapeo(mapearColumnas(headers));

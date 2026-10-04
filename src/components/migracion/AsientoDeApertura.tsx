@@ -13,6 +13,7 @@
  * test). Acá sólo se pintan.
  */
 
+import { fechaLarga } from "@/lib/fechas/fecha-de-la-casa";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, Info, Plus, Warning, X } from "@phosphor-icons/react";
@@ -53,6 +54,7 @@ import {
   problemasDeApertura,
   puedeEnviarApertura,
   totalesDeApertura,
+  fraseDelDescuadre,
   type FilaDeApertura,
   type ProblemaDeApertura,
 } from "@/lib/migracion/asiento-de-apertura";
@@ -238,12 +240,12 @@ export function AsientoDeApertura({
             <h2 className="text-sm font-medium text-fg">
               {yaEstaba
                 ? `Este asiento ya estaba registrado: es el N.º ${registrado.numero}`
-                : `Asiento N.º ${registrado.numero} registrado con fecha ${registrado.fecha.slice(0, 10)}`}
+                : `Asiento N.º ${registrado.numero} registrado con fecha del ${fechaLarga(registrado.fecha)}`}
             </h2>
             <p className="mt-1 text-sm text-fg-muted">
               {yaEstaba
                 ? `No se creó ninguno nuevo: este envío devolvió el que ya había quedado, ` +
-                  `con fecha ${registrado.fecha.slice(0, 10)} y ${registrado.movimientos.length} líneas por ` +
+                  `con fecha del ${fechaLarga(registrado.fecha)} y ${registrado.movimientos.length} líneas por ` +
                   `${formatCurrency(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
                 : `${registrado.movimientos.length} líneas por ${formatCurrency(montoDelAsiento)}. ` +
                   `Los asientos no se editan: si algo quedó mal, se reversa y se registra de nuevo.`}
@@ -475,7 +477,7 @@ export function AsientoDeApertura({
           {problemas.map((p) => (
             <li key={p} className="flex items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-              {TEXTO_DEL_PROBLEMA[p]}
+              {p === "DESCUADRADO" ? (fraseDelDescuadre(totales) ?? TEXTO_DEL_PROBLEMA[p]) : TEXTO_DEL_PROBLEMA[p]}
             </li>
           ))}
         </ul>

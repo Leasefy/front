@@ -464,3 +464,29 @@ describe('placeholderDeEjemplo', () => {
     expect(placeholderDeEjemplo(null)).toBeUndefined();
   });
 });
+
+describe('MG-22 (MIG-C 04-10): con las partes, mandan las partes', () => {
+  it('🔴 «Gloria Patricia Úsuga» con sus partes viaja con nombres «Gloria Patricia» y apellidos «Úsuga»', () => {
+    const encabezados = ['Documento', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Nombre Completo'];
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, encabezados);
+    const fila = armarFila(
+      {
+        Documento: '32111222',
+        'Primer Nombre': 'Gloria',
+        'Segundo Nombre': 'Patricia',
+        'Primer Apellido': 'Úsuga',
+        'Segundo Apellido': '',
+        'Nombre Completo': 'Gloria Patricia Úsuga',
+      },
+      mapeo,
+    );
+    expect(fila).toMatchObject({ nombre: 'Gloria Patricia Úsuga', nombres: 'Gloria Patricia', apellidos: 'Úsuga' });
+  });
+
+  it('una empresa (sólo «Primer Nombre/Razón Social», sin apellidos) no manda partes', () => {
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, ['Documento', 'Primer Nombre', 'Primer Apellido']);
+    const fila = armarFila({ Documento: '900456789', 'Primer Nombre': 'Inversiones La Ceja S.A.S.', 'Primer Apellido': '' }, mapeo);
+    expect(fila.nombres).toBeUndefined();
+    expect(fila.apellidos).toBeUndefined();
+  });
+});

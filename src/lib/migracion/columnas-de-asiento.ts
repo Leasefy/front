@@ -18,6 +18,7 @@
  * `GET /plantilla` para asientos— y `armarAsientos`, que agrupa.
  */
 
+import { plataDeOrigen } from './valores-de-origen';
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
 import type { AsientoMigrado, MovimientoMigrado } from '@/lib/api/contabilidad.service';
 import type { MapeoDeColumna } from './columnas-de-tercero';
@@ -203,7 +204,21 @@ export function armarAsientos(
     return col === undefined ? undefined : fila[col];
   };
 
-  const asientos = new Map<string, AsientoMigrado>();
+  /*
+   * MC-27 (MIG-C, 04-10): cada clave tiene sus PIEZAS. Con número de
+   * comprobante, una sola (el número dice qué líneas van juntas). Sin número,
+   * la clave es fecha + descripción, y dos pagos idénticos del mismo día («Comisión
+   * transferencia» dos veces) se fundían en UN asiento de 4 líneas: los totales
+   * daban, la estructura no era la del archivo. Ahora, sin número, un asiento
+   * se CIERRA en cuanto sus débitos y créditos cuadran, y la línea siguiente
+   * con la misma clave abre otro. Un asiento legítimo de varias líneas sigue
+   * entero (sólo cuadra al final); si alguna línea no se puede medir (valor en
+   * una sola columna, monto ilegible) no se parte: se manda como venía y el
+   * back dice si cuadra. Las piezas de una clave van seguidas en la salida
+   * (ver `asientosPorTandas.ts`: una tanda no las separa).
+   */
+  const piezas = new Map<string, AsientoMigrado[]>();
+  const cuadre = new WeakMap<AsientoMigrado, { debito: number; credito: number; medible: boolean; cerrado: boolean }>();
   for (const fila of filas) {
     const codigoCuenta = cap(texto(leer(fila, 'codigoCuenta')), LIMITES_DTO.codigo);
     const debito = montoCrudo(leer(fila, 'debito'));
@@ -226,11 +241,14 @@ export function armarAsientos(
      */
     const clave = numero ? `n:${numero}|${fecha}` : `fd:${fecha}|${descripcion}`;
 
-    let asiento = asientos.get(clave);
-    if (!asiento) {
+    const deLaClave = piezas.get(clave) ?? [];
+    let asiento: AsientoMigrado | undefined = deLaClave[deLaClave.length - 1];
+    if (!asiento || (!numero && cuadre.get(asiento)?.cerrado)) {
       asiento = { fecha, descripcion, movimientos: [] };
       if (numero) asiento.numeroOriginal = cap(numero, LIMITES_DTO.numero);
-      asientos.set(clave, asiento);
+      cuadre.set(asiento, { debito: 0, credito: 0, medible: true, cerrado: false });
+      deLaClave.push(asiento);
+      piezas.set(clave, deLaClave);
     }
 
     const movimiento: MovimientoMigrado = { codigoCuenta };
@@ -250,8 +268,29 @@ export function armarAsientos(
     if (terceroDocumento) movimiento.terceroDocumento = terceroDocumento;
     if (terceroNombre) movimiento.terceroNombre = terceroNombre;
     asiento.movimientos.push(movimiento);
+
+    if (!numero) {
+      const c = cuadre.get(asiento);
+      if (c) {
+        const d = debito === undefined ? 0 : plataDeOrigen(debito);
+        const k = credito === undefined ? 0 : plataDeOrigen(credito);
+        if (movimiento.valor !== undefined || d === undefined || k === undefined || (debito !== undefined && credito !== undefined)) {
+          c.medible = false;
+        } else {
+          c.debito += Math.round(d * 100);
+          c.credito += Math.round(k * 100);
+          const lados = asiento.movimientos;
+          c.cerrado =
+            c.medible &&
+            c.debito > 0 &&
+            c.debito === c.credito &&
+            lados.some((x) => x.debito !== undefined) &&
+            lados.some((x) => x.credito !== undefined);
+        }
+      }
+    }
   }
-  return [...asientos.values()];
+  return [...piezas.values()].flat();
 }
 
 /**

@@ -154,7 +154,7 @@ function asientoDelBack(yaExistia: boolean, montoCop = 1_000_000): AsientoRegist
     agencyId: 'ag-1',
     numero: 7,
     fecha: '2026-02-05',
-    descripcion: 'Saldos iniciales al 2026-02-05',
+    descripcion: 'Saldos iniciales al 5 de febrero de 2026',
     origen: 'MANUAL',
     origenId: null,
     cerrado: false,
@@ -283,7 +283,7 @@ describe('AsientoDeApertura — el cartel del final', () => {
     await registrar(asientoDelBack(false));
 
     const texto = q('apertura-creado')!.textContent ?? '';
-    expect(texto).toContain('Asiento N.º 7 registrado con fecha 2026-02-05');
+    expect(texto).toContain('Asiento N.º 7 registrado con fecha del 5 de febrero de 2026');
     expect(texto).not.toContain('ya estaba registrado');
     // Y el monto sale del asiento guardado, no de las filas vacías del form.
     expect(texto).toContain('1.000.000');

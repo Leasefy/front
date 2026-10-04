@@ -12,6 +12,7 @@
  * anticipan para que la persona vea el problema antes de mandar, no un 400.
  */
 
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { MAX_COP_POR_MOVIMIENTO, type MovimientoNuevo } from '@/lib/api/contabilidad.service';
 
 /** A quién se le imputa un saldo de cartera o de terceros. */
@@ -100,6 +101,17 @@ export function totalesDeApertura(filas: readonly FilaDeApertura[]): {
   return { debitos, creditos, diferencia: debitos - creditos };
 }
 
+/**
+ * Por qué no cuadra, con el número exacto (MIG-C, 04-10): «faltan $911.000 en
+ * créditos», no sólo «no cuadra». `null` si cuadra.
+ */
+export function fraseDelDescuadre(totales: { debitos: number; creditos: number; diferencia: number }): string | null {
+  if (totales.diferencia === 0) return null;
+  const plata = (n: number) => `$${Math.abs(n).toLocaleString('es-CO')}`;
+  const falta = totales.diferencia > 0 ? 'créditos' : 'débitos';
+  return `No cuadra: faltan ${plata(totales.diferencia)} en ${falta} para que los dos totales sean iguales (débitos ${plata(totales.debitos)}, créditos ${plata(totales.creditos)}).`;
+}
+
 /** `AAAA-MM-DD` y que el día exista: `aDiaContable` del back rechaza el resto. */
 export function esFechaContable(fecha: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
@@ -166,7 +178,8 @@ export function movimientosDeApertura(filas: readonly FilaDeApertura[]): Movimie
 }
 
 export function descripcionSugerida(fecha: string): string {
-  return esFechaContable(fecha) ? `Saldos iniciales al ${fecha}` : 'Saldos iniciales';
+  // Fecha de la casa («31 de julio de 2026»), no «2026-07-31» (MIG-C, 04-10).
+  return esFechaContable(fecha) ? `Saldos iniciales al ${fechaLarga(fecha)}` : 'Saldos iniciales';
 }
 
 /** Hoy en `AAAA-MM-DD` local, el valor por defecto del campo de fecha. */

@@ -28,6 +28,7 @@ import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/Cobr
 import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel'
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
+import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
@@ -288,6 +289,10 @@ export default function CobranzaOverviewPage() {
           {t(`${PAGES_NS}.salaDesc`)}
         </p>
       </header>
+
+      {/* QA-IA-B (04-10-2026): sin días de plazo fijados, lo vencido no entra a
+          la cobranza; la portada lo dice con el camino para fijarlos. */}
+      <AvisoPlazoSinFijarEnCobranza />
 
       {/* Ya había datos y un refresco falló: lo de abajo no se borra, pero se
           dice ARRIBA que puede estar viejo, con reintento. Entra y sale con

@@ -211,6 +211,17 @@ describe('🔴 «El inquilino aceptó» — el panel TAMBIÉN exige la aprobaci�
     expect(errorDeLaAccion()).toBe('')
   })
 
+  // QA-IA-B (04-10-2026, en el laboratorio): aprobado el plan, «Aprobar»,
+  // «Rechazar» y «Modificar» seguían prendidos. Aprobar dos veces o rechazar
+  // uno aprobado son 409 en el micro: el botón prometía algo que no se puede.
+  it('aprobado: ya no ofrece aprobar, rechazar ni modificar', async () => {
+    estado.aprobadoEn = '2026-10-02T15:00:00.000Z'
+    await montar()
+    for (const id of ['approval-aprobar-plan', 'approval-rechazar-plan', 'approval-modificar-plan']) {
+      expect(contenedor.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)?.disabled).toBe(true)
+    }
+  })
+
   it('un plan ya vigente no ofrece nada de esto', async () => {
     estado.status = 'active'
     await montar()

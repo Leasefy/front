@@ -1090,7 +1090,7 @@
       "flota": {
         "piloto": "Pilot",
         "apagado": "Off",
-        "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
+        "apagadoHint": "The Pilot is not turned on for your agency yet. The Leasefy team turns it on.",
         "cargando": "Reading the fleet state…",
         "corriendo": "{{n}} agents act in this mode.",
         "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",

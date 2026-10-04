@@ -44,6 +44,7 @@ const SIN_EXCLUIR = {
   YA_PAGO: 0,
   AUN_NO_VENCE: 0,
   DENTRO_DEL_PLAZO: 0,
+  PLAZO_SIN_FIJAR: 0,
   CUBIERTO_POR_ANTICIPO: 0,
   YA_SE_LE_ENVIO: 0,
   SIN_DATOS_DE_CONTACTO: 0,
@@ -325,6 +326,51 @@ describe('🔴 deuda no es cartera: los motivos nuevos se ven', () => {
     ).toContain('Dentro del plazo del contrato')
     // Y la explicación por fila, tal cual la manda el back.
     expect(contenedor.textContent).toContain('es deuda, no cartera')
+  })
+
+  /*
+   * 🔴 QA-CONT CR-31 (Nico, 03-10-2026): sin días de plazo fijados por la
+   * inmobiliaria, la cuota vencida NO entra a la cobranza. El back la excluye
+   * con `PLAZO_SIN_FIJAR`; sin ese motivo en el catálogo, esa gente
+   * desaparecía del resumen y nadie sabía que faltaba fijar el plazo.
+   */
+  it('cuenta a los excluidos por plazo sin fijar y da el camino para fijarlo', async () => {
+    destinatariosMock.mockResolvedValue({
+      ...PREVIA_CON_INTERES,
+      lesLlega: 0,
+      excluidos: { ...SIN_EXCLUIR, PLAZO_SIN_FIJAR: 2, AUN_NO_VENCE: 1 },
+      destinatarios: [
+        { ...PREVIA_CON_INTERES.destinatarios[1]! },
+        {
+          ...PREVIA_CON_INTERES.destinatarios[2]!,
+          esCartera: false,
+          leLlega: false,
+          motivo: 'PLAZO_SIN_FIJAR' as const,
+          explicacion:
+            'La cuota venció, pero la inmobiliaria todavía no fijó sus días de plazo: no entra a la cartera en mora ni a la cobranza. Se fijan en Configuración → Cartera.',
+        },
+      ],
+    })
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+
+    expect(contenedor.querySelector('[data-testid="excluidos-PLAZO_SIN_FIJAR"]')?.textContent).toContain(
+      'Plazo sin fijar: 2',
+    )
+    const aviso = contenedor.querySelector('[data-testid="aviso-plazo-sin-fijar"]')
+    expect(aviso?.textContent).toContain(
+      'La inmobiliaria no ha fijado sus días de plazo: la cuota vencida no entra a la cobranza hasta fijarlos',
+    )
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo',
+    )
+    // La fila de esa cuota no dice «dentro del plazo»: no hay plazo.
+    const filas = [...contenedor.querySelectorAll('[data-testid="fila-destinatario"]')]
+    const laDelPlazo = filas.find((f) => f.textContent?.includes('no fijó sus días de plazo'))
+    expect(laDelPlazo?.textContent).toContain('vencida · plazo sin fijar')
+    expect(laDelPlazo?.textContent).not.toContain('dentro del plazo')
   })
 
   it('explica por qué la lista se encoge al pasar al aviso con interés', async () => {

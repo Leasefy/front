@@ -5,6 +5,8 @@ import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, relativeTime } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
+import { laHizoUnaPersona, motivoDeLaTransicion } from '@/lib/cobranza/transicion-vocab'
+
 interface CobranzaTransitionsFeedProps {
   transitions: CarteraOverviewResponse['lastTransitions']
   isLoading?: boolean
@@ -85,7 +87,7 @@ export function CobranzaTransitionsFeed({
                     {item.debtorNameRedacted}
                   </p>
                   <p className="text-xs text-fg-subtle truncate">
-                    {item.reason}
+                    {motivoDeLaTransicion(item.reason)}
                   </p>
                 </div>
 
@@ -93,14 +95,17 @@ export function CobranzaTransitionsFeed({
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      item.actor === 'agent'
-                        ? 'bg-surface-muted text-fg-muted'
-                        : 'bg-surface-muted text-fg-subtle'
+                      laHizoUnaPersona(item.actor)
+                        ? 'bg-surface-muted text-fg-subtle'
+                        : 'bg-surface-muted text-fg-muted'
                     }`}
                   >
-                    {item.actor === 'agent'
-                      ? t('inmobiliaria.ai.cobranza.overview.transitions.agentActor')
-                      : t('inmobiliaria.ai.cobranza.overview.transitions.humanActor')}
+                    {/* QA-IA-B (04-10-2026): el micro manda `SAAS_ORCHESTRATOR`
+                        (el sistema) o `admin:override` (una persona); antes se
+                        comparaba contra `'agent'` y todo decía «Operador». */}
+                    {laHizoUnaPersona(item.actor)
+                      ? t('inmobiliaria.ai.cobranza.overview.transitions.humanActor')
+                      : t('inmobiliaria.ai.cobranza.overview.transitions.agentActor')}
                   </span>
                   <span className="text-xs text-fg-subtle">
                     {relativeTime(item.transitionedAt, locale)}

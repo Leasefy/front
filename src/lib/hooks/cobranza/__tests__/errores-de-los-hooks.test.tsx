@@ -341,6 +341,23 @@ describe('useDisputes: abrir devuelve el fallo, no sólo el status', () => {
     expect(camposDelError(r.fallo)[0]?.campo).toBe('reason')
   })
 
+  // QA-IA-B (04-10-2026): el contador (VIEWER en el micro) recibe 403 en la
+  // lista y la pantalla decía «No pudimos cargar las disputas. 403».
+  it('leer la lista con 403 deja el fallo del micro, no el número', async () => {
+    contestar(() =>
+      json(403, {
+        statusCode: 403,
+        code: 'SIN_PERMISO',
+        message: 'Tu rol no tiene permiso para hacer esto. Pídeselo a un administrador de tu inmobiliaria.',
+        error: 'Forbidden — insufficient role',
+      }),
+    )
+    const h = await montar(() => useDisputes())
+    expect(h.actual().error).not.toBe('403')
+    expect((h.actual().fallo as ApiError).status).toBe(403)
+    expect(mensajeParaLaPersona(h.actual().fallo)).toContain('Tu rol no tiene permiso')
+  })
+
   it('sin red: status 0 y el TypeError tal cual (no «el servicio no está disponible»)', async () => {
     contestar((url, init) => (init?.method === 'POST' ? SIN_RED() : json(200, { disputes: [] })))
     const h = await montar(() => useDisputes())

@@ -53,6 +53,8 @@ import { TablePagination } from '@/components/ui/pagination'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
   DebtorPicker,
@@ -308,8 +310,14 @@ function DisputasContent() {
 
   // Filtro server-side por estado (el endpoint soporta ?status).
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
-  const { disputes, isLoading, error, refetch, openDispute, resolveDispute } =
+  const { disputes, isLoading, error, fallo, refetch, openDispute, resolveDispute } =
     useDisputes(filtro === 'todas' ? {} : { status: filtro })
+  // Abrir y resolver es `cobranza:intervene` en el micro (también la lista).
+  // QA-IA-B (04-10-2026): al contador se le ofrecía «Abrir disputa» y la
+  // lista decía «No pudimos cargar las disputas. 403».
+  const { canAccess } = usePermissionsContext()
+  const puedeActuar = canAccess('cobranza', 'intervene')
+  const sinPermiso = (fallo as { status?: number } | null)?.status === 403
 
   useAutoRefresh(refetch)
 
@@ -419,15 +427,17 @@ function DisputasContent() {
           pausa ni reactiva la cobranza por su cuenta.
         </p>
       </div>
-      <Button
-        size="sm"
-        hideArrow
-        onClick={() => setAbrirOpen(true)}
-        data-testid="disputa-abrir"
-        className="shrink-0"
-      >
-        Abrir disputa
-      </Button>
+      {puedeActuar && !sinPermiso && (
+        <Button
+          size="sm"
+          hideArrow
+          onClick={() => setAbrirOpen(true)}
+          data-testid="disputa-abrir"
+          className="shrink-0"
+        >
+          Abrir disputa
+        </Button>
+      )}
     </header>
   )
 
@@ -460,17 +470,23 @@ function DisputasContent() {
         >
           <span className="flex items-center gap-2">
             <ShieldWarning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-            No pudimos cargar las disputas. {error}
+            <span data-testid="disputas-fallo">
+              {sinPermiso
+                ? 'Tu rol no puede ver las disputas: las abre y las resuelve quien gestiona la cobranza. Si las necesitas, pídele el acceso a un administrador.'
+                : mensajeParaLaPersona(fallo ?? error, { porDefecto: 'No pudimos cargar las disputas.' })}
+            </span>
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            Reintentar
-          </Button>
+          {!sinPermiso && (
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={() => void refetch()}
+              className="shrink-0"
+            >
+              Reintentar
+            </Button>
+          )}
       </Presence>
 
       {/* Filtro por estado + conteo */}

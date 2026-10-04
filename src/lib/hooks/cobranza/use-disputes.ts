@@ -98,6 +98,8 @@ export interface UseDisputesResult {
   disputes: CobranzaDispute[]
   isLoading: boolean
   error: string | null
+  /** El fallo de la lectura (el `ApiError` del micro o el error de red), para el traductor. */
+  fallo: unknown
   refetch: () => Promise<void>
   /** GET un detalle puntual. null si no existe / 404 / sin backend. */
   getDispute: (id: string) => Promise<CobranzaDispute | null>
@@ -120,6 +122,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
   const [disputes, setDisputes] = useState<CobranzaDispute[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [fallo, setFallo] = useState<unknown>(null)
 
   const { status } = params
 
@@ -139,14 +142,19 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
       if (status) sp.set('status', status)
       const qs = sp.toString()
       const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/disputes${qs ? `?${qs}` : ''}`)
-      if (!res.ok) throw new Error(`${res.status}`)
+      // QA-IA-B (04-10-2026): el fallo del micro entero (status, code, su
+      // frase), no `new Error('403')`: la pantalla decía «No pudimos cargar
+      // las disputas. 403» al contador.
+      if (!res.ok) throw await falloDelMicro(res)
       const json = (await res.json()) as DisputesListResponse
       setDisputes(Array.isArray(json.disputes) ? json.disputes : [])
       setError(null)
+      setFallo(null)
     } catch (err) {
       // Fail-soft: 404/empty/error → lista vacía, sin romper la pantalla.
       setDisputes([])
       setError(err instanceof Error ? err.message : 'fetch_failed')
+      setFallo(err)
     } finally {
       setIsLoading(false)
     }
@@ -255,6 +263,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
     disputes,
     isLoading,
     error,
+    fallo,
     refetch,
     getDispute,
     openDispute,

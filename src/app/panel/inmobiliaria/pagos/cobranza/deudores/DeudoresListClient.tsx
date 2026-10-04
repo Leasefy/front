@@ -28,6 +28,7 @@ import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
+import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -219,6 +220,9 @@ export default function DeudoresListClient() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
+        {/* QA-IA-B (04-10-2026): sin días de plazo fijados la lista queda
+            vacía aunque haya cuotas vencidas: se dice por qué. */}
+        <AvisoPlazoSinFijarEnCobranza />
         <EmptyState
           icon={Users}
           title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
@@ -279,6 +283,8 @@ export default function DeudoresListClient() {
           {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
         </p>
       </header>
+
+      <AvisoPlazoSinFijarEnCobranza />
 
       <Card>
         {/* ── Barra de filtros ──────────────────────────────────────────── */}

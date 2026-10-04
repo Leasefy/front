@@ -248,12 +248,16 @@ function InboxContent() {
 
       {/* Filtro de grupo (excluyente) + total */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <SegmentedControl<GrupoFiltro>
-          options={FILTRO_OPCIONES}
-          value={filtro}
-          onChange={setFiltro}
-          aria-label="Filtrar conversaciones por grupo"
-        />
+        {/* QA-IA-B (04-10-2026): a 390 px el control medía 709 px y corría la
+            página de lado (scrollWidth 733). Se desplaza dentro de su riel. */}
+        <div className="max-w-full overflow-x-auto" data-testid="inbox-filtro-riel">
+          <SegmentedControl<GrupoFiltro>
+            options={FILTRO_OPCIONES}
+            value={filtro}
+            onChange={setFiltro}
+            aria-label="Filtrar conversaciones por grupo"
+          />
+        </div>
         <span className="text-xs text-fg-muted tabular-nums shrink-0">
           <AnimatedNumber value={visibles.length} format={enteroTalCual} /> de {total}
         </span>

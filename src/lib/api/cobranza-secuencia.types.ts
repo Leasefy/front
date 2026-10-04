@@ -18,11 +18,16 @@ export type CanalDeCobranza = (typeof CANALES_DE_COBRANZA)[number];
  * `AUN_NO_VENCE` y `DENTRO_DEL_PLAZO` nacieron el 2026-09-15 con la separación
  * entre deuda y cartera: del paso 1 en adelante el aviso lleva interés, y eso
  * sólo se le manda a quien ya es cartera.
+ *
+ * `PLAZO_SIN_FIJAR` (QA-CONT CR-31, Nico 03-10-2026): la cuota venció pero la
+ * inmobiliaria no ha fijado sus días de plazo, así que no corre interés y la
+ * cuota no entra a la cartera en mora ni a la cobranza.
  */
 export const MOTIVOS_DE_EXCLUSION = [
   'YA_PAGO',
   'AUN_NO_VENCE',
   'DENTRO_DEL_PLAZO',
+  'PLAZO_SIN_FIJAR',
   'CUBIERTO_POR_ANTICIPO',
   'YA_SE_LE_ENVIO',
   'SIN_DATOS_DE_CONTACTO',
@@ -151,6 +156,7 @@ export const ETIQUETA_DEL_MOTIVO: Record<MotivoDeExclusion, string> = {
   YA_PAGO: 'Ya pagaron',
   AUN_NO_VENCE: 'Todavía no les vence',
   DENTRO_DEL_PLAZO: 'Dentro del plazo del contrato',
+  PLAZO_SIN_FIJAR: 'Plazo sin fijar',
   CUBIERTO_POR_ANTICIPO: 'Pagaron por adelantado',
   YA_SE_LE_ENVIO: 'Ya se les envió',
   SIN_DATOS_DE_CONTACTO: 'Sin datos de contacto',
@@ -158,3 +164,6 @@ export const ETIQUETA_DEL_MOTIVO: Record<MotivoDeExclusion, string> = {
   SIN_WHATSAPP: 'Sin WhatsApp',
   LEY_2300: 'Bloqueados por la Ley 2300',
 };
+
+/** Dónde se fijan los días de plazo de la inmobiliaria (Configuración → Perfil). */
+export const FIJAR_EL_PLAZO_HREF = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';

@@ -28,6 +28,13 @@
  *
  * Ahora se ve como lo que es, con `FalloDeCarga` (el mismo cartel del resto
  * del panel, con su referencia para soporte).
+ *
+ * QA-IA-B (04-10-2026): ese cartel decía «No encontramos la analítica de este
+ * agente. Puede que se haya eliminado, o que el enlace esté mal», y en el
+ * texto de la página (nodo de diagnóstico) «GET /ai-hub/agentes/{agente}/
+ * analitica no está publicado por el microservicio» (PG-17). Ni se eliminó
+ * nada ni el enlace está mal: la analítica no existe. Ahora lo dice así, sin
+ * jerga y sin «Reintentar» (sigue sin disfrazarse de «todavía no hay datos»).
  */
 
 import { ChartBar } from '@phosphor-icons/react'
@@ -41,16 +48,6 @@ import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece
 import { useRef } from 'react'
 
 const NS = 'inmobiliaria.ai.workspace.analitica'
-
-/**
- * El 404 que devuelve pedir una ruta que el micro no publica. Se arma acá
- * —con `status`, que es lo que lee `clasificarFallo`— porque el hook se traga
- * la respuesta y sólo deja la bandera `notAvailable`.
- */
-const FALLO_SIN_RUTA = Object.assign(
-  new Error('GET /ai-hub/agentes/{agente}/analitica no está publicado por el microservicio'),
-  { status: 404 },
-)
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -176,12 +173,19 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
      */
     return (
       <CrossFade swapKey="no-disponible">
-      <div data-testid="analitica-no-disponible">
-        <FalloDeCarga
-          error={FALLO_SIN_RUTA}
-          queEs="la analítica de este agente"
-          enmarcado={false}
-        />
+      <div
+        data-testid="analitica-no-disponible"
+        role="status"
+        className="flex flex-col items-center gap-2 px-6 py-16 text-center"
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-fg-muted">
+          <ChartBar className="h-6 w-6" weight="duotone" aria-hidden="true" />
+        </span>
+        <p className="text-sm font-medium text-fg">Esta analítica todavía no existe</p>
+        <p className="max-w-md text-sm text-fg-muted">
+          El servicio de agentes todavía no calcula el desempeño diario de este agente, así que no
+          hay cifras que mostrar. No es un problema de tu cuenta ni del enlace.
+        </p>
       </div>
       </CrossFade>
     )

@@ -189,7 +189,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   if (!plan) return null
 
   const maxDiscount = plan.agency.maxDiscount
-  const isPending = plan.status === 'offered' || plan.status === 'pending'
+  // Por decidir = ofrecido y SIN la aprobación de la inmobiliaria. Aprobado, ni
+  // aprobar otra vez ni rechazar ni modificar: el micro responde 409 a las tres
+  // (QA-IA-B, 04-10-2026: los tres botones seguían prendidos).
+  const isPending =
+    (plan.status === 'offered' || plan.status === 'pending') && !plan.operatorApprovedAt
   const esPagoUnico = plan.proposed.cuotas === 0 && plan.proposed.totalDueCop > 0
 
   // ── Handlers ──────────────────────────────────────────────────────────────

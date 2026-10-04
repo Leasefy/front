@@ -76,6 +76,7 @@ import {
 } from '@/lib/api/cobranza-secuencia.service'
 import {
   ETIQUETA_DEL_MOTIVO,
+  FIJAR_EL_PLAZO_HREF,
   MOTIVOS_DE_EXCLUSION,
   type CalendarioDeLaSecuencia,
   type CanalDeCobranza,
@@ -736,6 +737,26 @@ function PagosRecordatorios() {
                     ))}
                   </ul>
                 )}
+                {/*
+                  🔴 QA-CONT CR-31 (Nico, 03-10-2026): sin días de plazo fijados,
+                  lo vencido no es cartera y no entra a la cobranza. El conteo
+                  solo no alcanza: hay que decir qué hacer para que entre.
+                */}
+                {(previa.excluidos.PLAZO_SIN_FIJAR ?? 0) > 0 && (
+                  <div
+                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-xs text-warning ring-1 ring-warning/30"
+                    data-testid="aviso-plazo-sin-fijar"
+                  >
+                    <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                    <p className="leading-relaxed">
+                      La inmobiliaria no ha fijado sus días de plazo: la cuota vencida no entra a la
+                      cobranza hasta fijarlos.{' '}
+                      <Link href={FIJAR_EL_PLAZO_HREF} className="font-medium underline underline-offset-2">
+                        Fijar los días de plazo
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Toda fila que NO recibe sale igual, con su motivo: una lista sin
@@ -781,7 +802,9 @@ function PagosRecordatorios() {
                           <span className="ml-2 text-xs text-fg-muted">
                             {d.esCartera
                               ? `cartera · ${d.diasDeMora} ${d.diasDeMora === 1 ? 'día' : 'días'} de mora`
-                              : 'deuda · dentro del plazo'}
+                              : d.motivo === 'PLAZO_SIN_FIJAR'
+                                ? 'vencida · plazo sin fijar'
+                                : 'deuda · dentro del plazo'}
                           </span>
                         </td>
                         <td className="px-3 py-2 text-fg-muted">{d.inmueble}</td>

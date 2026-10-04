@@ -1090,7 +1090,7 @@
       "flota": {
         "piloto": "Piloto",
         "apagado": "Apagado",
-        "apagadoHint": "El Piloto está apagado en el servidor (PILOTO_ENABLED). Lo enciende el equipo técnico.",
+        "apagadoHint": "El Piloto todavía no está activado para tu inmobiliaria. Lo activa el equipo de Leasefy.",
         "cargando": "Leyendo el estado de la flota…",
         "corriendo": "{{n}} agentes actúan con este modo.",
         "corriendoConDistintos": "{{n}} agentes actúan: {{enEste}} con este modo y {{otros}} con otro (abajo, cuáles).",
@@ -6764,8 +6764,8 @@
         "pendientes": {
           "pageTitle": "Qué necesita tu atención",
           "desc": "Las decisiones del día, priorizadas: el agente trabaja solo lo demás.",
-          "vacio": "Todo al día",
-          "vacioHint": "El agente está gestionando la cartera. Cuando algo requiera tu decisión, aparecerá aquí.",
+          "vacio": "Nada espera tu decisión",
+          "vacioHint": "Cuando algo necesite tu aprobación (un acuerdo de pago, una carta o una escalación), aparece aquí.",
           "grupoEscalaciones": "Escalaciones",
           "grupoCartas": "Cartas prejurídicas por aprobar",
           "grupoSiniestros": "Siniestros por aprobar",
@@ -6829,7 +6829,7 @@
             "title": "Movimientos recientes",
             "empty": "Sin transiciones recientes",
             "emptyHelper": "Las transiciones aparecerán aquí cuando el agente mueva deudores entre etapas",
-            "agentActor": "Agente AI",
+            "agentActor": "El agente",
             "humanActor": "Operador",
             "timeAgo": "hace"
           },
@@ -7217,7 +7217,7 @@
           "title": "Aprobar plan de pago",
           "loading": "Cargando plan...",
           "loadError": "Error al cargar el plan. Intenta de nuevo.",
-          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "envMissing": "El servicio de agentes no está conectado a este panel. Avísale al equipo de Leasefy.",
           "verDeudor": "Ver deudor",
           "aprobar": "Aprobar",
           "rechazar": "Rechazar",
@@ -7300,7 +7300,7 @@
           "title": "Aprobar siniestro",
           "loading": "Cargando siniestro...",
           "error": "Error al cargar el siniestro. Intenta de nuevo.",
-          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "envMissing": "El servicio de agentes no está conectado a este panel. Avísale al equipo de Leasefy.",
           "back": "Volver",
           "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
           "pdfPreview": {
@@ -7348,7 +7348,7 @@
           "title": "Aprobar carta prejurídica",
           "loading": "Cargando carta...",
           "error": "Error al cargar la carta. Intenta de nuevo.",
-          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "envMissing": "El servicio de agentes no está conectado a este panel. Avísale al equipo de Leasefy.",
           "back": "Volver",
           "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
           "pdfPreview": {
@@ -7501,8 +7501,8 @@
             "export": "Exportar"
           },
           "empty": {
-            "title": "Sin alertas de compliance",
-            "description": "Todas las llamadas cumplen con T-323/2024 y Ley 2300."
+            "title": "Sin alertas de cumplimiento",
+            "description": "Cuando una llamada o un mensaje se salga de la Ley 2300 o de la Sentencia T-323 de 2024, aparece aquí."
           },
           "audit": {
             "empty": {
@@ -7513,14 +7513,14 @@
           },
           "ley2300": {
             "empty": {
-              "title": "Sin infracciones a Ley 2300 detectadas",
-              "description": "Las llamadas se monitorean en tiempo real."
+              "title": "Sin infracciones a la Ley 2300",
+              "description": "Si un contacto se sale de los horarios o de la frecuencia que permite la ley, aparece aquí."
             }
           },
           "optOut": {
             "empty": {
-              "title": "Sin deudores en opt-out",
-              "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+              "title": "Ningún deudor ha cerrado un canal",
+              "description": "Cuando un deudor pide que no lo contacten por un canal concreto (por ejemplo, «no me llamen»), ese canal se cierra y aparece aquí; la cobranza sigue por los demás. Un «no me contacten más» genérico no cierra ningún canal."
             },
             "errors": {
               "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
@@ -8480,7 +8480,7 @@
             "casoColaLabel": "Cola de pagos",
             "crossPregunta": "¿Ver la factura en Tesorería?",
             "crossDestino": "Tesorería · Cuentas por pagar",
-            "analiticaDesc": "Desempeño del agente de pagos en los últimos 30 días: facturas procesadas, aprobaciones y monto dispersado por día.",
+            "analiticaDesc": "Desempeño del equipo de agentes de pagos en los últimos 30 días: cobros preparados, pagos fallidos atendidos y propietarios liquidados por día.",
             "colaLabel": "Aprobar facturas",
             "comoFunciona": {
               "title": "¿Cómo funciona?",

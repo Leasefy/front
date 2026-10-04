@@ -111,7 +111,11 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           aria-describedby. Cadence `Table` injects a visible scroll-wrapper
           <div> and drops <caption> (no DS equivalent), degrading the
           screen-reader fallback semantics with no visual benefit. Kept native. */}
-      <table className="sr-only" id="funnel-summary-table">
+      {/* QA-IA-B (04-10-2026): el `sr-only` va en un <div> y no en el <table>:
+          una tabla no se encoge a 1 px (`width` no le aplica) y a 390 px medía
+          395 px y corría la portada de Cobranza de lado (scrollWidth 439). */}
+      <div className="sr-only" data-testid="funnel-summary-envoltorio">
+      <table id="funnel-summary-table">
         <caption>{t('inmobiliaria.ai.cobranza.overview.funnel.tableCaption')}</caption>
         <thead>
           <tr>
@@ -130,6 +134,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

@@ -69,6 +69,7 @@ import {
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { usePaymentPlans } from '@/lib/hooks/cobranza/use-payment-plans'
 // El Dialog del ADAPTADOR local (`@/components/ui/dialog`), no el de Cadence
 // crudo: es el que usan los otros 21 modales del panel, trae su padding `p-6` y
 // frena Lenis mientras está abierto.
@@ -799,14 +800,16 @@ function AcuerdosContent() {
     error: errorPromesas,
     refetch: recargarPromesas,
   } = usePromises({ limit: 200 })
+  // 🔴 QA-IA-B (04-10-2026): los planes salen de la lista REAL de planes de
+  // pago. Antes salían del embudo de pagos (sólo filas de `agent.payments`), y
+  // un plan sin pagos —todos los recién ofrecidos— no aparecía nunca.
   const {
-    rows,
+    planes,
     isLoading: cargandoPlanes,
     error: errorPlanes,
     refetch: recargarPlanes,
-  } = usePaymentsFunnel({ status: 'pending', sort: 'created_at' })
+  } = usePaymentPlans()
 
-  const planes = useMemo(() => rows.filter((r) => r.paymentPlanId != null), [rows])
   const acuerdos = useMemo(
     () => componerAcuerdos(promises, planes),
     [promises, planes],

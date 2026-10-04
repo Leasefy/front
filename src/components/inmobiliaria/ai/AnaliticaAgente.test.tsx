@@ -102,8 +102,11 @@ describe('AnaliticaAgente — states', () => {
     render({ notAvailable: true })
     const fallo = container.querySelector('[data-testid="analitica-no-disponible"]')
     expect(fallo).not.toBeNull()
-    expect(fallo!.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
     expect(fallo!.textContent).not.toContain('aún no reporta')
+    // QA-IA-B (04-10-2026): dice lo que es —no existe— y no culpa al enlace
+    // ni deja jerga en el texto de la página (PG-17).
+    expect(fallo!.textContent).toContain('Esta analítica todavía no existe')
+    expect(container.textContent).not.toMatch(/enlace esté mal|se haya eliminado|GET \/ai-hub|microservicio/)
     // Sobre una ruta que no existe, reintentar sería mentir.
     expect(fallo!.querySelector('[data-testid="reintentar"]')).toBeNull()
   })

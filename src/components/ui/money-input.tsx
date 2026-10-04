@@ -133,14 +133,32 @@ export interface MoneyInputProps
    * enteros como siempre. Ver `lib/plata/con-centavos.ts`.
    */
   areas?: AreasDePlata;
+  /**
+   * 🔴 Acepta centavos aunque la llave de `areas` esté apagada: los saldos
+   * iniciales de la migración contable los GUARDAN siempre (Nico, 04-10-2026:
+   * «NO redondear, guardar los centavos»). El back frena con su frase si las
+   * columnas todavía no los guardan; nunca se redondea. Sólo COP.
+   */
+  siempreConCentavos?: boolean;
 }
 
 export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function MoneyInput(
-  { value, onChange, moneda = 'COP', simbolo = true, conSigno = false, areas, className, ...props },
+  {
+    value,
+    onChange,
+    moneda = 'COP',
+    simbolo = true,
+    conSigno = false,
+    areas,
+    siempreConCentavos = false,
+    className,
+    ...props
+  },
   refExterna,
 ) {
   // «Centavos en todo»: sólo COP con la llave de `areas` admite centavos.
-  const conCentavos = usePlataConCentavos(moneda === 'COP' ? areas : undefined) && moneda === 'COP';
+  const llaveDelArea = usePlataConCentavos(moneda === 'COP' ? areas : undefined);
+  const conCentavos = moneda === 'COP' && (siempreConCentavos || llaveDelArea);
   const i18n = useOptionalI18n();
   /** ¿El último cambio traía un decimal de más? Prende la pista. */
   const [decimalFrenado, setDecimalFrenado] = useState(false);

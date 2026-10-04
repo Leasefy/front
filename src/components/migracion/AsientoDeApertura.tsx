@@ -57,7 +57,10 @@ import {
   type FilaDeApertura,
   type ProblemaDeApertura,
 } from "@/lib/migracion/asiento-de-apertura";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyEnDocumento } from "@/lib/format";
+
+/** La plata de los saldos: con sus centavos si los trae, nunca redondeada. */
+const plataDeLosSaldos = (valor: number) => formatCurrencyEnDocumento(valor, false);
 import { CampoDePlata } from "@/components/ui/campo-de-plata";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
@@ -246,8 +249,8 @@ export function AsientoDeApertura({
               {yaEstaba
                 ? `No se creó ninguno nuevo: este envío devolvió el que ya había quedado, ` +
                   `con fecha del ${fechaLarga(registrado.fecha)} y ${registrado.movimientos.length} líneas por ` +
-                  `${formatCurrency(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
-                : `${registrado.movimientos.length} líneas por ${formatCurrency(montoDelAsiento)}. ` +
+                  `${plataDeLosSaldos(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
+                : `${registrado.movimientos.length} líneas por ${plataDeLosSaldos(montoDelAsiento)}. ` +
                   `Los asientos no se editan: si algo quedó mal, se reversa y se registra de nuevo.`}
             </p>
           </div>
@@ -386,6 +389,8 @@ export function AsientoDeApertura({
                 <TableCell>
                   <CampoDePlata
                     areas="contabilidad_facturacion_y_exogena"
+                    // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
+                    siempreConCentavos
                     aria-label={`Débito de la línea ${i + 1}`}
                     value={fila.debitoCop > 0 ? fila.debitoCop : undefined}
                     onChange={(v) =>
@@ -399,6 +404,8 @@ export function AsientoDeApertura({
                 <TableCell>
                   <CampoDePlata
                     areas="contabilidad_facturacion_y_exogena"
+                    // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
+                    siempreConCentavos
                     aria-label={`Crédito de la línea ${i + 1}`}
                     value={fila.creditoCop > 0 ? fila.creditoCop : undefined}
                     onChange={(v) =>
@@ -533,7 +540,7 @@ function Total({
               : "text-fg"
         }`}
       >
-        {formatCurrency(valor)}
+        {plataDeLosSaldos(valor)}
       </p>
       {nota ? (
         <p

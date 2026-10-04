@@ -21,13 +21,16 @@ import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 export interface CampoDePlataProps extends CurrencyInputProps {
   /** El área (o las áreas) de la plata donde va a parar el valor. */
   areas: AreasDePlata;
+  /** Centavos aunque la llave esté apagada (ver `MoneyInput.siempreConCentavos`). */
+  siempreConCentavos?: boolean;
 }
 
 export const CampoDePlata = forwardRef<HTMLInputElement, CampoDePlataProps>(function CampoDePlata(
-  { areas, ...props },
+  { areas, siempreConCentavos = false, ...props },
   ref,
 ) {
-  const conCentavos = usePlataConCentavos(areas);
+  const llaveDelArea = usePlataConCentavos(areas);
+  const conCentavos = siempreConCentavos || llaveDelArea;
   if (!conCentavos) return <CurrencyInput ref={ref} {...props} />;
   const { value, onChange, placeholder, ...resto } = props;
   return (
@@ -35,6 +38,7 @@ export const CampoDePlata = forwardRef<HTMLInputElement, CampoDePlataProps>(func
       {...resto}
       ref={ref}
       areas={areas}
+      siempreConCentavos={siempreConCentavos}
       placeholder={placeholder === undefined ? '0' : placeholder}
       value={value}
       onChange={(v) => onChange?.(v)}

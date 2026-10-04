@@ -348,6 +348,27 @@ describe('AsientoDeApertura — T-0125: la apertura se identifica por su fecha, 
  * referencia (antes salía «Error interno del servidor» tal cual); el corte de
  * red sigue con su texto propio, que explica que reintentar es seguro.
  */
+describe('🔴 los saldos iniciales guardan los centavos (Nico, 04-10-2026)', () => {
+  it('con la llave de la contabilidad APAGADA, «1.500.000,37» viaja tal cual y cuadra al centavo', async () => {
+    await pintar();
+    const selects = container.querySelectorAll('select');
+    await escribir(selects[0] ?? null, 'c-1');
+    await escribir(selects[1] ?? null, 'c-2');
+    await escribir(q('apertura-debito-0'), '1.500.000,37');
+    await escribir(q('apertura-credito-1'), '1.500.000,37');
+    api.asientos.crear.mockResolvedValue(asientoDelBack(false, 1_500_000.37));
+    const boton = q('apertura-enviar') as HTMLButtonElement | null;
+    expect(boton?.disabled).toBe(false);
+    await click(boton);
+    await act(async () => {});
+    const enviado = api.asientos.crear.mock.calls[0]![0];
+    expect(enviado.movimientos.map((m: { debitoCop?: number; creditoCop?: number }) => [m.debitoCop ?? 0, m.creditoCop ?? 0])).toEqual([
+      [1_500_000.37, 0],
+      [0, 1_500_000.37],
+    ]);
+  });
+});
+
 describe('AsientoDeApertura — la regla de oro', () => {
   it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
     await pintar();

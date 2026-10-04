@@ -29,7 +29,7 @@ import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/she
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
-import { PipelineCard } from './PipelineCard';
+import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
 import {
   MotivoDialog,
   mensajeDelRechazoDelMotivo,
@@ -47,6 +47,8 @@ import {
 
 interface PipelineBoardProps {
   items: PipelineItem[];
+  /** El equipo, para poner nombre al agente de cada tarjeta. */
+  agentes?: ReadonlyArray<{ id: string; userId?: string; name: string }>;
   onItemClick: (item: PipelineItem) => void;
   /**
    * Devuelve una promesa que se RESUELVE cuando el back confirmó, y se
@@ -367,7 +369,17 @@ export function PipelineBoard({
   onItemClick,
   onStageChange,
   puedeMover = true,
+  agentes,
 }: PipelineBoardProps) {
+  const nombresDeAgentes = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const a of agentes ?? []) {
+      if (!a.name) continue;
+      m[a.id] = a.name;
+      if (a.userId) m[a.userId] = a.name;
+    }
+    return m;
+  }, [agentes]);
   const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -544,6 +556,7 @@ export function PipelineBoard({
   }, [itemsByStage]);
 
   return (
+    <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -607,6 +620,7 @@ export function PipelineBoard({
         )}
       </DragOverlay>
     </DndContext>
+    </NombresDeAgentesContext.Provider>
   );
 }
 

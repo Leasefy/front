@@ -10,6 +10,7 @@ import {
   Phone,
   Warning,
 } from '@phosphor-icons/react';
+import { createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
@@ -27,6 +28,12 @@ const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
 // Overdue warning thresholds
 const DAYS_WARNING_THRESHOLD = 7;
 const DAYS_CRITICAL_THRESHOLD = 14;
+
+/**
+ * Quién es cada agente (por id de miembro y por id de usuario). Lo pone el
+ * tablero; sin él la tarjeta no inventa un «Agente #a1b» con el final de un id.
+ */
+export const NombresDeAgentesContext = createContext<Record<string, string>>({});
 
 interface PipelineCardProps {
   item: PipelineItem;
@@ -47,6 +54,7 @@ export function PipelineCard({
 }: PipelineCardProps) {
   const { t, formatDate: formatDateI18n } = useI18n();
   const stageInfo = getPipelineStageInfo(item.stage);
+  const nombreDelAgente = useContext(NombresDeAgentesContext)[item.agenteId];
   const riskColors = item.riskLevel ? RISK_LEVEL_COLORS[item.riskLevel] : null;
 
   // Check if overdue
@@ -228,7 +236,7 @@ export function PipelineCard({
           {/* Assigned Agent (small text) */}
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <User className="w-3 h-3" />
-            <span className="truncate max-w-[80px]">{t('inmobiliaria.pipeline.agent')} #{item.agenteId.slice(-3)}</span>
+            <span className="truncate max-w-[80px]">{nombreDelAgente ?? 'Sin asignar'}</span>
           </div>
         </div>
       </div>

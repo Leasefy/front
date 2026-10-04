@@ -175,11 +175,41 @@ describe('tablero financiero', () => {
     expect(avisos?.textContent).toContain('no tienen tabla de amortización');
   });
 
-  it('el siniestro se dice aparte, adentro de la cartera', async () => {
+  it('el siniestro se dice APARTE de la cartera (el back lo saca del total)', async () => {
     await pintar();
-    expect(container.querySelector('[data-testid="cartera-en-siniestro"]')?.textContent).toContain(
-      '12.000.000',
+    const pie = container.querySelector('[data-testid="cartera-en-siniestro"]')?.textContent ?? '';
+    expect(pie).toContain('12.000.000');
+    // CONSISTENCIA (04-10-2026): «De eso, $104 M» bajo una cartera de $102 M.
+    expect(pie).toContain('Aparte');
+    expect(pie).not.toContain('De eso');
+    expect(container.textContent).not.toContain('siniestros incluidos');
+  });
+
+  it('🔴 CR-31: sin plazo fijado dice por qué la cartera está en cero y lleva al campo', async () => {
+    h.tablero.mockResolvedValue(
+      tablero({ cartera: { ...tablero().cartera, totalCop: 0, plazoSinFijar: true } }),
     );
+    await pintar();
+    const aviso = container.querySelector('[data-testid="cartera-plazo-sin-fijar"]');
+    expect(aviso?.textContent).toContain('todavía no fijó sus días de plazo');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo',
+    );
+  });
+
+  it('🔴 «Por girar» y «Girado» dicen su período y su base (CONSISTENCIA 04-10)', async () => {
+    await pintar();
+    const porGirar = container.querySelector('[data-testid="cifra-por-girar"]')?.textContent ?? '';
+    expect(porGirar).toContain('Por girar hasta septiembre de 2026');
+    expect(porGirar).toContain('Los meses futuros no entran');
+    const girado = container.querySelector('[data-testid="cifra-girado-del-mes"]')?.textContent ?? '';
+    expect(girado).toContain('Girado en septiembre de 2026');
+    expect(girado).toContain('Dispersado');
+  });
+
+  it('con el plazo fijado no sale el aviso del plazo', async () => {
+    await pintar();
+    expect(container.querySelector('[data-testid="cartera-plazo-sin-fijar"]')).toBeNull();
   });
 
   it('el deudor sale con su etapa en palabras', async () => {

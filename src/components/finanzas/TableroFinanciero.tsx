@@ -22,9 +22,11 @@
  * 3. **Sumar la deuda con la cartera.** El back manda `cartera.totalCop` y sus
  *    tramos: son la cartera, lo que ya pasó el plazo. La deuda del contrato
  *    —que es 12,9 veces más grande— vive en `/pagos/cartera` y no se mezcla.
- * 4. **Callar qué parte de la cartera está en siniestro.** Está adentro del
- *    total y se dice aparte: ya no la persigue la cobranza, la reclama la
- *    aseguradora.
+ * 4. **Callar qué parte de la cartera está en siniestro.** El back la saca
+ *    del total y de los tramos (`carteraDelTablero`) y se dice APARTE: ya no
+ *    la persigue la cobranza, la reclama la aseguradora. (CONSISTENCIA,
+ *    04-10-2026: el pie decía «De eso, $104 M está en siniestro» debajo de
+ *    una cartera de $102 M.)
  * 5. **Dejar una cifra sin definición.** Cada una dice qué mide, debajo.
  */
 
@@ -43,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { TableroFinanciero as Tablero, TramoDeCartera } from '@/lib/api/finanzas.types';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
@@ -277,16 +280,31 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
           </Link>
         }
       />
+      {cartera.plazoSinFijar && (
+        <p
+          className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-fg"
+          data-testid="cartera-plazo-sin-fijar"
+        >
+          La cartera está en cero porque esta inmobiliaria todavía no fijó sus días de plazo: sin
+          plazo, lo vencido se ve como «Vencida», no corre mora y no entra a la cobranza.{' '}
+          <Link
+            href={FIJAR_EL_PLAZO_HREF}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Fijar los días de plazo
+          </Link>
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Cifra
           id="cartera-total"
           etiqueta="Cartera"
           valor={cartera.totalCop}
-          definicion="Todo el capital que pasó el plazo, siniestros incluidos. La suma de los tramos de al lado."
+          definicion="El capital que pasó el plazo y todavía persigue la cobranza. Es la suma de los tramos de al lado; lo que está en siniestro va aparte."
           tono="warning"
           pie={
             <span data-testid="cartera-en-siniestro">
-              De eso, {formatCurrency(cartera.enSiniestroCop)} está en siniestro: lo reclama la
+              Aparte, {formatCurrency(cartera.enSiniestroCop)} en siniestro: lo reclama la
               aseguradora, no la cobranza.
             </span>
           }
@@ -372,9 +390,9 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Cifra
           id="por-girar"
-          etiqueta="Por girar"
+          etiqueta={`Por girar hasta ${nombreDelMes(tablero.mes)}`}
           valor={propietarios.porGirarCop}
-          definicion="Neto liquidado que todavía no entró a ningún lote: se le debe al propietario y no ha salido."
+          definicion={`Lo causado a favor de los propietarios de ${nombreDelMes(tablero.mes)} y los meses anteriores que todavía no ha salido (también lo que ya está en un lote sin pagar). Los meses futuros no entran; «Liquidaciones» muestra sólo el mes y «Cartera → Por pagar» suma además los 3 meses siguientes.`}
         />
         <Cifra
           id="retenido"
@@ -391,9 +409,9 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
         />
         <Cifra
           id="girado-del-mes"
-          etiqueta="Girado en el mes"
+          etiqueta={`Girado en ${nombreDelMes(tablero.mes)}`}
           valor={propietarios.giradoDelMesCop}
-          definicion="Lo que salió al banco en lotes marcados como pagados dentro del mes."
+          definicion="Lo que salió al banco ese mes, por el día en que salió: lotes marcados como pagados y dispersiones procesadas una a una. Es el mismo «Dispersado» de Recaudo."
           tono="success"
         />
       </div>

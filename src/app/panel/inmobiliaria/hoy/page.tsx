@@ -5,7 +5,8 @@ import { Users, CurrencyDollar, Robot, Wrench, ArrowRight, CaretRight } from '@p
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
-import { getActiveAgents } from '@/lib/types/ai-agents';
+import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context';
+import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { seVeElEnlace } from '@/lib/nav/se-ve-el-enlace';
@@ -110,8 +111,9 @@ const BLOCKS: SystemBlock[] = [
 ];
 
 export default function HoyPage() {
-  const { t, locale } = useI18n();
-  const agents = getActiveAgents();
+  const { t } = useI18n();
+  const flota = usePilotoFlotaCompartida();
+  const actuan = (flota.data?.agentes ?? []).filter((a) => a.actua ?? a.corre);
   const { isAdmin, agencyRole, isLoading } = usePermissions();
 
   return (
@@ -128,27 +130,42 @@ export default function HoyPage() {
           botones llevaban a pantallas reales que no tenían nada de eso. Las
           alertas reales viven en el Piloto (/panel/inmobiliaria/piloto). */}
 
-      {/* Autopilot activo */}
-      {agents.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* El Piloto, con LA verdad del Piloto: la flota real que lee la píldora
+          del encabezado. Antes esto contaba el catálogo («5 agentes
+          ejecutando») mientras el encabezado decía «Apagado». */}
+      {flota.data && (
+        <section
+          data-testid="hoy-piloto"
+          className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+              {flota.data.activo && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
+              )}
+              <span className={cn('relative inline-flex h-2.5 w-2.5 rounded-full', flota.data.activo ? 'bg-success' : 'bg-border-strong')} />
             </span>
             <div>
-              <p className="text-overline text-muted-foreground">{t('inmobiliaria.hoy.autopilotActiveLabel')}</p>
+              <p className="text-overline text-muted-foreground">
+                {flota.data.activo ? 'Piloto activo' : 'Piloto apagado'}
+              </p>
               <p className="text-body-sm text-foreground mt-0.5">
-                {t('inmobiliaria.hoy.autopilotRunning', { count: agents.length })}
-                <span className="text-muted-foreground"> · {agents.map((a) => (locale === 'en' ? a.nameEn : a.nameEs)).join(' · ')}</span>
+                {flota.data.activo
+                  ? actuan.length === 1
+                    ? '1 agente actúa'
+                    : `${actuan.length} agentes actúan`
+                  : 'Ningún agente actúa por su cuenta.'}
+                {flota.data.activo && actuan.length > 0 && (
+                  <span className="text-muted-foreground"> · {actuan.map((a) => workspaceVocab(t, 'agente', a.agente)).join(' · ')}</span>
+                )}
               </p>
             </div>
           </div>
           <Link
-            href="/panel/inmobiliaria/configuracion/agentes"
+            href="/panel/inmobiliaria/piloto"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors flex-shrink-0"
           >
-            {t('inmobiliaria.common.viewAll')}
+            Ver el Piloto
             <ArrowRight className="w-4 h-4" />
           </Link>
         </section>

@@ -58,6 +58,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 
+import { useEsPropietarioDeInmobiliaria } from '@/lib/context/PropietarioDeInmobiliariaContext';
+
 export interface PlanHeaderProps {
   title?: string;
   subtitle?: string;
@@ -127,6 +129,8 @@ export function PlanHeader({
 
   // In the inmobiliaria context, only admins can invite members or upgrade the plan.
   // Outside inmobiliaria (landlord/tenant), always show these actions.
+  // Propietario de una inmobiliaria: no tiene plan propio que mejorar.
+  const sinPlanPropio = useEsPropietarioDeInmobiliaria();
   const permsCtx = usePermissionsContextSafe();
   const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
 
@@ -628,7 +632,7 @@ export function PlanHeader({
             <>
 
               {/* Subscription Popover — admin-only in inmobiliaria context */}
-              {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+              {canShowAdminActions && !sinPlanPropio && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
@@ -1156,7 +1160,7 @@ export function PlanHeader({
                   </DropdownListItem>
                 </>
               )}
-              {isLandlord && (
+              {isLandlord && !sinPlanPropio && (
                 <DropdownListItem asChild>
                   <Link
                     href={upgradePlanHref}

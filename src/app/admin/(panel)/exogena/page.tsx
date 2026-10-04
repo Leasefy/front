@@ -166,7 +166,7 @@ export default function ExogenaAdminPage() {
       <div className="card p-4 border-l-4 border-l-warn mb-6" data-testid="aviso-del-preset">
         <p className="text-sm text-fg">
           El preset del código es una <strong>sugerencia de uso corriente, no la resolución</strong>.
-          Confirmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
+          Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
           — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
         </p>
       </div>

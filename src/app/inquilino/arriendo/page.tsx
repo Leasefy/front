@@ -10,6 +10,8 @@ import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, 
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useLeases, useMyPayments, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
+import { useResumenDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { estadoGeneralDelArriendo, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -22,6 +24,19 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
  */
+/** El portal en inglés es residual: sólo las etiquetas que ya existían. */
+function estadoEn(es: string): string {
+  const m: Record<string, string> = {
+    'Al día': 'Up to date',
+    'En verificación': 'In verification',
+    'Pago rechazado': 'Payment rejected',
+    'Pendiente': 'Pending',
+    'Con saldo vencido': 'Overdue balance',
+    'Pago del mes recibido': 'This month received',
+  };
+  return m[es] ?? es;
+}
+
 export default function ArriendoPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
@@ -34,6 +49,7 @@ export default function ArriendoPage() {
 
   // Estado del período actual — misma fuente única que pagos/page.tsx.
   const { info: paymentInfo } = useLeasePaymentInfo(primaryLease?.id ?? null);
+  const resumenDeCuotas = useResumenDelPortal(Boolean(primaryLease));
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
@@ -110,45 +126,29 @@ export default function ArriendoPage() {
     );
   }
 
-  // Estado general — refleja el período actual real (currentPeriodStatus), no una
-  // constante "Al día". Neutral y factual: sin "EN MORA", sin countdown, sin
-  // referencias a centrales de riesgo (PAGO-01 / PITFALLS 8).
-  const overallStatus = (() => {
-    switch (paymentInfo?.currentPeriodStatus) {
-      case 'APPROVED':
-        return {
-          label: locale === 'es' ? 'Al día' : 'Up to date',
-          detail: locale === 'es' ? 'Pago del período confirmado' : 'Current period confirmed',
-          Icon: CheckCircle,
-          iconColor: 'text-success',
-        };
-      case 'PENDING_VALIDATION':
-        return {
-          label: locale === 'es' ? 'En verificación' : 'In verification',
-          detail: locale === 'es' ? 'Pago en proceso de validación' : 'Payment being validated',
-          Icon: Clock,
-          iconColor: 'text-warning',
-        };
-      case 'REJECTED':
-        return {
-          label: locale === 'es' ? 'Pago rechazado' : 'Payment rejected',
-          detail:
-            paymentInfo?.currentPeriodRejectionReason ??
-            (locale === 'es' ? 'Revisa el estado de cuenta' : 'Check your account status'),
-          Icon: WarningCircle,
-          iconColor: 'text-danger',
-        };
-      case 'NONE':
-        return {
-          label: locale === 'es' ? 'Pendiente' : 'Pending',
-          detail: locale === 'es' ? 'Pago del período pendiente' : 'Current period pending',
-          Icon: Clock,
-          iconColor: 'text-fg-subtle',
-        };
-      default:
-        return null; // sin arriendo activo / info no cargada
-    }
-  })();
+  // Estado general — sale de las CUOTAS (la misma fuente que «Mi estado de
+  // cuenta»), no sólo del pago del período: con cuotas vencidas no se dice
+  // «Al día». Neutral y factual, sin referencias a centrales de riesgo.
+  const estadoGeneral = estadoGeneralDelArriendo(
+    paymentInfo?.currentPeriodStatus,
+    resumenDeCuotas,
+    paymentInfo?.currentPeriodRejectionReason,
+  );
+  const overallStatus = estadoGeneral
+    ? {
+        label: locale === 'es' ? estadoGeneral.etiqueta : estadoEn(estadoGeneral.etiqueta),
+        detail: estadoGeneral.detalle,
+        Icon: estadoGeneral.tono === 'ok' ? CheckCircle : estadoGeneral.tono === 'peligro' ? WarningCircle : Clock,
+        iconColor:
+          estadoGeneral.tono === 'ok'
+            ? 'text-success'
+            : estadoGeneral.tono === 'peligro'
+              ? 'text-danger'
+              : estadoGeneral.tono === 'espera'
+                ? 'text-warning'
+                : 'text-fg-subtle',
+      }
+    : null;
   const OverallStatusIcon = overallStatus?.Icon ?? Clock;
 
   return (
@@ -322,10 +322,13 @@ export default function ArriendoPage() {
                                 <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                   {lease.propertyTitle}
                                 </h3>
+                                {/* Los migrados llevan la dirección como título: no se repite. */}
+                                {lease.propertyAddress && lease.propertyAddress.trim() !== (lease.propertyTitle ?? '').trim() && (
                                 <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                   <MapPin className="w-3.5 h-3.5" />
                                   {lease.propertyAddress}
                                 </p>
+                                )}
                               </div>
                               <div className="sm:text-right">
                                 <p className="text-2xl font-bold text-fg">
@@ -352,7 +355,7 @@ export default function ArriendoPage() {
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
                                 <p className="text-sm font-medium text-fg">
-                                  {locale === 'es' ? `Día ${lease.paymentDay}` : `Day ${lease.paymentDay}`}
+                                  {diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}
                                 </p>
                               </div>
                               <div>

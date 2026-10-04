@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useEffect, useId } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -55,6 +55,18 @@ import {
   limpiarCodigoPostalAlEscribir,
   limpiarDireccion,
 } from '@/lib/direccion/direccion';
+
+/** El ancla con la que llegan los enlaces «Fijar los días de plazo». */
+const ANCLA_DEL_PLAZO = 'perfil-diasDePlazo';
+
+/**
+ * CR-31: `plazoDePagoFijadoAt === null` = la inmobiliaria nunca fijó su plazo
+ * (el 0 de fábrica no es «fijado en 0»). Un back que no manda el campo: fijado.
+ */
+function plazoSinFijar(agency: AgencyProfile): boolean {
+  const fila = agency as unknown as Record<string, unknown>;
+  return 'plazoDePagoFijadoAt' in fila && fila.plazoDePagoFijadoAt === null;
+}
 
 interface ConfigPerfilAgenciaProps {
   /** Real agency row from GET /inmobiliaria/config (`agency` key) */
@@ -780,6 +792,35 @@ export function ConfigPerfilAgencia({
     setIsEditing(true);
   };
 
+  /*
+   * 🔴 CONSISTENCIA (04-10-2026): «Fijar los días de plazo» (Cartera, Cobranza,
+   * la ficha del contrato, el tablero) llega con `#perfil-diasDePlazo`. Antes
+   * caía al tope del Perfil y el campo estaba escondido detrás del «Editar» de
+   * todo el perfil. Con el ancla, quien puede editar entra directo a editar y
+   * el foco queda EN el campo; quien no puede, ve el dato resaltado.
+   */
+  const [llegoAlPlazo, setLlegoAlPlazo] = useState(false);
+  useEffect(() => {
+    if (isLoading || typeof window === 'undefined') return;
+    if (window.location.hash !== `#${ANCLA_DEL_PLAZO}`) return;
+    setLlegoAlPlazo(true);
+    if (canEdit) {
+      setFormData(buildFormState(agency));
+      setIsEditing(true);
+    }
+    // Sólo al llegar: el ancla no vuelve a abrir la edición después de guardar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+  useEffect(() => {
+    if (!llegoAlPlazo) return;
+    const marco = window.requestAnimationFrame(() => {
+      const campo = document.getElementById(ANCLA_DEL_PLAZO);
+      campo?.scrollIntoView?.({ block: 'center' });
+      if (campo instanceof HTMLInputElement) campo.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(marco);
+  }, [llegoAlPlazo, isEditing]);
+
   if (isLoading) {
     return (
       <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
@@ -1468,7 +1509,11 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Días de plazo antes de la mora"
                 error={errors.diasDePlazo}
-                hint="Días después de la fecha de cobro en los que todavía no corre mora. Un contrato puede tener los suyos."
+                hint={
+                  plazoSinFijar(agency)
+                    ? 'Todavía no los ha fijado: mientras tanto lo vencido no entra a la cartera ni a la cobranza. El sugerido es 5 días; un contrato puede tener los suyos.'
+                    : 'Días después de la fecha de cobro en los que todavía no corre mora. Un contrato puede tener los suyos.'
+                }
                 campo="diasDePlazo"
               >
                 <div className="relative">
@@ -1598,9 +1643,23 @@ export function ConfigPerfilAgencia({
                   : `% mensual fijo (${agency.defaultLateFeePercent ?? '—'}%)`}
               </div>
             </div>
-            <div className="p-3 rounded-md bg-muted/50">
+            <div
+              id={ANCLA_DEL_PLAZO}
+              tabIndex={-1}
+              className={cn('p-3 rounded-md bg-muted/50', llegoAlPlazo && 'ring-2 ring-warning/60')}
+              data-testid="plazo-de-lectura"
+            >
               <div className="text-muted-foreground text-xs">Días de plazo antes de la mora</div>
-              <div className="text-foreground font-semibold tabular-nums">{agency.diasDePlazo ?? 0}</div>
+              {plazoSinFijar(agency) ? (
+                <>
+                  <div className="text-warning font-semibold">Sin fijar</div>
+                  <div className="text-caption text-muted-foreground">
+                    Mientras no los fije, lo vencido no entra a la cartera ni a la cobranza.
+                  </div>
+                </>
+              ) : (
+                <div className="text-foreground font-semibold tabular-nums">{agency.diasDePlazo ?? 0}</div>
+              )}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-xs">Siniestro a los</div>
@@ -1687,7 +1746,7 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Percent} title="Impuestos y retenciones" />
         <p className="text-xs text-muted-foreground">
-          Tarifas por defecto de Colombia: confirmalas con tu contador. La reteICA depende del municipio
+          Tarifas por defecto de Colombia: confírmalas con tu contador. La reteICA depende del municipio
           y hasta que no la configures no se practica. Se aplican sólo cuando el contrato dice quién
           retiene y si el inmueble es comercial.
         </p>

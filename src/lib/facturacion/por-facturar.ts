@@ -43,9 +43,14 @@ export function escenarioSinConfirmar(f: FacturaDelMes): boolean {
   )
 }
 
-/** Una factura que una nota crédito dejó sin efecto antes de emitirse (FA-R16). */
+/**
+ * Una factura que una nota crédito dejó sin efecto: antes de emitirse (FA-R16)
+ * o ya emitida (`saldadaPorNota`, CONSISTENCIA 04-10-2026: LABQA-1 seguía
+ * «Emitida» en Por facturar con la NC-1 encima, mientras Ventas decía que ya
+ * se anuló).
+ */
 export function estaAnulada(f: FacturaDelMes): boolean {
-  return f.codigoNoEmitible === 'ANULADA_POR_NOTA_CREDITO'
+  return f.codigoNoEmitible === 'ANULADA_POR_NOTA_CREDITO' || Boolean(f.saldadaPorNota)
 }
 
 const DICE_EL_GIRO = /\bgir(?:o|e|a|ar|ado|ada|en)\b/i
@@ -90,8 +95,9 @@ export type EstadoDeLaFila =
 
 /** Qué dice la celda de estado de una fila. */
 export function estadoDeLaFila(f: FacturaDelMes): EstadoDeLaFila {
-  if (f.estado === 'EMITIDA') return 'emitida'
+  // La anulada primero: una emitida que una nota crédito anuló ya no está «Emitida».
   if (estaAnulada(f)) return 'anulada'
+  if (f.estado === 'EMITIDA') return 'emitida'
   if (escenarioSinConfirmar(f)) return 'sin-escenario'
   if (esperaElGiro(f)) return 'espera-el-giro'
   if (!f.emitible) return 'todavia-no'
@@ -109,7 +115,9 @@ export function porQueNoSeEmite(f: FacturaDelMes): string | null {
         'La comisión se factura cuando se le gira al propietario, con lo que de verdad se le descontó.'
       )
     case 'anulada':
-      return f.motivoNoEmitible ?? 'Esta factura se anuló con una nota crédito.'
+      return f.saldadaPorNota
+        ? `Esta factura se anuló con la nota crédito ${f.saldadaPorNota.numero}.`
+        : (f.motivoNoEmitible ?? 'Esta factura se anuló con una nota crédito.')
     case 'todavia-no':
       return f.motivoNoEmitible ?? 'Todavía no se puede emitir.'
     default:

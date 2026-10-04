@@ -492,7 +492,9 @@ function EstadoDeLaFactura({
        (FA-11, Nico 03-10). */
     return (
       <Badge variant="secondary" data-testid={`anulada-${factura.clave}`} title={porQueNoSeEmite(factura) ?? undefined}>
-        Anulada con nota crédito
+        {factura.saldadaPorNota
+          ? `Anulada con la nota crédito ${factura.saldadaPorNota.numero}`
+          : 'Anulada con nota crédito'}
       </Badge>
     )
   }
@@ -539,8 +541,12 @@ function EstadoDeLaFactura({
   const generada = factura.estado === 'GENERADA'
   return (
     <div className="flex flex-col items-start gap-1.5">
+      {/* CONSISTENCIA (04-10-2026): el botón decía «Generar esta» y abría
+          «¿Emitir la factura…?»; la fila GENERADA decía «Generada · sin
+          número». Las dos cosas son lo mismo: falta EMITIRLA (ahí toma su
+          número), y así se dice. */}
       <span className="text-caption text-primary">
-        {generada ? 'Generada · sin número' : 'Por emitir'}
+        {generada ? 'Sin número todavía: falta emitirla' : 'Por emitir'}
       </span>
       {/* 🔴 «Selecciono sólo una y no da el poder generar factura de sólo esa»
           (Nico, 18-09). Una factura, un clic —y su confirmación con el número
@@ -555,7 +561,7 @@ function EstadoDeLaFactura({
         onClick={() => onGenerarUna(factura.clave)}
         data-testid={`generar-una-${factura.clave}`}
       >
-        {generada ? 'Emitir esta' : 'Generar esta'}
+        Emitir esta
       </Button>
     </div>
   )
@@ -1548,7 +1554,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     ocupado={generando}
     cuandoNoHayNada={`No hay ninguna factura marcada ${
       aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
-    }. Marca las que quieras, o usa «Generar esta» en una fila.`}
+    }. Marca las que quieras, o usa «Emitir esta» en una fila.`}
     nota={
       <>
         <Collapse open={verMasDelPie && hayDetallesDelPie} id="facturacion-acciones-detalle" className="space-y-0.5 pb-0.5">
@@ -1684,12 +1690,12 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           // nadie escribiría: el botón dice qué hace y el pie de al
           // lado dice por qué está apagado.
           elegidas.length === 0
-          ? 'Generar facturas'
+          ? 'Emitir facturas'
           : (
             // UN solo hijo de texto: el `Button` es flex con `gap`, y dos hijos
             // sueltos se leían «Generar 25 facturas  de inquilinos» (doble espacio).
             <span>
-              {`Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
+              {`Emitir ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
               {/* FA-15: a 390 px «de inquilinos» no cabe al lado de la ✕; la
                   pestaña ya lo dice. */}
               <span className="hidden sm:inline">

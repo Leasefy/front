@@ -25,6 +25,15 @@ import {
  */
 export function StepIncome() {
   const { application, updateIncome, attemptedAdvance, erroresDelServidor } = useApplication();
+  // QA-IA-A (04-10-2026): a un independiente o a un pensionado no se le
+  // pregunta «salario».
+  const situacion = application.employment?.employmentStatus;
+  const rotuloDelIngreso =
+    situacion === 'self-employed'
+      ? { label: 'Ingresos mensuales', hint: 'Lo que te entra en promedio cada mes por tu actividad' }
+      : situacion === 'retired'
+        ? { label: 'Mesada pensional', hint: 'Lo que recibes cada mes de tu pensión' }
+        : { label: 'Salario mensual', hint: 'Tu salario base mensual antes de deducciones' };
   const income = application.income;
 
   // Track which fields have been touched for error display
@@ -104,10 +113,10 @@ export function StepIncome() {
     <div className="space-y-6">
       {/* Monthly Salary */}
       <FormField
-        label="Salario mensual"
+        label={rotuloDelIngreso.label}
         htmlFor="monthlySalary"
         error={getError('monthlySalary')}
-        hint="Tu salario base mensual antes de deducciones"
+        hint={rotuloDelIngreso.hint}
         required
       >
         <CurrencyInput

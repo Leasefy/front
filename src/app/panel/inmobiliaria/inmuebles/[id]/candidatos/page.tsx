@@ -397,7 +397,10 @@ function CandidatosContent() {
             <h1 className="text-h2 text-fg">Candidatos</h1>
             {property && (
               <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-                {property.title} · {property.neighborhood}, {property.city}
+                {/* QA-IA-A: sin barrio salía «· , Medellín». */}
+                {[property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             )}
           </div>
@@ -447,7 +450,7 @@ function CandidatosContent() {
                     <span className="sr-only">Comparar</span>
                   </TableHead>
                   <TableHead>Candidato</TableHead>
-                  <TableHead>Score</TableHead>
+                  <TableHead>Puntaje</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="p-4" />
@@ -519,10 +522,9 @@ function CandidatosContent() {
                             </span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-                            <Sparkle className="w-3 h-3" />
-                            Ver resultado
-                          </span>
+                          // QA-IA-A: decía «Ver resultado» y la ficha abría «aún no tiene un
+                          // análisis»: prometía algo que no existe.
+                          <span className="text-sm text-fg-muted">Sin puntaje</span>
                         )}
                       </TableCell>
 

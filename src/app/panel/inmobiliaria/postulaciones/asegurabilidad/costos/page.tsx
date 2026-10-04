@@ -198,7 +198,9 @@ export default function CostosPage() {
                     {row.total > 0 ? `$${row.total.toFixed(4)}` : '—'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
-                    {row.populated ? (
+                    {/* QA-IA-A: «Con datos» al lado de «—» se contradecía; con
+                        datos es que haya gasto, no que la fuente esté cableada. */}
+                    {row.populated && row.total > 0 ? (
                       <Badge variant="outline" className="text-success border-success/30">
                         {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusPopulated')}
                       </Badge>

@@ -147,6 +147,13 @@ afterEach(() => {
 })
 
 describe('Requisitos por tipo de inquilino', () => {
+  it('QA-IA-A — no promete que el candidato ve esta lista: dice cómo se usa hoy', async () => {
+    await montar()
+    expect(contenedor.textContent).not.toContain('exactamente lo que ve quien se postula')
+    expect(porTestId('requisitos-como-se-usa')!.textContent).toContain('la cédula y el extracto bancario')
+    expect(porTestId('requisitos-como-se-usa')!.textContent).toContain('«Pedir info»')
+  })
+
   it('P2 — en «Todos» la lista va agrupada por perfil, no plana', async () => {
     await montar()
     const empleado = porTestId('grupo-EMPLEADO')

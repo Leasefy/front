@@ -99,7 +99,7 @@ function isApplicationCompleted(
   status: TenantApplicationStatus,
   contract: Contract | undefined,
 ): boolean {
-  if (status === 'rejected' || status === 'withdrawn' || status === 'contract_failed') return true;
+  if (status === 'rejected' || status === 'withdrawn' || status === 'contract_failed' || status === 'no_adjudicado') return true;
   if (status === 'approved') {
     if (!contract) return false;
     return contract.status === 'active' || contract.status === 'expired';

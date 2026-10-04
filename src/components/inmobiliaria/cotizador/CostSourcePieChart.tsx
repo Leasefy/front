@@ -25,6 +25,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { CostSourceRow } from '@/lib/hooks/cotizador/use-costos'
+import { Coins } from '@phosphor-icons/react'
+import { SinDatos } from '@/components/estado/SinDatos'
 
 const COBALTO = 'hsl(var(--primary))'
 const APOYO = 'hsl(var(--chart-3))'
@@ -81,6 +83,20 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
 
   // If all sources are 0, show a placeholder single full-opacity wedge for anthropic
   const totalSum = anthropicTotal + carrierApiTotal + sekureCommissionTotal + datacreditoTotal
+
+  // 🔴 QA-IA-A (04-10-2026): sin gasto se dibujaba una torta ENTERA de «IA
+  // (Anthropic)» («prevent empty pie»): leída, decía que el 100 % del gasto
+  // era del modelo cuando el gasto era cero. Sin gasto, se dice que no hay.
+  if (totalSum === 0) {
+    return (
+      <SinDatos
+        queSon="gastos"
+        icono={Coins}
+        titulo="Todavía no hay gasto"
+        descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el reparto por fuente se grafica acá."
+      />
+    )
+  }
 
   const findLabel = (key: string) => {
     const src = costSources.find(s => s.key === key)

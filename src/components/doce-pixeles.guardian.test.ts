@@ -99,7 +99,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 02-10 tarde: 2606 con la tanda 2 de errores (los errores de campo hechos a
 // mano pasaron a `ErrorDelCampo`).
 // 03-10 (ola E, E1): 2524 — los dos avisos de 12 px de «Giros devueltos» pasaron a `text-caption`.
-const CUANTOS_HABIA = 2524;
+const CUANTOS_HABIA = 2523;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

@@ -7,7 +7,6 @@ import { useI18n } from '@/lib/i18n'
 import { useInsights } from '@/lib/hooks/cotizador/use-insights'
 import { ApprovalRateMonthlyChart } from '@/components/inmobiliaria/cotizador/ApprovalRateMonthlyChart'
 import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/PrimaDistributionChart'
-import { InsightsAssumptionTable } from '@/components/inmobiliaria/cotizador/InsightsAssumptionTable'
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -26,7 +25,6 @@ export default function CotizadorInsightsPage() {
   const {
     approvalRateMonthly,
     primaDistribution,
-    assumptions,
     monthlyCostTrend,
     isLoading,
     error,
@@ -91,17 +89,13 @@ export default function CotizadorInsightsPage() {
             />
           </section>
 
-          {/* Widget 3 — Assumption Registry Table (la tabla trae su propio
-              recuadro: no se anida en otro) */}
-          <section className="space-y-4">
-            <h2 className="text-base font-semibold text-fg">
-              {t('inmobiliaria.ai.cotizador.insights.sections.assumptions')}
-            </h2>
-            <InsightsAssumptionTable
-              assumptions={assumptions.length > 0 ? assumptions : (isLoading ? null : [])}
-              isLoading={isLoading && assumptions.length === 0}
-            />
-          </section>
+          {/* 🔴 QA-IA-A (04-10-2026): aquí iba el «Registro de supuestos»: las
+              notas INTERNAS del equipo sobre cada aseguradora, en inglés
+              («API exists at conecta.segurosbolivar.com but catalog gated»,
+              «AI-SPEC SS4b + Mastra fan…», «Phase 27 sandbox run…»). No es
+              algo que la inmobiliaria use ni deba leer; vive en el código
+              (`InsightsAssumptionTable`) para cuando el panel de Leasefy lo
+              muestre. */}
 
           {/* Widget 4 — Monthly Cost Preview */}
           <section className="rounded-lg border border-border bg-surface p-6 space-y-4">

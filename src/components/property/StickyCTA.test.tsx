@@ -91,6 +91,14 @@ describe('<StickyCTA> — tenant / anonymous viewer', () => {
     expect(q('[data-testid="agency-share-panel"]')).toBeFalsy()
   })
 
+  // QA-IA-A (04-10-2026): «Respuesta en menos de 24h» y «Verificado» no tenían
+  // un dato detrás.
+  it('no promete tiempos de respuesta ni sellos sin dato', () => {
+    render()
+    expect(container.textContent).not.toContain('menos de 24h')
+    expect(container.textContent).not.toContain('Verificado')
+  })
+
   it('sin aprobación NO salta directo al wizard: primero explica qué falta', () => {
     render()
     // Sin sesión no hay aprobación posible → el gate intercepta el clic.

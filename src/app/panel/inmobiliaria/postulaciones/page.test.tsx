@@ -285,13 +285,14 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Pide info')
   })
 
-  it('renders the five clickable stat tiles with their counts', async () => {
+  it('renders the six clickable stat tiles with their counts', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
     const allTiles = tiles()
-    expect(allTiles.length).toBe(5)
+    // QA-IA-A (04-10-2026): seis — «No adjudicadas» va aparte de «Rechazadas».
+    expect(allTiles.length).toBe(6)
 
     const total = allTiles.find((b) => b.textContent?.includes('Total'))
     expect(total?.textContent).toContain('2')
@@ -482,7 +483,10 @@ describe('PostulacionesPage', () => {
       .toContain('sr-only')
   })
 
-  it('S1: una postulación desplazada se lee «No adjudicado» y cuenta en Rechazadas', async () => {
+  // QA-IA-A (04-10-2026): el no adjudicado cuenta en SU tarjeta, no en
+  // «Rechazadas»: no fue un rechazo (el inmueble quedó para otro) y es a quien
+  // hay que ofrecerle otras opciones (F-06).
+  it('S1: una postulación desplazada se lee «No adjudicado» y cuenta en «No adjudicadas», no en Rechazadas', async () => {
     getAllCandidatesMock.mockResolvedValue({
       ...RESPONSE,
       candidates: [
@@ -506,8 +510,10 @@ describe('PostulacionesPage', () => {
     )
     expect(fila?.textContent).toContain('No adjudicado')
     expect(fila?.textContent).not.toContain('Desconocido')
+    const noAdjudicadas = tiles().find((b) => b.textContent?.includes('No adjudicadas'))
+    expect(noAdjudicadas?.textContent).toContain('1')
     const rechazadas = tiles().find((b) => b.textContent?.includes('Rechazadas'))
-    expect(rechazadas?.textContent).toContain('1')
+    expect(rechazadas?.textContent).not.toContain('1')
   })
 
   it('S2: si el refresco de fondo falla, la tabla se queda y se avisa', async () => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -303,7 +304,7 @@ export function PropertyCard({
         <div className="flex items-center gap-1.5 mb-1">
           <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" strokeWidth={1.5} />
           <p className="text-[13px] text-muted-foreground truncate">
-            {neighborhood}, {city}
+            {barrioYCiudad(neighborhood, city)}
           </p>
         </div>
 

@@ -433,15 +433,13 @@ export function StickyCTA({
                 ) : (
                   <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
                 )}
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
-                  <Check className="w-3 h-3" />
-                  Verificado
-                </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {administrador && !esLeasefy(administrador.agencyId) ? 'Administra este inmueble · ' : ''}
-                Respuesta en menos de 24h
-              </p>
+              {/* QA-IA-A (04-10-2026): «Verificado» y «Respuesta en menos de 24h»
+                  eran promesas sin un dato detrás (nadie mide ese tiempo ni
+                  verifica nada aquí). Se dice sólo lo que consta. */}
+              {administrador && !esLeasefy(administrador.agencyId) ? (
+                <p className="text-xs text-muted-foreground">Administra este inmueble</p>
+              ) : null}
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
@@ -678,12 +676,6 @@ export function StickyCTA({
                     </p>
                   </div>
                 )}
-                <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
-                  <p className="text-[13px] text-muted-foreground">
-                    Respuesta en <span className="font-semibold text-foreground">menos de 24h</span>
-                  </p>
-                </div>
               </div>
               <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
                 Postularme a esta propiedad

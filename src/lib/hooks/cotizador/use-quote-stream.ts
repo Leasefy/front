@@ -296,9 +296,13 @@ export function useQuoteStream(
 
     void (async () => {
       try {
+        // 🔴 QA-IA-A (04-10-2026): NO se manda la cabecera `Last-Event-ID`. El
+        // micro no la permite en CORS (sólo Content-Type y Authorization), así
+        // que la reconexión —que siempre la llevaba— moría en el preflight y la
+        // ficha decía «Conexión interrumpida» con los tres veredictos ya en
+        // pantalla. El cursor viaja en `?lastEventId=` (lo arma `buildUrl`), que
+        // el micro lee como respaldo de la cabecera.
         const headers = new Headers({ Accept: 'text/event-stream' })
-        // Manual reconnect resume: the relay also reads the Last-Event-ID header.
-        if (cursor && cursor !== '0') headers.set('Last-Event-ID', cursor)
 
         // `agentFetch` pone el bearer y reintenta una vez ante un 401.
         const res = await agentFetch(url, { headers, signal: ac.signal })

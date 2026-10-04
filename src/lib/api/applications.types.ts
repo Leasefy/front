@@ -82,6 +82,8 @@ export interface BackendApplication {
     neighborhood: string;
     monthlyRent: number;
     images?: Array<{ url: string; order: number }>;
+    /** La inmobiliaria que administra el inmueble (null si es de un propietario directo). */
+    agencyId?: string | null;
   };
 }
 

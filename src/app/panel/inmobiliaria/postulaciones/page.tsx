@@ -73,7 +73,7 @@ const SCORE_COLORS: Record<string, string> = {
 
 // ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
 
-type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED'
+type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED' | 'NOT_AWARDED'
 
 const TILE_TONES = {
   neutral: 'bg-surface-muted text-fg-muted',
@@ -94,7 +94,11 @@ const FILTERS: {
   { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
   { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
   { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED', 'NO_ADJUDICADO'] },
+  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
+  // para otro— y es a quien hay que ofrecerle otras opciones (F-06). Contarlo
+  // entre las rechazadas lo escondía; el back ya lo devuelve en la lista.
+  { key: 'NOT_AWARDED', label: 'No adjudicadas', tone: 'neutral', icon: Hourglass,     statuses: ['NO_ADJUDICADO'] },
 ];
 
 function StatTile({
@@ -153,7 +157,8 @@ function formatDate(iso: string): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+  // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
 function initials(name: string): string {
@@ -433,7 +438,7 @@ function PostulacionesContenido() {
                     <TableHead>Candidato</TableHead>
                     <TableHead>Propiedad</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Score</TableHead>
+                    <TableHead>Puntaje</TableHead>
                     <TableHead>Fecha</TableHead>
                   </TableRow>
                 </TableHeader>

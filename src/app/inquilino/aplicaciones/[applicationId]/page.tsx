@@ -27,104 +27,24 @@ import {
 import { useTenantApplication } from '@/lib/hooks/useApplications';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { applicationsApi } from '@/lib/api/applications.service';
+import { useAuth } from '@/lib/auth/use-auth';
+import { PedirDetalleDelRechazo } from '@/components/tenant/PedirDetalleDelRechazo';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import {
+  historialDeLaPostulacion,
+  historialMinimo,
+  useHistorialDeLaPostulacion,
+} from '@/lib/tenant/historial-de-la-postulacion';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
-/**
- * Generate a status-based timeline for display
+/*
+ * 🔴 Aquí vivía `generateTimelineFromStatus`, que INVENTABA el historial a
+ * partir del estado (envío −2 h, +1 día, +4, +5). Ahora se lee el de verdad:
+ * `lib/tenant/historial-de-la-postulacion.ts` (QA-IA-A, 04-10-2026).
  */
-function generateTimelineFromStatus(
-  status: string,
-  submittedAt: string,
-  locale: string
-) {
-  const events: Array<{ id: string; type: string; timestamp: string; description: string }> = [];
-  const baseDate = new Date(submittedAt);
-  let eventId = 1;
-
-  // Created event
-  const createdDate = new Date(baseDate);
-  createdDate.setHours(createdDate.getHours() - 2);
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'created',
-    timestamp: createdDate.toISOString(),
-    description: locale === 'es' ? 'Solicitud iniciada' : 'Application started',
-  });
-
-  // Submitted
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'submitted',
-    timestamp: baseDate.toISOString(),
-    description: locale === 'es' ? 'Solicitud enviada al propietario' : 'Application submitted to landlord',
-  });
-
-  if (status === 'submitted') return events;
-
-  if (status === 'needs_info') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 1);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'needs_info',
-      timestamp: d.toISOString(),
-      description: locale === 'es'
-        ? 'La inmobiliaria solicitó información adicional'
-        : 'The agency requested additional information',
-    });
-    return events;
-  }
-
-  if (status === 'withdrawn') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 1);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'withdrawn',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? 'Solicitud retirada por el inquilino' : 'Application withdrawn by tenant',
-    });
-    return events;
-  }
-
-  // Under review
-  const reviewDate = new Date(baseDate);
-  reviewDate.setDate(reviewDate.getDate() + 1);
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'under_review',
-    timestamp: reviewDate.toISOString(),
-    description: locale === 'es' ? 'El propietario está revisando tu solicitud' : 'Landlord is reviewing your application',
-  });
-  if (status === 'under_review') return events;
-
-  if (status === 'approved') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 5);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'approved',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? '¡Tu solicitud ha sido aprobada!' : 'Your application has been approved!',
-    });
-  }
-
-  if (status === 'rejected') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 4);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'rejected',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? 'Lo sentimos, tu solicitud no fue aprobada' : 'Sorry, your application was not approved',
-    });
-  }
-
-  return events;
-}
 
 /**
  * Application Detail Page - Premium Leasefy Style
@@ -144,6 +64,8 @@ export default function ApplicationDetailPage() {
   const { application, isLoading, error, errorCrudo, refetch } = useTenantApplication(applicationId);
   const responseSubmitted = false; // will be true after navigating to /completar and coming back
   const { contract: linkedContract } = useContractByApplication(applicationId);
+  const historial = useHistorialDeLaPostulacion(applicationId, application?.status);
+  const { user: usuario } = useAuth();
 
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
@@ -225,6 +147,9 @@ export default function ApplicationDetailPage() {
     approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-success', bgColor: 'bg-success-soft', icon: Confetti },
     rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-danger', bgColor: 'bg-danger-soft', icon: XCircle },
     withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
+    contract_failed: { label: locale === 'es' ? 'Contrato fallido' : 'Contract failed', color: 'text-danger', bgColor: 'bg-danger-soft', icon: XCircle },
+    // QA-IA-A: sin esta fila el desplazado veía «Enviada».
+    no_adjudicado: { label: locale === 'es' ? 'Quedó para otra persona' : 'Went to someone else', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
   };
 
   const progressSteps = [
@@ -281,6 +206,10 @@ export default function ApplicationDetailPage() {
         return XCircle;
       case 'withdrawn':
         return XCircle;
+      case 'no_adjudicado':
+        return XCircle;
+      case 'info_provided':
+        return PaperPlaneTilt;
       default:
         return Clock;
     }
@@ -292,7 +221,7 @@ export default function ApplicationDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isFinalStatus = ['approved', 'rejected', 'withdrawn'].includes(application.status);
+  const isFinalStatus = ['approved', 'rejected', 'withdrawn', 'contract_failed', 'no_adjudicado'].includes(application.status);
   const status = statusConfig[application.status] || statusConfig.submitted;
   const StatusIcon = status.icon;
 
@@ -300,8 +229,10 @@ export default function ApplicationDetailPage() {
   // Antes se buscaba por propertyId, lo que podía traer un contrato equivocado.
   const contract = application.status === 'approved' ? linkedContract : null;
 
-  // Generate timeline from status
-  const events = generateTimelineFromStatus(application.status, application.submittedAt, locale);
+  // El historial real; si no se pudo leer, sólo lo que consta (la fecha de envío).
+  const events = historial.eventos
+    ? historialDeLaPostulacion(historial.eventos, locale)
+    : historialMinimo(application.submittedAt, locale);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -373,7 +304,7 @@ export default function ApplicationDetailPage() {
                   </h1>
                   <p className="text-fg-muted flex items-center gap-1.5 mb-4">
                     <MapPin className="w-4 h-4" />
-                    {property.neighborhood}, {property.city}
+                    {barrioYCiudad(property.neighborhood, property.city)}
                   </p>
                 </Link>
               )}
@@ -722,7 +653,11 @@ export default function ApplicationDetailPage() {
                 </div>
               )}
 
-              {application.status === 'rejected' && (
+              {/* QA-IA-A (04-10-2026): a una postulación RECHAZADA le decía «no es
+                  un rechazo a tu perfil — vas a recibir alternativas en breve»
+                  (el texto del no adjudicado, más una promesa que nadie cumple).
+                  Ahora cada caso dice lo suyo. */}
+              {(application.status === 'rejected' || application.status === 'no_adjudicado') && (
                 <div className="mt-6 p-4 rounded-xl bg-danger-soft border border-danger/30">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-danger flex items-center justify-center flex-shrink-0">
@@ -730,12 +665,18 @@ export default function ApplicationDetailPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-danger">
-                        {locale === 'es' ? 'Proceso cerrado' : 'Process closed'}
+                        {application.status === 'no_adjudicado'
+                          ? locale === 'es' ? 'El inmueble quedó para otra persona' : 'The property went to someone else'
+                          : locale === 'es' ? 'No aprobaron esta postulación' : 'This application was not approved'}
                       </p>
                       <p className="text-sm text-danger mt-1">
-                        {locale === 'es'
-                          ? 'Esta postulación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
-                          : 'This application was closed. The property may have been rented to another candidate or the landlord chose differently. It\'s not a rejection of your profile — you\'ll receive alternatives shortly.'}
+                        {application.status === 'no_adjudicado'
+                          ? locale === 'es'
+                            ? 'La inmobiliaria eligió a otro candidato para este inmueble. No es un rechazo a tu perfil: puedes postularte a otros inmuebles con los mismos datos.'
+                            : 'The agency chose another candidate for this property. It is not a rejection of your profile: you can apply to other properties with the same details.'
+                          : locale === 'es'
+                            ? 'En el historial ves el motivo que dejó la inmobiliaria. Si quieres saber más o un dato tuyo está mal, escríbele desde aquí abajo.'
+                            : 'The history shows the reason the agency left. If you want to know more or a detail is wrong, write to them below.'}
                       </p>
                       <Link
                         href="/inquilino/explorar"
@@ -791,6 +732,9 @@ export default function ApplicationDetailPage() {
                           )}>
                             {event.description}
                           </p>
+                          {'nota' in event && event.nota ? (
+                            <p className="mt-1 text-sm text-fg-muted whitespace-pre-line">«{event.nota}»</p>
+                          ) : null}
                           <p className="text-xs text-fg-subtle mt-1 flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
                             {formatDate(event.timestamp)} · {formatTime(event.timestamp)}
@@ -802,6 +746,18 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
             </section>
+
+            {/* F-07: quien no pasó tiene por dónde pedir el detalle o corregir un
+                dato (QA-IA-A, 04-10-2026). Sólo con inmobiliaria: es a ella a
+                quien le llega, en Postulaciones → Reclamos. */}
+            {application.status === 'rejected' && property?.agencyId ? (
+              <PedirDetalleDelRechazo
+                agencyId={property.agencyId}
+                applicationId={application.id}
+                nombre={usuario?.name ?? [usuario?.firstName, usuario?.lastName].filter(Boolean).join(' ')}
+                correo={usuario?.email ?? ''}
+              />
+            ) : null}
 
             {/* Property Info Card */}
             {property && (
@@ -824,7 +780,7 @@ export default function ApplicationDetailPage() {
                     <h3 className="font-semibold text-fg">{property.title}</h3>
                     <p className="text-sm text-fg-muted flex items-center gap-1 mt-1">
                       <MapPin className="w-3.5 h-3.5" />
-                      {property.neighborhood}, {property.city}
+                      {barrioYCiudad(property.neighborhood, property.city)}
                     </p>
                     <p className="text-lg font-bold text-fg mt-1">
                       {formatCurrency(property.monthlyRent)}
@@ -972,8 +928,8 @@ export default function ApplicationDetailPage() {
                     </p>
                     <p className="text-sm text-warning">
                       {locale === 'es'
-                        ? 'El propietario está evaluando tu postulación. Normalmente toma entre 24-48 horas.'
-                        : 'The landlord is evaluating your application. This typically takes 24-48 hours.'}
+                        ? 'La inmobiliaria está revisando tu postulación. Te avisamos por correo apenas decida.'
+                        : 'The agency is reviewing your application. We will email you as soon as it decides.'}
                     </p>
                   </div>
                 </div>

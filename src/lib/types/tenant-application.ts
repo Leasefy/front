@@ -18,7 +18,10 @@ export type TenantApplicationStatus =
   | 'approved'         // Final approval - accepted!
   | 'rejected'         // Declined
   | 'withdrawn'        // Tenant cancelled application
-  | 'contract_failed'; // Contract flow collapsed (definitive rejection or cancellation) — terminal
+  | 'contract_failed'  // Contract flow collapsed (definitive rejection or cancellation) — terminal
+  // QA-IA-A (04-10-2026): el inmueble quedó para otra persona (NO_ADJUDICADO).
+  // Antes caía en el respaldo «submitted» y el desplazado veía «Enviada».
+  | 'no_adjudicado';
 
 /**
  * Spanish labels for tenant-facing status display
@@ -31,6 +34,7 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
   rejected: 'Rechazada',
   withdrawn: 'Retirada',
   contract_failed: 'Contrato fallido',
+  no_adjudicado: 'Quedó para otra persona',
 };
 
 /**
@@ -45,6 +49,7 @@ export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> 
   rejected: 'bg-plan-status-red-bg text-plan-status-red',
   withdrawn: 'bg-plan-status-yellow-bg text-plan-status-yellow',
   contract_failed: 'bg-plan-status-red-bg text-plan-status-red',
+  no_adjudicado: 'bg-muted text-foreground',
 };
 
 // ============================================================================
@@ -107,6 +112,7 @@ const STATUS_PROGRESS: Record<TenantApplicationStatus, number> = {
   rejected: 100,
   withdrawn: 100,
   contract_failed: 100,
+  no_adjudicado: 100,
 };
 
 /**

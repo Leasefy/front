@@ -520,7 +520,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <ShieldCheck className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Estudio de preescoring</h3>
+                <h3 className="font-semibold text-sm text-foreground">Estudio de asegurabilidad</h3>
                 <p className="text-xs text-fg-muted">Resultado del estudio de asegurabilidad que ya pagó el candidato</p>
               </div>
             </div>
@@ -541,7 +541,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <Robot className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
+                <h3 className="font-semibold text-sm text-foreground">Análisis de riesgo con IA</h3>
                 <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
               </div>
             </div>
@@ -765,7 +765,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <MagnifyingGlass className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-foreground">Smart Matching</h3>
+                  <h3 className="font-semibold text-sm text-foreground">Inmuebles compatibles</h3>
                   <p className="text-xs text-fg-muted">Otras propiedades de tu portafolio que le podrían calzar</p>
                 </div>
               </div>
@@ -1035,7 +1035,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
     return (
       <div className="rounded-lg bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
         <p className="text-xs text-fg-muted">
-          Este candidato no tiene un estudio de preescoring registrado para esta postulación.
+          Este candidato no tiene un estudio de asegurabilidad registrado para esta postulación.
         </p>
       </div>
     );

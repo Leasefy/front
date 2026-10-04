@@ -2,7 +2,7 @@
 
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,13 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PostulacionDirecta } from '@/components/tenant/PostulacionDirecta';
 import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { AntesDePostularte, motivoDeBloqueo } from '@/components/tenant/PostularButton';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import {
+  leerElegibilidad,
+  motivoPorElegibilidad,
+  type Elegibilidad,
+} from '@/lib/tenant/antes-de-postularte';
 
 // ============================================================================
 // Page props
@@ -83,6 +90,42 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   >(undefined);
   const [withdrawing, setWithdrawing] = useState(false);
   const [errorAlRetirar, setErrorAlRetirar] = useState<string | null>(null);
+  const router = useRouter();
+
+  // 🔴 QA-IA-A (04-10-2026): ¿puede empezar el asistente? Sin esto, una
+  // persona sin estudio llenaba los cinco pasos y chocaba al enviar con
+  // «An error occurred»; y sin cuenta, la postulación de invitado entraba sin
+  // estudio ni documentos (F-08). Con sesión manda el MISMO veredicto que el
+  // back aplica al enviar; sin sesión, la aprobación local (quien se aprobó
+  // por un enlace y aún no tiene cuenta sigue pudiendo postularse).
+  const aprobacionLocal = useAprobacion();
+  const [elegibilidad, setElegibilidad] = useState<Elegibilidad | null | undefined>(undefined);
+  useEffect(() => {
+    if (resolviendoSesion) return;
+    if (!isAuthed) {
+      setElegibilidad(null);
+      return;
+    }
+    let cancelado = false;
+    void leerElegibilidad().then((e) => {
+      if (!cancelado) setElegibilidad(e);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [isAuthed, resolviendoSesion]);
+  const motivoAntes = isAuthed
+    ? motivoPorElegibilidad(elegibilidad)
+    : aprobacionLocal.cargando
+      ? null
+      : motivoDeBloqueo({
+          aprobacion: aprobacionLocal.aprobacion,
+          vigente: aprobacionLocal.vigente,
+          canonCop: property?.monthlyRent ?? undefined,
+          haySesion: false,
+        });
+  const decidiendoSiPuede =
+    resolviendoSesion || (isAuthed ? elegibilidad === undefined : aprobacionLocal.cargando);
 
   useEffect(() => {
     if (resolviendoSesion) return; // todavía no se sabe si hay sesión
@@ -237,7 +280,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // of the two paths they take. Se espera a las dos: mostrar el formulario y
   // reemplazarlo un segundo después por la pantalla directa sería peor que
   // esperar.
-  if (decidiendoCamino || (isAuthed && existingApp === undefined)) {
+  if (decidiendoCamino || decidiendoSiPuede || (isAuthed && existingApp === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <CargaDeMarca tamano="lg" />
@@ -255,6 +298,22 @@ export default function AplicarPage({ params }: AplicarPageProps) {
         withdrawing={withdrawing}
         error={errorAlRetirar}
       />
+    );
+  }
+
+  // Todavía no puede postularse: la misma explicación que da el botón de la
+  // ficha, en vez de seis pasos que terminan en un rechazo. «Ahora no» vuelve
+  // al inmueble.
+  if (motivoAntes) {
+    return (
+      <div className="min-h-screen bg-muted" data-testid="aplicar-antes-de-postularte">
+        <AntesDePostularte
+          open
+          onClose={() => router.push(`/propiedades/${resolvedParams.propertyId}`)}
+          motivo={motivoAntes}
+          propertyId={resolvedParams.propertyId}
+        />
+      </div>
     );
   }
 

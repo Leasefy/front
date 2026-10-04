@@ -124,16 +124,14 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <StatusIcon status={carrier.status} />
+          {/* QA-IA-A (04-10-2026): con la píldora de milisegundos a la derecha,
+              en una tarjeta angosta el nombre de la aseguradora se truncaba a
+              nada. El tiempo de respuesta vive en la tabla comparativa. */}
           <span className="font-heading font-semibold text-foreground truncate">
-            {carrier.carrier}
+            {carrier.carrier ? carrier.carrier.charAt(0).toUpperCase() + carrier.carrier.slice(1) : carrier.carrier}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {carrier.latencyMs !== null && (
-            <span className="text-caption font-mono text-muted-foreground rounded-full bg-muted px-2 py-0.5">
-              {carrier.latencyMs}{t('inmobiliaria.ai.cotizador.detail.carrier.latencyMs')}
-            </span>
-          )}
           <span
             className={[
               'rounded-full uppercase tracking-wide text-[10px] font-medium px-2 py-0.5',
@@ -157,7 +155,9 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Approved / Conditional */}
       {(carrier.status === 'approved' || carrier.status === 'conditional') && primaFormatted && (
         <div className="space-y-2">
-          <div className={['font-mono stat-number text-2xl font-bold', colors.text].join(' ')}>
+          {/* Sin `stat-number`: esa clase pone text-7xl en escritorio y la prima
+              se salía de la tarjeta («$ 54» cortado). */}
+          <div className={['font-mono tabular-nums text-2xl font-bold break-words', colors.text].join(' ')}>
             <AnimatedNumber value={carrier.primaMensualCop ?? 0} from={0} format={formatoCop} />
             <span className="text-xs font-normal text-muted-foreground ml-1">/mes</span>
           </div>

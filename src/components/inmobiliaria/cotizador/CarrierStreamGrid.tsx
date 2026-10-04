@@ -16,7 +16,9 @@ interface CarrierStreamGridProps {
 
 export function CarrierStreamGrid({ carriers, locale }: CarrierStreamGridProps) {
   return (
-    <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    // QA-IA-A: la grilla vive en la columna central del detalle (~500 px a
+    // 1440): tres columnas dejaban tarjetas de 155 px. Dos hasta 2xl.
+    <Stagger className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
       {carriers.map(carrier => (
         <CarrierCard
           key={carrier.carrier}

@@ -238,7 +238,10 @@ export function DocumentReviewQueueView({
                   return (
                     <TableRowAnimada key={doc.id} data-testid="review-doc">
                       <TableCell className="align-top">
-                        <p className="font-medium text-fg truncate">{item.tenant.title}</p>
+                        <p className="font-medium text-fg truncate">{item.tenant.fullName}</p>
+                        {item.property?.title ? (
+                          <p className="text-sm text-fg-muted truncate">{item.property.title}</p>
+                        ) : null}
                       </TableCell>
 
                       <TableCell className="max-w-[320px] align-top">

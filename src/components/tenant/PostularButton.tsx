@@ -185,7 +185,7 @@ const PASOS = [
   },
 ]
 
-function AntesDePostularte({
+export function AntesDePostularte({
   open,
   onClose,
   motivo,

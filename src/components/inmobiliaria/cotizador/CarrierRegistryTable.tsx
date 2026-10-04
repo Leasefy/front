@@ -66,6 +66,28 @@ import type { GlobalCarrierRow, TenantOverrideRow } from '@/lib/hooks/cotizador/
 // Types
 // =============================================================================
 
+/*
+ * 🔴 QA-IA-A (04-10-2026): la tabla le mostraba a la inmobiliaria los valores
+ * crudos del registro: «stub», «sekure»/«direct», «On»/«Off» y «healthy». Se
+ * dicen en español y sin jerga; el valor crudo sigue en `row` para lo demás.
+ */
+export const NOMBRE_DEL_MODO: Record<string, string> = {
+  stub: 'De prueba (simulada)',
+  direct: 'Conectada',
+}
+export const NOMBRE_DE_LA_RUTA: Record<string, string> = {
+  direct: 'Directa',
+  sekure: 'Por Sekure',
+}
+export const NOMBRE_DEL_ESTADO: Record<string, string> = {
+  healthy: 'Responde bien',
+  degraded: 'Lenta',
+  breached: 'Con fallas',
+  unknown: 'Sin datos',
+}
+const enPalabras = (mapa: Record<string, string>, valor: string | null | undefined) =>
+  valor == null ? '' : mapa[valor] ?? valor
+
 export interface MergedCarrierRow {
   global: GlobalCarrierRow
   override: TenantOverrideRow | null
@@ -184,7 +206,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <span className="font-medium text-fg capitalize">
               {row.global.name}
             </span>
-            <span className="text-xs text-fg-muted font-mono">{row.global.route}</span>
+            <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
             {row.hasOverride && (
               <span
                 data-testid="override-pill"
@@ -199,12 +221,12 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         {/* Mode — global / tenant */}
         <TableCell className="px-4 py-3 text-sm">
           <div className="flex flex-col gap-0.5">
-            <span className="text-fg">{row.global.mode}</span>
+            <span className="text-fg">{enPalabras(NOMBRE_DEL_MODO, row.global.mode)}</span>
             {row.override?.mode != null ? (
-              <span className="text-xs text-fg-muted">{row.override.mode}</span>
+              <span className="text-xs text-fg-muted">{enPalabras(NOMBRE_DEL_MODO, row.override.mode)}</span>
             ) : (
               <span className="text-xs text-fg-muted italic">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: row.global.mode })}
+                {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: enPalabras(NOMBRE_DEL_MODO, row.global.mode) })}
               </span>
             )}
           </div>
@@ -216,7 +238,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             variant="outline"
             className={globalEnabled ? 'text-success border-success/30' : 'text-fg-muted'}
           >
-            {globalEnabled ? 'On' : 'Off'}
+            {globalEnabled ? 'Sí' : 'No'}
           </Badge>
         </TableCell>
 
@@ -249,7 +271,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         {/* Breach Status */}
         <TableCell className="px-4 py-3 text-sm">
           <Badge variant="outline" className={`text-xs ${breachClass}`}>
-            {row.global.breachStatus}
+            {enPalabras(NOMBRE_DEL_ESTADO, row.global.breachStatus)}
           </Badge>
         </TableCell>
 

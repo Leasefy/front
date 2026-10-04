@@ -138,14 +138,14 @@ export function StepEmployment() {
 
           {/* Company Name */}
           <FormField
-            label="Nombre de la empresa"
+            label={employment.employmentStatus === 'self-employed' ? 'Tu negocio o actividad' : 'Nombre de la empresa'}
             htmlFor="companyName"
             error={getError('companyName')}
             required
           >
             <LightInput
               id="companyName"
-              placeholder="Empresa donde trabajas"
+              placeholder={employment.employmentStatus === 'self-employed' ? 'Ej.: diseño gráfico, tienda de barrio' : 'Empresa donde trabajas'}
               value={employment.companyName || ''}
               onChange={(e) => handleInputChange('companyName', e.target.value)}
               onBlur={() => handleBlur('companyName')}

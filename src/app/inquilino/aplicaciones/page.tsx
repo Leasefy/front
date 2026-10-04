@@ -207,6 +207,13 @@ export default function AplicacionesPage() {
       icon: XCircle,
       progress: 100,
     },
+    // QA-IA-A: el inmueble quedó para otra persona. No es un rechazo.
+    no_adjudicado: {
+      label: locale === 'es' ? 'Quedó para otra persona' : 'Went to someone else',
+      color: 'bg-surface-muted text-fg-muted',
+      icon: XCircle,
+      progress: 100,
+    },
   };
 
   const currentApplications = activeTab === 'active' ? activeApplications : completedApplications;

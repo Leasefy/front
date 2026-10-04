@@ -19,6 +19,15 @@ const { getMineMock, withdrawMock } = vi.hoisted(() => ({ getMineMock: vi.fn(), 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => '/aplicar/prop-1',
+  useRouter: () => ({ push: vi.fn() }),
+}))
+// Quien ya postuló puede retirar: el estudio no es lo que se prueba acá.
+vi.mock('@/lib/tenant/antes-de-postularte', () => ({
+  leerElegibilidad: () => Promise.resolve({ apto: true, motivo: 'OK', topeAprobadoCop: 3_000_000, elegibleHasta: null }),
+  motivoPorElegibilidad: () => null,
+}))
+vi.mock('@/lib/hooks/use-aprobacion', () => ({
+  useAprobacion: () => ({ aprobacion: null, cargando: false, vigente: false, error: null, recargar: () => {} }),
 }))
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,

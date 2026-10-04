@@ -568,10 +568,18 @@ export function RequisitosClient() {
           <h1 className="text-2xl font-semibold tracking-tight">
             Requisitos por tipo de inquilino
           </h1>
-          <p className="text-sm text-fg-muted">
-            Esto es exactamente lo que ve quien se postula a uno de tus
-            inmuebles: los papeles que le pides según su perfil. Es la política
-            de riesgo de esta inmobiliaria, y la defines tú.
+          {/*
+            🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
+            se postula», y no era cierto: el formulario de postulación le pide
+            a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
+            conoce los perfiles Empresa y Extranjero). Hasta que el formulario
+            la lea, la pantalla dice cómo se usa hoy.
+          */}
+          <p className="text-sm text-fg-muted" data-testid="requisitos-como-se-usa">
+            Los papeles que le pides a cada perfil: es la política de riesgo de
+            esta inmobiliaria, y la defines tú. Hoy el formulario de postulación
+            le pide a todos la cédula y el extracto bancario; lo demás de esta
+            lista se lo pides al candidato con «Pedir info» desde su ficha.
           </p>
         </div>
         {puedeEditar && !esElPreset && perfiles.length > 0 ? (

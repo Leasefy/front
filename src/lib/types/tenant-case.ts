@@ -203,6 +203,7 @@ export function applicationStatusToTone(status: TenantApplicationStatus): CaseTo
     case 'rejected':
     case 'withdrawn':
     case 'contract_failed':
+    case 'no_adjudicado':
       return 'neutral';
     default:
       return assertNever(status);

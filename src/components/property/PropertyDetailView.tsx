@@ -1,5 +1,6 @@
 'use client';
 
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -376,7 +377,7 @@ export function PropertyDetailView({
                 {/* Location with primary color */}
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                  <span className="text-[14px] text-muted-foreground">{property.neighborhood}, {property.city}</span>
+                  <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
                 </div>
 
                 {/* Title - using font-heading */}
@@ -549,7 +550,7 @@ export function PropertyDetailView({
                     latitude={property.latitude as number}
                     longitude={property.longitude as number}
                     titulo={property.title}
-                    direccion={`${property.neighborhood}, ${property.city}, Colombia`}
+                    direccion={`${barrioYCiudad(property.neighborhood, property.city)}, Colombia`}
                   />
                 ) : (
                 <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
@@ -563,7 +564,7 @@ export function PropertyDetailView({
                     <p className="text-[14px] text-muted-foreground mt-1">{property.city}, Colombia</p>
                   </div>
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.neighborhood + ', ' + property.city + ', Colombia')}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barrioYCiudad(property.neighborhood, property.city) + ', Colombia')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-primary bg-primary/10 rounded-xl hover:bg-primary/15 transition-colors"

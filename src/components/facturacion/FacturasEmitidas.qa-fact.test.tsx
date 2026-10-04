@@ -135,6 +135,33 @@ describe('FacturasEmitidas · QA-FACT', () => {
     expect(host.textContent).not.toContain('Nueva factura');
   });
 
+  it('🔴 ronda 3 (en el navegador): la factura anulada por completo lo dice UNA vez', async () => {
+    await pintar('ventas', {
+      mes: '2026-10',
+      anulacionDisponible: true,
+      facturas: [
+        factura({
+          anulacion: { puede: false, bloqueo: 'YA_ANULADA', explicacion: 'Esta factura ya se anuló con la nota crédito NC-3.' },
+          correccion: {
+            puedeAnular: false,
+            puedeParcial: false,
+            maximoParcialCop: 0,
+            puedeNotaDebito: false,
+            saldoCop: 0,
+            acreditadoCop: 4_100_000,
+            bloqueo: 'YA_ANULADA',
+            explicacion: 'Esta factura ya se anuló por completo con la nota crédito NC-3. Para corregirla, emite la factura nueva.',
+          },
+        }),
+      ],
+    });
+    const fila = q('[data-testid="factura-3"]')!;
+    expect(q('[data-testid="sin-anular-3"]')!.textContent).toBe('Esta factura ya se anuló con la nota crédito NC-3.');
+    expect(fila.textContent!.match(/ya se anuló/g)).toHaveLength(1);
+    expect(q('[data-testid="acreditado-3"]')).toBeNull();
+    expect(fila.textContent).not.toContain('emite la factura nueva');
+  });
+
   it('🔴 FA-R28: el total con el formato de la casa, «$ 4.100.000»', async () => {
     await pintar('ventas', { mes: '2026-10', anulacionDisponible: true, facturas: [factura()] });
     expect(q('[data-testid="factura-3"]')!.textContent).toContain('$ 4.100.000');
@@ -357,6 +384,57 @@ describe('FacturasEmitidas · Notas con `notas/lista`', () => {
     expect(pdfDeLaNota).toHaveBeenCalledWith('nc-2');
   });
 
+  it('🔴 ronda 3 (en el navegador): bajo 768 px las notas son tarjetas, con su IVA, su PDF y «Emitir»', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((consulta: string) => ({
+      matches: consulta.includes('max-width'),
+      media: consulta,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      notasDelMes.mockResolvedValue({
+        mes: '2026-10',
+        disponible: true,
+        notas: [
+          nota({ ivaCop: 1_900, valorCop: 11_900 }),
+          nota({ id: 'nc-9', numero: null, estado: 'GENERADA', parcial: false, puedeEmitir: true, tienePdf: false, enLaDeuda: null }),
+        ],
+      });
+      pdfDeLaNota.mockResolvedValue(new Blob(['%PDF']));
+      await pintar('notas', { mes: '2026-10', anulacionDisponible: true, facturas: [] });
+      expect(host.querySelector('table')).toBeNull();
+      const tarjeta = q('[data-testid="nota-del-mes-nc-2"]')!;
+      expect(tarjeta.tagName).toBe('LI');
+      expect(tarjeta.textContent).toContain('$ 11.900');
+      expect(tarjeta.textContent).toContain('IVA $ 1.900');
+      expect(tarjeta.textContent).toContain('3 oct 2026');
+      expect(q('[data-testid="nota-deuda-nc-2"]')).not.toBeNull();
+      await act(async () => {
+        (tarjeta.querySelector('[data-testid="nota-pdf-nc-2"]') as HTMLButtonElement).click();
+      });
+      expect(pdfDeLaNota).toHaveBeenCalledWith('nc-2');
+      expect(q('[data-testid="nota-del-mes-nc-9"] [data-testid="emitir-nota-nc-9"]')).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('🔴 ronda 3 (en el navegador): el PDF va en su columna, no pegado al texto del libro', async () => {
+    notasDelMes.mockResolvedValue({
+      mes: '2026-10',
+      disponible: true,
+      notas: [nota({ notaContable: 'Neteada en el libro: el asiento N.º 163 reversa la causación N.º 18.' })],
+    });
+    await pintar('notas', { mes: '2026-10', anulacionDisponible: true, facturas: [] });
+    const celdas = Array.from(q('[data-testid="nota-del-mes-nc-2"]')!.querySelectorAll('td'));
+    const delLibro = celdas.find((c) => c.textContent?.includes('Neteada en el libro'))!;
+    expect(delLibro.querySelector('[data-testid="nota-pdf-nc-2"]')).toBeNull();
+    expect(celdas[celdas.length - 1].querySelector('[data-testid="nota-pdf-nc-2"]')).not.toBeNull();
+    // La cabecera tiene la columna de las acciones (para lectores de pantalla).
+    expect(document.querySelectorAll('thead th').length).toBe(celdas.length);
+  });
+
   it('🔴 Q6: la GENERADA de un cobro anulado se emite desde acá', async () => {
     notasDelMes.mockResolvedValue({
       mes: '2026-10',
@@ -372,6 +450,29 @@ describe('FacturasEmitidas · Notas con `notas/lista`', () => {
       'el mes vuelve a «Por facturar»',
     );
     expect(emitirNotaGenerada).toHaveBeenCalledWith('nc-9');
+  });
+
+  it('🔴 ronda 3 (en el navegador): el 409 `NOTA_YA_EMITIDA` dice la frase del back y vuelve a leer la lista', async () => {
+    notasDelMes.mockResolvedValue({
+      mes: '2026-10',
+      disponible: true,
+      notas: [nota({ id: 'nc-9', numero: null, estado: 'GENERADA', parcial: false, puedeEmitir: true, tienePdf: false, enLaDeuda: null })],
+    });
+    const { ApiError } = await import('@/lib/api/client');
+    emitirNotaGenerada.mockRejectedValue(
+      new ApiError(409, 'Esta nota ya está emitida como NC-2.', 'NOTA_YA_EMITIDA', {
+        statusCode: 409,
+        code: 'NOTA_YA_EMITIDA',
+        message: 'Esta nota ya está emitida como NC-2.',
+      }),
+    );
+    await pintar('notas', { mes: '2026-10', anulacionDisponible: true, facturas: [] });
+    const lecturas = notasDelMes.mock.calls.length;
+    await act(async () => {
+      (q('[data-testid="emitir-nota-nc-9"]') as HTMLButtonElement).click();
+    });
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Esta nota ya está emitida como NC-2.');
+    expect(notasDelMes.mock.calls.length).toBe(lecturas + 1);
   });
 });
 

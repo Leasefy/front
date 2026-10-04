@@ -610,7 +610,10 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   pagados, aparte (`FacturasDeIntereses.tsx`: `intereses/por-emitir` e `intereses/emitir`, resolución de «Otros»).
 - **Notas**: la pestaña lee `notas/lista?mes=` (por el día de emisión, NC y ND, lo que movió en la deuda, «Emitir» en las
   generadas con `notas-credito/:id/emitir`, PDF con `notas-credito/:id/pdf`); un back sin la ruta, lo de antes. Anular
-  dice que la deuda baja; «sólo un dato del documento» manda `efecto: 'SOLO_EL_DOCUMENTO'` (sale la corregida).
+  dice que la deuda baja; «sólo un dato del documento» manda `efecto: 'SOLO_EL_DOCUMENTO'` (sale la corregida). «Emitir» y
+  el PDF van en su columna; bajo 768 px las notas son tarjetas (como Ventas); un 409 al emitir vuelve a leer la lista. La
+  factura anulada por completo lo dice UNA vez (sin las correcciones). La nota débito avisa su valor, el IVA que puso el
+  back (escenario de la factura; intereses y cobranza sin IVA) y qué hizo en la deuda.
 - **Electrónica**: el filtro con el `Select` del DS y `NOMBRE_DEL_ESTADO_DE_TRANSMISION`; sin proveedor no se ofrece
   reintentar; la entrega «Sin entregar · falta el correo» sale de `sinEntregar` del back y entonces ni corre la tácita
   ni se ofrecen «La aceptó / La rechazó» (tampoco en una SIMULADA).
@@ -618,7 +621,10 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   ahí (`sinLaRutaDeFacturacion`); plata con `formatCurrency` en mono; fechas con `fechaLegible` (un instante en la hora
   de Colombia) / `fechaEnFrase`; fechas de formulario con `CampoDeFecha` (DatePicker de Cadence); valores con
   `MoneyInput`. Resolución: casilla «Es una resolución de prueba» (`esDePrueba`), sugerencia del último número y rango
-  cruzado (`resolucion/sugerencia`), anular sólo el administrador. Documento soporte: registrar al proveedor ahí mismo.
+  cruzado (`resolucion/sugerencia`), anular sólo el administrador. «Ver el detalle» (kebab, ambos roles) abre
+  `CajonDelDetalleDeLaResolucion`: el interruptor «de prueba» (`PATCH resolucion/:id { esDePrueba }`) sólo para el
+  administrador y sólo con `sePuedeMarcarDePrueba` (lo numerado lo cuenta el back en `documentosNumerados`, no `usados`);
+  apagado, dice por qué; sin esos campos (back anterior) no se ofrece. Documento soporte: registrar al proveedor ahí mismo.
 - **Quién entra**: `PageGuard roles=[ADMIN, CONTADOR] seccion="Facturación"`; «Hoy» filtra con `lib/nav/se-ve-el-enlace.ts`.
 
 ## Seguimiento de Propietarios, Contratos e Inquilinos (SEGUIMIENTO-FRONT, 03-10-2026; back 5731a4e2, ff282197, 2a681c93)

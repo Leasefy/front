@@ -470,6 +470,18 @@ export interface ResolucionDeFacturacion {
   anulada: boolean
   /** Nico (03-10): marcada de PRUEBA al cargarla. Ausente con un back anterior. */
   esDePrueba?: boolean
+  /**
+   * Cuántos documentos numeró DE VERDAD en Leasefy (`null` = no se pudo
+   * contar). No es `usados`: ése sale de «último número usado», que puede
+   * venir del programa anterior.
+   */
+  documentosNumerados?: number | null
+  /**
+   * 🔴 Nico (03-10, noche): el administrador puede cambiar la casilla «de
+   * prueba» (`PATCH resolucion/:id`): hay migración y no numeró nada. Ausente
+   * con un back sin esa ruta: entonces no se ofrece.
+   */
+  sePuedeMarcarDePrueba?: boolean
   usados: number
   disponibles: number
   puedeNumerar: boolean
@@ -478,11 +490,27 @@ export interface ResolucionDeFacturacion {
   siguiente: string | null
 }
 
+/** Lo que responde `PATCH resolucion/:id`. */
+export interface ResolucionMarcadaDePrueba {
+  id: string
+  numero: string
+  prefijo: string
+  esDePrueba: boolean
+  /** «Quedó «de prueba»: lo que numere se transmite, pero nunca se le entrega a un cliente.» */
+  explicacion?: string
+}
+
 export interface ResolucionesDeLaAgencia {
   resoluciones: ResolucionDeFacturacion[]
   vigente: EstadoDeLaResolucion
   /** `false` sin la migración 20260918000000: no se puede elegir tipo. */
   porTipoDisponible: boolean
+  /**
+   * 🔴 `true` = esta base guarda la casilla «Es una resolución de prueba»
+   * (QA-FACT). Sin ella (o con un back anterior) la casilla no se ofrece: el
+   * back rechazaría `esDePrueba`.
+   */
+  marcaDePruebaDisponible?: boolean
   /** Con qué resolución se numera hoy cada tipo de documento. */
   porTipo: ResolucionPorTipo[]
   umbrales: { numeros: number; dias: number }
@@ -815,6 +843,20 @@ export const facturacionPorMesService = {
       // Sólo marcada: un back sin el campo (`forbidNonWhitelisted`) rechazaría
       // la clave, y «no es de prueba» es lo de siempre.
       ...(datos.esDePrueba ? { esDePrueba: true } : {}),
+    }),
+
+  /**
+   * 🔴 Nico (03-10-2026): el administrador marca o desmarca «de prueba» una
+   * resolución YA cargada, sólo mientras no haya numerado nada. 403 a los demás
+   * roles, 409 si ya numeró, 503 sin la migración. Ruta de QA-FACT-BACK-B.
+   */
+  /**
+   * `PATCH /resolucion/:id { esDePrueba }` — 403 `SOLO_EL_ADMINISTRADOR`, 409
+   * `RESOLUCION_YA_NUMERO` (con `numerados`), 503 `FALTA_UNA_MIGRACION`.
+   */
+  marcarDePrueba: (id: string, esDePrueba: boolean) =>
+    apiClient.patch<ResolucionMarcadaDePrueba>(`${BASE}/resolucion/${encodeURIComponent(id)}`, {
+      esDePrueba,
     }),
 
   /**

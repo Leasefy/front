@@ -348,6 +348,15 @@ export interface NotaDebito {
   } | null
 }
 
+/**
+ * Lo que responde emitir una nota débito: la nota y, con el back de QA-FACT,
+ * qué hizo en la deuda («Los intereses y los gastos de cobranza no suben la
+ * cuota…»). Ausente con un back anterior.
+ */
+export type NotaDebitoEmitida = NotaDebito & {
+  deuda?: { explicacion?: string | null } | null
+}
+
 export interface NotasDebitoDeLaAgencia {
   disponible: boolean
   migracion: string | null
@@ -587,7 +596,7 @@ export const facturacionElectronicaService = {
       ivaCop?: number
     },
   ) =>
-    apiClient.post<NotaDebito>(`${BASE}/${facturaId}/nota-debito`, {
+    apiClient.post<NotaDebitoEmitida>(`${BASE}/${facturaId}/nota-debito`, {
       concepto: datos.concepto,
       motivo: datos.motivo,
       valorCop: datos.valorCop,

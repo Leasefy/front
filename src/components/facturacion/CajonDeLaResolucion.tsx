@@ -277,7 +277,7 @@ export function CajonDeLaResolucion({
         ...(form.tipoDeDocumento !== '' && form.tipoDeDocumento !== CUALQUIER_TIPO
           ? { tipoDeDocumento: form.tipoDeDocumento as TipoDeDocumento }
           : {}),
-        ...(form.esDePrueba ? { esDePrueba: true } : {}),
+        ...(form.esDePrueba && datos?.marcaDePruebaDisponible === true ? { esDePrueba: true } : {}),
       })
       toast.success('Resolución cargada')
       setForm(VACIO)
@@ -461,7 +461,9 @@ export function CajonDeLaResolucion({
           </div>
           {/* 🔴 Nico (03-10-2026, 19:4x): la resolución de prueba se marca
               aquí. Lo que numere lleva la marca de prueba en su PDF y no se le
-              entrega a ningún cliente. */}
+              entrega a ningún cliente. Sólo si la base la guarda
+              (`marcaDePruebaDisponible`). */}
+          {datos?.marcaDePruebaDisponible === true && (
           <label
             htmlFor="resolucion-de-prueba"
             className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 sm:col-span-2"
@@ -476,10 +478,12 @@ export function CajonDeLaResolucion({
             <span>
               <span className="block text-sm text-fg">Es una resolución de prueba</span>
               <span className="block text-caption text-fg-muted">
-                Lo que numere no se le entrega a ningún cliente.
+                Lo que numere se transmite, pero nunca se le entrega a un cliente. El
+                administrador puede cambiarlo mientras no haya numerado nada.
               </span>
             </span>
           </label>
+          )}
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
             <Input

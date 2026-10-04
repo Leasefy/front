@@ -36,7 +36,7 @@ import { RadioGroup, RadioGroupItem } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import { confirmar } from '@/components/ui/confirmar'
 import { formatCurrency } from '@/lib/format'
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   Select,
   SelectContent,
@@ -269,6 +269,9 @@ export function FacturasEmitidas({ mes, vista }: Props) {
           accion: 'emitir la nota crédito',
         }),
       )
+      // Un 409 (`NOTA_YA_EMITIDA`: otra persona la emitió) es que la lista
+      // quedó vieja: se vuelve a leer y el «Emitir» que ya no aplica se va.
+      if (leerFallo(e).status === 409) await cargar()
     } finally {
       setEmitiendoNota(null)
     }
@@ -315,6 +318,40 @@ export function FacturasEmitidas({ mes, vista }: Props) {
     ) : null
 
   /** Anular con nota crédito, o por qué no; y las correcciones (la fila y la tarjeta). */
+  /** «Emitir» (una GENERADA) y el PDF de una nota del mes: en la tabla y en la tarjeta. */
+  const accionesDeLaNota = (n: NotaDelMes) => (
+    <>
+      {n.estado === 'GENERADA' && n.puedeEmitir && (
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={emitiendoNota !== null}
+          isLoading={emitiendoNota === n.id}
+          onClick={() => void emitirNota(n.factura, n)}
+          data-testid={`emitir-nota-${n.id}`}
+        >
+          Emitir
+        </Button>
+      )}
+      {n.tienePdf && (
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
+          className="h-8 px-2"
+          disabled={bajandoNota !== null}
+          isLoading={bajandoNota === n.id}
+          onClick={() => void bajarNota(n)}
+          data-testid={`nota-pdf-${n.id}`}
+        >
+          <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+          PDF
+        </Button>
+      )}
+    </>
+  )
+
   const accionesDeLaFactura = (f: FacturaEmitida) => (
     <>
       {f.anulacion.puede ? (
@@ -345,10 +382,16 @@ export function FacturasEmitidas({ mes, vista }: Props) {
       )}
       {/* 🔴 Y las dos correcciones nuevas del 17-09: acreditar
           una PARTE y cobrar de más. Se ofrecen sólo cuando el
-          back dice que se puede. */}
-      <span className="mt-1 block">
-        <CorregirFactura factura={f} onHecho={cargar} />
-      </span>
+          back dice que se puede.
+          🔴 QA-FACT ronda 3 (en el navegador): una factura ANULADA por
+          completo decía lo mismo tres veces («ya se anuló con NC-3», «ya se
+          anuló por completo… emite la factura nueva» y «ya acreditado
+          $ 1.750.000 · saldo $ 0»). Con la anulación basta: una línea. */}
+      {f.anulacion.bloqueo !== 'YA_ANULADA' && (
+        <span className="mt-1 block">
+          <CorregirFactura factura={f} onHecho={cargar} />
+        </span>
+      )}
     </>
   )
   /*
@@ -503,6 +546,60 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               ))}
             </ul>
           )
+        ) : vista === 'notas' && esCelular && notasDelMes !== null ? (
+          /* 🔴 QA-FACT ronda 3 (en el navegador): a 390 px la tabla de notas
+             se corría de lado como la de Ventas (Nico, ronda 2: tarjetas bajo
+             768 px). Cada nota: número y tipo, valor (con su IVA), la factura y
+             el cliente, el concepto con el motivo, lo que hizo en la deuda y en
+             el libro, y sus acciones. */
+          <ul className="divide-y divide-border border-y border-border" data-testid="notas-tarjetas">
+            {notasDelMes.map((n) => (
+              <li key={n.id} className="space-y-1.5 py-3.5" data-testid={`nota-del-mes-${n.id}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0">
+                    <span className="font-mono font-medium tabular-nums text-fg">{n.numero ?? 'Sin número'}</span>
+                    <span className="block text-caption text-fg-muted">
+                      {n.tipo === 'NOTA_DEBITO' ? 'Nota débito' : 'Nota crédito'}
+                      {n.parcial ? ' · parcial' : ''} · {fechaLegible(n.dia)}
+                    </span>
+                  </p>
+                  <p className="shrink-0 text-right">
+                    <span className="block font-mono font-medium tabular-nums text-fg">{formatCurrency(n.valorCop)}</span>
+                    {n.ivaCop !== null && n.ivaCop > 0 && (
+                      <span className="block font-mono text-caption tabular-nums text-fg-muted">
+                        IVA {formatCurrency(n.ivaCop)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <p className="text-caption text-fg-muted">
+                  <span className="font-mono tabular-nums text-fg">{n.factura.numeroDian ?? '—'}</span>
+                  {' · '}
+                  <span className="break-words">{n.factura.terceroNombre}</span>
+                </p>
+                <p className="text-sm text-fg">
+                  {n.conceptoNombre}
+                  <span className="block text-caption text-fg-muted">{n.motivo}</span>
+                </p>
+                {n.enLaDeuda && (
+                  <p className="text-caption text-fg-muted" data-testid={`nota-deuda-${n.id}`}>
+                    {n.enLaDeuda.movimiento === 'BAJA' ? 'Bajó' : 'Subió'} la deuda de {mesLegible(n.enLaDeuda.mes)}
+                  </p>
+                )}
+                {(n.notaContable || n.estado === 'GENERADA') && (
+                  <p className="text-caption text-fg-muted">
+                    {n.notaContable ?? 'Sin emitir todavía.'}
+                  </p>
+                )}
+                {n.estado === 'GENERADA' && !n.puedeEmitir && n.porQueNoSePuedeEmitir && (
+                  <p className="text-caption text-fg-muted">{n.porQueNoSePuedeEmitir}</p>
+                )}
+                {(n.tienePdf || (n.estado === 'GENERADA' && n.puedeEmitir)) && (
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">{accionesDeLaNota(n)}</div>
+                )}
+              </li>
+            ))}
+          </ul>
         ) : (
         <Table>
           <TableHeader>
@@ -524,6 +621,13 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>En el libro</TableHead>
+                  {/* Con la lista del back, «Emitir» y el PDF van en su columna
+                      (como las acciones de Ventas), no pegados al texto del libro. */}
+                  {notasDelMes !== null && (
+                    <TableHead className="w-px">
+                      <span className="sr-only">Acciones</span>
+                    </TableHead>
+                  )}
                 </>
               )}
             </TableRow>
@@ -579,20 +683,6 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                       {n.tipo === 'NOTA_DEBITO' ? 'Nota débito' : 'Nota crédito'}
                       {n.parcial ? ' · parcial' : ''}
                     </span>
-                    {n.estado === 'GENERADA' && n.puedeEmitir && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        hideArrow
-                        className="mt-1"
-                        disabled={emitiendoNota !== null}
-                        isLoading={emitiendoNota === n.id}
-                        onClick={() => void emitirNota(n.factura, n)}
-                        data-testid={`emitir-nota-${n.id}`}
-                      >
-                        Emitir
-                      </Button>
-                    )}
                     {n.estado === 'GENERADA' && !n.puedeEmitir && n.porQueNoSePuedeEmitir && (
                       <span className="mt-1 block max-w-[14rem] text-caption text-fg-muted">
                         {n.porQueNoSePuedeEmitir}
@@ -626,22 +716,8 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   <TableCell className="whitespace-nowrap">{fechaLegible(n.dia)}</TableCell>
                   <TableCell className="max-w-[20rem] text-caption text-fg-muted">
                     {n.notaContable ?? (n.estado === 'GENERADA' ? 'Sin emitir todavía.' : '—')}
-                    {n.tienePdf && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        hideArrow
-                        className="mt-1 h-8 px-2"
-                        disabled={bajandoNota !== null}
-                        isLoading={bajandoNota === n.id}
-                        onClick={() => void bajarNota(n)}
-                        data-testid={`nota-pdf-${n.id}`}
-                      >
-                        <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-                        PDF
-                      </Button>
-                    )}
                   </TableCell>
+                  <TableCell className="whitespace-nowrap text-right">{accionesDeLaNota(n)}</TableCell>
                 </TableRow>
               ))}
             {vista === 'notas' &&

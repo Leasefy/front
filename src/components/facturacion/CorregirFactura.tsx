@@ -173,7 +173,15 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
           factura.id,
           { concepto, motivo: motivo.trim(), valorCop },
         )
-        toast.success(`Nota débito ${r.numeroInterno} emitida`)
+        // 🔴 QA-FACT ronda 3 (en el navegador): con su valor y su IVA (lo
+        // calcula el back con el escenario de la factura) y lo que hizo en la
+        // deuda: los intereses y la cobranza NO suben la cuota, y quien la
+        // emite esperaba verla subir.
+        const conIva =
+          typeof r.ivaCop === 'number' && r.ivaCop > 0 ? ` (IVA ${formatCurrency(r.ivaCop)})` : ''
+        const enLaDeuda = r.deuda?.explicacion ? ` ${r.deuda.explicacion}` : ''
+        const porCuanto = typeof r.valorCop === 'number' ? ` por ${formatCurrency(r.valorCop)}` : ''
+        toast.success(`Nota débito ${r.numeroInterno} emitida${porCuanto}${conIva}.${enLaDeuda}`)
       }
       cerrar()
       await onHecho()

@@ -98,6 +98,7 @@ import { sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
 import { NumeracionPorTipo } from './NumeracionPorTipo'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CajonDeLaResolucion } from './CajonDeLaResolucion'
+import { CajonDelDetalleDeLaResolucion } from './CajonDelDetalleDeLaResolucion'
 
 /** El tope del back (`AnularResolucionDto`). */
 export const MAX_MOTIVO_DE_ANULACION = 500
@@ -126,6 +127,12 @@ export function ResolucionDeFacturacion({
    */
   const permisos = usePermissionsContextSafe()
   const puedeAnular = permisos === null || permisos.isAdmin || permisos.agencyRole === 'ADMIN'
+  /**
+   * 🔴 Nico (03-10): la marca «de prueba» de una resolución YA cargada la
+   * cambia el administrador desde su cajón, mientras no haya numerado nada.
+   * El cajón lo abre cualquiera de los dos roles (el contador ve el estado).
+   */
+  const [enDetalle, setEnDetalle] = useState<string | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [cargandoResolucion, setCargandoResolucion] = useState(false)
@@ -365,35 +372,41 @@ export function ResolucionDeFacturacion({
                             panel: un botón con texto por fila empuja la tabla
                             fuera de la pantalla y ademas grita más que el dato. */}
                         <TableCell className="w-10 whitespace-nowrap text-right">
-                          {!r.anulada && puedeAnular && (
-                            <DropdownList>
-                              <DropdownListTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  hideArrow
-                                  className="h-8 w-8"
-                                  disabled={anulando === r.id}
-                                  aria-label={`Acciones de la resolución ${r.numero}`}
-                                  data-testid={`acciones-${r.id}`}
-                                >
-                                  <DotsThreeVertical
-                                    className="h-4 w-4"
-                                    weight="bold"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </DropdownListTrigger>
-                              <DropdownListContent align="end" className="w-52">
+                          <DropdownList>
+                            <DropdownListTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                hideArrow
+                                className="h-8 w-8"
+                                disabled={anulando === r.id}
+                                aria-label={`Acciones de la resolución ${r.numero}`}
+                                data-testid={`acciones-${r.id}`}
+                              >
+                                <DotsThreeVertical
+                                  className="h-4 w-4"
+                                  weight="bold"
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                            </DropdownListTrigger>
+                            <DropdownListContent align="end" className="w-52">
+                              <DropdownListItem
+                                onSelect={() => setEnDetalle(r.id)}
+                                data-testid={`detalle-${r.id}`}
+                              >
+                                Ver el detalle
+                              </DropdownListItem>
+                              {!r.anulada && puedeAnular && (
                                 <DropdownListItem
                                   onSelect={() => pedirAnulacion(r)}
                                   data-testid={`anular-${r.id}`}
                                 >
                                   Anular la resolución
                                 </DropdownListItem>
-                              </DropdownListContent>
-                            </DropdownList>
-                          )}
+                              )}
+                            </DropdownListContent>
+                          </DropdownList>
                         </TableCell>
                       </TableRow>
                     ))
@@ -410,6 +423,14 @@ export function ResolucionDeFacturacion({
         onOpenChange={setCargandoResolucion}
         datos={datos}
         onCargada={cargar}
+      />
+
+      <CajonDelDetalleDeLaResolucion
+        resolucion={datos?.resoluciones.find((r) => r.id === enDetalle) ?? null}
+        onCerrar={() => setEnDetalle(null)}
+        marcaDePruebaDisponible={datos?.marcaDePruebaDisponible === true}
+        esAdministrador={puedeAnular}
+        onCambio={cargar}
       />
 
       <AlertDialog

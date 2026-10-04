@@ -265,6 +265,21 @@ describe('CorregirFactura · el sistema de errores (02-10)', () => {
     });
   }
 
+  it('🔴 QA-FACT ronda 3: el aviso dice cuánto, el IVA que puso el back y qué hizo en la deuda', async () => {
+    emitirNotaDebito.mockResolvedValue({
+      numeroInterno: 'ND-3',
+      valorCop: 11_900,
+      baseCop: 10_000,
+      ivaCop: 1_900,
+      deuda: { explicacion: 'La deuda de la cuota de octubre sube en $ 11.900.' },
+    });
+    await debitoCon('11900');
+    await confirmar();
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
+      'Nota débito ND-3 emitida por $ 11.900 (IVA $ 1.900). La deuda de la cuota de octubre sube en $ 11.900.',
+    );
+  });
+
   it('🔴 una nota débito con ceros de más se ataja con la frase del back y no se manda', async () => {
     await debitoCon('15000000000');
     expect(q('#corregir-valor-error')?.textContent).toBe(MENSAJES_DE_LA_FACTURACION.valorDeLaNotaMaximo);

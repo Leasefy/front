@@ -39,6 +39,8 @@ import type {
 } from '@/lib/api/tenant-payment-requests.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
+import { PagarLoVencido } from '@/components/tenant/PagarLoVencido';
+import { pagoEnLineaApi, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
 
 interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
@@ -126,9 +128,28 @@ function PagosPageContent() {
       .finally(() => setCargandoResumen(false));
   };
   const hayArriendo = Boolean(primaryLease);
+  /*
+   * 🔴 «Pagar lo vencido» (PAGO-ONLINE, Nico 04-10-2026): las cuotas que se
+   * pueden pagar en línea salen del back (la misma cartera del recibo de caja).
+   * Con estado de cuenta (`aplica`), esto reemplaza el «Pagar ahora» del canon
+   * del mes: la plata va siempre a la cuota más vieja. Sin él, lo de siempre.
+   */
+  const [pagoEnLinea, setPagoEnLinea] = useState<LoQueSePuedePagar | null>(null);
+  const leaseIdPrincipal = primaryLease?.id ?? null;
+  const cargarPagoEnLinea = () => {
+    if (!leaseIdPrincipal) return;
+    pagoEnLineaApi
+      .loQueSePuedePagar(leaseIdPrincipal)
+      .then(setPagoEnLinea)
+      // Sin respuesta (o un back anterior sin la ruta): lo de siempre, el canon del mes.
+      .catch(() => setPagoEnLinea({ aplica: false, cuotas: [], totalVencidoCop: 0, enVerificacion: null, ultimoRechazo: null }));
+  };
   useEffect(() => {
-    if (hayArriendo) cargarResumen();
-  }, [hayArriendo]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (hayArriendo) {
+      cargarResumen();
+      cargarPagoEnLinea();
+    }
+  }, [hayArriendo, leaseIdPrincipal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enriquecer requests con title de la propiedad (request.lease solo trae address+city)
   const leaseMap = new Map(activeLeases.map(l => [l.id, l]));
@@ -174,6 +195,7 @@ function PagosPageContent() {
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
+    cargarPagoEnLinea();
   };
 
   // Retorno de Wompi: verificar al volver (Nico, 02-10-2026, «seguimiento 4»).
@@ -196,6 +218,8 @@ function PagosPageContent() {
       recargar: () => {
         refetchRequests();
         refetchPaymentInfo();
+        cargarResumen();
+        cargarPagoEnLinea();
       },
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -241,6 +265,26 @@ function PagosPageContent() {
     }
   };
 
+  // El recibo en PDF de un pago confirmado (PAGO-ONLINE): sale de los recibos
+  // de caja que de verdad se emitieron con ese pago.
+  const descargarRecibo = async (request: RequestRow) => {
+    let blobUrl: string | null = null;
+    try {
+      const blob = await pagoEnLineaApi.recibo(request.id);
+      blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `recibo-${request.id.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      toast.error(mensajeParaLaPersona(err, { accion: 'descargar el recibo', porDefecto: 'No pudimos descargar el recibo.' }));
+    } finally {
+      if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
+    }
+  };
+
   const getStatusConfig = (status: TenantPaymentRequestStatus) => {
     switch (status) {
       case 'APPROVED':
@@ -260,8 +304,9 @@ function PagosPageContent() {
           iconColor: 'text-warning',
         };
       case 'PROCESSING':
+        // PSE pendiente: «En verificación» hasta que Wompi confirme (PAGO-ONLINE).
         return {
-          label: locale === 'es' ? 'Procesando' : 'Processing',
+          label: locale === 'es' ? 'En verificación' : 'In verification',
           color: 'bg-warning-soft text-warning',
           icon: Clock,
           iconBg: 'bg-warning-soft',
@@ -469,6 +514,14 @@ function PagosPageContent() {
           )}
         </CrossFade>
 
+        {/* «Pagar lo vencido» (PAGO-ONLINE): justo debajo de lo que debe, antes de
+            «Cómo pagar» (a 390 px quedaba al final, después del historial). */}
+        {pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
+          <div className="mb-8 lg:max-w-2xl">
+            <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
+          </div>
+        )}
+
         {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}
         <MediosDePagoDeLaInmobiliaria />
 
@@ -494,7 +547,7 @@ function PagosPageContent() {
                     const dateLabel =
                       request.status === 'APPROVED' && request.validatedAt
                         ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatShortDate(request.validatedAt)}`
-                        : request.status === 'PENDING_VALIDATION'
+                        : request.status === 'PENDING_VALIDATION' || request.status === 'PROCESSING'
                           ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatShortDate(request.createdAt)}`
                           : `${locale === 'es' ? 'Vence' : 'Due'} ${formatShortDate(request.dueDate)}`;
 
@@ -515,7 +568,9 @@ function PagosPageContent() {
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <h3 className="font-semibold text-fg">
-                                  {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
+                                  {request.referenceNumber?.startsWith('vencido-')
+                                    ? (locale === 'es' ? 'Pago de lo vencido' : 'Overdue payment')
+                                    : <>{locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span></>}
                                 </h3>
                                 <p className="text-sm text-fg-muted truncate">
                                   {request.propertyTitle}
@@ -552,7 +607,19 @@ function PagosPageContent() {
                                       {locale === 'es' ? 'Comprobante interno' : 'Internal receipt'}
                                     </Button>
                                   )}
-                                {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
+                                {request.status === 'APPROVED' && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => descargarRecibo(request)}
+                                    className="h-auto gap-1 p-0"
+                                    data-testid={`recibo-${request.id}`}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    {locale === 'es' ? 'Recibo PDF' : 'PDF receipt'}
+                                  </Button>
+                                )}
+                                {(request.status === 'REJECTED' || request.status === 'DISPUTED') && !pagoEnLinea?.aplica && (
                                   <Button
                                     variant="link"
                                     size="sm"
@@ -614,8 +681,8 @@ function PagosPageContent() {
           <div className="space-y-6">
             {/* Period Status Card — depende de currentPeriodStatus. Llega en su
                 propia consulta: si llega después, entra; si ya estaba, no. */}
-            <Presence show={Boolean(paymentInfo)} initial={false}>
-            {paymentInfo && (
+            <Presence show={Boolean(paymentInfo) && pagoEnLinea !== null && !pagoEnLinea.aplica} initial={false}>
+            {paymentInfo && pagoEnLinea !== null && !pagoEnLinea.aplica && (
               <PeriodStatusCard
                 status={paymentInfo.currentPeriodStatus}
                 rejectionReason={paymentInfo.currentPeriodRejectionReason}

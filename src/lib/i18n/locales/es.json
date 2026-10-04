@@ -3374,6 +3374,8 @@
         "titulo": "Ubicación",
         "abrirEnGoogleMaps": "Abrir en Google Maps",
         "comoLlegar": "Cómo llegar",
+        "mapaNoCargo": "El mapa no cargó",
+        "mapaNoCargoDesc": "La ubicación sí está guardada: puedes verla en Google Maps.",
         "sinUbicacion": "Este inmueble no tiene ubicación en el mapa",
         "sinUbicacionDesc": "Sin coordenadas, el aviso público no muestra el mapa y los candidatos no saben dónde queda.",
         "inmuebleNoCargo": "No se pudo cargar el inmueble para saber su ubicación.",

@@ -9,6 +9,21 @@ import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-e
 import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
 import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
 import { LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA } from "./src/lib/nav/los-nombres-que-no-decian-nada.data.mjs";
+import { asegurarElTrabajadorDeMaplibre } from "./scripts/copiar-trabajador-de-maplibre.mjs";
+import { fileURLToPath } from "url";
+
+// 🔴 El worker de MapLibre en `public/maplibre/<versión>/` (03-10-2026). Sin él
+// el mapa sale GRIS («Worker failed to load»). Antes sólo lo copiaba el
+// `postinstall`, y un árbol que reusa `node_modules` sin `npm install` (el
+// local de Nico, los worktrees, las copias de los agentes) no lo tenía. Acá
+// corre con `next dev`, `next build` y `next start`, aunque se arranquen sin
+// los scripts del package.json. Idempotente (no escribe si ya está) y nunca
+// tumba el arranque: si no puede, lo dice y sigue.
+try {
+  asegurarElTrabajadorDeMaplibre(path.dirname(fileURLToPath(import.meta.url)));
+} catch (e) {
+  console.warn(`[maplibre] No se pudo dejar el worker en public/maplibre: ${e instanceof Error ? e.message : e}. El mapa saldrá gris; corre «node scripts/copiar-trabajador-de-maplibre.mjs».`);
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

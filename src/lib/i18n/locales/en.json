@@ -3340,6 +3340,8 @@
         "titulo": "Location",
         "abrirEnGoogleMaps": "Open in Google Maps",
         "comoLlegar": "Get directions",
+        "mapaNoCargo": "The map didn't load",
+        "mapaNoCargoDesc": "The location is saved: you can see it in Google Maps.",
         "sinUbicacion": "This property has no location on the map",
         "sinUbicacionDesc": "Without coordinates the public listing shows no map and candidates can't tell where it is.",
         "inmuebleNoCargo": "The property could not be loaded, so its location is unknown.",

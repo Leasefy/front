@@ -440,13 +440,27 @@ The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the cano
   (sólo `opacity`) mientras la barra cambia de ancho; lo que ya estaba al cargar la página NO se
   anima ni sale con `opacity: 0` en el HTML del servidor (`useDespuesDelPrimerPintado`). El ancho
   sigue con `transition-all` de CSS (cambia el layout del panel; no es `transform`).
-- **Elemento activo del menú**: tinte NEUTRO (`bg-surface-selected`) que se desliza entre filas
-  del mismo bloque con `layoutId` (framer-motion, `MotionConfig reducedMotion="user"`), texto e
-  ícono en `text-fg` con el ícono relleno; dentro de una sección, un tramo de 2 px `bg-fg-subtle`
-  sobre la guía, sin halo ni degradado. Al pasar: `hover:bg-surface-hover` (también la cabecera de
-  sección). Nunca `bg-primary-soft` (en oscuro es un índigo saturado). Resorte de 220 ms sin
-  rebote, a opacidad plena; sólo cuando la activa salta a OTRO bloque (sin resaltado previo desde
-  donde deslizarse) entra con un fundido. Ver `ResalteDeLaFilaActiva` en `PlanSidebar.tsx`.
+- **Elemento activo del menú** (03-10-2026, Nico: «en light debería de verse con el azul como
+  estaba, quiero que cuando esté seleccionada se vea algo hermoso»): la píldora AZUL del menú,
+  `bg-[color:var(--menu-activa)]` + `text-[color:var(--menu-activa-tinta)]` (tokens en
+  `globals.css`): en claro, el azul de la marca tal como estaba (`#edf1ff` + `#1A40FF`, 5,8:1); en
+  oscuro, un azul APAGADO y translúcido (`rgba(110,135,255,.2)` ≈ `#1e233b` sobre el negro) con la
+  tinta `#b9c6ff` (9,3:1). Etiqueta `font-medium`, ícono relleno en la misma tinta, `rounded-[12px]`,
+  sin borde, sin sombra, sin halo y SIN tramo sobre la guía de la sección (la raya que brillaba —
+  23-09— y la gris —02-10— fueron justo lo que no gustó). La píldora se desliza entre filas del
+  mismo bloque con `layoutId` (framer-motion, `MotionConfig reducedMotion="user"`); en el riel
+  plegado, por todo el riel (`ResalteDelRiel`). La cabecera de una sección plegada con la página
+  actual adentro va en la tinta de la activa; la «IA» de la fila activa, en `bg-surface`. Al pasar:
+  `hover:bg-surface-hover` (neutro, más tenue que la activa; también la cabecera de sección); sobre
+  la activa no se suma. La barra de abajo del celular y su «Más» usan los mismos tokens. Nunca
+  `bg-primary-soft` para la activa del menú (en oscuro es el índigo saturado `#0d1331`). Resorte de
+  250 ms sin rebote (`motionSpring.snappy`), a opacidad plena; sólo cuando la activa salta a OTRO
+  bloque (sin resaltado previo desde donde deslizarse) entra con un fundido. Ver
+  `ResalteDeLaFilaActiva` en `PlanSidebar.tsx`.
+- **El logo de la barra** (03-10-2026, Nico: «pon el logo de la sidebar en todas las plataformas
+  negro así como el de la landing»): `text-fg` (tinta del tema: `#14130f` en claro, blanco hueso
+  en oscuro), abierta y plegada, en el cajón del celular, en los tres paneles y en la vista beta.
+  El /admin lleva su «nest» en negro (`Wordmark variant="ink"`). Del 22-09 al 03-10 fue `text-primary`.
 - **Secciones al entrar**: una sola abierta, «Operación» (`#sec-operacion`; en un panel sin ella,
   la primera), más la de la página actual. Lo que se abre o cierra vale mientras se navega y NO se
   guarda (`secciones-del-menu.ts`).

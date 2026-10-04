@@ -5,8 +5,14 @@
  *     cuadrado de 12 px de radio con el ícono de panel lateral, en la cabecera
  *     junto al logo; plegada, debajo del símbolo, a la vista.
  *  2. El elemento activo del menú era una píldora índigo saturada + un tramo
- *     con halo sobre la guía: ahora es un tinte neutro que se desliza
- *     (`layoutId`), con texto e ícono en tinta plena y un tramo gris sin halo.
+ *     con halo sobre la guía. El 02-10 pasó a un tinte gris con un tramo gris;
+ *     el 03-10 Nico: «eso se sigue viendo horrible y en light debería de verse
+ *     con el azul como estaba, quiero que cuando esté seleccionada se vea algo
+ *     hermoso». Ahora: la píldora AZUL del menú (`--menu-activa` +
+ *     `--menu-activa-tinta`: en claro #edf1ff + #1A40FF; en oscuro un azul
+ *     apagado), que se desliza (`layoutId`), sin tramo en la guía, sin halo.
+ *  3. El logo de la barra, NEGRO como el de la landing (`text-fg`; Nico,
+ *     03-10: «pon el logo de la sidebar en todas las plataformas negro»).
  *
  * Convención del repo: createRoot + act + happy-dom (sin RTL).
  */
@@ -103,30 +109,45 @@ describe('el botón de plegar la barra', () => {
   })
 })
 
-describe('el elemento activo del menú, sobrio', () => {
-  it('la fila activa tiene el resaltado neutro detrás; ninguna otra', async () => {
+describe('el elemento activo del menú, en el azul del menú', () => {
+  it('la fila activa tiene la píldora azul detrás; ninguna otra', async () => {
     await pintar()
     const resaltes = container.querySelectorAll('[data-testid="resalte-de-la-fila-activa"]')
     expect(resaltes.length).toBe(1)
     const r = resaltes[0] as HTMLElement
-    expect(r.className).toContain('bg-surface-selected')
+    expect(r.className).toContain('bg-[color:var(--menu-activa)]')
+    expect(r.className).toContain('rounded-[12px]')
+    expect(r.className).not.toContain('bg-surface-selected')
+    expect(r.className).not.toContain('shadow')
     expect(r.parentElement?.querySelector(`a[href="${P}/contratos"]`)).toBeTruthy()
   })
 
-  it('sin píldora azul ni halo: la fila va en tinta plena y el tramo de la guía es gris', async () => {
+  it('texto e ícono en la tinta de la activa (relleno); sin halo, sin degradado y sin tramo en la guía', async () => {
     await pintar()
     const fila = container.querySelector<HTMLAnchorElement>(`a[href="${P}/contratos"]`)!
     expect(fila.hasAttribute('data-active')).toBe(true)
     expect(fila.className).toContain('data-[active]:bg-transparent')
-    expect(fila.className).toContain('data-[active]:text-fg')
+    expect(fila.className).toContain('data-[active]:text-[color:var(--menu-activa-tinta)]')
+    expect(fila.className).not.toContain('data-[active]:text-fg')
     expect(fila.className).not.toContain('shadow-[0_0_10px')
     expect(fila.className).not.toContain('from-primary')
+    expect(fila.querySelector('svg')?.getAttribute('class') ?? '').toContain('!text-[color:var(--menu-activa-tinta)]')
+    // Ni la raya que brillaba ni la gris: ningún tramo encima de la guía.
     const contenedor = fila.parentElement!
-    const guia = Array.from(contenedor.querySelectorAll<HTMLElement>('span[aria-hidden="true"]')).find((s) =>
-      s.className.includes('w-[2px]'),
+    const tramo = Array.from(contenedor.querySelectorAll<HTMLElement>('span[aria-hidden="true"]')).find(
+      (s) => s.className.includes('w-[2px]') || s.className.includes('w-[3px]'),
     )
-    expect(guia?.className).toContain('bg-fg-subtle')
-    expect(guia?.className ?? '').not.toContain('shadow')
+    expect(tramo).toBeUndefined()
+  })
+
+  it('la cabecera de una sección plegada con la página actual adentro va en la tinta de la activa', async () => {
+    await pintar()
+    // «Operación» contiene Contratos (la actual): se pliega y se mira la cabecera.
+    const cabecera = container.querySelector<HTMLButtonElement>('[data-seccion] > button[aria-expanded]')!
+    await act(async () => cabecera.click())
+    expect(cabecera.getAttribute('aria-expanded')).toBe('false')
+    const rotulo = cabecera.querySelector('span')!
+    expect(rotulo.className).toContain('text-[color:var(--menu-activa-tinta)]')
   })
 
   it('al navegar, el resaltado pasa a la nueva fila', async () => {
@@ -138,12 +159,41 @@ describe('el elemento activo del menú, sobrio', () => {
     expect(container.querySelectorAll('[data-testid="resalte-de-la-fila-activa"]').length).toBe(1)
   })
 
-  it('en el riel plegado, la activa también es neutra (no `bg-primary-soft`)', async () => {
+  it('en el riel plegado, la misma píldora azul detrás (no `bg-primary-soft`, saturado en oscuro)', async () => {
     await pintar({ isCollapsed: true })
     const fila = container.querySelector<HTMLAnchorElement>(`a[href="${P}/contratos"]`)!
     expect(fila.getAttribute('aria-current')).toBe('page')
-    expect(fila.className).toContain('bg-surface-selected')
+    expect(fila.className).toContain('text-[color:var(--menu-activa-tinta)]')
     expect(fila.className).not.toContain('bg-primary-soft')
+    const resaltes = container.querySelectorAll('[data-testid="resalte-de-la-fila-activa"]')
+    expect(resaltes.length).toBe(1)
+    expect((resaltes[0] as HTMLElement).className).toContain('bg-[color:var(--menu-activa)]')
+    expect(resaltes[0]!.parentElement?.contains(fila)).toBe(true)
+  })
+
+  it('en el riel, al navegar a OTRA sección la píldora pasa a esa fila (viaja por todo el riel)', async () => {
+    await pintar({ isCollapsed: true })
+    rutaActual = P
+    await pintar({ isCollapsed: true })
+    const resaltes = container.querySelectorAll('[data-testid="resalte-de-la-fila-activa"]')
+    expect(resaltes.length).toBe(1)
+    expect(resaltes[0]!.parentElement?.querySelector(`a[href="${P}"]`)).toBeTruthy()
+  })
+})
+
+describe('el logo de la barra, negro como el de la landing', () => {
+  it('abierta: el logotipo en la tinta del tema (`text-fg`), no en el azul', async () => {
+    await pintar()
+    const logo = container.querySelector<HTMLAnchorElement>('a[aria-label="Leasefy — inicio"]')!
+    expect(logo.className).toContain('text-fg')
+    expect(logo.className).not.toContain('text-primary')
+  })
+
+  it('plegada: el símbolo también', async () => {
+    await pintar({ isCollapsed: true })
+    const simbolo = container.querySelector('svg[viewBox]')!.parentElement!
+    expect(simbolo.className).toContain('text-fg')
+    expect(simbolo.className).not.toContain('text-primary')
   })
 })
 

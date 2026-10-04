@@ -74,8 +74,10 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
                     // `px-3` + el `px-3` del cuerpo = 24 px: el ícono queda en la
                     // línea del título (DESIGN.md §Drawers, «Contenido alineado al padding»).
                     'flex items-center gap-4 px-3 py-3 min-h-[52px] rounded-lg',
+                    // El azul de la fila activa del menú (globals.css), el mismo
+                    // de la barra: en oscuro, apagado.
                     rowActive
-                      ? 'bg-primary-soft text-primary'
+                      ? 'bg-[color:var(--menu-activa)] font-medium text-[color:var(--menu-activa-tinta)]'
                       : 'text-fg hover:bg-surface-muted'
                   )}
                 >

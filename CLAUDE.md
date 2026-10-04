@@ -37,7 +37,8 @@ activity feed, execution panel).
 - Formularios: react-hook-form + zod. Toasts: sonner. Iconos: Phosphor + Lucide.
 - Estado: React Context + hooks custom (`src/lib/context/`, `src/lib/hooks/`). SIN Zustand/Redux.
 - Mapas: maplibre 6 (react-map-gl 8) + supercluster. El worker de MapLibre se sirve desde
-  `public/maplibre/<versión>/` (lo copia el `postinstall`); todo `<Map>` importa
+  `public/maplibre/<versión>/` (lo copian el `postinstall` y `next.config.mjs` al arrancar `next dev`/`build`/`start`,
+  idempotente; sin worker, la ficha dice «El mapa no cargó» con «Abrir en Google Maps»); todo `<Map>` importa
   `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
 
@@ -522,7 +523,8 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
 - **«Mis propiedades» (`/panel/propiedades`) a 390 px**: esqueleto mientras carga (nunca el vacío ni contadores en 0),
   el error con reintento, el «+» solo en pantallas chicas y el filtro de estado se desplaza dentro de su riel.
 - **El worker de MapLibre** (`public/maplibre/<versión>/`) lo copia el `postinstall`; un árbol con `node_modules` en
-  symlink (worktrees, copias del laboratorio) no lo tiene y responde 404 también con `next build`. Correr
+  symlink (worktrees, copias del laboratorio) no lo tenía y respondía 404 también con `next build` (desde el 03-10 lo
+  asegura `next.config.mjs` al arrancar; a mano sigue sirviendo). Correr
   `node scripts/copiar-trabajador-de-maplibre.mjs` en ese árbol.
 
 ## ARREGLOS-4 (03-10-2026, modo autónomo)

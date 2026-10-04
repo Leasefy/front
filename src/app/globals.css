@@ -1805,6 +1805,29 @@ select:-webkit-autofill:active {
   --info-soft: rgba(42, 111, 176, 0.2);
 }
 
+/* ── La fila activa del menú (Nico, 03-10-2026) ───────────────────────────────
+   «en light debería de verse con el azul como estaba, quiero que cuando esté
+   seleccionada se vea algo hermoso». Un solo par de tokens para la fila activa
+   de la barra (abierta, plegada y el cajón del celular) y de la barra de abajo
+   del celular con su «Más»:
+   · Claro: el azul de la marca tal como estaba — el fondo `#edf1ff`
+     (accent-soft) y la tinta `#1A40FF` (primary). Contraste 5,8:1.
+   · Oscuro: NO el accent-soft de oscuro (rgba(26,64,255,.16) sobre el negro da
+     #0d1331, saturación ≈60 %: el índigo saturado que no le gustó el 02-10)
+     sino un azul APAGADO y translúcido (sobre #0a0a0a da ≈ #1e233b,
+     saturación ≈33 %) con la tinta en un periwinkle claro (#b9c6ff).
+     Contraste 9,3:1. Se eligió mirando cuatro intensidades lado a lado: más
+     tenue se leía gris; más fuerte volvía al índigo.
+   Al pasar el mouse sigue `surface-hover` (neutro, más tenue que la activa). */
+:root {
+  --menu-activa: #edf1ff;
+  --menu-activa-tinta: hsl(var(--primary));
+}
+.dark {
+  --menu-activa: rgba(110, 135, 255, 0.2);
+  --menu-activa-tinta: #b9c6ff;
+}
+
 /* ── El sidebar NO pisa `--primary` (2026-08-16) ──────────────────────────────
    Hubo un `.tinte-de-marca` que en claro reemplazaba `--primary` por el hex que
    la agencia elige en Configuración → Marca, y en oscuro volvía al del tema.

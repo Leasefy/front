@@ -57,7 +57,8 @@ export function Nav({ userEmail }: { userEmail: string }) {
   return (
     <aside className="w-64 shrink-0 border-r border-bg-border bg-bg-surface min-h-screen flex flex-col sticky top-0 h-screen overflow-y-auto" data-lenis-prevent>
       <div className="px-5 py-5 border-b border-bg-border">
-        <Wordmark size="md" variant="blue" />
+        {/* Negro, como el logo de la barra de las otras plataformas y el de la landing (Nico, 03-10). */}
+        <Wordmark size="md" variant="ink" />
         <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin · v1</div>
       </div>
 

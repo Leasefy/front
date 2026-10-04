@@ -54,8 +54,10 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-lg',
+                  // El azul de la fila activa del menú (globals.css): en oscuro,
+                  // apagado, no el índigo saturado de `primary-soft`.
                   active
-                    ? 'bg-primary-soft text-primary'
+                    ? 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)]'
                     : 'text-fg-muted'
                 )}
               >

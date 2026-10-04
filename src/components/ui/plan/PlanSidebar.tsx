@@ -163,12 +163,19 @@ function displayLabel(item: NavItem): string {
  * ("Próximamente"). Returns undefined when the row carries neither, so
  * SidebarItem keeps rendering its numeric `count` untouched.
  */
-function TrailingPills({ item }: { item: NavItem }) {
+function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva?: boolean }) {
   if (!item.ai && !item.tag) return null;
   return (
     <span className="flex items-center gap-1.5">
       {item.ai && (
-        <span className="text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary-soft text-primary">
+        <span
+          className={cn(
+            'text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full',
+            // Sobre la píldora azul de la activa, la «IA» azul se perdía (mismo
+            // fondo): ahí va en la superficie, con la tinta de la activa.
+            enLaActiva ? 'bg-surface text-[color:var(--menu-activa-tinta)]' : 'bg-primary-soft text-primary',
+          )}
+        >
           IA
         </span>
       )}
@@ -249,9 +256,9 @@ interface NavItemComponentProps {
   onClick?: () => void;
   depth?: number;
   /**
-   * La fila cuelga de una sección plegable: la fila activa enciende su tramo
-   * de la guía vertical de la sección (la raya de la izquierda), para que se
-   * lea «estás acá, dentro de esto».
+   * La fila cuelga de una sección plegable (de su guía vertical): su aire
+   * es más corto, para que la etiqueta no se corte. Desde el 03-10 la activa
+   * ya no enciende un tramo de la guía (ver `ResalteDeLaFilaActiva`).
    */
   enSeccion?: boolean;
   /**
@@ -265,19 +272,31 @@ interface NavItemComponentProps {
 }
 
 /**
- * El elemento activo del menú (Nico, 02-10-2026: «no logro conectar con esa
- * línea de selección tan fea y con drop shadow, muy saturada»). Antes: la
- * píldora `bg-primary-soft` del DS —en oscuro, índigo saturado— más un tramo
- * de 3 px en degradado con halo sobre la guía. Ahora, como la navegación del
- * sistema de diseño de referencia (`chat-v2/live/laterales.css`: tinta al 5 %
- * al pasar, al 8 % la actual):
- *   · un fondo NEUTRO (`surface-selected`: tinta al 6 % en claro, blanco al
- *     7 % en oscuro) que se desliza de fila en fila con `layoutId`;
- *   · texto e ícono en tinta plena (`text-fg`, ícono relleno), no en azul;
- *   · el tramo de la guía, 2 px en gris y sin halo.
- * Al pasar el mouse, `surface-hover` (4–5 %): más tenue que la activa en los
- * dos temas. El `surface-muted` del DS en oscuro (#24221c) era MÁS claro que
- * cualquier activa y la competía.
+ * El elemento activo del menú — la tercera vuelta.
+ *
+ * 1. Hasta el 02-10: la píldora `bg-primary-soft` del DS —en oscuro, índigo
+ *    saturado— más un tramo de 3 px en degradado con halo sobre la guía. Nico:
+ *    «no logro conectar con esa línea de selección tan fea y con drop shadow,
+ *    muy saturada».
+ * 2. 02-10: un fondo gris neutro (`surface-selected`), texto en tinta y un
+ *    tramo gris de 2 px sobre la guía. Nico, 03-10: «aquí no hay mejora
+ *    visual, eso se sigue viendo horrible y en light debería de verse con el
+ *    azul como estaba, quiero que cuando esté seleccionada se vea algo
+ *    hermoso».
+ * 3. Ahora (03-10): la píldora AZUL, limpia —
+ *    · fondo `--menu-activa` y tinta `--menu-activa-tinta` (globals.css): en
+ *      claro, el azul de la marca tal como estaba (#edf1ff + #1A40FF); en
+ *      oscuro, un azul apagado y translúcido (≈ #1e233b) con la tinta en
+ *      periwinkle claro (#b9c6ff), no el índigo saturado;
+ *    · etiqueta en `font-medium`, ícono relleno en la misma tinta;
+ *    · radio de 12 px del DS, sin borde, sin sombra, sin halo;
+ *    · SIN tramo en la guía de la sección: con la píldora azul sobraba, y las
+ *      dos versiones de esa raya (la que brillaba y la gris) fueron justo lo
+ *      que no gustó. La guía queda como hilo neutro de la jerarquía;
+ *    · se DESLIZA de fila en fila con `layoutId` (abajo), también en el riel
+ *      plegado.
+ * Al pasar el mouse, `surface-hover` (neutro, 4–5 %): más tenue que la activa
+ * en los dos temas; sobre la activa no se suma nada.
  */
 // ── Movimiento — los tokens de Cadence (03-10-2026) ──────────────────────────
 // Antes eran valores propios «hasta que exista el sistema de movimiento».
@@ -319,30 +338,42 @@ function useDespuesDelPrimerPintado(): boolean {
  */
 const ResalteConFundido = createContext(false);
 
-function ResalteDeLaFilaActiva({ grupo, conGuia }: { grupo: string; conGuia: boolean }) {
+/** La píldora de la activa: el azul del menú (`--menu-activa`, globals.css), radio del DS. */
+const PILDORA_DE_LA_ACTIVA = 'pointer-events-none absolute inset-0 rounded-[12px] bg-[color:var(--menu-activa)]';
+
+/** Texto e ícono de la activa (`--menu-activa-tinta`). */
+const TINTA_DE_LA_ACTIVA = 'text-[color:var(--menu-activa-tinta)]';
+
+function ResalteDeLaFilaActiva({ grupo }: { grupo: string }) {
   const conFundido = useContext(ResalteConFundido);
   return (
-    <>
-      <motion.span
-        layoutId={`menu-activa-${grupo}`}
-        aria-hidden="true"
-        data-testid="resalte-de-la-fila-activa"
-        className="pointer-events-none absolute inset-0 rounded-[12px] bg-surface-selected"
-        initial={conFundido ? { opacity: 0 } : false}
-        animate={{ opacity: 1 }}
-        transition={RESORTE_DEL_MENU}
-      />
-      {conGuia && (
-        // Cae justo sobre la guía de la sección (`GUIA_DE_SECCION`: 1 px de
-        // borde + 3 px de aire → centro a −3,5 px de la fila).
-        <motion.span
-          layoutId={`menu-guia-${grupo}`}
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-[4.5px] bottom-1.5 top-1.5 w-[2px] rounded-full bg-fg-subtle"
-          transition={RESORTE_DEL_MENU}
-        />
-      )}
-    </>
+    <motion.span
+      layoutId={`menu-activa-${grupo}`}
+      aria-hidden="true"
+      data-testid="resalte-de-la-fila-activa"
+      className={PILDORA_DE_LA_ACTIVA}
+      initial={conFundido ? { opacity: 0 } : false}
+      animate={{ opacity: 1 }}
+      transition={RESORTE_DEL_MENU}
+    />
+  );
+}
+
+/**
+ * El mismo resaltado en el riel plegado. El riel no tiene cajas que recorten
+ * (no pliega secciones), así que la píldora viaja por TODO el riel con un solo
+ * `layoutId`, de una sección a otra, y nunca entra con fundido.
+ */
+function ResalteDelRiel() {
+  return (
+    <motion.span
+      layoutId="menu-activa-riel"
+      aria-hidden="true"
+      data-testid="resalte-de-la-fila-activa"
+      className={PILDORA_DE_LA_ACTIVA}
+      initial={false}
+      transition={RESORTE_DEL_MENU}
+    />
   );
 }
 
@@ -394,7 +425,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-instant',
             (isActive || isChildActive)
-              ? 'text-fg font-medium'
+              ? cn(TINTA_DE_LA_ACTIVA, 'font-medium')
               : 'text-plan-secondary hover:text-plan-primary',
             isCollapsed && 'justify-center px-2'
           )}
@@ -403,7 +434,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
             weight={(isActive || isChildActive) ? 'fill' : 'regular'}
             className={cn(
               'w-[18px] h-[18px] stroke-[1.5px]',
-              (isActive || isChildActive) ? 'text-fg' : 'text-plan-muted'
+              (isActive || isChildActive) ? TINTA_DE_LA_ACTIVA : 'text-plan-muted'
             )}
           />
           {!isCollapsed && (
@@ -440,26 +471,28 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   // rail row stays composed (see ## Gaps). title + data-tour-target preserved.
   if (isCollapsed) {
     return (
-      <Link
-        href={item.href}
-        onClick={onClick}
-        aria-current={isActive ? 'page' : undefined}
-        data-tour-target={item.dataTourTarget}
-        title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
-        className={cn(
-          // El mismo activo sobrio que la barra abierta: tinte neutro, ícono
-          // relleno en tinta (antes, la píldora azul del DS).
-          'flex items-center justify-center px-2.5 py-2.5 rounded-[12px] transition-colors',
-          isActive
-            ? 'text-fg bg-surface-selected'
-            : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
-        )}
-      >
-        <Icon
-          weight={isActive ? 'fill' : 'regular'}
-          className={cn('w-[18px] h-[18px]', isActive ? 'text-fg' : 'text-fg-muted')}
-        />
-      </Link>
+      <div className="relative">
+        {/* La misma píldora azul de la barra abierta, deslizándose (`ResalteDelRiel`). */}
+        {isActive && <ResalteDelRiel />}
+        <Link
+          href={item.href}
+          onClick={onClick}
+          aria-current={isActive ? 'page' : undefined}
+          data-tour-target={item.dataTourTarget}
+          title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
+          className={cn(
+            'relative z-[1] flex items-center justify-center px-2.5 py-2.5 rounded-[12px] transition-colors',
+            isActive
+              ? TINTA_DE_LA_ACTIVA
+              : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+          )}
+        >
+          <Icon
+            weight={isActive ? 'fill' : 'regular'}
+            className={cn('w-[18px] h-[18px]', isActive ? TINTA_DE_LA_ACTIVA : 'text-fg-muted')}
+          />
+        </Link>
+      </div>
     );
   }
 
@@ -491,21 +524,22 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   const row = (
       <SidebarItem
         href={item.href}
-        icon={<Icon weight={isActive ? 'fill' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-fg')} />}
+        icon={<Icon weight={isActive ? 'fill' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-[color:var(--menu-activa-tinta)]')} />}
         label={displayLabel(item)}
         active={isActive}
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
         // `badge` takes a node and renders it as-is (see SidebarItemProps), so
         // the IA / Próximamente pills ride here without forking the DS row.
-        badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
+        badge={item.ai || item.tag ? <TrailingPills item={item} enLaActiva={isActive} /> : undefined}
         depth={depth}
         onClick={navegar}
         onMouseEnter={precargar}
         onFocus={precargar}
         // El fondo de la activa lo pone `ResalteDeLaFilaActiva` (detrás, para
-        // poder deslizarse): la fila va transparente y POR ENCIMA de él (`z-[1]`).
-        // tailwind-merge pisa la píldora azul del DS con estas clases.
-        className="z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:font-medium data-[active]:text-fg"
+        // poder deslizarse): la fila va transparente y POR ENCIMA de él (`z-[1]`),
+        // también al pasar el mouse. tailwind-merge pisa con estas clases la
+        // píldora del DS (`bg-primary-soft`, saturada en oscuro) y su tinta.
+        className="z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:hover:bg-transparent data-[active]:font-medium data-[active]:text-[color:var(--menu-activa-tinta)]"
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
         // así que este `style` gana: dentro de una sección el aire es de 8/6 px.
         style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
@@ -515,7 +549,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
 
   return (
     <div className="relative" data-tour-target={item.dataTourTarget}>
-      {isActive && <ResalteDeLaFilaActiva grupo={grupoDelResalte} conGuia={enSeccion} />}
+      {isActive && <ResalteDeLaFilaActiva grupo={grupoDelResalte} />}
       {row}
     </div>
   );
@@ -626,9 +660,10 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
             // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
             // distingue de las filas sin competir con ellas (Nico, 23-09).
             'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
-            // Plegada con la página actual adentro: en tinta plena, no en azul
-            // (el activo del menú es sobrio, ver `ResalteDeLaFilaActiva`).
-            marcada ? 'text-fg' : 'text-fg-subtle group-hover/seccion:text-fg-muted',
+            // Plegada con la página actual adentro: en la tinta de la activa
+            // (el azul del menú, ver `ResalteDeLaFilaActiva`), como antes del
+            // 02-10.
+            marcada ? TINTA_DE_LA_ACTIVA : 'text-fg-subtle group-hover/seccion:text-fg-muted',
           )}
         >
           {bloque.cabecera.label}
@@ -926,9 +961,9 @@ export function SidebarContent({
                 className="h-8 w-8 rounded-[8px] object-cover"
               />
             ) : (
-              // Mismo azul que la fila expandida, para que el rail colapsado no
-              // cambie de identidad al plegar el sidebar.
-              <span className="flex h-8 w-8 items-center justify-center text-primary">
+              // Negro como el logotipo de la barra abierta (y el de la
+              // landing), para que el riel no cambie de identidad al plegar.
+              <span className="flex h-8 w-8 items-center justify-center text-fg">
                 <LeasefySymbol size={18} />
               </span>
             )}
@@ -940,9 +975,12 @@ export function SidebarContent({
         // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
         // en su propio contexto (encabezados, documentos); repetirla acá arriba
         // solo confundía sobre en qué
-        // producto estás parado. En el azul `primary` (Nico, 22-09: «el logo de
-        // la sidebar en todas las plataformas en el azul primary»): el token ya
-        // cambia a su versión clara en oscuro, sin ramificar por tema.
+        // producto estás parado. NEGRO, como el de la landing (Nico, 03-10:
+        // «pon el logo de la sidebar en todas las plataformas negro así como
+        // el de la landing»; del 22-09 al 03-10 fue el azul `primary`). Va en
+        // `text-fg`: la tinta del tema, #14130f en claro (la landing pinta el
+        // suyo en #111) y el blanco hueso en oscuro, sin ramificar por tema
+        // (la landing no tiene oscuro).
         //
         // Igual en los TRES paneles. Antes inquilino y propietario caían a un
         // fallback con otro logo y otro tamaño: la misma app cambiaba de firma
@@ -962,7 +1000,7 @@ export function SidebarContent({
             href={logo?.href ?? '/'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
-            className="mr-auto flex min-w-0 items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mr-auto flex min-w-0 items-center rounded-[12px] px-[10px] py-[6px] text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LeasefyLogotype size={26} />
           </Link>

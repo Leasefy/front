@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-04",
-  "cuantas": 1370,
+  "cuantas": 1371,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -354,6 +354,7 @@
     "GET /inmobiliaria/contabilidad/puc/semilla/pendientes",
     "GET /inmobiliaria/contabilidad/reportes/balance-de-prueba",
     "GET /inmobiliaria/contabilidad/reportes/balance-general",
+    "GET /inmobiliaria/contabilidad/reportes/cartera-vs-cuotas",
     "GET /inmobiliaria/contabilidad/reportes/estado-de-cuenta",
     "GET /inmobiliaria/contabilidad/reportes/libro-auxiliar/:cuentaId",
     "GET /inmobiliaria/contabilidad/reportes/libro.csv",

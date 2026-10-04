@@ -24,11 +24,12 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuxiliarPorTercero } from './AuxiliarPorTercero';
 import { BalanceDePrueba } from './BalanceDePrueba';
+import { CarteraLibroVsCuotas } from './CarteraLibroVsCuotas';
 import { EstadoDeCuenta } from './EstadoDeCuenta';
 import { LibroAuxiliar } from './LibroAuxiliar';
 import { LibroMayor } from './LibroMayor';
 
-export type Informe = 'balance' | 'mayor' | 'auxiliar' | 'terceros' | 'tercero';
+export type Informe = 'balance' | 'mayor' | 'auxiliar' | 'terceros' | 'tercero' | 'cartera';
 
 export const INFORMES: readonly Informe[] = [
   'balance',
@@ -36,6 +37,8 @@ export const INFORMES: readonly Informe[] = [
   'auxiliar',
   'terceros',
   'tercero',
+  // CB-39 (QA-CONTA-PROF, 04-10-2026): la cartera del libro contra las cuotas.
+  'cartera',
 ];
 
 /**
@@ -75,6 +78,9 @@ export function ReportesContables({ inicial = 'balance' }: { inicial?: Informe }
         <TabsTrigger value="tercero" data-testid="pestana-tercero" className="whitespace-nowrap">
           Estado de cuenta
         </TabsTrigger>
+        <TabsTrigger value="cartera" data-testid="pestana-cartera" className="whitespace-nowrap">
+          Cartera vs. contratos
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="balance" className="pt-5">
         {informe === 'balance' ? <BalanceDePrueba /> : null}
@@ -90,6 +96,9 @@ export function ReportesContables({ inicial = 'balance' }: { inicial?: Informe }
       </TabsContent>
       <TabsContent value="tercero" className="pt-5">
         {informe === 'tercero' ? <EstadoDeCuenta /> : null}
+      </TabsContent>
+      <TabsContent value="cartera" className="pt-5">
+        {informe === 'cartera' ? <CarteraLibroVsCuotas /> : null}
       </TabsContent>
     </Tabs>
   );

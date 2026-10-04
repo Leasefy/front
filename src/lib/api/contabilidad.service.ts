@@ -585,6 +585,49 @@ export interface FilaDeBalance {
   saldoFinalCop: number;
 }
 
+/**
+ * 🔴 CB-39 (QA-CONTA-PROF, 04-10-2026): `GET /reportes/cartera-vs-cuotas`. La
+ * cartera del libro (1305) contra las cuotas que deben los inquilinos, por
+ * contrato, con cada diferencia y su motivo («sin explicar» si no se sabe).
+ */
+export interface MotivoDeLaDiferenciaDeCartera {
+  tipo: 'SIN_CAUSAR' | 'YA_NO_SE_DEBE' | 'SIN_EXPLICAR';
+  /** `AAAA-MM` del cobro o de la cuota. */
+  mes: string | null;
+  texto: string;
+  /** Lo que aporta a la diferencia (libro − cuotas), con signo. */
+  valorCop: number;
+}
+
+export interface CarteraDelContrato {
+  contractId: string;
+  codigo: string | null;
+  inquilino: string | null;
+  inmueble: string | null;
+  libroCop: number;
+  cuotasCop: number;
+  diferenciaCop: number;
+  motivos: MotivoDeLaDiferenciaDeCartera[];
+}
+
+export interface CarteraSinContrato {
+  tipo: 'COBRO_QUE_YA_NO_EXISTE' | 'COBRO_SIN_CONTRATO' | 'ASIENTO_MANUAL' | 'MIGRACION' | 'OTRO';
+  texto: string;
+  valorCop: number;
+  documentos: number;
+  explicado: boolean;
+}
+
+export interface CarteraLibroVsCuotas {
+  hasta: string;
+  mayorCop: number;
+  cuotasCop: number;
+  diferenciaCop: number;
+  sinExplicarCop: number;
+  contratos: CarteraDelContrato[];
+  sinContrato: CarteraSinContrato[];
+}
+
 /** `GET /reportes/balance-de-prueba`. `cuadra` en `false` es un bug del
  * libro, no un dato más: la pantalla lo grita. */
 export interface BalanceDePrueba {
@@ -1629,6 +1672,13 @@ export const contabilidadApi = {
           soloConMovimiento:
             filtros.soloConMovimiento === undefined ? undefined : String(filtros.soloConMovimiento),
         }),
+      );
+    },
+
+    /** CB-39: la conciliación de la cartera (libro 1305 contra las cuotas). */
+    async carteraVsCuotas(hasta?: string): Promise<CarteraLibroVsCuotas> {
+      return apiClient.get<CarteraLibroVsCuotas>(
+        conQuery(`${BASE}/reportes/cartera-vs-cuotas`, { hasta }),
       );
     },
 

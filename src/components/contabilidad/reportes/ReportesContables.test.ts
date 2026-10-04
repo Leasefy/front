@@ -18,6 +18,7 @@ describe('informeDe', () => {
     expect(informeDe('auxiliar')).toBe('auxiliar');
     expect(informeDe('terceros')).toBe('terceros');
     expect(informeDe('tercero')).toBe('tercero');
+    expect(informeDe('cartera')).toBe('cartera');
   });
 
   /*
@@ -42,7 +43,8 @@ describe('informeDe', () => {
   it('la lista no tiene repetidos ni cosas de más, y está en el orden del trabajo', () => {
     // balance (¿cuadra?) → mayor (¿en qué mes?) → auxiliar (¿en qué asiento?)
     // → terceros (¿de quién?) → estado de cuenta (¿qué le pasó?).
-    expect(INFORMES).toEqual(['balance', 'mayor', 'auxiliar', 'terceros', 'tercero']);
+    // CB-39 (QA-CONTA-PROF): al final, la cartera del libro contra los contratos.
+    expect(INFORMES).toEqual(['balance', 'mayor', 'auxiliar', 'terceros', 'tercero', 'cartera']);
     expect(new Set(INFORMES).size).toBe(INFORMES.length);
   });
 });

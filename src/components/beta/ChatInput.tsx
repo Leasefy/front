@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { AvisoDePreguntas } from './AvisoDePreguntas';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -62,6 +63,8 @@ export function ChatInput({ onSend, disabled = false, className, topSlot }: Chat
             />
           }
         />
+        {/* Apagado hasta que se apruebe la cláusula (Nico, 04-10-2026). */}
+        <AvisoDePreguntas />
       </div>
     </div>
   );

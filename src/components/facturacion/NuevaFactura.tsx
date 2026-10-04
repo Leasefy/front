@@ -159,6 +159,7 @@ import {
   numerosQueSalen,
   porQueNoSeEmite,
   rutaDelEscenario,
+  rutaDelMandante,
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
@@ -175,12 +176,19 @@ import { FacturasDeIntereses } from './FacturasDeIntereses'
  * cajón, que es el documento.
  */
 const RANGO_DE_NUI = /\.?\s*De \d{1,2}-[A-Za-zñÑ]{3,4}-\d{4} hasta \d{1,2}-[A-Za-zñÑ]{3,4}-\d{4}\.?/i
+/**
+ * QA-FACT-PROF (04-10): el período en palabras de las cuotas nuevas («. Del 1 al
+ * 31 de octubre de 2026»). Sin quitarlo, el diálogo decía «… Del 1 al 31 de
+ * octubre de 2026 de octubre de 2026».
+ */
+const RANGO_EN_PALABRAS =
+  /\.?\s*Del \d{1,2}(?: de [a-záéíóúñ]+(?: de \d{4})?)? al \d{1,2} de [a-záéíóúñ]+ de \d{4}\.?/i
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
 function conceptosLegibles(factura: FacturaDelMes): string {
   const nombres = factura.lineas
     .filter((l) => !l.resta)
-    .map((l) => l.nombre.replace(RANGO_DE_NUI, '').trim() || l.nombre)
+    .map((l) => l.nombre.replace(RANGO_DE_NUI, '').replace(RANGO_EN_PALABRAS, '').trim() || l.nombre)
   if (nombres.length === 0) return '—'
   if (nombres.length <= 2) return nombres.join(' · ')
   return `${nombres.slice(0, 2).join(' · ')} +${nombres.length - 2}`
@@ -523,6 +531,27 @@ function EstadoDeLaFactura({
       >
         Se factura cuando se le gire
       </span>
+    )
+  }
+  if (estado === 'todavia-no' && factura.codigoNoEmitible === 'MANDANTE_SIN_TIPO_DE_DOCUMENTO') {
+    /* QA-FACT-PROF (04-10): la factura sale a nombre del propietario (mandato)
+       y la DIAN exige su tipo de documento. La fila lleva a su ficha. */
+    const ruta = rutaDelMandante(factura)
+    return (
+      <div className="flex flex-col items-start gap-1" data-testid={`mandante-sin-tipo-${factura.clave}`}>
+        <span className="text-caption text-fg-subtle" title={factura.motivoNoEmitible ?? undefined}>
+          {motivoCorto(factura)}
+        </span>
+        {ruta && (
+          <Link
+            href={ruta}
+            className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+            data-testid={`completar-mandante-${factura.clave}`}
+          >
+            Completar en el propietario
+          </Link>
+        )}
+      </div>
     )
   }
   if (estado === 'todavia-no') {
@@ -1618,8 +1647,10 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               tienes {marcadasEnTotal.toLocaleString('es-CO')}{' '}
               {marcadasEnTotal === 1 ? 'marcada' : 'marcadas'}
               {mismaBolsa && marcadasEnLaOtra > 0 ? ' entre las dos pestañas' : ''}: se
-              numeran las primeras y las{' '}
-              {numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar
+              numeran las primeras y{' '}
+              {numerosQueFaltan === 1
+                ? 'la otra va a fallar'
+                : `las ${numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar`}{' '}
               por rango agotado.{' '}
               {onIrAResolucion && (
                 <button

@@ -80,13 +80,13 @@ export function InformeDeFacturacion({
   if (informe.yaNoEstabanPorEmitir > 0) {
     lineas.push({
       clave: 'ya-no-estaban',
-      texto: `${facturas(informe.yaNoEstabanPorEmitir)} ya no estaban por emitir cuando llegó la orden: alguien las emitió antes o el contrato dejó de tocar el mes.`,
+      texto: `${facturas(informe.yaNoEstabanPorEmitir)} ${informe.yaNoEstabanPorEmitir === 1 ? 'ya no estaba' : 'ya no estaban'} por emitir cuando llegó la orden: alguien ${informe.yaNoEstabanPorEmitir === 1 ? 'la emitió' : 'las emitió'} antes o el contrato dejó de tocar el mes.`,
     })
   }
   if (informe.sinNumero > 0) {
     lineas.push({
       clave: 'sin-numero',
-      texto: `${facturas(informe.sinNumero)} quedaron sin número. ${informe.motivos.join(' ')}`.trim(),
+      texto: `${facturas(informe.sinNumero)} ${informe.sinNumero === 1 ? 'quedó' : 'quedaron'} sin número. ${informe.motivos.join(' ')}`.trim(),
     })
   }
   if (informe.sinConfirmar > 0) {
@@ -110,7 +110,7 @@ export function InformeDeFacturacion({
   const queHacer = !pendientes
     ? null
     : corte === 'rangoAgotado'
-      ? 'Carga la resolución nueva en la pestaña «Resolución» y vuelve a apretar «Generar»: las que ya salieron no se duplican.'
+      ? 'Carga la resolución nueva en la pestaña «Resolución» y vuelve a apretar «Emitir»: las que ya salieron no se duplican.'
       : 'Vuelve a apretar «Generar»: la lista ya se actualizó y las que salieron no se duplican.'
 
   return (

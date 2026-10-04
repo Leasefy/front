@@ -178,6 +178,12 @@ export interface FacturaDelMes {
    */
   codigoNoEmitible?: CodigoNoEmitible | null
   /**
+   * La factura del canon sale por mandato a nombre del propietario
+   * (`por-mandato.ts` del back). QA-FACT-PROF: con él la fila lleva a su ficha
+   * cuando le falta el tipo de documento. Opcional: un back anterior no lo manda.
+   */
+  mandato?: { porMandato: boolean; mandanteId: string | null; mandanteNombre: string | null } | null
+  /**
    * 🔴 Copropiedad (Nico, 03-10): la parte de ESTE copropietario en puntos
    * básicos (7000 = 70 %). Sólo en la comisión de una copropiedad; `null` con
    * un solo dueño; ausente con un back anterior.
@@ -246,6 +252,8 @@ export type CodigoNoEmitible =
   | 'ANTES_DE_LA_FECHA_DE_CARTERA'
   | 'COPROPIEDAD_SIN_MIGRACION'
   | 'GIRO_SIN_PAGAR'
+  /** QA-FACT-PROF (04-10): la factura por mandato cuyo propietario no tiene tipo de documento. */
+  | 'MANDANTE_SIN_TIPO_DE_DOCUMENTO'
 
 export interface ContratoOmitido {
   contractId: string

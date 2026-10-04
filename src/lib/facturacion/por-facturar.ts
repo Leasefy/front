@@ -137,9 +137,20 @@ export function motivoCorto(f: FacturaDelMes): string {
       return 'Revisa las participaciones'
     case 'COPROPIEDAD_SIN_MIGRACION':
       return 'Falta una actualización'
+    case 'MANDANTE_SIN_TIPO_DE_DOCUMENTO':
+      return 'Falta el tipo de documento del propietario'
     default:
       return 'Todavía no'
   }
+}
+
+/**
+ * QA-FACT-PROF (04-10): la ficha del propietario a cuyo nombre sale la factura
+ * por mandato, para completarle el tipo de documento. `null` sin mandante.
+ */
+export function rutaDelMandante(f: Pick<FacturaDelMes, 'mandato'>): string | null {
+  const id = f.mandato?.mandanteId
+  return id ? `/panel/inmobiliaria/propietarios/${id}` : null
 }
 
 /** La ruta del contrato, en la sección del escenario tributario. */
@@ -246,9 +257,13 @@ export function numeroDespuesDe(siguiente: string | null, cuantos: number): stri
 
 /** «LABQA-2» o «LABQA-2 a LABQA-31». */
 export function numerosQueSalen(
-  resolucion: Pick<EstadoDeLaResolucion, 'siguiente'> | null,
-  cuantos: number,
+  resolucion: (Pick<EstadoDeLaResolucion, 'siguiente'> & { disponibles?: number }) | null,
+  pedidas: number,
 ): string | null {
+  // QA-FACT-PROF (04-10): nunca se promete un número fuera del rango («de la
+  // FPA-1 a la FPA-3» con sólo 2 disponibles): se nombran los que alcanzan.
+  const cuantos =
+    typeof resolucion?.disponibles === 'number' ? Math.min(pedidas, resolucion.disponibles) : pedidas
   if (!resolucion?.siguiente || cuantos <= 0) return null
   if (cuantos === 1) return resolucion.siguiente
   const ultimo = numeroDespuesDe(resolucion.siguiente, cuantos)

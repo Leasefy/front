@@ -13,8 +13,10 @@ import {
   estadoDeLaFila,
   faltaEnLaBase,
   moraDelMes,
+  motivoCorto,
   numerosQueSalen,
   porQueNoSeEmite,
+  rutaDelMandante,
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
@@ -181,5 +183,20 @@ describe('una factura emitida y anulada con una nota crédito', () => {
     expect(
       estadoDeLaFila(fila({ estado: 'EMITIDA', numero: 1, saldadaPorNota: null } as Partial<FacturaDelMes>)),
     ).toBe('emitida')
+  })
+})
+
+// QA-FACT-PROF (04-10-2026)
+describe('QA-FACT-PROF · numeración prometida y mandante sin tipo de documento', () => {
+  it('🔴 no promete números fuera del rango: con 2 disponibles y 3 marcadas nombra FPA-1 a FPA-2', () => {
+    expect(numerosQueSalen({ siguiente: 'FPA-1', disponibles: 2 }, 3)).toBe('FPA-1 a FPA-2')
+    expect(numerosQueSalen({ siguiente: 'FPA-1', disponibles: 1 }, 3)).toBe('FPA-1')
+    expect(numerosQueSalen({ siguiente: 'FPA-1' }, 3)).toBe('FPA-1 a FPA-3')
+  })
+  it('la fila del mandante sin tipo de documento lo dice corto y lleva a su ficha', () => {
+    const f = { codigoNoEmitible: 'MANDANTE_SIN_TIPO_DE_DOCUMENTO', mandato: { porMandato: true, mandanteId: 'p-4', mandanteNombre: 'X' } } as never
+    expect(motivoCorto(f)).toBe('Falta el tipo de documento del propietario')
+    expect(rutaDelMandante(f)).toBe('/panel/inmobiliaria/propietarios/p-4')
+    expect(rutaDelMandante({ mandato: null } as never)).toBeNull()
   })
 })

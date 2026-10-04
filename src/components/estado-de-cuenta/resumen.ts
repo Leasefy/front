@@ -137,7 +137,26 @@ export function resumirElCliente(
     : [];
 
   const masVieja = vencidas[0] ? señalar(vencidas[0].fila, vencidas[0].contrato) : null;
-  const proxima = futuras[0] ? señalar(futuras[0].fila, futuras[0].contrato) : null;
+  /*
+   * 🔴 P-16 (QA-PROP, back 5731a4e2): del lado del PROPIETARIO la próxima es la
+   * suma del próximo mes de TODOS sus contratos, y la manda el back
+   * (`doc.proximaCuota`): tomar la primera fila daba la de UN contrato
+   * («$1.585.800» contra la suma). Ausente (inquilino, back anterior): la
+   * primera fila que no ha vencido, como siempre.
+   */
+  const proxima =
+    doc.proximaCuota !== undefined
+      ? doc.proximaCuota
+        ? {
+            fecha: doc.proximaCuota.fecha.slice(0, 10),
+            valor: doc.proximaCuota.monto,
+            concepto: futuras[0]?.fila.concepto ?? '',
+            contrato: doc.proximaCuota.contratos === 1 ? (futuras[0]?.contrato ?? '') : '',
+          }
+        : null
+      : futuras[0]
+        ? señalar(futuras[0].fila, futuras[0].contrato)
+        : null;
 
   return {
     cancelado: doc.totales.cancelado,

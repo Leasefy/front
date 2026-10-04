@@ -27,6 +27,7 @@ import type {
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
+import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-defecto';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
@@ -131,6 +132,11 @@ export function mapBackendContract(bc: BackendContract): Contract {
     motivoDeTerminacion: bc.motivoDeTerminacion ?? null,
     notaDeTerminacion: bc.notaDeTerminacion ?? null,
     finPactadoOriginal: bc.finPactadoOriginal ?? null,
+    // QA-CONT (back ff282197). Passthrough: `undefined` = un back anterior, y
+    // la pantalla cae a lo que ya calculaba.
+    estadoParaMostrar: bc.estadoParaMostrar,
+    reglaDeCobro: bc.reglaDeCobro,
+    depositoDelContrato: bc.depositoDelContrato,
     // `null` y ausente se tratan igual a propósito: los dos significan «no hay
     // referencia propia», y quien la muestra se cae al consecutivo.
     referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,
@@ -628,6 +634,15 @@ export const contractsApi = {
         desdeFila,
       });
     },
+  },
+
+  /**
+   * GET /contracts/valores-por-defecto?inicio= — con qué arranca «Nuevo
+   * contrato»: los de la inmobiliaria (QA-CONT C-13, back ff282197).
+   */
+  async valoresPorDefecto(inicio?: string): Promise<ValoresPorDefectoDelContrato> {
+    const consulta = inicio ? `?inicio=${encodeURIComponent(inicio)}` : '';
+    return apiClient.get<ValoresPorDefectoDelContrato>(`/contracts/valores-por-defecto${consulta}`);
   },
 
   async create(dto: CreateContractDto): Promise<Contract> {

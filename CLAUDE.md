@@ -621,6 +621,29 @@ Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente
   cruzado (`resolucion/sugerencia`), anular sólo el administrador. Documento soporte: registrar al proveedor ahí mismo.
 - **Quién entra**: `PageGuard roles=[ADMIN, CONTADOR] seccion="Facturación"`; «Hoy» filtra con `lib/nav/se-ve-el-enlace.ts`.
 
+## Seguimiento de Propietarios, Contratos e Inquilinos (SEGUIMIENTO-FRONT, 03-10-2026; back 5731a4e2, ff282197, 2a681c93)
+
+- 🔴 **`Propietario.pendingBalance` CAMBIÓ de significado**: ya no es lo generado en Dispersiones sino el GIRO ATRASADO (vencido
+  y sin girar, la fuente de su estado de cuenta), con `girosVencidos`/`giroVencidoDesde`; lo generado va en `generadoSinGirar`.
+  Se lee con `lib/propietarios/giros-del-propietario.ts` (lista, tarjetas, ficha, KPI, Excel). Rótulo: «Giro atrasado».
+- **Ficha del propietario**: «Editar» abre el MISMO cajón que «Nuevo» (`CajonDelFormularioDelPropietario`, compartido con la
+  lista); `?cambiarCuenta=1` abre «Cambiar cuenta» una vez y se quita de la URL; el NIT con su DV (`documento-con-dv.ts`, sobre
+  `digitoDeVerificacion`); en copropiedad cada tarjeta dice SU parte (`inmuebles[]`). P-16: la próxima cuota del propietario es
+  `doc.proximaCuota` (suma de sus contratos), no la primera fila. «Hacer principal» en un empate (`consignacionesApi.elegirPrincipal`,
+  sólo ADMIN/CONTADOR); el chip «Principal» va en `propietario.id`, no en el primero de la lista.
+- **Contratos**: «Nuevo contrato» toma el prorrateo, el plazo y el fin de `GET /contracts/valores-por-defecto`
+  (`lib/contratos/valores-por-defecto.ts`, dice de dónde sale); el estado de la LISTA lee `estadoParaMostrar.terminacionProgramada`
+  («Activo · Termina el 15 de dic»; la lista no trae `terminadoEn`); «Cuándo paga» = `reglaDeCobro.frase`; el depósito sólo si
+  `depositoDelContrato.aplica` (Nico: sólo comercial; en comercial sin valor, «Sin depósito pactado»). «Cambiar de inquilino»
+  (`CambioDeInquilino`, cajón, hoy o antes; el 409 `INQUILINO_SALIENTE_CON_DEUDA` se dice DENTRO del cajón). El correo del
+  inquilino nuevo del contrato manual es obligatorio (Nico, CR-14) y el botón del contrato sin cuenta es «Invitar al portal».
+- **Estado de cuenta**: el concepto del back nuevo cierra con el rango EN PALABRAS («Canon. Del 1 al 31 de octubre de 2026»,
+  «El 31 de octubre de 2026»); `filas.ts` lo lee además de la cola de Nui. CR-31 `plazoSinFijar`: aviso «sin días de plazo
+  fijados no corre interés» con «Fijar los días de plazo» (intereses del estado de cuenta y cajón del inquilino). CR-18: «Generar
+  cobros» dice los trimestrales cuyo mes va en la cuota de otro (`dentroDeOtraCuota`).
+- El «correo obligatorio» de Nuevo inquilino y del propietario sale de `terceros-sin-correo` con `cobros:view` y, sin él (el
+  asesor), de `exigeCorreoDelTercero` de `GET /inmobiliaria/agency` (`lib/terceros/correo-obligatorio.ts`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

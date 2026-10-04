@@ -380,8 +380,17 @@ export function CambioDeCuentaBancaria({
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   const seccion = useRef<HTMLElement>(null);
 
+  /*
+   * SEGUIMIENTO-FRONT: un pedido que llega ANTES de leer los cambios (la ficha
+   * abierta con `?cambiarCuenta=1`) se guarda y se atiende cuando llegan; antes
+   * se perdía, porque sin `datos` no se puede saber si ya hay uno en curso.
+   */
+  const pedidoAtendido = useRef(0);
   useEffect(() => {
-    if (!pedirCambio) return;
+    if (!pedirCambio || pedidoAtendido.current === pedirCambio) return;
+    // Sin leer todavía, espera; si la lectura falló, lleva a la sección (que lo dice).
+    if (!datos && !errorDeCarga) return;
+    pedidoAtendido.current = pedirCambio;
     const ultimoCambio = datos?.cambios[0] ?? null;
     const enCurso =
       ultimoCambio && (ultimoCambio.estado === 'PENDIENTE_CONFIRMACION' || ultimoCambio.estado === 'CONFIRMADO');
@@ -391,9 +400,10 @@ export function CambioDeCuentaBancaria({
     }
     seccion.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     seccion.current?.focus({ preventScroll: true });
-    // Sólo cuando llega un pedido nuevo: `datos` cambia solo con cada lectura.
+    // Un pedido nuevo, o los datos que faltaban para atender uno guardado
+    // (`pedidoAtendido` evita repetirlo con cada lectura).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pedirCambio]);
+  }, [pedirCambio, datos, errorDeCarga]);
 
   const cargar = useCallback(async () => {
     try {

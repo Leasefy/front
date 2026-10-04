@@ -43,7 +43,7 @@ import { ApiError } from '@/lib/api/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
-import { facturacionElectronicaService } from '@/lib/api/facturacion-electronica.service';
+import { leerCorreoObligatorio } from '@/lib/terceros/correo-obligatorio';
 import {
   documentoParaMostrar,
   errorDelDigitoDeVerificacion,
@@ -86,21 +86,18 @@ function useCorreoObligatorio(abierto: boolean): boolean | null {
   const puedeLeer = permisos ? permisos.canAccess('cobros', 'view') : false;
   const [exigido, setExigido] = useState<boolean | null>(null);
   useEffect(() => {
-    if (!abierto || !puedeLeer) return;
+    if (!abierto) return;
     let vivo = true;
-    facturacionElectronicaService
-      .tercerosSinCorreo('INQUILINO')
-      .then((r) => {
-        if (vivo) setExigido(r.exigido === true);
-      })
-      .catch(() => {
-        if (vivo) setExigido(null);
-      });
+    // SEGUIMIENTO-FRONT: con `cobros:view`, `terceros-sin-correo` como siempre;
+    // sin él (el asesor), `exigeCorreoDelTercero` de la agencia.
+    void leerCorreoObligatorio('INQUILINO', puedeLeer).then((r) => {
+      if (vivo) setExigido(r);
+    });
     return () => {
       vivo = false;
     };
   }, [abierto, puedeLeer]);
-  return puedeLeer ? exigido : null;
+  return exigido;
 }
 
 /** El formulario con los datos de una persona que ya existe (E-16). */

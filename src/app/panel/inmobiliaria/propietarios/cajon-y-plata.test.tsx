@@ -270,7 +270,8 @@ describe('P-21 — los KPI de plata a quien no la ve', () => {
     expect(host.textContent).not.toContain('$0');
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.upToDate');
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.noPending');
-    expect(host.textContent).toContain('Saldo pendiente');
+    // P-10 (SEGUIMIENTO-FRONT): el tile ahora se llama por lo que es, el giro atrasado.
+    expect(host.textContent).toContain('Giros atrasados');
     expect(host.textContent).toContain('inmobiliaria.propietario.table.sinAccesoALaPlata');
     // Y la tabla se entera para no pintar «$0» en cada fila.
     expect(tabla.plataOculta).toBe(true);

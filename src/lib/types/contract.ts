@@ -28,6 +28,59 @@ export type ContractStatus =
   | 'cancelled';                       // Cancelado - terminated early
 
 /**
+ * QA-CONT C-05/C-01 (back `contracts/estado-para-mostrar.ts`, commit ff282197):
+ * el estado que se muestra de un contrato, UNA regla para la lista, la ficha e
+ * Inquilinos. Espejo de `EstadoDelContratoParaMostrar`.
+ */
+export interface EstadoDelContratoDelBack {
+  estado: 'BORRADOR' | 'EN_FIRMA' | 'POR_EMPEZAR' | 'ACTIVO' | 'TERMINADO';
+  vigencia: 'VIGENTE' | 'POR_EMPEZAR' | 'TERMINADO' | 'SIN_VIGENCIA';
+  /** `AAAA-MM-DD`, sólo POR_EMPEZAR. */
+  empiezaEl: string | null;
+  /** `AAAA-MM-DD` del último día que rige. */
+  terminaEl: string | null;
+  porVencer: boolean;
+  vencidoSinRenovar: boolean;
+  /** C-01: la terminación con fecha futura; `null` sin ninguna. */
+  terminacionProgramada: {
+    /** `AAAA-MM-DD`: el último día que rige. */
+    fecha: string;
+    motivo: string | null;
+    motivoLegible: string | null;
+    nota: string | null;
+    finPactadoOriginal: string | null;
+  } | null;
+  /** La frase del back, con las fechas en palabras. */
+  leyenda: string;
+}
+
+/**
+ * QA-CONT C-07 (back `contracts/regla-de-cobro.ts`): cuándo se genera y vence
+ * la cuota. `paymentDay` viaja como LEGADO (`diaDePagoLegado`): no decide nada.
+ */
+export interface ReglaDeCobroDelBack {
+  modo: 'PRORRATEADO' | 'FECHA_A_FECHA';
+  /** 1 en prorrateado; el día de la cartera en fecha a fecha; `null` si no se sabe. */
+  venceElDia: number | null;
+  primeraCuotaVenceEl: string | null;
+  diasDePlazo: number;
+  origenDelPlazo: 'CONTRATO' | 'INMOBILIARIA';
+  moraDesdeElDia: number | null;
+  diaDePagoLegado: number | null;
+  diaDePagoAplica: false;
+  /** La frase lista para la ficha. */
+  frase: string;
+}
+
+/** QA-CONT CR-11 (back `contracts/deposito-del-contrato.ts`). */
+export interface DepositoDelContratoDelBack {
+  /** `true` en un inmueble comercial: ahí se pacta y se muestra. */
+  aplica: boolean;
+  /** El valor guardado; `null` si no hay. En vivienda, sólo uno viejo. */
+  valorCop: number | null;
+}
+
+/**
  * Tipo de rechazo cuando un tenant rechaza un contrato en PENDING_TENANT_SIGNATURE.
  * - DEFINITIVE: cierra el proceso, contrato → CANCELLED, application → CONTRACT_FAILED.
  * - MODIFICATIONS: pide cambios, contrato → REJECTED_PENDING_MODIFICATIONS, landlord debe editar.
@@ -501,6 +554,18 @@ export interface Contract {
   notaDeTerminacion?: string | null;
   /** Hasta cuándo se había pactado, antes de que la terminación moviera `endDate`. */
   finPactadoOriginal?: string | null;
+
+  /**
+   * 🔴 QA-CONT C-05/C-01 (back ff282197): el estado que se MUESTRA, con la
+   * terminación programada. Lo manda la lista y la ficha; la lista NO manda
+   * `terminadoEn`, así que «Activo · Termina el 31 oct» sólo se puede decir
+   * desde aquí. `undefined` = un back anterior.
+   */
+  estadoParaMostrar?: EstadoDelContratoDelBack;
+  /** 🔴 QA-CONT C-07: UNA regla de cuándo se genera y vence la cuota. Sólo la ficha. */
+  reglaDeCobro?: ReglaDeCobroDelBack;
+  /** 🔴 QA-CONT CR-11 (Nico: «Dejarlo sólo para comercial»): si el depósito aplica. Sólo la ficha. */
+  depositoDelContrato?: DepositoDelContratoDelBack;
 
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
   // Pueden venir '' cuando el backfill no encontró el dato original.

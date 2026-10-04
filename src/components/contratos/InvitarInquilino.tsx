@@ -89,7 +89,8 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
           data-testid="invitar-inquilino"
         >
           <PaperPlaneTilt className="w-4 h-4" />
-          Invitar al inquilino
+          {/* CR-14: el nombre con que lo nombra el 409 `INQUILINO_SIN_CUENTA` del back. */}
+          Invitar al portal
         </Button>
       ) : null}
       <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="invitar-inquilino-error">

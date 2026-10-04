@@ -68,6 +68,7 @@ import {
   type DeudaDelContrato,
 } from '@/lib/contratos/deuda-del-contrato';
 import { diasDePlazoQueRigen, ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
+import { depositoAplica, depositoParaMostrar } from '@/lib/contratos/deposito-del-contrato';
 import type { Vigencia } from '@/lib/contratos/vigencia';
 import {
   useCuentaDelContrato,
@@ -208,6 +209,13 @@ export function ArriendoDelContrato({
     fin: terminadoEn ? contract.finPactadoOriginal ?? contract.endDate : contract.endDate,
     hoy: terminadoEn && terminadoEn < hoy ? terminadoEn : hoy,
   });
+  /*
+   * QA-CONT C-01 (Nico: «con fecha futura el contrato sigue activo hasta esa
+   * fecha»): una terminación PROGRAMADA todavía no pasó. La línea decía
+   * «Terminó en el mes 10 de 12» sobre un arriendo que corre hasta el 15 dic;
+   * ahora va como en curso y dice «Termina el 15 dic 2026».
+   */
+  const terminaEl = terminadoEn && terminadoEn > hoy ? terminadoEn : null;
   const etapa = etapaDelArriendo(contract.status, vigencia, avance);
   const plazo = diasDePlazoQueRigen(contract, agencia);
   // Sólo donde hay plata en juego: un contrato que corre o que corrió.
@@ -231,7 +239,8 @@ export function ArriendoDelContrato({
         <LineaDelContrato
           avance={avance}
           vigencia={vigencia}
-          terminadoEn={terminadoEn}
+          terminadoEn={terminaEl ? null : terminadoEn}
+          terminaEl={terminaEl}
           className="lg:pr-8"
         />
 
@@ -251,19 +260,30 @@ export function ArriendoDelContrato({
               )}
             </dd>
           </div>
-          {/* Nico (03-10-2026): el depósito sólo existe en comercial, y ahí se ve. */}
-          {contract.usoInmueble === 'COMERCIAL' && (contract.deposit ?? 0) > 0 ? (
+          {/* Nico (03-10-2026, TAL CUAL): el depósito sólo existe en comercial, y
+              ahí se ve —también cuando no se pactó—; en vivienda, nada. Si
+              aplica lo dice el back (`depositoDelContrato`, por el tipo del
+              inmueble); un back anterior, el uso del contrato. */}
+          {depositoAplica(contract) ? (
             <div>
               <dt className="text-label uppercase tracking-wide text-fg-subtle">Depósito</dt>
-              <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
-                {formatCurrency(contract.deposit ?? 0)}
-              </dd>
+              {depositoParaMostrar(contract) !== null ? (
+                <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
+                  {formatCurrency(depositoParaMostrar(contract) ?? 0)}
+                </dd>
+              ) : (
+                <dd className="mt-1.5 text-body-sm text-fg-muted" data-testid="deposito-del-arriendo">
+                  Sin depósito pactado
+                </dd>
+              )}
             </div>
           ) : null}
           <div>
             <dt className="text-label uppercase tracking-wide text-fg-subtle">Cuándo paga</dt>
+            {/* C-07: UNA regla, la del back (`reglaDeCobro.frase`); un back
+                anterior, la que se armaba aquí. */}
             <dd className="mt-1.5 text-body-sm text-fg" data-testid="ritmo-de-pago">
-              {ritmoDePago(contract, agencia)}
+              {contract.reglaDeCobro?.frase ?? ritmoDePago(contract, agencia)}
             </dd>
           </div>
         </dl>
@@ -317,11 +337,14 @@ function LineaDelContrato({
   avance,
   vigencia,
   terminadoEn,
+  terminaEl = null,
   className,
 }: {
   avance: AvanceDelContrato;
   vigencia: Vigencia;
   terminadoEn: string | null;
+  /** C-01: el último día de una terminación programada (futura). */
+  terminaEl?: string | null;
   className?: string;
 }) {
   const reducirMovimiento = usePrefiereMenosMovimiento();
@@ -414,6 +437,8 @@ function LineaDelContrato({
           ? 'Último mes'
           : `${avance.mesesRestantes === 1 ? 'Queda' : 'Quedan'} ${meses(avance.mesesRestantes)}`;
   }
+  // C-01: con la terminación programada, lo que importa es cuándo termina.
+  if (terminaEl) aLaDerecha = `Termina el ${fechaLegible(terminaEl)}`;
 
   const enCurso = avance.tramo === 'EN_CURSO' && !terminadoEn;
   const valorTexto =
@@ -452,7 +477,7 @@ function LineaDelContrato({
         </span>
         <span className="text-right">
           <span className="block text-[11px] uppercase tracking-wide text-fg-subtle">
-            {terminadoEn ? 'Fin pactado' : 'Fin'}
+            {terminadoEn || terminaEl ? 'Fin pactado' : 'Fin'}
           </span>
           <span className="text-fg" data-testid="fecha-de-fin">
             {fechaLegible(avance.fin)}

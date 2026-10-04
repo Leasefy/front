@@ -2211,8 +2211,9 @@
       "totalProperties": "Total propiedades",
       "monthlyRevenue": "Canon mensual",
       "upToDate": "Al día",
-      "withBalance": "{{count}} con saldo",
-      "noPending": "Sin pendientes",
+      "withBalance": "{{count}} con giros atrasados",
+      "noPending": "Sin giros atrasados",
+      "generadoSinGirar": "{{monto}} generado en Dispersiones sin girar",
       "viewTable": "Tabla",
       "viewCards": "Tarjetas",
       "showing": "Mostrando",
@@ -2221,12 +2222,12 @@
       "card": {
         "property": "propiedad",
         "properties": "propiedades",
-        "pendingBadge": "Pendiente",
+        "pendingBadge": "Giro atrasado",
         "propertiesLabel": "Propiedades",
         "rented": "arrendadas",
         "rentedOne": "arrendada",
         "monthlyRent": "Canon mensual",
-        "pendingAbbr": "pend.",
+        "pendingAbbr": "atrasado",
         "sendEmail": "Enviar email",
         "call": "Llamar",
         "viewDetail": "Ver detalle"
@@ -2359,6 +2360,8 @@
         "propertiesCount": "propiedades",
         "propertiesCountUno": "propiedad",
         "copropiedadPct": "Copropiedad · {{pct}}",
+        "suParteAlMes": "su parte al mes",
+        "suParteDe": "su parte de {{canon}} al mes",
         "copiarCorreo": "Copiar el correo",
         "copiarTelefono": "Copiar el teléfono"
       }
@@ -5327,7 +5330,7 @@
         "properties": "Propiedades",
         "rented": "Arrendadas",
         "monthlyRent": "Canon mensual",
-        "pending": "Pendiente",
+        "pending": "Giro atrasado",
         "upToDate": "Al día",
         "consignedProperties": "Propiedades consignadas",
         "totalMonthlyRent": "Canon mensual total",
@@ -5336,7 +5339,7 @@
         "available": "disponibles",
         "noProperties": "Sin propiedades",
         "vsPrevMonth": "vs mes ant.",
-        "pendingBalance": "Pendiente de girar",
+        "pendingBalance": "Giro atrasado",
         "netToOwner": "Neto al propietario",
         "netToOwnerHint": "al mes, después de comisión",
         "ofTotalRented": "{{rentados}} de {{total}} arrendados",
@@ -5347,6 +5350,14 @@
         "nPropiedades": "{{n}} propiedades",
         "sinAccesoALaPlata": "Sin acceso a la plata"
       },
+      "giros": {
+        "uno": "1 giro vencido",
+        "varios": "{{n}} giros vencidos",
+        "unoDesde": "1 giro vencido desde el {{fecha}}",
+        "variosDesde": "{{n}} giros vencidos desde el {{fecha}}",
+        "vencidoDesde": "Vencido desde el {{fecha}}",
+        "generado": "{{monto}} generado en Dispersiones"
+      },
       "alertas": {
         "sinCuenta": {
           "titulo": "No tiene cuenta bancaria: no se le puede girar",
@@ -5355,8 +5366,14 @@
           "accion": "Cargar cuenta bancaria"
         },
         "pendienteDeGiro": {
-          "titulo": "Hay {{monto}} pendientes de girarle",
-          "detalle": "Son dispersiones ya generadas que todavía no se giraron. Se giran desde Dispersiones, con el extracto del mes.",
+          "titulo": "Tiene {{monto}} en giros atrasados",
+          "detalle": "Son cuotas suyas con el giro vencido y sin girar, las mismas de su estado de cuenta. Se giran desde Dispersiones, con el extracto del mes.",
+          "accion": "Ir a dispersiones",
+          "generado": "En Dispersiones ya hay {{monto}} generado y sin girar."
+        },
+        "generadoSinGirar": {
+          "titulo": "Hay {{monto}} generado en Dispersiones sin girar",
+          "detalle": "Son dispersiones ya generadas que todavía no salieron. No es un atraso: se giran desde Dispersiones, con el extracto del mes.",
           "accion": "Ir a dispersiones"
         },
         "sinArrendar": {
@@ -5373,13 +5390,13 @@
         "all": "Todos",
         "person": "Persona",
         "company": "Empresa",
-        "withPendingBalance": "Con saldo pendiente",
+        "withPendingBalance": "Con giros atrasados",
         "clear": "Limpiar",
         "of": "de",
         "owner": "Propietario",
         "properties": "Propiedades",
         "monthlyRent": "Canon mensual",
-        "pending": "Pendiente",
+        "pending": "Giro atrasado",
         "lastPayment": "Último pago",
         "rented": "arrendadas",
         "rentedOne": "arrendada",
@@ -12527,6 +12544,8 @@
       "interesesSinPagar": "Intereses de mora sin pagar: {{monto}}",
       "sinReglasDeMora": "La inmobiliaria no tiene reglas de mora: a lo que está en cartera no se le cobran intereses.",
       "configurarReglasDeMora": "Configurar las reglas de mora",
+      "plazoSinFijar": "Tu inmobiliaria no ha fijado sus días de plazo (sugerido 5): a lo que está en cartera no se le cobra interés hasta que los fije.",
+      "fijarPlazo": "Fijar los días de plazo",
       "editarDatos": "Editar datos",
       "sinCuentaDelPortal": "Sin cuenta en el portal",
       "sinCuentaDelPortalPorQue": "Todavía no tiene cuenta del portal, así que no hay dónde escribirle. La cuenta se crea desde su contrato.",
@@ -12976,6 +12995,8 @@
     "sinReglasDeMora": "La inmobiliaria no tiene reglas de mora activas: {{cuotas}} en mora sin intereses.",
     "sinInteresPorOtroMotivo": "{{cuotas}} en mora sin intereses. {{motivo}}",
     "configurarReglas": "Configurar las reglas de mora",
+    "sinPlazoFijado": "{{cuotas}} en mora sin intereses: tu inmobiliaria no ha fijado sus días de plazo (sugerido 5) y, mientras no los fije, no corre interés.",
+    "fijarPlazo": "Fijar los días de plazo",
     "descargarPDF": "Descargar PDF",
     "imprimir": "Imprimir",
     "generando": "Armando el PDF…",

@@ -305,12 +305,17 @@ export function AdministracionDelContrato({
         <Fila
           etiqueta="Día de pago"
           valor={(() => {
+            // El back ya resolvió la regla (`reglaDeCobro`, ff282197): vence el
+            // día `venceElDia` y el pactado viaja como legado. Un back
+            // anterior: la misma cuenta, hecha aquí.
+            const regla = contract.reglaDeCobro;
             const diaDeCartera = Number((contract.fechaDeCartera ?? contract.startDate ?? '').slice(8, 10)) || null;
-            const queRige = contract.prorratearPrimerMes ? 1 : diaDeCartera;
-            if (!queRige) return contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null;
+            const queRige = regla ? regla.venceElDia : contract.prorratearPrimerMes ? 1 : diaDeCartera;
+            const pactado = regla ? regla.diaDePagoLegado : contract.paymentDueDay;
+            if (!queRige) return pactado ? `Día ${pactado}` : null;
             const referencia =
-              contract.paymentDueDay && contract.paymentDueDay !== queRige
-                ? ` (el contrato dice el ${contract.paymentDueDay}: es sólo referencia)`
+              pactado && pactado !== queRige
+                ? ` (el contrato dice el ${pactado}: es sólo referencia)`
                 : '';
             return `Día ${queRige}${referencia}`;
           })()}

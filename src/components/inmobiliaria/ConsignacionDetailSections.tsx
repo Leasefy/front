@@ -171,6 +171,12 @@ interface PropietarioSectionProps {
   onCambiar?: () => void;
   /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
   rutaDeOrigen?: string;
+  /**
+   * QA-PROP P-03 (seguimiento): en un EMPATE de participación (50/50), elegir
+   * quién queda como principal (`PUT /consignaciones/:id/principal`). Sólo el
+   * administrador o el contador: sin esto no se ofrece.
+   */
+  onElegirPrincipal?: (propietarioId: string) => Promise<void>;
 }
 
 export function PropietarioSection({
@@ -178,11 +184,40 @@ export function PropietarioSection({
   copropietarios,
   onCambiar,
   rutaDeOrigen,
+  onElegirPrincipal,
 }: PropietarioSectionProps) {
   const { t } = useI18n();
   // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
   // del nombre es ruido: no informa nada que no se supiera.
   const variosDuenos = (copropietarios?.length ?? 0) > 1;
+  /*
+   * P-03 (seguimiento): el principal es el de MAYOR participación; en un empate
+   * se queda el que ya estaba, y un administrador o el contador puede elegir
+   * a otro de los empatados. Un 30 % nunca puede ser principal de un 70 %.
+   */
+  const mayorParticipacion = Math.max(0, ...(copropietarios ?? []).map((c) => c.participacionBps));
+  const empatados = (copropietarios ?? []).filter((c) => c.participacionBps === mayorParticipacion);
+  const principalEnLaLista = (copropietarios ?? []).some((c) => c.propietarioId === propietario?.id);
+  const [eligiendo, setEligiendo] = useState<string | null>(null);
+  const elegirPrincipal = async (c: Copropietario) => {
+    if (!onElegirPrincipal || eligiendo) return;
+    setEligiendo(c.propietarioId);
+    try {
+      await onElegirPrincipal(c.propietarioId);
+      toast.success(`Ahora el propietario principal es ${c.propietario?.name ?? 'el que elegiste'}.`, {
+        description: 'Las participaciones no cambian: sólo quién figura como principal.',
+      });
+    } catch (e) {
+      toast.error('No se cambió el propietario principal.', {
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'elegir el propietario principal',
+        }),
+      });
+    } finally {
+      setEligiendo(null);
+    }
+  };
   /*
    * La cuenta que acaba de crear el botón «Invitar». Vive acá y no en el
    * padre para que el mensaje aparezca en el acto: recargar la ficha entera
@@ -285,7 +320,11 @@ export function PropietarioSection({
               >
                 <span className="flex min-w-0 items-center gap-2 text-sm text-fg">
                   <span className="truncate">{c.propietario?.name ?? c.propietarioId}</span>
-                  {i === 0 && (
+                  {/* El chip va en EL principal (`propietario`), no en el primero de
+                      la lista: en un empate 50/50 el orden no dice quién es
+                      (SEGUIMIENTO-FRONT, P-03). Si el principal no está en la
+                      lista (dato raro), el primero, como antes. */}
+                  {(principalEnLaLista ? c.propietarioId === propietario.id : i === 0) && (
                     <span
                       className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
                       data-testid="copropietario-principal-chip"
@@ -294,8 +333,27 @@ export function PropietarioSection({
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-fg">
-                  {formatParticipacion(c.participacionBps)}
+                <span className="flex shrink-0 items-center gap-3">
+                  {onElegirPrincipal &&
+                    empatados.length > 1 &&
+                    c.participacionBps === mayorParticipacion &&
+                    c.propietarioId !== propietario.id && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        hideArrow
+                        onClick={() => void elegirPrincipal(c)}
+                        disabled={eligiendo !== null}
+                        isLoading={eligiendo === c.propietarioId}
+                        className="h-auto px-0 text-caption"
+                        data-testid="hacer-principal"
+                      >
+                        Hacer principal
+                      </Button>
+                    )}
+                  <span className="font-mono text-sm tabular-nums text-fg">
+                    {formatParticipacion(c.participacionBps)}
+                  </span>
                 </span>
               </div>
             ))}

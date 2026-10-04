@@ -11,6 +11,8 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
 import { plataOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+// P-06: un NIT con su dígito de verificación.
+import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 
 interface PropietarioCardProps {
   propietario: Propietario;
@@ -112,7 +114,7 @@ export function PropietarioCard({
             </h3>
             <p className="text-sm text-muted-foreground">
               {/* P-08: «Pasaporte: AB998877», no «PASSPORT: AB998877». */}
-              {tipoDeDocumentoEnPalabras(t, propietario.documentType) ?? 'Documento'}: {documentoParaMostrar(propietario.documentNumber)}
+              {tipoDeDocumentoEnPalabras(t, propietario.documentType) ?? 'Documento'}: {documentoParaMostrar(documentoDelPropietarioConDv(propietario))}
             </p>
             <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-1 flex" />
           </div>

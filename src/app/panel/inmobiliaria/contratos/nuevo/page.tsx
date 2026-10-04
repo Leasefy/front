@@ -37,6 +37,11 @@ import { ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { AgenciaConTerminos } from '@/lib/contratos/terminos-por-defecto';
 import { terminosPorDefectoDeLaAgencia } from '@/lib/contratos/terminos-por-defecto';
+import {
+  porQueSeProponeElProrrateo,
+  terminosConLosValoresDelBack,
+  type ValoresPorDefectoDelContrato,
+} from '@/lib/contratos/valores-por-defecto';
 import { usoPorElTipo } from '@/lib/contratos/uso-del-inmueble';
 import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
 import {
@@ -369,9 +374,36 @@ function NuevoContratoContent() {
       vivo = false;
     };
   }, []);
-  const porDefecto = useMemo(() => terminosPorDefectoDeLaAgencia(agenciaConTerminos), [agenciaConTerminos]);
+  /*
+   * SEGUIMIENTO-FRONT (C-13, back ff282197): el prorrateo, los días de plazo y
+   * el fin sugerido salen de `GET /contracts/valores-por-defecto` — los de la
+   * inmobiliaria resueltos por el back—. `GET /inmobiliaria/agency` no publica
+   * el prorrateo, así que el formulario abría «No» en una inmobiliaria que
+   * prorratea. Si la ruta falla (un back anterior), queda lo de la agencia.
+   */
+  const [valoresDelBack, setValoresDelBack] = useState<ValoresPorDefectoDelContrato | null>(null);
+  const inicioDeLosValores = useRef(form.startDate);
+  useEffect(() => {
+    let vivo = true;
+    // Dentro de una promesa (como la agencia): si el servicio no está —un doble
+    // de prueba, un back anterior—, el error queda en el `catch`.
+    Promise.resolve()
+      .then(() => contractsApi.valoresPorDefecto(inicioDeLosValores.current || undefined))
+      .then((v) => {
+        if (vivo && v) setValoresDelBack(v);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const porDefecto = useMemo(
+    () => terminosConLosValoresDelBack(terminosPorDefectoDeLaAgencia(agenciaConTerminos), valoresDelBack),
+    [agenciaConTerminos, valoresDelBack],
+  );
   const tocados = useRef<Set<keyof FormState>>(new Set());
   const porDefectoAplicado = useRef(false);
+  const valoresAplicados = useRef(false);
   useEffect(() => {
     if (!porDefecto || porDefectoAplicado.current) return;
     porDefectoAplicado.current = true;
@@ -382,11 +414,28 @@ function NuevoContratoContent() {
           ? String(porDefecto.diaDePago)
           : f.paymentDay,
       prorratearPrimerMes:
-        porDefecto.prorratear !== null && !tocados.current.has('prorratearPrimerMes')
+        porDefecto.prorratear !== null && !tocados.current.has('prorratearPrimerMes') && !valoresAplicados.current
           ? porDefecto.prorratear
           : f.prorratearPrimerMes,
     }));
   }, [porDefecto]);
+  useEffect(() => {
+    if (!valoresDelBack || valoresAplicados.current) return;
+    valoresAplicados.current = true;
+    setForm((f) => ({
+      ...f,
+      prorratearPrimerMes: tocados.current.has('prorratearPrimerMes') ? f.prorratearPrimerMes : valoresDelBack.prorratear,
+      // El fin que sugiere el back para el inicio que se le preguntó, mientras
+      // nadie haya tocado ni el inicio ni el fin (C-13: inicio + 12 meses − 1 día).
+      endDate:
+        valoresDelBack.finSugerido &&
+        !tocados.current.has('endDate') &&
+        f.startDate === inicioDeLosValores.current &&
+        f.endDate === finPorDefectoISO(f.startDate)
+          ? valoresDelBack.finSugerido
+          : f.endDate,
+    }));
+  }, [valoresDelBack]);
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     tocados.current.add(key);
@@ -674,6 +723,12 @@ function NuevoContratoContent() {
         });
         if (creado.inquilino.invitado) {
           toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
+        } else if (creado.inquilino.userId === null) {
+          // QA-CONT CR-14 (back 2a681c93): el borrador nace SIN la cuenta del
+          // inquilino; para enviarlo a firmar hay que invitarlo desde el contrato.
+          toast.success('Contrato creado como borrador.', {
+            description: 'El inquilino todavía no tiene cuenta en el portal: invítalo desde el contrato («Invitar al portal») antes de enviarlo a firmar.',
+          });
         } else {
           toast.success('Contrato creado.');
         }
@@ -1250,6 +1305,12 @@ function NuevoContratoContent() {
               <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
                 {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
+              {/* C-13: de dónde sale lo que se propone (mientras nadie lo cambie). */}
+              {valoresDelBack && form.prorratearPrimerMes === valoresDelBack.prorratear ? (
+                <p className="text-caption text-fg-subtle" data-testid="origen-del-prorrateo">
+                  {porQueSeProponeElProrrateo(valoresDelBack)}
+                </p>
+              ) : null}
             </div>
             <Switch
               id="prorratear-primer-mes"

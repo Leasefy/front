@@ -255,7 +255,19 @@ export interface InteresesDelContrato {
    * Cuotas en mora que NO llevan interés, y por qué. `null` cuando no hay
    * ninguna. Un cero sin esto se leería «no hay mora».
    */
-  sinInteres: { cuotas: number; motivo: string; sinReglas: boolean } | null;
+  sinInteres: {
+    cuotas: number;
+    motivo: string;
+    sinReglas: boolean;
+    /** QA-CONT CR-31 (J-13): el motivo es que la inmobiliaria no fijó sus días de plazo. Ausente en un back anterior. */
+    plazoSinFijar?: boolean;
+  } | null;
+  /**
+   * 🔴 QA-CONT CR-31 (Nico, J-13): la inmobiliaria no ha fijado sus días de
+   * plazo, así que NO corre interés de mora en este contrato (con o sin
+   * cartera). Ausente = un back anterior (se lee como `false`).
+   */
+  plazoSinFijar?: boolean;
 }
 
 export interface TotalesDeInteres {
@@ -266,6 +278,8 @@ export interface TotalesDeInteres {
   restaPorPagarConIntereses: number;
   /** Algún contrato tiene mora sin interés porque la agencia no tiene reglas. */
   sinReglas: boolean;
+  /** QA-CONT CR-31: la inmobiliaria no fijó su plazo: no corre interés. Ausente en un back anterior. */
+  plazoSinFijar?: boolean;
 }
 
 export interface ClienteDelEstadoDeCuenta {
@@ -310,6 +324,14 @@ export interface EstadoDeCuenta {
   intereses?: TotalesDeInteres | null;
   /** 🔴 D11: la deuda subrogada de todos los contratos. Ausente si no hay. */
   subrogacion?: Subrogacion | null;
+  /**
+   * 🔴 Sólo del PROPIETARIO (QA-PROP P-16, back 5731a4e2): lo próximo que se le
+   * gira, la suma del próximo mes de TODOS sus contratos (su parte) con el
+   * vencimiento del giro. La misma cuenta que `proximaCuota` del resumen de su
+   * ficha: la pantalla la lee de aquí en vez de tomar la primera fila. `null`
+   * = nada por vencer; ausente del lado del inquilino (o un back anterior).
+   */
+  proximaCuota?: { fecha: string; monto: number; contratos: number } | null;
 }
 
 /**
@@ -384,7 +406,8 @@ export interface ResumenDelEstadoDeCuenta {
   restaPorPagar: number;
   /** Lo vencido y no pagado. */
   pendiente: number;
-  proximaCuota: { fecha: string; monto: number } | null;
+  /** Del lado del PROPIETARIO (P-16) es la suma del próximo mes de todos sus contratos; `contratos` dice de cuántos. */
+  proximaCuota: { fecha: string; monto: number; contratos?: number } | null;
   /** Días de mora de la cuota vencida más vieja y cuánto suma lo vencido. */
   enMora: { dias: number; monto: number } | null;
   contratos: number;
@@ -396,6 +419,8 @@ export interface ResumenDelEstadoDeCuenta {
   interesDeMora?: number;
   /** `true` cuando la inmobiliaria no tiene reglas de mora: lo vencido no causa interés. */
   sinReglasDeMora?: boolean;
+  /** QA-CONT CR-31: la inmobiliaria no fijó sus días de plazo: `interesDeMora` es 0 por eso. Ausente en un back anterior. */
+  plazoSinFijar?: boolean;
 }
 
 /*

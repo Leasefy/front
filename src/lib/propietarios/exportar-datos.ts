@@ -73,7 +73,10 @@ export function armarHojasDelPropietario(
     ['Inmuebles consignados', propietario.propertyCount],
     ['Arrendados', propietario.activeLeases],
     ['Canon mensual total', propietario.totalMonthlyRent],
-    ['Saldo pendiente', propietario.pendingBalance],
+    // 🔴 P-10 (back 5731a4e2): `pendingBalance` ya es el giro atrasado, no lo
+    // generado en Dispersiones; lo generado va en su propia fila.
+    ['Giro atrasado (vencido sin girar)', propietario.pendingBalance],
+    ['Generado en Dispersiones sin girar', propietario.generadoSinGirar ?? ''],
     ['Notas', propietario.notes ?? ''],
     ['Creado', propietario.createdAt.slice(0, 10)],
   ];
@@ -247,7 +250,9 @@ export function armarHojaDeLaLista(
       'Inmuebles',
       'Arrendados',
       'Canon mensual total',
-      'Saldo pendiente',
+      // P-10: el giro atrasado y, aparte, lo generado en Dispersiones.
+      'Giro atrasado (vencido sin girar)',
+      'Generado sin girar',
       'Banco',
       'Tipo de cuenta',
       // 🔴 23-09 (datos personales): la LISTA ya no trae el número de cuenta,
@@ -277,6 +282,7 @@ export function armarHojaDeLaLista(
         p.activeLeases,
         sinPlata ? SIN_ACCESO_A_LA_PLATA : p.totalMonthlyRent,
         sinPlata ? SIN_ACCESO_A_LA_PLATA : p.pendingBalance,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : (p.generadoSinGirar ?? ''),
         tieneCuenta ? nombreDelBanco(cuenta) : '',
         tieneCuenta ? (cuenta.accountType === 'savings' ? 'Ahorros' : 'Corriente') : '',
         tieneCuenta ? `•••• ${ultimos4}` : '',

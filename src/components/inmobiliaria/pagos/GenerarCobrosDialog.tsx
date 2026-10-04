@@ -215,7 +215,8 @@ export function GenerarCobrosDialog({
       const omitidos = r?.omitidosPorContratoVencido
       // Sólo se queda abierto si hay algo que CONTAR: vencidos que quedaron
       // fuera, o que no se pudo verificar si los había.
-      if (omitidos && (omitidos.cuantos > 0 || !omitidos.consultado)) {
+      // CR-18: o inmuebles que se cobran por trimestre y este mes va en otra cuota.
+      if ((omitidos && (omitidos.cuantos > 0 || !omitidos.consultado)) || (r?.dentroDeOtraCuota?.cuantos ?? 0) > 0) {
         setResultado(r)
       } else {
         onOpenChange(false)
@@ -299,6 +300,14 @@ export function GenerarCobrosDialog({
         {omitidos ? (
           <Appear distance="xs">
           <OmitidosPorVencido omitidos={omitidos} />
+          {/* CR-18: los trimestrales cuyo mes va en la cuota de otro mes. */}
+          {(resultado?.dentroDeOtraCuota?.cuantos ?? 0) > 0 ? (
+            <p className="mt-3 text-body-sm text-fg-muted" data-testid="dentro-de-otra-cuota">
+              {resultado!.dentroDeOtraCuota!.cuantos === 1
+                ? `1 inmueble se cobra por trimestre y ${titulo} va en la cuota de otro mes: no se le generó cobro.`
+                : `${resultado!.dentroDeOtraCuota!.cuantos.toLocaleString('es-CO')} inmuebles se cobran por trimestre y ${titulo} va en la cuota de otro mes: no se les generó cobro.`}
+            </p>
+          ) : null}
           </Appear>
         ) : error && esUnRechazo(error) ? (
           <Banner variant="danger" role="alert" data-testid="generar-rechazo">

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import type { Consignacion, Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 
 interface PropietarioStatsProps {
   propietario: Propietario;
@@ -153,6 +154,15 @@ export function PropietarioStats({
   const plataOculta = propietario.plataOculta === true;
   const cuentaOculta = plataOculta || propietario.datosBancariosOcultos === true;
   const hasPendingBalance = !plataOculta && propietario.pendingBalance > 0;
+  /*
+   * 🔴 P-10 (back 5731a4e2): `pendingBalance` ya es el GIRO ATRASADO (vencido
+   * y sin girar, la misma fuente del estado de cuenta), con cuántas cuotas y
+   * desde cuándo; lo generado en Dispersiones viene aparte (`generadoSinGirar`).
+   * Antes la alerta decía «son dispersiones ya generadas» sobre este número.
+   */
+  const giros = girosDelPropietario(propietario);
+  const detalleDelGiro = detalleDelAtraso(giros, t);
+  const generado = giros.generadoSinGirar ?? 0;
   const occupancyRate = propietario.propertyCount > 0
     ? Math.round((propietario.activeLeases / propietario.propertyCount) * 100)
     : 0;
@@ -311,9 +321,11 @@ export function PropietarioStats({
           delta={
             plataOculta
               ? sinAcceso
-              : ultimoGiro
-                ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}`
-                : undefined
+              : detalleDelGiro
+                ? detalleDelGiro
+                : ultimoGiro
+                  ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}`
+                  : undefined
           }
           compact
         />
@@ -340,7 +352,29 @@ export function PropietarioStats({
           accion={{ label: t('inmobiliaria.propietario.alertas.pendienteDeGiro.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
           data-testid="alerta-pendiente-de-giro"
         >
-          {t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle')}
+          {[
+            detalleDelGiro ? `${detalleDelGiro}.` : null,
+            t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle'),
+            generado > 0
+              ? t('inmobiliaria.propietario.alertas.pendienteDeGiro.generado', { monto: formatCurrency(generado) })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        </AlertaAccionable>
+      )}
+
+      {/* P-10: sin giros atrasados pero con dispersiones generadas que no han
+          salido (el mes que todavía no vence, por ejemplo): se dice aparte y
+          con su nombre, sin llamarlo atraso. */}
+      {!plataOculta && !hasPendingBalance && generado > 0 && (
+        <AlertaAccionable
+          severidad="info"
+          titulo={t('inmobiliaria.propietario.alertas.generadoSinGirar.titulo', { monto: formatCurrency(generado) })}
+          accion={{ label: t('inmobiliaria.propietario.alertas.generadoSinGirar.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
+          data-testid="alerta-generado-sin-girar"
+        >
+          {t('inmobiliaria.propietario.alertas.generadoSinGirar.detalle')}
         </AlertaAccionable>
       )}
 

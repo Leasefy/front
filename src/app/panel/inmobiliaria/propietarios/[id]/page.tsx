@@ -3,7 +3,7 @@ import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useId, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
@@ -82,11 +82,13 @@ import {
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
-import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
+import type { PropietarioFormData, Consignacion, Dispersion, InmuebleDelPropietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency, formatParticipacion } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { CajonDelFormularioDelPropietario } from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
+import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
@@ -159,16 +161,36 @@ function Modal({
  * 🔴 P-22: a 390 px cortaba la dirección y el inquilino («David…»): el título
  * se parte en renglones y las cifras bajan de renglón cuando no caben.
  */
-function PropertyCard({ consignacion, propietarioId }: { consignacion: Consignacion; propietarioId: string }) {
+function PropertyCard({
+  consignacion,
+  propietarioId,
+  inmueble,
+}: {
+  consignacion: Consignacion;
+  propietarioId: string;
+  /**
+   * 🔴 P-02 (back 5731a4e2): el inmueble visto desde ESTE dueño — su %, si hay
+   * contrato vigente y SU parte del canon del contrato. Sin él (un back
+   * anterior, o la plata oculta), lo de siempre: el canon del mandato.
+   */
+  inmueble?: InmuebleDelPropietario | null;
+}) {
   const { t } = useI18n();
+  // Copropiedad: su parte del canon del contrato, con el entero al lado.
+  const suParteDelCanon =
+    inmueble && inmueble.participacionBps < 10_000 && inmueble.canonCop !== null ? inmueble : null;
+  // El canon que se cobra es el del CONTRATO vigente (P-01), si lo hay.
+  const canonDelContrato = inmueble?.arrendado ? inmueble.canonDelContratoCop : null;
   const direccionDistinta =
     !!consignacion.propertyAddress &&
     consignacion.propertyAddress.trim().toLowerCase() !== (consignacion.propertyTitle ?? '').trim().toLowerCase();
   // Con un solo dueño no se dice nada: el 100 % es lo normal.
   const suParte =
-    (consignacion.copropietarios?.length ?? 0) > 1
-      ? consignacion.copropietarios.find((c) => c.propietarioId === propietarioId)?.participacionBps ?? null
-      : null;
+    inmueble && inmueble.participacionBps < 10_000
+      ? inmueble.participacionBps
+      : (consignacion.copropietarios?.length ?? 0) > 1
+        ? consignacion.copropietarios.find((c) => c.propietarioId === propietarioId)?.participacionBps ?? null
+        : null;
 
   const statusColors = {
     available: 'bg-success-soft text-success',
@@ -247,14 +269,31 @@ function PropertyCard({ consignacion, propietarioId }: { consignacion: Consignac
               </div>
             ) : (
               <>
-                <div>
-                  <p className="text-base font-semibold tabular-nums text-foreground">
-                    {consignacion.canonPorConfirmar
-                      ? TEXTO_CANON_POR_CONFIRMAR
-                      : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
-                </div>
+                {suParteDelCanon ? (
+                  <div data-testid="su-parte-del-canon">
+                    <p className="text-base font-semibold tabular-nums text-foreground">
+                      {formatCurrency(suParteDelCanon.canonCop ?? 0)}
+                    </p>
+                    <p className="text-caption text-muted-foreground">
+                      {suParteDelCanon.canonDelContratoCop !== null
+                        ? t('inmobiliaria.propietarios.detail.suParteDe', {
+                            canon: formatCurrency(suParteDelCanon.canonDelContratoCop),
+                          })
+                        : t('inmobiliaria.propietarios.detail.suParteAlMes')}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-base font-semibold tabular-nums text-foreground">
+                      {canonDelContrato !== null && canonDelContrato !== undefined
+                        ? formatCurrency(canonDelContrato)
+                        : consignacion.canonPorConfirmar
+                          ? TEXTO_CANON_POR_CONFIRMAR
+                          : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
+                  </div>
+                )}
                 <div className="hidden h-8 w-px bg-border sm:block" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
@@ -436,6 +475,9 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
   const [errorAlEditar, setErrorAlEditar] = useState<ErrorAlGuardarPropietario | null>(null);
+  // «Editar» va en el CAJÓN de «Nuevo propietario» (Nico, 03-10): su pie manda el formulario por `form=`.
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const idDeLaEdicion = `propietario-editar-${useId().replace(/:/g, '')}`;
   /*
    * 🔴 P-24 (QA-PROP, 03-10): la invitación que NO salió. El back crea la cuenta
    * igual (y devuelve su id), así que el bloque «Invitar» desaparecía como si el
@@ -517,6 +559,29 @@ function PropietarioDetailContent() {
     errorCrudo: errorDispersiones,
     refetch: recargarDispersiones,
   } = useDispersiones({ propietarioId: id }, { skip: cargandoPermisos || !veLaPlata });
+
+  /*
+   * `?cambiarCuenta=1` (P-14): el enlace «Cambiar cuenta» del formulario de la
+   * LISTA trae aquí, porque el cambio de una cuenta que ya existe pasa por el
+   * flujo controlado de la ficha (certificación, confirmación del propietario,
+   * aprobación). Hasta hoy la ficha ignoraba el parámetro y no abría nada.
+   * Con la ficha leída y el permiso, se pide UNA vez y se quita de la URL (un
+   * «atrás» o un refresco no lo vuelven a abrir).
+   */
+  const cambioDeCuentaPedidoPorUrl = useRef(false);
+  const pideCambiarCuenta = searchParams.get('cambiarCuenta') === '1';
+  useEffect(() => {
+    if (!pideCambiarCuenta || cambioDeCuentaPedidoPorUrl.current) return;
+    if (!propietario || cargandoPermisos) return;
+    cambioDeCuentaPedidoPorUrl.current = true;
+    if (puedeEditar && veLaPlata && !propietario.datosBancariosOcultos) {
+      setPedirCambioDeCuenta((n) => n + 1);
+    }
+    const resto = new URLSearchParams(searchParams.toString());
+    resto.delete('cambiarCuenta');
+    const consulta = resto.toString();
+    router.replace(`${rutaDeEstaFicha}${consulta ? `?${consulta}` : ''}`, { scroll: false });
+  }, [pideCambiarCuenta, propietario, cargandoPermisos, puedeEditar, veLaPlata, searchParams, router, rutaDeEstaFicha]);
 
   // Mientras carga no es «no encontrado»: ese cartel salía un instante en
   // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
@@ -601,6 +666,7 @@ function PropietarioDetailContent() {
   // salía y nada se guardaba. Ahora pegan al back y la ficha se vuelve a leer.
   const handleEditSubmit = async (data: PropietarioFormData) => {
     setErrorAlEditar(null);
+    setGuardandoEdicion(true);
     try {
       const actualizado = await propietariosApi.update(propietario.id, data);
       setPropietario(actualizado);
@@ -611,6 +677,8 @@ function PropietarioDetailContent() {
       // No un toast que se va solo: «ese documento ya está cargado» va al lado
       // del documento y el diálogo se queda abierto con lo que escribiste.
       setErrorAlEditar(errorAlGuardarPropietario(error));
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -725,7 +793,8 @@ function PropietarioDetailContent() {
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
-                {documentoConTipo(propietario.documentType, propietario.documentNumber, ' ')}
+                {/* P-06: un NIT con su dígito de verificación («NIT 900555006-0»). */}
+                {documentoConTipo(propietario.documentType, documentoDelPropietarioConDv(propietario), ' ')}
               </span>
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                 {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}
@@ -1066,7 +1135,11 @@ function PropietarioDetailContent() {
                 <Stagger className="space-y-4">
                   {consignaciones.map((consignacion) => (
                     <StaggerItem key={consignacion.id}>
-                      <PropertyCard consignacion={consignacion} propietarioId={propietario.id} />
+                      <PropertyCard
+                        consignacion={consignacion}
+                        propietarioId={propietario.id}
+                        inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
+                      />
                     </StaggerItem>
                   ))}
                 </Stagger>
@@ -1156,23 +1229,21 @@ function PropietarioDetailContent() {
           sin permiso. Debajo de las pestañas: vale para todas. */}
       <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
-      {/* Edit Modal — el formulario trae sus propios botones (Cancelar /
-          Guardar) al final: `PropietarioForm` no se toca acá. */}
-      <Modal
-        open={showEditModal && puedeEditar}
-        onClose={cerrarEdicion}
-        title={t('inmobiliaria.propietarios.editOwner')}
-        size="lg"
+      {/* Editar — el MISMO cajón de «Nuevo propietario» y de «Editar» en la
+          lista (Nico, 03-10: el formulario del propietario va en un cajón, no
+          en un modal). Cabecera, cuerpo que se desplaza y pie fijo; lo que el
+          back dijo sin campo, arriba del cuerpo. «Cambiar cuenta» abre el
+          cambio controlado aquí mismo (P-14). */}
+      <CajonDelFormularioDelPropietario
+        abierto={showEditModal && puedeEditar}
+        onCerrar={cerrarEdicion}
+        titulo={t('inmobiliaria.propietarios.editOwner')}
+        descripcion={propietario.name}
+        aviso={errorAlEditar?.general}
+        idDelFormulario={idDeLaEdicion}
+        textoDelBoton={t('inmobiliaria.propietario.form.saveChanges')}
+        guardando={guardandoEdicion}
       >
-        {errorAlEditar?.general && (
-          <p
-            role="alert"
-            data-testid="aviso-en-el-dialogo"
-            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-          >
-            {errorAlEditar.general}
-          </p>
-        )}
         <PropietarioForm
           initialData={propietario}
           onSubmit={handleEditSubmit}
@@ -1180,8 +1251,14 @@ function PropietarioDetailContent() {
           mode="edit"
           serverError={errorAlEditar?.campo ?? null}
           serverErrors={errorAlEditar?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDeLaEdicion}
+          onCambiarCuenta={() => {
+            cerrarEdicion();
+            setPedirCambioDeCuenta((n) => n + 1);
+          }}
         />
-      </Modal>
+      </CajonDelFormularioDelPropietario>
 
       {/* Delete Modal — destructiva: dice qué se borra (la ficha entera; el
           back hace un `delete`, no lo archiva) y, si algo lo retiene, por qué

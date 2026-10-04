@@ -13,6 +13,8 @@ export const SIN_REGISTRAR = 'Sin registrar';
 const ETIQUETA_DEL_DATO: Record<string, string> = {
   documento: 'documento',
   tipoDocumento: 'tipo de documento',
+  // QA-PROP P-28 (back 5731a4e2): sin cuenta no se le puede girar.
+  cuentaBancaria: 'cuenta bancaria',
 };
 
 /** El número de documento listo para pintar: «Sin registrar» si no hay. */

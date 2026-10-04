@@ -33,12 +33,14 @@ import {
   CalendarX,
   ArrowsClockwise,
   ArrowsLeftRight,
+  UserSwitch,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { TerminarContrato } from '@/components/contratos/TerminarContrato';
 import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
 import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
 import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
+import { CambioDeInquilino } from '@/components/contratos/CambioDeInquilino';
 import { vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
 import { estadoParaMostrar } from '@/lib/contratos/estado-para-mostrar';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
@@ -187,6 +189,8 @@ function ContratoDetalleContent() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [terminarAbierto, setTerminarAbierto] = useState(false);
   const [cesionAbierta, setCesionAbierta] = useState(false);
+  // QA-CONT CR-06: «Cambiar de inquilino» (punto de quiebre, hoy o antes).
+  const [cambioDeInquilinoAbierto, setCambioDeInquilinoAbierto] = useState(false);
 
   /*
    * 🔴 Cómo está el contrato HOY, calculado y no guardado: un `active` cuya
@@ -536,6 +540,7 @@ function ContratoDetalleContent() {
               onCancelRequest: () => setIsCancelModalOpen(true),
               onTerminar: () => setTerminarAbierto(true),
               onCeder: () => setCesionAbierta(true),
+              onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
             })
           : {})}
       />
@@ -567,6 +572,14 @@ function ContratoDetalleContent() {
             abierto={cesionAbierta}
             onCerrar={() => setCesionAbierta(false)}
             onRegistrada={() => void refetch()}
+          />
+
+          <CambioDeInquilino
+            contractId={contract.id}
+            inquilinoActual={contract.tenantName || null}
+            abierto={cambioDeInquilinoAbierto}
+            onCerrar={() => setCambioDeInquilinoAbierto(false)}
+            onRegistrado={() => void refetch()}
           />
 
           <CancelContractModal
@@ -952,6 +965,7 @@ function decisionesDelContrato({
   onCancelRequest,
   onTerminar,
   onCeder,
+  onCambiarInquilino,
 }: {
   contract: { id: string; status: string; startDate?: string | null };
   isSubmitting: boolean;
@@ -968,6 +982,8 @@ function decisionesDelContrato({
   onCancelRequest: () => void;
   onTerminar: () => void;
   onCeder: () => void;
+  /** QA-CONT CR-06: abre «Cambiar de inquilino». Sin él, el botón no sale. */
+  onCambiarInquilino?: () => void;
 }): { aviso?: React.ReactNode; acciones?: React.ReactNode } {
   const status = contract.status as ContractStatus;
   const enVozBaja = 'h-auto gap-1.5 px-0 text-caption font-medium text-fg-muted hover:text-fg hover:no-underline';
@@ -982,6 +998,24 @@ function decisionesDelContrato({
       Cambiar de propietario
     </Button>
   );
+  /*
+   * QA-CONT CR-06: el inquilino también cambia sin que el contrato se acabe
+   * (cesión del arrendatario aceptada por el propietario). Mismo peso que
+   * «Cambiar de propietario»: pasa poco y no compite con «Terminar».
+   */
+  const cambioDeInquilino = onCambiarInquilino ? (
+    <Button
+      type="button"
+      variant="link"
+      hideArrow
+      onClick={onCambiarInquilino}
+      className={enVozBaja}
+      data-testid="abrir-cambio-de-inquilino"
+    >
+      <UserSwitch className="w-3.5 h-3.5" aria-hidden="true" />
+      Cambiar de inquilino
+    </Button>
+  ) : null;
   const terminar = (
     <Button type="button" variant="link" hideArrow onClick={onTerminar} className={enVozBaja} data-testid="abrir-terminar">
       <CalendarX className="w-3.5 h-3.5" aria-hidden="true" />
@@ -1147,7 +1181,12 @@ function decisionesDelContrato({
           secundaria={{ label: 'Terminar el arriendo', icon: CalendarX, onClick: onTerminar }}
         />
       ),
-      acciones: cesion,
+      acciones: (
+        <>
+          {cesion}
+          {cambioDeInquilino}
+        </>
+      ),
     };
   }
 
@@ -1163,6 +1202,7 @@ function decisionesDelContrato({
         <>
           {terminar}
           {cesion}
+          {cambioDeInquilino}
         </>
       ),
     };

@@ -120,6 +120,8 @@ import type { CobroStatus } from '@/lib/types/inmobiliaria';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 
 const NS = 'inquilinos.cajon';
+/** Donde la inmobiliaria fija sus días de plazo (CR-31), la ruta del aviso de la ficha del contrato. */
+const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
 
 /** Cuántos cobros caben antes de que la lista deje de leerse. El resto, en el contrato. */
 const TOPE_DE_COBROS = 12;
@@ -318,7 +320,14 @@ export function CuerpoDelCajon({
   const interesesSinPagar = cuentaConocida ? (cuenta.interesDeMora ?? 0) : 0;
   const alDiaConIntereses = deuda?.tipo === 'AL_DIA' && interesesSinPagar > 0;
   /* Y sin reglas de mora, a lo que está en cartera no se le causa interés: se dice (R-06). */
-  const sinReglasDeMora = cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
+  /*
+   * QA-CONT CR-31 (Nico, J-13): sin los días de plazo fijados no corre interés
+   * (`plazoSinFijar` del resumen). Va ANTES que «sin reglas de mora»: lo que
+   * falta es el plazo, y se arregla en otra pantalla.
+   */
+  const plazoSinFijar = cuentaConocida && cuenta.plazoSinFijar === true && deuda?.tipo === 'EN_CARTERA';
+  const sinReglasDeMora =
+    !plazoSinFijar && cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
   const enlaceAlEstadoDeCuenta = refDeCuenta
     ? `${rutaDelEstadoDeCuenta('inquilino', refDeCuenta)}?volver=${encodeURIComponent(
         '/panel/inmobiliaria/inquilinos',
@@ -541,6 +550,19 @@ export function CuerpoDelCajon({
                 /* Tiene arriendos pero ningún contrato responde por él: no se
                    sabe qué debe, y se dice en vez de pintar un cero. */
                 <Aviso texto={t(`${NS}.sinEstadoDeCuenta`)} />
+              ) : null}
+
+              {plazoSinFijar ? (
+                <p
+                  className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg"
+                  data-testid="inquilino-plazo-sin-fijar"
+                >
+                  <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 basis-[14rem]">{t(`${NS}.plazoSinFijar`)}</span>
+                  <Link href={RUTA_DEL_PLAZO} className="font-medium underline underline-offset-4">
+                    {t(`${NS}.fijarPlazo`)}
+                  </Link>
+                </p>
               ) : null}
 
               {sinReglasDeMora ? (

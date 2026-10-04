@@ -800,6 +800,20 @@ export const consignacionesApi = {
   },
 
   /**
+   * PUT /inmobiliaria/consignaciones/:id/principal — en un EMPATE de
+   * participación (copropiedad 50/50), quién queda como propietario principal
+   * (QA-PROP P-03, seguimiento). No cambia participaciones. Sólo administrador o
+   * contador (403 `SOLO_ADMINISTRADOR_O_CONTADOR`); 409
+   * `NO_TIENE_LA_MAYOR_PARTICIPACION` si el elegido no tiene la mayor.
+   */
+  async elegirPrincipal(
+    id: string,
+    propietarioId: string,
+  ): Promise<{ consignacionId: string; propietarioId: string; nombre: string; anterior: string; participacionBps: number; yaEra: boolean }> {
+    return apiClient.put(`${BASE}/consignaciones/${id}/principal`, { propietarioId });
+  },
+
+  /**
    * Asigna (o reasigna) el agente del mandato.
    *
    * Ruta dedicada, no `update`: el whitelist de `PUT /consignaciones/:id`
@@ -1145,6 +1159,15 @@ export interface ResultadoDeLaGeneracion {
     motivo?: string | null;
     cuantos: number;
     contratos: ConsignacionConContratoVencido[];
+  };
+  /**
+   * QA-CONT CR-18 (SEGUIMIENTO-BACK): los inmuebles cuyo contrato se cobra por
+   * trimestre y este mes va DENTRO de la cuota de otro mes (no se les genera
+   * cobro). Ausente en un back anterior.
+   */
+  dentroDeOtraCuota?: {
+    cuantos: number;
+    consignaciones: { consignacionId: string; mesDeLaCuota: string }[];
   };
 }
 

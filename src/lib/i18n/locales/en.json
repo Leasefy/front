@@ -2177,8 +2177,9 @@
       "totalProperties": "Total properties",
       "monthlyRevenue": "Monthly rent",
       "upToDate": "Up to date",
-      "withBalance": "{{count}} with balance",
-      "noPending": "No pending",
+      "withBalance": "{{count}} with overdue payouts",
+      "noPending": "No overdue payouts",
+      "generadoSinGirar": "{{monto}} generated in Disbursements, not paid out",
       "viewTable": "Table",
       "viewCards": "Cards",
       "showing": "Showing",
@@ -2187,12 +2188,12 @@
       "card": {
         "property": "property",
         "properties": "properties",
-        "pendingBadge": "Pending",
+        "pendingBadge": "Overdue payout",
         "propertiesLabel": "Properties",
         "rented": "rented",
         "rentedOne": "rented",
         "monthlyRent": "Monthly rent",
-        "pendingAbbr": "pend.",
+        "pendingAbbr": "overdue",
         "sendEmail": "Send email",
         "call": "Call",
         "viewDetail": "View detail"
@@ -2325,6 +2326,8 @@
         "propertiesCount": "properties",
         "propertiesCountUno": "property",
         "copropiedadPct": "Co-ownership · {{pct}}",
+        "suParteAlMes": "their share per month",
+        "suParteDe": "their share of {{canon}} per month",
         "copiarCorreo": "Copy the email",
         "copiarTelefono": "Copy the phone"
       }
@@ -5293,7 +5296,7 @@
         "properties": "Properties",
         "rented": "Rented",
         "monthlyRent": "Monthly rent",
-        "pending": "Pending",
+        "pending": "Overdue payout",
         "upToDate": "Up to date",
         "consignedProperties": "Consigned properties",
         "totalMonthlyRent": "Total monthly rent",
@@ -5302,7 +5305,7 @@
         "available": "available",
         "noProperties": "No properties",
         "vsPrevMonth": "vs prev. month",
-        "pendingBalance": "Pending payout",
+        "pendingBalance": "Overdue payout",
         "netToOwner": "Net to owner",
         "netToOwnerHint": "per month, after commission",
         "ofTotalRented": "{{rentados}} of {{total}} rented",
@@ -5313,6 +5316,14 @@
         "nPropiedades": "{{n}} properties",
         "sinAccesoALaPlata": "No access to money figures"
       },
+      "giros": {
+        "uno": "1 overdue payout",
+        "varios": "{{n}} overdue payouts",
+        "unoDesde": "1 overdue payout since {{fecha}}",
+        "variosDesde": "{{n}} overdue payouts since {{fecha}}",
+        "vencidoDesde": "Overdue since {{fecha}}",
+        "generado": "{{monto}} generated in Disbursements"
+      },
       "alertas": {
         "sinCuenta": {
           "titulo": "No bank account: payouts cannot be made",
@@ -5321,8 +5332,14 @@
           "accion": "Add bank account"
         },
         "pendienteDeGiro": {
-          "titulo": "{{monto}} pending payout",
-          "detalle": "Disbursements already generated that have not been paid out yet. Pay them from Disbursements, with the month's statement.",
+          "titulo": "{{monto}} in overdue payouts",
+          "detalle": "Their installments with the payout past due and not paid out, the same as in their account statement. Pay them from Disbursements, with the monthly statement.",
+          "accion": "Go to disbursements",
+          "generado": "{{monto}} is already generated in Disbursements and not paid out."
+        },
+        "generadoSinGirar": {
+          "titulo": "{{monto}} generated in Disbursements, not paid out",
+          "detalle": "Disbursements already generated that have not gone out yet. It is not overdue: pay them from Disbursements, with the monthly statement.",
           "accion": "Go to disbursements"
         },
         "sinArrendar": {
@@ -5339,13 +5356,13 @@
         "all": "All",
         "person": "Person",
         "company": "Company",
-        "withPendingBalance": "With pending balance",
+        "withPendingBalance": "With overdue payouts",
         "clear": "Clear",
         "of": "of",
         "owner": "Owner",
         "properties": "Properties",
         "monthlyRent": "Monthly rent",
-        "pending": "Pending",
+        "pending": "Overdue payout",
         "lastPayment": "Last payment",
         "rented": "rented",
         "rentedOne": "rented",
@@ -12493,6 +12510,8 @@
       "interesesSinPagar": "Unpaid late-payment interest: {{monto}}",
       "sinReglasDeMora": "The agency has no late-payment rules: overdue amounts are not charged interest.",
       "configurarReglasDeMora": "Set up late-payment rules",
+      "plazoSinFijar": "Your agency has not set its grace days (suggested 5): overdue amounts accrue no interest until it does.",
+      "fijarPlazo": "Set the grace days",
       "editarDatos": "Edit details",
       "sinCuentaDelPortal": "No portal account",
       "sinCuentaDelPortalPorQue": "They do not have a portal account yet, so there is nowhere to message them. The account is created from their lease.",
@@ -12942,6 +12961,8 @@
     "sinReglasDeMora": "The agency has no active late-fee rules: {{cuotas}} past due without interest.",
     "sinInteresPorOtroMotivo": "{{cuotas}} past due without interest. {{motivo}}",
     "configurarReglas": "Set up late-fee rules",
+    "sinPlazoFijado": "{{cuotas}} overdue without interest: your agency has not set its grace days (suggested 5) and, until it does, no interest accrues.",
+    "fijarPlazo": "Set the grace days",
     "descargarPDF": "Download PDF",
     "imprimir": "Print",
     "generando": "Building the PDF…",

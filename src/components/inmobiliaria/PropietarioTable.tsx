@@ -52,6 +52,8 @@ import type {
 } from '@/lib/propietarios/filtrar-propietarios';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { plataOculta as laPlataEstaOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
+import { detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
+import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 
 type SortField = CampoDeOrden;
 
@@ -456,14 +458,20 @@ export function PropietarioTable({
                     {sinPlata ? (
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : hasPending ? (
-                      <Badge variant="warning" className="gap-1 tabular-nums">
-                        <Warning className="w-3.5 h-3.5" />
-                        {formatCurrency(propietario.pendingBalance)}
-                      </Badge>
+                      <>
+                        <Badge variant="warning" className="gap-1 tabular-nums">
+                          <Warning className="w-3.5 h-3.5" />
+                          {formatCurrency(propietario.pendingBalance)}
+                        </Badge>
+                        <LineasDelGiro propietario={propietario} />
+                      </>
                     ) : (
-                      <span className="text-primary text-sm font-medium">
-                        {t('inmobiliaria.propietario.table.upToDate')}
-                      </span>
+                      <>
+                        <span className="text-primary text-sm font-medium">
+                          {t('inmobiliaria.propietario.table.upToDate')}
+                        </span>
+                        <LineasDelGiro propietario={propietario} />
+                      </>
                     )}
                   </TableCell>
 
@@ -589,6 +597,31 @@ function MenuDeLaFila({
 }
 
 /**
+ * 🔴 P-10 (back 5731a4e2): debajo del giro atrasado, cuántos giros y desde
+ * cuándo («3 giros vencidos desde el 1 ago»), y lo generado en Dispersiones
+ * aparte y con su nombre —antes era ESE el número de la columna—. Sin nada que
+ * decir (o sin la plata), no pinta nada.
+ */
+function LineasDelGiro({ propietario }: { propietario: Propietario }) {
+  const { t } = useI18n();
+  const giros = girosDelPropietario(propietario);
+  if (giros.oculto) return null;
+  const detalle = detalleDelAtraso(giros, t);
+  const generado = giros.generadoSinGirar ?? 0;
+  if (!detalle && generado <= 0) return null;
+  return (
+    <span className="mt-1 block space-y-0.5 text-caption text-fg-muted" data-testid="lineas-del-giro">
+      {detalle ? <span className="block tabular-nums">{detalle}</span> : null}
+      {generado > 0 ? (
+        <span className="block tabular-nums" data-testid="generado-sin-girar">
+          {t('inmobiliaria.propietario.giros.generado', { monto: formatCurrency(generado) })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
  * P-22: la lista en el celular. Una tarjeta por propietario con lo que en la
  * tabla eran columnas: documento, inmuebles (y arrendados), canon y
  * pendiente. Toda la tarjeta abre la ficha; el «…» va aparte (un menú no
@@ -642,7 +675,7 @@ function TarjetasDePropietarios({
                   {/* El nombre se ajusta en dos renglones; nunca «Constructora Ñan…». */}
                   <span className="block break-words font-medium text-fg">{propietario.name}</span>
                   <span className="block truncate text-sm text-fg-muted">
-                    {documentoConTipo(tipoDeDocumentoEnPalabras(t, propietario.documentType), propietario.documentNumber)}
+                    {documentoConTipo(tipoDeDocumentoEnPalabras(t, propietario.documentType), documentoDelPropietarioConDv(propietario))}
                   </span>
                 </span>
               </span>
@@ -677,6 +710,7 @@ function TarjetasDePropietarios({
                           {t('inmobiliaria.propietario.table.upToDate')}
                         </span>
                       )}
+                      <LineasDelGiro propietario={propietario} />
                     </>
                   )}
                 </span>

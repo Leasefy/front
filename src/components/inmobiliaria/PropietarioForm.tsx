@@ -40,13 +40,14 @@ import {
 } from '@/lib/types/payment-accounts';
 import { revisarDocumentoDelTitular, titularInicial } from '@/lib/propietarios/titular-de-la-cuenta';
 import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
-import { facturacionElectronicaService } from '@/lib/api/facturacion-electronica.service';
+import { leerCorreoObligatorio } from '@/lib/terceros/correo-obligatorio';
 import {
   TitularDeLaCuentaCampos,
   erroresDelTitular,
   type ErroresDelTitular,
   type ValorDelTitular,
 } from './TitularDeLaCuentaCampos';
+import { errorDelDigitoDeVerificacion } from '@/lib/inquilinos/documento-con-dv';
 
 /** Un `SelectItem` no puede valer '' (Radix lo rechaza): esta es la opción que vacía el departamento. */
 const SIN_DEPARTAMENTO = '__sin_departamento__';
@@ -112,21 +113,18 @@ function useCorreoObligatorio(activo: boolean): boolean | null {
   const puedeLeer = permisos ? permisos.canAccess('cobros', 'view') : false;
   const [exigido, setExigido] = useState<boolean | null>(null);
   useEffect(() => {
-    if (!activo || !puedeLeer) return;
+    if (!activo) return;
     let vivo = true;
-    facturacionElectronicaService
-      .tercerosSinCorreo('PROPIETARIO')
-      .then((r) => {
-        if (vivo) setExigido(r.exigido === true);
-      })
-      .catch(() => {
-        if (vivo) setExigido(null);
-      });
+    // SEGUIMIENTO-FRONT: con `cobros:view`, `terceros-sin-correo` como siempre;
+    // sin él (el asesor), `exigeCorreoDelTercero` de la agencia.
+    void leerCorreoObligatorio('PROPIETARIO', puedeLeer).then((r) => {
+      if (vivo) setExigido(r);
+    });
     return () => {
       vivo = false;
     };
   }, [activo, puedeLeer]);
-  return activo && puedeLeer ? exigido : null;
+  return activo ? exigido : null;
 }
 
 /**
@@ -485,6 +483,13 @@ export function PropietarioForm({
       }
       if (formData.documentType === 'NIT' && !/^[0-9.-]{9,15}$/.test(formData.documentNumber)) {
         newErrors.documentNumber = t('inmobiliaria.propietario.form.errNITInvalid');
+      }
+      // P-06 (QA-PROP): un NIT con un dígito de verificación que no cuadra se
+      // dice aquí, bajo el campo (el back también lo rechaza: 400
+      // `DIGITO_DE_VERIFICACION_NO_CUADRA`). Antes se guardaba en silencio.
+      if (formData.documentType === 'NIT' && !newErrors.documentNumber) {
+        const dvQueNoCuadra = errorDelDigitoDeVerificacion(formData.documentNumber, 'NIT');
+        if (dvQueNoCuadra) newErrors.documentNumber = dvQueNoCuadra;
       }
     }
 

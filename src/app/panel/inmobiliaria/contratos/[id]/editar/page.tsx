@@ -52,6 +52,7 @@ import {
 import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { isoToInputDate } from './iso-to-input-date';
+import { depositoAplica } from '@/lib/contratos/deposito-del-contrato';
 import {
   MAX_DIAS_DE_PLAZO,
   diasDePlazoComoTexto,
@@ -488,8 +489,10 @@ function EditarContratoContent() {
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            {/* Nico (03-10-2026): «Depósito: dejarlo sólo para comercial». */}
-            {contract?.usoInmueble === 'COMERCIAL' && (
+            {/* Nico (03-10-2026): «Depósito: dejarlo sólo para comercial». Si
+                aplica lo dice el back (`depositoDelContrato`); un back anterior,
+                el uso del contrato. */}
+            {contract && depositoAplica(contract) && (
               <Field
                 id={idDelCampoDelContrato('deposit')}
                 label="Depósito (COP)"

@@ -57,7 +57,34 @@ export interface PropietarioBankAccount {
 }
 
 /** Lo que `GET /inmobiliaria/propietarios` reporta como faltante (T-0128). */
-export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento';
+export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento'
+  /** QA-PROP P-28 (back 5731a4e2): le falta la cuenta bancaria para girarle. */
+  | 'cuentaBancaria';
+
+/**
+ * Un inmueble en la ficha del propietario, con SU parte (QA-PROP P-02, back
+ * 5731a4e2, `arrendados-del-propietario.ts`). Arrendado = contrato ACTIVE ya
+ * empezado; el canon es el del contrato.
+ */
+export interface InmuebleDelPropietario {
+  consignacionId: string;
+  propertyId: string | null;
+  propertyTitle: string | null;
+  propertyAddress: string | null;
+  /** Es el principal del mandato (el de mayor participación). */
+  esPrincipal: boolean;
+  /** Cuánto del inmueble es suyo, en puntos básicos (10000 = el 100 %). */
+  participacionBps: number;
+  arrendado: boolean;
+  contratoId: string | null;
+  /** El canon del contrato (el del inmueble entero). `null` si no se sabe. */
+  canonDelContratoCop: number | null;
+  comisionPorcentaje: number | null;
+  /** SU parte del canon, de la comisión y del neto. `null` sin canon. */
+  canonCop: number | null;
+  comisionCop: number | null;
+  netoCop: number | null;
+}
 
 export interface Propietario {
   id: string;
@@ -111,8 +138,30 @@ export interface Propietario {
    * salía antes era inventado).
    */
   totalCommission?: number;
-  /** Lo que la inmobiliaria le debe: Σ neto de las dispersiones pendientes o en proceso. */
+  /**
+   * 🔴 CAMBIÓ DE SIGNIFICADO (QA-PROP P-10, back 5731a4e2): ya NO es lo
+   * generado en Dispersiones. Es lo VENCIDO y sin girar de SU parte de las
+   * cuotas del lado propietario —la misma fuente que su estado de cuenta—: un
+   * GIRO ATRASADO. Lo generado va en `generadoSinGirar`. Ver
+   * `lib/propietarios/giros-del-propietario.ts`. (Antes decía: «Σ neto de las
+   * dispersiones pendientes o en proceso».)
+   */
   pendingBalance: number;
+  /** P-10: cuántas cuotas suyas tienen el giro vencido y sin girar. `null` con la plata oculta; ausente en un back anterior. */
+  girosVencidos?: number | null;
+  /** P-10: `AAAA-MM-DD` del giro vencido más viejo, o `null`. */
+  giroVencidoDesde?: string | null;
+  /** P-10: Σ de las dispersiones generadas que todavía no salieron (lo que antes era `pendingBalance`). */
+  generadoSinGirar?: number | null;
+  /** P-01/P-02: copropiedades (no es el principal) con contrato vigente. */
+  copropiedadesArrendadas?: number;
+  /**
+   * P-02: cada inmueble donde figura, con su % y SU parte del canon, la
+   * comisión y el neto. Sólo la ficha (`GET /:id`); `null` con la plata oculta.
+   */
+  inmuebles?: InmuebleDelPropietario[] | null;
+  /** P-06: el dígito de verificación de un NIT, calculado por el back (algoritmo DIAN). `null` si no es NIT. */
+  digitoDeVerificacion?: number | null;
   /** Última dispersión completada. */
   lastPaymentDate?: string | null;
   /** Canon de los arrendados menos la comisión: lo que recibe al mes. Del back. */

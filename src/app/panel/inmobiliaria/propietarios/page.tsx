@@ -38,8 +38,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
-import { Spinner } from '@/components/ui/spinner';
+import { Cajon, CajonCabecera } from '@/components/ui/cajon';
+// El cajón de Nuevo/Editar vive en su archivo: la ficha abre el mismo (SEGUIMIENTO-FRONT).
+import {
+  AvisoEnElDialogo,
+  CajonDelFormularioDelPropietario as CajonDelFormulario,
+} from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
 import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
@@ -67,6 +71,7 @@ import {
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
 import { laListaOcultaLaPlata } from '@/lib/propietarios/lo-que-muestra-la-lista';
+import { generadoSinGirarDeLaLista } from '@/lib/propietarios/giros-del-propietario';
 import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
@@ -130,97 +135,6 @@ function Modal({
         {footer ? <DialogFooter>{footer}</DialogFooter> : null}
       </DialogContent>
     </Dialog>
-  );
-}
-
-/**
- * El motivo del back, dentro del diálogo que lo provocó. Un toast se va solo
- * en cuatro segundos y se lleva la única explicación de por qué no se guardó.
- */
-function AvisoEnElDialogo({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      role="alert"
-      data-testid="aviso-en-el-dialogo"
-      className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-    >
-      {children}
-    </p>
-  );
-}
-
-/**
- * El cajón del formulario del propietario: Nuevo y Editar (Nico, 03-10). La
- * misma experiencia que «Nuevo inquilino»: cabecera, cuerpo que se desplaza y
- * pie FIJO, así «Cancelar / Crear propietario» se ven siempre enteros (P-12).
- * El formulario va en el cuerpo sin su fila de botones (`accionesAfuera`) y el
- * botón del pie lo manda con `form=`. Lo que el back dijo sin campo va arriba
- * del cuerpo; lo que es de un campo, bajo ese campo (y ahí va el foco, P-11).
- */
-function CajonDelFormulario({
-  abierto,
-  onCerrar,
-  titulo,
-  descripcion,
-  aviso,
-  idDelFormulario,
-  textoDelBoton,
-  guardando,
-  children,
-}: {
-  abierto: boolean;
-  onCerrar: () => void;
-  titulo: string;
-  descripcion?: React.ReactNode;
-  aviso?: string | null;
-  idDelFormulario: string;
-  textoDelBoton: string;
-  guardando: boolean;
-  children: React.ReactNode;
-}) {
-  const { t } = useI18n();
-  return (
-    <Cajon
-      abierto={abierto}
-      onOpenChange={(sigue) => {
-        if (!sigue) onCerrar();
-      }}
-      tamano="lg"
-      data-testid="cajon-del-propietario"
-    >
-      <CajonCabecera titulo={titulo} descripcion={descripcion} />
-      <CajonCuerpo>
-        {aviso ? (
-          <div className="mb-4">
-            <AvisoEnElDialogo>{aviso}</AvisoEnElDialogo>
-          </div>
-        ) : null}
-        {children}
-      </CajonCuerpo>
-      <CajonPie>
-        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onCerrar} disabled={guardando}>
-          {t('inmobiliaria.propietario.form.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          form={idDelFormulario}
-          size="sm"
-          hideArrow
-          disabled={guardando}
-          className="gap-2"
-          data-testid="guardar-propietario"
-        >
-          {guardando ? (
-            <>
-              <Spinner size="sm" variant="current" />
-              {t('inmobiliaria.propietario.form.saving')}
-            </>
-          ) : (
-            textoDelBoton
-          )}
-        </Button>
-      </CajonPie>
-    </Cajon>
   );
 }
 
@@ -406,8 +320,11 @@ function PropietariosContent() {
   const stats = useMemo(() => {
     const totalProperties = propietarios.reduce((sum, p) => sum + p.propertyCount, 0);
     const totalMonthlyRent = propietarios.reduce((sum, p) => sum + p.totalMonthlyRent, 0);
+    // 🔴 P-10 (back 5731a4e2): `pendingBalance` es el GIRO ATRASADO (vencido y
+    // sin girar); lo generado en Dispersiones viene aparte.
     const totalPending = propietarios.reduce((sum, p) => sum + p.pendingBalance, 0);
     const pendingCount = propietarios.filter((p) => p.pendingBalance > 0).length;
+    const generadoSinGirar = generadoSinGirarDeLaLista(propietarios);
 
     return {
       totalPropietarios: propietarios.length,
@@ -415,6 +332,7 @@ function PropietariosContent() {
       totalMonthlyRent,
       totalPending,
       pendingCount,
+      generadoSinGirar,
     };
   }, [propietarios]);
 
@@ -716,7 +634,7 @@ function PropietariosContent() {
         <KpiCard
           label={
             kpiSinDato || plataOculta
-              ? 'Saldo pendiente'
+              ? 'Giros atrasados'
               : stats.pendingCount > 0
                 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
                 : t('inmobiliaria.propietarios.noPending')
@@ -728,7 +646,13 @@ function PropietariosContent() {
                   stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
                 )
           }
-          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
+          sublabel={
+            plataOculta
+              ? sinAccesoALaPlata
+              : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
+                ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
+                : undefined
+          }
           icon={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
           deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
         />

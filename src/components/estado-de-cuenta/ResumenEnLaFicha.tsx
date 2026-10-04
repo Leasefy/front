@@ -70,6 +70,9 @@ export function numerosDelDocumento(
     : doc.contratos;
   const recortado: EstadoDeCuenta = {
     ...doc,
+    // La próxima del propietario (P-16) es de TODOS sus contratos: recortado a
+    // uno, se calcula de sus filas.
+    ...(soloContrato ? { proximaCuota: undefined } : {}),
     contratos,
     totales: soloContrato ? sumarTotales(contratos.map((c) => c.totales)) : doc.totales,
   };

@@ -47,7 +47,12 @@ export function noHaEmpezado(
 }
 
 export function estadoParaMostrar(args: {
-  contrato: Pick<Contract, 'status' | 'startDate'>;
+  /**
+   * Con `estadoParaMostrar` del back (lista y ficha desde ff282197) manda el
+   * back: es la misma regla de Inquilinos, con el día de Bogotá. Sin él (un
+   * back anterior), lo de siempre: las fechas y `vigencia`.
+   */
+  contrato: Pick<Contract, 'status' | 'startDate'> & Partial<Pick<Contract, 'estadoParaMostrar'>>;
   vigencia: Vigencia;
   /** La etiqueta del estado crudo (`CONTRACT_STATUS_LABELS`). */
   etiquetaDelEstado: string;
@@ -57,16 +62,27 @@ export function estadoParaMostrar(args: {
   const { contrato, vigencia, etiquetaDelEstado, locale } = args;
   const hoy = args.hoy ?? new Date();
   const en = locale === 'en';
-  if (noHaEmpezado(contrato, hoy)) {
-    const fecha = fechaCortaDelEstado(contrato.startDate, locale, hoy);
+  const delBack = contrato.estadoParaMostrar;
+  const porEmpezar = delBack ? delBack.estado === 'POR_EMPEZAR' : noHaEmpezado(contrato, hoy);
+  if (porEmpezar) {
+    const fecha = fechaCortaDelEstado(delBack?.empiezaEl ?? contrato.startDate, locale, hoy);
     return {
       clave: 'POR_EMPEZAR',
       texto: en ? `Starts ${fecha}` : `Empieza el ${fecha}`,
       titulo: en ? 'Not started yet' : 'Por empezar',
     };
   }
-  if (vigencia.terminaEl) {
-    const fecha = fechaCortaDelEstado(vigencia.terminaEl, locale, hoy);
+  /*
+   * SEGUIMIENTO-FRONT: la LISTA no trae `terminadoEn`, así que `vigencia` no
+   * podía saber de una terminación programada y la fila decía «Activo» a secas.
+   * El back la manda en `estadoParaMostrar.terminacionProgramada`.
+   */
+  const terminaEl =
+    delBack?.estado === 'ACTIVO' && delBack.terminacionProgramada
+      ? delBack.terminacionProgramada.fecha
+      : vigencia.terminaEl;
+  if (terminaEl) {
+    const fecha = fechaCortaDelEstado(terminaEl, locale, hoy);
     return {
       clave: 'TERMINA',
       texto: en ? `Active · Ends ${fecha}` : `Activo · Termina el ${fecha}`,

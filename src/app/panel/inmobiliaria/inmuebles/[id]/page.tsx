@@ -196,8 +196,10 @@ function ConsignacionDetailContent() {
   const consignacion = consignacionData || fetchedConsignacion || copiaLocal.copia?.consignacion;
   // T-0109 contract.md §3.1.C — la sección de firma electrónica sólo ofrece
   // sus acciones (iniciar, cancelar, reenviar) con `portafolio:edit`.
-  const { canAccess } = usePermissions();
+  const { canAccess, agencyRole } = usePermissions();
   const puedeEditarPortafolio = canAccess('portafolio', 'edit');
+  // P-03 (seguimiento): elegir el principal en un empate lo hacen el administrador o el contador.
+  const puedeElegirPrincipal = agencyRole === 'ADMIN' || agencyRole === 'CONTADOR';
   /** Se está mostrando lo guardado porque el back no contestó. */
   const mostrandoCopia = Boolean(
     !consignacionData && !fetchedConsignacion && copiaLocal.copia,
@@ -599,6 +601,15 @@ function ConsignacionDetailContent() {
               copropietarios={consignacion.copropietarios}
               onCambiar={() => setShowCambiarPropietario(true)}
               rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
+              onElegirPrincipal={
+                puedeElegirPrincipal
+                  ? async (propietarioId) => {
+                      await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
+                      // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
+                      await recargarConsignacion();
+                    }
+                  : undefined
+              }
             />
           </div>
 

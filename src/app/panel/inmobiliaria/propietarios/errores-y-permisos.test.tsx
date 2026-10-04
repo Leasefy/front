@@ -474,7 +474,8 @@ describe('Tiles — nunca un «0» ni un «Al día» que nadie verificó', () =>
     expect(tiles().every((t) => t.getAttribute('data-estado') === 'fallo')).toBe(true);
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.noPending');
     expect(host.textContent).not.toContain('inmobiliaria.propietarios.upToDate');
-    expect(host.textContent).toContain('Saldo pendiente');
+    // P-10 (SEGUIMIENTO-FRONT): el tile ahora se llama por lo que es, el giro atrasado.
+    expect(host.textContent).toContain('Giros atrasados');
   });
 
   it('con datos, los tiles muestran los números', async () => {

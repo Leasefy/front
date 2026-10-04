@@ -431,6 +431,34 @@ export interface ResultadoDeLaCesion {
   parteId: string;
 }
 
+/**
+ * QA-CONT CR-06 (back ff282197, `POST /contracts/:id/cambio-de-inquilino`): el
+ * contrato sigue con otro inquilino desde la fecha (hoy o antes). Lo anterior
+ * sigue siendo del saliente.
+ */
+export interface CambioDeInquilino {
+  /** `AAAA-MM-DD`, hoy o antes (el back responde 400 `CAMBIO_DE_INQUILINO_FUTURO`). */
+  desde: string;
+  nombre: string;
+  documento: string;
+  correo?: string;
+  telefono?: string;
+  /** El propietario lo aceptó (CEO 17-09). Sin `true`: 400 `FALTA_LA_ACEPTACION_DEL_PROPIETARIO`. */
+  aceptaElPropietario: boolean;
+  nota?: string;
+}
+
+export interface ResultadoDelCambioDeInquilino {
+  contractId: string;
+  desde: string;
+  inquilinoAnterior: string | null;
+  inquilinoNuevo: string;
+  cuotasReapuntadas: number;
+  /** El documento del entrante ya tiene cuenta en el portal. */
+  conCuenta: boolean;
+  parteId: string;
+}
+
 export const cicloDeVidaApi = {
   motivosDeTerminacion: () =>
     apiClient.get<{ motivos: MotivoDeTerminacion[] }>(
@@ -475,6 +503,10 @@ export const cicloDeVidaApi = {
     },
   ) =>
     apiClient.post<ResultadoDeLaCesion>(`/contracts/${contractId}/cesion`, body),
+
+  /** QA-CONT CR-06: cambiar de inquilino (punto de quiebre). 409 `INQUILINO_SALIENTE_CON_DEUDA` si el saliente debe vencido. */
+  cambiarDeInquilino: (contractId: string, body: CambioDeInquilino) =>
+    apiClient.post<ResultadoDelCambioDeInquilino>(`/contracts/${contractId}/cambio-de-inquilino`, body),
 
   /** Contrato vencido con el inquilino adentro: renovar por los días ocupados o por el término inicial. */
   extender: (

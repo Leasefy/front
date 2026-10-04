@@ -4,6 +4,9 @@
  */
 
 import type {
+  DepositoDelContratoDelBack,
+  EstadoDelContratoDelBack,
+  ReglaDeCobroDelBack,
   EscenarioTributarioDelContrato,
   PerfilesDelContrato,
   PropietariosDelContrato,
@@ -172,6 +175,12 @@ export interface BackendContract {
   motivoDeTerminacion?: string | null;
   notaDeTerminacion?: string | null;
   finPactadoOriginal?: string | null;
+  /** QA-CONT C-05/C-01: el estado que se muestra, con la terminación programada. Lista y ficha. */
+  estadoParaMostrar?: EstadoDelContratoDelBack;
+  /** QA-CONT C-07: la regla de cobro. Sólo la ficha. */
+  reglaDeCobro?: ReglaDeCobroDelBack;
+  /** QA-CONT CR-11: si el depósito aplica (comercial). Sólo la ficha. */
+  depositoDelContrato?: DepositoDelContratoDelBack;
   diasDePlazo?: number | null;
   /**
    * 🔴 Con qué número paga el inquilino (columna `referencia_de_recaudo`).
@@ -331,7 +340,12 @@ export interface CrearContratoManualDto extends Omit<CreateContractDto, 'applica
 export interface ContratoManualCreadoBackend {
   contract: BackendContract;
   inquilino: {
-    userId: string;
+    /**
+     * QA-CONT CR-14 (back 2a681c93): `null` = el borrador nació SIN la cuenta del
+     * inquilino; se invita desde el contrato («Invitar al portal») y, sin ella,
+     * enviarlo a firmar responde 409 `INQUILINO_SIN_CUENTA`.
+     */
+    userId: string | null;
     /** Se le acaba de mandar la invitación a crear su cuenta. */
     invitado: boolean;
     /** Ya era inquilino de la agencia. */

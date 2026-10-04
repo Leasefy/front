@@ -76,7 +76,11 @@ export function validarPartes(partes: PartesManuales): Record<string, string> {
   } else {
     if (q.nombre.trim().length < 2) errores.nombre = 'Escribe el nombre completo.'
     if (q.documento.replace(/\D/g, '').length < 4) errores.documento = 'Escribe el documento.'
-    if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
+    // Nico (03-10-2026, CR-14): el borrador nace SIN la cuenta del inquilino
+    // nuevo, así que su correo es OBLIGATORIO —para que siempre se lo pueda
+    // invitar al portal y firme—. El back también lo exige (400).
+    if (!q.correo.trim()) errores.correo = 'Escribe el correo: es obligatorio para invitarlo al portal y que firme.'
+    else if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
   }
   return errores
 }
@@ -314,9 +318,16 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                   data-testid="nuevo-documento"
                 />
               </Campo>
-              <Campo id="nuevo-correo" label="Correo" error={errores.correo}>
+              <Campo
+                id="nuevo-correo"
+                label="Correo"
+                requerido
+                hint="Obligatorio: ahí le llega la invitación al portal."
+                error={errores.correo}
+              >
                 <Input
                   id="nuevo-correo"
+                  aria-required="true"
                   aria-invalid={errores.correo ? true : undefined}
                   aria-describedby="nuevo-correo-error"
                   type="email"
@@ -356,6 +367,7 @@ function Campo({
   label,
   error,
   hint,
+  requerido,
   children,
 }: {
   /** El id del control: el error va en `${id}-error`, el que nombra su `aria-describedby`. */
@@ -363,12 +375,19 @@ function Campo({
   label: string
   error?: string
   hint?: string
+  /** Marca el campo como obligatorio (el asterisco; el control lleva su `aria-required`). */
+  requerido?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-1">
       <label className="block text-caption font-medium text-fg" htmlFor={id}>
         {label}
+        {requerido ? (
+          <span className="ml-0.5 text-danger" aria-hidden="true">
+            *
+          </span>
+        ) : null}
       </label>
       {children}
       {/* El error entra suave y, si hay ayuda, se cruza con ella. */}

@@ -89,14 +89,14 @@ describe('P-21 — el Excel de la lista no inventa plata', () => {
     const cabecera = hoja.filas[0] as string[];
     const fila = hoja.filas[1];
     expect(fila[cabecera.indexOf('Canon mensual total')]).toBe(SIN_ACCESO_A_LA_PLATA);
-    expect(fila[cabecera.indexOf('Saldo pendiente')]).toBe(SIN_ACCESO_A_LA_PLATA);
+    expect(fila[cabecera.indexOf('Giro atrasado (vencido sin girar)')]).toBe(SIN_ACCESO_A_LA_PLATA);
   });
 
   it('a quien sí la ve, los números de siempre', () => {
     const hoja = armarHojaDeLaLista([propietario({ name: 'Jorge', totalMonthlyRent: 1_000_000, pendingBalance: 5 })]);
     const cabecera = hoja.filas[0] as string[];
     expect(hoja.filas[1][cabecera.indexOf('Canon mensual total')]).toBe(1_000_000);
-    expect(hoja.filas[1][cabecera.indexOf('Saldo pendiente')]).toBe(5);
+    expect(hoja.filas[1][cabecera.indexOf('Giro atrasado (vencido sin girar)')]).toBe(5);
   });
 
   it('laListaOcultaLaPlata: basta una fila oculta (el back la oculta por rol)', () => {

@@ -43,6 +43,7 @@ import {
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { CompletarSolicitudDialog } from '@/components/inmobiliaria/mantenimiento/CompletarSolicitudDialog';
 import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
 import { BandejaDeAprobacionesDelPropietario } from '@/components/inmobiliaria/deducciones/BandejaDeAprobacionesDelPropietario';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
@@ -91,11 +92,23 @@ function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
     ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
   );
-  const quotedMantenimientos = mantenimientos.filter((m) => m.status === 'quoted');
+  /*
+   * 🔴 SO-13 (QA 04-10): «por aprobar» es lo que la INMOBILIARIA tiene que
+   * decidir. Lo que espera la respuesta del propietario se cuenta aparte: no
+   * es trabajo de la inmobiliaria y ya no se mezcla.
+   */
+  const esperaAlPropietario = (m: SolicitudMantenimiento) =>
+    m.aprobacionDelPropietario?.estado === 'PENDIENTE';
+  const quotedMantenimientos = mantenimientos.filter(
+    (m) => m.status === 'quoted' && !esperaAlPropietario(m),
+  );
 
   return {
     active: activeMantenimientos.length,
     quoted: quotedMantenimientos.length,
+    esperanAlPropietario: mantenimientos.filter(
+      (m) => m.status === 'quoted' && esperaAlPropietario(m),
+    ).length,
   };
 }
 
@@ -501,6 +514,20 @@ function MantenimientosContent() {
       ? propuestaDelDialogo.aCargoDeSugerido
       : null;
 
+  /** SO-11 (04-10): el responsable escogido al crear llega marcado. */
+  const PAGADOR_A_CARGO: Record<string, 'PROPIETARIO' | 'INQUILINO' | 'COMPARTIDA' | 'INMOBILIARIA'> = {
+    owner: 'PROPIETARIO',
+    tenant: 'INQUILINO',
+    split: 'COMPARTIDA',
+    agency: 'INMOBILIARIA',
+  };
+  const solicitudDelDialogo = cotizacionPorAprobar
+    ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)
+    : undefined;
+  const preseleccionDelDialogo = solicitudDelDialogo
+    ? (PAGADOR_A_CARGO[solicitudDelDialogo.paidBy] ?? null)
+    : null;
+
   /**
    * Cerrada desde el diálogo de «Marcar como completada», que ya subió las
    * fotos del trabajo y llamó a `PUT :id/complete` (Nico, 02-10-2026). Acá
@@ -590,6 +617,48 @@ function MantenimientosContent() {
       });
     },
     [t, recargarMantenimientos]
+  );
+
+  /*
+   * 🔴 SO-14 (QA 04-10): soltar una tarjeta respeta las MISMAS reglas que los
+   * botones del cajón. A «Completada» abre el cierre (fotos y costo final); a
+   * «Aprobada» sin cotización aprobada abre la aprobación (o pide la
+   * cotización). Lo demás va directo y el back frena lo que espera al
+   * propietario con su motivo.
+   */
+  const [porCompletar, setPorCompletar] = useState<SolicitudMantenimiento | null>(null);
+  const alSoltarEnElTablero = useCallback(
+    (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus): boolean => {
+      if (destino === 'completed') {
+        if (solicitud.aprobacionDelPropietario?.estado === 'PENDIENTE') return false;
+        setPorCompletar(solicitud);
+        return true;
+      }
+      if (
+        destino === 'approved' &&
+        (solicitud.status === 'reported' || solicitud.status === 'quoted') &&
+        !solicitud.selectedQuoteId
+      ) {
+        if (solicitud.quotes.length === 0) {
+          toast.info('Primero agrega una cotización', {
+            description: 'Se aprueba una cotización: escoge el proveedor y el valor.',
+          });
+          handleRequestQuote(solicitud.id);
+          return true;
+        }
+        if (solicitud.quotes.length === 1) {
+          void handleApproveQuote(solicitud.id, solicitud.quotes[0].id);
+          return true;
+        }
+        toast.info('Escoge cuál cotización aprobar', {
+          description: 'Tiene varias: ábrela y aprueba una desde el comparador.',
+        });
+        handleViewMantenimiento(solicitud);
+        return true;
+      }
+      return false;
+    },
+    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento],
   );
 
   // Consignaciones for form (rented properties only)
@@ -688,7 +757,13 @@ function MantenimientosContent() {
             icon={CurrencyDollar}
             label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
             value={mantenimientosError ? '—' : stats.quoted}
-            subValue={mantenimientosError ? 'No se pudo traer' : undefined}
+            subValue={
+              mantenimientosError
+                ? 'No se pudo traer'
+                : stats.esperanAlPropietario > 0
+                  ? `${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
+                  : undefined
+            }
             bgColor="bg-neutral-100 dark:bg-neutral-800"
             iconColor="text-neutral-600 dark:text-neutral-300"
             contarDesdeCero={huboCarga.current}
@@ -725,10 +800,14 @@ function MantenimientosContent() {
                     value={mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
                     format={enteroTalCual}
                   />
-                  {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
-                  {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
+                  {' '}
+                  {/* SO-11: «1 solicitud activa», no «1 solicitudes activas». */}
+                  {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length === 1
+                    ? 'solicitud activa'
+                    : t('inmobiliaria.operaciones.maintenance.activeRequests')}
+                  {stats.quoted > 0 && (
                     <span className="ml-2 text-primary">
-                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
+                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })})
                     </span>
                   )}
                 </>
@@ -784,6 +863,7 @@ function MantenimientosContent() {
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
+                  alSoltar={puedeEditar ? alSoltarEnElTablero : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                 />
               </div>
@@ -822,6 +902,8 @@ function MantenimientosContent() {
         onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
         // «Marcar como completada» con las fotos del trabajo (02-10-2026).
         onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}
+        // SO-14 (04-10): calificar al proveedor al cerrar.
+        onCalificado={puedeEditar ? recargarMantenimientos : undefined}
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página
@@ -835,6 +917,21 @@ function MantenimientosContent() {
         onGuardar={handleGuardarCotizacion}
       />
 
+      {/* SO-14: el cierre al soltar la tarjeta en «Completada». */}
+      {porCompletar && (
+        <CompletarSolicitudDialog
+          abierto={porCompletar !== null}
+          solicitudId={porCompletar.id}
+          costoAprobado={porCompletar.approvedAmount ?? null}
+          onCerrar={() => setPorCompletar(null)}
+          onCompletada={async () => {
+            setPorCompletar(null);
+            await handleSolicitudCompletada();
+          }}
+          t={t}
+        />
+      )}
+
       {/* A cargo de quién queda la reparación, antes de aprobar la cotización. */}
       <ACargoDeDialog
         abierto={cotizacionPorAprobar !== null}
@@ -843,6 +940,7 @@ function MantenimientosContent() {
         }}
         cotizacion={cotizacionDelDialogo}
         sugerencia={sugerenciaDelDialogo}
+        preseleccion={preseleccionDelDialogo}
         onConfirmar={aprobarCotizacion}
       />
 

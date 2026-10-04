@@ -25,6 +25,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button, Input, Textarea } from '@/components/ui';
 import { MoneyInput } from '@/components/ui/money-input';
+import { Combobox } from '@/components/ui/combobox';
+import {
+  proveedoresDeMantenimientoApi,
+  type ProveedorDeMantenimiento,
+} from '@/lib/api/proveedores-de-mantenimiento.service';
+import { EN_PALABRAS } from '@/components/mantenimientos/especialidades';
 import { useI18n } from '@/lib/i18n';
 import type { NuevaCotizacion, SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 
@@ -42,11 +48,18 @@ export interface AgregarCotizacionDialogProps {
   onGuardar: (solicitudId: string, cotizacion: NuevaCotizacion) => Promise<void>;
 }
 
-type CampoDeLaCotizacion = 'providerName' | 'providerPhone' | 'amount' | 'description' | 'estimatedDays';
+type CampoDeLaCotizacion =
+  | 'providerName'
+  | 'documento'
+  | 'providerPhone'
+  | 'amount'
+  | 'description'
+  | 'estimatedDays';
 
 /** En el orden en que se ven: el foco va al primero con error. */
 const CAMPOS: readonly CampoDeLaCotizacion[] = [
   'providerName',
+  'documento',
   'providerPhone',
   'amount',
   'estimatedDays',
@@ -56,6 +69,7 @@ const CAMPOS: readonly CampoDeLaCotizacion[] = [
 /** El id de cada control, para el foco y el `aria-describedby`. */
 const ID_DEL_CAMPO: Record<CampoDeLaCotizacion, string> = {
   providerName: 'cotizacion-proveedor',
+  documento: 'cotizacion-documento',
   providerPhone: 'cotizacion-telefono',
   amount: 'cotizacion-monto',
   estimatedDays: 'cotizacion-dias',
@@ -63,8 +77,16 @@ const ID_DEL_CAMPO: Record<CampoDeLaCotizacion, string> = {
 };
 
 /** Los cinco campos, tal como los guarda `MantenimientoQuote`. */
+/** La opción de la lista que abre el registro de un proveedor nuevo. */
+const NUEVO = '__nuevo__';
+
+/** El oficio del back para la solicitud (`plumbing` → `PLUMBING`). */
+const oficioDelBack = (tipo: string) =>
+  tipo === 'other' ? 'OTHER_MAINT' : tipo.toUpperCase();
+
 const VACIO = {
   providerName: '',
+  documento: '',
   providerPhone: '',
   amount: '',
   description: '',
@@ -96,6 +118,15 @@ export function AgregarCotizacionDialog({
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaCotizacion, string>>>({});
   const [guardando, setGuardando] = useState(false);
   const contenedor = useRef<HTMLDivElement>(null);
+  /*
+   * 🔴 SO-08 (QA 04-10): el proveedor se ESCOGE de los registrados (o se
+   * registra aquí mismo). Antes era texto libre: «Plomería QA Día S.A.S.»
+   * estaba en Proveedores y no aparecía, no se revisaban sus papeles y no
+   * quedaba unido para calificarlo al cerrar.
+   */
+  const [proveedores, setProveedores] = useState<ProveedorDeMantenimiento[]>([]);
+  const [proveedorId, setProveedorId] = useState<string | undefined>(undefined);
+  const [registrando, setRegistrando] = useState(false);
 
   /** Escribir en un campo borra su error: el dato ya no es el que se rechazó. */
   const poner = (campo: CampoDeLaCotizacion, valor: string) => {
@@ -117,8 +148,63 @@ export function AgregarCotizacionDialog({
       setCampos(VACIO);
       setErrores({});
       setGuardando(false);
+      setProveedorId(undefined);
+      setRegistrando(false);
+      let vivo = true;
+      proveedoresDeMantenimientoApi
+        .listar({ activos: true })
+        .then((lista) => {
+          if (!vivo) return;
+          const activos = Array.isArray(lista) ? lista : [];
+          setProveedores(activos);
+          // Sin ninguno registrado, el registro rápido de una vez.
+          if (activos.length === 0) setRegistrando(true);
+        })
+        .catch(() => {
+          if (!vivo) return;
+          setProveedores([]);
+          setRegistrando(true);
+        });
+      return () => {
+        vivo = false;
+      };
     }
+    return undefined;
   }, [abierto]);
+
+  /** Los del oficio de la solicitud primero; luego los demás. */
+  const oficio = solicitud ? oficioDelBack(solicitud.type) : '';
+  const ordenados = [...proveedores].sort(
+    (a, b) =>
+      Number(b.especialidades.includes(oficio)) - Number(a.especialidades.includes(oficio)) ||
+      a.nombre.localeCompare(b.nombre, 'es'),
+  );
+  const opcionesDeProveedor = [
+    ...ordenados.map((p) => ({
+      value: p.id,
+      label: [
+        p.nombre,
+        p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(', '),
+        p.calificacion !== null ? `${p.calificacion.toFixed(1)} ★` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    })),
+    { value: NUEVO, label: '+ Registrar un proveedor nuevo' },
+  ];
+  const elegido = proveedores.find((p) => p.id === proveedorId) ?? null;
+
+  const escoger = (valor: string | undefined) => {
+    setErrores((e) => (e.providerName ? { ...e, providerName: undefined } : e));
+    if (valor === NUEVO) {
+      setRegistrando(true);
+      setProveedorId(undefined);
+      return;
+    }
+    setProveedorId(valor);
+    const p = proveedores.find((x) => x.id === valor);
+    if (p) setCampos((c) => ({ ...c, providerName: p.nombre, providerPhone: p.telefono ?? '' }));
+  };
 
   if (!solicitud) return null;
 
@@ -129,8 +215,15 @@ export function AgregarCotizacionDialog({
    */
   const validar = () => {
     const nuevos: Partial<Record<CampoDeLaCotizacion, string>> = {};
-    if (!campos.providerName.trim()) {
-      nuevos.providerName = t('inmobiliaria.mantenimiento.nuevaCotizacion.errorProveedor');
+    if (registrando) {
+      if (!campos.providerName.trim()) {
+        nuevos.providerName = t('inmobiliaria.mantenimiento.nuevaCotizacion.errorProveedor');
+      }
+      if (!campos.documento.trim()) {
+        nuevos.documento = 'Escribe el NIT o la cédula del proveedor.';
+      }
+    } else if (!proveedorId) {
+      nuevos.providerName = 'Escoge el proveedor de la lista o regístralo.';
     }
     if (!campos.amount || Number(campos.amount) <= 0) {
       nuevos.amount = t('inmobiliaria.mantenimiento.nuevaCotizacion.errorMonto');
@@ -157,7 +250,22 @@ export function AgregarCotizacionDialog({
 
     setGuardando(true);
     try {
+      let id = proveedorId;
+      if (registrando) {
+        // El registro rápido: queda en Proveedores con el oficio de la solicitud.
+        const nuevo = await proveedoresDeMantenimientoApi.crear({
+          nombre: campos.providerName.trim(),
+          documento: campos.documento.trim(),
+          ...(campos.providerPhone.trim() ? { telefono: campos.providerPhone.trim() } : {}),
+          especialidades: [oficio],
+        });
+        id = nuevo.id;
+        setProveedores((l) => [...l, nuevo]);
+        setProveedorId(nuevo.id);
+        setRegistrando(false);
+      }
       await onGuardar(solicitud.id, {
+        proveedorId: id,
         providerName: campos.providerName.trim(),
         // El teléfono es opcional en la columna: vacío se omite, no viaja `''`.
         providerPhone: campos.providerPhone.trim() || undefined,
@@ -208,25 +316,84 @@ export function AgregarCotizacionDialog({
             </span>
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="cotizacion-proveedor"
-              className="block text-sm font-medium text-fg dark:text-fg-subtle"
-            >
-              {t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedor')}{' '}
-              <span className="text-danger">*</span>
-            </label>
-            <Input
-              id="cotizacion-proveedor"
-              aria-required="true"
-              value={campos.providerName}
-              maxLength={MAX_LARGO_NOMBRE_DEL_PROVEEDOR}
-              onChange={(e) => poner('providerName', e.target.value)}
-              placeholder={t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedorPlaceholder')}
-              {...aria('providerName')}
-            />
-            <ErrorDelCampo id="cotizacion-proveedor-error" mensaje={errores.providerName} />
-          </div>
+          {registrando ? (
+            <div className="space-y-3 rounded-[14px] border border-border p-3" data-testid="cotizacion-proveedor-nuevo">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-fg">Registrar un proveedor nuevo</p>
+                {proveedores.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline"
+                    onClick={() => setRegistrando(false)}
+                  >
+                    Escoger de los registrados
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="cotizacion-proveedor"
+                  className="block text-sm font-medium text-fg dark:text-fg-subtle"
+                >
+                  {t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedor')}{' '}
+                  <span className="text-danger">*</span>
+                </label>
+                <Input
+                  id="cotizacion-proveedor"
+                  aria-required="true"
+                  value={campos.providerName}
+                  maxLength={MAX_LARGO_NOMBRE_DEL_PROVEEDOR}
+                  onChange={(e) => poner('providerName', e.target.value)}
+                  placeholder={t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedorPlaceholder')}
+                  {...aria('providerName')}
+                />
+                <ErrorDelCampo id="cotizacion-proveedor-error" mensaje={errores.providerName} />
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="cotizacion-documento"
+                  className="block text-sm font-medium text-fg dark:text-fg-subtle"
+                >
+                  NIT o cédula <span className="text-danger">*</span>
+                </label>
+                <Input
+                  id="cotizacion-documento"
+                  aria-required="true"
+                  value={campos.documento}
+                  maxLength={20}
+                  onChange={(e) => poner('documento', e.target.value)}
+                  placeholder="900123456"
+                  {...aria('documento')}
+                />
+                <ErrorDelCampo id="cotizacion-documento-error" mensaje={errores.documento} />
+                <p className="text-xs text-fg-muted">
+                  Queda en Proveedores; ahí le subes el RUT y la seguridad social.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+                {t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedor')}{' '}
+                <span className="text-danger">*</span>
+              </label>
+              <Combobox
+                data-testid="cotizacion-proveedor-lista"
+                value={proveedorId}
+                onChange={escoger}
+                options={opcionesDeProveedor}
+                placeholder="Escoge un proveedor registrado"
+                searchPlaceholder="Buscar por nombre u oficio"
+                invalid={Boolean(errores.providerName)}
+              />
+              <ErrorDelCampo id="cotizacion-proveedor-error" mensaje={errores.providerName} />
+              {elegido && elegido.avisos.length > 0 && (
+                <p className="text-xs text-warning" data-testid="cotizacion-proveedor-avisos">
+                  {elegido.avisos.join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label

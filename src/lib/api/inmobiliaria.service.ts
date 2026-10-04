@@ -1765,7 +1765,7 @@ export const mantenimientoApi = {
    */
   async completar(
     id: string,
-    cierre: { completionNotes?: string; completionPhotoUrls?: string[] } = {},
+    cierre: { completionNotes?: string; completionPhotoUrls?: string[]; costoFinalCop?: number } = {},
   ): Promise<SolicitudMantenimiento> {
     return mantenimientoDelBack(
       await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${encodeURIComponent(id)}/complete`, cierre),

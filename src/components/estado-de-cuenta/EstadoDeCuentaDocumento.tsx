@@ -20,6 +20,7 @@
 
 import * as React from 'react';
 
+import { DeduccionesDelEstado } from '@/components/inmobiliaria/deducciones/DeduccionesDelEstado';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -154,6 +155,8 @@ export interface EstadoDeCuentaDocumentoProps {
    */
   docEntero?: EstadoDeCuenta;
   className?: string;
+  /** SO-09: firma el soporte de un descuento (portal o panel) y da su URL. */
+  abrirSoporteDeLaDeduccion?: (deduccionId: string) => Promise<string>;
 }
 
 export function EstadoDeCuentaDocumento({
@@ -166,6 +169,7 @@ export function EstadoDeCuentaDocumento({
   filtros,
   docEntero,
   className,
+  abrirSoporteDeLaDeduccion,
 }: EstadoDeCuentaDocumentoProps) {
   const t = useTextoDelEstado();
   const emisor = doc.inmobiliaria;
@@ -242,6 +246,16 @@ export function EstadoDeCuentaDocumento({
       {/* Del documento ENTERO: lo que el cliente debe no depende del recorte
           que uno esté mirando (ver `docEntero`). */}
       <ResumenDelEstado doc={docEntero ?? doc} hoy={hoy} className="mt-6" />
+
+      {/* 🔴 SO-09 (QA 04-10): los descuentos de sus giros, del documento
+          ENTERO (no dependen del recorte). Sólo del propietario. */}
+      {doc.cliente.tipo === 'PROPIETARIO' ? (
+        <DeduccionesDelEstado
+          deducciones={(docEntero ?? doc).deducciones}
+          abrirSoporte={abrirSoporteDeLaDeduccion}
+          className="mt-8"
+        />
+      ) : null}
 
       {/* 🔴 La barra de filtros, a lo ancho de la hoja y pegada a lo que
           filtra. `data-estado-barra` (que trae `FiltrosDelEstado`) la esconde

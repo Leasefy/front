@@ -59,6 +59,7 @@ export function ACargoDeDialog({
   onOpenChange,
   cotizacion,
   sugerencia = null,
+  preseleccion = null,
   onConfirmar,
 }: {
   abierto: boolean;
@@ -66,6 +67,12 @@ export function ACargoDeDialog({
   cotizacion: CotizacionPorAprobar | null;
   /** A cargo de quién sugiere el agente. Sólo se dice; decide la persona. */
   sugerencia?: ACargoDeLaReparacion | null;
+  /**
+   * 🔴 SO-11 (QA 04-10): el «Responsable del pago» que se escogió al crear la
+   * solicitud llega ya marcado (la persona lo puede cambiar). Antes se volvía
+   * a preguntar desde cero.
+   */
+  preseleccion?: ACargoDeLaReparacion | null;
   /**
    * Se espera: si el back rechaza, el diálogo queda abierto. Con
    * `emergencia`, la reparación del propietario se aprueba SIN esperarlo (D12).
@@ -93,7 +100,7 @@ export function ACargoDeDialog({
 
   useEffect(() => {
     if (abierto) {
-      setEleccion(null);
+      setEleccion(preseleccion);
       setAprobando(false);
       setEsEmergencia(false);
       setMotivoDeEmergencia('');
@@ -101,7 +108,7 @@ export function ACargoDeDialog({
       setInquilinoPct(50);
       setMotivoInmobiliaria('');
     }
-  }, [abierto]);
+  }, [abierto, preseleccion]);
 
   const emergenciaIncompleta =
     eleccion === 'PROPIETARIO' && esEmergencia && (!motivoDeEmergencia.trim() || !soporte);

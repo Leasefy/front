@@ -1151,6 +1151,8 @@ export interface MantenimientoQuote {
  * pedirlo.
  */
 export interface NuevaCotizacion {
+  /** SO-08 (04-10): el proveedor del registro; el back toma de ahí el nombre. */
+  proveedorId?: string;
   providerName: string;
   providerPhone?: string;
   amount: number;
@@ -1183,6 +1185,8 @@ export interface SolicitudMantenimiento {
   status: MantenimientoStatus;
   quotes: MantenimientoQuote[];
   selectedQuoteId?: string;
+  /** H-04 / SO-08: el proveedor del registro que hace el trabajo (para calificarlo). */
+  proveedorId?: string | null;
   approvedAmount?: number;
   paidBy: MantenimientoPaidBy;
 

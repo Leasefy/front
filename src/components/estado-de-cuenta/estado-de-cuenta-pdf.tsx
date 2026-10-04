@@ -74,6 +74,10 @@ import {
   resumirElCliente,
   type AmortizacionDelContrato,
 } from './resumen';
+import {
+  ORIGEN_DE_LA_DEDUCCION,
+  estadoDeLaDeduccionEnPalabras,
+} from '@/components/inmobiliaria/deducciones/DeduccionesDelEstado';
 import { claveDelLado, texto } from './textos';
 import { numeroDelContratoDelEstado } from './numero';
 import { estadoDeLaDevolucion } from './saldo-a-favor';
@@ -718,6 +722,38 @@ function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
           ))
         )}
       </View>
+
+      {/* 🔴 SO-09 (QA 04-10): los descuentos de sus giros, también en papel
+          («el propietario lo ve en su extracto con el soporte», CEO 16-09). */}
+      {esPropietario && doc.deducciones && doc.deducciones.filas.length > 0 ? (
+        <View style={{ marginTop: 22 }} wrap={false}>
+          <Text style={estilos.rotulo}>
+            {paraElPapel(
+              `Descuentos de tus giros · por descontar ${formatCurrency(doc.deducciones.porDescontarCop)}`,
+            )}
+          </Text>
+          {doc.deducciones.filas.map((d) => (
+            <View
+              key={d.id}
+              style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}
+            >
+              <View style={{ maxWidth: 400 }}>
+                <Text style={{ fontSize: 8 }}>
+                  {paraElPapel(`${ORIGEN_DE_LA_DEDUCCION[d.origen] ?? 'Descuento'}: ${d.concepto}`)}
+                </Text>
+                <Text style={estilos.direccion}>
+                  {paraElPapel(
+                    [d.inmueble, estadoDeLaDeduccionEnPalabras(d), d.tieneSoporte ? `Soporte: ${d.soporteNombre ?? 'adjunto'}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  )}
+                </Text>
+              </View>
+              <Text style={estilos.cifraChica}>{paraElPapel(`-${formatCurrency(d.valorCop)}`)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <PieDePagina doc={doc} />
     </Page>

@@ -54,6 +54,9 @@ import { lasQueNoSubieron } from '@/lib/mantenimiento/subir-fotos-del-mantenimie
 import { fotosQueEntran, MAX_FOTOS_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 import { SelectorDeFotosDelMantenimiento } from './SelectorDeFotosDelMantenimiento';
+import { MoneyInput } from '@/components/ui/money-input';
+import { Textarea } from '@/components/ui';
+import { formatCurrency } from '@/lib/format';
 
 const ID_DE_LAS_FOTOS = 'mantenimiento-fotos-del-trabajo';
 const ID_DEL_ERROR = `${ID_DE_LAS_FOTOS}-error`;
@@ -65,6 +68,12 @@ export interface CompletarSolicitudDialogProps {
   /** La solicitud ya quedó completada (con sus fotos). */
   onCompletada: (solicitud: SolicitudMantenimiento) => void | Promise<void>;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /**
+   * 🔴 SO-14 (QA 04-10): lo aprobado. Con él, el cierre pide el COSTO FINAL
+   * (prellenado con lo aprobado): si difiere, el back ajusta el descuento al
+   * propietario (o el cargo al inquilino) y el motivo dice las dos cifras.
+   */
+  costoAprobado?: number | null;
 }
 
 export function CompletarSolicitudDialog({
@@ -73,7 +82,21 @@ export function CompletarSolicitudDialog({
   onCerrar,
   onCompletada,
   t,
+  costoAprobado = null,
 }: CompletarSolicitudDialogProps) {
+  const [costo, setCosto] = useState<string>('');
+  const [notas, setNotas] = useState('');
+  const [errorDelCosto, setErrorDelCosto] = useState<string | null>(null);
+  useEffect(() => {
+    if (abierto) {
+      setCosto(costoAprobado && costoAprobado > 0 ? String(costoAprobado) : '');
+      setNotas('');
+      setErrorDelCosto(null);
+    }
+  }, [abierto, costoAprobado]);
+  const costoFinal = costo.trim() === '' ? null : Number(costo);
+  const cambiaElCosto =
+    costoAprobado !== null && costoFinal !== null && costoFinal > 0 && costoFinal !== costoAprobado;
   const [fotos, setFotos] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -111,6 +134,11 @@ export function CompletarSolicitudDialog({
   };
 
   const confirmar = async () => {
+    if (costoAprobado !== null && !(costoFinal !== null && costoFinal > 0)) {
+      setErrorDelCosto('Escribe cuánto costó el trabajo.');
+      return;
+    }
+    setErrorDelCosto(null);
     setEnviando(true);
     setError(null);
     try {
@@ -120,7 +148,12 @@ export function CompletarSolicitudDialog({
         yaSubidas.current,
         {
           subir: (id, foto, destino) => mantenimientoApi.subirFoto(id, foto, destino),
-          completar: (id, cierre) => mantenimientoApi.completar(id, cierre),
+          completar: (id, cierre) =>
+            mantenimientoApi.completar(id, {
+              ...cierre,
+              ...(notas.trim() ? { completionNotes: notas.trim() } : {}),
+              ...(costoFinal !== null && costoFinal > 0 ? { costoFinalCop: costoFinal } : {}),
+            }),
           borrar: (id, ruta, destino) => mantenimientoApi.borrarFoto(id, ruta, destino),
         },
         quitadas.current,
@@ -181,6 +214,48 @@ export function CompletarSolicitudDialog({
           <DialogTitle>{t('inmobiliaria.mantenimiento.markAsCompleted')}</DialogTitle>
           <DialogDescription>{t('inmobiliaria.mantenimiento.completeConfirm')}</DialogDescription>
         </DialogHeader>
+
+        {costoAprobado !== null && (
+          <div className="space-y-1.5">
+            <label htmlFor="cierre-costo-final" className="block text-sm font-medium text-fg">
+              Costo final del trabajo <span className="text-danger">*</span>
+            </label>
+            <MoneyInput
+              id="cierre-costo-final"
+              data-testid="cierre-costo-final"
+              value={costo}
+              onChange={(crudo) => {
+                setCosto(crudo);
+                setErrorDelCosto(null);
+              }}
+              aria-invalid={errorDelCosto ? true : undefined}
+              aria-describedby={errorDelCosto ? 'cierre-costo-final-error' : undefined}
+            />
+            <ErrorDelCampo id="cierre-costo-final-error" mensaje={errorDelCosto ?? undefined} />
+            {cambiaElCosto ? (
+              <p className="text-xs text-warning" data-testid="cierre-costo-cambia">
+                Lo aprobado fue {formatCurrency(costoAprobado)}. Al confirmar, el descuento (o el cargo) se ajusta a{' '}
+                {formatCurrency(costoFinal)} y quien lo paga lo verá en su estado de cuenta.
+              </p>
+            ) : (
+              <p className="text-xs text-fg-muted">Lo aprobado: {formatCurrency(costoAprobado)}.</p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label htmlFor="cierre-notas" className="block text-sm font-medium text-fg">
+            Notas del cierre <span className="text-fg-subtle font-normal">(opcional)</span>
+          </label>
+          <Textarea
+            id="cierre-notas"
+            value={notas}
+            maxLength={2000}
+            onChange={(e) => setNotas(e.target.value)}
+            placeholder="Qué se hizo, qué se cambió"
+            className="min-h-[72px] resize-none"
+          />
+        </div>
 
         <div className="space-y-1.5">
           <SelectorDeFotosDelMantenimiento

@@ -354,6 +354,34 @@ export interface EstadoDeCuenta {
    * la manda: entonces se muestra `totales.restaPorPagar`, como antes.
    */
   porGirar?: PorGirarDelPropietario;
+  /**
+   * 🔴 SO-09 (QA 04-10): sólo del PROPIETARIO, cada descuento de sus giros
+   * (reparación, descuento manual, saldo en contra…). `porDescontarCop` es la
+   * MISMA cifra que `porGirar.deduccionesCop`. Un back anterior no lo manda.
+   */
+  deducciones?: DeduccionesDelEstadoDto | null;
+}
+
+/** SO-09: un descuento del propietario tal como lo manda el back. */
+export interface DeduccionDelEstado {
+  id: string;
+  origen: string;
+  concepto: string;
+  inmueble: string | null;
+  /** `AAAA-MM`. */
+  mes: string;
+  valorCop: number;
+  estado: 'PENDIENTE' | 'EN_LIQUIDACION' | 'APLICADA';
+  tieneSoporte: boolean;
+  soporteNombre: string | null;
+  fecha: string;
+  solicitudMantenimientoId: string | null;
+}
+
+export interface DeduccionesDelEstadoDto {
+  filas: DeduccionDelEstado[];
+  porDescontarCop: number;
+  aplicadasCop: number;
 }
 
 /** «Por girar» de UN propietario, como lo manda el back (`porGirarDeLasPartes`). */

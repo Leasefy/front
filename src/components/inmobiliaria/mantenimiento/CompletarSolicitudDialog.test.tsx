@@ -489,3 +489,48 @@ describe('Marcar como completada — la foto quitada con la «x» se borra al co
     expect(h.completar).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 🔴 SO-14 (QA 04-10): «Completar (fotos después + costo final; si el costo
+ * final difiere del aprobado, la deducción se ajusta y el propietario lo ve)».
+ */
+describe('🔴 SO-14 — el cierre pide el COSTO FINAL', () => {
+  const costo = () => enDocumento<HTMLInputElement>('#cierre-costo-final');
+  function escribirCosto(valor: string) {
+    const input = costo()!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    act(() => {
+      setter.call(input, valor);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('con lo aprobado, el costo final viene prellenado y viaja al cerrar', async () => {
+    montar({ solicitud: { ...SOLICITUD, approvedAmount: 180_000 } });
+    expect(costo()).not.toBeNull();
+    expect(costo()!.value.replace(/\D/g, '')).toBe('180000');
+    await confirmar();
+    expect(h.completar).toHaveBeenCalledWith('sol-7', expect.objectContaining({ costoFinalCop: 180_000 }));
+  });
+
+  it('si cambia, dice que el descuento se ajusta y que quien paga lo verá', async () => {
+    montar({ solicitud: { ...SOLICITUD, approvedAmount: 180_000 } });
+    escribirCosto('200000');
+    expect(enDocumento('[data-testid="cierre-costo-cambia"]')!.textContent).toContain('se ajusta');
+    await confirmar();
+    expect(h.completar).toHaveBeenCalledWith('sol-7', expect.objectContaining({ costoFinalCop: 200_000 }));
+  });
+
+  it('vacío no cierra y lo pide bajo el campo', async () => {
+    montar({ solicitud: { ...SOLICITUD, approvedAmount: 180_000 } });
+    escribirCosto('');
+    await confirmar();
+    expect(h.completar).not.toHaveBeenCalled();
+    expect(enDocumento('#cierre-costo-final-error')?.textContent).toContain('cuánto costó');
+  });
+
+  it('sin nada aprobado (sin cotización) no pide costo', () => {
+    montar({ solicitud: { ...SOLICITUD, approvedAmount: undefined } });
+    expect(costo()).toBeNull();
+  });
+});

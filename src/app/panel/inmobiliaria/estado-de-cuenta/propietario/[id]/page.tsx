@@ -15,6 +15,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompartirEstadoDeCuenta } from '@/components/estado-de-cuenta/CompartirEstadoDeCuenta';
+import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/PantallaDelEstadoDeCuenta';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
@@ -73,6 +74,8 @@ function Contenido() {
           : { ...doc, cliente: { ...doc.cliente, tipoDocumento: ficha.documentType } };
       }}
       volverA={{ href: volver }}
+      // SO-09 (04-10): el soporte de cada descuento, con la ruta de la inmobiliaria.
+      abrirSoporteDeLaDeduccion={async (deduccionId) => (await deduccionesApi.urlDelSoporte(id, deduccionId)).url}
       acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}

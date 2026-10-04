@@ -198,3 +198,86 @@ describe('<MantenimientoViewer> — marcar como completada', () => {
     expect(onStatusChange).toHaveBeenCalledWith('sol-7', 'completed');
   });
 });
+
+/**
+ * 🔴 SO-14 (QA 04-10): «después de cotizada/aprobada no hay cómo seguir sin
+ * arrastrar: el menú sólo tenía Agregar cotización y Cancelar». Cada paso
+ * tiene su acción en el cajón (en el celular no se puede arrastrar).
+ */
+describe('🔴 SO-14 — el cajón tiene la acción de cada paso', () => {
+  function montarCon(
+    solicitud: SolicitudMantenimiento,
+    extra: Partial<React.ComponentProps<typeof MantenimientoViewer>> = {},
+  ) {
+    const onApproveQuote = vi.fn();
+    const onStatusChange = vi.fn();
+    act(() => {
+      root.render(
+        <MantenimientoViewer
+          solicitud={solicitud}
+          isOpen
+          onClose={vi.fn()}
+          onRequestQuote={vi.fn()}
+          onStatusChange={onStatusChange}
+          onApproveQuote={onApproveQuote}
+          {...extra}
+        />,
+      );
+    });
+    return { onApproveQuote, onStatusChange };
+  }
+  const item = (id: string) =>
+    document.body.querySelector<HTMLElement>(`[data-testid="mantenimiento-detalle-${id}"]`);
+  const cotizacion = {
+    id: 'q-1',
+    solicitudId: 'sol-1',
+    providerName: 'Plomería QA Día S.A.S.',
+    amount: 180_000,
+    description: 'Sifón',
+    estimatedDays: 1,
+    createdAt: '2026-10-04T10:00:00.000Z',
+  };
+
+  it('cotizada con UNA cotización: «Aprobar cotización» abre la aprobación de ESA cotización', async () => {
+    const { onApproveQuote } = montarCon(
+      hacerSolicitud({ status: 'quoted', quotes: [cotizacion] as never }),
+    );
+    await abrirMenu();
+    act(() => item('aprobar')!.click());
+    expect(onApproveQuote).toHaveBeenCalledWith('sol-1', 'q-1');
+  });
+
+  it('esperando al propietario NO ofrece aprobar (la aprueba él)', async () => {
+    montarCon(
+      hacerSolicitud({
+        status: 'quoted',
+        quotes: [cotizacion] as never,
+        aprobacionDelPropietario: { estado: 'PENDIENTE', valorCop: 180_000 } as never,
+      }),
+    );
+    await abrirMenu();
+    expect(item('aprobar')).toBeNull();
+  });
+
+  it('aprobada: «Iniciar trabajo»; en progreso: «Completar (fotos y costo final)»', async () => {
+    const { onStatusChange } = montarCon(hacerSolicitud({ status: 'approved' }));
+    await abrirMenu();
+    act(() => item('iniciar')!.click());
+    expect(onStatusChange).toHaveBeenCalledWith('sol-1', 'in_progress');
+
+    montarCon(hacerSolicitud({ status: 'in_progress' }));
+    await abrirMenu();
+    expect(item('completar')!.textContent).toContain('costo final');
+  });
+
+  it('completada con proveedor del registro: «Calificar al proveedor»; sin proveedor, no', async () => {
+    montarCon(
+      hacerSolicitud({ status: 'completed', proveedorId: 'prov-1' } as never),
+      { onCalificado: vi.fn() },
+    );
+    await abrirMenu();
+    expect(item('calificar')).not.toBeNull();
+    act(() => item('calificar')!.click());
+    expect(document.body.querySelector('[data-testid="calificar-proveedor-dialogo"]')).not.toBeNull();
+  });
+});

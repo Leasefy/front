@@ -470,7 +470,7 @@ function MantenimientoCard({
           {solicitud.quotes.length > 0 && (
             <div className="flex items-center gap-1">
               <CurrencyCircleDollar className="w-4 h-4" />
-              <span>{solicitud.quotes.length} cotiz.</span>
+              <span>{solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}</span>
             </div>
           )}
 

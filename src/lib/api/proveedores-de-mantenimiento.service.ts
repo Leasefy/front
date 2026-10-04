@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { subirAdjuntoDePqrs } from './pqrs-adjuntos';
 
 /**
  * 🔴 El registro de proveedores de mantenimiento (H-04, Nico 18-09-2026).
@@ -70,6 +71,19 @@ export interface GuardarProveedor {
 const BASE = '/inmobiliaria/mantenimiento/proveedores';
 
 export const proveedoresDeMantenimientoApi = {
+  /**
+   * 🔴 SO-12 (QA 04-10): SUBIR el RUT o la planilla de seguridad social
+   * (multipart `archivo`, el mismo almacenamiento privado de los adjuntos de
+   * PQRS). Antes se escribía sólo el nombre del archivo.
+   */
+  subirDocumento(id: string, tipo: 'rut' | 'seguridad-social', archivo: File) {
+    return subirAdjuntoDePqrs(`${BASE}/${encodeURIComponent(id)}/documentos/${tipo}`, archivo);
+  },
+  /** La URL firmada (una hora) para abrir el documento. */
+  abrirDocumento(id: string, tipo: 'rut' | 'seguridad-social') {
+    return apiClient.get<{ url: string }>(`${BASE}/${encodeURIComponent(id)}/documentos/${tipo}`);
+  },
+
   /**
    * 🔴 Sin la migración el back devuelve `[]`, no un 503: sin ella la
    * inmobiliaria no tenía proveedores, así que una lista vacía ES el estado de

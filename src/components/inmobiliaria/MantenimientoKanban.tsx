@@ -76,6 +76,13 @@ interface MantenimientoKanbanProps {
     solicitudId: string,
     nuevoEstado: MantenimientoStatus,
   ) => void | Promise<void>;
+  /**
+   * 🔴 SO-14 (QA 04-10): «arrastrar en el tablero respeta las mismas reglas»
+   * que los botones del cajón. Si devuelve `true`, la página se encargó (abrió
+   * «Aprobar cotización» o «Completar con fotos y costo final») y el tablero NO
+   * cambia el estado a pelo.
+   */
+  alSoltar?: (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus) => boolean;
 }
 
 // ============================================================================
@@ -255,16 +262,19 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-fg-subtle">
-          <span className="flex items-center gap-1">
+      {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en
+          renglones enteros en vez de cortar «$» de su cifra. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-fg-subtle">
+          <span className="flex items-center gap-1 whitespace-nowrap">
             <CalendarBlank className="w-3 h-3" />
-            {daysSince}d
+            {/* SO-11/SO-15: en palabras, no «1d». */}
+            {daysSince <= 0 ? 'Hoy' : daysSince === 1 ? 'Hace 1 día' : `Hace ${daysSince} días`}
           </span>
           {solicitud.quotes.length > 0 && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 whitespace-nowrap">
               <CurrencyCircleDollar className="w-3 h-3" />
-              {solicitud.quotes.length}
+              {solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}
             </span>
           )}
         </div>
@@ -286,7 +296,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-success">
+          <span className="font-medium text-success whitespace-nowrap">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -368,7 +378,7 @@ function KanbanColumnComponent({
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
   return (
-    <div className="flex flex-col min-w-[280px] max-w-[320px] flex-1" data-testid={`columna-${column.id}`}>
+    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`}>
       {/* Column Header */}
       <div
         className={cn(
@@ -499,6 +509,7 @@ export function MantenimientoKanban({
   data,
   onViewDetails,
   onStatusChange,
+  alSoltar: interceptar,
   onCrear,
   hayFiltros = false,
   onLimpiarFiltros,
@@ -583,6 +594,7 @@ export function MantenimientoKanban({
 
       const solicitud = data.find((m) => m.id === solicitudId);
       if (!solicitud || solicitud.status === destino) return;
+      if (interceptar?.(solicitud, destino)) return;
 
       try {
         await onStatusChange(solicitudId, destino);
@@ -590,7 +602,7 @@ export function MantenimientoKanban({
         // Ya lo dijo quien intentó guardarlo, con el motivo que vino del back.
       }
     },
-    [data, onStatusChange]
+    [data, onStatusChange, interceptar]
   );
 
   // Tablero vacío: cinco columnas en cero no dicen nada y no ofrecen nada.
@@ -609,7 +621,10 @@ export function MantenimientoKanban({
 
   const tablero = (
     <>
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
+      {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
+          «Completada» quedaba fuera, a la derecha). En pantallas chicas se
+          apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
+      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {KANBAN_COLUMNS.map((column) => (
           <KanbanColumnComponent
             key={column.id}

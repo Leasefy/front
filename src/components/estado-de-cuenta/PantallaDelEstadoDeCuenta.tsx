@@ -111,6 +111,8 @@ export interface PantallaProps {
    */
   filtrosIniciales?: Partial<FiltrosDelEstadoDeCuenta>;
   className?: string;
+  /** SO-09 (04-10): firma el soporte de un descuento del propietario. */
+  abrirSoporteDeLaDeduccion?: (deduccionId: string) => Promise<string>;
 }
 
 export function PantallaDelEstadoDeCuenta({
@@ -123,6 +125,7 @@ export function PantallaDelEstadoDeCuenta({
   conAnticipoDelContrato = false,
   filtrosIniciales,
   className,
+  abrirSoporteDeLaDeduccion,
 }: PantallaProps) {
   const t = useTextoDelEstado();
   const hoy = hoyProp ?? hoyLocal();
@@ -403,6 +406,7 @@ export function PantallaDelEstadoDeCuenta({
             <EstadoDeCuentaDocumento
               doc={vista}
               hoy={hoy}
+              abrirSoporteDeLaDeduccion={abrirSoporteDeLaDeduccion}
               /* 🔴 El resumen de arriba se calcula del ENTERO: «resta por
                  pagar», «próxima cuota» y «al día» son hechos del cliente, no
                  del recorte. Antes se calculaban de `vista`, así que filtrar a

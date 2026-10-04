@@ -53,6 +53,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { errorDeLaVigencia } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { cn } from '@/lib/utils';
+import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
 import {
   proveedoresDeMantenimientoApi,
   type ProveedorDeMantenimiento,
@@ -195,6 +196,32 @@ function FormularioDeProveedor({
     notas: proveedor?.notas ?? '',
   });
   const [guardando, setGuardando] = useState(false);
+  /*
+   * 🔴 SO-12 (QA 04-10): el RUT y la seguridad social se SUBEN (antes se
+   * escribía el nombre del archivo y nunca había archivo).
+   */
+  const [archivos, setArchivos] = useState<{ rut: File | null; 'seguridad-social': File | null }>({
+    rut: null,
+    'seguridad-social': null,
+  });
+  const [problemaDeArchivo, setProblemaDeArchivo] = useState<{ rut?: string; 'seguridad-social'?: string }>({});
+  const elegirArchivo = (tipo: 'rut' | 'seguridad-social', archivo: File | undefined) => {
+    if (!archivo) return;
+    const problema = problemaDelAdjunto(archivo);
+    setProblemaDeArchivo((p) => ({ ...p, [tipo]: problema ?? undefined }));
+    if (!problema) setArchivos((a) => ({ ...a, [tipo]: archivo }));
+  };
+  const abrirDocumento = async (tipo: 'rut' | 'seguridad-social') => {
+    if (!proveedor) return;
+    try {
+      const { url } = await proveedoresDeMantenimientoApi.abrirDocumento(proveedor.id, tipo);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast.error('No se pudo abrir el documento', {
+        description: mensajeParaLaPersona(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'abrir el documento' }),
+      });
+    }
+  };
   const [falla, setFalla] = useState<string | null>(null);
   // El aviso de la falla sale con su animación sin vaciarse mientras se va.
   const fallaQueSeVe = useUltimoPresente(falla);
@@ -232,15 +259,22 @@ function FormularioDeProveedor({
     setDelServidor({});
     // Los vacíos no viajan: el back distingue «no lo mandó» de «lo borró».
     const limpio = Object.fromEntries(
-      Object.entries(form).filter(([, v]) =>
-        Array.isArray(v) ? true : v !== '' && v !== undefined,
+      Object.entries(form).filter(
+        ([k, v]) =>
+          // SO-12: el nombre del archivo ya no se escribe: lo pone la subida.
+          k !== 'rutNombre' &&
+          k !== 'seguridadSocialNombre' &&
+          (Array.isArray(v) ? true : v !== '' && v !== undefined),
       ),
     ) as GuardarProveedor;
     try {
-      if (proveedor) {
-        await proveedoresDeMantenimientoApi.actualizar(proveedor.id, limpio);
-      } else {
-        await proveedoresDeMantenimientoApi.crear(limpio);
+      const guardado = proveedor
+        ? await proveedoresDeMantenimientoApi.actualizar(proveedor.id, limpio)
+        : await proveedoresDeMantenimientoApi.crear(limpio);
+      const id = guardado?.id ?? proveedor?.id;
+      for (const tipo of ['rut', 'seguridad-social'] as const) {
+        const archivo = archivos[tipo];
+        if (archivo && id) await proveedoresDeMantenimientoApi.subirDocumento(id, tipo, archivo);
       }
       toast.success(proveedor ? 'Proveedor actualizado' : 'Proveedor registrado');
       onGuardado();
@@ -381,18 +415,34 @@ function FormularioDeProveedor({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
               nombre="rutNombre"
-              error={errorDe('rutNombre')}
+              error={problemaDeArchivo['rut'] ?? errorDe('rutNombre')}
               label="RUT"
               ayuda="Sin él no se le puede facturar ni retener."
             >
-              <Input
-                id="proveedor-rutNombre"
-                {...ariaDe('rutNombre', errorDe('rutNombre'))}
-                value={form.rutNombre ?? ''}
-                onChange={(e) => poner('rutNombre', e.target.value)}
-                placeholder="Nombre del archivo"
-                maxLength={255}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="proveedor-rutNombre"
+                  className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-border px-3 text-sm text-fg hover:bg-surface-hover"
+                >
+                  {archivos['rut'] ? 'Cambiar archivo' : 'Subir archivo'}
+                </label>
+                <input
+                  id="proveedor-rutNombre"
+                  data-testid="proveedor-archivo-rut"
+                  type="file"
+                  accept={ACCEPT_DE_ADJUNTOS}
+                  className="sr-only"
+                  onChange={(e) => elegirArchivo('rut', e.target.files?.[0])}
+                />
+                <span className="min-w-0 truncate text-sm text-fg-muted">
+                  {archivos['rut']?.name ?? (proveedor?.rut?.nombre ? `Guardado: ${proveedor?.rut?.nombre}` : 'PDF o foto, hasta 10 MB')}
+                </span>
+                {proveedor && proveedor?.rut?.nombre && !archivos['rut'] && (
+                  <button type="button" className="text-sm text-primary hover:underline" onClick={() => void abrirDocumento('rut')}>
+                    Ver
+                  </button>
+                )}
+              </div>
             </Campo>
             <Campo nombre="rutVigenteHasta" error={errorDe('rutVigenteHasta')} label="RUT vigente hasta">
               <Input
@@ -408,18 +458,34 @@ function FormularioDeProveedor({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
               nombre="seguridadSocialNombre"
-              error={errorDe('seguridadSocialNombre')}
+              error={problemaDeArchivo['seguridad-social'] ?? errorDe('seguridadSocialNombre')}
               label="Seguridad social"
               ayuda="Si se accidenta dentro del inmueble, el riesgo es de la inmobiliaria."
             >
-              <Input
-                id="proveedor-seguridadSocialNombre"
-                {...ariaDe('seguridadSocialNombre', errorDe('seguridadSocialNombre'))}
-                value={form.seguridadSocialNombre ?? ''}
-                onChange={(e) => poner('seguridadSocialNombre', e.target.value)}
-                placeholder="Nombre del archivo"
-                maxLength={255}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="proveedor-seguridadSocialNombre"
+                  className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-border px-3 text-sm text-fg hover:bg-surface-hover"
+                >
+                  {archivos['seguridad-social'] ? 'Cambiar archivo' : 'Subir archivo'}
+                </label>
+                <input
+                  id="proveedor-seguridadSocialNombre"
+                  data-testid="proveedor-archivo-seguridad-social"
+                  type="file"
+                  accept={ACCEPT_DE_ADJUNTOS}
+                  className="sr-only"
+                  onChange={(e) => elegirArchivo('seguridad-social', e.target.files?.[0])}
+                />
+                <span className="min-w-0 truncate text-sm text-fg-muted">
+                  {archivos['seguridad-social']?.name ?? (proveedor?.seguridadSocial?.nombre ? `Guardado: ${proveedor?.seguridadSocial?.nombre}` : 'PDF o foto, hasta 10 MB')}
+                </span>
+                {proveedor && proveedor?.seguridadSocial?.nombre && !archivos['seguridad-social'] && (
+                  <button type="button" className="text-sm text-primary hover:underline" onClick={() => void abrirDocumento('seguridad-social')}>
+                    Ver
+                  </button>
+                )}
+              </div>
             </Campo>
             <Campo
               nombre="seguridadSocialVigenteHasta"

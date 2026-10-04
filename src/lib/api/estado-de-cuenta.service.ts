@@ -123,6 +123,13 @@ export const estadoDeCuentaApi = {
     return apiClient.get<EstadoDeCuenta>('/portal/estado-de-cuenta');
   },
 
+  /** SO-09 (04-10): el soporte de un descuento MÍO (propietario), firmado una hora. */
+  soporteDeMiDeduccion(deduccionId: string): Promise<{ url: string; nombre: string | null }> {
+    return apiClient.get<{ url: string; nombre: string | null }>(
+      `/portal/estado-de-cuenta/deducciones/${encodeURIComponent(deduccionId)}/soporte`,
+    );
+  },
+
   /**
    * Manda el ENLACE al cliente, por correo o por WhatsApp. Nunca un adjunto:
    * un PDF pegado a un correo queda viejo el día que entra un abono y el

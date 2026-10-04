@@ -227,7 +227,6 @@ const DECLARADOS: readonly string[] = [
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
   'propertiesApi.removeAgent',
-  'proveedoresDeMantenimientoApi.calificar',
   'pseCheckoutApi.getRequestStatus',
   'pseCheckoutApi.verifyRequest',
   'recibosDeCajaApi.anticipos',

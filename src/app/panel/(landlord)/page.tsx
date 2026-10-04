@@ -1,5 +1,6 @@
 'use client';
 
+import { ReparacionesPorAprobar } from '@/components/landlord/portal/ReparacionesPorAprobar';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -130,6 +131,8 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
             {t('dashboard.hello', { name: firstName })}
           </h1>
         </header>
+        {/* SO-10 (QA 04-10): lo que espera su respuesta, arriba de todo. */}
+        <ReparacionesPorAprobar />
         <ContratosConLaInmobiliaria doc={doc} />
         <nav aria-label="Lo tuyo" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[

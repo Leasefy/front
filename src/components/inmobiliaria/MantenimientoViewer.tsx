@@ -39,6 +39,7 @@ import {
   Plus,
   ChatCircle,
   Play,
+  Star,
   Note,
   Camera,
   CaretRight,
@@ -70,6 +71,7 @@ import type {
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
 import { CotizacionComparator } from './CotizacionComparator';
 import { CompletarSolicitudDialog } from './mantenimiento/CompletarSolicitudDialog';
+import { CalificarProveedorDialog } from './mantenimiento/CalificarProveedorDialog';
 
 // ============================================================================
 // Types
@@ -97,6 +99,11 @@ export interface MantenimientoViewerProps {
    * (`onStatusChange(id, 'completed')`, sin fotos).
    */
   onCompletada?: (solicitud: SolicitudMantenimiento) => void | Promise<void>;
+  /**
+   * 🔴 SO-14 (QA 04-10): con este callback el cajón ofrece «Calificar al
+   * proveedor» en una solicitud completada con proveedor del registro.
+   */
+  onCalificado?: () => void | Promise<void>;
 }
 
 interface TimelineEvent {
@@ -423,6 +430,7 @@ export function MantenimientoViewer({
   onUploadPhoto,
   onRequestQuote,
   onCompletada,
+  onCalificado,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
@@ -431,6 +439,7 @@ export function MantenimientoViewer({
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(undefined);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [calificando, setCalificando] = useState(false);
 
   const TypeIcon = solicitud ? TYPE_ICONS[solicitud.type] : Wrench;
   const typeInfo = solicitud ? getMantenimientoTypeInfo(solicitud.type) : null;
@@ -458,9 +467,6 @@ export function MantenimientoViewer({
    */
   const accionesDelMenu = useMemo(() => {
     if (!solicitud) return [];
-    const cerrada = solicitud.status === 'completed' || solicitud.status === 'cancelled';
-    if (cerrada) return [];
-
     const acciones: {
       id: string;
       etiqueta: string;
@@ -468,6 +474,62 @@ export function MantenimientoViewer({
       tono?: string;
       alElegir: () => void;
     }[] = [];
+
+    /*
+     * 🔴 SO-14 (QA 04-10): cada paso tiene su acción, sin arrastrar (en el
+     * celular no se puede). Sólo las que el estado admite.
+     */
+    const aprobacion = solicitud.aprobacionDelPropietario ?? null;
+    const esperaAlPropietario = aprobacion?.estado === 'PENDIENTE';
+    const proveedorId = (solicitud as { proveedorId?: string | null }).proveedorId ?? null;
+    if (solicitud.status === 'completed') {
+      if (onCalificado && proveedorId) {
+        acciones.push({
+          id: 'calificar',
+          etiqueta: 'Calificar al proveedor',
+          icono: Star,
+          tono: 'text-warning',
+          alElegir: () => setCalificando(true),
+        });
+      }
+      return acciones;
+    }
+    if (solicitud.status === 'cancelled') return [];
+
+    if (
+      onApproveQuote &&
+      (solicitud.status === 'reported' || solicitud.status === 'quoted') &&
+      solicitud.quotes.length > 0 &&
+      !esperaAlPropietario
+    ) {
+      const quoteId = solicitud.selectedQuoteId ?? (solicitud.quotes.length === 1 ? solicitud.quotes[0].id : null);
+      if (quoteId) {
+        acciones.push({
+          id: 'aprobar',
+          etiqueta: 'Aprobar cotización',
+          icono: Check,
+          tono: 'text-success',
+          alElegir: () => onApproveQuote(solicitud.id, quoteId),
+        });
+      }
+    }
+    if (onStatusChange && solicitud.status === 'approved') {
+      acciones.push({
+        id: 'iniciar',
+        etiqueta: t('inmobiliaria.mantenimiento.startWork'),
+        icono: Play,
+        alElegir: () => onStatusChange(solicitud.id, 'in_progress'),
+      });
+    }
+    if (onStatusChange && solicitud.status === 'in_progress') {
+      acciones.push({
+        id: 'completar',
+        etiqueta: 'Completar (fotos y costo final)',
+        icono: CheckCircle,
+        tono: 'text-success',
+        alElegir: () => setShowCompleteDialog(true),
+      });
+    }
 
     if (onRequestQuote) {
       acciones.push({
@@ -490,7 +552,7 @@ export function MantenimientoViewer({
     }
 
     return acciones;
-  }, [solicitud, onRequestQuote, onStatusChange, t]);
+  }, [solicitud, onRequestQuote, onStatusChange, onApproveQuote, onCalificado, t]);
 
   const handleAddNote = () => {
     if (solicitud && onAddNote && noteText.trim()) {
@@ -894,6 +956,7 @@ export function MantenimientoViewer({
         <CompletarSolicitudDialog
           abierto={showCompleteDialog}
           solicitudId={solicitud.id}
+          costoAprobado={solicitud.approvedAmount ?? null}
           onCerrar={() => setShowCompleteDialog(false)}
           onCompletada={async (completada) => {
             setShowCompleteDialog(false);
@@ -927,6 +990,19 @@ export function MantenimientoViewer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
+
+      {onCalificado && (solicitud as { proveedorId?: string | null }).proveedorId && (
+        <CalificarProveedorDialog
+          abierto={calificando}
+          onOpenChange={setCalificando}
+          proveedorId={(solicitud as { proveedorId?: string | null }).proveedorId as string}
+          proveedorNombre={
+            solicitud.quotes.find((q) => q.id === solicitud.selectedQuoteId)?.providerName ?? 'el proveedor'
+          }
+          solicitudId={solicitud.id}
+          onCalificado={onCalificado}
+        />
       )}
     </>
   );

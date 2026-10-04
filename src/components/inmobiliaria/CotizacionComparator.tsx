@@ -324,7 +324,8 @@ export function CotizacionComparator({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {quote.estimatedDays} {t('inmobiliaria.finance.quotes.days')}
+                  {/* SO-08: «1 día», no «1 días». */}
+                  {quote.estimatedDays === 1 ? '1 día' : `${quote.estimatedDays} ${t('inmobiliaria.finance.quotes.days')}`}
                 </span>
               </div>
             </div>

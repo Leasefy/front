@@ -22,6 +22,8 @@ export default function MiEstadoDeCuentaDelPropietarioPage() {
   return (
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
+      // SO-09 (04-10): el soporte de cada descuento de sus giros.
+      abrirSoporteDeLaDeduccion={async (id) => (await estadoDeCuentaApi.soporteDeMiDeduccion(id)).url}
       volverA={{ label: 'Volver al panel', href: '/panel' }}
       acciones={(doc, nota) => (
         <BotonDescargarPDF doc={doc} hoy={doc.fecha} nota={nota} />

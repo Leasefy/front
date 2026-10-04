@@ -56,6 +56,7 @@ const {
     },
     consignacionesApiMock: {
       create: vi.fn(),
+      actualizarInventario: vi.fn(),
     },
     propietariosApiMock: {
       create: vi.fn(),
@@ -67,7 +68,7 @@ const {
     // per-test vi.mock override (the module mock below is hoisted once for
     // the whole file, same constraint step1/step2's self-fill pattern
     // already works around).
-    stepFivePhotosHolder: { photos: [] as File[] },
+    stepFivePhotosHolder: { photos: [] as File[], inventoryItems: [] as Array<Record<string, unknown>> },
     // Same pattern as stepFivePhotosHolder — lets a SALE-listing test
     // override step 2's self-filled defaults (listingType/salePrice)
     // without a per-test vi.mock (T-0038).
@@ -259,6 +260,9 @@ vi.mock('./ConsignacionWizardSteps', () => ({
       if (stepFivePhotosHolder.photos.length > 0) {
         updateFormData({ photos: stepFivePhotosHolder.photos })
       }
+      if (stepFivePhotosHolder.inventoryItems.length > 0) {
+        updateFormData({ inventoryItems: stepFivePhotosHolder.inventoryItems })
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
     return React.createElement('div', { 'data-testid': 'step-5' })
@@ -310,6 +314,8 @@ beforeEach(() => {
   propietariosApiMock.update.mockReset()
   uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
   stepFivePhotosHolder.photos = []
+  stepFivePhotosHolder.inventoryItems = []
+  consignacionesApiMock.actualizarInventario.mockReset().mockResolvedValue({ id: 'consignacion-1' })
   stepTwoOverridesHolder.overrides = {}
   stepOneOverridesHolder.overrides = {}
   ubicarDireccionMock
@@ -1192,5 +1198,47 @@ describe('<ConsignacionWizard> — los errores del back, en su lugar', () => {
       const [, opciones] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(opciones.description).toMatch(/conexión/)
     })
+  })
+})
+
+/*
+ * 🔴 QA con avatares (04-10): el inventario del paso «Acta de entrega» se
+ * escribía y se perdía al crear (nunca viajaba), y después el contrato no se
+ * podía crear. Ahora va a la consignación recién creada.
+ */
+describe('<ConsignacionWizard> — el inventario del paso 5 se guarda', () => {
+  async function hastaElFinal() {
+    await renderWizard(AGENTE_LIST)
+    for (let i = 0; i < 5; i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    await enviar()
+  }
+
+  it('con ítems, los guarda en la consignación creada (sin los renglones vacíos)', async () => {
+    stepFivePhotosHolder.inventoryItems = [
+      { id: 'item-1', name: 'Nevera', quantity: 1, condition: 'good' },
+      { id: 'item-2', name: '   ', quantity: 1, condition: 'good' },
+    ]
+    await hastaElFinal()
+    expect(consignacionesApiMock.actualizarInventario).toHaveBeenCalledWith('consignacion-1', [
+      { id: 'item-1', name: 'Nevera', quantity: 1, condition: 'good' },
+    ])
+  })
+
+  it('sin ítems no llama a nadie', async () => {
+    await hastaElFinal()
+    expect(consignacionesApiMock.actualizarInventario).not.toHaveBeenCalled()
+  })
+
+  it('si el inventario no se guarda, lo dice y la consignación sigue creada', async () => {
+    stepFivePhotosHolder.inventoryItems = [{ id: 'item-1', name: 'Nevera', quantity: 1, condition: 'good' }]
+    consignacionesApiMock.actualizarInventario.mockRejectedValue(new Error('500'))
+    await hastaElFinal()
+    expect(toast.warning).toHaveBeenCalledWith(
+      'inmobiliaria.consignaciones.wizard.toasts.inventoryErrorTitle',
+      expect.objectContaining({ description: 'inmobiliaria.consignaciones.wizard.toasts.inventoryErrorDesc' }),
+    )
+    expect(pushMock).toHaveBeenCalled()
   })
 })

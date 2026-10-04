@@ -123,6 +123,21 @@ describe('<ConsignacionCard> — guarded map lookups (confirmed crash-on-missing
 
   it('a SALE listing renders its commission pill with saleCommissionPercent, not commissionPercent (§A.3)', () => {
     render(makeConsignacion({ listingType: 'sale', saleCommissionPercent: 3, commissionPercent: 0 }));
-    expect(container.textContent).toContain('3%');
+    expect(container.textContent).toContain('3 %');
+  });
+
+  /* IN-03 (QA 04-10): la pastilla decía «% 10%» (ícono + «%»). */
+  it('la comisión se lee «10 %» una sola vez, sin el ícono de porcentaje al lado', () => {
+    render(makeConsignacion({ commissionPercent: 10 }));
+    expect(container.textContent).toContain('10 %');
+    expect(container.textContent).not.toContain('10%');
+    expect((container.textContent ?? '').match(/%/g)?.length).toBe(1);
+  });
+
+  /* QA con avatares (04-10): «Dejar en borrador» y la tarjeta decía «Disponible». */
+  it('🔴 un inmueble en borrador dice «Borrador», no «Disponible»', () => {
+    render(makeConsignacion({ availability: 'available', arrendado: false, propertyStatus: 'DRAFT' }));
+    expect(container.textContent).toContain('inmobiliaria.portafolio.card.availability.draft');
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.card.availability.available');
   });
 });

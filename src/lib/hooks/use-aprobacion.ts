@@ -22,12 +22,13 @@
  * cierto, y es el estado que enseña el camino.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 
 import { apiClient, ApiError, getAccessToken } from '@/lib/api/client'
 import { leerAprobacionLocal } from '@/lib/api/aprobacion-local'
 import { mapPreScoringToAprobacion } from '@/lib/api/aprobacion-from-prescoring'
 import { estaVigente, SIN_APROBACION, type Aprobacion } from '@/lib/api/aprobacion.service'
+import { AuthContext } from '@/lib/auth/auth-context'
 import { parsePreScoringCurrent } from '@/lib/api/prescoring.types'
 
 export interface UseAprobacionResult {
@@ -43,6 +44,16 @@ export function useAprobacion(): UseAprobacionResult {
   const [aprobacion, setAprobacion] = useState<Aprobacion | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /*
+   * IN-22 (QA de Inmuebles, 04-10): el aviso público abierto por alguien de la
+   * inmobiliaria pedía `GET /pre-scoring/current` y el back respondía 403
+   * («sólo para cuentas de inquilino») — un error en consola en cada aviso.
+   * El estudio sólo se le pide al back si quien mira es INQUILINO. Sin el
+   * proveedor de sesión (una prueba, una ruta suelta) se comporta como antes.
+   */
+  const auth = useContext(AuthContext)
+  const sesionCargando = auth?.isLoading ?? false
+  const rolDeQuienMira = auth?.user?.role ?? null
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -51,6 +62,14 @@ export function useAprobacion(): UseAprobacionResult {
     // de una consulta reciente hecha sin cuenta.
     if (!getAccessToken()) {
       setAprobacion(leerAprobacionLocal() ?? SIN_APROBACION)
+      setCargando(false)
+      return
+    }
+    // Con sesión, hasta saber quién es no se pregunta nada (sigue cargando).
+    if (sesionCargando) return
+    // Propietario o inmobiliaria: no tienen estudio de inquilino que consultar.
+    if (rolDeQuienMira !== null && rolDeQuienMira !== 'tenant') {
+      setAprobacion(SIN_APROBACION)
       setCargando(false)
       return
     }
@@ -92,7 +111,7 @@ export function useAprobacion(): UseAprobacionResult {
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [sesionCargando, rolDeQuienMira])
 
   useEffect(() => {
     void cargar()

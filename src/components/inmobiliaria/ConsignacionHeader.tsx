@@ -10,7 +10,6 @@ import {
   Briefcase,
   MapPin,
   CalendarBlank,
-  Percent,
   PencilSimple,
   Eye,
   DotsThree,
@@ -41,6 +40,7 @@ import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/l
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 interface ConsignacionHeaderProps {
   consignacion: Consignacion;
@@ -183,7 +183,16 @@ export function ConsignacionHeader({
   const terminada = consignacion.status === 'terminated';
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
-  const availability = AVAILABILITY_STYLES[consignacion.availability];
+  // QA con avatares (04-10): un borrador no está publicado; decía «Disponible».
+  const availability =
+    cajonDelInmueble({ kind: 'consignacion', ...consignacion }) === 'borrador'
+      ? {
+          bg: 'bg-surface-muted dark:bg-ink',
+          text: 'text-fg-muted dark:text-fg-subtle',
+          labelKey: 'inmobiliaria.consignaciones.availability.draft',
+          icon: PencilSimple,
+        }
+      : AVAILABILITY_STYLES[consignacion.availability];
   const status = STATUS_STYLES[consignacion.status];
   const AvailabilityIcon = availability.icon;
   const thumbnailUrl = propertyThumbnailUrl || consignacion.propertyThumbnail;
@@ -257,8 +266,8 @@ export function ConsignacionHeader({
           {/* Commission pill — a SALE mandate's commissionPercent is always
               0 (contract-addendum-2.md §A.3); show saleCommissionPercent. */}
           <div className="absolute top-3 right-3">
+            {/* IN-03: sin el ícono de porcentaje — el texto ya dice «10 %». */}
             <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-1.5">
-              <Percent className="w-4 h-4" />
               {textoDeLaComision(consignacion)}{' '}
               {consignacion.listingType === 'sale'
                 ? t('inmobiliaria.consignaciones.header.saleCommission')
@@ -330,7 +339,7 @@ export function ConsignacionHeader({
           {consignacion.listingType === 'sale' ? (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
               <span className="text-3xl lg:text-4xl font-bold text-fg">
-                {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
+                {textoDeLaComision(consignacion)}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
             </div>

@@ -16,7 +16,6 @@ import {
   CaretRight,
   Eye,
   PencilSimple,
-  Percent,
   CalendarPlus,
   Car,
   Mountains,
@@ -28,6 +27,7 @@ import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/l
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 interface ConsignacionCardProps {
   consignacion: Consignacion;
@@ -129,7 +129,16 @@ export function ConsignacionCard({
   // latent trap the moment either type widens — the same trap this task
   // already found and fixed in the table.
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType] ?? Buildings;
-  const availability = AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
+  // QA con avatares (04-10): un borrador salía «Disponible». Misma regla que
+  // el chip «Borrador» de la lista (`cajonDelInmueble`).
+  const availability =
+    cajonDelInmueble({ kind: 'consignacion', ...consignacion }) === 'borrador'
+      ? {
+          bg: 'bg-surface-muted dark:bg-ink',
+          text: 'text-fg-muted dark:text-fg-subtle',
+          label: t('inmobiliaria.portafolio.card.availability.draft'),
+        }
+      : AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
   const status = STATUS_COLORS[consignacion.status] ?? STATUS_COLORS.active;
 
   // Compact variant - single row for list views
@@ -170,7 +179,7 @@ export function ConsignacionCard({
           <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
             {consignacion.propertyZone} ·{' '}
             {consignacion.listingType === 'sale'
-              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+              ? textoDeLaComision(consignacion)
               : consignacion.canonPorConfirmar
                 ? TEXTO_CANON_POR_CONFIRMAR
                 : consignacion.monthlyRent != null
@@ -242,9 +251,9 @@ export function ConsignacionCard({
         {/* Commission pill - top right */}
         <div className="absolute top-3 right-3">
           <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1">
-            <Percent className="w-3 h-3" />
             {/* contract-addendum-2.md §A.3 — a SALE mandate's commissionPercent
-                is always 0; the agreed figure is saleCommissionPercent. */}
+                is always 0; the agreed figure is saleCommissionPercent.
+                IN-03: sin el ícono de porcentaje — el texto ya dice «10 %». */}
             {textoDeLaComision(consignacion)}
           </span>
         </div>
@@ -276,7 +285,7 @@ export function ConsignacionCard({
         {consignacion.listingType === 'sale' ? (
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-xl font-bold text-fg">
-              {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
+              {textoDeLaComision(consignacion)}
             </span>
             <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
           </div>

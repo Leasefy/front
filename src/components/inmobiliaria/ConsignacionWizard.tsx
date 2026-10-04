@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
+import { itemsDelInventarioDelAsistente } from '@/lib/inmuebles/inventario-del-asistente';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
@@ -667,6 +668,7 @@ export function ConsignacionWizard({
       // properties.service.ts (back) ya le da PropertyAccess al creador
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
+      let consignacionCreada: { id: string } | null = null;
       try {
         // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
         // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
@@ -679,7 +681,7 @@ export function ConsignacionWizard({
           formData.propietarioId ?? '',
         );
 
-        await consignacionesApi.create({
+        consignacionCreada = await consignacionesApi.create({
           propietarioId: formData.propietarioId ?? '',
           ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
           propertyId,
@@ -748,6 +750,25 @@ export function ConsignacionWizard({
         return;
       }
       inmuebleCreado.current = null;
+
+      /*
+       * 🔴 QA con avatares (04-10): el inventario del paso «Acta de entrega» no
+       * se mandaba a ningún lado —se perdía al crear— y después el contrato
+       * no se podía crear. Va ahora a la consignación recién creada (el back
+       * lo deja también como borrador del inventario de la ficha). Si falla,
+       * la consignación ya existe: se dice y se sigue.
+       */
+      const inventario = isSaleListing ? [] : itemsDelInventarioDelAsistente(formData.inventoryItems);
+      if (inventario.length > 0 && consignacionCreada?.id) {
+        try {
+          await consignacionesApi.actualizarInventario(consignacionCreada.id, inventario);
+        } catch (error) {
+          console.error('Error saving the inventory:', error);
+          toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.inventoryErrorTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.inventoryErrorDesc'),
+          });
+        }
+      }
 
       if (!publicar) {
         // W2 — la persona eligió dejarlo en borrador porque no tiene fotos. El

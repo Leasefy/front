@@ -112,8 +112,13 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               type="button"
               aria-pressed={isSelected}
               onClick={() => handleSelect(card.method, card.disabled)}
+              // IN-08 (QA 04-10): un <button> centra su contenido en vertical, así
+              // que en la tarjeta más alta («Desde portales», cuatro renglones) la
+              // etiqueta «Guiado» quedaba más arriba que las de al lado. Contenido
+              // arriba, como columna: las etiquetas quedan a la misma altura.
+              data-testid={`metodo-${card.method}`}
               className={cn(
-                'animate-stagger-in text-left rounded-lg border-2 p-6 transition-[border-color,background-color,box-shadow] duration-base',
+                'animate-stagger-in flex flex-col items-start justify-start text-left rounded-lg border-2 p-6 transition-[border-color,background-color,box-shadow] duration-base',
                 card.disabled
                   ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
                   : isSelected

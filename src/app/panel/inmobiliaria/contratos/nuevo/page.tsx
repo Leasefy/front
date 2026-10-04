@@ -190,6 +190,12 @@ function NuevoContratoContent() {
    * datos ya escritos.
    */
   const inquilinoPedido = esManual ? searchParams.get('inquilino') : null;
+  /*
+   * `?inmueble=<propertyId>` (QA con avatares, 04-10): la vuelta desde el
+   * inventario de la ficha («Hacer el inventario» del bloqueo) llega con el
+   * inmueble ya elegido, para no empezar de cero.
+   */
+  const inmueblePedido = esManual ? searchParams.get('inmueble') : null;
   const actions = useContractActions();
   const [partes, setPartes] = useState<PartesManuales>(() =>
     inquilinoPedido
@@ -988,6 +994,7 @@ function NuevoContratoContent() {
         {esManual && (
           <PartesDelContratoManual
             inquilinoPedido={inquilinoPedido}
+            inmueblePedido={inmueblePedido}
             valor={partes}
             onCambio={(v, opciones) => {
               if (!opciones?.automatico) setPartesTocadas(true);
@@ -1027,7 +1034,19 @@ function NuevoContratoContent() {
           Entran y salen (no saltan).
         */}
         <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
-          {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
+          {bloqueoDeInventario && (
+            <BloqueoPorInventario
+              bloqueo={bloqueoDeInventario}
+              // Para volver acá con lo elegido cuando el inventario quede listo.
+              volverA={
+                esManual
+                  ? inmuebleParaIniciar
+                    ? `/panel/inmobiliaria/contratos/nuevo?inmueble=${encodeURIComponent(inmuebleParaIniciar)}`
+                    : '/panel/inmobiliaria/contratos/nuevo'
+                  : `/panel/inmobiliaria/contratos/nuevo?applicationId=${encodeURIComponent(applicationId ?? '')}`
+              }
+            />
+          )}
         </Presence>
         <Presence
           show={Boolean(errorDeInmueble)}

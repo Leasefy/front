@@ -16,9 +16,10 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle, ClipboardText } from '@phosphor-icons/react';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from '@/components/ui/toast';
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { BarraDeBorradorDeInventario } from '@/components/inmobiliaria/BarraDeBorradorDeInventario';
@@ -64,6 +65,12 @@ interface Props {
   sinSenal?: boolean;
   /** Sólo para la tarjeta de siempre (sin la migración). */
   onActualizada?: (consignacion: Consignacion) => void;
+  /**
+   * Se llegó desde «Nuevo contrato», que no deja crear el contrato sin el
+   * inventario completo (QA con avatares, 04-10): a dónde volver para seguir
+   * con el contrato. Sin esto la persona tenía que buscar el camino de vuelta.
+   */
+  volverAlContrato?: string | null;
 }
 
 export function InventarioDelInmueble(props: Props) {
@@ -111,6 +118,7 @@ function InventarioPorVersiones({
   puedeEditar,
   copiaLocal,
   sinSenal = false,
+  volverAlContrato = null,
   datos,
   inventarios,
 }: Props & { datos: InventariosDelInmueble; inventarios: EstadoDeLosInventarios }) {
@@ -208,6 +216,20 @@ function InventarioPorVersiones({
   }, [consignacion.id, reemplazar, t]);
 
   const aviso = avisoDeVigencia(datos.vigencia);
+  /*
+   * IN-07 (QA 04-10): sin ningún inventario la tarjeta decía lo mismo TRES
+   * veces —«Este inmueble no tiene inventario…» (el aviso de vigencia),
+   * «Todavía no hay inventario…» (el encabezado de la versión) y «No hay ítems
+   * de inventario» (la tabla vacía), más el historial vacío—. Ahora es UN solo
+   * estado vacío con la acción para empezarlo.
+   */
+  const sinInventarioTodavia =
+    !datos.borrador &&
+    !datos.ultimoCompleto &&
+    datos.versiones.length === 0 &&
+    items.length === 0 &&
+    !datos.vigencia?.porActualizarTras;
+  const inventarioVigente = Boolean(datos.vigencia?.vigente);
   const borrador = datos.borrador;
   const encabezado = borrador
     ? t(`${B}.borradorDeVersion`, { version: borrador.version })
@@ -236,7 +258,16 @@ function InventarioPorVersiones({
         </p>
       )}
 
-      {aviso && (
+      {volverAlContrato && (
+        <AlertaAccionable
+          severidad={inventarioVigente ? 'success' : 'info'}
+          titulo={t(inventarioVigente ? `${B}.volverListo` : `${B}.volverPendiente`)}
+          accion={{ label: t(`${B}.volverAlContrato`), href: volverAlContrato }}
+          data-testid="volver-al-contrato"
+        />
+      )}
+
+      {aviso && !sinInventarioTodavia && (
         <AlertaAccionable
           severidad={aviso.severidad}
           titulo={t(aviso.titulo.clave, aviso.titulo.params)}
@@ -270,18 +301,32 @@ function InventarioPorVersiones({
         />
       )}
 
-      <p className="text-sm font-medium text-foreground" data-testid="encabezado-de-version">
-        {encabezado}
-      </p>
+      {sinInventarioTodavia ? (
+        <div className="rounded-xl border border-border bg-card" data-testid="inventario-vacio">
+          <EmptyState
+            icon={ClipboardText}
+            title={t(`${B}.vacioTitulo`)}
+            description={t(`${B}.vacioTexto`)}
+            action={puedeEditar ? { label: t(`${B}.empezar`), onClick: () => setItemAbierto(null) } : undefined}
+            className="py-8"
+          />
+        </div>
+      ) : (
+        <>
+          <p className="text-sm font-medium text-foreground" data-testid="encabezado-de-version">
+            {encabezado}
+          </p>
 
-      <ActaEntregaView
-        inventoryItems={items}
-        contractDate={borrador?.updatedAt ?? datos.ultimoCompleto?.completadoEn ?? consignacion.contractDate}
-        onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`)}
-        onAddItem={puedeEditar ? () => setItemAbierto(null) : undefined}
-        onEditItem={puedeEditar ? (item) => setItemAbierto(item) : undefined}
-        onDeleteItem={puedeEditar ? quitarItem : undefined}
-      />
+          <ActaEntregaView
+            inventoryItems={items}
+            contractDate={borrador?.updatedAt ?? datos.ultimoCompleto?.completadoEn ?? consignacion.contractDate}
+            onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`)}
+            onAddItem={puedeEditar ? () => setItemAbierto(null) : undefined}
+            onEditItem={puedeEditar ? (item) => setItemAbierto(item) : undefined}
+            onDeleteItem={puedeEditar ? quitarItem : undefined}
+          />
+        </>
+      )}
 
       {puedeEditar && borrador && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-4" data-testid="completar-inventario">
@@ -298,7 +343,7 @@ function InventarioPorVersiones({
         </div>
       )}
 
-      <HistorialDeVersiones versiones={datos.versiones} />
+      {!sinInventarioTodavia && <HistorialDeVersiones versiones={datos.versiones} />}
 
       {puedeEditar && (
         <InventarioItemDialog

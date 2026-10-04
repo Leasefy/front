@@ -14,7 +14,6 @@ import {
   PencilSimple,
   MapPin,
   User,
-  Percent,
   CalendarPlus,
   ArrowSquareOut,
   Users,
@@ -54,6 +53,8 @@ import type {
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import { textoCortoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 type SortField = 'propertyTitle' | 'propertyZone' | 'monthlyRent' | 'commissionPercent' | 'availability';
 type SortDirection = 'asc' | 'desc';
@@ -148,6 +149,12 @@ const AVAILABILITY_COLORS: Record<
     variant: 'destructive',
     labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
   },
+};
+
+/** El inmueble no está publicado (`DRAFT`): ni disponible ni ofrecido. */
+const BORRADOR = {
+  variant: 'secondary' as const,
+  labelKey: 'inmobiliaria.consignaciones.availability.draft',
 };
 
 /**
@@ -346,9 +353,14 @@ export function ConsignacionTable({
           {sortedConsignaciones.map((row) => {
             const rowKey = portafolioRowKey(row);
             const PropertyIcon = getPropertyIcon(row.propertyType);
+            // QA con avatares (04-10): un inmueble en BORRADOR salía
+            // «Disponible». Se dice «Borrador», con la MISMA regla del chip
+            // (`cajonDelInmueble`), para que la fila y el filtro no se contradigan.
             const availability =
               row.kind === 'consignacion'
-                ? AVAILABILITY_COLORS[row.availability] ?? AVAILABILITY_COLORS.available
+                ? cajonDelInmueble(row) === 'borrador'
+                  ? BORRADOR
+                  : AVAILABILITY_COLORS[row.availability] ?? AVAILABILITY_COLORS.available
                 : null;
             const propietarioName =
               row.kind === 'consignacion' ? propietariosMap[row.propietarioId] : undefined;
@@ -503,12 +515,17 @@ export function ConsignacionTable({
                     (§A.3), `commissionPercent` es siempre 0: se muestra
                     `saleCommissionPercent` en su lugar. */}
                 <TableCell className="p-4">
+                  {/* IN-03 (QA 04-10): decía «% 10%» (el ícono de porcentaje
+                      y el «%» del número). Ahora «10 %» una vez, con la misma
+                      regla de la tarjeta y la ficha (`textoDeLaComision`),
+                      que además dice «No venía en el archivo» en vez de un 0. */}
                   {row.kind === 'consignacion' ? (
-                    <Badge variant="secondary" className="gap-1 tabular-nums">
-                      <Percent className="w-3.5 h-3.5" />
-                      {row.listingType === 'sale'
-                        ? (row.saleCommissionPercent != null ? `${row.saleCommissionPercent}%` : '—')
-                        : `${row.commissionPercent}%`}
+                    <Badge
+                      variant="secondary"
+                      className="whitespace-nowrap tabular-nums"
+                      title={textoCortoDeLaComision(row).explicacion}
+                    >
+                      {textoCortoDeLaComision(row).texto}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>

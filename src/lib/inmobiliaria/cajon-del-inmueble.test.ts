@@ -94,6 +94,24 @@ describe('cajonDelInmueble', () => {
     expect(estaArrendado({ availability: 'available' } as Consignacion)).toBe(false)
   })
 
+  /*
+   * 🔴 QA con avatares (04-10): Sara dejó una consignación «en borrador» (sin
+   * fotos) y la lista la mostraba «Disponible», contada entre las vacantes que
+   * se ofrecen. Un borrador no está publicado: tiene su propio cajón.
+   */
+  it('🔴 un inmueble en BORRADOR no es disponible: tiene su propio cajón', () => {
+    expect(cajonDelInmueble(mandato({ arrendado: false, propertyStatus: 'DRAFT' }))).toBe('borrador')
+    expect(cajonDelInmueble(mandato({ arrendado: false, propertyStatus: 'AVAILABLE' }))).toBe('disponible')
+    // Con contrato vigente manda el contrato, como siempre.
+    expect(cajonDelInmueble(mandato({ arrendado: true, propertyStatus: 'DRAFT' }))).toBe('arrendado')
+    const cuenta = contarPorCajon([
+      mandato({ id: 'b', arrendado: false, propertyStatus: 'DRAFT' }),
+      mandato({ id: 'd', arrendado: false, propertyStatus: 'AVAILABLE' }),
+    ])
+    expect(cuenta.borrador).toBe(1)
+    expect(cuenta.disponible).toBe(1)
+  })
+
   it('🔴 LOS CINCO CAJONES SUMAN EL TOTAL, siempre', () => {
     const filas: PortafolioRow[] = [
       ...Array.from({ length: 104 }, (_, i) =>
@@ -113,6 +131,7 @@ describe('cajonDelInmueble', () => {
       arrendado: 105,
       enProceso: 0,
       mantenimiento: 0,
+      borrador: 0,
       sinMandato: 25,
     })
     const suma = CAJONES_DEL_INMUEBLE.reduce((s, c) => s + cuenta[c], 0)

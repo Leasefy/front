@@ -53,6 +53,7 @@ import {
 import { FirmaElectronicaDeConsignacionSection } from '@/components/inmobiliaria/consignacion/FirmaElectronicaDeConsignacionSection';
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
 import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
+import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
 // 🔴 C-05 y la firma del mandato (18-09-2026): los papeles que hacen falta
@@ -208,6 +209,12 @@ function ConsignacionDetailContent() {
   // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
   // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
   const searchParams = useSearchParams();
+  // QA con avatares (04-10): desde «Nuevo contrato» («Hacer el inventario») se
+  // llega con `?volver=`; el inventario ofrece regresar al contrato.
+  const volverAlContrato = (() => {
+    const ruta = rutaDeRegreso(searchParams.get('volver'), '');
+    return ruta.startsWith('/panel/inmobiliaria/contratos') ? ruta : null;
+  })();
   useEffect(() => {
     if (consignacion && searchParams.get('editar') === '1') {
       setShowEditModal(true);
@@ -704,6 +711,7 @@ function ConsignacionDetailContent() {
               copiaLocal={copiaLocal}
               sinSenal={sinSenal}
               onActualizada={setConsignacionData}
+              volverAlContrato={volverAlContrato}
             />
           </div>
 

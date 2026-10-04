@@ -63,11 +63,14 @@ function Puerta({
   cuando,
   completo,
   falta,
+  soloElNumero = false,
 }: {
   titulo: string
   cuando: string
   completo: boolean
   falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+  /** «2» en vez de «Faltan 2» cuando el rótulo ya dice «Documentos que faltan». */
+  soloElNumero?: boolean
 }) {
   return (
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
@@ -82,7 +85,9 @@ function Puerta({
             ? 'Listo'
             : falta.length === 0
               ? 'Sin revisar'
-              : `Faltan ${falta.length}`}
+              : soloElNumero
+                ? String(falta.length)
+                : `Faltan ${falta.length}`}
         </Badge>
       </div>
       {!completo && falta.length === 0 ? (
@@ -134,6 +139,8 @@ export function MandatoDelInmueble({
     envio: 'ENVIADO' | 'SIMULADO' | 'FALLIDO'
     enlaceDePrueba?: string
   } | null>(null)
+
+  const yaHuboGiros = documentos.datos?.yaHuboGiros === true
 
   const laFirma = (firmas.datos?.firmas ?? []).find(
     (f) => f.estado === 'PENDIENTE' || f.estado === 'FIRMADA',
@@ -217,9 +224,13 @@ export function MandatoDelInmueble({
                   completo={documentos.datos.paraPublicar.completo}
                   falta={documentos.datos.paraPublicar.falta}
                 />
+                {/* IN-14 (QA 04-10): a un inmueble que ya gira hace meses le
+                    seguía diciendo «Antes del primer giro — Faltan 2». Si ya
+                    hubo giros, son «Documentos que faltan» y punto. */}
                 <Puerta
                   titulo="giro"
-                  cuando="Antes del primer giro"
+                  cuando={yaHuboGiros ? 'Documentos que faltan' : 'Antes del primer giro'}
+                  soloElNumero={yaHuboGiros}
                   completo={documentos.datos.paraElPrimerGiro.completo}
                   falta={documentos.datos.paraElPrimerGiro.falta}
                 />
@@ -276,7 +287,7 @@ export function MandatoDelInmueble({
               Lo firma <span className="text-foreground font-medium">
                 {propietarioNombre ?? 'el propietario'}
               </span>: es el documento con el que te autoriza a administrar y
-              arrendar el inmueble. Va antes del primer giro de su plata.
+              arrendar el inmueble.{yaHuboGiros ? '' : ' Va antes del primer giro de su plata.'}
             </p>
             {laFirma ? (
               <p className="text-muted-foreground text-sm">

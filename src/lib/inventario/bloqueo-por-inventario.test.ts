@@ -51,6 +51,12 @@ describe('bloqueo por inventario', () => {
     expect(enlaceAlInventario('cons-1')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
   });
 
+  it('con a dónde volver, el `?volver=` va ANTES del ancla (después del # no se lee)', () => {
+    expect(enlaceAlInventario('cons-1', '/panel/inmobiliaria/contratos/nuevo?inmueble=p 1')).toBe(
+      '/panel/inmobiliaria/inmuebles/cons-1?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fnuevo%3Finmueble%3Dp%201#inventario',
+    );
+  });
+
   it('nombra el contrato por su número del sistema viejo si lo tiene', () => {
     expect(numeroDelContrato({ code: 12, externalId: 'A-77' })).toBe('A-77');
     expect(numeroDelContrato({ code: 12, externalId: null })).toBe('#12');

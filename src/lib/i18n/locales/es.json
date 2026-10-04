@@ -938,8 +938,16 @@
       "bloqueoSinInventario": "El inmueble no tiene inventario. Hazlo y complétalo.",
       "bloqueoSoloBorrador": "El inventario del inmueble está en borrador. Complétalo.",
       "bloqueoAnterior": "El inventario del inmueble está por actualizar tras el contrato {{numero}}, que terminó el {{fecha}}.",
-      "bloqueoEnlace": "Ir al inventario del inmueble",
-      "bloqueoSinEnlace": "Busca el inmueble en el portafolio y actualiza su inventario."
+      "bloqueoSinEnlace": "Busca el inmueble en el portafolio y actualiza su inventario.",
+      "bloqueoHacer": "Hacer el inventario",
+      "bloqueoCompletar": "Completar el inventario",
+      "bloqueoActualizar": "Actualizar el inventario",
+      "vacioTitulo": "Este inmueble todavía no tiene inventario",
+      "vacioTexto": "Es la lista de lo que hay en el inmueble y en qué estado está. Hazlo y complétalo: sin él no se puede iniciar un contrato.",
+      "empezar": "Empezar el inventario",
+      "volverAlContrato": "Volver al contrato",
+      "volverListo": "Listo: el inventario está completo. Ya puedes seguir con el contrato.",
+      "volverPendiente": "Vienes de crear un contrato: cuando completes el inventario, vuelve para seguir."
     },
     "nav": {
       "dashboard": "Dashboard",
@@ -3430,7 +3438,8 @@
           "available": "Disponible",
           "rented": "Arrendado",
           "inProcess": "En proceso",
-          "maintenance": "Mantenimiento"
+          "maintenance": "Mantenimiento",
+          "draft": "Borrador"
         },
         "status": {
           "active": "Activa",
@@ -3470,6 +3479,7 @@
         "inProcess": "En proceso",
         "maintenance": "Mantenimiento",
         "propertyCount": "{{count}} inmuebles",
+        "propertyCountUno": "1 inmueble",
         "propertyCountSinContar": "Sin contar"
       },
       "views": {
@@ -3744,7 +3754,8 @@
         "available": "Disponible",
         "rented": "Arrendado",
         "inProcess": "En proceso",
-        "maintenance": "Mantenimiento"
+        "maintenance": "Mantenimiento",
+        "draft": "Borrador"
       },
       "status": {
         "active": "Activa",
@@ -3841,6 +3852,7 @@
         "rented": "Arrendado",
         "inProcess": "En proceso",
         "maintenance": "Mantenimiento",
+        "draft": "Borrador",
         "sinMandato": "Sin mandato",
         "allTypes": "Todos",
         "apartment": "Apto",
@@ -4111,6 +4123,8 @@
           "yesCancel": "Sí, cancelar"
         },
         "toasts": {
+          "inventoryErrorTitle": "La consignación quedó creada, pero el inventario no se guardó",
+          "inventoryErrorDesc": "Hazlo desde la ficha del inmueble: sin inventario no se podrá firmar el contrato.",
           "successTitle": "Inmueble consignado",
           "successDesc": "\"{{title}}\" quedó con su propietario, su comisión y su agente.",
           "errorTitle": "No pudimos crear el inmueble",
@@ -4203,24 +4217,30 @@
           "selfAssignNotice": "Si no seleccionas un agente, la consignación queda a cargo del mismo perfil que la está creando."
         },
         "step5": {
-          "title": "Acta de Entrega",
+          "title": "Acta de entrega",
           "subtitle": "Registra el inventario y estado del inmueble",
-          "titleSale": "Fotografías del Inmueble",
+          "titleSale": "Fotografías del inmueble",
           "subtitleSale": "Agrega las fotos que se publicarán con este inmueble.",
           "inventoryTitle": "Inventario de bienes",
-          "addItem": "Agregar item",
-          "itemNamePlaceholder": "Nombre del item (ej: Estufa 4 puestos)",
+          "addItem": "Agregar ítem",
+          "itemNamePlaceholder": "Qué es (ej.: estufa de 4 puestos)",
           "units": "unid.",
           "additionalNotes": "Notas adicionales...",
-          "emptyInventory": "No hay items en el inventario",
-          "addFirstItem": "Agregar primer item",
+          "emptyInventory": "No hay ítems en el inventario",
+          "addFirstItem": "Agregar el primer ítem",
           "photosTitle": "Fotografías del inmueble",
           "generalNotes": "Observaciones generales",
           "generalNotesPlaceholder": "Estado general del inmueble, detalles adicionales...",
           "conditionExcellent": "Excelente",
           "conditionGood": "Bueno",
           "conditionFair": "Regular",
-          "conditionPoor": "Malo"
+          "conditionPoor": "Malo",
+          "sinInventarioAviso": "Sin inventario no se podrá firmar el contrato. Puedes hacerlo después desde la ficha del inmueble.",
+          "itemNameAria": "Qué es (ítem {{n}})",
+          "itemQuantityAria": "Cantidad (ítem {{n}})",
+          "itemConditionAria": "Estado (ítem {{n}})",
+          "itemNotesAria": "Observaciones (ítem {{n}})",
+          "removeItem": "Quitar el ítem {{n}}"
         },
         "step6": {
           "title": "Confirmar la consignación",

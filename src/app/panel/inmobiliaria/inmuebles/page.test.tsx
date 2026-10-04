@@ -277,6 +277,7 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       arrendado: 1,
       enProceso: 0,
       mantenimiento: 1,
+      borrador: 0,
       sinMandato: 0,
     })
     expect(ultimo().total).toBe(3)
@@ -312,7 +313,46 @@ describe('Portafolio — los conteos que la franja recibe', () => {
       arrendado: 0,
       enProceso: 0,
       mantenimiento: 0,
+      borrador: 0,
       sinMandato: 0,
     })
+  })
+
+  /* QA con avatares (04-10): «1 inmuebles». El singular tiene su clave. */
+  it('«1 inmueble» en singular y «N inmuebles» en plural, con la clave del diccionario', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('portafolio.stats.propertyCountUno')
+    act(() => root.unmount())
+    root = createRoot(container)
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1'), consignacion('c-2')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('portafolio.stats.propertyCount')
+    expect(container.textContent).not.toContain('propertyCountUno')
+  })
+
+  /* QA con avatares (04-10): «Dejar en borrador» y la lista lo daba disponible. */
+  it('🔴 un inmueble en borrador cae en «Borrador», no en «Disponible»', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [
+        consignacion('a', { availability: 'available', arrendado: false, propertyStatus: 'AVAILABLE' }),
+        consignacion('b', { availability: 'available', arrendado: false, propertyStatus: 'DRAFT' }),
+      ],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(ultimo().conteo).toMatchObject({ disponible: 1, borrador: 1 })
   })
 })

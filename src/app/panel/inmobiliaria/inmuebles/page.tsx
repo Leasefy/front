@@ -567,10 +567,16 @@ function PortafolioContent() {
             ]}
           />
           <span className="text-sm text-fg-muted tabular-nums">
+            {/* «1 inmueble» / «N inmuebles»: el singular es su propia clave
+                (`…Uno`, como el resto del diccionario); antes decía
+                «1 inmuebles» (QA con avatares, 04-10). */}
             {sePudoContar
-              ? t('inmobiliaria.portafolio.stats.propertyCount', {
-                  count: filteredConsignaciones.length,
-                })
+              ? t(
+                  filteredConsignaciones.length === 1
+                    ? 'inmobiliaria.portafolio.stats.propertyCountUno'
+                    : 'inmobiliaria.portafolio.stats.propertyCount',
+                  { count: filteredConsignaciones.length },
+                )
               : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
           </span>
         </div>

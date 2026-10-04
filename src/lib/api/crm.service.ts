@@ -640,6 +640,12 @@ export interface DocumentosDelMandato {
     completo: boolean
     falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
   }
+  /**
+   * IN-14 (QA 04-10): si ya se le giró a alguno de los dueños del mandato. Con
+   * `true` la puerta «antes del primer giro» ya pasó y la ficha dice
+   * «Documentos que faltan». Ausente en un back anterior = `false`.
+   */
+  yaHuboGiros?: boolean
 }
 
 export interface ConsultaDeListas {

@@ -23,6 +23,7 @@ import {
   Warehouse,
   Car,
   Tree,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import type { Icon as IconoDePhosphor } from '@phosphor-icons/react';
 import { llevaHabitaciones, descripcionValida, DESCRIPCION_MINIMA, DESCRIPCION_MAXIMA } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
@@ -120,13 +121,25 @@ export interface StepProps {
 // Sistema de errores (02-10-2026): los ids y los topes viven en
 // `lib/inmuebles/errores-del-asistente.ts` (el asistente los usa sin montar
 // los pasos). Acá sólo el `aria` de cada control.
-function aria(campo: string, error?: string) {
+function aria(campo: string, error?: string, requerido = false) {
   const id = idDelCampoDelAsistente(campo);
   return {
     id,
     'aria-invalid': error ? true : undefined,
     'aria-describedby': error ? `${id}-error` : undefined,
+    'aria-required': requerido ? true : undefined,
   } as const;
+}
+
+/**
+ * IN-17 (QA 04-10): las etiquetas del asistente no estaban unidas a su campo
+ * (un lector de pantalla no decía qué era cada caja y `getByLabel` no las
+ * encontraba). Cada `<label>` apunta con `htmlFor` al `id` que ya ponía
+ * `aria()`; los grupos de tarjetas (tipo, arriendo/venta, término) se nombran
+ * con `aria-labelledby`, porque un `<div role="radiogroup">` no es «labelable».
+ */
+function idDeLaEtiqueta(campo: string): string {
+  return `${idDelCampoDelAsistente(campo)}-etiqueta`;
 }
 
 // ============================================================================
@@ -324,10 +337,12 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
       <div className="space-y-4">
         {/* Property Type */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label id={idDeLaEtiqueta('propertyType')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.propertyTypeLabel')} <span className="text-danger">*</span>
           </label>
           <RadioCardGroup
+            aria-labelledby={idDeLaEtiqueta('propertyType')}
+            aria-required
             className="grid grid-cols-3 sm:grid-cols-6 gap-2"
             value={formData.propertyType || undefined}
             onValueChange={(v) => updateFormData({ propertyType: v as Consignacion['propertyType'] })}
@@ -349,7 +364,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
 
         {/* Property Title */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('propertyTitle')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.propertyTitleLabel')} <span className="text-danger">*</span>
           </label>
           <Input
@@ -357,7 +372,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
             value={formData.propertyTitle || ''}
             onChange={(e) => updateFormData({ propertyTitle: e.target.value })}
             onBlur={() => handleBlur('propertyTitle')}
-            {...aria('propertyTitle', errors.propertyTitle)}
+            {...aria('propertyTitle', errors.propertyTitle, true)}
             placeholder={t('inmobiliaria.consignaciones.wizard.step2.propertyTitlePlaceholder')}
             className={cn('w-full', errors.propertyTitle && 'border-danger/30')}
           />
@@ -366,7 +381,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
 
         {/* Address */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('propertyAddress')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.addressLabel')} <span className="text-danger">*</span>
           </label>
           <PropertyLocationField
@@ -393,7 +408,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
         {/* City and Zone */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('propertyCity')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.cityLabel')} <span className="text-danger">*</span>
             </label>
             <Input
@@ -401,7 +416,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
               value={formData.propertyCity || ''}
               onChange={(e) => updateFormData({ propertyCity: e.target.value })}
               onBlur={() => handleBlur('propertyCity')}
-              {...aria('propertyCity', errors.propertyCity)}
+              {...aria('propertyCity', errors.propertyCity, true)}
               placeholder={t('inmobiliaria.consignaciones.wizard.step2.cityPlaceholder')}
               className={cn('w-full', errors.propertyCity && 'border-danger/30')}
             />
@@ -409,7 +424,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('propertyZone')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.zoneLabel')}
             </label>
             <Input
@@ -428,7 +443,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
         {/* Department — contract.md §3.2.1: required in this UI, reuses
             COLOMBIAN_DEPARTMENTS (do not define a second list). */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('department')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.departmentLabel')}
           </label>
           <Select
@@ -456,10 +471,12 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
             field below is replaced by a sale-price field; a sale listing
             sends monthlyRent: null, never 0 (C6) — see ConsignacionWizard. */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label id={idDeLaEtiqueta('listingType')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.listingTypeLabel')} <span className="text-danger">*</span>
           </label>
           <RadioCardGroup
+            aria-labelledby={idDeLaEtiqueta('listingType')}
+            aria-required
             className="grid grid-cols-2 gap-2"
             value={listingType}
             onValueChange={(v) => updateFormData({ listingType: v as 'rent' | 'sale' })}
@@ -473,7 +490,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {isSaleListing ? (
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={idDelCampoDelAsistente('salePrice')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.consignaciones.wizard.step2.salePriceLabel')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
@@ -486,7 +503,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
                     updateFormData({ salePrice: value ? parseInt(value) : undefined });
                   }}
                   onBlur={() => handleBlur('salePrice')}
-                  {...aria('salePrice', errors.salePrice)}
+                  {...aria('salePrice', errors.salePrice, true)}
                   placeholder={t('inmobiliaria.consignaciones.wizard.step2.salePricePlaceholder')}
                   className={cn('w-full pl-10', errors.salePrice && 'border-danger/30')}
                 />
@@ -495,7 +512,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={idDelCampoDelAsistente('monthlyRent')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
@@ -508,7 +525,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
                     updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
                   }}
                   onBlur={() => handleBlur('monthlyRent')}
-                  {...aria('monthlyRent', errors.monthlyRent)}
+                  {...aria('monthlyRent', errors.monthlyRent, true)}
                   placeholder={t('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')}
                   className={cn('w-full pl-10', errors.monthlyRent && 'border-danger/30')}
                 />
@@ -518,7 +535,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('adminFee')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.adminFeeLabel')}
             </label>
             <div className="relative">
@@ -544,7 +561,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {conHabitaciones && (<>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('bedrooms')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.bedroomsLabel')}
             </label>
             <Input
@@ -561,7 +578,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('bathrooms')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.bathroomsLabel')}
             </label>
             <Input
@@ -579,7 +596,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           </>)}
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('area')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.areaLabel')}
             </label>
             <Input
@@ -598,7 +615,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
 
         {/* Description */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('propertyDescription')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.descriptionLabel')}
           </label>
           <Textarea
@@ -629,7 +646,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           unchanged by this task) — see ConsignacionWizard.tsx.
         */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('consignedAt')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.consignedAtLabel')}
           </label>
           <Input
@@ -680,7 +697,7 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
 
       {isSaleListing ? (
         <div className="space-y-3">
-          <label className="text-sm font-medium text-muted-foreground">
+          <label htmlFor={idDelCampoDelAsistente('saleCommissionPercent')} className="text-sm font-medium text-muted-foreground">
             {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionLabel')}
           </label>
           <div className="relative">
@@ -714,7 +731,7 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
         <div className="space-y-6">
           {/* Commission Input */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-muted-foreground">
+            <label htmlFor={idDelCampoDelAsistente('commissionPercent')} className="text-sm font-medium text-muted-foreground">
               {t('inmobiliaria.consignaciones.wizard.step3.commissionLabel')}
             </label>
             <div className="relative">
@@ -778,11 +795,12 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
 
           {/* Minimum Term */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label id={idDeLaEtiqueta('minimumTerm')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step3.minimumTermLabel')}
             </label>
             <RadioCardGroup
               {...aria('minimumTerm', servidor.minimumTerm)}
+              aria-labelledby={idDeLaEtiqueta('minimumTerm')}
               className="grid grid-cols-2 sm:grid-cols-4 gap-2"
               value={formData.minimumTerm != null ? String(formData.minimumTerm) : undefined}
               onValueChange={(v) => updateFormData({ minimumTerm: Number(v) })}
@@ -851,6 +869,8 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
   // step renders photos-only for it. The rent path is unchanged (inventory
   // + photos + observaciones generales, all three).
   const isSaleListing = formData.listingType === 'sale';
+  // Un renglón sin nombre no es un ítem (no se guarda): no cuenta como inventario.
+  const inventarioConNombre = inventoryItems.filter((item) => item.name.trim().length > 0);
 
   const addItem = () => {
     const newItem: InventoryItem = {
@@ -908,6 +928,20 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
           </Button>
         </div>
 
+        {/* QA con avatares (04-10): se podía seguir sin inventario y después
+            el contrato no se podía crear («El inmueble no tiene inventario»).
+            Se dice AQUÍ, antes de salir del asistente; no frena. */}
+        {inventarioConNombre.length === 0 && (
+          <p
+            role="note"
+            className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-3 text-sm text-fg"
+            data-testid="aviso-sin-inventario"
+          >
+            <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+            {t('inmobiliaria.consignaciones.wizard.step5.sinInventarioAviso')}
+          </p>
+        )}
+
         {inventoryItems.length > 0 ? (
           // Agregar o quitar un ítem: entra bajando apenas y el que se quita
           // sale; los de abajo se corren a su lugar.
@@ -929,6 +963,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         type="text"
                         value={item.name}
                         onChange={(e) => updateItem(item.id, { name: e.target.value })}
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemNameAria', { n: index + 1 })}
                         placeholder={t('inmobiliaria.consignaciones.wizard.step5.itemNamePlaceholder')}
                         className="w-full h-9 text-sm"
                       />
@@ -941,6 +976,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         min="1"
                         value={item.quantity}
                         onChange={(e) => updateItem(item.id, { quantity: parseInt(e.target.value) || 1 })}
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemQuantityAria', { n: index + 1 })}
                         className="w-20 h-9 px-3 text-sm text-center"
                       />
                       <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step5.units')}</span>
@@ -951,7 +987,10 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       value={item.condition}
                       onValueChange={(v) => updateItem(item.id, { condition: v as InventoryItem['condition'] })}
                     >
-                      <SelectTrigger className="w-full h-9 px-3 text-sm">
+                      <SelectTrigger
+                        className="w-full h-9 px-3 text-sm"
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemConditionAria', { n: index + 1 })}
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -968,6 +1007,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       type="text"
                       value={item.notes || ''}
                       onChange={(e) => updateItem(item.id, { notes: e.target.value })}
+                      aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemNotesAria', { n: index + 1 })}
                       placeholder={t('inmobiliaria.consignaciones.wizard.step5.additionalNotes')}
                       className="sm:col-span-2 h-9 px-3 text-sm"
                     />
@@ -978,7 +1018,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeItem(item.id)}
-                    aria-label={t('inmobiliaria.consignaciones.wizard.step5.addItem')}
+                    aria-label={t('inmobiliaria.consignaciones.wizard.step5.removeItem', { n: index + 1 })}
                     icon={<Trash className="w-4 h-4" />}
                     className="shrink-0 text-danger hover:bg-danger-soft hover:text-danger"
                   />
@@ -1020,10 +1060,11 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
       {/* General Notes — no acta de entrega on the sale path (T-0042) */}
       {!isSaleListing && (
       <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <label htmlFor={idDelCampoDelAsistente('inventoryNotes')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.generalNotes')}
         </label>
         <Textarea
+          id={idDelCampoDelAsistente('inventoryNotes')}
           value={formData.inventoryNotes || ''}
           onChange={(e) => updateFormData({ inventoryNotes: e.target.value })}
           placeholder={t('inmobiliaria.consignaciones.wizard.step5.generalNotesPlaceholder')}

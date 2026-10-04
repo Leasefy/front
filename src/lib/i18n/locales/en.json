@@ -938,8 +938,16 @@
       "bloqueoSinInventario": "The property has no inventory. Create and complete it.",
       "bloqueoSoloBorrador": "The property inventory is a draft. Complete it.",
       "bloqueoAnterior": "The property inventory must be updated after contract {{numero}}, which ended on {{fecha}}.",
-      "bloqueoEnlace": "Go to the property inventory",
-      "bloqueoSinEnlace": "Find the property in the portfolio and update its inventory."
+      "bloqueoSinEnlace": "Find the property in the portfolio and update its inventory.",
+      "bloqueoHacer": "Make the inventory",
+      "bloqueoCompletar": "Complete the inventory",
+      "bloqueoActualizar": "Update the inventory",
+      "vacioTitulo": "This property has no inventory yet",
+      "vacioTexto": "It's the list of what's in the property and its condition. Make it and complete it: without it you can't start a lease.",
+      "empezar": "Start the inventory",
+      "volverAlContrato": "Back to the lease",
+      "volverListo": "Done: the inventory is complete. You can continue with the lease.",
+      "volverPendiente": "You came from creating a lease: once you complete the inventory, come back to continue."
     },
     "nav": {
       "dashboard": "Dashboard",
@@ -3396,7 +3404,8 @@
           "available": "Available",
           "rented": "Rented",
           "inProcess": "In process",
-          "maintenance": "Maintenance"
+          "maintenance": "Maintenance",
+          "draft": "Draft"
         },
         "status": {
           "active": "Active",
@@ -3436,6 +3445,7 @@
         "inProcess": "In process",
         "maintenance": "Maintenance",
         "propertyCount": "{{count}} properties",
+        "propertyCountUno": "1 property",
         "propertyCountSinContar": "Not counted"
       },
       "views": {
@@ -3710,7 +3720,8 @@
         "available": "Available",
         "rented": "Rented",
         "inProcess": "In process",
-        "maintenance": "Maintenance"
+        "maintenance": "Maintenance",
+        "draft": "Draft"
       },
       "status": {
         "active": "Active",
@@ -3807,6 +3818,7 @@
         "rented": "Rented",
         "inProcess": "In process",
         "maintenance": "Maint.",
+        "draft": "Draft",
         "sinMandato": "No mandate",
         "allTypes": "All",
         "apartment": "Apt",
@@ -4077,6 +4089,8 @@
           "yesCancel": "Yes, cancel"
         },
         "toasts": {
+          "inventoryErrorTitle": "The consignment was created, but the inventory was not saved",
+          "inventoryErrorDesc": "Make it from the property page: without an inventory the lease can't be signed.",
           "successTitle": "Property consigned",
           "successDesc": "\"{{title}}\" now has its owner, commission and agent.",
           "errorTitle": "We couldn't create the property",
@@ -4186,7 +4200,13 @@
           "conditionExcellent": "Excellent",
           "conditionGood": "Good",
           "conditionFair": "Fair",
-          "conditionPoor": "Poor"
+          "conditionPoor": "Poor",
+          "sinInventarioAviso": "Without an inventory the lease can't be signed. You can make it later from the property page.",
+          "itemNameAria": "What it is (item {{n}})",
+          "itemQuantityAria": "Quantity (item {{n}})",
+          "itemConditionAria": "Condition (item {{n}})",
+          "itemNotesAria": "Notes (item {{n}})",
+          "removeItem": "Remove item {{n}}"
         },
         "step6": {
           "title": "Confirm Consignment",

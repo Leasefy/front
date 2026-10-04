@@ -12,11 +12,22 @@ import {
   enlaceAlInventario,
   type BloqueoPorInventario as Bloqueo,
 } from '@/lib/inventario/bloqueo-por-inventario';
-import { textoDelBloqueo } from '@/lib/inventario/aviso-de-vigencia';
+import { accionDelBloqueo, textoDelBloqueo } from '@/lib/inventario/aviso-de-vigencia';
 
 const B = 'inmobiliaria.inventarioDelInmueble';
 
-export function BloqueoPorInventario({ bloqueo }: { bloqueo: Bloqueo }) {
+export function BloqueoPorInventario({
+  bloqueo,
+  volverA,
+}: {
+  bloqueo: Bloqueo;
+  /**
+   * Dónde está la persona (el formulario del contrato, con el inmueble ya
+   * elegido): la ficha le ofrece volver acá cuando el inventario quede listo.
+   * Antes el aviso era un callejón: «Ir al inventario» y nada para regresar.
+   */
+  volverA?: string | null;
+}) {
   const { t } = useI18n();
   const texto = textoDelBloqueo(bloqueo);
   return (
@@ -26,7 +37,7 @@ export function BloqueoPorInventario({ bloqueo }: { bloqueo: Bloqueo }) {
       icon={<ClipboardText className="h-5 w-5" aria-hidden />}
       accion={
         bloqueo.consignacionId
-          ? { label: t(`${B}.bloqueoEnlace`), href: enlaceAlInventario(bloqueo.consignacionId) }
+          ? { label: t(accionDelBloqueo(bloqueo)), href: enlaceAlInventario(bloqueo.consignacionId, volverA) }
           : undefined
       }
       data-testid="bloqueo-por-inventario"

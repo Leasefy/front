@@ -105,9 +105,15 @@ interface Props {
    * persona llegó ya elegida (`?inquilino=`), no sólo al tocar el selector.
    */
   onNombreDelInquilino?: (nombre: string | null) => void
+  /**
+   * El inmueble con el que se llegó (`?inmueble=<propertyId>`): la vuelta
+   * desde el inventario de su ficha (QA con avatares, 04-10). Queda elegido
+   * apenas llega la lista; si ya no es elegible, no se elige nada.
+   */
+  inmueblePedido?: string | null
 }
 
-export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino }: Props) {
+export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino, inmueblePedido = null }: Props) {
   const [consignaciones, setConsignaciones] = useState<Consignacion[] | null>(null)
   const [errorInmuebles, setErrorInmuebles] = useState<string | null>(null)
   const { inquilinos, cargando: cargandoInquilinos } = useInquilinos({ buscar: '', estado: 'todos' })
@@ -157,6 +163,19 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         })),
     [inquilinos],
   )
+
+  /* El inmueble pedido, UNA vez, cuando llega la lista: después manda la persona. */
+  const inmuebleResuelto = useRef(false)
+  useEffect(() => {
+    if (!inmueblePedido || inmuebleResuelto.current || consignaciones === null) return
+    inmuebleResuelto.current = true
+    const c = elegibles.find((x) => x.propertyId === inmueblePedido)
+    if (!c) return
+    onCambio({ ...valor, propertyId: c.propertyId }, { automatico: true })
+    onInmuebleElegido?.(c)
+    // `valor`/`onCambio` cambian con cada render del padre; esto corre una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inmueblePedido, consignaciones, elegibles])
 
   /* Se resuelve UNA vez, cuando llega la lista: después manda la persona. */
   const pedidoResuelto = useRef(false)

@@ -174,6 +174,28 @@ describe('MandatoDelInmueble', () => {
     expect(giro).toContain('RUT')
   })
 
+  /*
+   * IN-14 (QA 04-10): a un inmueble que ya gira hace meses le decía «Antes del
+   * primer giro — Faltan 2». Si ya hubo giros, «Documentos que faltan» con el
+   * número, sin «antes del primer giro» en ninguna parte de la tarjeta.
+   */
+  it('🔴 IN-14: si ya hubo giros dice «Documentos que faltan», no «Antes del primer giro»', async () => {
+    api.documentos = vi.fn(() => Promise.resolve({ ...DOCUMENTOS, yaHuboGiros: true }))
+    await pintar()
+    const giro = $('[data-testid="puerta-giro"]')?.textContent ?? ''
+    expect(giro).toContain('Documentos que faltan')
+    expect(giro).toContain('RUT')
+    expect(giro).not.toContain('Faltan 1')
+    expect(contenedor.textContent).not.toMatch(/primer giro/i)
+  })
+
+  it('sin giros todavía sigue diciendo «Antes del primer giro» (back anterior sin el campo, igual)', async () => {
+    api.documentos = vi.fn(() => Promise.resolve({ ...DOCUMENTOS, yaHuboGiros: false }))
+    await pintar()
+    expect($('[data-testid="puerta-giro"]')?.textContent ?? '').toContain('Antes del primer giro')
+    expect($('[data-testid="puerta-giro"]')?.textContent ?? '').toContain('Faltan 1')
+  })
+
   it('el certificado muestra los días que le quedan, no «está»', async () => {
     await pintar()
     expect(

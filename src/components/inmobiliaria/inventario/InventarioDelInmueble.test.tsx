@@ -77,7 +77,11 @@ function datos(over: Partial<InventariosDelInmueble>): InventariosDelInmueble {
   };
 }
 
-async function montar(d: InventariosDelInmueble | null, borrador: Record<string, unknown> = {}) {
+async function montar(
+  d: InventariosDelInmueble | null,
+  borrador: Record<string, unknown> = {},
+  extra: { volverAlContrato?: string | null; puedeEditar?: boolean } = {},
+) {
   estadoInventarios.mockReturnValue({ datos: d, cargando: false, error: null, desdeCache: false, recargar: vi.fn(), reemplazar });
   estadoBorrador.mockReturnValue({
     vistasPrevias: {}, hayPendientes: false, subiendo: false, actualizadoEn: null, fotosSinSubir: 0,
@@ -91,7 +95,8 @@ async function montar(d: InventariosDelInmueble | null, borrador: Record<string,
     root.render(
       <InventarioDelInmueble
         consignacion={{ id: 'cons-1', contractDate: '2026-01-01', inventoryItems: [] }}
-        puedeEditar
+        puedeEditar={extra.puedeEditar ?? true}
+        volverAlContrato={extra.volverAlContrato}
       />,
     );
   });
@@ -202,5 +207,41 @@ describe('InventarioDelInmueble', () => {
     expect(destinoRecibido).toBeDefined();
     await destinoRecibido!.guardar('cons-1', []);
     expect(reemplazar).toHaveBeenCalled();
+  });
+
+  /*
+   * IN-07 (QA 04-10): sin inventario la tarjeta decía lo mismo tres veces (el
+   * aviso, el encabezado y la tabla vacía, más el historial vacío). Ahora es
+   * UN estado vacío con la acción para empezar.
+   */
+  it('🔴 IN-07: sin ningún inventario hay UN solo estado vacío, con «Empezar el inventario»', async () => {
+    await montar(datos({ vigencia: { vigente: false, motivo: 'SIN_INVENTARIO', ultimoCompleto: null, porActualizarTras: null } as never }))
+    const vacio = q('inventario-vacio')!;
+    expect(vacio).not.toBeNull();
+    expect(vacio.textContent).toContain('Este inmueble todavía no tiene inventario');
+    expect(vacio.textContent).toContain('Empezar el inventario');
+    // Ni el aviso de vigencia, ni el encabezado de versión, ni la tabla vacía, ni el historial vacío.
+    expect(q('aviso-inventario-info')).toBeNull();
+    expect(q('encabezado-de-version')).toBeNull();
+    expect(q('acta')).toBeNull();
+    expect(q('historial')).toBeNull();
+    expect(host.textContent).not.toContain('Todavía no hay inventario');
+    expect(host.textContent!.match(/no tiene inventario/g)?.length).toBe(1);
+  });
+
+  it('sin permiso de editar, el vacío no ofrece empezar', async () => {
+    await montar(datos({}), {}, { puedeEditar: false });
+    expect(q('inventario-vacio')?.textContent).not.toContain('Empezar el inventario');
+  });
+
+  it('con un borrador ya empezado se ve la tabla de siempre, no el vacío', async () => {
+    await montar(datos({ borrador: version({ id: 'b', estado: 'BORRADOR', items: [{ id: 'i', name: 'Nevera', quantity: 1, condition: 'good' }] }) as never, versiones: [version({ id: 'b', estado: 'BORRADOR' })] }));
+    expect(q('inventario-vacio')).toBeNull();
+    expect(q('acta')).not.toBeNull();
+  });
+
+  it('desde «Nuevo contrato» ofrece volver al contrato', async () => {
+    await montar(datos({}), {}, { volverAlContrato: '/panel/inmobiliaria/contratos/nuevo?inmueble=p1' });
+    expect(q('volver-al-contrato')?.textContent).toContain('cuando completes el inventario');
   });
 });

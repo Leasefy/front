@@ -643,12 +643,19 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
             {resumen.enMora
               ? frase('estadoDeCuenta.enMoraDias', { dias: resumen.diasDeMora })
               : resumen.enPlazo
-                ? frase('estadoDeCuenta.vencidoEnPlazo')
+                ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                  resumen.sinPlazoFijado
+                  ? frase('estadoDeCuenta.vencidaSinPlazo')
+                  : frase('estadoDeCuenta.vencidoEnPlazo')
                 : frase('estadoDeCuenta.alDia')}
           </Text>
           {resumen.enPlazo ? (
             <Text style={estilos.heroePie}>
-              {frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
+              {resumen.sinPlazoFijado
+                ? resumen.cuotasEnPlazo === 1
+                  ? frase('estadoDeCuenta.unaVencidaSinPlazoDetalle')
+                  : frase('estadoDeCuenta.vencidaSinPlazoDetalle', { n: resumen.cuotasEnPlazo })
+                : frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
             </Text>
           ) : null}
           {resumen.enMora ? (
@@ -1170,7 +1177,14 @@ function FilaDeLaTabla({
             fila.estado === 'ANULADA' ? { textDecoration: 'line-through' } : {},
           ]}
         >
-          {paraElPapel(pintaDelEstado(fila.estado, rol).texto)}
+          {/* 🔴 Nico (03-10-2026): la saldó una nota crédito, no un pago. */}
+          {paraElPapel(
+            fila.saldadaPorNota
+              ? fila.saldadaPorNota.numero
+                ? frase('estadoDeCuenta.saldadaPorNota', { numero: fila.saldadaPorNota.numero })
+                : frase('estadoDeCuenta.saldadaPorNotaSinNumero')
+              : pintaDelEstado(fila.estado, rol).texto,
+          )}
         </Text>
       </View>
 

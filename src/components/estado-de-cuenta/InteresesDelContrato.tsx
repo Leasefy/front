@@ -36,7 +36,7 @@ import type { FilaDeInteres, InteresesDelContrato } from '@/lib/types/estado-de-
 import { useTextoDelEstado } from './textos';
 
 /** Donde la inmobiliaria fija sus días de plazo (la misma ruta del aviso de la ficha del contrato). */
-const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
+export const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
 
 export interface InteresesDelContratoProps {
   intereses: InteresesDelContrato;

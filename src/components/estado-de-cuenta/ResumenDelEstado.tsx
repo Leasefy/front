@@ -167,13 +167,20 @@ export function ResumenDelEstado({
               {r.enMora
                 ? t('estadoDeCuenta.enMoraDias', { dias: r.diasDeMora })
                 : r.enPlazo
-                  ? t('estadoDeCuenta.vencidoEnPlazo')
+                  ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                    r.sinPlazoFijado
+                    ? t('estadoDeCuenta.vencidaSinPlazo')
+                    : t('estadoDeCuenta.vencidoEnPlazo')
                   : t('estadoDeCuenta.alDia')}
             </span>
           </p>
           {r.enPlazo && (
             <p className="mt-2 text-caption text-fg-muted" data-testid="estado-en-plazo">
-              {t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
+              {r.sinPlazoFijado
+                ? r.cuotasEnPlazo === 1
+                  ? t('estadoDeCuenta.unaVencidaSinPlazoDetalle')
+                  : t('estadoDeCuenta.vencidaSinPlazoDetalle', { n: r.cuotasEnPlazo })
+                : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
             </p>
           )}
           {r.enMora && (

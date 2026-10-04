@@ -33,10 +33,13 @@ export interface MismoPaso {
   nota: string;
 }
 
-/** El título de la nota cuando quien mira es quien armó y aprobó. */
-export const APROBADO_POR_TI = 'Aprobado por ti como administrador (P-4)';
+/**
+ * El título de la nota cuando quien mira es quien armó y aprobó. Sin el código
+ * interno «(P-4)»: sale en toasts y notas ante la persona (COLA-FRONT, 04-10).
+ */
+export const APROBADO_POR_TI = 'Aprobado por ti como administrador';
 /** El título cuando lo mira otra persona. */
-export const APROBADO_POR_LA_MISMA_PERSONA = 'Lo armó y lo aprobó la misma persona (P-4)';
+export const APROBADO_POR_LA_MISMA_PERSONA = 'Lo armó y lo aprobó la misma persona';
 
 /** Quién armó y quién aprobó, como los trae cualquier lote. */
 export interface QuienArmoYAprobo {
@@ -92,12 +95,12 @@ export function notaDelCastigo(
   if (!castigadoPorUnaSolaPersona(c)) return null;
   return yo !== null && yo === c.admin?.userId
     ? {
-        titulo: 'Castigado por ti como administrador (P-4)',
+        titulo: 'Castigado por ti como administrador',
         detalle:
           'Tu firma valió por el administrador y por el contador, en el mismo paso. En la bitácora queda que fuiste la misma persona.',
       }
     : {
-        titulo: 'Lo castigó una sola persona, como administrador (P-4)',
+        titulo: 'Lo castigó una sola persona, como administrador',
         detalle:
           'Un administrador de la inmobiliaria firmó por los dos lados. En la bitácora queda que fue la misma persona.',
       };

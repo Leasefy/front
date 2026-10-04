@@ -52,7 +52,7 @@ import type {
 } from '@/lib/propietarios/filtrar-propietarios';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { plataOculta as laPlataEstaOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
-import { detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
+import { datosPendientesDelPropietario, detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 
 type SortField = CampoDeOrden;
@@ -412,7 +412,7 @@ export function PropietarioTable({
                         </p>
                         {/* T-0128: ficha creada por la migración sin todos sus datos. */}
                         <DatosPorCompletar
-                          pendientes={propietario.datosPendientes}
+                          pendientes={datosPendientesDelPropietario(propietario)}
                           onCompletar={() => onEdit(propietario)}
                           className="mt-1 flex flex-wrap items-center gap-2"
                         />
@@ -465,6 +465,11 @@ export function PropietarioTable({
                         </Badge>
                         <LineasDelGiro propietario={propietario} />
                       </>
+                    ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
+                      // COLA-FRONT (04-10): algo arrendado y ningún giro programado.
+                      <span className="text-sm text-fg-muted" data-testid="sin-dia-de-giro">
+                        {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
+                      </span>
                     ) : (
                       <>
                         <span className="text-primary text-sm font-medium">
@@ -705,6 +710,10 @@ function TarjetasDePropietarios({
                           <Warning className="h-3.5 w-3.5" aria-hidden="true" />
                           {formatCurrency(propietario.pendingBalance)}
                         </Badge>
+                      ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
+                        <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">
+                          {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
+                        </span>
                       ) : (
                         <span className="text-caption font-medium text-primary">
                           {t('inmobiliaria.propietario.table.upToDate')}
@@ -716,7 +725,7 @@ function TarjetasDePropietarios({
                 </span>
               </span>
             </button>
-            <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-2 flex flex-wrap items-center gap-2" />
+            <DatosPorCompletar pendientes={datosPendientesDelPropietario(propietario)} className="mt-2 flex flex-wrap items-center gap-2" />
             <div className="absolute right-2 top-2.5">{menu(propietario)}</div>
           </StaggerItem>
         );

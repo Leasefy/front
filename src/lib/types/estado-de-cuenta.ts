@@ -33,6 +33,8 @@
  * `CANCELADA` se lee «Cancelada» del lado del inquilino y «Pagada» del lado del
  * propietario: la palabra la pone el front, el estado es el mismo.
  */
+import type { SaldadaPorNota } from '@/lib/api/cartera.types';
+
 export type EstadoDeFila = 'CANCELADA' | 'PENDIENTE' | 'ANULADA' | 'ANTERIOR';
 
 /** El lado del contrato que mira este estado de cuenta. */
@@ -126,6 +128,19 @@ export interface FilaDelEstadoDeCuenta {
   cajon?: 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA' | 'SIN_DEUDA';
   /** Días de mora DESPUÉS del plazo. `0` mientras el plazo corre. */
   diasDeMora?: number;
+  /**
+   * 🔴 CR-31 (Nico, 03-10-2026): vencida, pero la inmobiliaria todavía no fijó
+   * sus días de plazo: NO es cartera ni va a la cobranza (cajón
+   * `VENCIDA_EN_PLAZO`, `diasDeMora: 0`). Se rotula «Vencida», no «Vencido, en
+   * plazo». Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
+  /**
+   * 🔴 Nico (03-10-2026): una nota crédito dejó la cuota en $0 sin pagos. La
+   * fila llega `CANCELADA` y `SIN_DEUDA`, y se lee «Saldada por nota crédito
+   * NC-12» (sin número si la nota todavía no lo tiene). Ausente en el resto.
+   */
+  saldadaPorNota?: SaldadaPorNota;
 }
 
 /**

@@ -25,7 +25,8 @@ import type { Propietario } from '@/lib/types/inmobiliaria';
 export type CamposDeLosGiros = Pick<
   Propietario,
   'pendingBalance' | 'plataOculta' | 'girosVencidos' | 'giroVencidoDesde' | 'generadoSinGirar'
->;
+> &
+  Partial<Pick<Propietario, 'proximoGiro' | 'activeLeases' | 'copropiedadesArrendadas'>>;
 
 export interface GirosParaMostrar {
   /** Quien mira no ve la plata del propietario: no se afirma nada. */
@@ -40,6 +41,17 @@ export interface GirosParaMostrar {
   generadoSinGirar: number | null;
   /** Hay giros atrasados (y quien mira lo puede ver). */
   conAtraso: boolean;
+  /**
+   * 🔴 COLA-FRONT (04-10, la recomendada): tiene algo arrendado, nada atrasado
+   * y NINGÚN giro programado (`proximoGiro: null`): no está «Al día», no tiene
+   * día de giro. Con un back que no manda `proximoGiro`, siempre `false`.
+   */
+  sinDiaDeGiro: boolean;
+}
+
+/** ¿Tiene algún inmueble arrendado, propio o en copropiedad? */
+function tieneAlgoArrendado(p: CamposDeLosGiros): boolean {
+  return (p.activeLeases ?? 0) + (p.copropiedadesArrendadas ?? 0) > 0;
 }
 
 function monto(v: number | null | undefined): number {
@@ -53,10 +65,19 @@ function entero(v: number | null | undefined): number | null {
 export function girosDelPropietario(p: CamposDeLosGiros): GirosParaMostrar {
   const oculto = p.plataOculta === true;
   if (oculto) {
-    return { oculto, atrasado: 0, girosVencidos: null, desde: null, generadoSinGirar: null, conAtraso: false };
+    return {
+      oculto,
+      atrasado: 0,
+      girosVencidos: null,
+      desde: null,
+      generadoSinGirar: null,
+      conAtraso: false,
+      sinDiaDeGiro: false,
+    };
   }
   const atrasado = monto(p.pendingBalance);
   return {
+    sinDiaDeGiro: atrasado <= 0 && p.proximoGiro === null && tieneAlgoArrendado(p),
     oculto,
     atrasado,
     girosVencidos: entero(p.girosVencidos),
@@ -121,4 +142,16 @@ export function generadoSinGirarDeLaLista(propietarios: readonly CamposDeLosGiro
     }
   }
   return alguno ? total : null;
+}
+
+/**
+ * Los datos por completar del propietario: los del back y, si no tiene día de
+ * giro (`sinDiaDeGiro`), «día de giro» (COLA-FRONT, 04-10, la recomendada).
+ */
+export function datosPendientesDelPropietario(
+  p: CamposDeLosGiros & Pick<Propietario, 'datosPendientes'>,
+): NonNullable<Propietario['datosPendientes']> {
+  const delBack = p.datosPendientes ?? [];
+  if (!girosDelPropietario(p).sinDiaDeGiro || delBack.includes('diaDeGiro')) return delBack;
+  return [...delBack, 'diaDeGiro'];
 }

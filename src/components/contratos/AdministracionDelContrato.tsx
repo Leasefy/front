@@ -324,9 +324,15 @@ export function AdministracionDelContrato({
         <Fila
           etiqueta="Plazo antes de la mora"
           valor={
-            contract.diasDePlazo != null
-              ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
-              : null
+            // 🔴 CR-31: mientras la inmobiliaria no fije su plazo no corre
+            // mora (lo dice el back en `reglaDeCobro.plazoSinFijar`).
+            contract.reglaDeCobro?.plazoSinFijar
+              ? contract.diasDePlazo != null
+                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'} · no corre mora: la inmobiliaria no ha fijado su plazo`
+                : 'Sin fijar: no corre mora hasta que la inmobiliaria lo fije'
+              : contract.diasDePlazo != null
+                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
+                : null
           }
           ausente="Los días de la inmobiliaria"
         />

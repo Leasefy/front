@@ -140,18 +140,17 @@ export function PartesDelContrato({
           </ul>
         )}
 
-        {/* La salida de un contrato migrado sin cuenta de inquilino: se
-            muestra sólo mientras `tenantId` siga null (T-0036 §3.2.B6). */}
-        {contract.tenantId === null && (
-          <div className="pt-1">
-            <InvitarInquilino
-              contract={contract}
-              puedeInvitar={puedeInvitar}
-              onActualizado={onActualizado}
-              onConflicto={onConflicto}
-            />
-          </div>
-        )}
+        {/* La invitación al portal (T-0036 §3.2.B6). 🔴 CR-08: también con la
+            cuenta vinculada —el inquilino que nunca entró: estado y «Reenviar
+            invitación»—; el componente decide con lo que dice el back. */}
+        <div className="pt-1 empty:hidden">
+          <InvitarInquilino
+            contract={contract}
+            puedeInvitar={puedeInvitar}
+            onActualizado={onActualizado}
+            onConflicto={onConflicto}
+          />
+        </div>
       </div>
     </div>
   )

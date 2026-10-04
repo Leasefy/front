@@ -114,6 +114,13 @@ import { CajonDelEgreso } from './CajonDelEgreso';
 // Seguimiento 6: la salida del extracto se ELIGE de una lista con búsqueda (ya no se teclea el id).
 import { ElegirLaSalidaDelExtracto } from './ElegirLaSalidaDelExtracto';
 import { APROBADO_POR_TI, notaDelLote } from '@/lib/doble-control/el-administrador';
+import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
+import {
+  SIN_CUENTA_DE_ORIGEN,
+  cuentasQueSirvenDeOrigen,
+  nombreDeLaCuentaDeOrigen,
+  type CuentaDeOrigen,
+} from './cuenta-de-origen';
 import { useI18n } from '@/lib/i18n';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
@@ -168,6 +175,31 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [comprobante, setComprobante] = useState<ComprobanteDeEgreso | null>(null);
   const [formato, setFormato] = useState<FormatoDelArchivo>('BANCOLOMBIA_PAB');
+  /*
+   * 🔴 CB-R09 (QA-CONTA): el archivo para el banco sale DESDE una cuenta de la
+   * inmobiliaria, y el back la exige (`cuentaId`, el medio de pago). Se elige
+   * de las cuentas bancarias activas; con una sola, queda elegida.
+   */
+  const [cuentasDeOrigen, setCuentasDeOrigen] = useState<CuentaDeOrigen[] | null>(null);
+  const [cuentaDeOrigen, setCuentaDeOrigen] = useState('');
+  const [errorDeLaCuenta, setErrorDeLaCuenta] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    conciliacionBancariaApi
+      .cuentas()
+      .then((r) => {
+        if (!vivo) return;
+        const activas = cuentasQueSirvenDeOrigen(r?.cuentas ?? []);
+        setCuentasDeOrigen(activas);
+        if (activas.length === 1) setCuentaDeOrigen(activas[0].id);
+      })
+      .catch(() => {
+        if (vivo) setCuentasDeOrigen([]);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   /** El lote que se está marcando pagado, y sus datos. */
   const [pagando, setPagando] = useState<LoteDeEgreso | null>(null);
@@ -304,9 +336,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   };
 
   const bajarArchivo = async (lote: LoteDeEgreso) => {
+    if (!cuentaDeOrigen) {
+      setErrorDeLaCuenta(SIN_CUENTA_DE_ORIGEN);
+      return;
+    }
     setOcupado(lote.id);
+    setErrorDeLaCuenta(null);
     try {
-      const blob = await gastosApi.lotes.archivo(lote.id, formato);
+      const blob = await gastosApi.lotes.archivo(lote.id, formato, cuentaDeOrigen);
       const url = URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;
@@ -318,7 +355,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       toast.success('Archivo descargado. Súbelo al banco y después marca el lote como pagado.');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo generar el archivo.'));
+      // 🔴 CB-R09: la cuenta que no sirve se dice bajo su selector.
+      if (e instanceof ApiError && e.code === 'CUENTA_DE_ORIGEN_NO_SIRVE') {
+        setErrorDeLaCuenta(mensajeDeContabilidad(e, SIN_CUENTA_DE_ORIGEN));
+      } else {
+        toast.error(mensajeDeContabilidad(e, 'No se pudo generar el archivo.'));
+      }
     } finally {
       setOcupado(null);
     }
@@ -941,9 +983,55 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                         </select>
                       </div>
 
+                      <div className="space-y-1">
+                        <Label htmlFor={`cuenta-de-origen-${lote.id}`} className="text-caption">
+                          Sale de la cuenta
+                        </Label>
+                        <select
+                          id={`cuenta-de-origen-${lote.id}`}
+                          className="h-9 max-w-full rounded-md border border-border bg-surface px-2 text-sm text-fg data-[invalid]:border-danger"
+                          value={cuentaDeOrigen}
+                          onChange={(e) => {
+                            setCuentaDeOrigen(e.target.value);
+                            setErrorDeLaCuenta(null);
+                          }}
+                          disabled={!permisos.archivo.puede || cuentasDeOrigen === null}
+                          aria-invalid={errorDeLaCuenta ? true : undefined}
+                          data-invalid={errorDeLaCuenta ? '' : undefined}
+                          aria-describedby={errorDeLaCuenta ? `cuenta-de-origen-${lote.id}-error` : undefined}
+                          data-testid={`cuenta-de-origen-${lote.id}`}
+                        >
+                          <option value="">
+                            {cuentasDeOrigen === null
+                              ? 'Cargando las cuentas…'
+                              : cuentasDeOrigen.length === 0
+                                ? 'Sin cuentas bancarias'
+                                : 'Elige la cuenta'}
+                          </option>
+                          {(cuentasDeOrigen ?? []).map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {nombreDeLaCuentaDeOrigen(c)}
+                            </option>
+                          ))}
+                        </select>
+                        <ErrorDelCampo
+                          id={`cuenta-de-origen-${lote.id}-error`}
+                          mensaje={errorDeLaCuenta ?? undefined}
+                          pista={
+                            cuentasDeOrigen && cuentasDeOrigen.length === 0
+                              ? 'Carga una cuenta bancaria en Configuración → Medios de pago.'
+                              : undefined
+                          }
+                        />
+                      </div>
+
                       <AccionConMotivo
-                        puede={permisos.archivo.puede}
-                        motivo={permisos.archivo.motivo}
+                        puede={permisos.archivo.puede && Boolean(cuentaDeOrigen)}
+                        motivo={
+                          permisos.archivo.puede && !cuentaDeOrigen
+                            ? SIN_CUENTA_DE_ORIGEN
+                            : permisos.archivo.motivo
+                        }
                         ocupado={ocupado === lote.id}
                         textoOcupado="Generando…"
                         onClick={() => void bajarArchivo(lote)}

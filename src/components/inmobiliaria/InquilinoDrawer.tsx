@@ -317,7 +317,10 @@ export function CuerpoDelCajon({
    * E-09 (QA-INQ, 03-10): los intereses de mora van APARTE de lo vencido. Con
    * lo vencido en cero y intereses sin pagar, la persona NO está «al día».
    */
-  const interesesSinPagar = cuentaConocida ? (cuenta.interesDeMora ?? 0) : 0;
+  // CR-31 (COLA-FRONT, 04-10): sin plazo fijado no corre interés: no se dice
+  // aunque el back todavía mande un número.
+  const interesesSinPagar =
+    cuentaConocida && cuenta.plazoSinFijar !== true ? (cuenta.interesDeMora ?? 0) : 0;
   const alDiaConIntereses = deuda?.tipo === 'AL_DIA' && interesesSinPagar > 0;
   /* Y sin reglas de mora, a lo que está en cartera no se le causa interés: se dice (R-06). */
   /*
@@ -325,7 +328,12 @@ export function CuerpoDelCajon({
    * (`plazoSinFijar` del resumen). Va ANTES que «sin reglas de mora»: lo que
    * falta es el plazo, y se arregla en otra pantalla.
    */
-  const plazoSinFijar = cuentaConocida && cuenta.plazoSinFijar === true && deuda?.tipo === 'EN_CARTERA';
+  // CR-31 (Nico, 03-10): sin plazo, lo vencido no entra a la cartera: el aviso va
+  // también con lo vencido (que ya no es «en cartera»).
+  const plazoSinFijar =
+    cuentaConocida &&
+    cuenta.plazoSinFijar === true &&
+    (deuda?.tipo === 'EN_CARTERA' || deuda?.tipo === 'VENCIDO_EN_PLAZO');
   const sinReglasDeMora =
     !plazoSinFijar && cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
   const enlaceAlEstadoDeCuenta = refDeCuenta
@@ -520,7 +528,9 @@ export function CuerpoDelCajon({
                         ? t(`${NS}.enCarteraUnDia`)
                         : t(`${NS}.enCartera`, { n: deuda.dias })
                       : deuda?.tipo === 'VENCIDO_EN_PLAZO'
-                        ? t(`${NS}.vencidoEnPlazo`)
+                        ? cuenta?.plazoSinFijar === true
+                          ? t(`${NS}.vencidaSinPlazo`)
+                          : t(`${NS}.vencidoEnPlazo`)
                         : alDiaConIntereses
                           ? t(`${NS}.interesesSinPagar`, { monto: formatCurrency(interesesSinPagar) })
                           : deuda?.tipo === 'AL_DIA'

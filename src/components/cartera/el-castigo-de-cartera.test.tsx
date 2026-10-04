@@ -234,7 +234,7 @@ describe('la pantalla de cartera castigada', () => {
     api.listar.mockResolvedValue(LISTA([SOLO]));
     await montar();
     expect($('[data-testid="castigo-p4"]').textContent).toBe(
-      'Lo castigó una sola persona, como administrador (P-4)',
+      'Lo castigó una sola persona, como administrador',
     );
   });
 
@@ -253,7 +253,7 @@ describe('la pantalla de cartera castigada', () => {
     });
     await esperar();
     await esperar();
-    expect($('[data-testid="castigo-p4"]').textContent).toBe('Castigado por ti como administrador (P-4)');
+    expect($('[data-testid="castigo-p4"]').textContent).toBe('Castigado por ti como administrador');
   });
 
   it('dos personas distintas: sin nota de P-4', async () => {
@@ -273,7 +273,7 @@ describe('la pantalla de cartera castigada', () => {
     await montar();
     await clic($('[data-testid="firmar-castigo"]'));
     expect(toastMock.success).toHaveBeenCalledWith(
-      'Lo castigó una sola persona, como administrador (P-4). Sale de la cartera activa y de la cobranza.',
+      'Lo castigó una sola persona, como administrador. Sale de la cartera activa y de la cobranza.',
     );
   });
 

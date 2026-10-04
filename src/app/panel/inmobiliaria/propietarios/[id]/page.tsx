@@ -87,6 +87,7 @@ import { formatCurrency, formatParticipacion } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { datosPendientesDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 import { CajonDelFormularioDelPropietario } from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
@@ -461,6 +462,8 @@ function PropietarioDetailContent() {
   const rutaDeEstaFicha = `${LISTA_DE_PROPIETARIOS}/${id}`;
 
   const [showEditModal, setShowEditModal] = useState(false);
+  /** COLA-FRONT (04-10): el resumen dijo «Sin día de giro» (algo arrendado y ningún giro programado). */
+  const [sinDiaDeGiro, setSinDiaDeGiro] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showExtracto, setShowExtracto] = useState(false);
@@ -808,7 +811,11 @@ function PropietarioDetailContent() {
             </div>
             {/* T-0128: una ficha creada por la migración puede venir sin documento. */}
             <DatosPorCompletar
-              pendientes={propietario.datosPendientes}
+              pendientes={
+                sinDiaDeGiro
+                  ? datosPendientesDelPropietario({ ...propietario, proximoGiro: null })
+                  : datosPendientesDelPropietario(propietario)
+              }
               onCompletar={puedeEditar ? () => setShowEditModal(true) : undefined}
             />
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
@@ -903,6 +910,8 @@ function PropietarioDetailContent() {
           tipo="propietario"
           id={propietario.id}
           volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+          tieneArrendados={(propietario.activeLeases ?? 0) + (propietario.copropiedadesArrendadas ?? 0) > 0}
+          onSinDiaDeGiro={setSinDiaDeGiro}
         />
       )}
 
@@ -910,6 +919,7 @@ function PropietarioDetailContent() {
       <PropietarioStats
         propietario={propietario}
         variant="full"
+        sinDiaDeGiro={sinDiaDeGiro}
         consignaciones={consignaciones}
         onCargarCuenta={puedeEditar ? () => setShowEditModal(true) : undefined}
       />

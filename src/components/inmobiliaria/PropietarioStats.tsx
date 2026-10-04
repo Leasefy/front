@@ -31,6 +31,11 @@ interface PropietarioStatsProps {
   consignaciones?: Consignacion[];
   /** Abre el formulario para cargar la cuenta bancaria (alerta «no se le puede girar»). */
   onCargarCuenta?: () => void;
+  /**
+   * La ficha lo sabe por el resumen de su estado de cuenta: algo arrendado y
+   * ningún giro programado (COLA-FRONT, 04-10). Se suma a `proximoGiro: null`.
+   */
+  sinDiaDeGiro?: boolean;
 }
 
 interface StatCardProps {
@@ -141,6 +146,7 @@ export function PropietarioStats({
   className,
   consignaciones,
   onCargarCuenta,
+  sinDiaDeGiro: sinDiaDeGiroPorLaFicha = false,
 }: PropietarioStatsProps) {
   const { t, locale } = useI18n();
   /*
@@ -161,6 +167,8 @@ export function PropietarioStats({
    * Antes la alerta decía «son dispersiones ya generadas» sobre este número.
    */
   const giros = girosDelPropietario(propietario);
+  /* COLA-FRONT (04-10, la recomendada): sin giro programado no está «Al día». */
+  const sinDiaDeGiro = !hasPendingBalance && (giros.sinDiaDeGiro || sinDiaDeGiroPorLaFicha);
   const detalleDelGiro = detalleDelAtraso(giros, t);
   const generado = giros.generadoSinGirar ?? 0;
   const occupancyRate = propietario.propertyCount > 0
@@ -237,7 +245,11 @@ export function PropietarioStats({
               ? 'text-warning'
               : 'text-success'
           )}>
-            {hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
+            {hasPendingBalance
+              ? formatCurrency(propietario.pendingBalance)
+              : sinDiaDeGiro
+                ? t('inmobiliaria.propietario.giros.sinDiaDeGiro')
+                : t('inmobiliaria.propietario.stats.upToDate')}
           </p>
         </div>
       </div>
@@ -316,7 +328,9 @@ export function PropietarioStats({
               ? '—'
               : hasPendingBalance
                 ? formatCurrency(propietario.pendingBalance)
-                : t('inmobiliaria.propietario.stats.upToDate')
+                : sinDiaDeGiro
+                  ? t('inmobiliaria.propietario.giros.sinDiaDeGiro')
+                  : t('inmobiliaria.propietario.stats.upToDate')
           }
           delta={
             plataOculta

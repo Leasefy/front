@@ -28,6 +28,8 @@ describe('girosDelPropietario — 🔴 P-10: `pendingBalance` ya es lo VENCIDO s
       desde: '2025-11-01',
       generadoSinGirar: 3_656_150,
       conAtraso: true,
+      // COLA-FRONT (04-10): con atraso no es «sin día de giro».
+      sinDiaDeGiro: false,
     });
   });
 

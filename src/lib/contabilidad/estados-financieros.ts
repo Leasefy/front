@@ -225,11 +225,42 @@ export function margenLegible(margenPct: number | null, sinMedir: string): strin
 
 // ── Balance general ────────────────────────────────────────────────────────
 
-/** Pasivo + patrimonio + resultado del ejercicio: el otro lado de la igualdad. */
+/**
+ * Pasivo + patrimonio + resultado del ejercicio (+ el de años anteriores sin
+ * asiento de cierre, CB-R14): el otro lado de la igualdad, el mismo del back.
+ */
 export function totalDelOtroLado(balance: BalanceGeneral): number {
   return (
-    balance.pasivo.totalCop + balance.patrimonio.totalCop + balance.resultadoDelEjercicioCop
+    balance.pasivo.totalCop +
+    balance.patrimonio.totalCop +
+    balance.resultadoDelEjercicioCop +
+    (balance.resultadoDeEjerciciosAnterioresCop ?? 0)
   );
+}
+
+/**
+ * 🔴 QA-CONTA CB-18: ¿cuánto le falta al auxiliar por tercero para cuadrar con
+ * el libro? Sólo se puede saber con TODOS los terceros a la vista (una sola
+ * página, sin el filtro «con saldo», que esconde terceros con movimientos que
+ * se anulan). `null` = no se puede saber desde acá.
+ */
+export function loQueLeFaltaAlAuxiliar(auxiliar: {
+  total: number;
+  desplazamiento: number;
+  terceros: ReadonlyArray<{ debitosCop: number; creditosCop: number }>;
+  sinTercero: { debitosCop: number; creditosCop: number };
+  libro?: { debitosCop: number; creditosCop: number };
+}, conSaldo: boolean): { debitosCop: number; creditosCop: number } | null {
+  if (!auxiliar.libro || conSaldo) return null;
+  if (auxiliar.desplazamiento !== 0 || auxiliar.terceros.length !== auxiliar.total) return null;
+  const debitos =
+    auxiliar.terceros.reduce((s, f) => s + f.debitosCop, 0) + auxiliar.sinTercero.debitosCop;
+  const creditos =
+    auxiliar.terceros.reduce((s, f) => s + f.creditosCop, 0) + auxiliar.sinTercero.creditosCop;
+  return {
+    debitosCop: auxiliar.libro.debitosCop - debitos,
+    creditosCop: auxiliar.libro.creditosCop - creditos,
+  };
 }
 
 /**

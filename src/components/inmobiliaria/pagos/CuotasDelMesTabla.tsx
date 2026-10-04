@@ -92,7 +92,7 @@ import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 import { CuotaDelMesCajon } from './CuotaDelMesCajon'
-import { NOMBRE_DEL_CAJON, VARIANTE_DEL_CAJON, fechaLocal } from './cajon-de-la-cuota'
+import { fechaLocal, nombreDeLaFila, varianteDeLaFila } from './cajon-de-la-cuota'
 
 const VOLVER_A = '/panel/inmobiliaria/pagos'
 
@@ -281,8 +281,10 @@ export function CuotasDelMesTabla({
                     y lo vencido en plazo dice cuántos días le quedan. Son dos
                     hechos distintos y se escriben distinto.
                   */}
-                  <Badge variant={VARIANTE_DEL_CAJON[f.cajon]} className="mt-1">
-                    {f.enSiniestro ? 'En siniestro' : NOMBRE_DEL_CAJON[f.cajon]}
+                  {/* CR-31 y nota crédito: el rótulo con sus excepciones
+                      («Vencida» sin plazo fijado, «Saldada por nota crédito»). */}
+                  <Badge variant={varianteDeLaFila(f)} className="mt-1" data-testid="rotulo-de-la-cuota">
+                    {nombreDeLaFila(f)}
                   </Badge>
                   {f.cajon === 'CARTERA' && (
                     <p className="text-caption text-danger">
@@ -291,7 +293,9 @@ export function CuotasDelMesTabla({
                   )}
                   {f.cajon === 'VENCIDA_EN_PLAZO' && (
                     <p className="text-caption text-fg-muted">
-                      plazo de {f.diasDePlazo} {f.diasDePlazo === 1 ? 'día' : 'días'}
+                      {f.plazoSinFijar
+                        ? 'sin plazo fijado: no corre mora'
+                        : `plazo de ${f.diasDePlazo} ${f.diasDePlazo === 1 ? 'día' : 'días'}`}
                     </p>
                   )}
                 </TableCell>

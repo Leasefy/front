@@ -853,7 +853,14 @@ function NuevoContratoContent() {
             paymentDueDay: Number(form.paymentDay) || null,
             diasDePlazo: form.diasDePlazo.trim() === '' ? null : Number(form.diasDePlazo),
           },
-          porDefecto ? { diasDePlazo: porDefecto.diasDePlazo, diaDePago: porDefecto.diaDePago } : null,
+          porDefecto
+            ? {
+                diasDePlazo: porDefecto.diasDePlazo,
+                diaDePago: porDefecto.diaDePago,
+                // CR-31: sin plazo fijado no corre mora (lo dice el back).
+                plazoSinFijar: valoresDelBack?.reglaDeCobro?.plazoSinFijar === true,
+              }
+            : null,
         )
       : null;
   const inquilinoDelResumen = esManual
@@ -1260,7 +1267,9 @@ function NuevoContratoContent() {
               label="Días de plazo antes de la mora"
               error={errorDe('diasDePlazo')}
               hint={
-                porDefecto?.diasDePlazo != null
+                valoresDelBack?.reglaDeCobro?.plazoSinFijar === true
+                  ? 'Vacío = los de la inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora. Días después del vencimiento en los que todavía no corre mora.'
+                  : porDefecto?.diasDePlazo != null
                   ? `Vacío = los de la inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
                   : 'Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
               }

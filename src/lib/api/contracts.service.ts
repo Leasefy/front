@@ -725,6 +725,15 @@ export const contractsApi = {
   },
 
   /**
+   * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
+   * está la invitación al portal del inquilino del contrato y qué botón le
+   * toca («Invitar al portal», «Reenviar invitación» o ninguno).
+   */
+  async invitacionDelInquilino(id: string): Promise<InvitacionDelInquilino> {
+    return apiClient.get<InvitacionDelInquilino>(`/contracts/${id}/invitacion-del-inquilino`);
+  },
+
+  /**
    * POST /contracts/:id/remind — re-sends the pending-signature notification.
    * Rate-limited to 1 per 24h. Returns `{ remindedAt, nextAllowedAt }`.
    * Throws on 429 (too soon since last reminder).
@@ -1665,4 +1674,46 @@ export interface ResultadoInvitacion {
    * un tercer shape.
    */
   contrato: BackendContract;
+  /**
+   * 🔴 CR-08: el contrato ya tenía la cuenta del inquilino y nunca entró, así
+   * que se REENVIÓ la invitación. Dice si salió y, si no, por qué (nunca se
+   * dice «enviada» si no salió). Ausente cuando fue la primera invitación.
+   */
+  reenvio?: ReenvioDeLaInvitacion;
+}
+
+/**
+ * - `SIN_CUENTA`: el contrato no tiene cuenta del portal vinculada.
+ * - `SIN_ENVIO`: tiene cuenta, nunca entró y no hay registro de envío.
+ * - `PENDIENTE`: le salió y todavía vale.
+ * - `VENCIDA`: le salió, venció y nunca entró.
+ * - `YA_ENTRO`: entró al portal alguna vez.
+ */
+export type EstadoDeLaInvitacion = 'SIN_CUENTA' | 'SIN_ENVIO' | 'PENDIENTE' | 'VENCIDA' | 'YA_ENTRO';
+
+/** `GET /contracts/:id/invitacion-del-inquilino` (back `invitacion-del-inquilino.ts`). */
+export interface InvitacionDelInquilino {
+  estado: EstadoDeLaInvitacion;
+  /** El botón que le toca. `null` = ninguno (ya entró, o sin correo para invitar). */
+  accion: 'INVITAR' | 'REENVIAR' | null;
+  /** ISO del último envío; `null` = sin registro. */
+  ultimoEnvio: string | null;
+  /** ISO de cuándo deja de valer: último envío + días de vigencia. */
+  vence: string | null;
+  diasDeVigencia: number;
+}
+
+/** Lo que pasó al reenviar (`POST :id/invitar-inquilino` → `reenvio`). */
+export interface ReenvioDeLaInvitacion {
+  enviada: boolean;
+  motivo:
+    | 'RECIEN_ENVIADA'
+    | 'DOMINIO_NO_ENTREGABLE'
+    | 'CORREO_NO_CONFIGURADO'
+    | 'ENVIO_FALLIDO'
+    | null;
+  /** Para el aviso, en palabras. Nunca dice «enviada» si no salió. */
+  mensaje: string;
+  /** La invitación DESPUÉS del intento. */
+  invitacion: InvitacionDelInquilino;
 }

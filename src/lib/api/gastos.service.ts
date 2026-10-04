@@ -970,9 +970,12 @@ export const gastosApi = {
      * Lectura, pero con efecto: marca `ARCHIVO_GENERADO` y guarda el hash del
      * archivo que se subió al banco. Baja como blob, no como JSON.
      */
-    async archivo(id: string, formato?: FormatoDelArchivo): Promise<Blob> {
+    async archivo(id: string, formato?: FormatoDelArchivo, cuentaId?: string): Promise<Blob> {
+      // 🔴 CB-R09: `cuentaId` = el medio de pago (cuenta bancaria de la
+      // inmobiliaria) desde el que sale la plata. Uno que no sirve es un 400
+      // `CUENTA_DE_ORIGEN_NO_SIRVE` con `campos: [{ campo: 'cuentaId' }]`.
       return apiClient.getBlob(
-        conQuery(`${BASE}/egresos/lotes/${encodeURIComponent(id)}/archivo`, { formato }),
+        conQuery(`${BASE}/egresos/lotes/${encodeURIComponent(id)}/archivo`, { formato, cuentaId }),
       );
     },
 

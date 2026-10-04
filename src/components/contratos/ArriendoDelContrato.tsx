@@ -56,6 +56,7 @@ import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar';
 import { cicloDeVidaApi } from '@/lib/api/ciclo-de-vida.service';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { interesesDelContrato } from '@/components/estado-de-cuenta/intereses';
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import {
   avanceDelContrato,
@@ -634,7 +635,9 @@ function CuentaDelArriendo({
     [cuenta, hoy, diasDePlazo],
   );
 
-  const intereses = cuenta.estado === 'listo' ? cuenta.contrato.intereses ?? null : null;
+  // CR-31 (COLA-FRONT, 04-10): sin el interés de las cuotas sin plazo fijado
+  // (no corre), aunque el back todavía lo mande (`interesesDelContrato`).
+  const intereses = cuenta.estado === 'listo' ? interesesDelContrato(cuenta.contrato) : null;
   const cuotaDeLaProrroga = useCuotaDeLaProrroga(
     contract.id,
     contract.status === 'active' && cuenta.estado === 'listo' && deuda !== null && deuda.proxima === null,
@@ -809,7 +812,12 @@ function EstadoDeLaDeuda({ deuda, interesPendiente = 0 }: { deuda: DeudaDelContr
       break;
     case 'VENCIDO_EN_PLAZO': {
       const q = deuda.diasDePlazoQueQuedan ?? 0;
-      detalle = (
+      detalle = deuda.plazoSinFijar ? (
+        // CR-31: sin plazo fijado no hay «último día de plazo».
+        <>
+          <Monto>{formatCurrency(deuda.vencido)}</Monto> vencido · sin plazo fijado, no corre mora
+        </>
+      ) : (
         <>
           <Monto>{formatCurrency(deuda.vencido)}</Monto> vencido ·{' '}
           {q === 0
@@ -854,7 +862,11 @@ function EstadoDeLaDeuda({ deuda, interesPendiente = 0 }: { deuda: DeudaDelContr
           <Icono className="size-3.5" weight="bold" />
         </span>
         <span className="text-body font-medium text-fg" data-testid="estado-nombre">
-          {conIntereses ? 'Debe intereses' : NOMBRE_DEL_ESTADO[deuda.estado]}
+          {conIntereses
+            ? 'Debe intereses'
+            : deuda.estado === 'VENCIDO_EN_PLAZO' && deuda.plazoSinFijar
+              ? 'Vencida'
+              : NOMBRE_DEL_ESTADO[deuda.estado]}
         </span>
       </p>
       <p className="mt-1.5 text-caption text-fg-muted" data-testid="estado-detalle">

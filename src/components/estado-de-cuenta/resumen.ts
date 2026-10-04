@@ -70,6 +70,11 @@ export interface ResumenDelCliente {
   enPlazo: boolean;
   /** Cuántas filas vencidas siguen dentro del plazo. */
   cuotasEnPlazo: number;
+  /**
+   * 🔴 CR-31: esas vencidas no están «en plazo» sino SIN plazo: la inmobiliaria
+   * no ha fijado sus días (`plazoSinFijar` del back). Se rotula «Vencida».
+   */
+  sinPlazoFijado: boolean;
   cuotasVencidas: number;
   /**
    * Lo vencido y no pagado, sumado de las FILAS. No se toma de
@@ -172,6 +177,7 @@ export function resumirElCliente(
         : 0,
     enPlazo: enCartera.length === 0 && enPlazo.length > 0,
     cuotasEnPlazo: enPlazo.length,
+    sinPlazoFijado: enPlazo.some(({ fila }) => fila.plazoSinFijar === true),
     cuotasVencidas: vencidas.length,
     vencidoCop: vencidas.reduce((s, { fila }) => s + fila.valorNeto, 0),
   };

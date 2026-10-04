@@ -46,6 +46,17 @@ export type EstadoDeCuota =
  */
 export type CajonDeLaCuota = 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA' | 'SIN_DEUDA';
 
+/**
+ * 🔴 La nota crédito que dejó una cuota en $0 sin que se pagara nada (Nico,
+ * 03-10-2026: «Saldada por nota crédito», con el número de la nota). Espejo de
+ * `back-erp/src/contracts/estado-de-cuenta/saldada-por-nota.ts`.
+ */
+export interface SaldadaPorNota {
+  notaCreditoId: string;
+  /** «NC-12». `null` si la nota todavía no tiene número (generada, sin emitir). */
+  numero: string | null;
+}
+
 export interface FilaDeCarteraDelInquilino {
   /**
    * 🔴 La cuota: la identidad de la fila (una por contrato, lado y mes). Antes
@@ -81,6 +92,8 @@ export interface FilaDeCarteraDelInquilino {
   esVencida: boolean;
   /** 🔴 ES CARTERA: pasó el vencimiento más los días de plazo del contrato. */
   enMora: boolean;
+  /** 🔴 CR-31: vencida sin plazo fijado por la inmobiliaria (ver `PlazoSinFijar`). */
+  plazoSinFijar?: true;
   enSiniestro: boolean;
   /** Lo facturado por concepto. */
   porConcepto: PorConcepto;
@@ -226,7 +239,19 @@ export interface FilaDeLaCuotaDelMes {
   esVencida: boolean;
   /** 🔴 ES CARTERA: pasó el vencimiento MÁS los días de plazo del contrato. */
   enMora: boolean;
+  /**
+   * 🔴 CR-31 (Nico, 03-10-2026): vencida, pero la inmobiliaria todavía no fijó
+   * sus días de plazo: NO es cartera (`enMora: false`) ni va a la cobranza. Se
+   * rotula «Vencida» (no «Vencido, en plazo»). Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
   enSiniestro: boolean;
+  /**
+   * 🔴 Nico (03-10-2026): una nota crédito la dejó en $0 sin pagos. Se lee
+   * «Saldada por nota crédito NC-12» aunque `estado` siga `PENDIENTE` (no se
+   * pagó nada). Ausente en el resto.
+   */
+  saldadaPorNota?: SaldadaPorNota;
   /** Lo que el período le cuesta al inquilino (lo pactado). */
   totalCop: number;
   pagadoCop: number;

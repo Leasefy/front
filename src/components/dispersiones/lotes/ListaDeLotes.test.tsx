@@ -338,7 +338,9 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     const { toast } = await import('@/components/ui/toast');
     const [titulo, opciones] = vi.mocked(toast.success).mock.calls.at(-1)!;
     expect(titulo).toBe('Lote de septiembre de 2026 armado y aprobado');
-    expect((opciones as { description: string }).description).toContain('Aprobado por ti como administrador (P-4)');
+    expect((opciones as { description: string }).description).toContain('Aprobado por ti como administrador');
+    // Sin el código interno (COLA-FRONT, 04-10).
+    expect((opciones as { description: string }).description).not.toContain('(P-4)');
   });
 
   it('otro rol: «armado», como siempre (lo aprueba otra persona)', async () => {

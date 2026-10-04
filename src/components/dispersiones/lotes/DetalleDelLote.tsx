@@ -511,7 +511,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           mono={false}
           detalle={
             lote.aprobadoAt
-              ? `${notaP4 ? 'Como administrador, en el mismo paso (P-4) · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              ? `${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
               : undefined
           }
         />

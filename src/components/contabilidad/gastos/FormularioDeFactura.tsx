@@ -306,10 +306,19 @@ export function FormularioDeFactura({
    * hacia atrás.
    */
   const lineasListas = useMemo(() => lineasParaElBack(lineas), [lineas]);
+  /*
+   * 🔴 QA-CONTA (COLA-FRONT, 04-10, la recomendada): la retefuente NO viaja
+   * mientras nadie la toque. Así el back la calcula con el registro del
+   * proveedor Y la base mínima (lo que el front no sabe); mandar la propuesta
+   * local (pct × base) le pisaba ese cálculo. Escrita a mano, viaja.
+   */
+  const retefuenteQueViaja: { retefuenteCop?: number } = retefuenteEscrita
+    ? { retefuenteCop: retefuente }
+    : {};
   const huellaDeLaLiquidacion = JSON.stringify([
     proveedorId,
     lineasListas,
-    retefuente,
+    retefuenteEscrita ? retefuente : null,
     reteiva,
     reteica,
   ]);
@@ -325,7 +334,7 @@ export function FormularioDeFactura({
         .previsualizar({
           ...(proveedorId ? { proveedorId } : {}),
           lineas: lineasListas,
-          retefuenteCop: retefuente,
+          ...retefuenteQueViaja,
           reteivaCop: reteiva,
           reteicaCop: reteica,
         })
@@ -346,11 +355,18 @@ export function FormularioDeFactura({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto, huellaDeLaLiquidacion]);
 
-  // CB-21: la retefuente propuesta sigue a la base mientras nadie la escriba.
+  // CB-21: la retefuente propuesta sigue a la base mientras nadie la escriba
+  // (y mientras el back no haya dicho la suya).
   useEffect(() => {
-    if (retefuentePct === null || retefuenteEscrita) return;
+    if (retefuentePct === null || retefuenteEscrita || liquidacion) return;
     setRetefuente(retefuentePropuesta(totales.subtotalCop, retefuentePct));
-  }, [retefuentePct, retefuenteEscrita, totales.subtotalCop]);
+  }, [retefuentePct, retefuenteEscrita, totales.subtotalCop, liquidacion]);
+
+  // Sin tocarla, la retefuente que se ve es la que calculó el back (con la base mínima).
+  useEffect(() => {
+    if (retefuenteEscrita || !liquidacion) return;
+    setRetefuente(liquidacion.retefuenteCop);
+  }, [retefuenteEscrita, liquidacion]);
 
   /** Elegir un proveedor del registro copia sus datos en la factura. */
   const elegirProveedor = (id: string) => {
@@ -416,7 +432,7 @@ export function FormularioDeFactura({
         ...(rubro ? { rubro } : {}),
         ...(sedeId ? { sedeId } : {}),
         lineas: lineasParaElBack(lineas),
-        retefuenteCop: retefuente,
+        ...retefuenteQueViaja,
         reteivaCop: reteiva,
         reteicaCop: reteica,
         /*
@@ -900,9 +916,13 @@ export function FormularioDeFactura({
                   id="factura-retefuente-error"
                   mensaje={errorDe('retefuenteCop')}
                   pista={
-                    retefuentePct !== null && !retefuenteEscrita
-                      ? `Propuesta: ${retefuentePct.toLocaleString('es-CO')} % de la base, del registro del proveedor.`
-                      : undefined
+                    retefuenteEscrita
+                      ? undefined
+                      : liquidacion
+                        ? 'La calcula Leasefy con el registro del proveedor y la base mínima. Escríbela sólo si es otra.'
+                        : retefuentePct !== null
+                          ? `Propuesta: ${retefuentePct.toLocaleString('es-CO')} % de la base, del registro del proveedor.`
+                          : undefined
                   }
                 />
               </div>

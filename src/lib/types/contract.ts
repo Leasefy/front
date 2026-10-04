@@ -65,7 +65,13 @@ export interface ReglaDeCobroDelBack {
   primeraCuotaVenceEl: string | null;
   diasDePlazo: number;
   origenDelPlazo: 'CONTRATO' | 'INMOBILIARIA';
+  /** `null` si no se sabe o si la inmobiliaria no fijó su plazo (no corre mora, CR-31). */
   moraDesdeElDia: number | null;
+  /**
+   * 🔴 CR-31: la inmobiliaria todavía no fijó sus días de plazo: la cuota vence,
+   * pero no corre mora ni entra a la cartera. Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
   diaDePagoLegado: number | null;
   diaDePagoAplica: false;
   /** La frase lista para la ficha. */

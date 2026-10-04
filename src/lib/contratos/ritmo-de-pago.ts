@@ -23,6 +23,12 @@ export interface TerminosDeLaAgencia {
   diasDePlazo?: number | null;
   /** `Agency.paymentDueDay`. */
   diaDePago?: number | null;
+  /**
+   * 🔴 CR-31 (`reglaDeCobro.plazoSinFijar` del back): la inmobiliaria todavía
+   * no fijó sus días de plazo. Mientras tanto no corre mora, así que decir
+   * «sin días de plazo» (la mora corre ese mismo día) sería falso.
+   */
+  plazoSinFijar?: boolean;
 }
 
 export type Periodicidad = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -98,7 +104,9 @@ export function ritmoDePago(
   const plazo = diasDePlazoQueRigen(contrato, agencia);
 
   let conPlazo: string;
-  if (plazo === null) {
+  if (agencia?.plazoSinFijar === true) {
+    conPlazo = 'sin mora mientras tu inmobiliaria no fije sus días de plazo';
+  } else if (plazo === null) {
     conPlazo = 'con los días de plazo de tu inmobiliaria';
   } else if (plazo === 0) {
     conPlazo = heredaPlazo ? 'sin días de plazo (como tu inmobiliaria)' : 'sin días de plazo';

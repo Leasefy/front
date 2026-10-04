@@ -40,6 +40,7 @@
  */
 
 import * as React from 'react';
+import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
@@ -78,7 +79,7 @@ import {
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { claveDelLado, useTextoDelEstado } from './textos';
-import { InteresesDelContratoSeccion } from './InteresesDelContrato';
+import { InteresesDelContratoSeccion, RUTA_DEL_PLAZO } from './InteresesDelContrato';
 import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
 import { SaldoAFavorAlTerminarSeccion } from './SaldoAFavorAlTerminar';
 import { hayQueContarIntereses, interesesDelContrato } from './intereses';
@@ -124,6 +125,16 @@ export function ContratoDelEstado({
   const conSaldoAFavorAlTerminar = conAnticipoDelContrato && !esPropietario && !contrato.vigente;
   const intereses = interesesDelContrato(contrato);
   const conIntereses = Boolean(intereses && intereses.filas.length > 0);
+  /*
+   * 🔴 CR-31 (Nico, 03-10-2026: «avisar… de que eso falta»): las vencidas que
+   * no entran a la cartera porque la inmobiliaria no ha fijado su plazo. El
+   * aviso es de la inmobiliaria: sólo en el panel (`reglasDeMoraHref`).
+   */
+  const vencidasSinPlazo = reglasDeMoraHref
+    ? [...contrato.secciones.arriendos, ...contrato.secciones.otrosConceptos].filter(
+        (f) => f.plazoSinFijar,
+      ).length
+    : 0;
 
   const columnas = React.useMemo(
     () =>
@@ -214,6 +225,26 @@ export function ContratoDelEstado({
             columnas: omitidas.map((c) => ETIQUETA_DE_COLUMNA[c]).join(', '),
           })}
         </p>
+      )}
+
+      {vencidasSinPlazo > 0 && (
+        <div
+          data-testid={`vencidas-sin-plazo-${contrato.numero}`}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md bg-warning-soft px-3 py-2 text-caption text-warning print:hidden"
+        >
+          <span>
+            {vencidasSinPlazo === 1
+              ? t('estadoDeCuenta.unaVencidaSinPlazoAviso')
+              : t('estadoDeCuenta.vencidasSinPlazoAviso', { n: vencidasSinPlazo })}
+          </span>
+          <Link
+            href={RUTA_DEL_PLAZO}
+            className="font-medium underline underline-offset-4"
+            data-testid="fijar-plazo-desde-el-estado"
+          >
+            {t('estadoDeCuenta.fijarPlazo')}
+          </Link>
+        </div>
       )}
 
       {hayQueContarIntereses(intereses) && (
@@ -618,9 +649,26 @@ function Pildora({
   fila: FilaDelEstadoDeCuenta;
   rol: RolEnElContrato;
 }) {
+  const t = useTextoDelEstado();
   // «Cancelada» al inquilino, «Pagada» al propietario: mismo estado, distinta
   // palabra, como en los dos PDF de Nui.
   const pinta = pintaDelEstado(fila.estado, rol);
+  /*
+   * 🔴 Nico (03-10-2026): la cuota que una nota crédito dejó en $0 no se pagó:
+   * la saldó la nota. «Saldada por nota crédito NC-12», no «Cancelada».
+   */
+  if (fila.saldadaPorNota) {
+    return (
+      <span
+        className="inline-block rounded-full bg-surface-muted px-2.5 py-0.5 text-caption text-fg-muted"
+        data-testid="saldada-por-nota"
+      >
+        {fila.saldadaPorNota.numero
+          ? t('estadoDeCuenta.saldadaPorNota', { numero: fila.saldadaPorNota.numero })
+          : t('estadoDeCuenta.saldadaPorNotaSinNumero')}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(

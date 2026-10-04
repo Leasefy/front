@@ -123,6 +123,7 @@ import { refDesdeLaClave } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type {
   FilaDeCarteraDelInquilino,
   InquilinoEnCartera,
@@ -255,12 +256,21 @@ export function CarteraPorConcepto() {
     [datos, busqueda, cajon],
   )
   const totalesDeLoVisible = useMemo(() => sumarTotales(inquilinos), [inquilinos])
+  /** 🔴 CR-31: la inmobiliaria no ha fijado su plazo: lo vencido no está «en plazo». */
+  const hayVencidasSinPlazo = useMemo(
+    () => (datos?.inquilinos ?? []).some((i) => i.filas.some((f) => f.plazoSinFijar)),
+    [datos],
+  )
   /* El interés de lo visible, de las MISMAS filas que el pie. */
   const interesDeLoVisible = useMemo(
     () => sumarIntereses(inquilinos.flatMap((i) => i.filas)),
     [inquilinos],
   )
-  const interesTotal = (datos?.totales as { interesCop?: number } | undefined)?.interesCop ?? 0
+  // 🔴 CR-31 (COLA-FRONT, 04-10): con vencidas sin plazo fijado, se suma de las
+  // filas (que no cuentan el interés de esas cuotas: no corre).
+  const interesTotal = hayVencidasSinPlazo
+    ? sumarIntereses((datos?.inquilinos ?? []).flatMap((i) => i.filas))
+    : ((datos?.totales as { interesCop?: number } | undefined)?.interesCop ?? 0)
   const sinReglasDeMora =
     (datos as { sinReglasDeMora?: boolean } | undefined)?.sinReglasDeMora === true ||
     faltanReglasDeMora((datos?.inquilinos ?? []).flatMap((i) => i.filas))
@@ -409,9 +419,13 @@ export function CarteraPorConcepto() {
             />
             <PestanaDeLaCartera
               marca={marca}
-              label="Vencido, en plazo"
+              label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
               monto={datos?.totales.vencidaEnPlazoCop ?? 0}
-              detalle="Venció, pero el plazo del contrato sigue corriendo."
+              detalle={
+                hayVencidasSinPlazo
+                  ? 'Venció. Sin plazo fijado no es cartera ni corre mora.'
+                  : 'Venció, pero el plazo del contrato sigue corriendo.'
+              }
               tono="warning"
               activa={cajon === 'VENCIDA_EN_PLAZO'}
               testId="cajon-vencido-en-plazo"
@@ -450,7 +464,9 @@ export function CarteraPorConcepto() {
           >
             {/* La frase del cajón nuevo entra con un fundido. */}
             <Appear as="span" key={cajon} direction="none">
-            {QUE_ES_ESTE_CAJON[cajon]}
+            {cajon === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo
+              ? 'Venció, y la inmobiliaria todavía no fijó sus días de plazo: no es cartera, no corre interés de mora y la cobranza no la toca hasta que los fije.'
+              : QUE_ES_ESTE_CAJON[cajon]}
             </Appear>
           </p>
 
@@ -889,6 +905,11 @@ function FilaDelMes({
           ) : fila.enMora ? (
             <span className="text-danger">
               Cartera · {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+            </span>
+          ) : fila.esVencida && fila.plazoSinFijar ? (
+            /* 🔴 CR-31: sin plazo fijado no hay plazo: «Vencida», sin mora. */
+            <span className="text-warning" data-testid="vencida-sin-plazo">
+              Vencida · venció el {fechaLarga(fila.vence)} · sin plazo fijado, no corre mora
             </span>
           ) : fila.esVencida ? (
             <span className="text-warning">

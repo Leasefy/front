@@ -433,9 +433,17 @@ function FilaDeCartera({
                   { n: item.diasDeMora },
                 )
               : item.cajon === 'VENCIDA_EN_PLAZO'
-                ? t('cartera.tabla.vencidoEnPlazo')
+                ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                  item.plazoSinFijar
+                  ? t('cartera.tabla.vencidaSinPlazo')
+                  : t('cartera.tabla.vencidoEnPlazo')
                 : t('cartera.tabla.porVencer')}
           </Badge>
+          {item.cajon === 'VENCIDA_EN_PLAZO' && item.plazoSinFijar ? (
+            <div className="whitespace-nowrap text-caption text-fg-subtle" data-testid="sin-plazo-fijado">
+              {t('cartera.tabla.sinPlazoFijado')}
+            </div>
+          ) : null}
           {/* El plazo se dice sólo donde explica algo: es la razón por la que
               una cuota vencida todavía no es cartera. */}
           {item.cajon === 'VENCIDA_EN_PLAZO' && item.diasDePlazo > 0 ? (

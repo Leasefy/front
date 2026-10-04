@@ -402,6 +402,17 @@ export interface ProveedorNoObligado {
   faltaPerfilTributario: boolean
 }
 
+/** Lo que se le puede cambiar a un proveedor (`ActualizarProveedorNoObligadoDto`). */
+export interface CambiosDelProveedor {
+  nombre?: string
+  tipoDocumento?: string | null
+  documento?: string | null
+  email?: string | null
+  telefono?: string | null
+  responsableIva?: boolean | null
+  retefuentePct?: number | null
+}
+
 export interface ProveedoresNoObligados {
   disponible: boolean
   migracion: string | null
@@ -611,6 +622,17 @@ export const facturacionElectronicaService = {
   proveedores: () =>
     apiClient.get<ProveedoresNoObligados>(
       `${BASE}/documento-soporte/proveedores`,
+    ),
+
+  /**
+   * 🔴 QA-FACT FA-24: `PATCH documento-soporte/proveedores/:id` — editar un
+   * proveedor ya registrado (sobre todo completar su perfil tributario). Sólo
+   * viaja lo que cambió; `null` borra el dato («no lo sabemos»).
+   */
+  actualizarProveedor: (id: string, cambios: CambiosDelProveedor) =>
+    apiClient.patch<ProveedorNoObligado>(
+      `${BASE}/documento-soporte/proveedores/${encodeURIComponent(id)}`,
+      cambios,
     ),
 
   crearProveedor: (datos: {

@@ -161,7 +161,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
        */
       toast.success(
         propuesto?.estado === 'CASTIGADA'
-          ? 'Castigada por ti como administrador (P-4): tu firma valió por los dos lados. Sale de la cartera activa y de la cobranza.'
+          ? 'Castigada por ti como administrador: tu firma valió por los dos lados. Sale de la cartera activa y de la cobranza.'
           : 'Propuesto. Ahora lo firman el administrador y el contador.',
       )
       setElegido(null)

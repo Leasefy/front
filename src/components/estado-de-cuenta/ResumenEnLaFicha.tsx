@@ -50,6 +50,10 @@ export interface NumerosDeLaFicha {
   diasDeMora: number;
   /** Vencido, pero dentro del plazo del contrato: todavía no es mora. */
   enPlazo?: boolean;
+  /** 🔴 CR-31: ese vencido no está «en plazo»: la inmobiliaria no fijó su plazo («Vencida»). */
+  sinPlazoFijado?: boolean;
+  /** 🔴 CR-31: la inmobiliaria no fijó su plazo: no corre interés (no se dice «+ intereses»). */
+  plazoSinFijar?: boolean;
   /**
    * El interés de mora que falta, APARTE de `restaPorPagar` (que es capital).
    * Ausente = el back no lo mandó; no se inventa un cero.
@@ -86,6 +90,7 @@ export function numerosDelDocumento(
     enMora: r.enMora,
     diasDeMora: r.diasDeMora,
     enPlazo: r.enPlazo,
+    sinPlazoFijado: r.sinPlazoFijado,
     interesDeMora,
     hayAlgo: contratos.length > 0,
   };
@@ -103,6 +108,32 @@ export interface ResumenEnLaFichaProps {
   /** A dónde vuelve el botón. Viaja como `?volver=`. */
   volverA?: string;
   className?: string;
+  /**
+   * Sólo del propietario: tiene algo arrendado (propio o en copropiedad). Con
+   * eso, un resumen sin nada por girar ni próximo giro no es «Al día»: es
+   * «Sin día de giro» (COLA-FRONT, 04-10, la recomendada).
+   */
+  tieneArrendados?: boolean;
+  /** Avisa a la ficha si quedó «Sin día de giro» (para «Datos por completar»). */
+  onSinDiaDeGiro?: (sinDiaDeGiro: boolean) => void;
+}
+
+/**
+ * ¿El propietario con algo arrendado no tiene ningún giro programado? Nada por
+ * girar, nada vencido ni próximo giro: su contrato no generó cuotas de su lado.
+ */
+export function propietarioSinDiaDeGiro(
+  numeros: Pick<NumerosDeLaFicha, 'restaPorPagar' | 'proxima' | 'enMora' | 'enPlazo'> | null,
+  tieneArrendados: boolean | undefined,
+): boolean {
+  return Boolean(
+    tieneArrendados &&
+      numeros &&
+      !numeros.enMora &&
+      !numeros.enPlazo &&
+      !numeros.proxima &&
+      numeros.restaPorPagar <= 0,
+  );
 }
 
 export function ResumenEnLaFicha({
@@ -111,6 +142,8 @@ export function ResumenEnLaFicha({
   soloContrato,
   volverA,
   className,
+  tieneArrendados,
+  onSinDiaDeGiro,
 }: ResumenEnLaFichaProps) {
   const texto = useTextoDelEstado();
   /*
@@ -149,6 +182,8 @@ export function ResumenEnLaFicha({
             diasDeMora: r.enMora?.dias ?? 0,
             // `pendiente` es lo vencido, en plazo o no; `enMora`, sólo lo que pasó el plazo.
             enPlazo: r.enMora === null && r.pendiente > 0,
+            sinPlazoFijado: r.plazoSinFijar === true && r.enMora === null && r.pendiente > 0,
+            plazoSinFijar: r.plazoSinFijar === true,
             interesDeMora: (r as { interesDeMora?: number }).interesDeMora,
             hayAlgo: r.contratos > 0,
           }))
@@ -169,6 +204,11 @@ export function ResumenEnLaFicha({
       vivo = false;
     };
   }, [tipo, id, soloContrato, hoy]);
+
+  const sinDiaDeGiro = esPropietario && propietarioSinDiaDeGiro(numeros, tieneArrendados);
+  React.useEffect(() => {
+    onSinDiaDeGiro?.(sinDiaDeGiro);
+  }, [onSinDiaDeGiro, sinDiaDeGiro]);
 
   if (cargando) {
     return (
@@ -219,7 +259,9 @@ export function ResumenEnLaFicha({
             </p>
             {/* Capital arriba; el interés de mora, aparte y debajo. Nunca del
                 lado del propietario: el interés de mora es de la inmobiliaria. */}
-            {!esPropietario && (numeros.interesDeMora ?? 0) > 0 && (
+            {/* CR-31: sin plazo fijado no corre interés: aunque llegue un
+                número, no se dice «+ $X de intereses». */}
+            {!esPropietario && !numeros.plazoSinFijar && (numeros.interesDeMora ?? 0) > 0 && (
               <p
                 data-testid="ficha-intereses"
                 className="mt-1 font-mono text-caption tabular-nums text-danger"
@@ -259,7 +301,9 @@ export function ResumenEnLaFicha({
                 data-testid="ficha-estado"
                 className={cn(
                   'inline-block rounded-full px-2.5 py-0.5 text-body-sm',
-                  numeros.enMora
+                  sinDiaDeGiro
+                    ? 'bg-surface-muted text-fg-muted'
+                    : numeros.enMora
                     ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
                       esPropietario
                       ? 'bg-warning-soft text-warning'
@@ -269,10 +313,14 @@ export function ResumenEnLaFicha({
                       : 'bg-success-soft text-success',
                 )}
               >
-                {numeros.enMora
+                {sinDiaDeGiro
+                  ? t('estadoDeCuenta.sinDiaDeGiro')
+                  : numeros.enMora
                   ? t('estadoDeCuenta.enMoraDias', { dias: numeros.diasDeMora })
                   : numeros.enPlazo
-                    ? t('estadoDeCuenta.vencidoEnPlazo')
+                    ? numeros.sinPlazoFijado
+                      ? t('estadoDeCuenta.vencidaSinPlazo')
+                      : t('estadoDeCuenta.vencidoEnPlazo')
                     : t('estadoDeCuenta.alDia')}
               </span>
             </p>

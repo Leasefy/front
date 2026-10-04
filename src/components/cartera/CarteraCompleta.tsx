@@ -211,6 +211,14 @@ export function CarteraCompleta() {
   // Las fichas y la franja hablan de TODA la cartera, no de lo filtrado: si
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
   const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
+  /** 🔴 CR-31: la inmobiliaria no ha fijado su plazo: lo vencido no está «en plazo». */
+  const hayVencidasSinPlazo = useMemo(() => items.some((i) => i.plazoSinFijar), [items])
+  const nombreDelCajon = (cual: Cajon) =>
+    cual === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo ? 'Vencido' : NOMBRE_DEL_CAJON[cual]
+  const queSignificaElCajon = (cual: Cajon) =>
+    cual === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo
+      ? 'Venció. Sin plazo fijado no es cartera ni corre mora.'
+      : QUE_SIGNIFICA_EL_CAJON[cual]
   const montoDelCajon = (cual: Cajon) =>
     cartera.cajones.find((c) => c.cajon === cual)!
   /*
@@ -414,7 +422,7 @@ export function CarteraCompleta() {
                 {activo ? (
                   <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
                 ) : null}
-                <p className="text-xs text-fg-muted">{NOMBRE_DEL_CAJON[cual]}</p>
+                <p className="text-xs text-fg-muted">{nombreDelCajon(cual)}</p>
                 <p
                   className={cn(
                     'mt-1 font-mono text-2xl font-semibold tabular-nums',
@@ -423,7 +431,7 @@ export function CarteraCompleta() {
                 >
                   {formatCurrency(suyo.monto)}
                 </p>
-                <p className="mt-0.5 text-xs text-fg-muted">{QUE_SIGNIFICA_EL_CAJON[cual]}</p>
+                <p className="mt-0.5 text-xs text-fg-muted">{queSignificaElCajon(cual)}</p>
                 {/* 🔴 La cartera INCLUYE el siniestro, y lo dice: restarlo en
                     silencio es lo que hacía que esta cifra no fuera la de «Por
                     concepto». */}
@@ -638,7 +646,7 @@ export function CarteraCompleta() {
             className="text-sm text-fg-muted"
             data-testid="que-significa"
           >
-            {edad ? QUE_SIGNIFICA[edad] : QUE_SIGNIFICA_EL_CAJON[cajon!]}{' '}
+            {edad ? QUE_SIGNIFICA[edad] : queSignificaElCajon(cajon!)}{' '}
             <button
               type="button"
               className="underline underline-offset-2 hover:text-fg"

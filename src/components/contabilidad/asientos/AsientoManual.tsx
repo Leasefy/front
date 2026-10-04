@@ -307,9 +307,12 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="min-w-[640px] space-y-2">
-              <div className="grid grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] gap-2 px-1 font-mono text-[11px] uppercase tracking-wide text-fg-muted">
+          {/* 🔴 QA-CONTA (COLA-FRONT, 04-10): a 390 px las líneas se corrían de
+              lado. Bajo `md` cada línea es una tarjeta (cuenta arriba, débito y
+              crédito lado a lado, el detalle abajo); desde `md`, la grilla. */}
+          <div className="md:overflow-x-auto">
+            <div className="space-y-2 md:min-w-[640px]">
+              <div className="hidden grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] gap-2 px-1 font-mono text-[11px] uppercase tracking-wide text-fg-muted md:grid">
                 <span>Cuenta</span>
                 <span className="text-right">Débito</span>
                 <span className="text-right">Crédito</span>
@@ -338,16 +341,26 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                 const describe = mensajeDeLinea ? idDelError : undefined;
                 return (
                   <StaggerItem key={l.clave} className="space-y-1" data-testid="linea-de-asiento">
-                    <div className="grid grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] items-center gap-2">
-                      <SelectorDeCuenta
-                        cuentas={cuentas}
-                        value={l.cuentaId}
-                        onChange={(cuentaId) => cambiar(l.clave, { cuentaId })}
-                        soloImputables
-                        invalid={errorDeLinea === 'SIN_CUENTA'}
-                        disabled={enviando}
-                        className="w-full"
-                      />
+                    <div
+                      className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 md:grid-cols-[minmax(220px,2fr)_150px_150px_minmax(140px,1.4fr)_40px] md:items-center md:rounded-none md:border-0 md:p-0"
+                      data-testid="linea-de-asiento-campos"
+                    >
+                      <div className="col-span-2 flex items-center gap-2 md:col-span-1">
+                        <span className="w-6 shrink-0 font-mono text-caption text-fg-subtle md:hidden" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <SelectorDeCuenta
+                          cuentas={cuentas}
+                          value={l.cuentaId}
+                          onChange={(cuentaId) => cambiar(l.clave, { cuentaId })}
+                          soloImputables
+                          invalid={errorDeLinea === 'SIN_CUENTA'}
+                          disabled={enviando}
+                          className="w-full min-w-0"
+                        />
+                      </div>
+                      <label className="space-y-1 md:contents">
+                        <span className="block text-caption text-fg-muted md:hidden">Débito</span>
                       <CurrencyInput
                         id={`${id}-linea-${l.clave}-debito`}
                         aria-label={`Débito de la línea ${i + 1}`}
@@ -361,6 +374,9 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                         className="text-right"
                         data-testid="linea-debito"
                       />
+                      </label>
+                      <label className="space-y-1 md:contents">
+                        <span className="block text-caption text-fg-muted md:hidden">Crédito</span>
                       <CurrencyInput
                         aria-label={`Crédito de la línea ${i + 1}`}
                         aria-describedby={describe}
@@ -373,12 +389,15 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                         className="text-right"
                         data-testid="linea-credito"
                       />
+                      </label>
                       <Input
                         aria-label={`Detalle de la línea ${i + 1}`}
+                        placeholder="Detalle (opcional)"
                         value={l.descripcion}
                         maxLength={LARGO_MAXIMO_DE_DESCRIPCION}
                         onChange={(e) => cambiar(l.clave, { descripcion: e.target.value })}
                         disabled={enviando}
+                        className="col-span-2 md:col-span-1"
                       />
                       <Button
                         type="button"
@@ -388,6 +407,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                         aria-label={`Quitar la línea ${i + 1}`}
                         onClick={() => quitar(l.clave)}
                         disabled={enviando || lineas.length <= 2}
+                        className="col-span-2 justify-self-end md:col-span-1"
                       >
                         <Trash className="h-4 w-4" aria-hidden="true" />
                       </Button>

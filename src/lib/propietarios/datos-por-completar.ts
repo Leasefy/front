@@ -15,6 +15,8 @@ const ETIQUETA_DEL_DATO: Record<string, string> = {
   tipoDocumento: 'tipo de documento',
   // QA-PROP P-28 (back 5731a4e2): sin cuenta no se le puede girar.
   cuentaBancaria: 'cuenta bancaria',
+  // COLA-FRONT (04-10): algo arrendado y ningún giro programado.
+  diaDeGiro: 'día de giro',
 };
 
 /** El número de documento listo para pintar: «Sin registrar» si no hay. */

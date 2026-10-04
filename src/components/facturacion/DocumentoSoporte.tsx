@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Receipt, Warning } from '@phosphor-icons/react'
+import { PencilSimple, Plus, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,6 +62,8 @@ import {
   type DocumentosSoporte as Documentos,
   type LiquidacionDelDocumentoSoporte,
   type ProveedoresNoObligados,
+  type ProveedorNoObligado,
+  type CambiosDelProveedor,
 } from '@/lib/api/facturacion-electronica.service'
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service'
 import { faltaEnLaBase } from '@/lib/facturacion/por-facturar'
@@ -106,6 +108,49 @@ export function erroresDelProveedor(p: ProveedorNuevo): Partial<Record<CampoDelP
   return errores
 }
 
+/** El proveedor del registro, como lo escribe la persona (para editarlo, FA-24). */
+export function proveedorEnElFormulario(p: ProveedorNoObligado): ProveedorNuevo {
+  return {
+    nombre: p.nombre ?? '',
+    tipoDocumento: p.tipoDocumento ?? 'CC',
+    documento: p.documento ?? '',
+    email: p.email ?? '',
+    telefono: p.telefono ?? '',
+    responsableIva: p.responsableIva === true ? 'SI' : p.responsableIva === false ? 'NO' : 'NO_SE',
+    retefuentePct: p.retefuentePct === null || p.retefuentePct === undefined ? '' : String(p.retefuentePct),
+  }
+}
+
+/**
+ * 🔴 QA-FACT FA-24: sólo lo que cambió, con `null` para lo que se borró (el
+ * back rechaza un PATCH vacío y `null` en «responsable de IVA» es «no lo
+ * sabemos», no «no»). PURA.
+ */
+export function cambiosDelProveedor(
+  antes: ProveedorNuevo,
+  ahora: ProveedorNuevo,
+): CambiosDelProveedor {
+  const cambios: CambiosDelProveedor = {}
+  const texto = (v: string) => (v.trim() === '' ? null : v.trim())
+  if (ahora.nombre.trim() !== antes.nombre.trim()) cambios.nombre = ahora.nombre.trim()
+  const documentoAhora = texto(ahora.documento)
+  const documentoAntes = texto(antes.documento)
+  if (documentoAhora !== documentoAntes) cambios.documento = documentoAhora
+  // El tipo va con el número: sin número no hay tipo.
+  const tipoAhora = documentoAhora ? ahora.tipoDocumento : null
+  const tipoAntes = documentoAntes ? antes.tipoDocumento : null
+  if (tipoAhora !== tipoAntes) cambios.tipoDocumento = tipoAhora
+  if (texto(ahora.email) !== texto(antes.email)) cambios.email = texto(ahora.email)
+  if (texto(ahora.telefono) !== texto(antes.telefono)) cambios.telefono = texto(ahora.telefono)
+  if (ahora.responsableIva !== antes.responsableIva) {
+    cambios.responsableIva =
+      ahora.responsableIva === 'NO_SE' ? null : ahora.responsableIva === 'SI'
+  }
+  const pct = (v: string) => (v.trim() === '' ? null : Number(v.trim().replace(',', '.')))
+  if (pct(ahora.retefuentePct) !== pct(antes.retefuentePct)) cambios.retefuentePct = pct(ahora.retefuentePct)
+  return cambios
+}
+
 interface Formulario {
   proveedorId: string
   fecha: string
@@ -137,6 +182,11 @@ export function DocumentoSoporte() {
   /** Registrar un proveedor desde el mismo cajón (FA-R12). */
   const [registrando, setRegistrando] = useState(false)
   const [nuevo, setNuevo] = useState<ProveedorNuevo>(PROVEEDOR_VACIO)
+  /**
+   * 🔴 QA-FACT FA-24: el proveedor que se está EDITANDO (el mismo formulario del
+   * registro, con sus datos). `null` = se registra uno nuevo.
+   */
+  const [editando, setEditando] = useState<{ id: string; antes: ProveedorNuevo } | null>(null)
   const [guardandoProveedor, setGuardandoProveedor] = useState(false)
   const [erroresDelServidor, setErroresDelServidor] = useState<
     Partial<Record<CampoDelProveedor, string>>
@@ -234,6 +284,7 @@ export function DocumentoSoporte() {
   }
 
   const proveedoresActivos = (proveedores?.proveedores ?? []).filter((p) => p.activo)
+  const elegido = proveedoresActivos.find((p) => p.id === form.proveedorId) ?? null
   const erroresDelNuevo = erroresDelProveedor(nuevo)
   const errorDelNuevo = (c: CampoDelProveedor) => erroresDelNuevo[c] ?? erroresDelServidor[c]
   const nuevoListo = nuevo.nombre.trim() !== '' && Object.keys(erroresDelNuevo).length === 0
@@ -241,6 +292,54 @@ export function DocumentoSoporte() {
   function campoDelNuevo<K extends keyof ProveedorNuevo>(clave: K, valor: ProveedorNuevo[K]) {
     setNuevo((p) => ({ ...p, [clave]: valor }))
     setErroresDelServidor((e) => ({ ...e, [clave]: undefined }))
+  }
+
+  function editarProveedor(p: ProveedorNoObligado) {
+    const comoEsta = proveedorEnElFormulario(p)
+    setEditando({ id: p.id, antes: comoEsta })
+    setNuevo(comoEsta)
+    setErroresDelServidor({})
+    setRegistrando(true)
+  }
+
+  function cerrarElFormularioDelProveedor() {
+    setRegistrando(false)
+    setEditando(null)
+    setNuevo(PROVEEDOR_VACIO)
+    setErroresDelServidor({})
+  }
+
+  const cambiosDelEditado = editando ? cambiosDelProveedor(editando.antes, nuevo) : null
+  const hayCambios = cambiosDelEditado ? Object.keys(cambiosDelEditado).length > 0 : true
+
+  async function guardarProveedorEditado() {
+    if (!editando || !cambiosDelEditado || !hayCambios || !nuevoListo || guardandoProveedor) return
+    setGuardandoProveedor(true)
+    try {
+      const actualizado = await facturacionElectronicaService.actualizarProveedor(
+        editando.id,
+        cambiosDelEditado,
+      )
+      toast.success(`Proveedor ${actualizado.nombre ?? nuevo.nombre.trim()} actualizado`)
+      try {
+        setProveedores(await facturacionElectronicaService.proveedores())
+      } catch {
+        // La lista vieja sigue; el cambio ya quedó guardado.
+      }
+      // La vista previa se calculó con los datos de antes: se vuelve a pedir.
+      setPrevia(null)
+      cerrarElFormularioDelProveedor()
+    } catch (e) {
+      const { porCampo, sueltos } = repartirErroresDelServidor<CampoDelProveedor>(e, {
+        campos: ['nombre', 'tipoDocumento', 'documento', 'email', 'telefono', 'retefuentePct'],
+        porDefecto: 'No se pudo guardar el proveedor.',
+        accion: 'guardar el proveedor',
+      })
+      setErroresDelServidor(porCampo)
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
+    } finally {
+      setGuardandoProveedor(false)
+    }
   }
 
   async function registrarProveedor() {
@@ -324,6 +423,7 @@ export function DocumentoSoporte() {
               onClick={() => {
                 // Sin ningún proveedor, el cajón abre en el registro: es el primer paso.
                 setRegistrando(proveedoresActivos.length === 0)
+                setEditando(null)
                 setEmitiendo(true)
               }}
               data-testid="ds-abrir"
@@ -443,10 +543,13 @@ export function DocumentoSoporte() {
               data-testid="ds-registrar-proveedor"
             >
               <div>
-                <h3 className="text-body font-semibold text-fg">Registrar un proveedor</h3>
+                <h3 className="text-body font-semibold text-fg">
+                  {editando ? 'Editar el proveedor' : 'Registrar un proveedor'}
+                </h3>
                 <p className="text-caption text-fg-muted">
-                  El técnico o el contratista que no factura. Con el nombre basta; su
-                  documento y su retención hacen que el documento salga bien liquidado.
+                  {editando
+                    ? 'Completa o corrige sus datos: su documento y su retención hacen que el documento salga bien liquidado.'
+                    : 'El técnico o el contratista que no factura. Con el nombre basta; su documento y su retención hacen que el documento salga bien liquidado.'}
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -561,26 +664,39 @@ export function DocumentoSoporte() {
                 </div>
               </div>
               <div className="flex flex-wrap justify-end gap-2">
-                {proveedoresActivos.length > 0 && (
+                {(editando || proveedoresActivos.length > 0) && (
                   <Button
                     variant="outline"
                     hideArrow
                     disabled={guardandoProveedor}
-                    onClick={() => setRegistrando(false)}
+                    onClick={cerrarElFormularioDelProveedor}
                     data-testid="ds-prov-cancelar"
                   >
-                    Volver a elegir uno
+                    {editando ? 'Cancelar' : 'Volver a elegir uno'}
                   </Button>
                 )}
-                <Button
-                  hideArrow
-                  disabled={!nuevoListo || guardandoProveedor}
-                  isLoading={guardandoProveedor}
-                  onClick={() => void registrarProveedor()}
-                  data-testid="ds-prov-guardar"
-                >
-                  Registrar el proveedor
-                </Button>
+                {editando ? (
+                  <Button
+                    hideArrow
+                    disabled={!nuevoListo || !hayCambios || guardandoProveedor}
+                    isLoading={guardandoProveedor}
+                    onClick={() => void guardarProveedorEditado()}
+                    title={hayCambios ? undefined : 'No has cambiado nada todavía.'}
+                    data-testid="ds-prov-guardar-cambios"
+                  >
+                    Guardar los cambios
+                  </Button>
+                ) : (
+                  <Button
+                    hideArrow
+                    disabled={!nuevoListo || guardandoProveedor}
+                    isLoading={guardandoProveedor}
+                    onClick={() => void registrarProveedor()}
+                    data-testid="ds-prov-guardar"
+                  >
+                    Registrar el proveedor
+                  </Button>
+                )}
               </div>
             </section>
           ) : null}
@@ -623,6 +739,23 @@ export function DocumentoSoporte() {
                   Registrar un proveedor nuevo
                 </button>
               )}
+              {/* 🔴 FA-24: el proveedor elegido se puede editar aquí mismo
+                  (sobre todo, completar su perfil tributario). */}
+              {!registrando && elegido ? (
+                <button
+                  type="button"
+                  onClick={() => editarProveedor(elegido)}
+                  className={
+                    elegido.faltaPerfilTributario
+                      ? 'ml-3 inline-flex items-center gap-1 text-caption font-medium text-warning underline-offset-4 hover:underline'
+                      : 'ml-3 inline-flex items-center gap-1 text-caption font-medium text-primary underline-offset-4 hover:underline'
+                  }
+                  data-testid="ds-editar-proveedor"
+                >
+                  <PencilSimple className="h-3 w-3" weight="bold" aria-hidden="true" />
+                  {elegido.faltaPerfilTributario ? 'Completar su perfil tributario' : 'Editar este proveedor'}
+                </button>
+              ) : null}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ds-fecha">Fecha</Label>

@@ -459,12 +459,13 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     );
 
     const nota = container.querySelector('[data-testid="aprobado-por-la-misma-persona"]');
-    expect(nota?.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(nota?.textContent).toContain('Aprobado por ti como administrador');
+    expect(nota?.textContent).not.toContain('(P-4)');
     expect(nota?.textContent).toContain('sin código');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
     expect(acciones()).toEqual(['Generar archivo', 'Anular']);
     expect(container.textContent).not.toContain('Tú armaste este lote');
-    expect(container.textContent).toContain('Como administrador, en el mismo paso (P-4)');
+    expect(container.textContent).toContain('Como administrador, en el mismo paso');
   });
 
   it('otra persona que lo mira lo lee sin «ti»', async () => {
@@ -472,7 +473,7 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
       vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
     );
     expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')?.textContent).toContain(
-      'Lo armó y lo aprobó la misma persona (P-4)',
+      'Lo armó y lo aprobó la misma persona',
     );
   });
 

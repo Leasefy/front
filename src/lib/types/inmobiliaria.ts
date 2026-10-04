@@ -59,7 +59,12 @@ export interface PropietarioBankAccount {
 /** Lo que `GET /inmobiliaria/propietarios` reporta como faltante (T-0128). */
 export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento'
   /** QA-PROP P-28 (back 5731a4e2): le falta la cuenta bancaria para girarle. */
-  | 'cuentaBancaria';
+  | 'cuentaBancaria'
+  /**
+   * COLA-FRONT (04-10, la recomendada): tiene algo arrendado y ningún giro
+   * programado (`proximoGiro: null`). Lo agrega el front, no el back.
+   */
+  | 'diaDeGiro';
 
 /**
  * Un inmueble en la ficha del propietario, con SU parte (QA-PROP P-02, back
@@ -155,6 +160,12 @@ export interface Propietario {
   generadoSinGirar?: number | null;
   /** P-01/P-02: copropiedades (no es el principal) con contrato vigente. */
   copropiedadesArrendadas?: number;
+  /**
+   * 🔴 COLA-FRONT / COLA-BACK (04-10): el próximo giro programado (su parte),
+   * o `null` si no tiene ninguno —un contrato arrendado sin cuotas del lado
+   * propietario—. Ausente = un back que todavía no lo manda: no se afirma nada.
+   */
+  proximoGiro?: { fecha: string; monto: number } | null;
   /**
    * P-02: cada inmueble donde figura, con su % y SU parte del canon, la
    * comisión y el neto. Sólo la ficha (`GET /:id`); `null` con la plata oculta.
@@ -1475,6 +1486,12 @@ export interface CarteraItem {
   diasDePlazo: number;
   /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
   esVencida: boolean;
+  /**
+   * 🔴 CR-31 (Nico, 03-10-2026): vencida, pero la inmobiliaria todavía no fijó
+   * sus días de plazo: NO es cartera ni va a la cobranza. Se rotula «Vencida»
+   * (no «Vencido, en plazo»). Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
   /** La inmobiliaria decidió dejar de perseguir esta deuda (21-09-2026). */
   castigada?: boolean;
   /** `YYYY-MM-DD` del día en que quedó castigada. `null` si no lo está. */

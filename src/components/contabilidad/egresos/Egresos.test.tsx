@@ -78,6 +78,29 @@ vi.mock('../use-puede-escribir', async () => {
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/api/salidas-del-egreso', () => ({ salidasDelEgresoApi: salidasDelEgreso }));
+// CB-R09 (COLA-FRONT, 04-10): el archivo del banco sale desde una cuenta de la
+// inmobiliaria; con una sola, queda elegida.
+vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({
+  conciliacionBancariaApi: {
+    cuentas: () =>
+      Promise.resolve({
+        disponible: true,
+        motivo: null,
+        cuentas: [
+          {
+            id: 'medio-1',
+            nombre: 'Bancolombia ahorros recaudo',
+            banco: 'Bancolombia',
+            tipoDeCuenta: 'AHORROS',
+            numeroEnmascarado: '•••• 5678',
+            activa: true,
+          },
+        ],
+        sinCuenta: null,
+        pasarela: null,
+      }),
+  },
+}));
 vi.mock('@/lib/i18n', async () => {
   const { t } = await import('@/lib/i18n/i18n-test-stub');
   return {
@@ -431,7 +454,8 @@ describe('🔴 P-4: el administrador no se confirma a sí mismo', () => {
     expect(gastos.lotes.crear).toHaveBeenCalledTimes(1);
     const [mensaje] = toastMock.success.mock.calls.at(-1)!;
     expect(mensaje).toContain('Lote armado y aprobado');
-    expect(mensaje).toContain('Aprobado por ti como administrador (P-4)');
+    expect(mensaje).toContain('Aprobado por ti como administrador');
+    expect(mensaje).not.toContain('(P-4)');
     expect(mensaje).not.toContain('Lo tiene que aprobar otra persona');
   });
 
@@ -443,7 +467,7 @@ describe('🔴 P-4: el administrador no se confirma a sí mismo', () => {
       lotes: [lote({ estado: 'APROBADO', creadoPorUserId: 'u-yo', aprobadoPorUserId: 'u-yo', aprobadoAt: '2026-09-24T15:00:00.000Z' })],
     });
     await pintar('lotes');
-    expect(q('aprobado-por-la-misma-persona-l1')!.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(q('aprobado-por-la-misma-persona-l1')!.textContent).toContain('Aprobado por ti como administrador');
   });
 
   it('🔴 un borrador que el administrador armó (de antes de la regla): «Aprobar» prendido', async () => {

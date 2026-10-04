@@ -507,7 +507,13 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 titulo="Lo que este balance no cuenta"
               />
 
-              <dl className="grid gap-4 sm:grid-cols-4">
+              <dl
+                className={cn(
+                  'grid gap-4 sm:grid-cols-4',
+                  // Cinco cifras no caben en una fila sin partir los montos: 3 + 2.
+                  (balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 && 'sm:grid-cols-3',
+                )}
+              >
                 <Cifra
                   formato={plata}
                   id="activo"
@@ -537,11 +543,24 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   definicion={POR_QUE_EL_RESULTADO_VA_APARTE}
                   tono={balance.resultadoDelEjercicioCop < 0 ? 'danger' : 'success'}
                 />
+                {/* 🔴 CB-R14 (Nico): el resultado de años anteriores sin asiento
+                    de cierre se calcula y se dice, aparte. */}
+                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? (
+                  <Cifra
+                    formato={plata}
+                    id="resultado-de-ejercicios-anteriores"
+                    etiqueta="Resultado de años anteriores"
+                    valor={balance.resultadoDeEjerciciosAnterioresCop ?? 0}
+                    definicion="Lo que dejaron los años anteriores y todavía no se lleva al patrimonio: falta el asiento de cierre de esos años, que hace tu contador. Va aparte para que el balance cuadre."
+                    tono={(balance.resultadoDeEjerciciosAnterioresCop ?? 0) < 0 ? 'danger' : 'success'}
+                  />
+                ) : null}
               </dl>
 
               <p className="text-caption text-fg-muted" data-testid="ecuacion-del-balance">
                 Activo <Monto valor={balance.activo.totalCop} className="text-caption" /> = pasivo +
-                patrimonio + resultado{' '}
+                patrimonio + resultado
+                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? ' (con el de años anteriores)' : ''}{' '}
                 <Monto valor={totalDelOtroLado(balance)} className="text-caption" />
                 {balance.cuadra ? ' · cuadra.' : ' · NO cuadra.'}
               </p>

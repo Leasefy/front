@@ -48,7 +48,7 @@ import { useI18n } from '@/lib/i18n'
 import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
-import { NOMBRE_DEL_CAJON, VARIANTE_DEL_CAJON, fechaLocal } from './cajon-de-la-cuota'
+import { fechaLocal, nombreDeLaFila, varianteDeLaFila } from './cajon-de-la-cuota'
 
 /** Un dato del cajón: rótulo arriba, valor abajo. */
 function Dato({
@@ -111,8 +111,8 @@ export function CuotaDelMesCajon({ fila, onCerrar, volverA }: CuotaDelMesCajonPr
         descripcion={`${nombreDelMes(fila.mes, idioma)} · ${fila.inmueble}`}
       >
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge variant={VARIANTE_DEL_CAJON[fila.cajon]}>
-            {fila.enSiniestro ? 'En siniestro' : NOMBRE_DEL_CAJON[fila.cajon]}
+          <Badge variant={varianteDeLaFila(fila)} data-testid="cajon-rotulo">
+            {nombreDeLaFila(fila)}
           </Badge>
           {/* El matiz del cajón: la cartera dice cuántos días lleva y lo
               vencido en plazo cuántos le quedan. Son dos hechos distintos, y
@@ -125,8 +125,15 @@ export function CuotaDelMesCajon({ fila, onCerrar, volverA }: CuotaDelMesCajonPr
           )}
           {fila.cajon === 'VENCIDA_EN_PLAZO' && (
             <span className="text-sm text-fg-muted" data-testid="cajon-dias-de-plazo">
-              venció, pero tiene {fila.diasDePlazo}{' '}
-              {fila.diasDePlazo === 1 ? 'día' : 'días'} de plazo
+              {/* CR-31: sin plazo fijado no hay «días de plazo» que contar. */}
+              {fila.plazoSinFijar ? (
+                'la inmobiliaria no ha fijado sus días de plazo: no corre mora ni entra a la cobranza'
+              ) : (
+                <>
+                  venció, pero tiene {fila.diasDePlazo}{' '}
+                  {fila.diasDePlazo === 1 ? 'día' : 'días'} de plazo
+                </>
+              )}
             </span>
           )}
         </div>

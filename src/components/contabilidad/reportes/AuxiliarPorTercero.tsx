@@ -47,6 +47,8 @@ import {
   type AuxiliarPorTercero as Auxiliar,
 } from '@/lib/api/estados-financieros.service';
 import { rangoDelMesAnterior } from '@/lib/contabilidad/fechas';
+import { loQueLeFaltaAlAuxiliar } from '@/lib/contabilidad/estados-financieros';
+import { useI18n } from '@/lib/i18n';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
@@ -67,6 +69,7 @@ export function AuxiliarPorTercero() {
   const [rango, setRango] = useState(inicial);
   const [terceroTipo, setTerceroTipo] = useState('');
   const [conSaldo, setConSaldo] = useState(true);
+  const { formatCurrency } = useI18n();
   const [desplazamiento, setDesplazamiento] = useState(0);
 
   const [auxiliar, setAuxiliar] = useState<Auxiliar | null>(null);
@@ -165,12 +168,26 @@ export function AuxiliarPorTercero() {
         </div>
       ) : auxiliar ? (
         <>
-          {/* Que este informe no cuadre contra el libro invalida los saldos. */}
-          {auxiliar.cuadraConElLibro ? null : (
+          {/* Que este informe no cuadre contra el libro invalida los saldos.
+              🔴 CB-18: con `libro` del back se dice contra qué cuadra o, si se
+              puede saber desde acá (todos los terceros a la vista), cuánto falta. */}
+          {auxiliar.cuadraConElLibro ? (
+            auxiliar.libro ? (
+              <p
+                className="border-b border-border px-4 py-2 text-caption text-fg-muted"
+                data-testid="auxiliar-cuadra"
+              >
+                Cuadra con el libro: débitos{' '}
+                <Monto valor={auxiliar.libro.debitosCop} className="text-caption" /> y créditos{' '}
+                <Monto valor={auxiliar.libro.creditosCop} className="text-caption" />.
+              </p>
+            ) : null
+          ) : (
             <div className="border-b border-border p-4">
               <Bloqueos
                 bloqueos={[
                   'La suma de los terceros más los movimientos sin tercero NO coincide con el libro: este informe está dejando algo afuera, así que sus saldos no se pueden usar para cobrar ni para girar.',
+                  ...(auxiliar.libro ? [fraseDeLoQueFalta(auxiliar, conSaldo, formatCurrency)] : []),
                 ]}
                 titulo="El auxiliar no cuadra con el libro"
                 testId="auxiliar-no-cuadra"
@@ -322,4 +339,28 @@ export function AuxiliarPorTercero() {
       ) : null}
     </TarjetaDeInforme>
   );
+}
+
+/**
+ * 🔴 CB-18: contra qué no cuadra y, si se puede saber desde acá, cuánto falta.
+ * Con terceros en otras páginas (o el filtro «con saldo») sólo se dice lo que
+ * suma el libro: la diferencia exacta la sabe el back.
+ */
+export function fraseDeLoQueFalta(
+  auxiliar: Auxiliar,
+  conSaldo: boolean,
+  formatCurrency: (n: number) => string,
+): string {
+  const libro = auxiliar.libro;
+  if (!libro) return '';
+  const delLibro = `El libro suma débitos ${formatCurrency(libro.debitosCop)} y créditos ${formatCurrency(libro.creditosCop)}`;
+  const falta = loQueLeFaltaAlAuxiliar(auxiliar, conSaldo);
+  if (!falta) {
+    return `${delLibro}; para ver cuánto falta, quita «Sólo los que tienen saldo» y mira todos los terceros en una página.`;
+  }
+  const partes = [
+    falta.debitosCop !== 0 ? `${formatCurrency(Math.abs(falta.debitosCop))} en débitos` : null,
+    falta.creditosCop !== 0 ? `${formatCurrency(Math.abs(falta.creditosCop))} en créditos` : null,
+  ].filter(Boolean);
+  return `${delLibro}: la diferencia con los terceros es de ${partes.join(' y ')}.`;
 }

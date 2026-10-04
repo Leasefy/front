@@ -133,7 +133,7 @@ import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
 import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
-import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA } from '@/components/cartera/interes-de-mora'
+import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
@@ -430,6 +430,13 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     return cuenta
   }, [todas])
 
+  /**
+   * 🔴 CR-31: la inmobiliaria no ha fijado sus días de plazo. Lo vencido no
+   * está «en plazo» (no hay plazo): la pestaña dice «Vencido» y el aviso de
+   * arriba dice por qué no es cartera.
+   */
+  const hayVencidasSinPlazo = useMemo(() => todas.some((f) => f.plazoSinFijar), [todas])
+
   /** Las que de verdad faltan: los tres momentos, sin las ya saldadas. */
   const cuotasQueFaltan = useMemo(
     () => todas.filter((f) => f.cajon !== 'SIN_DEUDA').length,
@@ -457,7 +464,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
    * siguen siendo capital. Todo el interés es de cuotas en cartera (también las
    * ya pagadas que lo siguen debiendo).
    */
-  const interesDelMes = t?.interesCop ?? 0
+  // 🔴 CR-31 (COLA-FRONT, 04-10): con vencidas sin plazo fijado, el interés del
+  // mes se suma de las filas (que no cuentan el de esas cuotas: no corre).
+  const interesDelMes = hayVencidasSinPlazo ? sumarIntereses(todas) : (t?.interesCop ?? 0)
 
   /**
    * Emite el recibo. El back reparte la plata por antigüedad sobre las cuotas
@@ -570,7 +579,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 {' ('}
                 {traducir(CLAVE_DE_MORA.conIntereses, {
                   monto: formatCurrency(
-                    t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                    hayVencidasSinPlazo
+                      ? (t?.pendienteCop ?? 0) + interesDelMes
+                      : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
                   ),
                 })}
                 {')'}
@@ -657,7 +668,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             />
             <PestanaDeCajon
               marca={marca}
-              label="Vencido, en plazo"
+              label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
               monto={t?.vencidaEnPlazoCop ?? 0}
               cuotas={cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0}
               tono="warning"

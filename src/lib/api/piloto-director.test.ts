@@ -78,9 +78,12 @@ describe('lecturas', () => {
     expect(r).toEqual({ data: null, notAvailable: true })
   })
 
-  it('un 500 tira el status como mensaje (lo lee `clasificarFallo`)', async () => {
+  it('un 500 tira el sobre del micro con su status (lo lee `clasificarFallo`)', async () => {
+    // Desde ARREGLOS-4 (03-10) las lecturas del Piloto tiran el sobre entero
+    // (`falloDelMicro`), no un `Error('500')`: así la pantalla distingue un 403
+    // de un 429 o de un 5xx.
     respuestas.push({ status: 500, cuerpo: {} })
-    await expect(fetchDirectorHoy(AG)).rejects.toThrow('500')
+    await expect(fetchDirectorHoy(AG)).rejects.toMatchObject({ status: 500 })
   })
 
   it('metas, gasto y experimento van a sus caminos', async () => {

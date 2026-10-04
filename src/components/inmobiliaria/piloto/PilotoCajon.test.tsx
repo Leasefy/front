@@ -430,9 +430,6 @@ describe('PilotoCajon — una acción que no sale', () => {
   })
 })
 
-  })
-})
-
 /*
  * Fase 1 del director (28-09-2026): el cajón muestra el por qué, la evidencia,
  * la meta y lo descartado cuando la fila es del director, y SIEMPRE el motivo

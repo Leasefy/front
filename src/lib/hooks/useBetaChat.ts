@@ -30,6 +30,7 @@ import {
   mandarSenalEnUnMomento,
   type TestigoDeTurnos,
 } from '@/lib/chat/senales';
+import { borrarConversacionEnElServidor } from '@/lib/chat/borrar-en-el-servidor';
 import { formatCurrency } from '@/lib/format';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
@@ -2311,8 +2312,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
   const deleteConversation = useCallback(
     (id: string) => {
-      // Borrar la conversación abierta también es irse de ella.
-      if (id === activeConversationId) anotarAbandonoDe(id);
+      // 🔴 Borrar la conversación borra también el servidor (Nico, 04-10-2026):
+      // sus señales, su pulgar, la memoria del chat y Redis. Y ya NO se anota
+      // como abandono: quien borra no se fue sin respuesta, borró.
+      const borrada = conversationsRef.current.find((c) => c.id === id);
+      if (borrada) borrarConversacionEnElServidor(agencyIdRef.current, borrada.messages);
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.id !== id);
         // If deleting the active conversation, switch to first remaining or create new
@@ -2336,7 +2340,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       abortarTurnoEnCurso();
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
   );
 
   // ========================================================================

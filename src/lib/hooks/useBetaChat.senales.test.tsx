@@ -28,6 +28,7 @@ import { useBetaChat } from './useBetaChat';
 import { setAccessToken } from '@/lib/api/client';
 import { erroresContraElEsquema, rutaDelMicro } from '@/lib/api/contrato-del-chat-del-micro';
 import { __olvidarSenalesParaPruebas } from '@/lib/chat/senales';
+import { __esperaDelBorradoParaPruebas } from '@/lib/chat/borrar-en-el-servidor';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 
 const TURNO = '3f2b8c1e-9d4a-4f6b-8e2a-1c5d7e9f0a3b';
@@ -103,6 +104,9 @@ beforeEach(() => {
       const camino = new URL(url).pathname;
       if (camino.endsWith('/ai-hub/chat/stream')) return micro.stream(turnosPedidos++);
       if (camino.endsWith('/ai-hub/chat/senales')) return micro.senales();
+      if (camino.endsWith('/ai-hub/chat/conversacion/borrar')) {
+        return json(200, { turnos: 1, senales: 3, feedback: 0, memoria: 1, mensajesDeRedis: 2 });
+      }
       if (camino.endsWith('/ai-hub/chat/feedback')) {
         return json(200, { guardado: true, yaRegistrado: false, leccionId: null, motivo: '', registradoEn: '' });
       }
@@ -417,5 +421,33 @@ describe('Reintentar (el micro avisa con `reintentable` en el `done`)', () => {
     const r = rutaDelMicro(String(l.init.method), l.url);
     expect(erroresContraElEsquema(r!.ruta.cuerpo!, l.cuerpo)).toEqual([]);
     s.soltar();
+  });
+});
+
+describe('borrar la conversación (Nico, 04-10-2026: borra también el servidor)', () => {
+  it('le pide al micro borrar sus turnos, mensajes y preguntas, y ya NO anota abandono', async () => {
+    __esperaDelBorradoParaPruebas(20);
+    visibilidad = 'hidden';
+    const s = montar();
+    await preguntar(s, 'busca a Juan Camilo López');
+    const conversacion = s.actual.activeConversationId!;
+    const mensajes = [...s.actual.messages];
+    act(() => {
+      s.actual.deleteConversation(conversacion);
+    });
+    const borrados = () => llamadas.filter((l) => l.url.endsWith('/ai-hub/chat/conversacion/borrar'));
+    await esperarA(() => borrados().length === 1);
+    const [b] = borrados();
+    expect(b.init.method).toBe('POST');
+    expect(b.cuerpo).toEqual({
+      turnoIds: [TURNO],
+      mensajeIds: mensajes.map((m) => m.id),
+      preguntas: ['busca a Juan Camilo López'],
+    });
+    // Con la respuesta sin mirar, antes salía un abandono; borrar no es irse.
+    await pausa(150);
+    expect(abandonos()).toHaveLength(0);
+    s.soltar();
+    __esperaDelBorradoParaPruebas();
   });
 });

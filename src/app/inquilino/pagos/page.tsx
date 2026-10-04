@@ -31,6 +31,7 @@ import { AutopagoSection } from '@/components/tenant/AutopagoSection';
 import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { fraseDeLoVencido } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { diasHastaElDiaDePago, resumenDePagos, type ResumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
 import type {
   BackendTenantPaymentRequest,
@@ -625,6 +626,7 @@ function PagosPageContent() {
                 progress={getPaymentProgress()}
                 daysUntil={daysUntil}
                 onPay={handlePayNow}
+                vencido={fraseDeLoVencido(resumen)}
                 locale={locale}
                 t={t}
                 formatCurrency={formatCurrencyI18n}
@@ -696,6 +698,8 @@ interface PeriodStatusCardProps {
   progress: number | null;
   daysUntil: number | null;
   onPay: () => void;
+  /** «$6.050.000 vencidos en 3 cuotas», o null si no hay nada vencido. */
+  vencido?: string | null;
   locale: 'es' | 'en';
   t: (key: string, params?: Record<string, string | number>) => string;
   formatCurrency: (n: number) => string;
@@ -711,6 +715,7 @@ function PeriodStatusCard({
   progress,
   daysUntil,
   onPay,
+  vencido,
   locale,
   t,
   formatCurrency,
@@ -757,9 +762,13 @@ function PeriodStatusCard({
         </p>
         <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
         <p className="text-sm text-fg-muted">
-          {locale === 'es'
-            ? 'Tu pago de este mes ya está al día.'
-            : 'You\'re up to date for this month.'}
+          {vencido
+            ? (locale === 'es'
+                ? `Recibimos el pago de este mes, pero aún tienes ${vencido}.`
+                : `This month's payment was received, but you still have ${vencido}.`)
+            : (locale === 'es'
+                ? 'Tu pago de este mes ya está al día.'
+                : 'You\'re up to date for this month.')}
         </p>
       </div>
     );

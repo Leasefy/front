@@ -152,7 +152,7 @@ export function DispersionResumen({
 
       {/* Main Stats Grid */}
       <div className="px-6 pb-6">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
           {/* Total to Disburse */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -165,7 +165,7 @@ export function DispersionResumen({
               value={summary.totalToDisburse}
               from={0}
               format={formatCurrency}
-              className="text-2xl font-semibold text-foreground tabular-nums"
+              className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
             />
           </div>
 
@@ -181,7 +181,7 @@ export function DispersionResumen({
               value={summary.totalCommissions}
               from={0}
               format={formatCurrency}
-              className="text-2xl font-semibold text-foreground tabular-nums"
+              className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
             />
           </div>
 
@@ -196,7 +196,7 @@ export function DispersionResumen({
             <div className="flex items-baseline gap-1">
               {completionRate === null ? (
                 <span
-                className="text-2xl font-semibold text-foreground tabular-nums"
+                className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
                 data-testid="dispersiones-avance"
               >
                   {SIN_MEDIR}
@@ -206,7 +206,7 @@ export function DispersionResumen({
                   value={completionRate}
                   from={0}
                   format={(n) => n.toFixed(0)}
-                  className="text-2xl font-semibold text-foreground tabular-nums"
+                  className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums"
                   data-testid="dispersiones-avance"
                 />
               )}

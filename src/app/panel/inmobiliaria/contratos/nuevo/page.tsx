@@ -175,7 +175,12 @@ function NuevoContratoContent() {
    * eligen acá mismo; los términos y todo lo que sigue (envío, firma,
    * activación) son los mismos (Nico, 2026-09-03).
    */
-  const esManual = !applicationId && searchParams.get('modo') === 'manual';
+  /*
+   * 🔴 QA con avatares 04-10: `/contratos/nuevo` a secas (un marcador, un enlace
+   * guardado) mostraba «fue un problema nuestro… falta applicationId». Sin
+   * postulación es lo mismo que `?modo=manual`: se arma el contrato acá.
+   */
+  const esManual = !applicationId;
   /*
    * `?inquilino=<identidad>` (QA-INQ I-29): «Crear su contrato» desde
    * Inquilinos llega con la persona ya elegida. `PartesDelContratoManual` la

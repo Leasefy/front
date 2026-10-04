@@ -28,13 +28,16 @@
  * (`/internal/mantenimiento`, S2S). Desde el panel, por ahora, esto se MIRA.
  */
 
+// 🔴 QA con avatares 04-10: estos textos llegaban a la persona con nombres de
+// variables («falta MANTENIMIENTO_ENABLED=true»), «microservicio» y códigos
+// HTTP. Ahora dicen qué pasa y qué sigue valiendo, sin palabras de programador.
 export const SIN_AGENTE_CONFIGURADO =
-  'No hay agente configurado (falta NEXT_PUBLIC_AGENT_URL), así que no se pudo traer nada. ' +
+  'El asistente de mantenimiento no está disponible por ahora, así que no pudimos traer nada. ' +
   'Esta pantalla está vacía porque no pudimos consultar, no porque no haya datos.'
 
 export const AGENTE_APAGADO =
-  'El agente de mantenimiento está apagado en el microservicio (falta MANTENIMIENTO_ENABLED=true). ' +
-  'La ruta existe y responde 404 a propósito: no es que no tengas tickets, es que todavía no se puede preguntar.'
+  'El asistente de mantenimiento todavía no está encendido para tu inmobiliaria, así que no podemos mostrarte la priorización de tickets. ' +
+  'No es que no tengas tickets: los puedes ver y gestionar en el tablero de Mantenimiento.'
 
 export const SIN_AGENCIA =
   'Todavía no sabemos con qué inmobiliaria estás trabajando, así que no se consultó nada. ' +
@@ -49,18 +52,17 @@ export const SIN_AGENCIA =
 export function mensajeDeRespuestaFallida(res: Response, queEs: string): string {
   if (res.status === 404) return AGENTE_APAGADO
   if (res.status === 401 || res.status === 403) {
-    return `Tu usuario no tiene permiso para ver ${queEs} (${res.status}).`
+    return `Tu usuario no tiene permiso para ver ${queEs}. Pídele acceso a un administrador de tu inmobiliaria.`
   }
   if (res.status === 502 || res.status === 503 || res.status === 504) {
-    return `El agente no pudo responder (${res.status}). Es un problema del servidor, no de tus datos.`
+    return 'El asistente no pudo responder en este momento. Es un problema nuestro, no de tus datos; vuelve a intentar en unos minutos.'
   }
-  return `No se pudo traer ${queEs} (HTTP ${res.status}).`
+  return `No pudimos traer ${queEs}. Vuelve a intentar en unos minutos.`
 }
 
 /** El `catch` de red: un `TypeError: Failed to fetch` tampoco explica nada solo. */
 export function mensajeDeErrorDeRed(err: unknown, queEs: string): string {
-  if (err instanceof Error && err.message) {
-    return `No se pudo traer ${queEs}: ${err.message}`
-  }
-  return `No se pudo traer ${queEs}.`
+  // El texto del error del navegador («Failed to fetch») no le dice nada a quien mira.
+  void err
+  return `No pudimos traer ${queEs}. Revisa tu conexión y vuelve a intentar.`
 }

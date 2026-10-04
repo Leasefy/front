@@ -36,8 +36,8 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
           {locale === 'es' ? 'Tu score' : 'Your score'}
         </p>
         <div className="flex items-center gap-2">
-          <p className="text-2xl font-bold text-fg-subtle dark:text-fg-muted blur-[6px] select-none">
-            ??
+          <p className="text-base font-medium text-fg-subtle dark:text-fg-muted">
+            {locale === 'es' ? 'Sin evaluar' : 'Not evaluated'}
           </p>
           {/* Decía "Evaluar perfil", una acción que no existe: la evaluación
               la lanza la inmobiliaria sobre una postulación. Ahora la etiqueta

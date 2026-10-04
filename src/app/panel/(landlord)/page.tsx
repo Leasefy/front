@@ -109,9 +109,67 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
 }
 
 /**
+ * Inicio del propietario al que una INMOBILIARIA le administra los inmuebles:
+ * sus contratos y el camino a su estado de cuenta. No pide nada del panel del
+ * propietario independiente (esas rutas responden «panel en pausa»).
+ */
+function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnType<typeof useContratosAdministrados>['doc']> }) {
+  const { user } = useAuth();
+  const { greeting } = useTimeGreeting();
+  const { t } = useI18n();
+  const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
+  return (
+    <div className="min-h-screen bg-bg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+        <header>
+          <span className="inline-flex items-center gap-2 mb-2">
+            <BrandDot />
+            <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
+          </span>
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
+            {t('dashboard.hello', { name: firstName })}
+          </h1>
+        </header>
+        <ContratosConLaInmobiliaria doc={doc} />
+        <nav aria-label="Lo tuyo" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: '/panel/estado-de-cuenta', titulo: 'Estado de cuenta', texto: 'Lo girado, lo que falta y por qué.' },
+            { href: '/panel/informes', titulo: 'Mis informes', texto: 'Certificado anual de ingresos y detalle por inmueble.' },
+            { href: '/panel/certificados', titulo: 'Certificados de retención', texto: 'Se generan al cerrar el año.' },
+            { href: '/panel/aprobaciones', titulo: 'Aprobar reparaciones', texto: 'Nada se descuenta sin tu aprobación, salvo emergencia.' },
+          ].map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+            >
+              <p className="text-body-sm font-medium text-fg">{a.titulo}</p>
+              <p className="mt-1 text-body-sm text-fg-muted">{a.texto}</p>
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+export default function PanelPage() {
+  const administrados = useContratosAdministrados();
+  if (administrados.cargando) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Skeleton className="h-40 w-full max-w-3xl rounded-lg" />
+      </div>
+    );
+  }
+  if (administrados.doc) return <InicioDelPropietarioDeInmobiliaria doc={administrados.doc} />;
+  return <PanelDelPropietarioIndependiente />;
+}
+
+/**
  * Landlord Dashboard Page - Modern Landing Page Style
  */
-export default function PanelPage() {
+function PanelDelPropietarioIndependiente() {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const { t, locale, formatCurrency: i18nFormatCurrency, formatDate: i18nFormatDate } = useI18n();

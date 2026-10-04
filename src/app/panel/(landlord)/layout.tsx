@@ -13,6 +13,13 @@ import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { useAuth } from '@/lib/auth';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
+import {
+  PropietarioDeInmobiliariaProvider,
+  esRutaDelPropietarioDeInmobiliaria,
+} from '@/lib/context/PropietarioDeInmobiliariaContext';
 import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 
 const LANDLORD_NAV_ITEMS: NavItem[] = [
@@ -125,6 +132,20 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
   // },
 ];
 
+/**
+ * El menú de quien tiene a una INMOBILIARIA como administradora: sólo lo suyo.
+ * Sin Candidatos, Visitas, Arriendos ni «Pronto» (eso es del propietario
+ * independiente, y sus rutas responden «panel en pausa»), ni plan que mejorar.
+ */
+const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
+  { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
+  { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
+  { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
+  { label: 'Mis informes', href: '/panel/informes', icon: Receipt },
+  { label: 'Certificados de retención', href: '/panel/certificados', icon: SealCheck },
+  { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
+];
+
 interface PanelLayoutProps {
   children: React.ReactNode;
 }
@@ -136,7 +157,20 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { t, locale } = useI18n();
   const { subscription } = useMySubscription();
-  const showUpgrade = subscription?.planId === 'starter';
+  // ¿Una inmobiliaria le administra los inmuebles? Mientras se sabe, se le da el
+  // menú corto: ofrecerle «Mejorar plan» a quien no lo compra sería peor que
+  // un menú que se completa un instante después.
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null;
+  const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
+  const pathname = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    // Las pantallas del propietario independiente no son suyas: de ahí vuelve a lo suyo.
+    if (!administrados.cargando && administrados.doc && !esRutaDelPropietarioDeInmobiliaria(pathname)) {
+      router.replace('/panel/estado-de-cuenta');
+    }
+  }, [administrados.cargando, administrados.doc, pathname, router]);
 
   /*
    * 🔴 ARREGLOS-4 (03-10-2026) · «Completa tu perfil» cuenta lo MISMO que la
@@ -163,7 +197,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-plan-page">
       {/* PLan CRM Sidebar */}
       <PlanSidebar
-        navItems={LANDLORD_NAV_ITEMS}
+        navItems={deInmobiliaria ? AGENCY_OWNER_NAV_ITEMS : LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
           // 🔴 Adentro de la plataforma el logo vuelve al inicio del panel, no
@@ -192,9 +226,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         'transition-all duration-200',
         isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
       )}>
-        <PlanHeader />
+        <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
+          <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
+        </PropietarioDeInmobiliariaProvider>
         <main id="main-content" tabIndex={-1}>
-          {children}
+          {/* Una pantalla del propietario independiente no se monta para quien
+              tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
+          {deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname) ? null : children}
         </main>
       </div>
 

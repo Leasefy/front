@@ -406,6 +406,7 @@ function PipelineContent() {
           <div className="p-4">
             <PipelineBoard
               items={filteredItems}
+              agentes={agentes}
               onItemClick={handleCardClick}
               onStageChange={handleStageChange}
               puedeMover={puedeMover}

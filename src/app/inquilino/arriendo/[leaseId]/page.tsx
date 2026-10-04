@@ -26,6 +26,8 @@ import {
   useMyPaymentRequests,
   useLeasePaymentInfo,
 } from '@/lib/hooks/useLeases';
+import { useResumenDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { fraseDeLoVencido, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
@@ -51,6 +53,7 @@ export default function LeaseDetailPage() {
   const { lease, isLoading: leaseLoading, errorCrudo: leaseError, refetch: refetchLease } = useLease(leaseId);
   const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
   const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
+  const resumenDeCuotas = useResumenDelPortal(true);
   const requests = getForLease(leaseId);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [acceptingRenovacion, setAcceptingRenovacion] = useState(false);
@@ -186,6 +189,7 @@ export default function LeaseDetailPage() {
   // Account-status card: drive label / icon / color from the real period status
   // (paymentInfo.currentPeriodStatus) instead of always showing "Al día".
   // Reuses the brand success/warning/danger convention used elsewhere in this view.
+  const lovencido = fraseDeLoVencido(resumenDeCuotas);
   const accountStatus = (() => {
     switch (periodStatus) {
       case 'PENDING_VALIDATION':
@@ -207,8 +211,20 @@ export default function LeaseDetailPage() {
           captionClass: 'text-danger',
         };
       case 'APPROVED':
+        // Con cuotas vencidas no se dice «Al día» (misma fuente que el estado de cuenta).
+        if (lovencido) {
+          return {
+            label: locale === 'es' ? 'Con saldo vencido' : 'Overdue balance',
+            icon: WarningCircle,
+            cardClass: 'bg-danger-soft border border-danger/30',
+            iconClass: 'text-danger',
+            captionClass: 'text-danger',
+          };
+        }
         return {
-          label: locale === 'es' ? 'Al día' : 'Up to date',
+          label: resumenDeCuotas
+            ? (locale === 'es' ? 'Al día' : 'Up to date')
+            : (locale === 'es' ? 'Pago del mes recibido' : 'This month received'),
           icon: CheckCircle,
           cardClass:
             'bg-success-soft border border-success/30',
@@ -217,6 +233,15 @@ export default function LeaseDetailPage() {
         };
       default:
         // 'NONE' or unknown → no confirmed/in-flight payment for the period.
+        if (lovencido) {
+          return {
+            label: locale === 'es' ? 'Con saldo vencido' : 'Overdue balance',
+            icon: WarningCircle,
+            cardClass: 'bg-danger-soft border border-danger/30',
+            iconClass: 'text-danger',
+            captionClass: 'text-danger',
+          };
+        }
         return {
           label: locale === 'es' ? 'Pago pendiente' : 'Payment pending',
           icon: WarningCircle,
@@ -337,7 +362,7 @@ export default function LeaseDetailPage() {
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                  <p className="text-lg font-semibold text-fg">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDay}</p>
+                  <p className="text-lg font-semibold text-fg">{diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}</p>
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
@@ -615,7 +640,7 @@ export default function LeaseDetailPage() {
                   <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
                 </div>
                 <p className="text-2xl font-bold text-fg">{accountStatus.label}</p>
-                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{lovencido ?? (locale === 'es' ? 'Estado de cuenta' : 'Account status')}</p>
               </div>
             </div>
 

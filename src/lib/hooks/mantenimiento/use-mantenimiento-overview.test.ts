@@ -126,7 +126,9 @@ describe('useMantenimientoOverview', () => {
     })
     expect(result.current!.isLoading).toBe(false)
     expect(result.current!.data).toBeNull()
-    expect(result.current!.error).toContain('NEXT_PUBLIC_AGENT_URL')
+    // Explica el vacío en palabras de la persona: sin nombres de variables.
+    expect(result.current!.error).toContain('no pudimos consultar')
+    expect(result.current!.error).not.toMatch(/NEXT_PUBLIC|_ENABLED|microservicio/)
   })
 
   /**
@@ -141,5 +143,22 @@ describe('useMantenimientoOverview', () => {
       await new Promise((r) => setTimeout(r, 40))
     })
     expect(result.current!.data).toBeNull()
+  })
+})
+
+describe('textos del agente de mantenimiento ante la persona', () => {
+  it('ninguno nombra variables, microservicio ni códigos HTTP', async () => {
+    const m = await import('./traer-del-agente')
+    const textos = [
+      m.AGENTE_APAGADO,
+      m.SIN_AGENTE_CONFIGURADO,
+      m.SIN_AGENCIA,
+      m.mensajeDeRespuestaFallida({ status: 404 } as Response, 'tickets'),
+      m.mensajeDeRespuestaFallida({ status: 403 } as Response, 'tickets'),
+      m.mensajeDeRespuestaFallida({ status: 503 } as Response, 'tickets'),
+      m.mensajeDeRespuestaFallida({ status: 500 } as Response, 'tickets'),
+      m.mensajeDeErrorDeRed(new TypeError('Failed to fetch'), 'tickets'),
+    ]
+    for (const t of textos) expect(t).not.toMatch(/MANTENIMIENTO_ENABLED|NEXT_PUBLIC|microservicio|HTTP|\b(40\d|50\d)\b|Failed to fetch/)
   })
 })

@@ -35,8 +35,9 @@
  * minutos, un botón que no sirve de nada.
  */
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { CloudArrowUp, Info, Warning } from '@phosphor-icons/react'
+import { CloudArrowUp, Copy, Info, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -57,15 +58,21 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { confirmar } from '@/components/ui/confirmar'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import {
   ESTADOS_DE_TRANSMISION,
   NOMBRE_DEL_ESTADO_DE_TRANSMISION,
   facturacionElectronicaService,
   nombreDelDocumento,
   type ColaDeTransmision as Cola,
+  type DocumentoEnLaCola,
   type EstadoDeTransmision,
+  type EstadoVisibleDeTransmision,
+  type SaltoDeLaNumeracion,
 } from '@/lib/api/facturacion-electronica.service'
+import { useEstadoAnteLaDian } from './EstadoAnteLaDian'
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service'
 import { cuantos, faltaEnLaBase } from '@/lib/facturacion/por-facturar'
 
@@ -79,7 +86,7 @@ const TODOS = 'TODOS'
 export function errorLegible(error: string | null): string | null {
   if (!error) return null
   const tecnico =
-    /[A-Z]{3,}_[A-Z_]+|\bat\s+\S+\s*\(|[{}<>]|https?:\/\/|Error:|Exception|\bundefined\b/.test(error)
+    /[A-Z]{3,}_[A-Z_]+|\bat\s+\S+\s*\(|[{}<>]|https?:\/\/|Error:|Exception|\bundefined\b|fetch failed|ECONN|HTTP \d{3}/.test(error)
   return tecnico
     ? 'El proveedor respondió con un error técnico. Si se repite, escríbenos con el número del documento.'
     : error
@@ -94,8 +101,92 @@ const TONO: Record<EstadoDeTransmision, string> = {
   SIN_PROVEEDOR: 'text-warning',
 }
 
+/** DIAN-FEEL: el color del estado en palabras (el back lo manda desde el 04-10). */
+const TONO_VISIBLE: Record<EstadoVisibleDeTransmision, string> = {
+  EN_COLA: 'text-fg-muted',
+  REINTENTANDO: 'text-warning',
+  TRANSMITIENDO: 'text-fg',
+  ESPERANDO_CONFIRMACION: 'text-warning',
+  VALIDADA: 'text-success',
+  RECHAZADA: 'text-danger',
+  SIN_TRANSMITIR: 'text-warning',
+}
+
+function tonoDe(d: DocumentoEnLaCola): string {
+  return (d.estadoVisible && TONO_VISIBLE[d.estadoVisible]) ?? TONO[d.estado] ?? 'text-fg'
+}
+
+/** El CUFE (o CUDE) de lo validado, con su número de FEEL, el PDF y la consulta en la DIAN. */
+function AcuseDeLaDian({ d }: { d: DocumentoEnLaCola }) {
+  const codigo = d.cufe ?? d.cude
+  if (!codigo) return null
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(codigo!)
+      toast.success('CUFE copiado')
+    } catch {
+      toast.error('No se pudo copiar. Selecciónalo y cópialo a mano.')
+    }
+  }
+  return (
+    <div className="space-y-1" data-testid={`acuse-${d.id}`}>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-fg-subtle">{d.cufe ? 'CUFE' : 'CUDE'}</span>
+        <span className="font-mono truncate max-w-[16rem] text-fg" title={codigo}>
+          {codigo}
+        </span>
+        <button
+          type="button"
+          onClick={() => void copiar()}
+          className="text-fg-muted hover:text-fg"
+          aria-label="Copiar el CUFE"
+          data-testid={`copiar-cufe-${d.id}`}
+        >
+          <Copy className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      {(d.documentoGenerado || d.pdfUrl || d.qrDatos) && (
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+          {d.documentoGenerado && (
+            <span>
+              Número en la DIAN: <span className="font-mono text-fg">{d.documentoGenerado}</span>
+            </span>
+          )}
+          {d.pdfUrl && (
+            <a
+              href={d.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary underline-offset-2 hover:underline"
+              data-testid={`pdf-dian-${d.id}`}
+            >
+              Ver el PDF
+            </a>
+          )}
+          {d.qrDatos && /^https:\/\//.test(d.qrDatos) && (
+            <a
+              href={d.qrDatos}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary underline-offset-2 hover:underline"
+              data-testid={`qr-dian-${d.id}`}
+            >
+              Consultarla en la DIAN
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ColaDeTransmision() {
+  // DIAN-FEEL: qué le falta a ESTA inmobiliaria para que Leasefy transmita.
+  const { estado: anteLaDian } = useEstadoAnteLaDian()
+  const permisos = usePermissionsContextSafe()
   const [datos, setDatos] = useState<Cola | null>(null)
+  // DIAN-FEEL: los saltos en la numeración de las facturas (el 6 que no es factura).
+  const [saltos, setSaltos] = useState<SaltoDeLaNumeracion[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [filtro, setFiltro] = useState<EstadoDeTransmision | ''>('')
@@ -104,6 +195,13 @@ export function ColaDeTransmision() {
   const cargar = useCallback(async () => {
     setCargando(true)
     setError(null)
+    // Los saltos no frenan la cola: si no se pueden leer, no se muestran.
+    const pedirSaltos = facturacionElectronicaService.saltosDeLaNumeracion
+    if (typeof pedirSaltos === 'function') {
+      void pedirSaltos()
+        .then((r) => setSaltos(r?.saltos ?? []))
+        .catch(() => setSaltos([]))
+    }
     try {
       setDatos(await facturacionElectronicaService.cola(filtro || undefined))
     } catch (e) {
@@ -118,11 +216,27 @@ export function ColaDeTransmision() {
     void cargar()
   }, [cargar])
 
-  async function reintentar(id: string) {
+  async function reintentar(d: DocumentoEnLaCola) {
     if (reintentando) return
-    setReintentando(id)
+    /*
+     * DIAN-FEEL: el envío anterior se cortó sin respuesta. Reenviarlo sin mirar
+     * puede emitirlo dos veces (FEEL le pone el número a la nota crédito).
+     */
+    if (d.esperandoConfirmacion) {
+      const si = await confirmar({
+        tipo: 'advertencia',
+        titulo: '¿Revisaste en FEEL que no está?',
+        descripcion: `No sabemos si FEEL recibió ${d.numeroDian ?? nombreDelDocumento(d.documentoTipo).toLowerCase()}: la conexión se cortó esperando la respuesta. Si ya está en FEEL y lo vuelves a enviar, quedaría emitido dos veces.`,
+        accion: 'No está: volver a enviar',
+      })
+      if (!si) return
+    }
+    setReintentando(d.id)
     try {
-      await facturacionElectronicaService.reintentarTransmision(id)
+      await facturacionElectronicaService.reintentarTransmision(
+        d.id,
+        d.esperandoConfirmacion ? { confirmoQueNoLlego: true } : {},
+      )
       toast.success('El documento volvió a la cola')
       await cargar()
     } catch (e) {
@@ -162,6 +276,8 @@ export function ColaDeTransmision() {
   }
 
   const sinProveedor = datos?.resumen.SIN_PROVEEDOR ?? 0
+  /** DIAN-FEEL: ¿Leasefy transmite de verdad lo de esta inmobiliaria? Sin el estado (back anterior), lo de siempre. */
+  const transmite = anteLaDian ? anteLaDian.transmite : datos?.proveedorConfigurado === true
   /** Sin proveedor conectado, volver a encolar no transmite nada. */
   const hayProveedor = datos?.disponible === true && datos.proveedorConfigurado
 
@@ -185,13 +301,13 @@ export function ColaDeTransmision() {
       {datos?.disponible && (
         <div
           className={`rounded-lg border p-3 flex items-start gap-2.5 ${
-            datos.proveedorConfigurado
+            transmite
               ? 'bg-surface-muted border-border'
               : 'bg-warning-soft border-warning/30'
           }`}
           data-testid="cola-proveedor"
         >
-          {datos.proveedorConfigurado ? (
+          {transmite ? (
             <CloudArrowUp
               className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5"
               weight="fill"
@@ -203,11 +319,35 @@ export function ColaDeTransmision() {
             />
           )}
           <div className="space-y-1">
+            {/* DIAN-FEEL: con el estado de la inmobiliaria, qué le falta a ELLA
+                (también con FEEL prendido: la resolución puede no coincidir);
+                con un back anterior, el texto de siempre. */}
             <p className="text-caption text-fg">
-              {datos.proveedorConfigurado
-                ? `Transmitiendo con ${datos.proveedor}.`
-                : 'Todavía no hay proveedor tecnológico conectado. Tus facturas se numeran con tu resolución y quedan en esta cola, pero NO están validadas ante la DIAN hasta que se conecte.'}
+              {anteLaDian
+                ? anteLaDian.transmite
+                  ? anteLaDian.ambiente === 'PRUEBAS'
+                    ? 'Leasefy transmite con FEEL al ambiente de PRUEBAS de la DIAN: lo transmitido sirve para la habilitación, pero no es una factura válida.'
+                    : 'Leasefy transmite tus documentos a la DIAN con FEEL, su proveedor tecnológico.'
+                  : `${anteLaDian.titulo}. ${anteLaDian.descripcion}`
+                : datos.proveedorConfigurado
+                  ? `Transmitiendo con ${datos.proveedor}.`
+                  : 'Todavía no hay proveedor tecnológico conectado. Tus facturas se numeran con tu resolución y quedan en esta cola, pero NO están validadas ante la DIAN hasta que se conecte.'}
             </p>
+            {anteLaDian && !anteLaDian.transmite && anteLaDian.estado !== 'APAGADA' && (
+              permisos?.isAdmin ? (
+                <Link
+                  href="/panel/inmobiliaria/configuracion/facturacion"
+                  className="text-caption font-semibold text-primary underline-offset-2 hover:underline"
+                  data-testid="cola-ver-pasos"
+                >
+                  Ver los pasos
+                </Link>
+              ) : (
+                <p className="text-caption text-fg-muted">
+                  Los pasos los ve el administrador en Configuración → Facturación.
+                </p>
+              )
+            )}
             <p className="text-caption text-fg-muted">
               El recaudo no depende de esto: puedes hacer recibos de caja con la
               factura en cualquier estado.
@@ -233,10 +373,38 @@ export function ColaDeTransmision() {
                   {a.numeroDian ?? nombreDelDocumento(a.documentoTipo)}
                 </span>
                 : {cuantos(a.horas, 'hora', 'horas')} y {cuantos(a.intentos, 'intento', 'intentos')}.
-                {a.ultimoError ? ` Último error: ${errorLegible(a.ultimoError)}` : ''}
+                {(a.motivo ?? errorLegible(a.ultimoError))
+                  ? ` ${a.motivo ?? `Último error: ${errorLegible(a.ultimoError)}`}`
+                  : ''}
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {saltos.length > 0 && (
+        <div
+          className="rounded-lg border border-warning/30 bg-warning-soft p-3 space-y-1"
+          data-testid="cola-saltos"
+        >
+          <p className="text-caption font-semibold text-fg">
+            {saltos.length === 1
+              ? 'La numeración de tus facturas tiene 1 salto'
+              : `La numeración de tus facturas tiene ${saltos.length} saltos`}
+          </p>
+          <p className="text-caption text-fg-muted">
+            La DIAN recibe tus facturas por su número. Un número sin factura no se renumera: se explica.
+          </p>
+          <ul className="space-y-0.5">
+            {saltos.slice(0, 10).map((s) => (
+              <li key={`${s.resolucionId}-${s.numeroDian}`} className="text-caption text-fg">
+                <span className="font-mono tabular-nums">{s.numero}</span>: {s.explicacion}
+              </li>
+            ))}
+          </ul>
+          {saltos.length > 10 && (
+            <p className="text-caption text-fg-muted">Y {cuantos(saltos.length - 10, 'más', 'más')}.</p>
+          )}
         </div>
       )}
 
@@ -324,21 +492,27 @@ export function ColaDeTransmision() {
                     <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
                       {d.numeroDian ?? '—'}
                     </TableCell>
-                    <TableCell
-                      className={`whitespace-nowrap ${TONO[d.estado] ?? 'text-fg'}`}
-                    >
+                    <TableCell className={`whitespace-nowrap ${tonoDe(d)}`}>
                       {d.estadoNombre}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                       {d.intentos}
                     </TableCell>
-                    <TableCell className="max-w-[28rem] text-caption text-fg-muted">
+                    {/* DIAN-FEEL: 20 rem (antes 28): con el acuse y los motivos, a
+                        1440 px la tabla se corría y tapaba «Volver a enviar». */}
+                    <TableCell className="min-w-[16rem] max-w-[20rem] text-caption text-fg-muted">
                       {/* Sin proveedor, el porqué es el mismo en todas las filas y
-                          ya lo dice el aviso de arriba: no se repite (como FA-03). */}
-                      {d.cufe ??
-                        d.cude ??
-                        (d.estado === 'SIN_PROVEEDOR' ? null : errorLegible(d.ultimoError)) ??
-                        '—'}
+                          ya lo dice el aviso de arriba: no se repite (como FA-03).
+                          DIAN-FEEL: con la inmobiliaria lista, el porqué de UNA
+                          fila sin transmitir es suyo (la nota débito, la
+                          resolución que no coincide) y sí se dice. */}
+                      {d.cufe || d.cude ? (
+                        <AcuseDeLaDian d={d} />
+                      ) : (
+                        (d.estado === 'SIN_PROVEEDOR' && !anteLaDian?.transmite
+                          ? null
+                          : (d.motivo ?? errorLegible(d.ultimoError))) ?? '—'
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-fg-muted">
                       {fechaLegible(d.encoladaAt)}
@@ -350,11 +524,11 @@ export function ColaDeTransmision() {
                           variant="outline"
                           size="sm"
                           hideArrow
-                          onClick={() => void reintentar(d.id)}
+                          onClick={() => void reintentar(d)}
                           disabled={reintentando !== null}
                           data-testid={`transmision-reintentar-${d.id}`}
                         >
-                          Volver a intentar
+                          {d.esperandoConfirmacion ? 'Volver a enviar' : 'Volver a intentar'}
                         </Button>
                       )}
                     </TableCell>

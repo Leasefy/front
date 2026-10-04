@@ -23,11 +23,15 @@ void React;
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { cola, reintentarTransmision, reintentarLosSinProveedor } = vi.hoisted(
+const { cola, reintentarTransmision, reintentarLosSinProveedor, estadoAnteLaDian, confirmar, saltosDeLaNumeracion } = vi.hoisted(
   () => ({
     cola: vi.fn(),
     reintentarTransmision: vi.fn(),
     reintentarLosSinProveedor: vi.fn(),
+    // DIAN-FEEL: sin respuesta (back anterior), la cola dice lo de siempre.
+    estadoAnteLaDian: vi.fn(),
+    confirmar: vi.fn(),
+    saltosDeLaNumeracion: vi.fn(),
   }),
 );
 
@@ -42,9 +46,13 @@ vi.mock('@/lib/api/facturacion-electronica.service', async () => {
       cola,
       reintentarTransmision,
       reintentarLosSinProveedor,
+      estadoAnteLaDian,
+      saltosDeLaNumeracion,
     },
   };
 });
+
+vi.mock('@/components/ui/confirmar', () => ({ confirmar }));
 
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -110,6 +118,8 @@ async function pintar(r: Record<string, unknown>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  estadoAnteLaDian.mockResolvedValue(null);
+  saltosDeLaNumeracion.mockResolvedValue({ saltos: [] });
   host = document.createElement('div');
 });
 
@@ -170,7 +180,7 @@ describe('ColaDeTransmision', () => {
     await act(async () => {
       boton.click();
     });
-    expect(reintentarTransmision).toHaveBeenCalledWith('t-rechazada');
+    expect(reintentarTransmision).toHaveBeenCalledWith('t-rechazada', {});
   });
 
   it('🔴 lo que TODAVÍA se reintenta solo no ofrece el botón', async () => {
@@ -323,5 +333,179 @@ describe('ColaDeTransmision · el sistema de errores (02-10)', () => {
     const texto = vi.mocked(toast.error).mock.calls[0]?.[0] as string;
     expect(texto).toContain('No pudimos volver a encolar el documento: algo falló de nuestro lado');
     expect(texto).toContain('ab12cd34');
+  });
+});
+
+/**
+ * DIAN-FEEL (04-10-2026): «una sola cuenta FEEL de Leasefy». La cola dice qué le
+ * falta a ESTA inmobiliaria, muestra el acuse (CUFE, PDF, QR) y no deja volver
+ * a mandar a ciegas lo que se cortó sin respuesta.
+ */
+describe('ColaDeTransmision · DIAN-FEEL', () => {
+  const FALTA_HABILITAR = {
+    estado: 'FALTA_HABILITAR',
+    titulo: 'Falta habilitar a FEEL como tu proveedor tecnológico',
+    descripcion: 'Tus facturas se numeran y quedan en cola, pero todavía no se transmiten a la DIAN.',
+    transmite: false,
+    ambiente: null,
+    pasos: [],
+    avisos: [],
+  };
+
+  it('🔴 sin transmitir: dice qué le falta a ESTA inmobiliaria, sin pedir credenciales', async () => {
+    estadoAnteLaDian.mockResolvedValue(FALTA_HABILITAR);
+    await pintar(respuesta());
+    const aviso = q('[data-testid="cola-proveedor"]')!;
+    expect(aviso.textContent).toContain('Falta habilitar a FEEL como tu proveedor tecnológico');
+    expect(aviso.textContent).toContain('recaudo no depende de esto');
+    expect(aviso.textContent).not.toMatch(/token|contraseña|credencial/i);
+  });
+
+  it('lo validado muestra el CUFE, el número de la DIAN, el PDF y la consulta del QR', async () => {
+    estadoAnteLaDian.mockResolvedValue({ ...FALTA_HABILITAR, estado: 'LISTA', transmite: true, ambiente: 'PRODUCCION' });
+    await pintar(
+      respuesta({
+        proveedorConfigurado: true,
+        proveedor: 'FEEL',
+        documentos: [
+          documento({
+            id: 't-ok',
+            estado: 'ACEPTADA_DIAN',
+            estadoVisible: 'VALIDADA',
+            estadoNombre: 'Validada por la DIAN',
+            cufe: 'cufe-0123456789abcdef',
+            documentoGenerado: 'SETP993500100',
+            pdfUrl: 'https://feel.example/pdf/1',
+            qrDatos: 'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=cufe-0123456789abcdef',
+          }),
+        ],
+      }),
+    );
+    const fila = q('[data-testid="transmision-t-ok"]')!;
+    expect(fila.textContent).toContain('Validada por la DIAN');
+    expect(fila.textContent).toContain('cufe-0123456789abcdef');
+    expect(fila.textContent).toContain('SETP993500100');
+    expect(q('[data-testid="pdf-dian-t-ok"]')!.getAttribute('href')).toBe('https://feel.example/pdf/1');
+    expect(q('[data-testid="qr-dian-t-ok"]')!.getAttribute('href')).toContain('documentkey=cufe-');
+    expect(q('[data-testid="cola-proveedor"]')!.textContent).toContain(
+      'Leasefy transmite tus documentos a la DIAN con FEEL',
+    );
+  });
+
+  it('el motivo en palabras del back gana sobre el error crudo', async () => {
+    estadoAnteLaDian.mockResolvedValue({ ...FALTA_HABILITAR, estado: 'LISTA', transmite: true, ambiente: 'PRODUCCION' });
+    await pintar(
+      respuesta({
+        proveedorConfigurado: true,
+        documentos: [
+          documento({
+            id: 't-r',
+            estado: 'RECHAZADA_DIAN',
+            estadoNombre: 'Rechazada por la DIAN',
+            ultimoError: 'Regla: FAU04, Rechazo: (R) Base Imponible es distinto',
+            motivo: 'La DIAN la rechazó: Base Imponible es distinto (regla FAU04).',
+            reintentable: true,
+          }),
+        ],
+      }),
+    );
+    const fila = q('[data-testid="transmision-t-r"]')!;
+    expect(fila.textContent).toContain('La DIAN la rechazó: Base Imponible es distinto (regla FAU04).');
+    expect(fila.textContent).not.toContain('Regla: FAU04, Rechazo');
+  });
+
+  it('🔴 «Esperando confirmación»: volver a enviar pide confirmar que en FEEL no está', async () => {
+    estadoAnteLaDian.mockResolvedValue({ ...FALTA_HABILITAR, estado: 'LISTA', transmite: true, ambiente: 'PRODUCCION' });
+    await pintar(
+      respuesta({
+        proveedorConfigurado: true,
+        documentos: [
+          documento({
+            id: 't-nc',
+            documentoTipo: 'NOTA_CREDITO',
+            numeroDian: 'NC-4',
+            estado: 'TRANSMITIDA',
+            estadoVisible: 'ESPERANDO_CONFIRMACION',
+            estadoNombre: 'Esperando confirmación',
+            proximoIntentoAt: null,
+            reintentable: true,
+            esperandoConfirmacion: true,
+          }),
+        ],
+      }),
+    );
+    const boton = q('[data-testid="transmision-reintentar-t-nc"]') as HTMLButtonElement;
+    expect(boton.textContent).toBe('Volver a enviar');
+
+    // Dice que no: no se manda nada.
+    confirmar.mockResolvedValueOnce(false);
+    await act(async () => {
+      boton.click();
+    });
+    expect(reintentarTransmision).not.toHaveBeenCalled();
+
+    // Confirma: se manda con la confirmación.
+    confirmar.mockResolvedValueOnce(true);
+    reintentarTransmision.mockResolvedValue({ id: 't-nc', estado: 'POR_TRANSMITIR' });
+    await act(async () => {
+      boton.click();
+    });
+    expect(confirmar).toHaveBeenCalledWith(
+      expect.objectContaining({ titulo: '¿Revisaste en FEEL que no está?' }),
+    );
+    expect(reintentarTransmision).toHaveBeenCalledWith('t-nc', { confirmoQueNoLlego: true });
+  });
+
+  it('el aviso de lo que lleva demasiado dice el motivo en palabras, no el error crudo; «Reintentando» va en ámbar', async () => {
+    estadoAnteLaDian.mockResolvedValue({ ...FALTA_HABILITAR, estado: 'LISTA', transmite: true, ambiente: 'PRODUCCION' });
+    await pintar(
+      respuesta({
+        proveedorConfigurado: true,
+        avisos: [
+          {
+            transmisionId: 't-1',
+            documentoTipo: 'FACTURA',
+            numeroDian: 'FE-1042',
+            horas: 15,
+            intentos: 3,
+            ultimoError: 'FEEL no respondió tras 3 intentos: fetch failed',
+            motivo: 'No se pudo conectar con FEEL. Se vuelve a intentar sola; no tienes que hacer nada.',
+          },
+        ],
+        documentos: [documento({ estadoVisible: 'REINTENTANDO', estadoNombre: 'Reintentando' })],
+      }),
+    );
+    const avisos = q('[data-testid="cola-avisos"]')!;
+    expect(avisos.textContent).toContain('No se pudo conectar con FEEL');
+    expect(avisos.textContent).not.toContain('fetch failed');
+    const celda = [...q('[data-testid="transmision-t-1"]')!.querySelectorAll('td')].find(
+      (td) => td.textContent === 'Reintentando',
+    )!;
+    expect(celda.className).toContain('text-warning');
+  });
+
+  it('🔴 un salto en la numeración (el LABQA-6 del laboratorio) se muestra con su explicación', async () => {
+    saltosDeLaNumeracion.mockResolvedValue({
+      saltos: [
+        {
+          resolucionId: 'r',
+          resolucion: '18764000000001',
+          numero: 'LABQA-6',
+          numeroDian: 6,
+          usadoPor: { tipo: 'NOTA_DEBITO', nombre: 'n.º 1' },
+          explicacion: 'El LABQA-6 no es una factura: lo tomó la nota débito n.º 1.',
+        },
+      ],
+    });
+    await pintar(respuesta());
+    const caja = q('[data-testid="cola-saltos"]')!;
+    expect(caja.textContent).toContain('tiene 1 salto');
+    expect(caja.textContent).toContain('LABQA-6');
+    expect(caja.textContent).toContain('lo tomó la nota débito n.º 1');
+  });
+
+  it('sin saltos no se pinta la caja', async () => {
+    await pintar(respuesta());
+    expect(q('[data-testid="cola-saltos"]')).toBeNull();
   });
 });

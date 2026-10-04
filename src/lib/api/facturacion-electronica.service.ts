@@ -136,12 +136,29 @@ export const ESTADOS_DE_TRANSMISION: readonly EstadoDeTransmision[] = [
  * back (`cola-de-transmision.ts::NOMBRE_DEL_ESTADO`).
  */
 export const NOMBRE_DEL_ESTADO_DE_TRANSMISION: Record<EstadoDeTransmision, string> = {
-  POR_TRANSMITIR: 'Por transmitir',
-  TRANSMITIDA: 'Transmitida, esperando la DIAN',
-  ACEPTADA_DIAN: 'Aceptada por la DIAN',
+  // DIAN-FEEL (04-10-2026): los nombres del encargo («En cola», «Validada»…),
+  // los mismos del back (`cola-de-transmision.ts::NOMBRE_DEL_ESTADO`).
+  POR_TRANSMITIR: 'En cola',
+  TRANSMITIDA: 'Esperando confirmación',
+  ACEPTADA_DIAN: 'Validada por la DIAN',
   RECHAZADA_DIAN: 'Rechazada por la DIAN',
-  SIN_PROVEEDOR: 'Sin proveedor configurado',
+  SIN_PROVEEDOR: 'Sin transmitir todavía',
 }
+
+/**
+ * DIAN-FEEL (04-10-2026): el estado de UNA fila en palabras, como lo calcula
+ * el back (`estadoParaLaPersona`): «En cola» la primera vez, «Reintentando»
+ * después de un fallo, «Esperando confirmación» si el envío se cortó sin
+ * respuesta. Ausente con un back anterior.
+ */
+export type EstadoVisibleDeTransmision =
+  | 'EN_COLA'
+  | 'REINTENTANDO'
+  | 'TRANSMITIENDO'
+  | 'ESPERANDO_CONFIRMACION'
+  | 'VALIDADA'
+  | 'RECHAZADA'
+  | 'SIN_TRANSMITIR'
 
 /** El documento en palabras, cuando no hay número que mostrar (FA-R27). */
 export const NOMBRE_DEL_DOCUMENTO: Record<DocumentoQueSeTransmite, string> = {
@@ -168,17 +185,85 @@ export interface DocumentoEnLaCola {
   proximoIntentoAt: string | null
   ultimoIntentoAt: string | null
   ultimoError: string | null
+  /** DIAN-FEEL: el motivo en palabras (el rechazo de la DIAN, qué está pasando). Ausente con un back anterior. */
+  motivo?: string | null
+  /** DIAN-FEEL: «En cola», «Reintentando», «Validada»… Ausente con un back anterior. */
+  estadoVisible?: EstadoVisibleDeTransmision
   cufe: string | null
   cude: string | null
-  xmlUrl: string | null
+  /** DIAN-FEEL: el número que FEEL le puso («SETP993500100»). */
+  documentoGenerado?: string | null
+  /** El XML firmado ya no viaja en la lista (era el documento entero en base64). */
+  tieneXml?: boolean
   pdfUrl: string | null
+  /** DIAN-FEEL: el enlace del QR a la consulta de la DIAN, tal como lo manda FEEL. */
+  qrDatos?: string | null
   encoladaAt: string
   transmitidaAt: string | null
   aceptadaAt: string | null
   rechazadaAt: string | null
   proveedor: string | null
-  /** `true` cuando se puede volver a intentar a mano (rechazada, sin proveedor). */
+  /** `true` cuando se puede volver a intentar a mano (rechazada, sin proveedor, esperando confirmación). */
   reintentable: boolean
+  /**
+   * DIAN-FEEL: el envío se cortó sin respuesta y no sabemos si FEEL lo recibió.
+   * Volver a enviarlo pide confirmar que en FEEL no está (`confirmoQueNoLlego`).
+   */
+  esperandoConfirmacion?: boolean
+}
+
+// ══ DIAN-FEEL (04-10-2026): ¿Leasefy ya transmite por esta inmobiliaria? ═════
+
+/**
+ * `GET /inmobiliaria/facturacion/electronica` — Nico (04-10): «una sola cuenta
+ * FEEL de Leasefy que transmite por todas las inmobiliarias». La inmobiliaria
+ * no escribe credenciales: ve los pasos y en qué va.
+ */
+export type EstadoAnteLaDianCodigo =
+  | 'LISTA'
+  | 'FALTAN_DATOS'
+  | 'FALTA_RESOLUCION'
+  | 'FALTA_HABILITAR'
+  | 'NO_COINCIDE'
+  | 'APAGADA'
+
+export interface PasoParaTransmitir {
+  id: 'datos' | 'habilitacion' | 'resolucion' | 'registro' | 'coincide'
+  titulo: string
+  detalle: string
+  quien: 'INMOBILIARIA' | 'LEASEFY'
+  hecho: boolean
+  accion: { texto: string; href: string } | null
+}
+
+export interface EstadoAnteLaDian {
+  estado: EstadoAnteLaDianCodigo
+  titulo: string
+  descripcion: string
+  /** ¿Leasefy transmite HOY lo de esta inmobiliaria? */
+  transmite: boolean
+  ambiente: 'PRUEBAS' | 'PRODUCCION' | null
+  pasos: PasoParaTransmitir[]
+  avisos: string[]
+}
+
+/**
+ * DIAN-FEEL: un número de la resolución de facturas que no tiene factura, con
+ * su explicación (`GET …/electronica/saltos`). La DIAN ve la 5 y la 7: el 6 se
+ * explica, no se esconde.
+ */
+export interface SaltoDeLaNumeracion {
+  resolucionId: string
+  resolucion: string
+  numero: string
+  numeroDian: number
+  usadoPor: { tipo: 'NOTA_DEBITO' | 'DOCUMENTO_SOPORTE'; nombre: string } | null
+  explicacion: string
+}
+
+/** ¿El banner de «todavía no se transmiten» se va? Sólo transmitiendo de verdad (no en pruebas). */
+export function seTransmiteDeVerdad(estado: EstadoAnteLaDian | null | undefined): boolean {
+  return !!estado && estado.transmite && estado.ambiente === 'PRODUCCION'
 }
 
 export interface AvisoDeTransmision {
@@ -188,6 +273,8 @@ export interface AvisoDeTransmision {
   horas: number
   intentos: number
   ultimoError: string | null
+  /** DIAN-FEEL: el último error en palabras. Ausente con un back anterior. */
+  motivo?: string | null
 }
 
 export interface ColaDeTransmision {
@@ -520,12 +607,22 @@ export const facturacionElectronicaService = {
       `${BASE}/transmision${estado ? `?estado=${encodeURIComponent(estado)}` : ''}`,
     ),
 
-  /** Vuelve a encolar UN documento. Es el único camino para uno rechazado. */
-  reintentarTransmision: (id: string) =>
+  /**
+   * Vuelve a encolar UN documento. Es el único camino para uno rechazado.
+   * DIAN-FEEL: uno «Esperando confirmación» sólo con `confirmoQueNoLlego`.
+   */
+  reintentarTransmision: (id: string, opciones: { confirmoQueNoLlego?: boolean } = {}) =>
     apiClient.post<{ id: string; estado: string }>(
-      `${BASE}/transmision/${id}/reintentar`,
-      {},
+      `${BASE}/transmision/${encodeURIComponent(id)}/reintentar`,
+      opciones.confirmoQueNoLlego ? { confirmoQueNoLlego: true } : {},
     ),
+
+  /** DIAN-FEEL: ¿Leasefy ya transmite por esta inmobiliaria? Los pasos y qué falta. */
+  estadoAnteLaDian: () => apiClient.get<EstadoAnteLaDian>(`${BASE}/electronica`),
+
+  /** DIAN-FEEL: los saltos en la numeración de las facturas, con su explicación. */
+  saltosDeLaNumeracion: () =>
+    apiClient.get<{ saltos: SaltoDeLaNumeracion[] }>(`${BASE}/electronica/saltos`),
 
   /** Vuelve a encolar TODO lo que quedó sin proveedor. */
   reintentarLosSinProveedor: () =>

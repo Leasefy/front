@@ -10,6 +10,7 @@
  */
 
 import { ConfigFacturacion } from '@/components/inmobiliaria';
+import { PasosParaTransmitir } from '@/components/facturacion/EstadoAnteLaDian';
 import { useAgencyBilling } from '@/lib/hooks/useInmobiliaria';
 
 export function SeccionFacturacion() {
@@ -19,5 +20,14 @@ export function SeccionFacturacion() {
   // formulario de pago» sin abrir ninguno (y el componente tiraba OTRO igual,
   // con el mismo texto). Ahora el botón lleva a `/upgrade`, que es donde la
   // pasarela real (Wompi) registra el medio de pago: la navegación es el aviso.
-  return <ConfigFacturacion billing={billing} invoices={invoices} isLoading={isLoading} />;
+  //
+  // DIAN-FEEL (04-10-2026): arriba, la factura electrónica ante la DIAN — lo
+  // que la inmobiliaria hace de su lado para que Leasefy transmita por ella
+  // (con la cuenta de FEEL de Leasefy: aquí no se piden credenciales).
+  return (
+    <div className="space-y-6">
+      <PasosParaTransmitir />
+      <ConfigFacturacion billing={billing} invoices={invoices} isLoading={isLoading} />
+    </div>
+  );
 }

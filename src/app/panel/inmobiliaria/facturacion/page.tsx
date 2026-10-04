@@ -22,9 +22,9 @@
  * `TablePagination`, como en Solicitudes): sin filas nunca se pintaría.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarBlank, Info, Receipt } from '@phosphor-icons/react';
+import { CalendarBlank, Receipt } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
@@ -43,6 +43,8 @@ import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import { ComoSeFactura } from '@/components/facturacion/ComoSeFactura';
 import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
 import { ColaDeTransmision } from '@/components/facturacion/ColaDeTransmision';
+// DIAN-FEEL (04-10-2026): el aviso dice qué le falta a ESTA inmobiliaria.
+import { BannerDeLaDian } from '@/components/facturacion/EstadoAnteLaDian';
 import { EntregasYAcuse } from '@/components/facturacion/EntregasYAcuse';
 import { DocumentoSoporte } from '@/components/facturacion/DocumentoSoporte';
 import { CertificacionDelMandatario } from '@/components/facturacion/CertificacionDelMandatario';
@@ -134,6 +136,16 @@ function FacturacionContent() {
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
 
   /*
+   * DIAN-FEEL (04-10-2026): «Cargar la resolución» de Configuración →
+   * Facturación llega con `?tab=resolucion`. Se lee del navegador al montar
+   * (sin `useSearchParams`, que pediría un Suspense en la página).
+   */
+  useEffect(() => {
+    const pedida = new URLSearchParams(window.location.search).get('tab');
+    if (pedida && esTab(pedida)) setActive(pedida);
+  }, []);
+
+  /*
    * El mes de los listados de documentos. «Ventas» y «Notas» leen
    * `GET /facturacion/emitidas?mes=`, que es por mes como todo lo demás de
    * facturación; las otras dos pestañas todavía no tienen de dónde leer.
@@ -171,14 +183,13 @@ function FacturacionContent() {
           lo emitido. 🔴 FA-06 (QA-FACT, 03-10): decía «Estructura lista — el
           motor DIAN llega en M2» (jerga interna) y «Compras todavía se lleva en
           Pagos» estando en Ventas; Compras ya lo dice en su propio vacío. */}
+      {/* DIAN-FEEL (04-10-2026): con FEEL prendido y la inmobiliaria lista,
+          desaparece; si no, dice qué le falta a ESTA inmobiliaria. Sin
+          respuesta del back, el texto de siempre. */}
       {active === 'ventas' || active === 'notas' ? (
-      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
-        <div>
-          <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
-        </div>
-      </div>
+        <BannerDeLaDian
+          textoDeAntes={{ titulo: t(k('m2BannerTitle')), descripcion: t(k('m2BannerDesc')) }}
+        />
       ) : null}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}

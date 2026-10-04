@@ -55,6 +55,16 @@ vi.mock('@/components/facturacion/FacturasEmitidas', () => ({
 vi.mock('@/components/facturacion/ColaDeTransmision', () => ({
   ColaDeTransmision: () => <div data-testid="cola-simulada" />,
 }));
+/*
+ * DIAN-FEEL (04-10-2026): el aviso de la DIAN pide el estado de la
+ * inmobiliaria al back y tiene su propia prueba (`EstadoAnteLaDian.test.tsx`).
+ * Acá sólo importa DÓNDE se pinta.
+ */
+vi.mock('@/components/facturacion/EstadoAnteLaDian', () => ({
+  BannerDeLaDian: ({ textoDeAntes }: { textoDeAntes: { titulo: string } }) => (
+    <div data-testid="banner-dian-simulado">{textoDeAntes.titulo}</div>
+  ),
+}));
 vi.mock('@/components/facturacion/EntregasYAcuse', () => ({
   EntregasYAcuse: () => <div data-testid="entregas-simulada" />,
 }));
@@ -120,8 +130,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
     const activa = qa('[role="tab"]').find((t) => t.getAttribute('aria-selected') === 'true');
     expect(activa!.textContent).toBe(`${K}tab_nueva`);
     expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
-    // El banner del M2 no se pinta encima de una pestaña que sí tiene motor.
-    expect(host.textContent ?? '').not.toContain(`${K}m2BannerTitle`);
+    // El aviso de la DIAN no se pinta encima de «Nueva factura».
+    expect(q('[data-testid="banner-dian-simulado"]')).toBeNull();
   });
 
   /*
@@ -284,7 +294,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
       'combobox',
     );
 
-    expect(texto).toContain(`${K}m2BannerTitle`);
+    // DIAN-FEEL: en Ventas va el aviso de la DIAN (con el texto de antes de respaldo).
+    expect(q('[data-testid="banner-dian-simulado"]')!.textContent).toBe(`${K}m2BannerTitle`);
   });
 
   /**

@@ -88,6 +88,7 @@ import {
   type NotaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
 import { descargarBlob } from '@/lib/reportes/exportables'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   facturacionElectronicaService,
   type NotaDebito,
@@ -293,6 +294,63 @@ export function FacturasEmitidas({ mes, vista }: Props) {
   }
 
   const facturas = useMemo(() => datos?.facturas ?? [], [datos])
+
+  /** Bajar el PDF de una factura con número (la fila y la tarjeta). */
+  const botonDelPdf = (f: FacturaEmitida) =>
+    f.numeroDian ? (
+      <Button
+        size="icon"
+        variant="ghost"
+        hideArrow
+        className="ml-1 h-8 w-8 align-middle"
+        disabled={descargando !== null}
+        isLoading={descargando === f.id}
+        aria-label={`Descargar el PDF de la factura ${f.numeroDian}`}
+        title="Descargar el PDF"
+        onClick={() => void descargarUna(f.id, f.numeroDian)}
+        data-testid={`ventas-pdf-${f.numero}`}
+      >
+        <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+      </Button>
+    ) : null
+
+  /** Anular con nota crédito, o por qué no; y las correcciones (la fila y la tarjeta). */
+  const accionesDeLaFactura = (f: FacturaEmitida) => (
+    <>
+      {f.anulacion.puede ? (
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={() => {
+            setConcepto('ANULACION')
+            setMotivo('')
+            setQueEstabaMal('cobro')
+            setPorAnular(f)
+            setDelServidor({})
+          }}
+          data-testid={`anular-${f.numero}`}
+        >
+          Anular con nota crédito
+        </Button>
+      ) : (
+        /* 🔴 Sin botón, con la razón: un botón que va a fallar es
+           peor que no tenerlo. */
+        <span
+          className="text-caption text-fg-muted"
+          data-testid={`sin-anular-${f.numero}`}
+        >
+          {f.anulacion.explicacion}
+        </span>
+      )}
+      {/* 🔴 Y las dos correcciones nuevas del 17-09: acreditar
+          una PARTE y cobrar de más. Se ofrecen sólo cuando el
+          back dice que se puede. */}
+      <span className="mt-1 block">
+        <CorregirFactura factura={f} onHecho={cargar} />
+      </span>
+    </>
+  )
   /*
    * 🔴 FA-R30 (QA-FACT, 03-10-2026): Ventas no tenía buscador, ni paginación,
    * ni PDF por fila (la migrada trae 800 facturas en un mes, y el PDF sólo se
@@ -313,6 +371,13 @@ export function FacturasEmitidas({ mes, vista }: Props) {
     )
   }, [facturas, busqueda, vista])
   const paginado = useTablePagination(ventas, { resetKey: `${mes}|${busqueda}` })
+  /*
+   * 🔴 QA-FACT ronda 2 (Nico, la recomendada): a 390 px la tabla de Ventas se
+   * corría de lado dentro de su tarjeta. Por debajo de 768 px cada factura es una
+   * TARJETA con el cliente, el número y el total, con su PDF y sus acciones, como
+   * «Por facturar». En escritorio sigue la tabla.
+   */
+  const esCelular = useIsMobile()
   const { descargarUna, descargando } = useDescargarFacturas()
   /*
    * 🔴 «Notas» lista TODAS las notas crédito de cada factura, no una sola.
@@ -404,6 +469,41 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             </p>
           </div>
         )}
+        {vista === 'ventas' && esCelular ? (
+          ventas.length === 0 ? (
+            <SinDatos
+              hayFiltros
+              queSon="facturas emitidas"
+              icono={Receipt}
+              onLimpiarFiltros={() => setBusqueda('')}
+            />
+          ) : (
+            <ul className="divide-y divide-border border-y border-border" data-testid="ventas-tarjetas">
+              {paginado.pageItems.map((f) => (
+                <li key={f.id} className="space-y-2 py-3.5" data-testid={`factura-${f.numero}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
+                    <p className="min-w-0 break-words font-medium text-fg">{f.terceroNombre}</p>
+                    <p className="shrink-0 font-mono font-medium tabular-nums text-fg">
+                      {formatCurrency(f.totalCop)}
+                    </p>
+                  </div>
+                  <p className="flex flex-wrap items-center gap-x-2 text-caption text-fg-muted">
+                    <span>{f.destinatario === 'INQUILINO' ? 'Inquilino' : 'Propietario'}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums text-fg">{f.numeroDian ?? 'Sin número DIAN'}</span>
+                    <span className="font-mono tabular-nums">interna N.º {f.numero}</span>
+                    {botonDelPdf(f)}
+                  </p>
+                  <p className="truncate text-caption text-fg-muted" title={f.inmueble}>
+                    {f.inmueble}
+                  </p>
+                  <div>{accionesDeLaFactura(f)}</div>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -447,22 +547,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   <TableCell className="font-mono tabular-nums">{f.numero}</TableCell>
                   <TableCell className="whitespace-nowrap font-mono tabular-nums">
                     {f.numeroDian ?? '—'}
-                    {f.numeroDian && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        hideArrow
-                        className="ml-1 h-8 w-8 align-middle"
-                        disabled={descargando !== null}
-                        isLoading={descargando === f.id}
-                        aria-label={`Descargar el PDF de la factura ${f.numeroDian}`}
-                        title="Descargar el PDF"
-                        onClick={() => void descargarUna(f.id, f.numeroDian)}
-                        data-testid={`ventas-pdf-${f.numero}`}
-                      >
-                        <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    )}
+                    {botonDelPdf(f)}
                   </TableCell>
                   <TableCell>
                     <span className="block">{f.terceroNombre}</span>
@@ -478,40 +563,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                     {formatCurrency(f.totalCop)}
                   </TableCell>
-                  <TableCell>
-                    {f.anulacion.puede ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        hideArrow
-                        onClick={() => {
-                          setConcepto('ANULACION')
-                          setMotivo('')
-                          setQueEstabaMal('cobro')
-                          setPorAnular(f)
-                          setDelServidor({})
-                        }}
-                        data-testid={`anular-${f.numero}`}
-                      >
-                        Anular con nota crédito
-                      </Button>
-                    ) : (
-                      /* 🔴 Sin botón, con la razón: un botón que va a fallar es
-                         peor que no tenerlo. */
-                      <span
-                        className="text-caption text-fg-muted"
-                        data-testid={`sin-anular-${f.numero}`}
-                      >
-                        {f.anulacion.explicacion}
-                      </span>
-                    )}
-                    {/* 🔴 Y las dos correcciones nuevas del 17-09: acreditar
-                        una PARTE y cobrar de más. Se ofrecen sólo cuando el
-                        back dice que se puede. */}
-                    <span className="mt-1 block">
-                      <CorregirFactura factura={f} onHecho={cargar} />
-                    </span>
-                  </TableCell>
+                  <TableCell>{accionesDeLaFactura(f)}</TableCell>
                 </TableRow>
               ) : null,
             )}
@@ -678,6 +730,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               })}
           </TableBody>
         </Table>
+        )}
         {vista === 'ventas' && paginado.shouldPaginate && (
           <div className="border-t border-border pt-3">
             <TablePagination

@@ -374,3 +374,55 @@ describe('FacturasEmitidas · Notas con `notas/lista`', () => {
     expect(emitirNotaGenerada).toHaveBeenCalledWith('nc-9');
   });
 });
+
+/**
+ * 🔴 QA-FACT ronda 2 (Nico, la recomendada): a 390 px Ventas se corría de lado.
+ * Por debajo de 768 px cada factura es una tarjeta con el cliente, el número y el
+ * total, con su PDF y sus acciones; en escritorio sigue la tabla.
+ */
+describe('FacturasEmitidas · Ventas en el celular', () => {
+  function conAncho(celular: boolean, prueba: () => Promise<void>) {
+    return async () => {
+      const original = window.matchMedia;
+      window.matchMedia = ((consulta: string) => ({
+        matches: celular && consulta.includes('max-width'),
+        media: consulta,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as unknown as typeof window.matchMedia;
+      try {
+        await prueba();
+      } finally {
+        window.matchMedia = original;
+      }
+    };
+  }
+
+  it(
+    'bajo 768 px: tarjetas con cliente, número y total, el PDF y anular',
+    conAncho(true, async () => {
+      await pintar('ventas', { mes: '2026-10', anulacionDisponible: true, facturas: [factura()] });
+      expect(host.querySelector('table')).toBeNull();
+      const tarjeta = q('[data-testid="factura-3"]')!;
+      expect(tarjeta.tagName).toBe('LI');
+      expect(tarjeta.textContent).toContain('Juliana Sin Correo Patiño');
+      expect(tarjeta.textContent).toContain('LABQA-1');
+      expect(tarjeta.textContent).toContain('$ 4.100.000');
+      expect(tarjeta.querySelector('[data-testid="anular-3"]')).not.toBeNull();
+      await act(async () => {
+        (tarjeta.querySelector('[data-testid="ventas-pdf-3"]') as HTMLButtonElement).click();
+      });
+      expect(descargarUnaMock).toHaveBeenCalledWith('f-1', 'LABQA-1');
+    }),
+  );
+
+  it(
+    'en escritorio sigue la tabla',
+    conAncho(false, async () => {
+      await pintar('ventas', { mes: '2026-10', anulacionDisponible: true, facturas: [factura()] });
+      expect(host.querySelector('table')).not.toBeNull();
+      expect(q('[data-testid="ventas-tarjetas"]')).toBeNull();
+      expect(q('[data-testid="factura-3"]')!.tagName).toBe('TR');
+    }),
+  );
+});

@@ -336,7 +336,10 @@ export function PilotoBandeja({
               <StaggerItem
                 as="li"
                 key={item.id}
-                className="group relative flex items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover"
+                // PI-30 (04-10-2026): a 390 px el botón («Marcar como atendido») le
+                // dejaba ancho 0 al título: no se leía QUÉ era la decisión y la
+                // fila no se podía tocar. En pantallas chicas el botón baja.
+                className="group relative flex flex-wrap items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover sm:flex-nowrap"
               >
                 <span
                   className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
@@ -391,7 +394,7 @@ export function PilotoBandeja({
 
                 {/* `relative z-10`: por encima del área clicable de la fila,
                     para que la acción rápida no abra además el cajón. */}
-                <div className="relative z-10 flex shrink-0 items-center gap-1.5 self-center">
+                <div className="relative z-10 flex shrink-0 basis-full items-center gap-1.5 pl-11 sm:basis-auto sm:self-center sm:pl-0">
                   {item.accion ? (
                     <Button
                       size="sm"

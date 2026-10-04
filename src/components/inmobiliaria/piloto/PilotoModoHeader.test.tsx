@@ -220,6 +220,26 @@ describe('PilotoModoHeader', () => {
     expect(document.activeElement).toBe(radio('autonomo'))
   })
 
+  it('🔴 PI-23: si el micro pide el código del segundo factor, no hay aviso rojo: se pide el código ahí mismo', async () => {
+    setModoMock.mockImplementation(async () => ({
+      ok: false,
+      error: 'SEGUNDO_FACTOR_RECIENTE',
+      fallo: { status: 403, code: 'SEGUNDO_FACTOR_RECIENTE' },
+    }))
+    render()
+    await act(async () => {
+      radio('autonomo').click()
+    })
+    await act(async () => {
+      ;(q('[data-testid="piloto-modo-confirmar-si"]') as HTMLButtonElement).click()
+    })
+    expect(setModoMock).toHaveBeenCalledWith('autonomo')
+    expect(toastMock.error).not.toHaveBeenCalled()
+    // El diálogo (en un portal) abre directo en el código: la píldora ya confirmó en línea.
+    expect(document.querySelector('[data-testid="confirmar-automatico-codigo"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="confirmar-automatico-explicacion"]')).toBeNull()
+  })
+
   it('si el micro no deja cambiar el modo, lo dice (toast de error) y no se queda callado', async () => {
     // Tanda 2 de errores (02-10-2026): antes salía «No se pudo cambiar el
     // modo: 500». Un 5xx dice «de nuestro lado» con la referencia.

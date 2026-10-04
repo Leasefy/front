@@ -1114,6 +1114,7 @@
           "autonomo": "Los que ya saben actúan sin preguntarte."
         },
         "aria": "Piloto automático: modo {{modo}}. Abrir para cambiarlo",
+        "ariaApagado": "Piloto automático apagado. Abrir para ver por qué",
         "elegir": "Modo del Piloto",
         "modo": {
           "sombra": "Manual",
@@ -1216,10 +1217,10 @@
         "ahoraVacio": "No hay nada en curso en este momento.",
         "alertas": "Alertas",
         "alertasVacio": "Nada que requiera tu atención.",
-        "hoyLlamadas": "Llamadas",
-        "hoyChats": "Chats",
-        "hoyResueltas": "Resueltas",
-        "hoyPlaneados": "Agendados",
+        "hoyLlamadas": "Llamadas hoy",
+        "hoyChats": "Chats esperando",
+        "hoyResueltas": "Resueltas hoy",
+        "hoyPlaneados": "Contactos para hoy",
         "estado": {
           "ok": "Todo bajo control",
           "atencion": "Requiere tu atención",
@@ -1261,8 +1262,8 @@
       "gobierno": {
         "activo": "Activa",
         "inactivo": "Apagada para tu inmobiliaria",
-        "apagadoServidor": "Apagado en el servidor: lo enciende el equipo técnico",
-        "proximamente": "Próximamente",
+        "apagadoServidor": "Apagado por ahora: lo prende Leasefy",
+        "proximamente": "En pausa: Leasefy todavía no lo ofrece",
         "switchAria": "Encender o apagar {{agente}} para tu inmobiliaria",
         "toastOn": "{{agente}} encendida para tu inmobiliaria",
         "toastOff": "{{agente}} apagada para tu inmobiliaria"
@@ -1319,15 +1320,15 @@
         "sinModoElegido": "nadie eligió su modo",
         "verProcesos": "Ver sus {{n}} procesos",
         "ocultarProcesos": "Ocultar sus procesos",
-        "interruptoresAyuda": "Los prende Leasefy en el servidor, nunca la inmobiliaria. Aquí sólo se dice si están prendidos, nunca su valor.",
-        "migraciones": "Migraciones que faltan (las aplica Leasefy)",
+        "interruptoresAyuda": "Los prende Leasefy, nunca la inmobiliaria. Aquí sólo se dice si están prendidos.",
+        "migraciones": "Partes que Leasefy todavía tiene que instalar",
         "migracionSinAplicar": "sin aplicar",
         "migracionNoSe": "no se pudo comprobar",
         "loQueHizoSinFuente": "No pude leer lo que hizo: el ERP no contestó.",
         "secciones": {
           "queFalta": "Qué falta, y quién lo destraba",
           "porAgente": "Por agente",
-          "interruptores": "Interruptores del servidor",
+          "interruptores": "Lo que Leasefy tiene prendido",
           "loQueHizo": "Lo que hizo en los últimos 30 días"
         },
         "quien": {
@@ -8213,6 +8214,7 @@
           "matching": "Matching",
           "avaluos": "Avalúos",
           "gerente": "Gerente",
+        "equipo": "Tu equipo",
           "retencion": "Retención",
           "calidad": "Calidad de publicación",
           "prospectos": "Prospectos",

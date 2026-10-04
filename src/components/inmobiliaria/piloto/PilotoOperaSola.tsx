@@ -97,11 +97,15 @@ export function faltasPorQuien(agentes: AgenteEnAutomatico[]): Record<QuienLoArr
     if (a.estado === 'apagado') continue
     for (const f of a.faltas) {
       if (f.tipo === 'agente_apagado') continue
-      const previa = porId.get(f.id)
+      // 🟠 PI-04 (04-10-2026): «Nadie eligió su modo…» salía SIETE veces igual,
+      // una por agente. La misma cosa (mismo texto y cómo se destraba) es UNA
+      // fila, con todos los agentes a los que afecta (como cuenta el micro).
+      const clave = `${f.tipo}|${f.que}|${f.como}`
+      const previa = porId.get(clave)
       if (previa) {
         if (!previa.agentes.includes(a.nombre)) previa.agentes.push(a.nombre)
       } else {
-        porId.set(f.id, { falta: f, agentes: [a.nombre] })
+        porId.set(clave, { falta: f, agentes: [a.nombre] })
       }
     }
   }
@@ -332,9 +336,7 @@ export function PilotoOperaSolaContenido({ queFalta, loQueHizo }: PilotoOperaSol
               </div>
               <p className="mt-1 text-caption text-fg-muted">{i.detalle}</p>
               <p className="mt-0.5 text-caption text-fg-subtle">{i.queHabilita}</p>
-              <p className="mt-1 break-all font-mono text-caption text-fg-subtle">
-                {t(`inmobiliaria.piloto.operaSola.interruptor.donde.${i.donde}`)} · {i.variables.join(' · ')}
-              </p>
+              {/* PI-02 (04-10-2026): sin nombres de variables del servidor ante la inmobiliaria. */}
             </li>
           ))}
         </ul>
@@ -344,7 +346,7 @@ export function PilotoOperaSolaContenido({ queFalta, loQueHizo }: PilotoOperaSol
             <ul className="space-y-1">
               {migracionesPendientes.map((m) => (
                 <li key={m.id} className="text-caption text-fg-muted">
-                  <span className="break-all font-mono text-fg">{m.id}</span> —{' '}
+                  {/* PI-02: el nombre técnico de la migración no se muestra. */}
                   {m.aplicada === false
                     ? t('inmobiliaria.piloto.operaSola.migracionSinAplicar')
                     : t('inmobiliaria.piloto.operaSola.migracionNoSe')}

@@ -279,7 +279,9 @@ export function PilotoPulso({
           hacer zoom. Con `!border-0` no hay sorteo, y la única línea la pone
           este contenedor con el mismo token que todo lo demás. */}
       <div className="border-t border-border-faint">
-        <StatStrip className="!border-0 overflow-x-auto [&>*]:min-w-[124px] [&>*:first-child]:!pl-6 [&>*:last-child]:!pr-6">
+        {/* PI-30 (04-10-2026): a 390 px la banda se deslizaba y la 4.ª cifra quedaba
+            fuera de la vista sin que nada lo dijera. En el teléfono: dos por fila. */}
+        <StatStrip className="!border-0 grid grid-cols-2 max-sm:[&>*]:!px-5 sm:flex sm:overflow-x-auto [&>*]:min-w-0 sm:[&>*]:min-w-[124px] sm:[&>*:first-child]:!pl-6 sm:[&>*:last-child]:!pr-6">
         <Stat
           compact
           label={t('inmobiliaria.piloto.pulso.hoyLlamadas')}

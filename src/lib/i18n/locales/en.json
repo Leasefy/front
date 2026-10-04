@@ -1114,6 +1114,7 @@
           "autonomo": "Those that know how act without asking."
         },
         "aria": "Autopilot: {{modo}} mode. Open to change it",
+        "ariaApagado": "Autopilot is off. Open to see why",
         "elegir": "Pilot mode",
         "modo": {
           "sombra": "Manual",

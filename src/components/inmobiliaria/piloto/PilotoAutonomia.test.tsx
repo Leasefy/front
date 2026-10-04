@@ -65,8 +65,9 @@ describe('copy del panel de autonomía (es.json / en.json)', () => {
     expect(fuente).not.toContain('Ejecuta lo reversible solo')
   })
 
-  it('el estado de gobierno "Próximamente" existe en ambos locales', () => {
-    expect(es.inmobiliaria.piloto.gobierno.proximamente).toBe('Próximamente')
+  it('el estado de gobierno de un agente en pausa existe en ambos locales (PI-26: sin «Próximamente»)', () => {
+    expect(es.inmobiliaria.piloto.gobierno.proximamente).toBe('En pausa: Leasefy todavía no lo ofrece')
+    expect(es.inmobiliaria.piloto.gobierno.proximamente).not.toMatch(/Próximamente/)
     expect(en.inmobiliaria.piloto.gobierno.proximamente).toBeTruthy()
     // La frase que reemplaza sigue existiendo (la usan otros agentes).
     //

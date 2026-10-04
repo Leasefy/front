@@ -99,6 +99,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
+import { ConfirmarAutomatico, pideSegundoFactor } from '@/components/inmobiliaria/piloto/ConfirmarAutomatico'
 import { useI18n } from '@/lib/i18n'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
@@ -202,6 +203,8 @@ export function PilotoModoHeader() {
   const enHoja = useIsMobile()
   const [abierto, setAbierto] = useState(false)
   const [confirmando, setConfirmando] = useState<AutonomiaModo | null>(null)
+  // PI-23: el diálogo de Automático (explica y pide el segundo factor si hace falta).
+  const [pidiendoCodigo, setPidiendoCodigo] = useState(false)
   // El modo que la línea de ayuda explica mientras el cursor o el foco está
   // sobre otra tarjeta. `null` = el modo actual.
   const [vistaPrevia, setVistaPrevia] = useState<AutonomiaModo | null>(null)
@@ -240,10 +243,12 @@ export function PilotoModoHeader() {
   const subtituloId = `${base}-subtitulo`
   const queId = (m: AutonomiaModo) => `${base}-que-${m}`
 
-  const aplicar = async (nuevo: AutonomiaModo) => {
+  const aplicar = async (nuevo: AutonomiaModo): Promise<{ ok: boolean; fallo?: unknown }> => {
     setConfirmando(null)
     const res = await flota.setModo(nuevo)
     if (!res.ok) {
+      // PI-23: si el micro pide el código del segundo factor, lo pide el diálogo.
+      if (pideSegundoFactor(res.fallo)) return { ok: false, fallo: res.fallo }
       // Lo que pasó, con la regla de oro: nunca «No se pudo cambiar el modo: 500».
       toast.error(
         mensajeParaLaPersona(res.fallo, {
@@ -251,7 +256,7 @@ export function PilotoModoHeader() {
           accion: 'cambiar el modo del Piloto',
         }),
       )
-      return
+      return { ok: false, fallo: res.fallo }
     }
     if (res.fallidos && res.fallidos.length > 0) {
       toast.warning(
@@ -263,6 +268,7 @@ export function PilotoModoHeader() {
     } else {
       toast.success(t('inmobiliaria.piloto.flota.toastOk', { modo: etiquetaModo(nuevo).toLowerCase() }))
     }
+    return { ok: true }
   }
 
   const elegir = (nuevo: AutonomiaModo) => {
@@ -318,7 +324,12 @@ export function PilotoModoHeader() {
       type="button"
       data-testid="piloto-modo-header"
       data-modo={modo ?? 'cargando'}
-      aria-label={t('inmobiliaria.piloto.flota.aria', { modo: etiquetaModo(modo) })}
+      // PI-07: con el Piloto apagado la píldora dice «Apagado» y su nombre accesible también.
+      aria-label={
+        data && !activo
+          ? t('inmobiliaria.piloto.flota.ariaApagado')
+          : t('inmobiliaria.piloto.flota.aria', { modo: etiquetaModo(modo) })
+      }
       className={cn(
         // A 390 px la píldora se compacta a punto + modo (sin flecha): el
         // encabezado desbordaba y la página medía 446–463 px de ancho (24-09).
@@ -625,7 +636,14 @@ export function PilotoModoHeader() {
                   hideArrow
                   onClick={() => {
                     radios.current.autonomo?.focus()
-                    void aplicar('autonomo')
+                    // PI-23: esta confirmación ya dice lo que pasa; si el micro
+                    // pide el código del segundo factor, lo pide el diálogo.
+                    void aplicar('autonomo').then((r) => {
+                      if (!r.ok && pideSegundoFactor(r.fallo)) {
+                        setAbierto(false)
+                        setPidiendoCodigo(true)
+                      }
+                    })
                   }}
                   data-testid="piloto-modo-confirmar-si"
                 >
@@ -824,8 +842,21 @@ export function PilotoModoHeader() {
     </>
   )
 
+  // PI-23: el diálogo de Automático vive junto a la píldora (el desplegable ya se cerró).
+  const dialogoDeAutomatico = (
+    <ConfirmarAutomatico
+      abierto={pidiendoCodigo}
+      quien="todos los agentes"
+      pilotoActivo={activo}
+      pasoInicial="codigo"
+      onConfirmar={() => aplicar('autonomo')}
+      onCerrar={() => setPidiendoCodigo(false)}
+    />
+  )
+
   if (enHoja) {
     return (
+      <>
       <Sheet open={abierto} onOpenChange={alCambiarApertura}>
           <SheetTrigger asChild>{pildora}</SheetTrigger>
           {/* `layout="manual"`: el cuerpo ya trae su scroll (`data-lenis-prevent`),
@@ -835,10 +866,13 @@ export function PilotoModoHeader() {
             {cuerpo}
           </SheetContent>
         </Sheet>
+      {dialogoDeAutomatico}
+      </>
     )
   }
 
   return (
+    <>
       <Popover open={abierto} onOpenChange={alCambiarApertura}>
         <PopoverTrigger asChild>{pildora}</PopoverTrigger>
         <PopoverContent
@@ -858,5 +892,7 @@ export function PilotoModoHeader() {
           {cuerpo}
         </PopoverContent>
       </Popover>
+      {dialogoDeAutomatico}
+    </>
   )
 }

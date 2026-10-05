@@ -19,7 +19,7 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
 import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
 import { laSesionSeCerro, mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
-import { leerErrorDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { FRASES_DE_SUPABASE, leerErrorDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
@@ -90,7 +90,9 @@ async function factorVerificadoPorHttp(seguir: () => boolean): Promise<string | 
   const token = await esperarElToken(seguir);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!token || !url || !anonKey) throw new Error('sin sesión');
+  // Sin token y con el AuthProvider ya contestado: no hay sesión (no es «no se pudo preguntar»).
+  if (!token) throw Object.assign(new Error('sin sesión'), { sinSesion: hayRespuestaDeSesion() });
+  if (!url || !anonKey) throw new Error('sin Supabase');
   const control = new AbortController();
   const reloj = setTimeout(() => control.abort(), 10_000);
   try {
@@ -98,7 +100,7 @@ async function factorVerificadoPorHttp(seguir: () => boolean): Promise<string | 
       signal: control.signal,
       headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
     const usuario = (await res.json()) as { factors?: Array<{ id: string; factor_type: string; status: string }> };
     return usuario.factors?.find((f) => f.factor_type === 'totp' && f.status === 'verified')?.id ?? null;
   } finally {
@@ -203,6 +205,23 @@ export default function MfaVerifyPage() {
   const enUnFlujoPropio = sinLaApp || restablecido || cambiandoElFactor || quiereInscribir;
 
   /**
+   * 🔴 Nico, 05-10: con la sesión muerta ningún código entra y el factor ni
+   * se puede consultar. Esta pantalla no es la salida: se cierra lo que quede
+   * y se va a la contraseña con el destino que traía (el `returnUrl`).
+   */
+  const aLaContrasena = useCallback(async () => {
+    const destino = returnUrlDeLaBarra();
+    try {
+      await signOut();
+    } catch {
+      // La sesión ya estaba muerta: no hay nada más que cerrar.
+    }
+    router.replace(destino ? `/auth?returnUrl=${encodeURIComponent(destino)}` : '/auth');
+  }, [signOut, router]);
+  const aLaContrasenaRef = useRef(aLaContrasena);
+  aLaContrasenaRef.current = aLaContrasena;
+
+  /**
    * 🔴 Nico, 29-09: pidió el código al correo, la página se montó de nuevo
    * mientras lo buscaba y volvió a las casillas de la APP; escribió ahí el
    * código del correo y le dijo «Código incorrecto». Si hay un restablecimiento
@@ -251,25 +270,59 @@ export default function MfaVerifyPage() {
   const consultaDelFactorRef = useRef<Promise<string | null> | null>(null);
   useEffect(() => {
     let vivo = true;
+    // 🔴 Nico, 05-10: al recargar con la sesión muerta, las dos preguntas
+    // fallaban y la pantalla concluía «no tiene factor»: le ofrecía ACTIVARLO a
+    // quien ya lo tenía. Sin sesión no se pregunta nada: se va a la contraseña.
+    let sesionMuerta = false;
+    const aLaContrasenaPorLaSesion = () => {
+      if (!vivo) return;
+      vivo = false;
+      toast.error(FRASES_DE_SUPABASE.session_not_found);
+      void aLaContrasenaRef.current();
+    };
     const porElSdk = (async () => {
       const supabase = getSupabase();
       if (!supabase) throw new Error('sin Supabase');
       const { data: factors, error } = await supabase.auth.mfa.listFactors();
-      if (error) throw error;
+      if (error) {
+        if (laSesionSeCerro({ status: error.status, codigo: error.code, mensaje: error.message })) sesionMuerta = true;
+        throw error;
+      }
       return factors?.totp?.find((f) => f.status === 'verified')?.id ?? null;
     })();
-    const consulta = primeroQueConteste([porElSdk, factorVerificadoPorHttp(() => vivo)]);
+    let contesto = false;
+    const porHttp = factorVerificadoPorHttp(() => vivo).catch((e: { sinSesion?: boolean; status?: number }) => {
+      // Sin token con el AuthProvider ya contestado no hay sesión. Se le dan 3 s
+      // al SDK por si la trae (un null de paso del AuthProvider); si no
+      // contesta —puede quedarse con el candado, ver arriba—, a la contraseña.
+      if (e?.sinSesion) {
+        setTimeout(() => {
+          if (vivo && !contesto && !getAccessToken() && hayRespuestaDeSesion()) aLaContrasenaPorLaSesion();
+        }, 3_000);
+      }
+      // Un 401/403 con el token en memoria puede ser un token viejo que el SDK
+      // sí renueva: decide el SDK; si él también falla, la sesión murió.
+      if (e?.status === 401 || e?.status === 403) sesionMuerta = true;
+      throw e;
+    });
+    const consulta = primeroQueConteste([porElSdk, porHttp]);
     consultaDelFactorRef.current = consulta;
     consulta
       .then((id) => {
+        contesto = true;
         if (!vivo) return;
         if (id) setFactorId(id);
         setTieneFactor(Boolean(id));
       })
       .catch(() => {
+        if (!vivo) return;
+        if (sesionMuerta) {
+          aLaContrasenaPorLaSesion();
+          return;
+        }
         // Si ni siquiera se pudo preguntar, se ofrece inscribirlo: es la
         // única de las dos salidas que sirve cuando no se sabe.
-        if (vivo) setTieneFactor(false);
+        setTieneFactor(false);
       });
     return () => {
       vivo = false;
@@ -354,16 +407,10 @@ export default function MfaVerifyPage() {
       // y se va a la contraseña, con el destino que traía (el `returnUrl`).
       if (laSesionSeCerro(datos)) {
         setHayError(false);
-        const destino = returnUrlDeLaBarra();
-        try {
-          await signOut();
-        } catch {
-          // La sesión ya estaba muerta: no hay nada más que cerrar.
-        }
-        router.replace(destino ? `/auth?returnUrl=${encodeURIComponent(destino)}` : '/auth');
+        await aLaContrasena();
       }
     }
-  }, [factorId, code, setMfaVerified, user, router, signOut]);
+  }, [factorId, code, setMfaVerified, user, router, aLaContrasena]);
 
   /** Seis dígitos y ya no hay nada más que preguntar: se envía solo. */
   const enviarSiSePuede = useCallback(

@@ -145,12 +145,15 @@ export function filtrarPropietarios(
     let bVal: string | number = b[filtros.campo] ?? '';
 
     if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase();
-      bVal = String(bVal ?? '').toLowerCase();
+      // QA-PROP-95 (A-20): orden del español — «Óscar» con la O y «Ñandú»
+      // después de la N. Con `<` sobre minúsculas las tildes iban tras la Z.
+      const orden = aVal.localeCompare(String(bVal ?? ''), 'es', { sensitivity: 'base' });
+      return filtros.sentido === 'asc' ? orden : -orden;
     }
 
-    if (aVal < bVal) return filtros.sentido === 'asc' ? -1 : 1;
-    if (aVal > bVal) return filtros.sentido === 'asc' ? 1 : -1;
+    const bNum = Number(bVal);
+    if (aVal < bNum) return filtros.sentido === 'asc' ? -1 : 1;
+    if (aVal > bNum) return filtros.sentido === 'asc' ? 1 : -1;
     return 0;
   });
 

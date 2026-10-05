@@ -1300,6 +1300,8 @@ export interface ResultadoDeEnvioMasivo {
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
+  /** QA-PROP-95 (C-14): cabecera del documento; la manda el back con el extracto (sin pedir la configuración). */
+  inmobiliaria?: { nombre: string; nit: string | null; direccion: string | null; ciudad: string | null } | null;
   month: string;
   generatedAt: string;
 

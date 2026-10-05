@@ -626,7 +626,14 @@ function PropietarioDetailContent() {
    * cuando reintentar puede cambiar algo (un 404 sí es «no existe», y ahí
    * muestra exactamente eso, con el camino de vuelta).
    */
-  if (!propietario && errorPropietario) {
+  // QA-PROP-95 (B-03): un enlace con un id que no es un UUID («/propietarios/abc»)
+  // responde 400 y es «no existe», no «fue un problema nuestro»: cae al cartel de abajo.
+  const idInvalido =
+    !!errorPropietario &&
+    typeof errorPropietario === 'object' &&
+    (errorPropietario as { status?: unknown }).status === 400 &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '');
+  if (!propietario && errorPropietario && !idInvalido) {
     return (
       <div className="p-6 lg:p-8 space-y-6" data-testid="propietario-fallo">
         <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />

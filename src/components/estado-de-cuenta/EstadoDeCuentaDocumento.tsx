@@ -287,6 +287,7 @@ export function EstadoDeCuentaDocumento({
               sinPaginar={sinPaginar}
               reglasDeMoraHref={reglasDeMoraHref}
               conAnticipoDelContrato={conAnticipoDelContrato}
+              plegable={doc.contratos.length > 1}
             />
           ))}
         </div>

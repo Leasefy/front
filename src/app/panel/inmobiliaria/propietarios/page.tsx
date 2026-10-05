@@ -244,7 +244,7 @@ function PropietariosContent() {
    * `canAccess` en false mientras los permisos cargan: los botones aparecen
    * cuando se sabe, nunca antes.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, isLoading: cargandoPermisosDeLaLista } = usePermissions();
   const puedeCrear = canAccess('propietarios', 'create');
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
@@ -269,11 +269,16 @@ function PropietariosContent() {
   // Open modal if ?nuevo=true query param is present
   useEffect(() => {
     if (searchParams.get('nuevo') === 'true') {
-      setShowAddModal(true);
+      // QA-PROP-95 (A-65): quien no puede crear (el contador, desde Reportes ›
+      // Resumen) no se queda sin saber por qué no se abrió el formulario.
+      // `canAccess` es false mientras cargan los permisos: se espera a que carguen.
+      if (cargandoPermisosDeLaLista) return;
+      if (puedeCrear) setShowAddModal(true);
+      else toast.error('No puedes crear propietarios', { description: 'Tu rol no incluye crear propietarios. Pídele a un administrador que te lo habilite.' });
       // Clean up URL without reload
       router.replace('/panel/inmobiliaria/propietarios', { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, puedeCrear, cargandoPermisosDeLaLista]);
 
   /**
    * `?persona=<User.id>` — entrar acá con un propietario ya elegido.
@@ -709,6 +714,9 @@ function PropietariosContent() {
             error={errorPropietarios}
             queEs="los propietarios"
             onReintentar={recargarPropietarios}
+            // QA-PROP-95 (A-04, PR-14): si el servidor NIEGA la lista, la pantalla
+            // entera pasa al cartel (PageGuard) y no quedan «Nuevo» ni «Crear con IA» vivos.
+            principal
           >
             {propietarios.length === 0 ? (
               /* «Todavía no hay ninguno» es esto y sólo esto: la lista del
@@ -767,7 +775,28 @@ function PropietariosContent() {
                 onExport={handleExport}
                 plataOculta={plataOculta}
               />
-            ) : paginationData.totalItems === 0 ? (
+            ) : (
+              <>
+              {/* QA-PROP-95 (A-28): la vista de tarjetas también busca y filtra:
+                  la misma barra de la tabla, sin la tabla. */}
+              <PropietarioTable
+                soloBarra
+                propietarios={paginationData.paginatedItems}
+                totalFiltrado={paginationData.totalItems}
+                total={propietarios.length}
+                filtros={filtros}
+                conteos={conteos}
+                onFiltros={(nuevos) => {
+                  setFiltros(nuevos);
+                  setCurrentPage(1);
+                }}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onExport={handleExport}
+                plataOculta={plataOculta}
+              />
+              {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
                  así que acá el vacío filtrado tiene que traer su propia salida:
                  si no, la única forma de volver es adivinar que hay que cambiar
@@ -796,11 +825,16 @@ function PropietariosContent() {
                 ))}
               </Stagger>
             )}
+              </>
+            )}
           </EstadoDeDatos>
         </div>
 
-        {/* Pagination Footer */}
-        {paginationData.totalPages > 1 && (
+        {/* Pagination Footer.
+            QA-PROP-95 (A-22): se queda mientras haya más filas que el tamaño de
+            página más chico. Antes se iba con `totalPages > 1`: quien elegía 50
+            por página (con 37) perdía el selector y no podía volver a 10. */}
+        {paginationData.totalItems > 5 && (
           <div className="px-4 py-3 border-t border-border bg-muted/10">
             <TablePagination
               total={paginationData.totalItems}

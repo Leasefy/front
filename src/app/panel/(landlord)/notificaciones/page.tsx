@@ -1,5 +1,6 @@
 'use client';
 
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
@@ -115,6 +116,8 @@ function NotificationSkeleton() {
 export default function NotificacionesPage() {
   const { t, formatRelativeDate } = useI18n();
   const router = useRouter();
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.doc !== null;
   const {
     notifications,
     unreadCount,
@@ -159,8 +162,9 @@ export default function NotificacionesPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header — QA-PROP-95 (PO-24): a 390 px «Marcar todo como leído» baja de
+          renglón; antes la página se corría 45 px de lado. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-fg">
             {t('landlord.notifications.title')}
@@ -191,12 +195,16 @@ export default function NotificacionesPage() {
           { id: 'all', label: t('landlord.notifications.filterAll') },
           { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
           { id: 'payment', label: t('landlord.notifications.filterPayments') },
-          { id: 'application', label: t('landlord.notifications.filterCandidates') },
+          { id: 'application', label: t('landlord.notifications.filterCandidates'), soloIndependiente: true },
           { id: 'contract', label: t('landlord.notifications.filterContracts') },
-          { id: 'lease', label: t('landlord.notifications.filterLeases') },
-          { id: 'visit', label: t('landlord.notifications.filterVisits') },
-          { id: 'property', label: t('landlord.notifications.filterProperties') },
-        ].map((f) => (
+          { id: 'lease', label: t('landlord.notifications.filterLeases'), soloIndependiente: true },
+          { id: 'visit', label: t('landlord.notifications.filterVisits'), soloIndependiente: true },
+          { id: 'property', label: t('landlord.notifications.filterProperties'), soloIndependiente: true },
+        ]
+          // QA-PROP-95: candidatos, arriendos, visitas y propiedades son del
+          // propietario independiente; a quien administra una inmobiliaria no le sirven.
+          .filter((f) => !(deInmobiliaria && 'soloIndependiente' in f && f.soloIndependiente))
+          .map((f) => (
           <Chip
             key={f.id}
             selected={filter === f.id}
@@ -204,8 +212,8 @@ export default function NotificacionesPage() {
             className="whitespace-nowrap"
           >
             {f.label}
-            {f.count !== undefined && f.count > 0 && (
-              <span className="tabular-nums">{f.count}</span>
+            {'count' in f && f.count !== undefined && f.count > 0 && (
+              <span className="ml-1 tabular-nums">{f.count}</span>
             )}
           </Chip>
         ))}

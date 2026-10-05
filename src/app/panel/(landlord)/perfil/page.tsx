@@ -1,5 +1,6 @@
 'use client';
 
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -68,6 +69,9 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
+  // QA-PROP-95: ¿una inmobiliaria le administra los inmuebles? (mientras carga, sí)
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null;
   const { user, updateProfile } = useAuth();
   const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
@@ -593,7 +597,10 @@ export default function PropietarioPerfilPage() {
                   </div>
                 </Collapse>
 
-                {/* Quick Stats */}
+                {/* Quick Stats — QA-PROP-95: «Propiedades publicadas» y «Contratos
+                    activos» son del propietario independiente (publica y arrienda
+                    él); a quien le administra una inmobiliaria no le dicen nada. */}
+                {!deInmobiliaria && (
                 <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
@@ -622,6 +629,7 @@ export default function PropietarioPerfilPage() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
 
@@ -690,7 +698,7 @@ export default function PropietarioPerfilPage() {
                     no lo cambia; es el de la cuenta). Era un campo editable que
                     se vaciaba al guardar (Nico, 02-10-2026). */}
                 <div>
-                  <label className="block text-sm font-medium text-fg-muted mb-2">Email</label>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Correo' : 'Email'}</label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <Envelope className="w-4 h-4 text-fg-subtle" />
                     <span className="text-sm text-fg">{formData.email || notSet}</span>

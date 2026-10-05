@@ -20,6 +20,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Buildings, CaretRight } from '@phosphor-icons/react';
 
+import { estadoDe, selloDelContrato } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { numeroDelContratoDelEstado } from '@/components/estado-de-cuenta/numero';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -56,7 +57,8 @@ export function useContratosAdministrados(): ContratosAdministrados {
 }
 
 export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
-  const vigentes = doc.contratos.filter((c) => c.vigente).length;
+  // QA-PROP-95 (PO-01): un firmado que todavía no empieza no es «vigente».
+  const vigentes = doc.contratos.filter((c) => estadoDe(c) === 'VIGENTE').length;
   const quien = doc.inmobiliaria.razonSocial || 'Tu inmobiliaria';
   return (
     <section
@@ -99,12 +101,12 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
             </div>
             <span
               className={
-                c.vigente
+                selloDelContrato(c).vivo
                   ? 'rounded-full bg-success-soft px-2.5 py-0.5 text-body-sm text-success'
                   : 'rounded-full bg-surface-muted px-2.5 py-0.5 text-body-sm text-fg-muted'
               }
             >
-              {c.vigente ? 'Vigente' : 'Terminado'}
+              {selloDelContrato(c).texto}
             </span>
           </li>
         ))}

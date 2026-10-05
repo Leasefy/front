@@ -10,6 +10,7 @@
  */
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -57,6 +58,18 @@ function Contenido() {
       vivo = false;
     };
   }, [fichaDelPropietario]);
+
+  // QA-PROP-95 (C-30): «/estado-de-cuenta/propietario/abc» no existe; antes el 400
+  // del back salía como «fue un problema nuestro».
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')) {
+    return (
+      <div className="p-6 lg:p-8 text-center py-16" data-testid="estado-de-cuenta-no-existe">
+        <h2 className="text-base font-semibold text-foreground mb-1.5">No encontramos ese propietario</h2>
+        <p className="text-sm text-muted-foreground mb-4">Ese enlace no corresponde a ningún propietario de tu inmobiliaria.</p>
+        <Link href={LISTA} className="text-sm text-primary underline">Volver a propietarios</Link>
+      </div>
+    );
+  }
 
   return (
     <PantallaDelEstadoDeCuenta

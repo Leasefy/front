@@ -127,8 +127,9 @@ interface PropietarioTableProps {
   conteos: ConteosDePropietarios;
   onFiltros: (filtros: FiltrosDePropietarios) => void;
   onView: (propietario: Propietario) => void;
-  onEdit: (propietario: Propietario) => void;
-  onDelete: (propietario: Propietario) => void;
+  /** QA-PROP-95 (A-52, A-60): sin permiso no se pasa y el menú no lo ofrece. */
+  onEdit?: (propietario: Propietario) => void;
+  onDelete?: (propietario: Propietario) => void;
   onExport?: () => void;
   /**
    * P-21: quien mira no ve la plata de los propietarios (el back la oculta por
@@ -136,6 +137,11 @@ interface PropietarioTableProps {
    * «Con saldo pendiente 0». Se calcula en la página con la lista COMPLETA.
    */
   plataOculta?: boolean;
+  /**
+   * QA-PROP-95 (A-28): sólo la barra (buscador, Exportar y chips), para la
+   * vista de tarjetas: antes las tarjetas no tenían cómo buscar ni filtrar.
+   */
+  soloBarra?: boolean;
 }
 
 /**
@@ -154,6 +160,7 @@ export function PropietarioTable({
   onDelete,
   onExport,
   plataOculta = false,
+  soloBarra = false,
 }: PropietarioTableProps) {
   const { t, locale } = useI18n();
   /*
@@ -329,8 +336,9 @@ export function PropietarioTable({
               /* Los dos en UN solo cambio: encadenar
                  `setFilterPending(false)` y `setFilterType('all')` arma los
                  dos objetos a partir del mismo `filtros` viejo, y el segundo
-                 pisa al primero — «Limpiar» dejaba el saldo pendiente puesto. */
-              onClick={() => onFiltros({ ...filtros, soloConSaldo: false, tipo: 'all' })}
+                 pisa al primero — «Limpiar» dejaba el saldo pendiente puesto.
+                 QA-PROP-95 (A-15): también vacía la búsqueda, como dice. */
+              onClick={() => onFiltros({ ...filtros, soloConSaldo: false, tipo: 'all', busqueda: '' })}
               className="gap-1.5 text-warning"
             >
               <Funnel className="w-4 h-4" weight="fill" />
@@ -354,7 +362,7 @@ export function PropietarioTable({
         )}
       </div>
 
-      {esCelular ? (
+      {soloBarra ? null : esCelular ? (
         <TarjetasDePropietarios
           propietarios={propietarios}
           plataOculta={plataOculta}
@@ -414,7 +422,7 @@ export function PropietarioTable({
                         {/* T-0128: ficha creada por la migración sin todos sus datos. */}
                         <DatosPorCompletar
                           pendientes={datosPendientesDelPropietario(propietario)}
-                          onCompletar={() => onEdit(propietario)}
+                          onCompletar={onEdit ? () => onEdit(propietario) : undefined}
                           className="mt-1 flex flex-wrap items-center gap-2"
                         />
                         {/* 🔴 Copropiedad migrada sin porcentaje: no se gira (04-10). */}
@@ -545,8 +553,9 @@ function MenuDeLaFila({
 }: {
   propietario: Propietario;
   onView: (propietario: Propietario) => void;
-  onEdit: (propietario: Propietario) => void;
-  onDelete: (propietario: Propietario) => void;
+  /** QA-PROP-95 (A-52, A-60): sin permiso no se pasa y el menú no lo ofrece. */
+  onEdit?: (propietario: Propietario) => void;
+  onDelete?: (propietario: Propietario) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -568,10 +577,12 @@ function MenuDeLaFila({
           <Eye className="w-4 h-4" />
           <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>
         </DropdownListItem>
+        {onEdit && (
         <DropdownListItem onSelect={() => onEdit(propietario)}>
           <PencilSimple className="w-4 h-4" />
           <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
         </DropdownListItem>
+        )}
         {propietario.email && (
           <DropdownListItem asChild>
             <a
@@ -594,6 +605,8 @@ function MenuDeLaFila({
             </a>
           </DropdownListItem>
         )}
+        {onDelete && (
+          <>
         <DropdownListSeparator />
         <DropdownListItem
           onSelect={() => onDelete(propietario)}
@@ -602,6 +615,8 @@ function MenuDeLaFila({
           <TrashSimple className="w-4 h-4" />
           <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>
         </DropdownListItem>
+          </>
+        )}
       </DropdownListContent>
     </DropdownList>
   );

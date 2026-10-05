@@ -98,3 +98,21 @@ export const CONFIGURACION_DEL_PROPIETARIO: ConfiguracionDeCuenta<SeccionDelProp
     },
   ],
 };
+
+/**
+ * QA-PROP-95 (04-10-2026): a quien una INMOBILIARIA le administra los inmuebles
+ * no se le ofrece plan que mejorar, equipo ni cuentas de recaudo —eso es del
+ * propietario independiente—: la inmobiliaria recauda y le gira. Ve sus avisos,
+ * su seguridad, sus preferencias y sus datos.
+ */
+export const SECCIONES_SOLO_DEL_INDEPENDIENTE: readonly SeccionDelPropietario[] = ['plan', 'equipo', 'cuentas-de-recaudo'];
+
+export const CONFIGURACION_DEL_PROPIETARIO_DE_INMOBILIARIA: ConfiguracionDeCuenta<SeccionDelPropietario> = {
+  ...CONFIGURACION_DEL_PROPIETARIO,
+  subtitulo: {
+    es: 'Tus avisos, tu seguridad y tus datos, en un solo lugar',
+    en: 'Your alerts, your security and your data, in one place',
+  },
+  grupos: CONFIGURACION_DEL_PROPIETARIO.grupos.filter((g) => g.id !== 'operacion'),
+  secciones: CONFIGURACION_DEL_PROPIETARIO.secciones.filter((s) => !SECCIONES_SOLO_DEL_INDEPENDIENTE.includes(s.id)),
+};

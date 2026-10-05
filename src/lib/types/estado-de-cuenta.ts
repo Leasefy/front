@@ -193,6 +193,10 @@ export interface ContratoDelEstadoDeCuenta {
   rol: RolEnElContrato;
   inmueble: { direccion: string };
   vigente: boolean;
+  /** QA-PROP-95: VIGENTE · POR_EMPEZAR · TERMINADO · CANCELADO (back nuevo). */
+  estadoDelContrato?: 'VIGENTE' | 'POR_EMPEZAR' | 'TERMINADO' | 'CANCELADO';
+  /** `AAAA-MM-DD` del inicio. */
+  inicio?: string | null;
   secciones: {
     arriendos: FilaDelEstadoDeCuenta[];
     otrosConceptos: FilaDelEstadoDeCuenta[];

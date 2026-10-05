@@ -132,7 +132,14 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
     if (nuevos.length === 0) return;
     // El mismo archivo dos veces no aporta nada al modelo y sí cuesta.
     const vistos = new Set(files.map((f) => `${f.name}:${f.size}`));
-    const distintos = nuevos.filter((f) => !vistos.has(`${f.name}:${f.size}`));
+    // QA-PROP-95 (A-46): también dentro de la MISMA selección (elegir dos
+    // veces el mismo archivo en el diálogo lo sumaba dos veces).
+    const distintos = nuevos.filter((f) => {
+      const llave = `${f.name}:${f.size}`;
+      if (vistos.has(llave)) return false;
+      vistos.add(llave);
+      return true;
+    });
     const candidatos = [...files, ...distintos];
     const error = validarArchivos(candidatos);
     if (error) {

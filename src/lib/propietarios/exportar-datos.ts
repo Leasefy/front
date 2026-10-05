@@ -168,7 +168,7 @@ export function nombreDelArchivoDelPropietario(nombre: string, hoy: Date = new D
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase();
-  const fecha = hoy.toISOString().slice(0, 10);
+  const fecha = diaEnBogota(hoy);
   return `propietario-${seguro || 'sin-nombre'}-${fecha}.xlsx`;
 }
 
@@ -297,7 +297,7 @@ export function armarHojaDeLaLista(
 
 /** `propietarios-<fecha>.xlsx`. */
 export function nombreDelArchivoDeLaLista(hoy: Date = new Date()): string {
-  return `propietarios-${hoy.toISOString().slice(0, 10)}.xlsx`;
+  return `propietarios-${diaEnBogota(hoy)}.xlsx`;
 }
 
 /**
@@ -327,4 +327,13 @@ export async function descargarListaDePropietarios(
     nombre,
   );
   return nombre;
+}
+
+/**
+ * QA-PROP-95 (A-30, PR-34): el día del nombre del archivo es el de Bogotá.
+ * Con `toISOString()` (UTC) un archivo bajado después de las 7 p. m. salía con
+ * la fecha de mañana.
+ */
+function diaEnBogota(hoy: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(hoy);
 }

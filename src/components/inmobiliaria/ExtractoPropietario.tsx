@@ -53,7 +53,7 @@ interface ExtractoPropietarioProps {
   onDownloadPDF?: () => void | Promise<void>;
   onPrint?: () => void;
   /** Manda el extracto al correo del propietario. Sin esto el botón no se muestra. */
-  onEmail?: () => void | Promise<void>;
+  onEmail?: () => void | boolean | Promise<void | boolean>;
   /**
    * `'afuera'`: el pie de acciones (Imprimir / Enviar / PDF) no se pinta acá
    * porque quien lo hospeda lo pone en su propio pie fijo con
@@ -317,9 +317,14 @@ export function ExtractoPropietario({
   const { propietarios } = usePropietarios();
   // Con qué regla sale el canon: rotula la columna, el resumen y la nota de terceros.
   const base = baseDelExtracto(extracto);
-  const { config } = useInmobiliariaConfig();
-  // Real agency profile lives under the `agency` key of GET /inmobiliaria/config.
-  const agencyConfig = config?.agency;
+  // QA-PROP-95 (C-14, PR-16): la cabecera viene con el extracto (el contador no
+  // puede leer `GET /inmobiliaria/config`: le salía «NIT: » vacío y un 403).
+  // Sin ella (back viejo), la configuración, sólo si quien mira la puede leer.
+  const cabecera = extracto.inmobiliaria ?? null;
+  const { config } = useInmobiliariaConfig(!cabecera);
+  const agencyConfig = cabecera
+    ? { name: cabecera.nombre, nit: cabecera.nit ?? '', address: cabecera.direccion ?? '', city: cabecera.ciudad ?? '' }
+    : config?.agency;
   const propietario = React.useMemo(() => {
     return propietarios.find((p) => p.id === extracto.propietarioId);
   }, [extracto.propietarioId, propietarios]);
@@ -607,7 +612,7 @@ export function ExtractoPropietario({
                 <TableRow className="bg-muted/50 hover:bg-muted/50 font-semibold">
                   <TableCell className={cn('text-foreground', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
                     <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
-                    {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
+                    {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {extracto.lineItems.length === 1 && locale === 'es' ? 'propiedad' : t('inmobiliaria.propietario.extracto.properties')})
                   </TableCell>
                   <TableCell colSpan={3} />
                   <TableCell className="text-right text-foreground">
@@ -851,10 +856,12 @@ export function AccionesDelExtracto({
   // Handle email — antes esperaba un segundo de mentira y decía «enviado»
   // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
   const handleEmail = async () => {
-    if (!onEmail) return;
+    // QA-PROP-95 (C-19): un segundo clic mientras sale no manda otro correo.
+    if (!onEmail || isSendingEmail) return;
     setIsSendingEmail(true);
     try {
-      await onEmail();
+      // `false` = quien manda lo canceló en su confirmación: no se dice «enviado».
+      if ((await onEmail()) === false) return;
       toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
         description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
       });
@@ -882,8 +889,11 @@ export function AccionesDelExtracto({
             <Button
               variant="outline"
               onClick={handleEmail}
-              disabled={isSendingEmail || !propietario?.email}
-              title={!propietario?.email ? t('inmobiliaria.propietario.extracto.sinCorreo') : undefined}
+              // QA-PROP-95 (C-21): sólo se apaga si SABEMOS que no tiene correo. Con la
+              // lista de propietarios cargando o caída, se deja mandar (el back responde
+              // 422 si no tiene) en vez de decir «no tiene correo» sin saberlo.
+              disabled={isSendingEmail || (!!propietario && !propietario.email)}
+              title={propietario && !propietario.email ? t('inmobiliaria.propietario.extracto.sinCorreo') : undefined}
               className="gap-2"
               data-testid="extracto-enviar"
             >

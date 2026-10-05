@@ -794,7 +794,8 @@ function ContratoEnLaPortada({
       </View>
 
       <View style={{ width: 150, alignItems: 'flex-end' }}>
-        <Text style={estilos.rotulo}>{frase('estadoDeCuenta.restaPorPagar')}</Text>
+        {/* QA-PROP-95 (F11): al propietario se le gira. */}
+        <Text style={estilos.rotulo}>{contrato.rol === 'PROPIETARIO' ? 'Resta por girar' : frase('estadoDeCuenta.restaPorPagar')}</Text>
         <Text style={[estilos.numeroDeContrato, { fontSize: 11, marginTop: 3 }]}>
           {formatCurrency(contrato.totales.restaPorPagar)}
         </Text>

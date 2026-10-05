@@ -205,6 +205,12 @@ export function periodoEnPalabras(month: string, locale: 'es' | 'en' = 'es'): st
  * hora se interpreta en UTC y en Colombia amanece un día antes.
  */
 export function fechaEnPalabras(fecha: string, locale: 'es' | 'en' = 'es'): string {
+  // QA-PROP-95 (C-32): un instante («2026-10-05T02:31:31Z», la emisión) se dice con
+  // el día de Bogotá (4 de octubre a las 9:31 p. m.), no con el de UTC.
+  // Una fecha civil guardada a medianoche UTC («…T00:00:00.000Z») se lee tal cual.
+  if (/T\d{2}:\d{2}/.test(fecha) && !/T00:00:00(\.0+)?Z$/.test(fecha) && !Number.isNaN(Date.parse(fecha))) {
+    fecha = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(fecha));
+  }
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha);
   if (!m) return fecha;
   const [, a, mm, d] = m;

@@ -10,6 +10,7 @@
  * contra un `setTimeout`.
  */
 
+import { confirmar } from '@/components/ui/confirmar';
 import { useCallback, useEffect, useState } from 'react';
 import { CrossFade } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
@@ -96,8 +97,20 @@ export function ExtractoDelPropietarioDialog({
   }, [propietarioId, propietarioName, mes]);
 
   const enviarPorCorreo = useCallback(async () => {
+    // QA-PROP-95 (C-19, PR-17): el extracto le llega a una persona real; se
+    // confirma antes, diciendo de qué mes. Antes salía de un clic.
+    const [anio, numMes] = mes.split('-').map(Number);
+    const mesEnPalabras = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(anio, numMes - 1, 1)));
+    const ok = await confirmar({
+      titulo: '¿Le enviamos el extracto por correo?',
+      descripcion: `Se le enviará al propietario el extracto de ${mesEnPalabras}, a su correo registrado.`,
+      accion: 'Enviar el extracto',
+      cancelar: 'Cancelar',
+    });
+    if (!ok) return false;
     await propietariosApi.enviarExtracto(propietarioId, mes);
     onEnviado?.();
+    return true;
   }, [propietarioId, mes, onEnviado]);
 
   return (

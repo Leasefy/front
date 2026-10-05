@@ -478,7 +478,9 @@ export function PropietarioForm({
       newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
     } else {
       // Document-specific validation
-      if (formData.documentType === 'CC' && !/^[0-9.]{6,12}$/.test(formData.documentNumber.replace(/\./g, ''))) {
+      // QA-PROP-95 (A-38): una CC tiene de 3 a 10 dígitos (documentos-colombia…;
+      // la misma regla del back, `reglaDelDocumento`). Antes se exigían 6-12.
+      if (formData.documentType === 'CC' && !/^[0-9]{3,10}$/.test(formData.documentNumber.replace(/\./g, '').trim())) {
         newErrors.documentNumber = t('inmobiliaria.propietario.form.errCCInvalid');
       }
       if (formData.documentType === 'NIT' && !/^[0-9.-]{9,15}$/.test(formData.documentNumber)) {
@@ -571,7 +573,14 @@ export function PropietarioForm({
   };
 
   return (
-    <form id={idDelFormulario} onSubmit={handleSubmit} className="space-y-6">
+    <form
+      id={idDelFormulario}
+      onSubmit={handleSubmit}
+      // QA-PROP-95 (A-38): la validación es la de la casa (frase bajo su campo y
+      // foco al primero), no la burbuja del navegador en inglés.
+      noValidate
+      className="space-y-6"
+    >
       {/* Personal Information */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-fg">
@@ -667,7 +676,7 @@ export function PropietarioForm({
           {/* Email */}
           <InputWrapper
             id={idDe('email')}
-            label="Email"
+            label="Correo"
             // PR-02: obligatorio sólo con la política de la inmobiliaria, y entonces se dice.
             required={correoObligatorio}
             error={touched.email ? errors.email : undefined}

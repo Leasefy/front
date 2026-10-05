@@ -39,8 +39,11 @@
  *    con la misma regla que la prefactura y la cartera.
  */
 
+import { selloDelContrato } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import * as React from 'react';
 import Link from 'next/link';
+import { Collapse } from '@leasefy/cadence';
+import { CaretDown } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
@@ -108,6 +111,12 @@ interface Props {
   reglasDeMoraHref?: string;
   /** El anticipo del contrato, sólo en el panel (endpoint de la inmobiliaria). */
   conAnticipoDelContrato?: boolean;
+  /**
+   * QA-INQ-95 (E-30, regla R-04 de Nico, 16-09: «un bloque plegable por
+   * contrato»): con varios contratos, cada uno se pliega a su encabezado y su
+   * total. Al imprimir (`sinPaginar`) siempre va abierto.
+   */
+  plegable?: boolean;
 }
 
 export function ContratoDelEstado({
@@ -116,8 +125,12 @@ export function ContratoDelEstado({
   sinPaginar = false,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
+  plegable = false,
 }: Props) {
   const t = useTextoDelEstado();
+  const [abierto, setAbierto] = React.useState(true);
+  const visible = !plegable || abierto || sinPaginar;
+  const idDelCuerpo = `contrato-${contrato.numero}-cuerpo`;
   const esPropietario = contrato.rol === 'PROPIETARIO';
   // 🔴 Ola E: en el panel, un contrato que ya no está vigente muestra la
   // liquidación del saldo a favor con su acción (registrar la devolución); el
@@ -178,17 +191,41 @@ export function ContratoDelEstado({
             )}
           </p>
         </div>
-        <span
-          className={cn(
-            'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
-            contrato.vigente
-              ? 'bg-success-soft text-success'
-              : 'bg-surface-muted text-fg-subtle',
-          )}
-        >
-          {t(contrato.vigente ? 'estadoDeCuenta.vigente' : 'estadoDeCuenta.terminado')}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
+              selloDelContrato(contrato).vivo
+                ? 'bg-success-soft text-success'
+                : 'bg-surface-muted text-fg-subtle',
+            )}
+          >
+            {/* QA-PROP-95 (PO-01): «Empieza el …» y «Cancelado» además de vigente/terminado. */}
+            {contrato.estadoDelContrato && contrato.estadoDelContrato !== 'VIGENTE' && contrato.estadoDelContrato !== 'TERMINADO'
+              ? selloDelContrato(contrato).texto
+              : t(contrato.vigente ? 'estadoDeCuenta.vigente' : 'estadoDeCuenta.terminado')}
+          </span>
+          {plegable ? (
+            <button
+              type="button"
+              onClick={() => setAbierto((a) => !a)}
+              aria-expanded={visible}
+              aria-controls={idDelCuerpo}
+              data-testid={`plegar-contrato-${contrato.numero}`}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-caption font-medium text-fg-muted hover:bg-surface-muted hover:text-fg print:hidden"
+            >
+              <CaretDown
+                className={cn('h-3.5 w-3.5 transition-transform duration-base', !visible && '-rotate-90')}
+                aria-hidden="true"
+              />
+              {visible ? 'Plegar' : 'Desplegar'}
+              <span className="sr-only"> el contrato {numero.principal}</span>
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      <Collapse id={idDelCuerpo} open={visible} className="space-y-5">
 
       {/* «Funciona como una tabla de amortización» (CEO). La barra dice en una
           línea lo que la tabla dice en cuarenta filas: cuánto del contrato ya
@@ -315,18 +352,22 @@ export function ContratoDelEstado({
           </div>
         )}
 
+      </Collapse>
+
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.totalDelContrato')}
         </p>
         <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+          {/* QA-PROP-95 (F11): del lado del propietario la plata se GIRA: «Girado»
+              y «Resta por girar», no las palabras del inquilino. */}
           <Cifra
-            etiqueta={t('estadoDeCuenta.cancelado')}
+            etiqueta={esPropietario ? 'Girado' : t('estadoDeCuenta.cancelado')}
             valor={contrato.totales.cancelado}
             tono="apagado"
           />
           <Cifra
-            etiqueta={t('estadoDeCuenta.restaPorPagar')}
+            etiqueta={esPropietario ? 'Resta por girar' : t('estadoDeCuenta.restaPorPagar')}
             valor={contrato.totales.restaPorPagar}
             tono={
               contrato.totales.restaPorPagar > 0 && !conIntereses

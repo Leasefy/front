@@ -161,6 +161,17 @@ describe('NuevoInquilinoDrawer', () => {
     ).toContain('al menos el correo o el documento');
   });
 
+  it('QA-INQ-95 r2 (N-06): sin correo NI documento, los DOS campos quedan marcados', () => {
+    montar();
+    escribir('inquilino-nombre', 'Carla Mesa');
+    guardar();
+    for (const id of ['inquilino-documento', 'inquilino-correo']) {
+      const campo = document.querySelector(`[data-testid="${id}"]`);
+      expect(campo?.getAttribute('aria-invalid')).toBe('true');
+      expect(campo?.getAttribute('aria-describedby')).toContain('inquilino-llave-error');
+    }
+  });
+
   it('guarda y devuelve la persona creada', async () => {
     montar();
     escribir('inquilino-nombre', '  Carla Mesa  ');

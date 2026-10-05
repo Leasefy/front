@@ -60,6 +60,11 @@ export interface BackendConversation {
    * pasa cuando un inquilino o un propietario mira su hilo con la
    * inmobiliaria, que es una organización y no un usuario. */
   otherParticipant: BackendParticipant | null;
+  /**
+   * SO-29 (QA-INQ-95 r2): de qué es el hilo. Un back anterior no lo manda: la
+   * fila cae al título del inmueble, como antes.
+   */
+  tema?: { tipo: 'POSTULACION' | 'CONSULTA' | 'ARRIENDO' | 'DIRECTO'; direccion: string | null } | null;
   lastMessage: BackendLastMessage | null;
   unreadCount: number;
   updatedAt: string;
@@ -242,6 +247,12 @@ export interface ChatConversation {
   property: string;
   /** Cadena vacía en un hilo directo — nunca `'null'` ni `'undefined'`. */
   propertyId: string;
+  /**
+   * SO-29: el rótulo de la fila —«Postulación · Carrera 35…», «Arriendo ·
+   * Calle 45…»— para que dos hilos con la misma persona no se confundan.
+   * Vacío si el back no dice el tema (cae al título del inmueble).
+   */
+  tema?: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
@@ -384,11 +395,20 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
     property: property?.title ?? '',
     // NEW top-level field; older back build → fall back to `property.id`.
     propertyId: backend.propertyId ?? property?.id ?? '',
+    tema: rotuloDelTema(backend.tema),
     lastMessage: lastMessage?.content ?? '',
     lastMessageTime: lastMessage ? formatTime(lastMessage.createdAt) : '',
     unreadCount: backend.unreadCount,
     updatedAt: backend.updatedAt,
   };
+}
+
+const ROTULO_DEL_TEMA = { POSTULACION: 'Postulación', CONSULTA: 'Consulta', ARRIENDO: 'Arriendo' } as const;
+
+/** SO-29 (QA-INQ-95 r2): «Postulación · dirección», «Arriendo · dirección»… */
+export function rotuloDelTema(tema: BackendConversation['tema']): string {
+  if (!tema || tema.tipo === 'DIRECTO' || !tema.direccion) return '';
+  return `${ROTULO_DEL_TEMA[tema.tipo]} · ${tema.direccion}`;
 }
 
 export function mapToMessage(backend: BackendChatMessage, currentUserId: string): ChatMessage {

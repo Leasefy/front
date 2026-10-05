@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -284,6 +284,25 @@ function MantenimientosContent() {
     setSelectedMantenimiento(solicitud);
     setIsMantenimientoViewerOpen(true);
   }, []);
+
+  /*
+   * PI-28: «Abrirla en Mantenimiento» desde el cajón de una PQRS llega con
+   * `?solicitud=<id>` y abre ESA solicitud apenas la lista la trae. Se lee de
+   * `window.location` (no `useSearchParams`) para no pedir un Suspense nuevo.
+   */
+  const solicitudPedida = useRef<string | null>(null);
+  useEffect(() => {
+    solicitudPedida.current = new URLSearchParams(window.location.search).get('solicitud');
+  }, []);
+  useEffect(() => {
+    const id = solicitudPedida.current;
+    if (!id || !mantenimientosData) return;
+    const pedida = mantenimientosData.find((m) => m.id === id);
+    if (pedida) {
+      solicitudPedida.current = null;
+      handleViewMantenimiento(pedida);
+    }
+  }, [mantenimientosData, handleViewMantenimiento]);
 
   const handleNewMantenimiento = useCallback(() => {
     setErroresDelFormulario(undefined);

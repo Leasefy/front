@@ -299,7 +299,9 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado, editando
   /** `id`, `aria-invalid` y `aria-describedby` de un control con su error. */
   const control = (k: CampoDelInquilino, tambien?: string) => ({
     id: ID_DEL_CAMPO[k],
-    'aria-invalid': Boolean(errorDe(k)) || undefined,
+    // QA-INQ-95 r2 (N-06): «pon al menos el correo o el documento» marca LOS DOS.
+    'aria-invalid':
+      Boolean(errorDe(k)) || (tambien === 'inquilino-llave-error' && tocado && Boolean(errores.llave)) || undefined,
     'aria-describedby': [`${ID_DEL_CAMPO[k]}-error`, tambien].filter(Boolean).join(' '),
   });
 

@@ -105,6 +105,18 @@ export function rutaDelContratoManualPara(persona: Pick<Inquilino, 'tenantId'>):
   return `${RUTA_DEL_CONTRATO_MANUAL}&inquilino=${encodeURIComponent(persona.tenantId)}`;
 }
 
+/**
+ * QA-INQ-95 ronda 2 (T-10): un contrato sin canon (o con el canon en cero, que
+ * no es un canon) se pinta «—», nunca «$ 0»: «$ 0» se lee como un inquilino que
+ * no paga.
+ */
+export function canonParaMostrar(
+  canonCop: number | null | undefined,
+  formatCurrency: (n: number) => string,
+): string {
+  return typeof canonCop === 'number' && Number.isFinite(canonCop) && canonCop > 0 ? formatCurrency(canonCop) : '—';
+}
+
 /** Cómo se pinta cada estado de `LeaseStatus`. Color + palabra, nunca color solo. */
 export const TONO_DEL_ARRIENDO: Record<
   EstadoDeArriendo,
@@ -597,7 +609,7 @@ function FilaDeInquilino({
             <span className="text-sm text-fg-subtle">—</span>
           ) : (
             <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-              {formatCurrency(canonDeLaFila(persona) ?? 0)}
+              {canonParaMostrar(canonDeLaFila(persona), formatCurrency)}
             </span>
           )}
         </TableCell>
@@ -663,7 +675,7 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
       )}
 
       <span className="font-mono text-sm tabular-nums text-fg">
-        {formatCurrency(arriendo.canonCop)}
+        {canonParaMostrar(arriendo.canonCop, formatCurrency)}
       </span>
       <span className="font-mono text-xs tabular-nums text-fg-muted">
         {fechaOGuion(arriendo.desde, formatDate)} — {fechaOGuion(arriendo.hasta, formatDate)}
@@ -731,7 +743,7 @@ function TarjetasDeInquilinos({
               {!sinArriendo ? (
                 <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-                    {formatCurrency(canonDeLaFila(persona) ?? 0)}
+                    {canonParaMostrar(canonDeLaFila(persona), formatCurrency)}
                   </span>
                   <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
                     {varios || !principal

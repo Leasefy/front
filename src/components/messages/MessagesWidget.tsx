@@ -368,7 +368,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const filteredConversations = conversations.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.property.toLowerCase().includes(searchQuery.toLowerCase()),
+      c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   useEffect(() => {
@@ -782,9 +783,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                           <div className="mb-1 flex min-w-0 items-center gap-1.5">
                             <InsigniaDePerfil perfil={conversation.perfil} conIcono={false} />
-                            {conversation.property && (
-                              <span className="truncate text-caption text-muted-foreground">
-                                {conversation.property}
+                            {/* SO-29 (QA-INQ-95 r2): el TEMA del hilo («Postulación ·
+                                …», «Arriendo · …»); sin tema, el inmueble como antes. */}
+                            {(conversation.tema || conversation.property) && (
+                              <span className="truncate text-caption text-muted-foreground" data-testid="tema-del-hilo">
+                                {conversation.tema || conversation.property}
                               </span>
                             )}
                           </div>

@@ -44,6 +44,18 @@ describe('aplicarLoteDeTerceros', () => {
     expect(r.restantes).toBe(0);
   });
 
+  it('🔴 M-05 (QA-INQ-95 r2): suma también las incompletas y las sin correo, o el informe no dice «Las completas desde Inquilinos»', async () => {
+    const aplicar = vi
+      .fn()
+      .mockResolvedValueOnce(tanda({ restantes: 1, incompletas: 2, sinCorreo: 1 }))
+      .mockResolvedValueOnce(tanda({ intentadas: 1, aplicadas: 1, invitados: 0, restantes: 0, incompletas: 1 }));
+
+    const r = await aplicarLoteDeTerceros('l1', aplicar);
+
+    expect(r.incompletas).toBe(3);
+    expect(r.sinCorreo).toBe(1);
+  });
+
   it('una sola tanda alcanza cuando el lote entra completo', async () => {
     const aplicar = vi.fn().mockResolvedValue(tanda({ intentadas: 12, aplicadas: 12 }));
 

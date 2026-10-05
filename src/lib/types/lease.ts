@@ -82,6 +82,17 @@ export interface Lease {
     } | null;
   } | null;
 
+  /**
+   * D-19 (QA-INQ-95 ronda 2): el aviso de no renovación que vale para el fin
+   * de hoy, venga de quien venga y aunque no haya renovación abierta (el de la
+   * inmobiliaria vive en el contrato). Úsalo con `avisoDeNoRenovar(lease)`.
+   */
+  avisoNoRenovar?: {
+    at: string;
+    por: string | null;
+    motivo: string | null;
+  } | null;
+
   // Metadata
   createdAt: string;
   updatedAt: string;

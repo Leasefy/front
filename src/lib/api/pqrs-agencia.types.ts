@@ -117,6 +117,16 @@ export interface PqrsConHistorial extends Pqrs {
   /** ¿Quien la radicó lee la respuesta en su portal? Sin portal se escoge el medio. */
   tienePortal: boolean;
   historialDisponible: boolean;
+  /** PI-28: su solicitud en Mantenimiento (una reparación); `null` si no tiene. Ausente con un back anterior. */
+  mantenimiento?: MantenimientoDeLaPqrs | null;
+}
+
+/** PI-28: la solicitud de Mantenimiento de una reparación radicada como PQRS. */
+export interface MantenimientoDeLaPqrs {
+  id: string;
+  titulo: string;
+  /** El estado del back (`REPORTED`, `QUOTED`, `MAINT_APPROVED`…). */
+  estado: string;
 }
 
 /** `GET /inmobiliaria/pqrs/responsables` (SO-22). */

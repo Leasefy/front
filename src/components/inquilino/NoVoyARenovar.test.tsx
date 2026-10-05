@@ -310,3 +310,23 @@ describe('diasHastaElFin', () => {
     );
   });
 });
+
+describe('D-19 (QA-INQ-95 ronda 2) · el aviso del contrato y la fecha del fin', () => {
+  it('el aviso que registró la inmobiliaria EN EL CONTRATO (sin renovación) se muestra', async () => {
+    await montar({
+      id: 'l-1',
+      endDate: '2027-07-31T00:00:00.000Z',
+      renovacion: null,
+      avisoNoRenovar: { at: '2026-10-04T15:00:00.000Z', por: 'INMOBILIARIA', motivo: 'El propietario necesita el inmueble' },
+    } as never);
+    const caja = porTestId('aviso-de-no-renovacion')!;
+    expect(caja.textContent).toContain('Tu inmobiliaria registró');
+    expect(porTestId('abrir-no-renovar')).toBeNull();
+  });
+
+  it('el fin del contrato es un DÍA: «31 de julio», no el 30 (medianoche UTC en Bogotá)', async () => {
+    await montar({ id: 'l-1', endDate: '2027-07-31T00:00:00.000Z', renovacion: null } as never);
+    await abrir();
+    expect(porTestId('dialogo-no-voy-a-renovar')!.textContent).toContain('31 de julio de 2027');
+  });
+});

@@ -19,6 +19,8 @@ import { CompartirEstadoDeCuenta } from '@/components/estado-de-cuenta/Compartir
 import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/PantallaDelEstadoDeCuenta';
 import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { cuentaDelPortal, inquilinosApi } from '@/lib/api/inquilinos.service';
+import { identidadDeLaRuta } from '@/lib/inquilinos/identidad-de-la-ruta';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAnularRecibo } from '@/components/estado-de-cuenta/AnularReciboDeLaFila';
@@ -42,6 +44,29 @@ function Contenido() {
   // que devolvió el back (su número de documento), no el `id` de la ruta, que
   // puede ser la cuenta del portal.
   const [cliente, setCliente] = React.useState<{ documento: string; nombre: string } | null>(null);
+  /*
+   * EC-05 (QA-INQ-95 ronda 2): el WhatsApp sale por el chat de la CUENTA del
+   * portal. Antes se le pasaba siempre el `id` de la ruta y a quien no tiene
+   * cuenta el ítem salía prendido; el «no tiene cuenta» llegaba recién después
+   * de confirmar. Se pregunta a la ficha: sin cuenta, `null` y el ítem dice por
+   * qué está apagado. Si la ficha no responde (p. ej. sin `contratos:view`),
+   * queda como antes y el back responde `SIN_CUENTA`.
+   */
+  const [cuentaDelPortalId, setCuentaDelPortalId] = React.useState<string | null | undefined>(undefined);
+  React.useEffect(() => {
+    let vivo = true;
+    inquilinosApi
+      .obtener(identidadDeLaRuta(id))
+      .then((persona) => {
+        if (vivo) setCuentaDelPortalId(cuentaDelPortal(persona));
+      })
+      .catch(() => {
+        if (vivo) setCuentaDelPortalId(undefined);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [id]);
   // QA-INQ-95 (04-10-2026): `cargar` es estable por `id` y `cliente` sólo cambia si cambió
   // la persona. Antes era una flecha nueva en cada render y guardaba un objeto nuevo al
   // resolver: otro render → otro `cargar` → la pantalla volvía a pedir, ~27 veces por
@@ -86,7 +111,7 @@ function Contenido() {
             /* El `tenantRef` del inquilino ES su `User.id` cuando tiene cuenta
                del portal, que es justo lo que necesita el hilo del chat. Cuando
                no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
-            personaId={id}
+            personaId={cuentaDelPortalId === undefined ? id : cuentaDelPortalId}
             nota={nota}
             /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
             filtros={filtros}

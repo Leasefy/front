@@ -6,6 +6,7 @@ import type {
   ResponsableDePqrs,
   ActualizarPqrsInput,
   CrearPqrsInput,
+  MantenimientoDeLaPqrs,
   Pqrs,
   PqrsDelContratoResponse,
   PqrsListResponse,
@@ -52,6 +53,14 @@ export const pqrsApi = {
   /** SO-18: una foto o un PDF (el back valida tipo real y 10 MB). */
   async subirAdjunto(id: string, archivo: File): Promise<AdjuntoDePqrs> {
     return (await subirAdjuntoDePqrs(`${BASE}/${id}/adjuntos`, archivo)) as AdjuntoDePqrs;
+  },
+
+  /**
+   * PI-28 · POST /inmobiliaria/pqrs/:id/mantenimiento — la solicitud de
+   * Mantenimiento de una reparación (una sola por PQRS: si ya está, la misma).
+   */
+  async aMantenimiento(id: string): Promise<{ solicitud: MantenimientoDeLaPqrs; creada: boolean }> {
+    return apiClient.post(`${BASE}/${id}/mantenimiento`, {});
   },
 
   async abrirAdjunto(id: string, adjuntoId: string): Promise<{ url: string; nombre: string; tipo: string }> {

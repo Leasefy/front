@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import Image from 'next/image';
@@ -708,7 +709,19 @@ export function MantenimientoViewer({
               <FileText className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.descriptionLabel')}
             </h4>
-            <p className="text-sm text-muted-foreground">{solicitud.description}</p>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{solicitud.description}</p>
+            {/* PI-28: la reparación que radicó el inquilino (o el propietario) en su portal. */}
+            {solicitud.pqrs ? (
+              <p className="text-sm" data-testid="mantenimiento-de-la-pqrs">
+                Viene de la {solicitud.pqrs.radicado} del portal.{' '}
+                <Link
+                  href={`/panel/inmobiliaria/solicitudes?pqrs=${encodeURIComponent(solicitud.pqrs.id)}`}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Ver la PQRS
+                </Link>
+              </p>
+            ) : null}
           </div>
 
           {/* Before Photos */}

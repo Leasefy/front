@@ -50,7 +50,11 @@ export interface BackendLease {
     proposedAdminFee: number | null;
     newEndDate: string | null;
     tenantAcceptedAt: string | null;
+    avisoNoRenovar?: { at: string; por: string | null; motivo: string | null } | null;
   } | null;
+
+  /** D-19: el aviso de no renovación del CONTRATO (también sin renovación abierta). */
+  avisoNoRenovar?: { at: string; por: string | null; motivo: string | null } | null;
 
   createdAt: string;
   updatedAt: string;

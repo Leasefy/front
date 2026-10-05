@@ -79,6 +79,7 @@ import { KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { useAlVolverLaConexion } from '@/lib/inquilinos/al-volver-la-conexion';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
@@ -234,6 +235,9 @@ function ContenidoDeInquilinos() {
     cargandoPortafolio,
     errorPortafolio,
   } = useInquilinos({ buscar, estado }, { portafolio: true });
+  // XE-01: «apenas vuelva la red los traemos» — al volver la conexión, la
+  // lista (y los números) que fallaron se piden otra vez, solos.
+  useAlVolverLaConexion(refrescar, Boolean(error || errorPortafolio));
 
   /*
    * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que

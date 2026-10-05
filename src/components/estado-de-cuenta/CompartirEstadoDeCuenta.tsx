@@ -121,6 +121,10 @@ export interface CompartirProps {
 const VA_FILTRADO = 'Va con el filtro que tienes puesto';
 
 /** Un ítem del menú con su línea de aclaración, si la tiene. */
+/** Por qué el WhatsApp está apagado para quien no tiene cuenta del portal. */
+export const SIN_CUENTA_NO_HAY_WHATSAPP =
+  'No tiene cuenta del portal: el WhatsApp sale por el chat de su cuenta';
+
 function Rotulo({ texto, aclaracion }: { texto: string; aclaracion?: string }) {
   return (
     <span className="flex min-w-0 flex-col">
@@ -168,6 +172,13 @@ export function CompartirEstadoDeCuenta({
 
   const conFiltros = Boolean(nota);
   const aclaracionDelEnlace = sinPermiso ?? (conFiltros ? VA_FILTRADO : undefined);
+  /*
+   * EC-05 (QA-INQ-95 ronda 2): el WhatsApp sale por el chat de la CUENTA del
+   * portal. A quien no tiene cuenta se le apagaba sin decir por qué: parecía
+   * un botón roto.
+   */
+  const aclaracionDelWhatsapp =
+    sinPermiso ?? (personaId ? aclaracionDelEnlace : SIN_CUENTA_NO_HAY_WHATSAPP);
 
   const cliente = doc.cliente.nombre;
   const documento = doc.cliente.documento;
@@ -209,7 +220,7 @@ export function CompartirEstadoDeCuenta({
             data-testid="compartir-whatsapp"
           >
             <WhatsappLogo className="h-4 w-4" />
-            <Rotulo texto={t('estadoDeCuenta.porWhatsapp')} aclaracion={aclaracionDelEnlace} />
+            <Rotulo texto={t('estadoDeCuenta.porWhatsapp')} aclaracion={aclaracionDelWhatsapp} />
           </DropdownListItem>
           <DropdownListItem
             onSelect={() => void copiarEnlace()}

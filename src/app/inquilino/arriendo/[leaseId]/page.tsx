@@ -198,7 +198,10 @@ export default function LeaseDetailPage() {
   const totalPaid = amortizacion?.pagadoCop ?? 0;
   // Qué bloque de renovación toca: cuando cambia (pidió renovar, avisó que
   // no renueva), el viejo sale y el nuevo entra.
-  const claveDeRenovacion = lease.renovacion?.avisoNoRenovar
+  // D-19: el aviso puede vivir en el contrato (lo registró la inmobiliaria)
+  // aunque no haya renovación abierta.
+  const avisoNoRenovar = lease.avisoNoRenovar ?? lease.renovacion?.avisoNoRenovar ?? null;
+  const claveDeRenovacion = avisoNoRenovar
     ? 'aviso'
     : lease.renovacion
       ? 'renovacion'
@@ -453,7 +456,7 @@ export default function LeaseDetailPage() {
             // Pedir la renovación o avisar que no cambia el bloque entero:
             // el viejo sale y el nuevo entra (CrossFade), no un salto seco.
             <CrossFade swapKey={claveDeRenovacion}>
-            {lease.renovacion?.avisoNoRenovar ? (
+            {avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : lease.renovacion ? (
               <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
@@ -548,7 +551,7 @@ export default function LeaseDetailPage() {
                 tiene que estar SIEMPRE que haya contrato vivo, no sólo cuando
                 está por vencer: avisar con cinco meses es justo lo que la ley
                 premia, y esconderlo hasta el último mes empuja a avisar tarde. */}
-            {isActive && !lease.renovacion?.avisoNoRenovar ? (
+            {isActive && !avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : null}
 

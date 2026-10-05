@@ -1173,6 +1173,8 @@ export interface NuevaCotizacion {
 
 export interface SolicitudMantenimiento {
   id: string;
+  /** PI-28: la PQRS del portal de la que salió («Reparación / mantenimiento»), si salió de una. */
+  pqrs?: { id: string; radicado: string } | null;
   consignacionId: string;
   propertyId: string;
   propietarioId: string;

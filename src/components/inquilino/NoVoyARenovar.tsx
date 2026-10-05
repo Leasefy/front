@@ -46,6 +46,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { Lease } from '@/lib/types/lease';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 
 /**
  * Los tres meses de preaviso, en días.
@@ -66,8 +67,10 @@ export function diasHastaElFin(fin: string, hoy = new Date()): number {
 }
 
 function fechaLarga(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  // QA-INQ-95 r2: el fin del contrato es un DÍA (`…T00:00:00.000Z`): leído como
+  // instante, en Bogotá decía «termina el 30 de julio» de un contrato que vence el 31.
+  const d = fechaDeVigencia(iso);
+  if (!d || Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
@@ -85,7 +88,8 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
   /** Lo que el back rechazó del motivo (un 400 con `campos`), bajo el campo. */
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
-  const aviso = lease.renovacion?.avisoNoRenovar ?? null;
+  // D-19: también el que vive en el contrato (lo registró la inmobiliaria).
+  const aviso = lease.avisoNoRenovar ?? lease.renovacion?.avisoNoRenovar ?? null;
   const dias = diasHastaElFin(lease.endDate);
   const aTiempo = dias >= DIAS_DE_PREAVISO;
 

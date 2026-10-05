@@ -38,6 +38,7 @@ import {
 const NOMBRE_DEL_CERTIFICADO: Record<TipoDeCertificado, string> = {
   PAZ_Y_SALVO: 'Paz y salvo',
   CERTIFICADO_ESTAR_AL_DIA: 'Certificado de estar al día',
+  CERTIFICADO_DE_SU_TIEMPO: 'Certificado de que no debe nada por el tiempo en que fue inquilino',
 };
 
 const QUE_CERTIFICA: Record<TipoDeCertificado, string> = {
@@ -45,6 +46,8 @@ const QUE_CERTIFICA: Record<TipoDeCertificado, string> = {
     'El contrato terminó y no queda nada por pagar. Lo emite tu inmobiliaria contra su estado de cuenta.',
   CERTIFICADO_ESTAR_AL_DIA:
     'El contrato sigue vigente y no tienes nada vencido a la fecha. No es un paz y salvo.',
+  CERTIFICADO_DE_SU_TIEMPO:
+    'Saliste de este contrato por un cambio de inquilino: certifica que no debes nada del tiempo en que fuiste el inquilino. No es el paz y salvo del contrato.',
 };
 
 export function MisCertificados() {

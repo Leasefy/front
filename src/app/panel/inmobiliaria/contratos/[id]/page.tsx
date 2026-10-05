@@ -91,6 +91,7 @@ import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
 import { falloDeLaFicha } from '@/lib/contratos/fallo-de-la-ficha';
 import { fundirContrato } from '@/lib/contratos/fundir-contrato';
+import { CertificadosDeSuTiempo } from '@/components/contratos/CertificadosDeSuTiempo';
 import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
@@ -642,6 +643,9 @@ function ContratoDetalleContent() {
               onActualizado={(c) => setContract(c)}
               onConflicto={() => void refetch()}
             />
+            {/* QA-INQ-95 r2 (Nico): quien salió por un cambio de inquilino, con el
+                certificado de que no debe nada por su tiempo. */}
+            <CertificadosDeSuTiempo contractId={contract.id} puedeEmitir={canAccess('documentos', 'create')} />
           </InfoCard>
 
           <InfoCard title="Inmueble" icon={Buildings}>

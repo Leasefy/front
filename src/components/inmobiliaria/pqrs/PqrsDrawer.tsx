@@ -26,6 +26,7 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ApiError } from '@/lib/api/client'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
+import Link from 'next/link'
 import type {
   ActualizarPqrsInput,
   Pqrs,
@@ -57,6 +58,16 @@ interface Props {
   onActualizado: (pqrs: Pqrs) => void
 }
 
+/** PI-28: el estado de la solicitud de Mantenimiento, en palabras. */
+const ESTADO_DEL_MANTENIMIENTO: Record<string, string> = {
+  REPORTED: 'Reportada',
+  QUOTED: 'Con cotización',
+  MAINT_APPROVED: 'Aprobada',
+  IN_PROGRESS: 'En ejecución',
+  MAINT_COMPLETED: 'Terminada',
+  MAINT_CANCELLED: 'Cancelada',
+}
+
 function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
     <div className="space-y-0.5">
@@ -85,6 +96,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
   const [medio, setMedio] = useState<string>('')
   const [errorRespuesta, setErrorRespuesta] = useState<string | null>(null)
   const [subiendo, setSubiendo] = useState(false)
+  const [pasando, setPasando] = useState(false)
   const inputArchivo = useRef<HTMLInputElement>(null)
   const pqrsId = pqrs?.id
 
@@ -285,6 +297,55 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
                   {MEDIO_LABEL[detalle.respuesta.medio]} · {fecha(detalle.respuesta.at)}
                   {detalle.respuesta.porNombre ? ` · ${detalle.respuesta.porNombre}` : ''}
                 </p>
+              </section>
+            ) : null}
+
+            {/* PI-28 (Nico, 05-10): la reparación del portal llega también a
+                Mantenimiento; desde acá se va a su solicitud, o se crea si una
+                reparación vieja no la tiene (una sola por PQRS). */}
+            {detalle?.mantenimiento ? (
+              <section className="space-y-1.5 rounded-lg border border-border p-4" data-testid="pqrs-mantenimiento">
+                <h4 className="text-sm font-medium text-fg">Mantenimiento</h4>
+                <p className="text-sm text-fg">
+                  Su solicitud: «{detalle.mantenimiento.titulo}» ·{' '}
+                  {ESTADO_DEL_MANTENIMIENTO[detalle.mantenimiento.estado] ?? detalle.mantenimiento.estado}
+                </p>
+                <Link
+                  href={`/panel/inmobiliaria/mantenimientos?solicitud=${encodeURIComponent(detalle.mantenimiento.id)}`}
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="pqrs-ir-a-mantenimiento"
+                >
+                  Abrirla en Mantenimiento
+                </Link>
+              </section>
+            ) : detalle && pqrs.tipo === 'SOLICITUD' && pqrs.subtipo === 'REPARACION' && pqrs.estado !== 'CERRADA' ? (
+              <section className="space-y-2 rounded-lg border border-border p-4" data-testid="pqrs-mantenimiento">
+                <h4 className="text-sm font-medium text-fg">Mantenimiento</h4>
+                <p className="text-sm text-fg-muted">Esta reparación todavía no tiene su solicitud en Mantenimiento.</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  hideArrow
+                  isLoading={pasando}
+                  disabled={pasando}
+                  data-testid="pqrs-pasar-a-mantenimiento"
+                  onClick={async () => {
+                    setPasando(true)
+                    try {
+                      await pqrsApi.aMantenimiento(pqrs.id)
+                      toast.success('La reparación quedó en Mantenimiento')
+                      cargarDetalle()
+                    } catch (e) {
+                      toast.error('No se pudo pasar a Mantenimiento', {
+                        description: mensajeParaLaPersona(e, { accion: 'pasarla a Mantenimiento' }),
+                      })
+                    } finally {
+                      setPasando(false)
+                    }
+                  }}
+                >
+                  Crear su solicitud en Mantenimiento
+                </Button>
               </section>
             ) : null}
 

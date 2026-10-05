@@ -204,12 +204,18 @@ export function useInquilinoDetalle(
         );
         // Todos fallaron = error. Algunos = lo que se ve es cierto pero
         // incompleto, y decirlo importa: un saldo a medias parece un saldo.
-        if (buenos.length === 0) {
+        /*
+         * QA-INQ-95 ronda 2 (F-26): si uno falló y los que respondieron no traen
+         * ningún cobro, decir «Todavía no se le ha emitido ningún cobro» es
+         * afirmar algo que no sabemos: es un fallo, con «Reintentar».
+         */
+        const algunoFallo = buenos.length < resultados.length;
+        if (buenos.length === 0 || (algunoFallo && buenos.every((r) => r.value.length === 0))) {
           setErrorPagos(true);
           setCobros([]);
           return;
         }
-        setPagosIncompletos(buenos.length < resultados.length);
+        setPagosIncompletos(algunoFallo);
         setCobros(buenos.flatMap((r) => r.value).sort(porMesDescendente));
       })
       .finally(() => {

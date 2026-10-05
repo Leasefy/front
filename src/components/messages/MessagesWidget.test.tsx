@@ -421,6 +421,21 @@ describe('<MessagesWidget> — hilo directo: iniciar y distinguir perfiles', () 
   });
 });
 
+describe('<MessagesWidget> — SO-29: los hilos con la misma persona se rotulan por su tema', () => {
+  it('Iván ×2: «Postulación · …» y «Arriendo · …», en el panel y en el portal', () => {
+    for (const actor of ['landlord', 'tenant'] as const) {
+      conversationsState = [
+        makeConversation({ id: 'conv-post', name: 'Iván Inquilino', kind: 'APPLICATION', property: 'Apto en El Poblado', tema: 'Postulación · Carrera 35 # 8A-12' }),
+        makeConversation({ id: 'conv-dir', name: 'Iván Inquilino', kind: 'DIRECT', property: '', tema: 'Arriendo · Calle 45 # 70-12 Apto 301' }),
+      ];
+      render(actor);
+      const temas = [...container.querySelectorAll('[data-testid="tema-del-hilo"]')].map((e) => e.textContent);
+      expect(temas).toContain('Postulación · Carrera 35 # 8A-12');
+      expect(temas).toContain('Arriendo · Calle 45 # 70-12 Apto 301');
+    }
+  });
+});
+
 describe('<MessagesWidget> — selection keys on conversation.id, never applicationId (contract-addendum-2.md §B.3)', () => {
   it('auto-selects the first conversation by id when none is selected yet', () => {
     conversationsState = [

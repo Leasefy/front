@@ -24,6 +24,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
 
 /**
  * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
@@ -292,7 +293,9 @@ export default function ArriendoPage() {
 
                           {/* Content */}
                           <div className="flex-1 p-6">
-                            {lease.renovacion && (
+                            {/* D-19: con un aviso de no renovación, la tarjeta no ofrece
+                                «Aceptar renovación»: el aviso va debajo de la tarjeta. */}
+                            {lease.renovacion && !(lease.avisoNoRenovar ?? lease.renovacion.avisoNoRenovar) && (
                               <div className="mb-4 rounded-lg border border-primary/30 bg-primary-soft/40 p-3">
                                 <p className="text-sm font-medium text-primary flex items-center gap-1.5">
                                   <ArrowUpRight className="w-4 h-4" />
@@ -433,6 +436,12 @@ export default function ArriendoPage() {
                         </div>
                       </div>
                     </Link>
+                    {/* D-19 (QA-INQ-95 ronda 2): la otra mitad de la decisión, también
+                        desde la lista (antes sólo «Aceptar renovación»). Va FUERA del
+                        enlace de la tarjeta: abrir el diálogo no navega al detalle. */}
+                    <div className="mt-2 px-1">
+                      <NoVoyARenovar lease={lease} onCambio={refetch} />
+                    </div>
                   </div>
                 );
               })}

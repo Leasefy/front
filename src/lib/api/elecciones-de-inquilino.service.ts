@@ -23,6 +23,11 @@ export interface CandidatoParaElPropietario {
   /** En palabras: «Sin estudio de arrendamiento (es opcional).», «Tiene estudio…». */
   estudio: string;
   postuladoEl: string | null;
+  /**
+   * MANOS-2 (04-10-2026): su puesto en la lista corta que armó matching (1, 2,
+   * 3), `null` si quedó fuera; ausente si la inmobiliaria no tiene lista corta.
+   */
+  enLaListaCorta?: number | null;
 }
 
 export interface EleccionEnElPortal {

@@ -306,7 +306,8 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     orbe: orbe('orchid', 'prospectos'),
     autonomia: 'prospectos',
     despachos: [],
-    hace: ['inventario', 'similares', 'visita', 'pipeline', 'asesores'],
+    // MANOS-2 (04-10-2026): las manos de Imana viven en el back (responder al interesado, agendar la visita).
+    hace: ['responde', 'visita', 'inventario', 'similares', 'pipeline', 'asesores'],
     noHace: [{ clave: 'precio' }, { clave: 'escribe' }, { clave: 'protegidos' }],
     herramientas: ['inventario', 'agenda', 'pipeline'],
     trabajaCon: ['matching', 'calidad'],
@@ -314,6 +315,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     fuentes: [
       'src/mastra/agents/prospectos/agent.ts (buscarInventario, verificarDisponibilidad, buscarSimilares, rankearInventario, proponerSlots, agendarVisita)',
       'src/mastra/agents/prospectos/copiloto/copiloto-agent.ts (priorizarPipeline, leadsEnfriandose, metricasAsesor)',
+      'back: src/inmobiliaria/agenda/imana/imana-del-piloto.service.ts (responder al interesado, agendar la visita)',
       'src/piloto/que-hace-cada-modo.ts (prospectos)',
     ],
   },
@@ -324,13 +326,15 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     orbe: orbe('marigold', 'calidad'),
     autonomia: 'calidad',
     despachos: [],
-    hace: ['audita', 'prioriza', 'propone'],
+    // MANOS-2 (04-10-2026): Niti arregla la ficha en el back y le deja al asesor lo que falta.
+    hace: ['audita', 'arregla', 'tarea', 'prioriza'],
     noHace: [{ clave: 'edita' }, { clave: 'propietario' }],
     herramientas: ['inventario', 'portales', 'bandeja'],
     trabajaCon: ['prospectos', 'propietarios'],
     reportaA: 'equipo',
     fuentes: [
       'src/mastra/agents/calidad-publicacion/agent.ts (`name: \'Niti · calidad\'`)',
+      'back: src/inmobiliaria/publicacion/niti/niti-del-piloto.service.ts (arreglar la ficha, la tarea al asesor, el tomado)',
       'src/piloto/que-hace-cada-modo.ts (calidad)',
     ],
   },
@@ -341,7 +345,8 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     orbe: orbe('lime', 'matching'),
     autonomia: 'matching',
     despachos: ['matching'],
-    hace: ['compatibilidad', 'correo', 'envia'],
+    // MANOS-2 (04-10-2026): la lista corta y las opciones al interesado nuevo, en el back.
+    hace: ['listaCorta', 'interesado', 'compatibilidad', 'correo', 'envia'],
     noHace: [{ clave: 'unSolo' }, { clave: 'sinVistoBueno' }],
     herramientas: ['inventario', 'correo'],
     trabajaCon: ['estudio', 'prospectos'],
@@ -349,6 +354,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     fuentes: [
       'src/mastra/agents/matching/smart-matching.ts (calculateCompatibility)',
       'src/mastra/agents/matching/suggestion-email.ts',
+      'back: src/inmobiliaria/matching/matching-del-piloto.service.ts (lista corta, opciones al interesado)',
       'src/piloto/que-hace-cada-modo.ts (matching)',
     ],
   },
@@ -394,7 +400,8 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     orbe: orbe('copper', 'avaluos'),
     autonomia: 'avaluos',
     despachos: ['avaluo'],
-    hace: ['solicitud', 'orienta'],
+    // MANOS-2 (04-10-2026): el precio contra la vacancia, en el back.
+    hace: ['vacancia', 'solicitud', 'orienta'],
     noHace: [{ clave: 'vinculante' }, { clave: 'solo' }],
     herramientas: ['avaluos'],
     trabajaCon: ['orquestador'],
@@ -402,6 +409,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     fuentes: [
       'src/mastra/agents/avaluo/avaluo-proxy-tool.ts (abre la solicitud en el servicio de avalúos)',
       'src/mastra/agents/avaluo/chat-orientation.ts (respaldo: orientación)',
+      'back: src/inmobiliaria/comercial/precio/precio-del-piloto.service.ts (preguntarle al propietario por el canon, cambiarlo, pedir el avalúo)',
       'src/piloto/que-hace-cada-modo.ts (avaluos)',
     ],
   },

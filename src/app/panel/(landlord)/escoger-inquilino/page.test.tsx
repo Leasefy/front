@@ -108,6 +108,18 @@ async function escribir(sel: string, valor: string) {
   })
 }
 
+describe('Escoger inquilino — la lista corta de la inmobiliaria (MANOS-2)', () => {
+  it('quien está en la lista corta lleva su puesto; sin lista corta no sale nada', async () => {
+    api.delPortal.mockResolvedValue({
+      pendientes: [{ ...PENDIENTE, candidatos: [{ ...PENDIENTE.candidatos[1], enLaListaCorta: 1 }, { ...PENDIENTE.candidatos[0], enLaListaCorta: null }] }],
+      historial: [],
+    })
+    await montar()
+    expect(q('[data-testid="lista-corta-app-b"]')?.textContent).toBe('Lista corta de tu inmobiliaria · 1.º')
+    expect(q('[data-testid="lista-corta-app-a"]')).toBeNull()
+  })
+})
+
 describe('Escoger inquilino — lo que ve el propietario', () => {
   it('cada candidato con de qué vive, lo que declara ganar y el estudio en palabras; sin puntaje ni contacto', async () => {
     api.delPortal.mockResolvedValue({ pendientes: [PENDIENTE], historial: [] })

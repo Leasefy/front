@@ -23,6 +23,8 @@ const RUTAS_DEL_PROPIETARIO_DE_INMOBILIARIA = [
   '/panel/aprobaciones',
   // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
   '/panel/escoger-inquilino',
+  // MANOS-2 (04-10-2026): revisar el canon del inmueble desocupado.
+  '/panel/revisar-canon',
   '/panel/informes',
   '/panel/certificados',
   '/panel/mensajes',

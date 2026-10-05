@@ -62,9 +62,18 @@ function Candidato({
   return (
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between" data-testid="candidato">
       <div className="min-w-0 space-y-0.5">
-        <p className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
           <UserCircle className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
           {c.nombre}
+          {/* MANOS-2 (04-10-2026): la lista corta de tu inmobiliaria va primero y se dice. */}
+          {typeof c.enLaListaCorta === 'number' && (
+            <span
+              className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary"
+              data-testid={`lista-corta-${c.applicationId}`}
+            >
+              Lista corta de tu inmobiliaria · {c.enLaListaCorta}.º
+            </span>
+          )}
         </p>
         {c.deQueVive && <p className="text-sm text-fg">{c.deQueVive}</p>}
         <p className="text-xs text-fg-muted">

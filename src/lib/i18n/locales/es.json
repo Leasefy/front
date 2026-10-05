@@ -13544,13 +13544,14 @@
     },
     "prospectos": {
       "rol": "Prospectos y seguimiento comercial",
-      "historia": "Atiende a quien pregunta por un arriendo, le muestra lo disponible y agenda la visita; a tu equipo le dice qué prospecto atender primero.",
+      "historia": "Atiende a quien pregunta por un arriendo: le responde con el inmueble y las horas libres de su asesor, y a quien pidió que lo llamaran le agenda la visita. A tu equipo le dice qué prospecto atender primero.",
       "hace": {
         "inventario": "Busca en tu inventario y verifica que el inmueble siga disponible",
         "similares": "Propone inmuebles parecidos cuando el presupuesto no alcanza",
-        "visita": "Propone horarios y agenda la visita",
+        "visita": "Agenda la visita con el asesor del inmueble a quien pidió que lo llamaran",
         "pipeline": "Prioriza tu pipeline y avisa de los prospectos que se enfrían",
-        "asesores": "Mide qué tan rápido responde cada asesor"
+        "asesores": "Mide qué tan rápido responde cada asesor",
+        "responde": "Le responde al interesado nuevo con el inmueble, el canon y las horas libres de su asesor"
       },
       "noHace": {
         "precio": "No negocia el precio",
@@ -13560,25 +13561,28 @@
     },
     "calidad": {
       "rol": "Calidad de publicación",
-      "historia": "Revisa cada publicación —datos, precio, fotos y disponibilidad— y te dice qué corregir antes de que se pierda un interesado.",
+      "historia": "Revisa cada ficha publicada con la regla de publicar —fotos, canon, área, habitaciones, baños, descripción y barrio—, arregla lo que se puede con sus propios datos y le deja al asesor lo que falta.",
       "hace": {
-        "audita": "Revisa que cada inmueble esté completo, coherente, con buen precio, sin duplicados y disponible",
+        "audita": "Revisa cada ficha con la misma regla de publicar de Leasefy",
         "prioriza": "Prioriza las correcciones para el asesor",
-        "propone": "Te propone cada corrección para que la apruebes"
+        "arregla": "Arregla la ficha con lo que ya tiene: la descripción que falta y el título genérico, con tu gracia para deshacerlo",
+        "tarea": "Le deja al asesor la tarea en la Agenda con lo que falta y no se puede inventar"
       },
       "noHace": {
-        "edita": "No cambia el inmueble: todo cambio espera el clic de una persona",
-        "propietario": "No le escribe al propietario: todavía no tiene canal de envío"
+        "edita": "No inventa un dato que la ficha no tiene",
+        "propietario": "No le escribe al propietario: lo que falta va al asesor"
       }
     },
     "matching": {
       "nombre": "Matching",
       "rol": "Un inmueble para cada candidato",
-      "historia": "Cuando un candidato se queda sin inmueble, busca las opciones que le encajan y se las propone.",
+      "historia": "Arma la lista corta de cada inmueble con varias postulaciones y le manda al interesado nuevo los inmuebles que le calzan.",
       "hace": {
         "compatibilidad": "Calcula qué tan compatible es cada inmueble con lo que busca",
         "correo": "Prepara el correo con las opciones compatibles",
-        "envia": "En Automático lo envía, máximo un correo al día"
+        "envia": "En Automático lo envía, máximo un correo al día",
+        "listaCorta": "Arma la lista corta de cada inmueble con dos o más postulaciones; el propietario la ve primero",
+        "interesado": "Le manda al interesado nuevo los inmuebles que le calzan, con la opción de no recibir más"
       },
       "noHace": {
         "unSolo": "Con un solo inmueble compatible no envía: te lo deja en la cola",
@@ -13614,15 +13618,16 @@
     },
     "avaluos": {
       "nombre": "Avalúos",
-      "rol": "Valor y canon",
-      "historia": "Estima el valor comercial y el canon de arrendamiento de un inmueble.",
+      "rol": "Valor, canon y vacancia",
+      "historia": "Cuando un inmueble lleva más de un mes desocupado, le cuenta al propietario lo que le ha costado y le pregunta si quiere revisar el canon; también abre la solicitud de avalúo.",
       "hace": {
         "solicitud": "Abre la solicitud de avalúo desde el chat con los datos que le das",
-        "orienta": "Si el servicio de avalúos no responde, te orienta con el rango del mercado"
+        "orienta": "Si el servicio de avalúos no responde, te orienta con el rango del mercado",
+        "vacancia": "Le cuenta al propietario lo que le cuesta la vacancia y le pregunta si quiere revisar el canon"
       },
       "noHace": {
         "vinculante": "No entrega el avalúo en firme en el chat: ese informe sale del servicio de avalúos",
-        "solo": "Todavía no actúa solo: avalúa cuando se lo pides"
+        "solo": "Nunca le propone un precio al propietario: el número lo pone él. Cambiar el canon y pedir un avalúo te piden un clic"
       }
     },
     "mantenimiento": {

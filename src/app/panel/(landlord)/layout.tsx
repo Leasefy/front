@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -74,6 +74,13 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Escoger inquilino',
     href: '/panel/escoger-inquilino',
     icon: UsersThree,
+  },
+  // MANOS-2 (04-10-2026): cuando su inmueble lleva más de un mes desocupado,
+  // la inmobiliaria le pregunta si quiere revisar el canon; el número lo pone él.
+  {
+    label: 'Revisar el canon',
+    href: '/panel/revisar-canon',
+    icon: Tag,
   },
   // SO-27 (PQRS-FIX, 04-10-2026): el propietario radica sus PQRS y reporta
   // daños desde su portal (antes sólo podía escribir en Mensajes).
@@ -157,6 +164,8 @@ const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
   // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
   { label: 'Escoger inquilino', href: '/panel/escoger-inquilino', icon: UsersThree },
+  // MANOS-2 (04-10-2026): revisar el canon del inmueble desocupado (el número lo pone él).
+  { label: 'Revisar el canon', href: '/panel/revisar-canon', icon: Tag },
   // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
   { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
   { label: 'Mis informes', href: '/panel/informes', icon: Receipt },

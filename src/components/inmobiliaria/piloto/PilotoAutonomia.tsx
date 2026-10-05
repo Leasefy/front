@@ -87,7 +87,8 @@ const MODOS: readonly AutonomiaModo[] = MODOS_DEL_PILOTO
  */
 export const AGENTES_NO_DISPONIBLES: ReadonlySet<AgentePiloto> = new Set<AgentePiloto>([
   'retencion',
-  'prospectos',
+  // MANOS-2 (04-10-2026): Imana (prospectos) ya tiene manos en el back
+  // (responder al interesado y agendar su visita): sale de esta lista.
 ])
 
 

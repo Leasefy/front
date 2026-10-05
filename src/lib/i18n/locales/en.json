@@ -13509,13 +13509,14 @@
     },
     "prospectos": {
       "rol": "Leads and sales follow-up",
-      "historia": "Answers whoever asks about a rental, shows what's available and books the viewing; tells your team which lead to handle first.",
+      "historia": "Handles whoever asks about a rental: replies with the property and the agent's free times, and books the viewing for whoever asked to be called. Tells your team which lead to handle first.",
       "hace": {
         "inventario": "Searches your inventory and checks the property is still available",
         "similares": "Suggests similar properties when the budget falls short",
-        "visita": "Proposes times and books the viewing",
+        "visita": "Books the viewing with the property's agent for whoever asked to be called",
         "pipeline": "Prioritizes your pipeline and flags leads going cold",
-        "asesores": "Measures how fast each agent responds"
+        "asesores": "Measures how fast each agent responds",
+        "responde": "Replies to the new lead with the property, the rent and the agent's free times"
       },
       "noHace": {
         "precio": "Doesn't negotiate the price",
@@ -13525,25 +13526,28 @@
     },
     "calidad": {
       "rol": "Listing quality",
-      "historia": "Reviews each listing —data, price, photos and availability— and tells you what to fix before a lead is lost.",
+      "historia": "Reviews each published listing against the publishing rule —photos, rent, area, bedrooms, bathrooms, description and neighborhood—, fixes what it can with the listing's own data and leaves the rest to the agent.",
       "hace": {
-        "audita": "Checks each property is complete, consistent, well priced, not duplicated and available",
+        "audita": "Reviews each listing against Leasefy's publishing rule",
         "prioriza": "Prioritizes fixes for the agent",
-        "propone": "Proposes each fix for you to approve"
+        "arregla": "Fixes the listing with what it already has: the missing description and the generic title, with your grace period to undo",
+        "tarea": "Leaves the agent a task in the Calendar with what is missing and can't be made up"
       },
       "noHace": {
-        "edita": "Doesn't change the property: every change waits for a person's click",
-        "propietario": "Doesn't message the owner: there's no sending channel yet"
+        "edita": "Never makes up data the listing doesn't have",
+        "propietario": "Doesn't message the owner: what's missing goes to the agent"
       }
     },
     "matching": {
       "nombre": "Matching",
       "rol": "A property for each applicant",
-      "historia": "When an applicant is left without a property, finds the options that fit and proposes them.",
+      "historia": "Builds the shortlist of each property with several applications and sends new leads the properties that fit them.",
       "hace": {
         "compatibilidad": "Computes how well each property fits what they're looking for",
         "correo": "Prepares the email with the matching options",
-        "envia": "In Automatic, sends it, at most one email a day"
+        "envia": "In Automatic, sends it, at most one email a day",
+        "listaCorta": "Builds the shortlist of each property with two or more applications; the owner sees it first",
+        "interesado": "Sends the new lead the properties that fit, with the option to stop receiving emails"
       },
       "noHace": {
         "unSolo": "With only one matching property it doesn't send: it leaves it in your queue",
@@ -13579,15 +13583,16 @@
     },
     "avaluos": {
       "nombre": "Appraisals",
-      "rol": "Value and rent",
-      "historia": "Estimates a property's market value and rent.",
+      "rol": "Value, rent and vacancy",
+      "historia": "When a property has been empty for over a month, tells the owner what it has cost and asks whether they want to review the rent; also opens the appraisal request.",
       "hace": {
         "solicitud": "Opens the appraisal request from the chat with the data you give",
-        "orienta": "If the appraisal service doesn't respond, guides you with the market range"
+        "orienta": "If the appraisal service doesn't respond, guides you with the market range",
+        "vacancia": "Tells the owner what the vacancy costs and asks whether they want to review the rent"
       },
       "noHace": {
         "vinculante": "Doesn't deliver the binding appraisal in the chat: that report comes from the appraisal service",
-        "solo": "Doesn't act on its own yet: appraises when you ask"
+        "solo": "Never proposes a price to the owner: they set the number. Changing the rent and ordering an appraisal ask for your click"
       }
     },
     "mantenimiento": {

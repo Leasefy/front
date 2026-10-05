@@ -23,13 +23,14 @@ import es from '@/lib/i18n/locales/es.json'
 import en from '@/lib/i18n/locales/en.json'
 
 describe('AGENTES_NO_DISPONIBLES', () => {
-  it('marca retención y prospectos como no disponibles, y a nadie más', () => {
+  it('marca retención como no disponible, y a nadie más (MANOS-2: Imana ya tiene manos)', () => {
     expect(AGENTES_NO_DISPONIBLES.has('retencion')).toBe(true)
-    expect(AGENTES_NO_DISPONIBLES.has('prospectos')).toBe(true)
+    // MANOS-2 (04-10-2026): Imana (prospectos) ya tiene manos: está disponible.
+    expect(AGENTES_NO_DISPONIBLES.has('prospectos')).toBe(false)
     // Un agente normal no debe quedar atrapado por accidente en la lista.
     expect(AGENTES_NO_DISPONIBLES.has('pagos')).toBe(false)
     expect(AGENTES_NO_DISPONIBLES.has('cobranza')).toBe(false)
-    expect(AGENTES_NO_DISPONIBLES.size).toBe(2)
+    expect(AGENTES_NO_DISPONIBLES.size).toBe(1)
   })
 })
 

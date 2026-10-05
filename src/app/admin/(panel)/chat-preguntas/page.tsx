@@ -52,7 +52,7 @@ const FUENTE_LEGIBLE: Record<string, string> = {
   cerebro: 'lo aprendido de la inmobiliaria',
 }
 
-export function fuenteLegible(f: string): string {
+function fuenteLegible(f: string): string {
   if (FUENTE_LEGIBLE[f]) return FUENTE_LEGIBLE[f]
   if (f.startsWith('grafo_inmobiliaria')) return 'relaciones de la inmobiliaria'
   if (f.startsWith('especialista:')) return `especialista de ${f.slice('especialista:'.length).replace(/[_-]/g, ' ')}`
@@ -62,7 +62,7 @@ export function fuenteLegible(f: string): string {
 const especialistaLegible = (e: string) => `especialista de ${e.replace(/[_-]/g, ' ')}`
 
 /** «US$0,0123». */
-export function usd(n: number | null | undefined): string {
+function usd(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
   const dec = n > 0 && n < 0.01 ? 4 : 2
   return `US$${n.toFixed(dec).replace('.', ',')}`

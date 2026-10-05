@@ -38,6 +38,7 @@ import {
 } from '@/lib/api/informes-del-propietario.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { anioQueAbreElCertificado } from '@/lib/propietarios/anio-del-certificado';
 
 /**
  * 🔴 QA 22-09: el back ofrecía «2027 · 2026» y la pantalla abría 2027 —un
@@ -70,7 +71,8 @@ export default function MisInformesPage() {
       setDisponibles({ ...d, anios });
       setReparaciones(r.reparaciones);
       setMotivoDeReparaciones(r.motivo);
-      const elegido = anios.length > 0 ? Math.max(...anios) : null;
+      // QA-PROP-95 C-35: el año anterior (el que se declara) si está; si no, el más nuevo.
+      const elegido = anioQueAbreElCertificado(anios);
       setAnio(elegido);
       if (elegido !== null) {
         setCertificado(

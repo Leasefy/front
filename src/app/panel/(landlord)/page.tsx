@@ -156,6 +156,52 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
   );
 }
 
+/**
+ * QA-PROP-95 PO-27 (04-10): la inmobiliaria ya tiene su ficha (y lo invitó),
+ * pero todavía ningún contrato. El vacío honesto, sin el panel del
+ * independiente (sus rutas responden «panel en pausa»).
+ */
+function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
+  const { user } = useAuth();
+  const { greeting } = useTimeGreeting();
+  const { t } = useI18n();
+  const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
+  return (
+    <div className="min-h-screen bg-bg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+        <header>
+          <span className="inline-flex items-center gap-2 mb-2">
+            <BrandDot />
+            <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
+          </span>
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
+            {t('dashboard.hello', { name: firstName })}
+          </h1>
+        </header>
+        <section className="rounded-lg border border-border bg-surface px-5 py-6" data-testid="inicio-sin-contratos">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted">
+              <Buildings className="h-5 w-5 text-fg-muted" aria-hidden />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <h2 className="text-subtitle text-fg">{inmobiliaria} todavía no tiene contratos tuyos en Leasefy</h2>
+              <p className="text-body-sm text-fg-muted">
+                Cuando registre el contrato de uno de tus inmuebles, aquí ves lo que te gira, lo que falta y tus
+                informes. Mientras tanto puedes escribirle por Mensajes.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link href="/panel/mensajes" className="text-body-sm font-medium text-primary hover:underline">
+              Escribirle a {inmobiliaria}
+            </Link>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function PanelPage() {
   const administrados = useContratosAdministrados();
   if (administrados.cargando) {
@@ -166,6 +212,7 @@ export default function PanelPage() {
     );
   }
   if (administrados.doc) return <InicioDelPropietarioDeInmobiliaria doc={administrados.doc} />;
+  if (administrados.fichaSinContratos) return <InicioSinContratos inmobiliaria={administrados.fichaSinContratos.inmobiliaria} />;
   return <PanelDelPropietarioIndependiente />;
 }
 

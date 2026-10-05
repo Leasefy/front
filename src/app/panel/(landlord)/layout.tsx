@@ -188,7 +188,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   // menú corto: ofrecerle «Mejorar plan» a quien no lo compra sería peor que
   // un menú que se completa un instante después.
   const administrados = useContratosAdministrados();
-  const deInmobiliaria = administrados.cargando || administrados.doc !== null;
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
   const pathname = usePathname();
   const router = useRouter();

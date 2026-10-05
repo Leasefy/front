@@ -12,5 +12,5 @@ import { ContenidoDelPropietario } from './contenido';
 export default function ConfiguracionDelPropietarioPage() {
   const administrados = useContratosAdministrados();
   if (administrados.cargando) return null;
-  return <ContenidoDelPropietario id={administrados.doc !== null ? 'notificaciones' : 'plan'} />;
+  return <ContenidoDelPropietario id={administrados.doc !== null || administrados.fichaSinContratos ? 'notificaciones' : 'plan'} />;
 }

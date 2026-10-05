@@ -7,7 +7,7 @@ import { CONFIGURACION_DEL_PROPIETARIO, CONFIGURACION_DEL_PROPIETARIO_DE_INMOBIL
 export default function ConfiguracionDelPropietarioLayout({ children }: { children: React.ReactNode }) {
   // QA-PROP-95: el propietario de inmobiliaria no ve «Tu plan», «Equipo» ni «Cuentas de recaudo».
   const administrados = useContratosAdministrados();
-  const deInmobiliaria = administrados.cargando || administrados.doc !== null;
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   return (
     <LayoutDeConfiguracionDeCuenta config={deInmobiliaria ? CONFIGURACION_DEL_PROPIETARIO_DE_INMOBILIARIA : CONFIGURACION_DEL_PROPIETARIO}>
       {children}

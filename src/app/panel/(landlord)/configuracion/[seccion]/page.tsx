@@ -14,7 +14,7 @@ export default function SeccionDeConfiguracionDelPropietarioPage() {
   if (!seccion) notFound();
   if (administrados.cargando) return null;
   // QA-PROP-95: plan, equipo y cuentas de recaudo no son del propietario de inmobiliaria.
-  if (administrados.doc !== null && SECCIONES_SOLO_DEL_INDEPENDIENTE.includes(seccion.id)) {
+  if ((administrados.doc !== null || administrados.fichaSinContratos) && SECCIONES_SOLO_DEL_INDEPENDIENTE.includes(seccion.id)) {
     return <ContenidoDelPropietario id="notificaciones" />;
   }
   return <ContenidoDelPropietario id={seccion.id} />;

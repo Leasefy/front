@@ -71,7 +71,7 @@ export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
   // QA-PROP-95: ¿una inmobiliaria le administra los inmuebles? (mientras carga, sí)
   const administrados = useContratosAdministrados();
-  const deInmobiliaria = administrados.cargando || administrados.doc !== null;
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   const { user, updateProfile } = useAuth();
   const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);

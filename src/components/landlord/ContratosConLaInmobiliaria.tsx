@@ -22,13 +22,34 @@ import { Buildings, CaretRight } from '@phosphor-icons/react';
 
 import { estadoDe, selloDelContrato } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { informesDelPropietarioApi } from '@/lib/api/informes-del-propietario.service';
 import { numeroDelContratoDelEstado } from '@/components/estado-de-cuenta/numero';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 
 export interface ContratosAdministrados {
   doc: EstadoDeCuenta | null;
   cargando: boolean;
+  /**
+   * QA-PROP-95 PO-27 (04-10, decidido por el coordinador): tiene ficha en una
+   * inmobiliaria (por su correo, la regla del portal) pero todavía ningún
+   * contrato. Es propietario DE INMOBILIARIA igual: menú corto e Inicio con el
+   * vacío honesto, nunca el panel del independiente (en pausa: 503).
+   */
+  fichaSinContratos?: { inmobiliaria: string } | null;
 }
+
+/** ¿Lo que tiene es una ficha sin contratos? (tras el 404 `SIN_CONTRATOS` del portal). */
+async function fichaSinContratos(): Promise<{ inmobiliaria: string } | null> {
+  try {
+    const d = await informesDelPropietarioApi.disponibles();
+    return d.fichas.length > 0 ? { inmobiliaria: d.fichas[0].agencia } : null;
+  } catch {
+    return null;
+  }
+}
+
+const esSinContratos = (e: unknown) =>
+  typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 'SIN_CONTRATOS';
 
 /**
  * El estado de cuenta del que mira, sólo si trae contratos del lado
@@ -44,10 +65,12 @@ export function useContratosAdministrados(): ContratosAdministrados {
       .then((doc) => {
         if (!vivo) return;
         const propios = doc.contratos.filter((c) => c.rol === 'PROPIETARIO');
-        setEstado({ doc: propios.length > 0 ? { ...doc, contratos: propios } : null, cargando: false });
+        setEstado({ doc: propios.length > 0 ? { ...doc, contratos: propios } : null, cargando: false, fichaSinContratos: null });
       })
-      .catch(() => {
-        if (vivo) setEstado({ doc: null, cargando: false });
+      .catch(async (e: unknown) => {
+        // Sólo el «no tienes contratos» pregunta por la ficha: otro fallo no se adivina.
+        const ficha = esSinContratos(e) ? await fichaSinContratos() : null;
+        if (vivo) setEstado({ doc: null, cargando: false, fichaSinContratos: ficha });
       });
     return () => {
       vivo = false;

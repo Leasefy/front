@@ -93,6 +93,12 @@ export interface PantallaProps {
   /** Apaga la barra de filtros (el enlace público muestra el documento entero). */
   sinFiltros?: boolean;
   /**
+   * QA-PROP-95 PO-27 (04-10): el vacío «sin contratos» dicho a la persona que
+   * mira (el portal le habla a ella: «todavía no tienes…»). Sin esto, el texto
+   * del panel («Este cliente no tiene contratos»).
+   */
+  textosSinContratos?: { titulo: string; detalle: string };
+  /**
    * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
    * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
    * El portal y el enlace público no lo pasan: ese motivo es interno.
@@ -121,6 +127,7 @@ export function PantallaDelEstadoDeCuenta({
   volverA,
   hoy: hoyProp,
   sinFiltros = false,
+  textosSinContratos,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
   filtrosIniciales,
@@ -361,9 +368,9 @@ export function PantallaDelEstadoDeCuenta({
           data-testid="estado-sin-contratos-pantalla"
           className="rounded-lg border border-border bg-surface p-10 text-center"
         >
-          <p className="text-body text-fg">{t('estadoDeCuenta.sinContratos')}</p>
+          <p className="text-body text-fg">{textosSinContratos?.titulo ?? t('estadoDeCuenta.sinContratos')}</p>
           <p className="mt-1 text-body-sm text-fg-muted">
-            {t('estadoDeCuenta.sinContratosDetalle')}
+            {textosSinContratos?.detalle ?? t('estadoDeCuenta.sinContratosDetalle')}
           </p>
         </div>
       ) : error ? (

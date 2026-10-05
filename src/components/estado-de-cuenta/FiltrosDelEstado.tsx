@@ -149,7 +149,8 @@ export function FiltrosDelEstado({
           value={conFechas ? 'fechas' : opcion}
           onValueChange={(v) => elegirPeriodo(v as OpcionDePeriodo)}
         >
-          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-periodo">
+          {/* QA-PROP-95 G-14: el nombre del control (axe «button-name»). */}
+          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-periodo" aria-label={`Período: ${etiquetaDelPeriodo}`}>
             <span className="truncate">{etiquetaDelPeriodo}</span>
           </SelectTrigger>
           <SelectContent>
@@ -195,7 +196,11 @@ export function FiltrosDelEstado({
             value={filtros.contrato || 'all'}
             onValueChange={(v) => onCambiar({ ...filtros, contrato: v === 'all' ? '' : v })}
           >
-            <SelectTrigger className="w-auto max-w-[200px] gap-2" data-testid="filtro-contrato">
+            <SelectTrigger
+              className="w-auto max-w-[200px] gap-2"
+              data-testid="filtro-contrato"
+              aria-label={`Contrato: ${filtros.contrato ? t('estadoDeCuenta.contrato', { numero: filtros.contrato }) : t('estadoDeCuenta.todosLosContratos')}`}
+            >
               <span className="truncate">
                 {filtros.contrato
                   ? t('estadoDeCuenta.contrato', { numero: filtros.contrato })

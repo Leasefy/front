@@ -18,6 +18,8 @@
  * y el botón del pie puede ser `type="submit"`.
  */
 
+import { useRef } from 'react';
+
 import { cn } from '@/lib/utils';
 import {
   Sheet,
@@ -64,6 +66,15 @@ export function Cajon({
   className?: string;
 } & Record<`data-${string}`, string | undefined>) {
   const traducido = ancho ? TAMANO_POR_ANCHO[ancho] : undefined;
+  /*
+   * QA-PROP-95 G-11 (04-10-2026): el cajón se abre por estado, nunca por un
+   * `Trigger` de Radix, y Radix devuelve el foco SÓLO a su `Trigger`: al
+   * cerrar con Esc el foco caía al principio de la página («Saltar al
+   * contenido principal»). Se recuerda qué tenía el foco al abrir (en
+   * `onOpenAutoFocus`, antes de que Radix lo meta adentro) y al cerrar vuelve
+   * ahí, si sigue en la página. Lo mismo que hizo QA-INQ-95 en su cajón.
+   */
+  const disparador = useRef<HTMLElement | null>(null);
   return (
     <Sheet open={abierto} onOpenChange={onOpenChange}>
       <SheetContent
@@ -74,6 +85,18 @@ export function Cajon({
         layout="manual"
         className={cn(ancho && !traducido ? ancho : undefined, className)}
         aria-describedby={undefined}
+        onOpenAutoFocus={() => {
+          const activo = typeof document !== 'undefined' ? document.activeElement : null;
+          disparador.current = activo instanceof HTMLElement && activo !== document.body ? activo : null;
+        }}
+        onCloseAutoFocus={(e) => {
+          const d = disparador.current;
+          disparador.current = null;
+          if (d && d.isConnected) {
+            e.preventDefault();
+            d.focus();
+          }
+        }}
         {...resto}
       >
         {children}

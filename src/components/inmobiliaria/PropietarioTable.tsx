@@ -317,7 +317,8 @@ export function PropietarioTable({
                 selected={filterPending}
                 icon={<Warning className="w-4 h-4" />}
                 onClick={() => setFilterPending(!filterPending)}
-                aria-pressed={filterPending}
+                // QA-PROP-95 G-14: el Chip ya es `role="checkbox"` con `aria-checked`;
+                // un `aria-pressed` encima es un atributo que ese rol no admite (axe crítico).
               >
                 <ConChip
                   etiqueta={t('inmobiliaria.propietario.table.withPendingBalance')}

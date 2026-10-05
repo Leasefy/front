@@ -1730,7 +1730,19 @@ select:-webkit-autofill:active {
   --accent-soft: #edf1ff;
   --success-soft: #e8f4ea;
   --warning-soft: #fbf1dd;
+  /* QA-PROP-95 G-14 + QA-CONT-95 I-09 (04-10-2026): la TINTA para escribir en
+     advertencia y en éxito. `--warning` (#C07A2D) es el color de RELLENO: como
+     texto sobre su fondo suave da 3,23:1 y sobre --surface-muted 3,24:1 (AA
+     pide 4,5:1). Ver «La tinta de advertencia y de éxito» al final del archivo. */
+  --warning-ink: hsl(var(--warning-700)); /* #8A4F1D · 5,8:1 sobre #FBF1DD */
+  --success-ink: hsl(var(--success-700));
   --danger: #c0392b;
+  /* La alerta de peligro escribe su texto con opacidad 0,9 sobre --danger-soft:
+     con --danger daba 3,99:1. Esta tinta da 5,3:1 con esa opacidad. */
+  --danger-ink: #9f2a1f;
+  /* La alerta de información escribe su texto con `--info` (#4D8EF6 con
+     opacidad 0,9: 2,79:1 sobre --info-soft). El título del DS ya era #1B4F84. */
+  --info-ink: #1b4f84;
   --danger-soft: #fbe9e6;
   --info-soft: #e6f0fa;
   /* ink — Deep Navy brand surface */
@@ -1800,7 +1812,13 @@ select:-webkit-autofill:active {
   --accent-soft: rgba(26, 64, 255, 0.16);
   --success-soft: rgba(62, 174, 112, 0.16);
   --warning-soft: rgba(210, 153, 47, 0.16);
+  /* En oscuro, la tinta clara (sobre el fondo suave); el ámbar suelto se queda. */
+  --warning-ink: hsl(var(--warning-100));
+  --success-ink: hsl(var(--success-100));
   --danger: #e0664d;
+  --danger-ink: #f3a595;
+  /* En oscuro el título #1B4F84 del DS quedaba en 2,01:1 sobre el fondo. */
+  --info-ink: #a9cdf2;
   --danger-soft: rgba(224, 102, 77, 0.16);
   --info-soft: rgba(42, 111, 176, 0.2);
 }
@@ -2681,4 +2699,46 @@ button[role='radio'][data-state='checked'].group {
     opacity: 1;
     transition: opacity var(--motion-duration-base, 200ms) var(--motion-ease-enter, cubic-bezier(0.22, 1, 0.36, 1));
   }
+}
+
+/* ── La tinta de advertencia y de éxito (QA-PROP-95 G-14, 04-10-2026) ────────
+   UN solo lugar para el tono del TEXTO de advertencia y de éxito (Nico, por el
+   coordinador: «oscurecer el texto de advertencia sobre su fondo suave en el
+   tema claro hasta 4,5:1»). `text-warning` del preset de Cadence es el color de
+   relleno (#C07A2D): axe lo marcaba en «Datos por completar», «Giro atrasado»,
+   el estado de la ficha y «Vencido» (3,23:1). Badge, AlertaAccionable, los
+   chips y cualquier `text-warning` leen `--warning-ink`; el relleno
+   (`bg-warning`, bordes) no cambia.
+   · Claro: todo texto de advertencia con la tinta (#8A4F1D, ≥ 5,8:1).
+   · Oscuro: el ámbar suelto se lee bien sobre el fondo oscuro y se queda; sobre
+     su fondo suave, la tinta clara.
+   · Éxito: sólo sobre su fondo suave (suelto ya pasa: #307E57 sobre blanco 5:1). */
+.text-warning {
+  color: var(--warning-ink);
+}
+.dark .text-warning {
+  color: var(--warning);
+}
+.dark .text-warning.bg-warning-soft,
+.dark .bg-warning-soft .text-warning {
+  color: var(--warning-ink);
+}
+.text-success.bg-success-soft,
+.bg-success-soft .text-success {
+  color: var(--success-ink);
+}
+/* Peligro: sólo sobre su fondo suave (la alerta roja de la ficha: «No tiene
+   cuenta bancaria», «El banco devolvió su último giro»). */
+.text-danger.bg-danger-soft,
+.bg-danger-soft .text-danger {
+  color: var(--danger-ink);
+}
+/* Información: el texto sobre su fondo suave, y en oscuro también su título
+   (el DS lo fija en #1B4F84, pensado para el fondo claro). */
+.text-info.bg-info-soft,
+.bg-info-soft .text-info {
+  color: var(--info-ink);
+}
+.dark .bg-info-soft .alert-title {
+  color: var(--info-ink);
 }

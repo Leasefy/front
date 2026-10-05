@@ -314,7 +314,12 @@ export function PilotoModoHeader() {
         : t('inmobiliaria.piloto.flota.corriendo', {
             n: String(data.actuan ?? agentesQueActuan.length),
           })
-      : t('inmobiliaria.piloto.flota.apagadoHint')
+      : // PI-01 (04-10-2026): el Piloto se activa por inmobiliaria; se dice por qué no actúa.
+        data.piloto?.motivo === 'apagado_por_leasefy'
+        ? t('inmobiliaria.piloto.flota.apagadoHintLeasefy')
+        : data.piloto?.motivo === 'prueba_terminada'
+          ? t('inmobiliaria.piloto.flota.apagadoHintPrueba')
+          : t('inmobiliaria.piloto.flota.apagadoHint')
     : t('inmobiliaria.piloto.flota.cargando')
 
   const etiquetaPildora = data ? (activo ? etiquetaModo(modo) : t('inmobiliaria.piloto.flota.apagado')) : '…'

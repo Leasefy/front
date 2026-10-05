@@ -74,6 +74,8 @@ vi.mock('@/components/inmobiliaria/piloto/PilotoCatalogo', () => ({ PilotoCatalo
 // importa que la torre se monte detrás del guard.
 vi.mock('@/components/inmobiliaria/piloto/PilotoQueEs', () => ({ PilotoQueEs: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoNovedad', () => ({ PilotoNovedad: () => null }))
+// PI-01 (04-10-2026): la franja del Piloto activo se prueba en `PilotoActivacion.test.tsx`.
+vi.mock('@/components/inmobiliaria/piloto/PilotoActivacion', () => ({ PilotoActivacion: () => null }))
 
 import PilotoPage from './page'
 import PilotoProcesosPage from './procesos/page'

@@ -110,7 +110,7 @@ describe('PI-23: ConfirmarAutomatico', () => {
 
   it('🔴 con el Piloto apagado lo dice: la elección se guarda pero no actúa sola todavía (PI-27)', async () => {
     await pintar({ pilotoActivo: false, onConfirmar: async () => ({ ok: true }) })
-    expect(q('[data-testid="confirmar-automatico-apagado"]')!.textContent).toContain('no actuará solo hasta que se active')
+    expect(q('[data-testid="confirmar-automatico-apagado"]')!.textContent).toContain('no actuará solo hasta que lo actives en la página del Piloto')
   })
 
   it('confirmar hace el cambio una vez y cierra', async () => {

@@ -695,8 +695,14 @@ export interface AgenteDeLaFlota {
 }
 
 export interface PilotoFlotaResponse {
-  /** `PILOTO_ENABLED` del micro: apagado, la flota no corre aunque tenga modo. */
+  /**
+   * PI-01 (04-10-2026): ¿el Piloto automático está activo PARA ESTA
+   * inmobiliaria? (el interruptor de Leasefy Y su activación). Apagado, la
+   * flota no actúa sola aunque tenga modo.
+   */
   activo: boolean
+  /** PI-01 (aditivo): por qué está o no activo, la prueba y la frase. Un micro viejo no lo manda. */
+  piloto?: Pick<PilotoActivoResponse, 'activo' | 'motivo' | 'frase' | 'prueba' | 'sinVencimiento' | 'maestro' | 'sePuedeActivar'>
   /** El modo de la mayoría de los agentes que actúan (empate → el más cauto). */
   modo: ModoDeLaFlota
   /** Los que actúan con OTRO modo: la píldora los nombra al abrirse. */
@@ -897,6 +903,10 @@ export type TipoDeFalta =
   | 'sin_cablear'
   | 'laura'
   | 'no_medido'
+  /** PI-01 (04-10-2026): el Piloto automático no está activo en esta inmobiliaria. */
+  | 'piloto_inactivo'
+  /** CR-31 y compañía: un dato de la operación que pone la inmobiliaria (con su enlace). */
+  | 'requisito'
 
 export interface FaltaParaAutomatico {
   /** Estable: la misma falta en dos agentes trae el mismo id. */
@@ -905,6 +915,8 @@ export interface FaltaParaAutomatico {
   que: string
   quien: QuienLoArregla
   como: string
+  /** Dónde se arregla, si es una pantalla del panel (PILOTO-ACTIVO). */
+  enlace?: { href: string; texto: string }
 }
 
 export type EstadoDelProcesoEnAutomatico = 'opera_solo' | 'siempre_humano' | 'frenado' | 'apagado'
@@ -967,6 +979,10 @@ export interface PilotoQueFaltaResponse {
   topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number; porDefecto: boolean }
   agentes: AgenteEnAutomatico[]
   tomadoAt: string
+  /** PI-01 (aditivo): el Piloto de ESTA inmobiliaria. Un micro viejo no lo manda. */
+  piloto?: Pick<PilotoActivoResponse, 'activo' | 'motivo' | 'frase' | 'prueba' | 'sinVencimiento' | 'maestro'>
+  /** CR-31 y compañía (aditivo): lo que la inmobiliaria tiene que poner para que los agentes operen. */
+  requisitos?: RequisitoDeLaOperacion[]
 }
 
 export function fetchPilotoQueFalta(
@@ -1051,6 +1067,85 @@ export async function putPilotoPreferencias(
       return { ...r, ...(typeof code === 'string' ? { code } : {}) }
     }
     return { ok: true, data: (await res.json()) as PreferenciasDelPiloto }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
+// ── El Piloto automático POR INMOBILIARIA (PI-01, PILOTO-ACTIVO, 04-10-2026) ─
+
+/** Por qué el Piloto está (o no) activo para la inmobiliaria. */
+export type MotivoDelPilotoActivo =
+  | 'activo'
+  | 'apagado_por_leasefy'
+  | 'sin_activar'
+  | 'apagado_por_la_inmobiliaria'
+  | 'prueba_terminada'
+  | 'no_se_pudo_leer'
+
+/** Lo que le falta a la operación para que el Piloto trabaje (CR-31 y compañía), con dónde se arregla. */
+export interface RequisitoDeLaOperacion {
+  id: string
+  agentes: string[]
+  que: string
+  como: string
+  enlace: { href: string; texto: string }
+}
+
+/** Espejo de `GET /api/agency/{agencyId}/piloto/activo` del micro (`agency-piloto-activo.ts`). */
+export interface PilotoActivoResponse {
+  activo: boolean
+  motivo: MotivoDelPilotoActivo
+  /** El interruptor maestro de Leasefy. */
+  maestro: boolean
+  activoDesde: string | null
+  /** La prueba de 30 días: `diasRestantes` 30 el primer día, 1 el último. */
+  prueba: { desde: string; hasta: string; diasRestantes: number; terminada: boolean } | null
+  /** El plan contratado (sin vencimiento; lo pone Leasefy). */
+  sinVencimiento: boolean
+  sePuedeActivar: boolean
+  /** `false` = a Leasefy le falta instalar una parte; `null` = no se pudo saber. */
+  guardable: boolean | null
+  /** Lo que se le dice a la inmobiliaria, en una o dos frases. */
+  frase: string
+  /** ¿Quien mira lo puede prender o apagar? (un administrador). */
+  puedeCambiarlo: boolean
+  diasDePrueba: number
+  /** Hasta cuándo iría la prueba si se prende HOY por primera vez. */
+  pruebaHastaSiSeActivaHoy: string | null
+  /** Los agentes que la inmobiliaria puso en Automático: actúan solos con el Piloto activo. */
+  enAutomatico: Array<{ agente: string; nombre: string }>
+  topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number }
+  /** `null` = no se pudo comprobar. */
+  requisitos: RequisitoDeLaOperacion[] | null
+}
+
+export function fetchPilotoActivo(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoActivoResponse>> {
+  return getJson<PilotoActivoResponse>(`/api/agency/${agencyId}/piloto/activo`, signal, 15_000)
+}
+
+/**
+ * Prende o apaga el Piloto de la inmobiliaria. Sólo un administrador; prenderlo
+ * pide el segundo factor de hace poco (`SEGUNDO_FACTOR_RECIENTE`: el diálogo
+ * pide las seis cifras ahí mismo). `fallo` es el error entero para el traductor.
+ */
+export async function putPilotoActivo(
+  agencyId: string,
+  activo: boolean,
+): Promise<{ ok: boolean; data?: PilotoActivoResponse; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/activo`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    })
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as PilotoActivoResponse }
   } catch (err) {
     return escrituraSinRespuesta(err, 'put_failed')
   }

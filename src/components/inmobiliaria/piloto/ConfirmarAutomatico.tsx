@@ -21,7 +21,7 @@
  * proceso) y la píldora del encabezado (la flota entera).
  */
 
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
 import { ShieldCheck } from '@phosphor-icons/react'
 
 import {
@@ -65,6 +65,16 @@ export interface ConfirmarAutomaticoProps {
    * (no se confirma dos veces).
    */
   pasoInicial?: 'explicar' | 'codigo'
+  /**
+   * PI-01 (PILOTO-ACTIVO, 04-10-2026): el mismo diálogo —qué va a pasar y el
+   * código de ahora— sirve para PRENDER el Piloto automático de la
+   * inmobiliaria. Sin estas, dice lo de pasar un agente a Automático.
+   */
+  titulo?: string
+  descripcion?: ReactNode
+  explicacion?: ReactNode
+  textoSi?: string
+  textoVerificar?: string
 }
 
 type Paso = 'explicar' | 'codigo'
@@ -77,6 +87,11 @@ export function ConfirmarAutomatico({
   onConfirmar,
   onCerrar,
   pasoInicial = 'explicar',
+  titulo,
+  descripcion,
+  explicacion,
+  textoSi = 'Sí, pasar a Automático',
+  textoVerificar = 'Verificar y pasar',
 }: ConfirmarAutomaticoProps) {
   // Sin `useAuth` a propósito: el diálogo vive montado (cerrado) en el
   // encabezado y en la hoja, y fuera de un AuthProvider (pruebas, vistas
@@ -175,14 +190,18 @@ export function ConfirmarAutomatico({
     <AlertDialog open={abierto} onOpenChange={(o) => !o && !ocupado && onCerrar()}>
       <AlertDialogContent icon={<ShieldCheck weight="bold" />} data-testid="confirmar-automatico">
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Pasar {quien} a Automático?</AlertDialogTitle>
+          <AlertDialogTitle>{titulo ?? `¿Pasar ${quien} a Automático?`}</AlertDialogTitle>
           <AlertDialogDescription>
-            Desde ese momento el Piloto actúa a tu nombre: hace solo lo que ya sabe hacer, dentro de tus
-            topes y del horario de ley, y te cuenta en la Actividad en vivo lo que hizo.
+            {descripcion ??
+              'Desde ese momento el Piloto actúa a tu nombre: hace solo lo que ya sabe hacer, dentro de tus topes y del horario de ley, y te cuenta en la Actividad en vivo lo que hizo.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {paso === 'explicar' ? (
+        {paso === 'explicar' && explicacion ? (
+          <div className="space-y-3 text-body-sm text-fg" data-testid="confirmar-automatico-explicacion">
+            {explicacion}
+          </div>
+        ) : paso === 'explicar' ? (
           <div className="space-y-3 text-body-sm text-fg" data-testid="confirmar-automatico-explicacion">
             {queHaceSolo && <p className="text-fg-muted">{queHaceSolo}</p>}
             <p className="text-fg-muted">
@@ -191,8 +210,8 @@ export function ConfirmarAutomatico({
             </p>
             {!pilotoActivo && (
               <p className="rounded-md border border-warning bg-warning-soft px-3 py-2 text-fg" data-testid="confirmar-automatico-apagado">
-                El Piloto automático está apagado para tu inmobiliaria: guardo tu elección, pero no actuará
-                solo hasta que se active. Mientras tanto, prepara todo y te pide el clic.
+                El Piloto automático no está activo en tu inmobiliaria: guardo tu elección, pero no actuará
+                solo hasta que lo actives en la página del Piloto. Mientras tanto, prepara todo y te pide el clic.
               </p>
             )}
             <p className="text-fg-muted">
@@ -236,7 +255,7 @@ export function ConfirmarAutomatico({
           <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
           {paso === 'explicar' ? (
             <Button hideArrow isLoading={ocupado} onClick={() => void confirmar()} data-testid="confirmar-automatico-si">
-              Sí, pasar a Automático
+              {textoSi}
             </Button>
           ) : (
             <Button
@@ -246,7 +265,7 @@ export function ConfirmarAutomatico({
               onClick={() => void verificar(codigo)}
               data-testid="confirmar-automatico-verificar"
             >
-              Verificar y pasar
+              {textoVerificar}
             </Button>
           )}
         </AlertDialogFooter>

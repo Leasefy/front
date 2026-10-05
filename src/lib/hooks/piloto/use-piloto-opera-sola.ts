@@ -16,11 +16,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import {
+  fetchPilotoActivo,
   fetchPilotoLoQueHizo,
   fetchPilotoPreferencias,
   fetchPilotoQueFalta,
+  putPilotoActivo,
   putPilotoPreferencias,
   type CambiosDePreferencias,
+  type PilotoActivoResponse,
   type PilotoFetchResult,
   type PilotoLoQueHizoResponse,
   type PilotoPreferenciasResponse,
@@ -129,4 +132,39 @@ export function usePilotoPreferencias(abierto: boolean): UsePilotoPreferenciasRe
     [agency?.id, refetch],
   )
   return { ...lectura, guardando, guardar }
+}
+
+export interface UsePilotoActivoResult extends LecturaDelPiloto<PilotoActivoResponse> {
+  cambiando: boolean
+  /**
+   * Prende o apaga el Piloto de la inmobiliaria (PI-01). Devuelve `fallo`
+   * entero: si es `SEGUNDO_FACTOR_RECIENTE`, el diálogo pide el código y lo
+   * repite. Si salió, la respuesta ya trae el estado nuevo.
+   */
+  cambiar: (activo: boolean) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
+}
+
+/** El Piloto automático de la inmobiliaria: ¿activo?, la prueba y lo que le falta. Se lee al montar. */
+export function usePilotoActivo(): UsePilotoActivoResult {
+  const lectura = useLecturaDelPiloto(fetchPilotoActivo, true)
+  const { agency } = useAuth()
+  const [cambiando, setCambiando] = useState(false)
+  const { refetch } = lectura
+  const cambiar = useCallback(
+    async (activo: boolean) => {
+      if (!agency?.id) return { ok: false, error: 'sin_inmobiliaria' }
+      setCambiando(true)
+      try {
+        const r = await putPilotoActivo(agency.id, activo)
+        if (r.ok) await refetch()
+        return r.ok
+          ? { ok: true }
+          : { ok: false, ...(r.error ? { error: r.error } : {}), ...(r.fallo !== undefined ? { fallo: r.fallo } : {}) }
+      } finally {
+        setCambiando(false)
+      }
+    },
+    [agency?.id, refetch],
+  )
+  return { ...lectura, cambiando, cambiar }
 }

@@ -81,6 +81,7 @@ import {
 } from '@/components/inmobiliaria/piloto/PilotoCajon'
 import { PilotoQueEs } from '@/components/inmobiliaria/piloto/PilotoQueEs'
 import { PilotoNovedad } from '@/components/inmobiliaria/piloto/PilotoNovedad'
+import { PilotoActivacion } from '@/components/inmobiliaria/piloto/PilotoActivacion'
 import type { PulsoAlerta } from '@/lib/api/piloto'
 
 /** Una decisión «atrasada» lleva más de una semana esperando. */
@@ -204,6 +205,11 @@ function PilotoContent() {
           <PilotoAutonomia autonomia={autonomia} />
         </div>
       </header>
+
+      {/* PI-01 (04-10-2026): el Piloto automático de ESTA inmobiliaria — la prueba
+          de 30 días, prenderlo (un administrador, con su código) y lo que le
+          falta a la operación para que trabaje (CR-31: los días de plazo…). */}
+      <PilotoActivacion />
 
       {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
       <PilotoPulso

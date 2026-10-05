@@ -67,6 +67,7 @@ import type {
   QuienLoArregla,
 } from '@/lib/api/piloto'
 import { PilotoTopes } from './PilotoTopes'
+import { EnlaceQueSePuedeAbrir } from './EnlaceQueSePuedeAbrir'
 
 const QUIENES: QuienLoArregla[] = ['leasefy', 'administrador', 'programar']
 
@@ -115,6 +116,23 @@ export function faltasPorQuien(agentes: AgenteEnAutomatico[]): Record<QuienLoArr
 }
 
 const conMayuscula = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
+/**
+ * PILOTO-ACTIVO (04-10-2026): una falta que se arregla en una pantalla del
+ * panel trae su enlace (CR-31: «Fijar los días de plazo» → Configuración →
+ * Perfil; activar el Piloto → su página). Sólo rutas del panel.
+ */
+function EnlaceDeLaFalta({ f }: { f: FaltaParaAutomatico }) {
+  if (!f.enlace || !f.enlace.href.startsWith('/panel/')) return null
+  return (
+    <EnlaceQueSePuedeAbrir
+      href={f.enlace.href}
+      texto={f.enlace.texto}
+      className="mt-0.5 inline-block text-caption font-medium text-primary underline-offset-2 hover:underline"
+      testid={`piloto-opera-sola-enlace-${f.id}`}
+    />
+  )
+}
 
 function Seccion({ titulo, children, testid }: { titulo: string; children: ReactNode; testid: string }) {
   return (
@@ -172,6 +190,12 @@ function FilaDeAgente({ a }: { a: AgenteEnAutomatico }) {
           {a.faltas.map((f) => (
             <li key={f.id} className="text-caption text-fg">
               {f.que}
+              {f.enlace && (
+                <>
+                  {' '}
+                  <EnlaceDeLaFalta f={f} />
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -210,7 +234,7 @@ function FilaDeAgente({ a }: { a: AgenteEnAutomatico }) {
                       </p>
                       {p.faltas.map((f) => (
                         <p key={f.id} className="text-caption text-warning">
-                          {f.que}
+                          {f.que} <EnlaceDeLaFalta f={f} />
                         </p>
                       ))}
                       {p.estado === 'opera_solo' &&
@@ -304,6 +328,7 @@ export function PilotoOperaSolaContenido({ queFalta, loQueHizo }: PilotoOperaSol
                   <li key={g.falta.id} className="rounded-md bg-surface-muted px-3 py-2">
                     <p className="text-caption text-fg">{g.falta.que}</p>
                     <p className="mt-0.5 text-caption text-fg-muted">{g.falta.como}</p>
+                    <EnlaceDeLaFalta f={g.falta} />
                     <p className="mt-0.5 text-caption text-fg-subtle">
                       {t('inmobiliaria.piloto.operaSola.afecta', { agentes: g.agentes.join(', ') })}
                     </p>

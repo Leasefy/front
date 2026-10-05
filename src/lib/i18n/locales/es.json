@@ -1099,7 +1099,9 @@
       "flota": {
         "piloto": "Piloto",
         "apagado": "Apagado",
-        "apagadoHint": "El Piloto todavía no está activado para tu inmobiliaria. Lo activa el equipo de Leasefy.",
+        "apagadoHint": "El Piloto automático no está activo en tu inmobiliaria: ningún agente actúa solo. Se activa en la página del Piloto.",
+        "apagadoHintLeasefy": "Leasefy tiene apagado el Piloto automático por ahora: ninguna inmobiliaria opera sola.",
+        "apagadoHintPrueba": "Terminó tu prueba del Piloto automático: volviste a Copiloto y ningún agente actúa solo.",
         "cargando": "Leyendo el estado de la flota…",
         "corriendo": "{{n}} agentes actúan con este modo.",
         "corriendoConDistintos": "{{n}} agentes actúan: {{enEste}} con este modo y {{otros}} con otro (abajo, cuáles).",
@@ -1405,7 +1407,7 @@
           "copiloto": "Los agentes preparan cada acción y te la dejan en la Bandeja. Nada sale sin tu visto bueno.",
           "autonomo": "Los agentes que ya saben actuar solos lo hacen sin preguntarte. Lo dudoso te lo dejan en la Bandeja."
         },
-        "apagadoCorto": "El Piloto está apagado: ningún agente actúa por su cuenta.",
+        "apagadoCorto": "El Piloto automático no está activo en tu inmobiliaria: ningún agente actúa por su cuenta.",
         "queEs": {
           "titulo": "Qué es",
           "p1": "El Piloto automático es la forma en que tus agentes de IA hacen parte del trabajo de la inmobiliaria. Cada agente se encarga de una tarea: cobrar, conciliar los pagos del banco, hacer seguimiento a contratos, facturas y propietarios.",
@@ -1418,7 +1420,7 @@
           "ahora": "Tu modo ahora",
           "siempre": "Aunque estés en Automático, esto siempre espera a una persona: la plata que sale, los reportes a centrales de riesgo, lo jurídico, lo que va a la DIAN y las terminaciones de contrato. Los mensajes salen solo en horario hábil, nunca domingos ni festivos, y por encima de tus topes te piden el clic.",
           "quienLoCambia": "Lo cambia un administrador desde «Piloto», en la barra de arriba, para todos los agentes a la vez. En «Autonomía» se ajusta agente por agente. Si nadie lo ha cambiado, los agentes arrancan en Copiloto.",
-          "apagado": "Ahora el Piloto está apagado: ningún agente actúa por su cuenta, sin importar el modo."
+          "apagado": "Ahora el Piloto automático no está activo en tu inmobiliaria: ningún agente actúa por su cuenta, sin importar el modo. Un administrador lo activa en esta misma página, con una prueba de 30 días."
         },
         "agentes": {
           "titulo": "Qué agentes trabajan",
@@ -8219,6 +8221,7 @@
           "avaluos": "Avalúos",
           "gerente": "Gerente",
           "equipo": "Tu equipo",
+          "piloto": "Piloto automático",
           "retencion": "Retención",
           "calidad": "Calidad de publicación",
           "prospectos": "Prospectos",

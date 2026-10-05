@@ -1099,7 +1099,9 @@
       "flota": {
         "piloto": "Pilot",
         "apagado": "Off",
-        "apagadoHint": "The Pilot is not turned on for your agency yet. The Leasefy team turns it on.",
+        "apagadoHint": "The Autopilot is not active in your agency: no agent acts on its own. It is turned on from the Pilot page.",
+        "apagadoHintLeasefy": "Leasefy has the Autopilot turned off for now: no agency runs on its own.",
+        "apagadoHintPrueba": "Your Autopilot trial ended: you are back in Copilot and no agent acts on its own.",
         "cargando": "Reading the fleet state…",
         "corriendo": "{{n}} agents act in this mode.",
         "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",
@@ -1371,7 +1373,7 @@
           "copiloto": "Agents prepare every action and leave it in the Inbox. Nothing goes out without your approval.",
           "autonomo": "Agents that already know how to act alone do it without asking. Anything doubtful goes to the Inbox."
         },
-        "apagadoCorto": "The Autopilot is off: no agent acts on its own.",
+        "apagadoCorto": "The Autopilot is not active in your agency: no agent acts on its own.",
         "queEs": {
           "titulo": "What it is",
           "p1": "The Autopilot is how your AI agents take part in the agency's work. Each agent owns one task: collecting, reconciling bank payments, following up on contracts, invoices and owners.",
@@ -1384,7 +1386,7 @@
           "ahora": "Your mode now",
           "siempre": "Even in Automatic, these always wait for a person: money going out, credit bureau reports, legal matters, anything sent to the DIAN and contract terminations. Messages only go out during business hours, never on Sundays or holidays, and above your limits they ask for your click.",
           "quienLoCambia": "An admin changes it from «Pilot» in the top bar, for all agents at once. In «Autonomy» it is set agent by agent. If nobody has changed it, agents start in Copilot.",
-          "apagado": "The Autopilot is off right now: no agent acts on its own, whatever the mode."
+          "apagado": "The Autopilot is not active in your agency right now: no agent acts on its own, whatever the mode. An admin turns it on from this same page, with a 30-day trial."
         },
         "agentes": {
           "titulo": "Which agents work",
@@ -8184,6 +8186,7 @@
           "matching": "Matching",
           "avaluos": "Appraisals",
           "gerente": "Manager",
+          "piloto": "Autopilot",
           "retencion": "Retention",
           "calidad": "Listing quality",
           "prospectos": "Prospects",

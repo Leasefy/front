@@ -37,6 +37,13 @@ export type AcuerdoDetail = components['schemas']['CarteraPaymentPlanDetailRespo
    * no ofrece «Pagar» en este acuerdo. Ausente (un micro anterior) = `false`.
    */
   pagoPendienteDeRevision?: boolean;
+  /**
+   * 🔴 QA-INQ-95 (04-10-2026): el acuerdo sigue vivo en el micro, pero la
+   * persona ya no debe NADA vencido en esa inmobiliaria (lo pagó por fuera).
+   * Lo calcula el puente del back con las cuotas del contrato. `true` = el
+   * portal no cobra sus cuotas ni ofrece firmarlo. Ausente = como antes.
+   */
+  deudaSaldada?: boolean;
 };
 
 /**

@@ -12709,7 +12709,8 @@
       "arriendosVigentes": "Current leases",
       "canonVigente": "Current monthly rent"
     },
-    "vacioDescripcion": "You have no tenants yet. Bring over the ones you already have in another system, or add one right here.",
+    "vacioDescripcion": "Bring over the ones you already have in another system, or add one right here.",
+    "vacioDescripcionSinPermiso": "They show up here once your agency loads its leases.",
     "vacioContrato": "Migrate leases",
     "crearContrato": "Create a lease",
     "nuevoInquilino": "New tenant",

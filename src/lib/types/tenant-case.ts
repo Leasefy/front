@@ -355,6 +355,36 @@ export function pqrsToCase(s: SolicitudPqrs): TenantCase {
 // ============================================================================
 
 /**
+ * QA-INQ-95 (04-10-2026): un acuerdo CERRADO ya no se cobra. `completed` (lo
+ * que financiaba se pagó, por el acuerdo o por fuera: el micro lo cierra cuando
+ * el deudor se queda sin deuda), `cancelled` y `defaulted`. Sus cuotas sin pagar
+ * no se ofrecen ni se leen como deuda.
+ */
+export const ESTADOS_DEL_ACUERDO_CERRADO = ['completed', 'cancelled', 'defaulted'] as const;
+
+export function acuerdoEstaCerrado(status: string): boolean {
+  return (ESTADOS_DEL_ACUERDO_CERRADO as readonly string[]).includes(status);
+}
+
+/**
+ * QA-INQ-95: un acuerdo no se cobra si está cerrado o si el back dice que la
+ * deuda que financiaba ya se saldó (`deudaSaldada`, pagada por fuera).
+ */
+export function acuerdoNoSeCobra(p: { status: string; deudaSaldada?: boolean }): boolean {
+  return acuerdoEstaCerrado(p.status) || p.deudaSaldada === true;
+}
+
+/** La etiqueta del acuerdo para la persona: «Saldado» cuando ya no debe nada. */
+export function etiquetaDelAcuerdo(p: { status: string; deudaSaldada?: boolean }): string {
+  return p.deudaSaldada === true ? 'Saldado' : acuerdoStatusToLabel(p.status);
+}
+
+/** El tono: un acuerdo saldado se apaga (neutral), como uno completado. */
+export function tonoDelAcuerdo(p: { status: string; deudaSaldada?: boolean }): CaseTone {
+  return p.deudaSaldada === true ? 'neutral' : acuerdoStatusToTone(p.status);
+}
+
+/**
  * Acuerdo plan `status` → tone. The agent `status` is a FREE string (not a closed
  * enum), so this is a `switch` with a safe DEFAULT (not `assertNever`): `offered`
  * caps at `'attention'` (the tenant may need to accept the plan — ACUE-02); `active`
@@ -385,10 +415,14 @@ export function acuerdoStatusToLabel(status: string): string {
   switch (status) {
     case 'offered':
       return 'Propuesto';
+    case 'accepted':
+      return 'Aceptado';
     case 'active':
       return 'Activo';
     case 'completed':
       return 'Completado';
+    case 'defaulted':
+      return 'Incumplido';
     case 'cancelled':
       return 'Cancelado';
     default:
@@ -420,8 +454,8 @@ export function acuerdoToCase(p: AcuerdoDetail): TenantCase {
     id: p.planId,
     type: 'acuerdo',
     titulo: 'Acuerdo de pago',
-    estadoLabel: acuerdoStatusToLabel(p.status),
-    tone: acuerdoStatusToTone(p.status),
+    estadoLabel: etiquetaDelAcuerdo(p),
+    tone: tonoDelAcuerdo(p),
     responsable: RESPONSABLE_INMOBILIARIA,
     // Real source timestamps only — accepted when present, else offered.
     updatedAt: p.acceptedAt ?? p.offeredAt,

@@ -28,6 +28,14 @@ export function diaEnPalabras(dia: string): string {
   const [a, m, d] = dia.split('-').map(Number);
   return `${d} de ${MESES[(m || 1) - 1]} de ${a}`;
 }
+/** Cierra la frase sin el punto doble de «p. m.». */
+export function conPunto(texto: string): string {
+  return texto.endsWith('.') ? texto : `${texto}.`;
+}
+/** «6:47 p. m.» en Colombia. */
+export function horaEnColombia(iso: string): string {
+  return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+}
 export function mesEnPalabras(mes: string): string {
   const [a, m] = mes.split('-').map(Number);
   return `${MESES[(m || 1) - 1]} de ${a}`;
@@ -110,10 +118,20 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
         {enVerificacion && (
           <div data-testid="pago-en-verificacion" className="mb-4 flex gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm text-fg">
             <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
-            <span>
-              Tu pago de <span className="font-mono">{formatCurrency(enVerificacion.valorCop)}</span> está en verificación. Cuando
-              tu banco lo confirme se aplica solo y aquí verás tu recibo.
-            </span>
+            {enVerificacion.conTransaccion === false && enVerificacion.puedesReintentarDesde ? (
+              /* QA-INQ-95: Wompi todavía no conoce el intento (no hay transacción): no se dice
+                 «tu banco lo confirma» de un pago que tal vez nunca se hizo. */
+              <span data-testid="pago-sin-terminar">
+                Empezaste un pago de <span className="font-mono">{formatCurrency(enVerificacion.valorCop)}</span> y Wompi todavía
+                no nos dice si lo terminaste. Si lo pagaste, se aplica solo cuando tu banco lo confirme; si no, podrás intentarlo
+                de nuevo desde las {conPunto(horaEnColombia(enVerificacion.puedesReintentarDesde))}
+              </span>
+            ) : (
+              <span>
+                Tu pago de <span className="font-mono">{formatCurrency(enVerificacion.valorCop)}</span> está en verificación. Cuando
+                tu banco lo confirme se aplica solo y aquí verás tu recibo.
+              </span>
+            )}
           </div>
         )}
       </Presence>

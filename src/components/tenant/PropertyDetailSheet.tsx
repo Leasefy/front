@@ -21,6 +21,7 @@ import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
+import { areaConocida } from '@/lib/inmuebles/area-conocida';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import type { Property } from '@/lib/types/property';
 import type { AcceptanceProbability } from '@/lib/scoring/propertyMatching';
@@ -230,7 +231,7 @@ export function PropertyDetailSheet({
                 <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
                   <ArrowsOut className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
-                    {formatArea(property.area)}
+                    {areaConocida(property.area) ? formatArea(property.area) : '—'}
                   </span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">

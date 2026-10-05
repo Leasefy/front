@@ -30,6 +30,15 @@ const { pendientes, enviar, toastOk, toastError } = vi.hoisted(() => ({
 vi.mock('@/lib/api/invitaciones.service', () => ({
   invitacionesApi: { pendientes, enviar },
 }));
+// QA-INQ-95 (E-28): «Enviar a todos» corre por el centro de procesos; acá, sin él.
+vi.mock('@/lib/procesos/en-el-centro', () => ({
+  correrEnElNavegador: async ({ trabajo }: { trabajo: (ctx: unknown) => Promise<unknown> }) => ({
+    procesoId: null,
+    enElCentro: false,
+    detenido: false,
+    resultado: await trabajo({ procesoId: null, avanzar: async () => true, debeParar: () => false }),
+  }),
+}));
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: toastOk, error: toastError },
 }));

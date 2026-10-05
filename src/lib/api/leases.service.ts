@@ -64,7 +64,9 @@ function mapBackendLease(bl: BackendLease): Lease {
     deposit: bl.deposit,
     startDate: bl.startDate,
     endDate: bl.endDate,
-    paymentDay: bl.paymentDay,
+    // QA-INQ-95: el día que se le muestra al inquilino es el del vencimiento de la cuota
+    // (`venceElDia`); sin él (un back anterior u otra lectura), el día pactado.
+    paymentDay: bl.venceElDia !== undefined ? bl.venceElDia : (bl.paymentDay ?? bl.paymentDueDay ?? null),
     propertyTitle: bl.propertyTitle,
     propertyAddress: bl.propertyAddress,
     propertyCity: bl.propertyCity,

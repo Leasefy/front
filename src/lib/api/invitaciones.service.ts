@@ -90,6 +90,15 @@ export const invitacionesApi = {
    * esperando. Con `userIds` es el reenvío de filas concretas, y ése sí pasa
    * por encima de la espera entre envíos.
    */
+  /**
+   * QA-INQ-95 (IV-11, R-22 del CEO): el correo de la invitación, tal cual va a
+   * salir, para verlo antes de «Enviar a todos».
+   */
+  async vistaPrevia(nombre?: string | null): Promise<{ asunto: string; html: string; vigencia: string }> {
+    const q = nombre?.trim() ? `?nombre=${encodeURIComponent(nombre.trim())}` : '';
+    return apiClient.get<{ asunto: string; html: string; vigencia: string }>(`/inmobiliaria/invitaciones/vista-previa${q}`);
+  },
+
   async enviar(opciones: { userIds?: string[]; limite?: number } = {}): Promise<ResultadoDeTanda> {
     return apiClient.post<ResultadoDeTanda>('/inmobiliaria/invitaciones/enviar', opciones);
   },

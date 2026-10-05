@@ -48,7 +48,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
+import { tonoDelAcuerdo, etiquetaDelAcuerdo, acuerdoNoSeCobra } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
 
@@ -68,7 +68,7 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
 
 function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   const { formatCurrency } = useI18n();
-  const badge = TONE_BADGE[acuerdoStatusToTone(p.status)];
+  const badge = TONE_BADGE[tonoDelAcuerdo(p)];
   const ToneIcon = badge.icon;
   // La inicial viaja como la «cuota 0» (ARREGLOS-3): el conteo dice las cuotas
   // del plan (1, 2, 3…); la tabla las muestra todas, la inicial primero.
@@ -90,7 +90,7 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
                 </h3>
                 <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                   <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                  {acuerdoStatusToLabel(p.status)}
+                  {etiquetaDelAcuerdo(p)}
                 </Badge>
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
@@ -115,7 +115,7 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
           {/* Cuota plan — rendered VERBATIM from the record (no saldo math) */}
           {p.installments.length > 0 && (
             <div className="mt-4 pt-4 border-t border-border dark:border-border-strong">
-              <CuotaPlanTable installments={p.installments} locale={locale} />
+              <CuotaPlanTable installments={p.installments} locale={locale} acuerdoCerrado={acuerdoNoSeCobra(p)} />
             </div>
           )}
         </div>

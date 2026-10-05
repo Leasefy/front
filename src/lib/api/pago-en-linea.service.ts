@@ -26,7 +26,14 @@ export interface LoQueSePuedePagar {
   aplica: boolean;
   cuotas: CuotaQueSePuedePagar[];
   totalVencidoCop: number;
-  enVerificacion: { solicitudId: string; valorCop: number; desde: string } | null;
+  enVerificacion: {
+    solicitudId: string;
+    valorCop: number;
+    desde: string;
+    /** QA-INQ-95: `false` = Wompi todavía no conoce el intento (puede que no lo haya terminado). Un back anterior no lo manda. */
+    conTransaccion?: boolean;
+    puedesReintentarDesde?: string | null;
+  } | null;
   ultimoRechazo: { solicitudId: string; valorCop: number; motivo: string | null } | null;
 }
 

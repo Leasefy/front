@@ -219,7 +219,7 @@ export default function CasosPage() {
           </p>
         </header>
 
-        {/* CASO-03 — in-app notification strip (real) + push/WhatsApp Próximamente (honest) */}
+        {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
         <div
           className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 flex flex-col sm:flex-row sm:items-center gap-4"
         >
@@ -227,27 +227,19 @@ export default function CasosPage() {
             <Bell className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
+            {/* QA-INQ-95 (PI-30): sin «Próximamente»: se dice lo que hay hoy. */}
             <p className="text-sm font-semibold text-fg dark:text-white">
               {locale === 'es'
-                ? 'Te avisamos in-app cuando cambia el estado de un caso'
-                : 'We notify you in-app when a case status changes'}
+                ? 'Te avisamos en el portal cuando cambia el estado de un caso'
+                : 'We let you know in the portal when a case status changes'}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
               {locale === 'es'
-                ? 'Push y WhatsApp llegarán próximamente.'
-                : 'Push and WhatsApp are coming soon.'}
+                ? 'Los avisos quedan en la campana de arriba y en Notificaciones.'
+                : 'Notices stay in the bell at the top and in Notifications.'}
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Push / WhatsApp — disabled affordance, never an "activado" state */}
-            <span
-              className="inline-flex items-center gap-1.5 text-xs text-fg-subtle dark:text-fg-muted select-none"
-              aria-disabled="true"
-              title={locale === 'es' ? 'Aún no disponible' : 'Not available yet'}
-            >
-              <ChatCircle className="w-4 h-4" aria-hidden="true" />
-              {locale === 'es' ? 'Push · WhatsApp — Próximamente' : 'Push · WhatsApp — Coming soon'}
-            </span>
             <Link
               href="/inquilino/notificaciones"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity"

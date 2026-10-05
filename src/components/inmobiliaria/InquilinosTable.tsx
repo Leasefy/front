@@ -68,8 +68,10 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import {
   canonVigente,
+  canonDeLaFila,
   ordenarInquilinos,
   siguienteOrden,
   type CampoDeOrden,
@@ -321,6 +323,16 @@ export interface InquilinosTableProps {
   onOrdenar?: (orden: OrdenDeInquilinos) => void;
 }
 
+/**
+ * QA-INQ-95 (E-19 / PR-02): «Crear su contrato» lleva a una pantalla que pide
+ * `contratos:create`; al contador y al viewer les quedaba vivo un enlace que
+ * rebota. Fuera del panel (pruebas) no hay contexto de permisos y se muestra.
+ */
+function usePuedeCrearContrato(): boolean {
+  const permisos = usePermissionsContextSafe();
+  return permisos ? permisos.canAccess('contratos', 'create') : true;
+}
+
 export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: InquilinosTableProps) {
   const { t } = useI18n();
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
@@ -424,6 +436,7 @@ function FilaDeInquilino({
   onAbrir: () => void;
 }) {
   const { t, formatCurrency, formatDate } = useI18n();
+  const puedeCrearContrato = usePuedeCrearContrato();
   const vigentes = arriendosVigentes(persona);
   const varios = persona.arriendos.length > 1;
   const principal = arriendoPrincipal(persona);
@@ -556,15 +569,17 @@ function FilaDeInquilino({
              */
             <div className="flex flex-col items-start gap-1">
               <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
-              <Link
-                href={rutaDelContratoManualPara(persona)}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
-                data-testid="inquilino-crear-contrato"
-              >
-                <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
-                {t('inquilinos.crearSuContrato')}
-              </Link>
+              {puedeCrearContrato ? (
+                <Link
+                  href={rutaDelContratoManualPara(persona)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                  data-testid="inquilino-crear-contrato"
+                >
+                  <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                  {t('inquilinos.crearSuContrato')}
+                </Link>
+              ) : null}
             </div>
           ) : varios ? (
             <span className="text-sm text-fg-muted tabular-nums">
@@ -582,7 +597,7 @@ function FilaDeInquilino({
             <span className="text-sm text-fg-subtle">—</span>
           ) : (
             <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-              {formatCurrency(varios ? canonVigente(persona) : (principal?.canonCop ?? 0))}
+              {formatCurrency(canonDeLaFila(persona) ?? 0)}
             </span>
           )}
         </TableCell>
@@ -671,6 +686,7 @@ function TarjetasDeInquilinos({
   onAbrir: (persona: Inquilino) => void;
 }) {
   const { t, formatCurrency, formatDate } = useI18n();
+  const puedeCrearContrato = usePuedeCrearContrato();
   return (
     <Stagger as="ul" className="divide-y divide-border" data-testid="inquilinos-tarjetas">
       {inquilinos.map((persona) => {
@@ -715,7 +731,7 @@ function TarjetasDeInquilinos({
               {!sinArriendo ? (
                 <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-                    {formatCurrency(varios ? canonVigente(persona) : (principal?.canonCop ?? 0))}
+                    {formatCurrency(canonDeLaFila(persona) ?? 0)}
                   </span>
                   <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
                     {varios || !principal
@@ -726,7 +742,7 @@ function TarjetasDeInquilinos({
               ) : null}
             </button>
             <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1.5 flex" />
-            {sinArriendo ? (
+            {sinArriendo && puedeCrearContrato ? (
               <Link
                 href={rutaDelContratoManualPara(persona)}
                 className="mt-1.5 inline-flex items-center gap-1 text-caption text-primary underline-offset-2 hover:underline"

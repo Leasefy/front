@@ -26,7 +26,11 @@ import {
   useMyPaymentRequests,
   useLeasePaymentInfo,
 } from '@/lib/hooks/useLeases';
-import { useResumenDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { resumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { amortizacionDe } from '@/components/estado-de-cuenta/resumen';
+import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
 import { fraseDeLoVencido, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
@@ -35,6 +39,16 @@ import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+
+/**
+ * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
+ * en Colombia es el 31 de octubre: «Mi arriendo» decía «31 de oct de 2025 → 30 de oct de 2026»
+ * de un contrato del 1 de noviembre al 31 de octubre. Un instante (con hora) sigue siendo instante.
+ */
+function diaDelArriendo(iso: string): Date {
+  return fechaDeVigencia(iso) ?? new Date(iso);
+}
 
 const MONTH_NAMES_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -53,7 +67,12 @@ export default function LeaseDetailPage() {
   const { lease, isLoading: leaseLoading, errorCrudo: leaseError, refetch: refetchLease } = useLease(leaseId);
   const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
   const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
-  const resumenDeCuotas = useResumenDelPortal(true);
+  // UNA lectura del estado de cuenta: el estado de la cuenta y lo pagado de ESTE
+  // contrato salen de ahí (QA-INQ-95, PI-08: «Total pagado» sumaba solicitudes de
+  // pago aprobadas —también las de recibos anulados— y daba $10.840.670 donde el
+  // estado de cuenta dice $7.050.000).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(true);
+  const resumenDeCuotas = estadoDeCuenta ? resumenDePagos(estadoDeCuenta, hoyLocal()) : null;
   const requests = getForLease(leaseId);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [acceptingRenovacion, setAcceptingRenovacion] = useState(false);
@@ -119,7 +138,7 @@ export default function LeaseDetailPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -127,7 +146,7 @@ export default function LeaseDetailPage() {
   };
 
   const formatFullDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -135,14 +154,14 @@ export default function LeaseDetailPage() {
   };
 
   const getDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     return Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   const getLeaseProgress = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = diaDelArriendo(startDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     const totalDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
     const elapsedDays = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
@@ -174,8 +193,9 @@ export default function LeaseDetailPage() {
 
   const daysRemaining = getDaysRemaining(lease.endDate);
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
-  const approvedRequests = requests.filter(r => r.status === 'APPROVED');
-  const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+  const contratoDelEstado = estadoDeCuenta?.contratos.find((c) => c.id === lease.contractId) ?? null;
+  const amortizacion = contratoDelEstado ? amortizacionDe(contratoDelEstado) : null;
+  const totalPaid = amortizacion?.pagadoCop ?? 0;
   // Qué bloque de renovación toca: cuando cambia (pidió renovar, avisó que
   // no renueva), el viejo sale y el nuevo entra.
   const claveDeRenovacion = lease.renovacion?.avisoNoRenovar
@@ -631,9 +651,12 @@ export default function LeaseDetailPage() {
                   <Receipt className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-2xl font-bold text-fg">
-                  <AnimatedNumber value={approvedRequests.length} />
+                  <AnimatedNumber value={amortizacion?.pagadas ?? 0} />
+                  {amortizacion ? (
+                    <span className="text-base font-medium text-fg-muted"> {locale === 'es' ? 'de' : 'of'} {amortizacion.total}</span>
+                  ) : null}
                 </p>
-                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
+                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Cuotas pagadas' : 'Installments paid'}</p>
               </div>
               <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
@@ -668,12 +691,8 @@ export default function LeaseDetailPage() {
                   {requests.map((request) => {
                     const statusInfo = getRequestStatusInfo(request.status);
                     const StatusIcon = statusInfo.icon;
-                    const dateText =
-                      request.status === 'APPROVED' && request.validatedAt
-                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatDate(request.validatedAt)}`
-                        : request.status === 'PENDING_VALIDATION'
-                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatDate(request.createdAt)}`
-                          : `${locale === 'es' ? 'Vence el' : 'Due on'} ${formatDate(request.dueDate)}`;
+                    // QA-INQ-95: la misma regla que «Pagos» (rechazado/cancelado no «vencen»).
+                    const dateText = fechaDeLaSolicitud(request, locale, formatDate);
 
                     return (
                       <StaggerItem

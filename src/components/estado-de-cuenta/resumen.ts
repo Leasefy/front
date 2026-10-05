@@ -252,34 +252,56 @@ export function amortizacionDe(
 ): AmortizacionDelContrato {
   const filas = contrato.secciones.arriendos.filter((f) => f.estado !== 'ANULADA');
   const pagadasFilas = filas.filter((f) => f.estado === 'CANCELADA');
-  const anteriores = filas.filter((f) => f.estado === 'ANTERIOR').length;
 
+  // La PLATA se suma fila por fila (un abono parcial es plata que entró).
   const pagadoCop = pagadasFilas.reduce((s, f) => s + f.valorNeto, 0);
   const anterioresCop = filas
     .filter((f) => f.estado === 'ANTERIOR')
     .reduce((s, f) => s + f.valorNeto, 0);
   const pactadoCop = filas.reduce((s, f) => s + f.valorNeto, 0);
-  const total = filas.length;
+
+  // 🔴 QA-INQ-95 (04-10-2026): las CUOTAS se cuentan por cuota, no por fila.
+  // Una cuota pagada con varios recibos se parte en una fila por recibo (y la
+  // abonada a medias, en lo pagado + el saldo): contar filas decía «Pagadas 11
+  // de 20 cuotas» de un contrato de 12. Las filas de una misma cuota comparten
+  // `cuotaId`; sin él, cada fila es una cuota (como siempre).
+  const cuotas = new Map<string, typeof filas>();
+  filas.forEach((f, i) => {
+    const llave = f.cuotaId ? `c:${f.cuotaId}` : `f:${i}`;
+    const grupo = cuotas.get(llave);
+    if (grupo) grupo.push(f);
+    else cuotas.set(llave, [f]);
+  });
+  const grupos = [...cuotas.values()];
+  const pagadas = grupos.filter((g) => g.every((f) => f.estado === 'CANCELADA')).length;
+  const gruposAnteriores = grupos.filter((g) => g.some((f) => f.estado === 'ANTERIOR'));
+  const anteriores = gruposAnteriores.length;
+  const total = grupos.length;
 
   // PG-08: «vino pagado» sólo con el comprobante migrado.
-  const anterioresConComprobante = filas.filter(
-    (f) => f.estado === 'ANTERIOR' && !sinComprobantesDelSistemaAnterior(f),
+  const anterioresConComprobante = gruposAnteriores.filter(
+    (g) => !g.some((f) => f.estado === 'ANTERIOR' && sinComprobantesDelSistemaAnterior(f)),
   );
   const anterioresSinComprobante = anteriores - anterioresConComprobante.length;
 
   return {
-    pagadas: pagadasFilas.length,
+    pagadas,
     anteriores,
     total,
     pagadoCop,
     anterioresCop,
     // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado CON su
     // comprobante (PG-08: sin comprobante no se afirma que se pagó).
-    cubiertas: pagadasFilas.length + anterioresConComprobante.length,
-    cubiertoCop: pagadoCop + anterioresConComprobante.reduce((s, f) => s + f.valorNeto, 0),
+    cubiertas: pagadas + anterioresConComprobante.length,
+    cubiertoCop:
+      pagadoCop +
+      anterioresConComprobante.reduce(
+        (s, g) => s + g.filter((f) => f.estado === 'ANTERIOR').reduce((t, f) => t + f.valorNeto, 0),
+        0,
+      ),
     anterioresSinComprobante,
     pactadoCop,
-    porcentaje: total === 0 ? 0 : Math.round((pagadasFilas.length / total) * 100),
+    porcentaje: total === 0 ? 0 : Math.round((pagadas / total) * 100),
     porcentajeAnterior: total === 0 ? 0 : Math.round((anteriores / total) * 100),
   };
 }

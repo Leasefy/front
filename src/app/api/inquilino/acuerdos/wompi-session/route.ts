@@ -58,6 +58,7 @@ import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 import { aCentavosWompi } from '@/lib/plata/plata'
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types'
+import { acuerdoEstaCerrado } from '@/lib/types/tenant-case'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,10 @@ const MENSAJES_DE_LA_SESION_DE_PAGO = {
   montoInvalido:
     'No pudimos calcular el valor de la cuota: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
   delBack: 'No pudimos iniciar el pago: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+  acuerdoCerrado:
+    'Este acuerdo de pago ya no está vigente: no tienes cuotas por pagar en él. Revisa lo que debes en tu estado de cuenta.',
+  deudaSaldada:
+    'Hoy no debes nada vencido con tu inmobiliaria: las cuotas de este acuerdo ya no se cobran. Si crees que es un error, escríbele a tu inmobiliaria.',
 } as const
 
 interface CampoConError {
@@ -220,6 +225,18 @@ export async function POST(req: Request) {
   }
 
   const plan = (await planRes.json()) as AcuerdoDetail
+
+  // QA-INQ-95 (04-10-2026): un acuerdo cerrado no se cobra (el micro no puede
+  // cerrar la cuota de un acuerdo completado, cancelado o incumplido y la
+  // persona pagaría de más).
+  if (acuerdoEstaCerrado(plan.status)) {
+    return sobre(409, 'ACUERDO_NO_VIGENTE', MENSAJES_DE_LA_SESION_DE_PAGO.acuerdoCerrado)
+  }
+  // QA-INQ-95: el acuerdo sigue vivo pero la deuda que financiaba ya se pagó por
+  // fuera (lo dice el back con las cuotas del contrato): cobrarlo sería cobrar de más.
+  if (plan.deudaSaldada === true) {
+    return sobre(409, 'ACUERDO_SIN_DEUDA', MENSAJES_DE_LA_SESION_DE_PAGO.deudaSaldada)
+  }
 
   // The cuota's amount (or the plan total when no cuota is specified). Read verbatim
   // from the record — the agent is the sole authority for every peso (no client math).

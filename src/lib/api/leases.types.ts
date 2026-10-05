@@ -12,7 +12,14 @@ export interface BackendLease {
   status: string;       // ACTIVE | ENDING_SOON | ENDED | TERMINATED
   monthlyRent: number;  // COP, NOT NULL en backend
   deposit?: number;     // COP, opcional según contexto
-  paymentDay: number;   // 1-28 — backend usa `paymentDay`, NO `paymentDueDay`
+  /** Día pactado (legado). `GET /leases` del inquilino lo manda como `paymentDueDay`; otras lecturas, `paymentDay`. */
+  paymentDay?: number;
+  paymentDueDay?: number;
+  /**
+   * QA-INQ-95: el día en que VENCE cada cuota (la regla de cobro del contrato). Lo manda
+   * `GET /leases` del inquilino; en un contrato de inmobiliaria el día pactado ya no decide nada.
+   */
+  venceElDia?: number | null;
   startDate: string;
   endDate: string;
 

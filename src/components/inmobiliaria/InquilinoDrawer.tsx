@@ -69,7 +69,7 @@
  *    busca a la persona en el banco y en la migración.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -122,6 +122,9 @@ import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 const NS = 'inquilinos.cajon';
 /** Donde la inmobiliaria fija sus días de plazo (CR-31), la ruta del aviso de la ficha del contrato. */
 const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
+
+/** QA-INQ-95 (E-33): con más de estos días en cartera, la persona está «En cobranza». */
+export const DIAS_PARA_ESTAR_EN_COBRANZA = 60;
 
 /** Cuántos cobros caben antes de que la lista deje de leerse. El resto, en el contrato. */
 const TOPE_DE_COBROS = 12;
@@ -213,6 +216,13 @@ export function InquilinoDrawer({ persona, onCerrar, onEditar, version = 0 }: In
    * blanco, que se ve peor que el corte.
    */
   const ultima = useUltimoPresente(persona);
+  /*
+   * QA-INQ-95 (L-06): el cajón se abre por estado, no por un `Trigger` de
+   * Radix, así que al cerrarlo el foco caía al principio de la página («Saltar
+   * al contenido principal»). Se recuerda qué tenía el foco AL ABRIR (en
+   * `onOpenAutoFocus`, antes de que Radix lo mueva adentro) y al cerrar vuelve ahí.
+   */
+  const disparador = useRef<HTMLElement | null>(null);
 
   return (
     <Sheet open={Boolean(persona)} onOpenChange={(abierto) => !abierto && onCerrar()}>
@@ -223,6 +233,17 @@ export function InquilinoDrawer({ persona, onCerrar, onEditar, version = 0 }: In
         layout="manual"
         aria-describedby={undefined}
         data-testid="inquilino-cajon"
+        onOpenAutoFocus={() => {
+          const activo = typeof document !== 'undefined' ? document.activeElement : null;
+          disparador.current = activo instanceof HTMLElement && activo !== document.body ? activo : null;
+        }}
+        onCloseAutoFocus={(e) => {
+          const d = disparador.current;
+          if (d && d.isConnected) {
+            e.preventDefault();
+            d.focus();
+          }
+        }}
       >
         {/* El título accesible lo exige Radix y va acá, no en el cuerpo: así
             `CuerpoDelCajon` se monta en un test sin el contexto del Sheet.
@@ -267,7 +288,7 @@ export function CuerpoDelCajon({
   /** E-16: «Editar datos». Sin él (o sin `contratos:edit`), no hay botón. */
   onEditar?: (persona: Inquilino) => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate, locale } = useI18n();
   /*
    * Editar pide `contratos:edit`, el permiso con el que el back protege
    * `PATCH /inmobiliaria/inquilinos/:tenantId`: un botón que abre un
@@ -276,6 +297,8 @@ export function CuerpoDelCajon({
    */
   const permisos = usePermissionsContextSafe();
   const puedeEditar = Boolean(onEditar) && (permisos ? permisos.canAccess('contratos', 'edit') : true);
+  // QA-INQ-95 (E-19): «Crear su contrato» sólo con `contratos:create` (si no, el vacío lo dice sin botón).
+  const puedeCrearContrato = permisos ? permisos.canAccess('contratos', 'create') : true;
   const {
     persona,
     cargandoArriendos,
@@ -287,6 +310,7 @@ export function CuerpoDelCajon({
     cuenta,
     cargandoCuenta,
     errorCuenta,
+    cuentaSinPermiso,
     refDeCuenta,
     reintentar,
   } = detalle;
@@ -336,6 +360,12 @@ export function CuerpoDelCajon({
     (deuda?.tipo === 'EN_CARTERA' || deuda?.tipo === 'VENCIDO_EN_PLAZO');
   const sinReglasDeMora =
     !plazoSinFijar && cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
+  /*
+   * QA-INQ-95 (E-33 / F-29): más de 60 días en cartera = «En cobranza» (Nico,
+   * 26-09: no está «en riesgo», ya lo toma la cobranza). La marca sale de los
+   * MISMOS días de la franja (`enMora.dias` del estado de cuenta).
+   */
+  const enCobranza = deuda?.tipo === 'EN_CARTERA' && deuda.dias > DIAS_PARA_ESTAR_EN_COBRANZA;
   const enlaceAlEstadoDeCuenta = refDeCuenta
     ? `${rutaDelEstadoDeCuenta('inquilino', refDeCuenta)}?volver=${encodeURIComponent(
         '/panel/inmobiliaria/inquilinos',
@@ -474,11 +504,15 @@ export function CuerpoDelCajon({
                   icon={FileText}
                   title={t(`${NS}.sinArriendosTitulo`)}
                   description={t(`${NS}.sinContratos`)}
-                  action={{
-                    label: t('inquilinos.crearSuContrato'),
-                    // I-29: con la persona ya elegida en el contrato manual.
-                    href: rutaDelContratoManualPara(persona),
-                  }}
+                  action={
+                    puedeCrearContrato
+                      ? {
+                          label: t('inquilinos.crearSuContrato'),
+                          // I-29: con la persona ya elegida en el contrato manual.
+                          href: rutaDelContratoManualPara(persona),
+                        }
+                      : undefined
+                  }
                   className="py-14"
                 />
               )}
@@ -547,7 +581,26 @@ export function CuerpoDelCajon({
                 />
               </dl>
 
-              {errorCuenta ? (
+              {enCobranza ? (
+                <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted" data-testid="inquilino-en-cobranza">
+                  <Badge variant="destructive">{locale === 'en' ? 'In collections' : 'En cobranza'}</Badge>
+                  {locale === 'en'
+                    ? 'More than 60 days in arrears.'
+                    : 'Lleva más de 60 días en cartera.'}
+                </p>
+              ) : null}
+
+              {errorCuenta && cuentaSinPermiso ? (
+                /* QA-INQ-95 (F-17): un 403 no se arregla reintentando; se dice por qué. */
+                <p
+                  className="rounded-lg border border-border bg-surface-muted/50 px-4 py-3 text-sm text-fg-muted"
+                  data-testid="inquilino-cuenta-sin-permiso"
+                >
+                  {locale === 'en'
+                    ? 'Your role does not include seeing what this person owes. An administrator can enable it for you.'
+                    : 'Tu rol no incluye ver lo que debe esta persona. Un administrador te lo puede habilitar.'}
+                </p>
+              ) : errorCuenta ? (
                 <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
                   <p className="text-sm text-danger" role="alert">
                     {t(`${NS}.errorCuenta`)}
@@ -780,7 +833,10 @@ function Seccion({
 function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   const tono = TONO_DEL_COBRO[cobro.status];
-  const debe = (cobro.pendingAmount ?? 0) > 0;
+  // QA-INQ-95 (I-09): un cobro sin cuota anterior a la fecha de cartera no es
+  // deuda de aquí: «Resta por pagar» no lo suma, así que tampoco se pinta su saldo.
+  const anterior = cobro.anteriorALaCartera === true;
+  const debe = !anterior && (cobro.pendingAmount ?? 0) > 0;
   /*
    * I-10 (QA-INQ, 03-10): una GRILLA, no un renglón que se acomoda. Antes el
    * «Saldo» saltaba de renglón en unos meses y en otros se salía del borde, y
@@ -799,12 +855,24 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
           {nombreDelMes(cobro.month, locale === 'en' ? 'en' : 'es', 'short')}
         </span>
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge variant={tono?.variant ?? 'secondary'}>
-            {/* Un estado que el back agregue mañana se muestra crudo: mejor una
-                etiqueta rara que una fila que miente. */}
-            {tono ? t(tono.clave) : cobro.status}
-          </Badge>
-          {cobro.paidDate && !debe ? (
+          {anterior ? (
+            <Badge variant="secondary" data-testid="cobro-anterior-a-la-cartera">
+              {locale === 'en' ? 'Before the portfolio date' : 'Antes de la cartera'}
+            </Badge>
+          ) : (
+            <Badge variant={tono?.variant ?? 'secondary'}>
+              {/* Un estado que el back agregue mañana se muestra crudo: mejor una
+                  etiqueta rara que una fila que miente. */}
+              {tono ? t(tono.clave) : cobro.status}
+            </Badge>
+          )}
+          {anterior ? (
+            <span className="text-xs text-fg-muted">
+              {locale === 'en'
+                ? 'Not charged here: it is older than the contract’s portfolio date.'
+                : 'No se cobra aquí: es anterior a la fecha de cartera del contrato.'}
+            </span>
+          ) : cobro.paidDate && !debe ? (
             <span className="text-xs text-fg-muted">
               {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
             </span>

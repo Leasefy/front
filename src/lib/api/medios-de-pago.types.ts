@@ -73,5 +73,7 @@ export interface MediosDeUnaInmobiliariaParaInquilino {
   agencyId: string;
   agencyName: string;
   leaseIds: string[];
+  /** QA-INQ-95 (PI-11): la referencia de recaudo de cada contrato vivo con esta inmobiliaria. Un back viejo no la manda. */
+  referencias?: { contractId: string; referencia: string; inmueble: string | null }[];
   medios: MedioDePagoParaInquilino[];
 }

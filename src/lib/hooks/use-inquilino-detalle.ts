@@ -39,6 +39,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { contractsApi } from '@/lib/api/contracts.service';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { ApiError } from '@/lib/api/client';
 import { inquilinosApi, type Inquilino } from '@/lib/api/inquilinos.service';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
 import type { ResumenDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -66,6 +67,12 @@ export interface DetalleDeInquilino {
   cuenta: ResumenDelEstadoDeCuenta | null;
   cargandoCuenta: boolean;
   errorCuenta: boolean;
+  /**
+   * QA-INQ-95 (F-17): el error fue un 403 — la persona NO tiene permiso de ver
+   * la deuda (coordinador sin `cobros:view`). No se ofrece «Reintentar»: no
+   * cambia nada. Ausente o `false` = cualquier otro fallo.
+   */
+  cuentaSinPermiso?: boolean;
   /**
    * Con qué se abre su estado de cuenta: la cuenta del portal o, si con ella no
    * aparece ningún contrato, su documento. `null` = no hay estado de cuenta que
@@ -111,6 +118,7 @@ export function useInquilinoDetalle(
   const [cuenta, setCuenta] = useState<ResumenDelEstadoDeCuenta | null>(null);
   const [cargandoCuenta, setCargandoCuenta] = useState(false);
   const [errorCuenta, setErrorCuenta] = useState(false);
+  const [cuentaSinPermiso, setCuentaSinPermiso] = useState(false);
   const [refDeCuenta, setRefDeCuenta] = useState<string | null>(null);
 
   const [recarga, setRecarga] = useState(0);
@@ -228,6 +236,7 @@ export function useInquilinoDetalle(
     let vigente = true;
     setCargandoCuenta(true);
     setErrorCuenta(false);
+    setCuentaSinPermiso(false);
 
     void (async () => {
       try {
@@ -249,11 +258,12 @@ export function useInquilinoDetalle(
         if (!vigente) return;
         setCuenta(resumen);
         setRefDeCuenta(resumen.contratos > 0 ? ref : null);
-      } catch {
+      } catch (e) {
         if (!vigente) return;
         setCuenta(null);
         setRefDeCuenta(null);
         setErrorCuenta(true);
+        setCuentaSinPermiso(e instanceof ApiError && e.status === 403);
       } finally {
         if (vigente) setCargandoCuenta(false);
       }
@@ -277,6 +287,7 @@ export function useInquilinoDetalle(
     cuenta,
     cargandoCuenta,
     errorCuenta,
+    cuentaSinPermiso,
     refDeCuenta,
     reintentar,
   };

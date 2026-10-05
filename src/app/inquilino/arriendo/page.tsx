@@ -9,8 +9,11 @@ import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, 
 
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { useLeases, useMyPayments, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
-import { useResumenDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { useLeases, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { resumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
+import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
 import { estadoGeneralDelArriendo, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
@@ -20,6 +23,16 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+
+/**
+ * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
+ * en Colombia es el 31 de octubre: «Mi arriendo» decía «31 de oct de 2025 → 30 de oct de 2026»
+ * de un contrato del 1 de noviembre al 31 de octubre. Un instante (con hora) sigue siendo instante.
+ */
+function diaDelArriendo(iso: string): Date {
+  return fechaDeVigencia(iso) ?? new Date(iso);
+}
 
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
@@ -42,14 +55,18 @@ export default function ArriendoPage() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   const { leases, isLoading, error, errorCrudo, refetch, getActive } = useLeases();
-  const { getNextPayment } = useMyPayments();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
 
   // Estado del período actual — misma fuente única que pagos/page.tsx.
   const { info: paymentInfo } = useLeasePaymentInfo(primaryLease?.id ?? null);
-  const resumenDeCuotas = useResumenDelPortal(Boolean(primaryLease));
+  // UNA lectura del estado de cuenta: el «Estado general» y el «Próximo pago» de
+  // cada tarjeta salen de ahí, como «Pagos» (QA-INQ-95: el próximo pago venía de
+  // `/tenant-payments/mine`, armado con el día pactado y el canon entero).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(Boolean(primaryLease));
+  const hoy = hoyLocal();
+  const resumenDeCuotas = estadoDeCuenta ? resumenDePagos(estadoDeCuenta, hoy) : null;
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
@@ -58,7 +75,7 @@ export default function ArriendoPage() {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -66,7 +83,7 @@ export default function ArriendoPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
@@ -74,15 +91,15 @@ export default function ArriendoPage() {
 
   // Get days remaining for a lease
   const getDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     return Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   // Calculate lease progress (time elapsed)
   const getLeaseProgress = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = diaDelArriendo(startDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     const totalDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
     const elapsedDays = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
@@ -237,7 +254,9 @@ export default function ArriendoPage() {
           {activeLeases.length > 0 ? (
             <div className="space-y-4">
               {activeLeases.map((lease, index) => {
-                const nextPayment = getNextPayment(lease.id);
+                const nextPayment = estadoDeCuenta
+                  ? proximoPagoDelPortal(estadoDeCuenta, hoy, lease.contractId ?? null)
+                  : null;
                 const daysRemaining = getDaysRemaining(lease.endDate);
                 const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
 
@@ -400,7 +419,7 @@ export default function ArriendoPage() {
                                   <div>
                                     <p className="text-xs text-fg-muted">{t('dashboard.nextPayment')}</p>
                                     <p className="text-sm font-semibold text-fg">
-                                      {formatCurrency(nextPayment.amount)} · {formatShortDate(nextPayment.dueDate)}
+                                      {formatCurrency(nextPayment.valor)} · {formatShortDate(nextPayment.fecha)}
                                     </p>
                                   </div>
                                 </div>

@@ -191,6 +191,19 @@ function MessagesSkeleton() {
 // Main widget
 // ============================================================================
 
+
+/** QA-INQ-95 (PI-44): de qué es el hilo, dicho al inquilino. */
+export function encabezadoDelHilo(kind: string | undefined): string {
+  if (kind === 'APPLICATION') return 'Sobre tu postulación';
+  if (kind === 'PROPERTY_INQUIRY') return 'Sobre el inmueble';
+  return 'Sobre tu arriendo';
+}
+function encabezadoDelHiloEn(kind: string | undefined): string {
+  if (kind === 'APPLICATION') return 'About your application';
+  if (kind === 'PROPERTY_INQUIRY') return 'About the property';
+  return 'About your rental';
+}
+
 export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
   // Para las transiciones hechas a mano (filas, burbujas, el menú): con
@@ -1000,15 +1013,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">
+                              {/* QA-INQ-95 (PI-44): el hilo de una POSTULACIÓN o de una
+                                  consulta no es «tu arriendo» (Iván leía «Sobre tu
+                                  arriendo — Carrera 35…», el inmueble al que se postuló). */}
                               {locale === 'es'
-                                ? `Sobre tu arriendo — ${selectedConversation.property}`
-                                : `About your rental — ${selectedConversation.property}`}
+                                ? `${encabezadoDelHilo(selectedConversation.kind)} — ${selectedConversation.property}`
+                                : `${encabezadoDelHiloEn(selectedConversation.kind)} — ${selectedConversation.property}`}
                             </p>
-                            <p className="text-caption text-muted-foreground mt-0.5">
-                              {locale === 'es'
-                                ? 'Estamos conectando cada chat a su arriendo; el hilo por arriendo llega próximamente.'
-                                : "We're tying each chat to its rental; per-rental threads are coming soon."}
-                            </p>
+                            {/* QA-INQ-95: sin «llega próximamente»; el encabezado dice lo que hay. */}
                           </div>
                         </div>
                       )}

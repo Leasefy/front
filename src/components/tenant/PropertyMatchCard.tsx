@@ -6,6 +6,7 @@ import { MapPin, CaretRight, Check } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
+import { areaConocida } from '@/lib/inmuebles/area-conocida';
 import type { RecommendedProperty } from '@/lib/api/recommendations.service';
 import {
   getMatchScoreBgColor,
@@ -33,7 +34,8 @@ function datosDelInmueble(property: RecommendedProperty['property']): string[] {
   const datos: string[] = [];
   if (property.bedrooms != null) datos.push(`${property.bedrooms} hab`);
   if (property.bathrooms != null) datos.push(`${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}`);
-  if (property.area != null) datos.push(formatArea(property.area));
+  // QA-INQ-95 (PI-03): un área en 0 es «no sabemos», no «0 m²».
+  if (areaConocida(property.area)) datos.push(formatArea(property.area));
   return datos;
 }
 

@@ -63,7 +63,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Buildings,
   CurrencyDollar,
@@ -106,6 +106,7 @@ import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { useI18n } from '@/lib/i18n';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import {
   type FiltroDeEstado,
   type Inquilino,
@@ -199,6 +200,7 @@ function ContenidoDeInquilinos() {
    * «todos» para que se vea por qué la lista es más larga que de costumbre.
    */
   const searchParams = useSearchParams();
+  const router = useRouter();
   const personaBuscada = searchParams.get('persona');
 
   const [buscar, setBuscar] = useState('');
@@ -350,6 +352,13 @@ function ContenidoDeInquilinos() {
   const copyDeMigracion = useCopyDeMigracionEnLista();
   const vacioPorLaMigracion = !hayFiltros && vacioPorMigracion(deuda);
   const copy = deuda && vacioPorLaMigracion ? copyDeMigracion(deuda) : null;
+  /*
+   * QA-INQ-95 (V-03): sin `contratos:create` (contador, viewer) el vacío no
+   * ofrece «Migrar contratos» —la migración pide ese permiso y rebota— ni le
+   * dice «trae los tuyos o carga uno»: le dice cuándo aparecen.
+   */
+  const permisos = usePermissionsContextSafe();
+  const puedeCargar = permisos ? permisos.canAccess('contratos', 'create') : true;
 
   /*
    * 🔴 Los tiles son del PORTAFOLIO (I-07, QA-INQ 03-10): «activos» sin
@@ -440,7 +449,11 @@ function ContenidoDeInquilinos() {
         />
       </div>
 
+      {/* QA-INQ-95 (E-18 / XE-03): la lista es el dato PRINCIPAL: si el servidor
+          la niega (403), `PageGuard` cambia la pantalla entera por el cartel y no
+          quedan «Nuevo inquilino» ni «Crear un contrato» vivos. Un 500 no apaga nada. */}
       <EstadoDeDatos
+        principal
         cargando={cargando}
         error={error}
         queEs={t('inquilinos.queEs')}
@@ -472,7 +485,10 @@ function ContenidoDeInquilinos() {
               queSon={t('inquilinos.queSon')}
               icono={UserCircle}
               titulo={copy?.titulo}
-              descripcion={copy?.detalle ?? t('inquilinos.vacioDescripcion')}
+              descripcion={
+                copy?.detalle ??
+                t(puedeCargar ? 'inquilinos.vacioDescripcion' : 'inquilinos.vacioDescripcionSinPermiso')
+              }
               onLimpiarFiltros={
                 hayFiltros
                   ? () => {
@@ -506,12 +522,14 @@ function ContenidoDeInquilinos() {
               accion={
                 hayFiltros ? undefined : (
                   <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button asChild hideArrow>
-                      <Link href={RUTA_DE_LA_MIGRACION}>
-                        <UploadSimple className="mr-1.5 h-4 w-4" />
-                        {copy?.accion ?? t('inquilinos.vacioContrato')}
-                      </Link>
-                    </Button>
+                    <PermissionGate module="contratos" action="create" fallback={null}>
+                      <Button asChild hideArrow>
+                        <Link href={RUTA_DE_LA_MIGRACION}>
+                          <UploadSimple className="mr-1.5 h-4 w-4" />
+                          {copy?.accion ?? t('inquilinos.vacioContrato')}
+                        </Link>
+                      </Button>
+                    </PermissionGate>
                     <CrearContratoBoton />
                     <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
                   </div>
@@ -549,7 +567,17 @@ function ContenidoDeInquilinos() {
 
       <InquilinoDrawer
         persona={abierto}
-        onCerrar={() => setAbierto(null)}
+        onCerrar={() => {
+          setAbierto(null);
+          /* QA-INQ-95 (L-07): cerrada la ficha que pidió `?persona=`, el enlace
+             deja de pedirla: recargar o volver atrás no la reabre. */
+          if (personaBuscada) {
+            const sin = new URLSearchParams(searchParams.toString());
+            sin.delete('persona');
+            const cola = sin.toString();
+            router.replace(`${window.location.pathname}${cola ? `?${cola}` : ''}`, { scroll: false });
+          }
+        }}
         onEditar={setEditando}
         version={versionDeLaFicha}
       />

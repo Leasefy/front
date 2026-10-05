@@ -29,10 +29,10 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useSignedDocUrl } from '@/lib/hooks/useDocuments';
 import { createEmptyDocumentConsent, type DocumentConsent } from '@/lib/api/documents.types';
 import { useContracts } from '@/lib/hooks/useContracts';
-import { useMyPaymentRequests } from '@/lib/hooks/useLeases';
+import { useRecibosDelInquilino } from '@/lib/hooks/use-recibos-del-inquilino';
+import { RecibosDeCaja } from '@/components/tenant/RecibosDeCaja';
 import { MisCertificados } from '@/components/tenant/MisCertificados';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
-import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 
 // Per-status visual config for the tenant-facing document badge.
 // Color is always paired with an icon + label (never color alone) per a11y rules.
@@ -69,25 +69,6 @@ const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: ty
 
 const ITEMS_PER_PAGE = 6;
 
-const MONTH_NAMES_ES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
-const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-// Estado del comprobante interno (tenant-payment-request) — copy + badge color.
-const PAYMENT_REQUEST_STATUS: Record<TenantPaymentRequestStatus, { es: string; en: string; className: string }> = {
-  PENDING_VALIDATION: { es: 'En validación', en: 'Under review', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
-  PROCESSING: { es: 'Procesando', en: 'Processing', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
-  APPROVED: { es: 'Aprobado', en: 'Approved', className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]' },
-  REJECTED: { es: 'Rechazado', en: 'Rejected', className: 'bg-[#FBEAEA] text-[#B4322E] dark:bg-[#B4322E]/15 dark:text-[#E06B67]' },
-  DISPUTED: { es: 'En disputa', en: 'Disputed', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
-  CANCELLED: { es: 'Cancelado', en: 'Cancelled', className: 'bg-surface-muted text-fg-muted dark:bg-border dark:text-fg-subtle' },
-};
-
 /**
  * Tenant Documents Page - Connected to Real API
  * Shows documents from the tenant's applications
@@ -99,7 +80,8 @@ export default function DocumentosPage() {
 
   // Lease documents (arriendo) — real sources, degrade to [] on 403/404 (see hooks).
   const { contracts, isLoading: contractsLoading } = useContracts();
-  const { requests: paymentRequests, isLoading: paymentRequestsLoading } = useMyPaymentRequests();
+  // QA-INQ-95: los recibos de caja de verdad (antes: los intentos de pago como «comprobante interno»).
+  const { recibos, isLoading: recibosLoading, error: recibosError, refetch: recargarRecibos } = useRecibosDelInquilino();
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -159,13 +141,13 @@ export default function DocumentosPage() {
     }
   }, [isOnboardingComplete, applications, fetchAllDocuments]);
 
-  const isLoading = isOnboardingLoading || isLoadingApps || isLoadingDocs || contractsLoading || paymentRequestsLoading;
+  const isLoading = isOnboardingLoading || isLoadingApps || isLoadingDocs || contractsLoading || recibosLoading;
 
   // "Contrato firmado" = ambas partes firmaron (signed/active/expired/cancelled).
   const signedContracts = contracts.filter((c) =>
     ['signed', 'active', 'expired', 'cancelled'].includes(c.status)
   );
-  const hasLeaseDocs = signedContracts.length > 0 || paymentRequests.length > 0;
+  const hasLeaseDocs = signedContracts.length > 0 || (recibos?.length ?? 0) > 0 || Boolean(recibosError);
 
   // Get unique document types for filter pills
   const docTypes = Array.from(new Set(documents.map((d) => d.type)));
@@ -321,11 +303,6 @@ export default function DocumentosPage() {
       year: 'numeric',
     });
 
-  const formatPeriod = (month: number, year: number) => {
-    const names = locale === 'es' ? MONTH_NAMES_ES : MONTH_NAMES_EN;
-    return `${names[month - 1] ?? ''} ${year}`.trim();
-  };
-
   const formatSize = (bytes: number) =>
     bytes > 1024 * 1024
       ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
@@ -451,53 +428,10 @@ export default function DocumentosPage() {
                 </div>
               )}
 
-              {/* Recibos — comprobantes internos (nunca fiscal; sin PDF descargable todavía) */}
-              {paymentRequests.length > 0 && (
-                <div>
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">
-                    {locale === 'es' ? 'Recibos (comprobante interno)' : 'Receipts (internal receipt)'}
-                  </p>
-                  <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3">
-                    {locale === 'es'
-                      ? 'Registro interno de tus pagos. El comprobante en PDF descargable llegará con Pagos.'
-                      : 'Internal record of your payments. The downloadable receipt PDF will arrive with Payments.'}
-                  </p>
-                  <div className="space-y-2">
-                    {paymentRequests.map((r) => {
-                      const ReciboIcon = getDocIcon('RECIBO');
-                      const statusMeta = PAYMENT_REQUEST_STATUS[r.status];
-                      return (
-                        <div
-                          key={r.id}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-                            <ReciboIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-fg dark:text-white truncate">
-                              {locale === 'es' ? 'Comprobante interno' : 'Internal receipt'} · {formatPeriod(r.periodMonth, r.periodYear)}
-                            </p>
-                            <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
-                              <span className="font-mono tabular-nums">{formatCurrency(r.amount)}</span>
-                              {r.bankName ? ` · ${r.bankName}` : ''} · {formatDate(r.paymentDate)}
-                            </p>
-                          </div>
-                          {statusMeta && (
-                            <span
-                              className={cn(
-                                'px-2.5 py-1 text-xs font-medium rounded-full flex-shrink-0',
-                                statusMeta.className
-                              )}
-                            >
-                              {locale === 'es' ? statusMeta.es : statusMeta.en}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+              {/* Recibos de caja (QA-INQ-95): los que la inmobiliaria emitió de verdad, con su PDF.
+                  `recibos === null` = un back sin la ruta: la sección no se pinta. */}
+              {(Boolean(recibosError) || (recibos?.length ?? 0) > 0) && (
+                <RecibosDeCaja recibos={recibos ?? []} error={recibosError} onReintentar={() => void recargarRecibos()} />
               )}
             </div>
           ) : (

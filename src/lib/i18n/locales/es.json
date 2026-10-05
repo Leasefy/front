@@ -12744,7 +12744,8 @@
       "arriendosVigentes": "Arriendos vigentes",
       "canonVigente": "Canon mensual vigente"
     },
-    "vacioDescripcion": "Todavía no tienes inquilinos. Trae los que ya tienes en otro sistema, o carga uno acá mismo.",
+    "vacioDescripcion": "Trae los que ya tienes en otro sistema, o carga uno acá mismo.",
+    "vacioDescripcionSinPermiso": "Aparecen acá cuando tu inmobiliaria cargue sus arriendos.",
     "vacioContrato": "Migrar contratos",
     "crearContrato": "Crear un contrato",
     "nuevoInquilino": "Nuevo inquilino",
@@ -12983,7 +12984,7 @@
           "accion": "Completar los inquilinos"
         },
         "pendientes": {
-          "linea": "{{n}} filas sin activar",
+          "linea": "{{n}} sin activar",
           "detalle": "Entraron con el archivo y todavía no son contratos.",
           "accion": "Revisar las filas"
         },

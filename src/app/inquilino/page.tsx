@@ -14,7 +14,11 @@ import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
-import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { useLeases } from '@/lib/hooks/useLeases';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
@@ -40,6 +44,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
 import { formatArea } from '@/lib/format';
+import { areaConocida } from '@/lib/inmuebles/area-conocida';
 
 /**
  * Tenant Dashboard - Landing Page Style
@@ -136,13 +141,8 @@ export default function InquilinoPage() {
     error: errorArriendos,
     refetch: recargarArriendos,
   } = useLeases();
-  const { getNextPayment } = useMyPayments();
 
   const activeLeases = getActiveLeases();
-  const nextPaymentRaw = getNextPayment();
-  const nextPayment: { amount: number; dueDate: string } | null = nextPaymentRaw
-    ? { amount: nextPaymentRaw.amount, dueDate: nextPaymentRaw.dueDate }
-    : null;
   const primaryLease: { id: string; propertyName: string } | null = activeLeases[0]
     ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
     : null;
@@ -206,6 +206,11 @@ export default function InquilinoPage() {
     !errorPostulaciones &&
     !errorArriendos;
   const { openCasesCount } = useTenantCases({ skip: !dashboardWillRender });
+  // «Próximo pago» sale del estado de cuenta, la misma cuenta que «Pagos» y «Mi
+  // arriendo» (QA-INQ-95: venía de `/tenant-payments/mine`, armado con el día
+  // pactado y el canon entero del modelo viejo).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(dashboardWillRender && activeLeases.length > 0);
+  const nextPayment = estadoDeCuenta ? proximoPagoDelPortal(estadoDeCuenta, hoyLocal()) : null;
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   const cargandoElPanel =
@@ -392,7 +397,10 @@ export default function InquilinoPage() {
                 </div>
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
                 <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">
-                  {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
+                  {i18nFormatCurrency(nextPayment.valor)}
+                </p>
+                <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                  {locale === 'es' ? `Vence el ${fechaCorta(nextPayment.fecha)}` : `Due ${fechaCorta(nextPayment.fecha)}`}
                 </p>
               </div>
             </Link>
@@ -513,7 +521,7 @@ export default function InquilinoPage() {
                       {/* Sólo los datos que el inmueble trae: los migrados llegan
                           sin habitaciones, baños ni área, y las pastillas salían
                           «hab», «baños», «m²» sin número. */}
-                      {(property.bedrooms != null || property.bathrooms != null || property.area != null) && (
+                      {(property.bedrooms != null || property.bathrooms != null || areaConocida(property.area)) && (
                         <div data-testid="datos-del-inmueble" className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
                           {property.bedrooms != null && (
                             <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
@@ -530,7 +538,7 @@ export default function InquilinoPage() {
                                 : 'bath'}
                             </span>
                           )}
-                          {property.area != null && (
+                          {areaConocida(property.area) && (
                             <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
                               {formatArea(property.area)}
                             </span>

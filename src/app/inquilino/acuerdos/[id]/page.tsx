@@ -45,7 +45,7 @@ import {
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
 import { estadoDeLaFirma } from '@/lib/api/tenant-acuerdos.service';
-import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
+import { tonoDelAcuerdo, etiquetaDelAcuerdo, acuerdoNoSeCobra } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail, AcuerdoInstallment } from '@/lib/api/tenant-acuerdos.types';
 import { useI18n } from '@/lib/i18n';
@@ -139,15 +139,19 @@ function AcuerdoDetailView({
 }) {
   const { formatCurrency } = useI18n();
   const es = locale === 'es';
-  const badge = TONE_BADGE[acuerdoStatusToTone(plan.status)];
+  const badge = TONE_BADGE[tonoDelAcuerdo(plan)];
   const ToneIcon = badge.icon;
 
   // Qué se hace con la firma (03-10-2026): sólo se firma lo que la inmobiliaria aprobó.
   const firma = estadoDeLaFirma(plan);
 
   // Pay a cuota only once the acuerdo is accepted (active) and one is still owed.
+  // QA-INQ-95: y nunca la de un acuerdo cerrado (completado, cancelado o incumplido) ni la de
+  // uno cuya deuda ya se saldó por fuera (`deudaSaldada` del back).
+  const cerrado = acuerdoNoSeCobra(plan);
+  const saldado = plan.deudaSaldada === true;
   const nextCuota =
-    plan.acceptedAt !== null ? nextPayableCuota(plan.installments) : undefined;
+    plan.acceptedAt !== null && !cerrado ? nextPayableCuota(plan.installments) : undefined;
 
   // Timeline from SOURCE TIMESTAMPS only — offered, then accepted when present.
   // Nothing synthesized, reordered, or padded (T-v7-07 / PITFALLS 2).
@@ -191,7 +195,7 @@ function AcuerdoDetailView({
           <div className="mt-2">
             <Badge variant={badge.variant} className="inline-flex items-center gap-1">
               <ToneIcon className="w-3 h-3" aria-hidden="true" />
-              {acuerdoStatusToLabel(plan.status)}
+              {etiquetaDelAcuerdo(plan)}
             </Badge>
           </div>
         </div>
@@ -212,14 +216,33 @@ function AcuerdoDetailView({
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {es ? 'Plan de cuotas' : 'Installment plan'}
         </h2>
-        <CuotaPlanTable installments={plan.installments} locale={locale} />
+        <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
       </section>
 
       {/* Accept-by-signing (ACUE-02) — only while OFFERED, APPROVED and unaccepted; else a factual state.
           Un acuerdo cancelado (la inmobiliaria lo rechazó) o roto ya no se acepta: el back
           respondería 409 `ACUERDO_NO_ACEPTABLE`, así que ni se ofrece firmar (02-10-2026).
           Uno ofrecido que la inmobiliaria todavía no aprobó tampoco (03-10-2026). */}
-      {firma === 'firmar' ? (
+      {saldado ? (
+        <section
+          data-testid="acuerdo-saldado"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        >
+          <div className="flex items-start gap-3">
+            <SealCheck className="w-5 h-5 text-success flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="font-semibold text-fg dark:text-white">
+                {es ? 'Hoy no debes nada vencido' : 'You owe nothing overdue today'}
+              </p>
+              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+                {es
+                  ? 'Lo que financiaba este acuerdo ya está pagado, así que sus cuotas pendientes no se cobran. Si crees que es un error, escríbele a tu inmobiliaria.'
+                  : 'What this agreement financed is already paid, so its pending installments are not charged. If you think this is a mistake, write to your agency.'}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : firma === 'firmar' ? (
         <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>

@@ -49,6 +49,8 @@ import { Badge } from '@/components/ui/badge';
 import { ApiError } from '@/lib/api/client';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { correrEnElNavegador } from '@/lib/procesos/en-el-centro';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   invitacionesApi,
   type FilaDeTanda,
@@ -200,16 +202,40 @@ export function InvitacionesPendientes({ version = 0 }: {
     let quedan = total ?? 0;
     let ultimosResultados: FilaDeTanda[] = [];
     try {
-      for (let vuelta = 0; vuelta < 40; vuelta += 1) {
-        const r = await invitacionesApi.enviar({});
-        ultimosResultados = r.resultados ?? [];
-        salieron += r.enviadas;
-        quedan = r.restantes;
-        setYaSalieron(salieron);
-        setTotal(r.restantes);
-        // Ninguna salió en esta vuelta: seguir sería repetir la misma tanda.
-        if (r.enviadas === 0 || r.restantes === 0) break;
-      }
+      /*
+       * QA-INQ-95 (E-28): por el centro de procesos, como toda acción masiva
+       * larga (`correrEnElNavegador`): se ve con su avance y «Detener», y si el
+       * back no puede abrir el proceso, corre igual sin el centro.
+       */
+      const inicial = total ?? 0;
+      await correrEnElNavegador({
+        tipo: 'ENVIO_MASIVO',
+        titulo:
+          inicial === 1 ? 'Mandar 1 invitación al portal' : `Mandar ${inicial} invitaciones al portal`,
+        ...(inicial > 0 ? { total: inicial } : {}),
+        trabajo: async (ctx) => {
+          for (let vuelta = 0; vuelta < 40; vuelta += 1) {
+            const r = await invitacionesApi.enviar({});
+            ultimosResultados = r.resultados ?? [];
+            salieron += r.enviadas;
+            quedan = r.restantes;
+            setYaSalieron(salieron);
+            setTotal(r.restantes);
+            const sigue = await ctx.avanzar(salieron, {
+              total: salieron + r.restantes,
+              mensaje: `Salieron ${salieron}; quedan ${r.restantes}`,
+            });
+            // Ninguna salió en esta vuelta: seguir sería repetir la misma tanda.
+            if (!sigue || r.enviadas === 0 || r.restantes === 0) break;
+          }
+          return {
+            mensaje:
+              quedan > 0
+                ? `Salieron ${salieron}; quedan ${quedan} por mandar`
+                : `Salieron ${salieron}; no queda ninguna pendiente`,
+          };
+        },
+      });
       if (salieron > 0) {
         toast.success(
           salieron === 1
@@ -248,6 +274,22 @@ export function InvitacionesPendientes({ version = 0 }: {
       void cargar();
     }
   }, [total, cargar]);
+
+  const [vistaPrevia, setVistaPrevia] = useState<{ asunto: string; html: string } | null>(null);
+  const [cargandoVistaPrevia, setCargandoVistaPrevia] = useState(false);
+  const verElCorreo = useCallback(async () => {
+    setCargandoVistaPrevia(true);
+    try {
+      const v = await invitacionesApi.vistaPrevia(personas[0]?.nombre ?? null);
+      setVistaPrevia({ asunto: v.asunto, html: v.html });
+    } catch (e) {
+      toast.error('No pudimos mostrar el correo', {
+        description: mensajeParaLaPersona(e, { porDefecto: '', accion: 'mostrar el correo de la invitación' }) || undefined,
+      });
+    } finally {
+      setCargandoVistaPrevia(false);
+    }
+  }, [personas]);
 
   const reenviarUna = useCallback(
     async (persona: PersonaPendiente) => {
@@ -465,6 +507,18 @@ export function InvitacionesPendientes({ version = 0 }: {
           <Button variant="outline" hideArrow onClick={() => setAbierto(false)}>
             Cerrar
           </Button>
+          {/* QA-INQ-95 (IV-11): ver el correo antes de mandarlo (R-22 del CEO). */}
+          <Button
+            variant="outline"
+            hideArrow
+            className="gap-2"
+            onClick={() => void verElCorreo()}
+            disabled={cargandoVistaPrevia}
+            data-testid="ver-correo-de-invitacion"
+          >
+            <EnvelopeSimple className="h-4 w-4" aria-hidden="true" />
+            {cargandoVistaPrevia ? 'Abriendo…' : 'Ver el correo'}
+          </Button>
           <Button
             hideArrow
             className="gap-2"
@@ -479,6 +533,25 @@ export function InvitacionesPendientes({ version = 0 }: {
           </Button>
         </CajonPie>
       </Cajon>
+
+      <Dialog open={vistaPrevia !== null} onOpenChange={(abierta) => !abierta && setVistaPrevia(null)}>
+        <DialogContent className="max-w-2xl" data-testid="vista-previa-de-la-invitacion">
+          <DialogHeader>
+            <DialogTitle>El correo que les llega</DialogTitle>
+            <DialogDescription>
+              Asunto: «{vistaPrevia?.asunto}». El enlace de esta muestra no funciona: cada persona recibe el suyo.
+            </DialogDescription>
+          </DialogHeader>
+          {vistaPrevia ? (
+            <iframe
+              title="Vista previa del correo de invitación"
+              srcDoc={vistaPrevia.html}
+              sandbox=""
+              className="h-[60vh] w-full rounded-lg border border-border bg-white"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

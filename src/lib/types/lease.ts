@@ -28,7 +28,7 @@ export interface Lease {
   deposit?: number;
   startDate: string;
   endDate: string;
-  paymentDay: number; // Day of month (1-28)
+  paymentDay: number | null; // Día del mes en que vence la cuota; null = sin definir
 
   // ─── Campos legacy / no modelados en backend ────────
   /** @deprecated backend no modela adminFee en lease. Si necesitas, viene de la property. */

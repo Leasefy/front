@@ -23,6 +23,19 @@ export function canonVigente(persona: Inquilino): number {
   return arriendosVigentes(persona).reduce((suma, a) => suma + a.canonCop, 0);
 }
 
+/**
+ * El canon que la FILA muestra (QA-INQ-95, T-02). Con varios arriendos, la suma
+ * de los vigentes; con uno, el suyo (vigente o no: «En firma $4.500.000»,
+ * «Empieza el 1 de nov $3.300.000»); sin arriendo, `null` («—»). Ordenar por
+ * otra cuenta que la que se ve dejaba una fila de $4.500.000 al final de «mayor
+ * a menor», detrás de las de $1.000.000.
+ */
+export function canonDeLaFila(persona: Inquilino): number | null {
+  if (persona.arriendos.length === 0) return null;
+  if (persona.arriendos.length > 1) return canonVigente(persona);
+  return (arriendosVigentes(persona)[0] ?? persona.arriendos[0]).canonCop;
+}
+
 /** Ordena sin mutar. El nombre con `localeCompare` es-CO: «Ñ» va donde debe. */
 export function ordenarInquilinos(
   inquilinos: readonly Inquilino[],
@@ -34,8 +47,16 @@ export function ordenarInquilinos(
     switch (campo) {
       case 'arriendos':
         return (a.arriendos.length - b.arriendos.length) * signo;
-      case 'canon':
-        return (canonVigente(a) - canonVigente(b)) * signo;
+      case 'canon': {
+        // Lo que no tiene canon («—», sin arriendo) va al final en los dos sentidos.
+        const ca = canonDeLaFila(a);
+        const cb = canonDeLaFila(b);
+        if (ca === null || cb === null) {
+          if (ca === cb) return a.nombre.localeCompare(b.nombre, 'es-CO');
+          return ca === null ? 1 : -1;
+        }
+        return (ca - cb) * signo || a.nombre.localeCompare(b.nombre, 'es-CO');
+      }
       default:
         return a.nombre.localeCompare(b.nombre, 'es-CO') * signo;
     }

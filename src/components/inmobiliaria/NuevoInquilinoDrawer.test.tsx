@@ -180,6 +180,17 @@ describe('NuevoInquilinoDrawer', () => {
     expect(creados).toEqual(['u-1']);
   });
 
+  it('QA-INQ-95 E-34: el teléfono pegado con +57 y espacios viaja en dígitos nacionales, como el del registro', async () => {
+    montar();
+    escribir('inquilino-nombre', 'Carla Mesa');
+    escribir('inquilino-documento', '1020304050');
+    escribir('inquilino-telefono', '+57 300 999 9999');
+    guardar();
+    await act(async () => {});
+
+    expect((crearMock.mock.calls[0][0] as Record<string, unknown>).telefono).toBe('3009999999');
+  });
+
   it('🔴 un campo vacío se OMITE, no se manda como «»', async () => {
     montar();
     escribir('inquilino-nombre', 'Carla Mesa');
@@ -291,5 +302,20 @@ describe('NuevoInquilinoDrawer', () => {
     guardar();
     await act(async () => {});
     expect(errores[0].descripcion).toMatch(/conexión/);
+  });
+});
+
+/*
+ * QA-INQ-95 (N-09, 04-10-2026): el pasaporte lleva letras; el teclado numérico
+ * del celular no deja escribirlas.
+ */
+describe('tecladoDelDocumento', () => {
+  it('numérico sólo para cédula y tarjeta de identidad', async () => {
+    const { tecladoDelDocumento } = await import('./NuevoInquilinoDrawer');
+    expect(tecladoDelDocumento('CC')).toBe('numeric');
+    expect(tecladoDelDocumento('TI')).toBe('numeric');
+    expect(tecladoDelDocumento('PASSPORT')).toBe('text');
+    expect(tecladoDelDocumento('CE')).toBe('text');
+    expect(tecladoDelDocumento('NIT')).toBe('text');
   });
 });

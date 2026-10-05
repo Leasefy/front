@@ -28,6 +28,8 @@ export interface CuotaPlanTableProps {
   /** Locale para formato de fecha; por defecto el del contexto i18n. */
   locale?: string;
   className?: string;
+  /** QA-INQ-95: el acuerdo ya no está vivo (completado, cancelado, incumplido): lo no pagado dice «Sin cobrar». */
+  acuerdoCerrado?: boolean;
 }
 
 /** Fecha de cuota en formato largo es-CO / en-US (o vacío si la fecha es inválida). */
@@ -74,8 +76,10 @@ export function nombreDeLaCuota(numero: number, locale: string): string {
  * Etiqueta factual del estado de la cuota (neutral, sin alarma ni copy de urgencia).
  * Un estado desconocido cae al string crudo — nunca se inventa un color de alarma.
  */
-function cuotaEstadoLabel(status: string, locale: string): string {
+function cuotaEstadoLabel(status: string, locale: string, acuerdoCerrado = false): string {
   const es = locale === 'es';
+  // QA-INQ-95: en un acuerdo cerrado lo que no se pagó por él ya no se cobra.
+  if (acuerdoCerrado && status !== 'paid' && status !== 'pagada') return es ? 'Sin cobrar' : 'Not charged';
   switch (status) {
     case 'paid':
     case 'pagada':
@@ -97,7 +101,7 @@ function cuotaEstadoLabel(status: string, locale: string): string {
   }
 }
 
-export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTableProps) {
+export function CuotaPlanTable({ installments, locale, className, acuerdoCerrado = false }: CuotaPlanTableProps) {
   const { formatCurrency, locale: i18nLocale } = useI18n();
   const loc = locale ?? i18nLocale;
   const es = loc === 'es';
@@ -135,7 +139,7 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <span className="rounded-full bg-surface-muted dark:bg-border px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
-              {cuotaEstadoLabel(cuota.status, loc)}
+              {cuotaEstadoLabel(cuota.status, loc, acuerdoCerrado)}
             </span>
             <span className="text-sm font-mono tabular-nums text-fg dark:text-white whitespace-nowrap">
               {formatCurrency(cuota.amountCop)}

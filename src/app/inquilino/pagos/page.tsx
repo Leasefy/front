@@ -41,6 +41,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { PagarLoVencido } from '@/components/tenant/PagarLoVencido';
 import { pagoEnLineaApi, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
+import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
 
 interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
@@ -206,6 +207,17 @@ function PagosPageContent() {
   // recargan las solicitudes y el período (que queda «en verificación» mientras
   // Wompi no termine) y se limpia la URL para que recargar no repita el aviso.
   const verificacionHecha = useRef(false);
+  // QA-INQ-95: recargar con las funciones de AHORA. El efecto corre al montar,
+  // cuando el arriendo todavía no llegó: su `cargarPagoEnLinea` no tenía
+  // arriendo y no recargaba nada. Tras pagar, «Pagar lo vencido» seguía
+  // diciendo «en verificación» y ofrecía pagar otra vez la cuota ya pagada.
+  const recargarTrasVolver = useRef<() => void>(() => {});
+  recargarTrasVolver.current = () => {
+    refetchRequests();
+    refetchPaymentInfo();
+    cargarResumen();
+    cargarPagoEnLinea();
+  };
   useEffect(() => {
     const transaccion = transaccionDelRetorno(searchParams);
     if (!transaccion || verificacionHecha.current) return;
@@ -215,12 +227,7 @@ function PagosPageContent() {
       transaccion,
       locale,
       aviso: toast,
-      recargar: () => {
-        refetchRequests();
-        refetchPaymentInfo();
-        cargarResumen();
-        cargarPagoEnLinea();
-      },
+      recargar: () => recargarTrasVolver.current(),
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -544,12 +551,8 @@ function PagosPageContent() {
                     const statusConfig = getStatusConfig(request.status);
                     const StatusIcon = statusConfig.icon;
 
-                    const dateLabel =
-                      request.status === 'APPROVED' && request.validatedAt
-                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatShortDate(request.validatedAt)}`
-                        : request.status === 'PENDING_VALIDATION' || request.status === 'PROCESSING'
-                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatShortDate(request.createdAt)}`
-                          : `${locale === 'es' ? 'Vence' : 'Due'} ${formatShortDate(request.dueDate)}`;
+                    // QA-INQ-95: un rechazado dice cuándo lo rechazaron (antes, «Vence …»).
+                    const dateLabel = fechaDeLaSolicitud(request, locale, formatShortDate);
 
                     return (
                       <StaggerItem
@@ -660,8 +663,8 @@ function PagosPageContent() {
                 {/* Comprobante interno vs. factura electrónica (DIAN) — disclosure honesto, una vez. */}
                 <p className="mt-4 text-xs text-fg-muted">
                   {locale === 'es'
-                    ? 'Los comprobantes son de uso interno; la factura electrónica (DIAN) estará disponible más adelante.'
-                    : 'Receipts are for internal use; the DIAN electronic invoice will be available later.'}
+                    ? 'El recibo de caja es el soporte de tu pago. Si tu inmobiliaria te emite factura electrónica, te llega a tu correo.'
+                    : 'The cash receipt is the proof of your payment. If your agency issues you an electronic invoice, it arrives by email.'}
                 </p>
               </>
             ) : (

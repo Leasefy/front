@@ -29,6 +29,7 @@ import { ArrowRight } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui/input';
+import { recortarAlPais } from '@/lib/phone/countries';
 import {
   Select,
   SelectContent,
@@ -136,6 +137,15 @@ export const INQUILINO_VACIO: InquilinoForm = {
   correo: '',
   telefono: '',
 };
+
+/**
+ * QA-INQ-95 (N-09, 04-10-2026): con `inputMode="numeric"` el celular saca el
+ * teclado de números y un pasaporte («AB1234567») no se puede escribir. Sólo
+ * la cédula y la tarjeta de identidad son puros dígitos.
+ */
+export function tecladoDelDocumento(tipo: TipoDeDocumento | string): 'numeric' | 'text' {
+  return tipo === 'CC' || tipo === 'TI' ? 'numeric' : 'text';
+}
 
 export const TIPOS_DE_DOCUMENTO: Array<{ value: TipoDeDocumento; label: string }> = [
   { value: 'CC', label: 'Cédula' },
@@ -479,7 +489,7 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado, editando
                 onBlur={() => dejar('documento')}
                 onChange={(e) => set('documento', e.target.value)}
                 placeholder={form.tipoDocumento === 'NIT' ? '900123456-8' : '1020304050'}
-                inputMode={form.tipoDocumento === 'NIT' ? 'text' : 'numeric'}
+                inputMode={tecladoDelDocumento(form.tipoDocumento)}
                 data-testid="inquilino-documento"
               />
             </Campo>
@@ -515,15 +525,25 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado, editando
           </Campo>
 
           <Campo id={ID_DEL_CAMPO.telefono} label="Teléfono" hint="Opcional" error={errorDe('telefono')}>
-            <Input
-              {...control('telefono')}
-              value={form.telefono}
-              onBlur={() => dejar('telefono')}
-              onChange={(e) => set('telefono', e.target.value)}
-              placeholder="3001234567"
-              inputMode="tel"
-              data-testid="inquilino-telefono"
-            />
+            {/* QA-INQ-95 (E-34): el MISMO formato que el registro del inquilino
+                (`PhoneField`): +57 fijo y el número nacional en dígitos. Lo que
+                se pegue con indicativo o espacios («+57 300 111 2233») queda
+                «3001112233», como el teléfono que escribe la persona. */}
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 font-mono text-sm tabular-nums text-fg-muted" aria-hidden="true">
+                +57
+              </span>
+              <Input
+                {...control('telefono')}
+                value={form.telefono}
+                onBlur={() => dejar('telefono')}
+                onChange={(e) => set('telefono', recortarAlPais(e.target.value))}
+                placeholder="3001234567"
+                inputMode="tel"
+                aria-label="Teléfono, indicativo +57"
+                data-testid="inquilino-telefono"
+              />
+            </div>
           </Campo>
 
           {/* Correo O documento: el error es de los dos campos, que lo nombran

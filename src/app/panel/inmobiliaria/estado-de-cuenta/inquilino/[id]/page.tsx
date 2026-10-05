@@ -42,6 +42,24 @@ function Contenido() {
   // que devolvió el back (su número de documento), no el `id` de la ruta, que
   // puede ser la cuenta del portal.
   const [cliente, setCliente] = React.useState<{ documento: string; nombre: string } | null>(null);
+  // QA-INQ-95 (04-10-2026): `cargar` es estable por `id` y `cliente` sólo cambia si cambió
+  // la persona. Antes era una flecha nueva en cada render y guardaba un objeto nuevo al
+  // resolver: otro render → otro `cargar` → la pantalla volvía a pedir, ~27 veces por
+  // segundo, hasta que el limitador del back respondía 429.
+  const cargar = React.useCallback(
+    (filtro?: Parameters<typeof estadoDeCuentaApi.inquilino>[1]) =>
+      estadoDeCuentaApi.inquilino(id, filtro).then((doc) => {
+        const documento = doc.cliente?.documento?.trim();
+        const nombre = doc.cliente?.nombre ?? '';
+        setCliente((antes) => {
+          if (!documento) return antes === null ? antes : null;
+          if (antes && antes.documento === documento && antes.nombre === nombre) return antes;
+          return { documento, nombre };
+        });
+        return doc;
+      }),
+    [id],
+  );
 
   return (
     <ProveedorDeAnularRecibo habilitado={isAdmin} onAnulado={() => setVersion((v) => v + 1)}>
@@ -50,13 +68,7 @@ function Contenido() {
         /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
            el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
            quien abre el enlace compartido. */
-        cargar={(filtro) =>
-          estadoDeCuentaApi.inquilino(id, filtro).then((doc) => {
-            const documento = doc.cliente?.documento?.trim();
-            setCliente(documento ? { documento, nombre: doc.cliente.nombre } : null);
-            return doc;
-          })
-        }
+        cargar={cargar}
         volverA={{ href: volver }}
         /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
            a configurar las reglas. El portal y el enlace no lo pasan. */

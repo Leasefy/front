@@ -101,13 +101,8 @@ const EN_PANTALLA: Record<string, Promesa> = {
   // `/mine` la lista sale vacía y la pantalla dice «Acuerdo no encontrado».
   // `/mine`, `/accept` y `/request` los vigila `rutas-que-el-back-no-tiene`;
   // `/:planId` lo pide la ruta del servidor de la sesión de pago.
-  'app/inquilino/casos/page.tsx': {
-    estado: 'FALTA',
-    de: 'infra',
-    nota:
-      'Avisar al inquilino por push y por WhatsApp. El aviso dentro del portal sí ' +
-      'es real; lo que falta es el canal, no la pantalla.',
-  },
+  // `app/inquilino/casos/page.tsx` salió de acá el 04-10-2026 (QA-INQ-95, PI-30):
+  // ya no promete push ni WhatsApp; dice que los avisos quedan en la campana.
   'app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx': {
     estado: 'FALTA',
     de: 'back',

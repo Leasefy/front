@@ -66,7 +66,12 @@ export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento'
    * COLA-FRONT (04-10, la recomendada): tiene algo arrendado y ningún giro
    * programado (`proximoGiro: null`). Lo agrega el front, no el back.
    */
-  | 'diaDeGiro';
+  | 'diaDeGiro'
+  /**
+   * QA-PROP-95 B-08 (04-10): «CC» con un número con forma de NIT de empresa
+   * (9 dígitos que empiezan por 8 o 9). El back no lo corrige solo: se revisa.
+   */
+  | 'tipoDocumentoPorRevisar';
 
 /**
  * Un inmueble en la ficha del propietario, con SU parte (QA-PROP P-02, back
@@ -114,6 +119,12 @@ export interface Propietario {
    * Ausente con un back anterior.
    */
   inmueblesSinPorcentaje?: InmuebleSinPorcentaje[];
+  /**
+   * QA-PROP-95 B-40 (04-10): el banco devolvió un giro suyo por la cuenta y no
+   * hay un cambio de cuenta aprobado después: lo suyo queda retenido. Sólo en
+   * el detalle; `null` si quien mira no ve la plata; ausente con un back anterior.
+   */
+  giroRetenidoPorLaCuenta?: boolean | null;
   address?: string;
   city?: string;
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
@@ -1294,6 +1305,8 @@ export interface ResultadoDeEnvioMasivo {
   enviados: number;
   fallidos: number;
   omitidos: number;
+  /** QA-PROP-95 C-41: los que ya lo habían recibido ese mes (no se les reenvió). */
+  yaLoTenian?: number;
   detalle: DetalleDeEnvioDeExtracto[];
 }
 

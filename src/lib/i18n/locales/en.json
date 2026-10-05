@@ -1962,6 +1962,10 @@
         "resultadoDesc": "{{enviados}} sent · {{fallidos}} failed · {{omitidos}} skipped",
         "errorEnvio": "The statements could not be sent",
         "verDetalle": "See the ones that did not go out ({{n}})",
+        "enElCentro": "are being sent in the process center. You can follow the progress and stop it there; meanwhile you can keep working.",
+        "detenido": "was stopped before finishing. Nothing was sent to the ones left.",
+        "verEnElCentro": "View in the process center",
+        "verDetalleEnElCentro": "See in the process center who did not get it",
         "todosSalieron": "All of them went out.",
         "estado": {
           "ENVIADO": "Sent",
@@ -12877,6 +12881,7 @@
     "nav": "Migration",
     "enLaLista": {
       "titulo": "{{n}} migrated contracts are still incomplete",
+      "tituloUno": "1 migrated contract is not complete yet",
       "detalle": "{{deuda}}. Until they are linked they do not bill and they do not show up here.",
       "accion": "Complete the migration"
     },

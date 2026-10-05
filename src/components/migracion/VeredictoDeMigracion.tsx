@@ -463,7 +463,15 @@ export function useCopyDeMigracionEnLista(): (deuda: DeudaDeMigracion) => {
   const frase = useFraseDeDeuda();
   return useCallback(
     (deuda: DeudaDeMigracion) => ({
-      titulo: t("migracion.enLaLista.titulo", { n: deuda.contratos }),
+      /*
+       * 🔴 QA-PROP-95 A-62 (04-10-2026): el número es lo que de verdad falta
+       * (filas sin activar + contratos activos sin inmueble o sin propietario),
+       * no el total de filas del archivo: el lab decía «103 contratos migrados
+       * todavía no están completos» con 63 activados, 39 descartados y 1 a medias.
+       */
+      titulo: ((n) => (n === 1 ? t("migracion.enLaLista.tituloUno") : t("migracion.enLaLista.titulo", { n })))(
+        deuda.pendientes + deuda.sinInmueble + deuda.sinPropietario,
+      ),
       detalle: t("migracion.enLaLista.detalle", { deuda: frase(deuda) }),
       accion: t("migracion.enLaLista.accion"),
     }),

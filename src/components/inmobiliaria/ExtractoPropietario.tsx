@@ -46,6 +46,7 @@ import { nombreDelMes } from '@/lib/utils/mes';
 import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 import { useDesbordeHorizontal } from '@/components/ui/use-desborde-horizontal';
+import { estadoDelGiroDeLaLinea, partesDelGiro } from '@/lib/propietarios/estado-del-giro';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -600,6 +601,12 @@ export function ExtractoPropietario({
                       >
                         <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
+                        {/* QA-PROP-95 C-10: en qué va el giro de esta línea. */}
+                        {estadoDelGiroDeLaLinea(prop) && (
+                          <span className="block text-xs font-normal text-muted-foreground" data-testid="estado-del-giro">
+                            {estadoDelGiroDeLaLinea(prop)}
+                          </span>
+                        )}
                       </TableCell>
                     </TableRowAnimada>
                   );
@@ -745,6 +752,17 @@ export function ExtractoPropietario({
                     {formatCurrency(extracto.totals.totalNet)}
                   </span>
                 </div>
+                {/* QA-PROP-95 C-10: lo mismo que dice el PDF («De eso, ya girado…»). */}
+                {partesDelGiro(extracto.totals).length > 0 && (
+                  <div className="mt-2 space-y-1" data-testid="extracto-estado-del-giro">
+                    {partesDelGiro(extracto.totals).map((p) => (
+                      <div key={p.etiqueta} className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{p.etiqueta}</span>
+                        <span className="text-xs tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {extracto.totals.totalDeTerceros > 0 && (
                 /* Nombrar lo que entró y no es suyo. Sin esto, un propietario

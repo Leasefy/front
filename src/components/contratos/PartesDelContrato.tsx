@@ -554,17 +554,28 @@ function Propietarios({
         {lista.map((p) => (
           <li key={p.id} className="flex items-start justify-between gap-3 text-sm">
             <div className="min-w-0">
-              <Link
-                href={conRegreso(
-                  `/panel/inmobiliaria/propietarios/${p.id}`,
-                  `/panel/inmobiliaria/contratos/${contract.id}`,
-                )}
-                className="block break-words font-medium text-foreground hover:underline"
-                data-testid="propietario-ficha"
-              >
-                {p.name}
-              </Link>
-              <span className="block text-caption text-muted-foreground">{documentoParaMostrar(p.documentNumber)}</span>
+              {p.sinFicha ? (
+                /* QA-PROP-95 B-06: el dueño del archivo sin ficha. Su id es el de
+                   la parte del historial: enlazarlo abría «no encontrado». */
+                <span className="block break-words font-medium text-foreground" data-testid="propietario-sin-ficha">
+                  {p.name}
+                </span>
+              ) : (
+                <Link
+                  href={conRegreso(
+                    `/panel/inmobiliaria/propietarios/${p.id}`,
+                    `/panel/inmobiliaria/contratos/${contract.id}`,
+                  )}
+                  className="block break-words font-medium text-foreground hover:underline"
+                  data-testid="propietario-ficha"
+                >
+                  {p.name}
+                </Link>
+              )}
+              <span className="block text-caption text-muted-foreground">
+                {documentoParaMostrar(p.documentNumber)}
+                {p.sinFicha ? ' · Dueño según el archivo, sin ficha de propietario en Leasefy' : ''}
+              </span>
             </div>
             {varios ? (
               /* El % y la plata de cada uno, y el chip en el mayoritario — el

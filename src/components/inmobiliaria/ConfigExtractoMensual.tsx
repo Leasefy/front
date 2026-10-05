@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { EnvelopeSimple, PaperPlaneTilt, Warning, CaretDown } from '@phosphor-icons/react';
+import { EnvelopeSimple, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -22,11 +22,13 @@ import { useI18n } from '@/lib/i18n';
 import { formatDateTime } from '@/lib/format';
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { abrirCentroDeProcesos } from '@/lib/api/procesos.service';
+import type { Proceso } from '@/lib/api/procesos.types';
+import { lanzarEnElCentro } from '@/lib/procesos/en-el-centro';
 import type {
   AgencyProfile,
   UpdateAgencyPayload,
   ResumenDeExtractos,
-  ResultadoDeEnvioMasivo,
 } from '@/lib/types/inmobiliaria';
 
 /** Rango del día — el mismo `@Min(1) @Max(28)` del DTO del back: existe en todos los meses. */
@@ -154,23 +156,38 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
   // ── Enviar ahora ───────────────────────────────────────────────────────────
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [resultado, setResultado] = useState<ResultadoDeEnvioMasivo | null>(null);
-  const [detalleAbierto, setDetalleAbierto] = useState(false);
+  /**
+   * QA-PROP-95 C-42 (05-10-2026): el envío corre EN EL CENTRO DE PROCESOS
+   * (avance «N de M» y «Detener»); acá queda cómo va y, al final, el resumen
+   * que dejó el back («24 enviados · 1 falló · 2 sin enviar · 12 ya lo
+   * tenían»). Quiénes no lo recibieron, y por qué, es el CSV del proceso.
+   */
+  const [ultimoEnvio, setUltimoEnvio] = useState<{
+    procesoId: string;
+    estado: Proceso['estado'];
+    mensaje: string | null;
+    conDetalle: boolean;
+  } | null>(null);
 
   const enviarAhora = async () => {
     setEnviando(true);
+    const titulo = t('inmobiliaria.config.extractoMensual.resultadoTitle', { mes: mesTitulo });
     try {
-      const r = await propietariosApi.enviarExtractosDelMes(mes, true);
-      setResultado(r);
-      setDetalleAbierto(false);
-      toast.success(t('inmobiliaria.config.extractoMensual.resultadoTitle', { mes: mesEnTitulo(r.month, locale) }), {
-        description: t('inmobiliaria.config.extractoMensual.resultadoDesc', {
-          enviados: r.enviados,
-          fallidos: r.fallidos,
-          omitidos: r.omitidos,
-        }),
+      const { procesoId } = await lanzarEnElCentro({
+        titulo,
+        tipoDeProceso: 'ENVIO_MASIVO',
+        pedir: () => propietariosApi.enviarExtractosDelMesEnElCentro(mes, true),
+        alTerminar: (p) => {
+          setUltimoEnvio({ procesoId: p.id, estado: p.estado, mensaje: p.mensaje, conDetalle: Boolean(p.archivo) });
+          setResumenVersion((v) => v + 1);
+          if (p.estado === 'FALLO') {
+            toast.error(t('inmobiliaria.config.extractoMensual.errorEnvio'), { description: p.mensaje ?? undefined });
+          } else {
+            toast.success(titulo, { description: p.mensaje ?? undefined });
+          }
+        },
       });
-      setResumenVersion((v) => v + 1);
+      setUltimoEnvio({ procesoId, estado: 'CORRIENDO', mensaje: null, conDetalle: false });
     } catch (e: unknown) {
       toast.error(t('inmobiliaria.config.extractoMensual.errorEnvio'), {
         description: mensajeParaLaPersona(e, {
@@ -183,8 +200,6 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
       setConfirmando(false);
     }
   };
-
-  const noSalieron = resultado?.detalle.filter((d) => d.estado !== 'ENVIADO') ?? [];
 
   return (
     <section
@@ -327,49 +342,34 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
           </Button>
         )}
 
-        {resultado && (
-          <div className="space-y-2 rounded-md border border-border bg-card p-3" data-testid="extracto-mensual-resultado">
+        {ultimoEnvio && (
+          <div
+            className="space-y-2 rounded-md border border-border bg-card p-3"
+            data-testid="extracto-mensual-resultado"
+            role="status"
+          >
             <p className="text-sm text-foreground">
               <span className="font-semibold">
-                {t('inmobiliaria.config.extractoMensual.resultadoTitle', { mes: mesEnTitulo(resultado.month, locale) })}
+                {t('inmobiliaria.config.extractoMensual.resultadoTitle', { mes: mesTitulo })}
               </span>
               {': '}
-              {t('inmobiliaria.config.extractoMensual.resultadoDesc', {
-                enviados: resultado.enviados,
-                fallidos: resultado.fallidos,
-                omitidos: resultado.omitidos,
-              })}
+              {ultimoEnvio.estado === 'CORRIENDO' || ultimoEnvio.estado === 'EN_COLA'
+                ? t('inmobiliaria.config.extractoMensual.enElCentro')
+                : (ultimoEnvio.mensaje ??
+                  (ultimoEnvio.estado === 'CANCELADO'
+                    ? t('inmobiliaria.config.extractoMensual.detenido')
+                    : t('inmobiliaria.config.extractoMensual.errorEnvio')))}
             </p>
-            {noSalieron.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('inmobiliaria.config.extractoMensual.todosSalieron')}</p>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                  aria-expanded={detalleAbierto}
-                  aria-controls="extracto-mensual-detalle"
-                  data-testid="extracto-mensual-ver-detalle"
-                  onClick={() => setDetalleAbierto((v) => !v)}
-                >
-                  {t('inmobiliaria.config.extractoMensual.verDetalle', { n: noSalieron.length })}
-                  <CaretDown className={cn('w-3 h-3 transition-transform', detalleAbierto && 'rotate-180')} />
-                </button>
-                {detalleAbierto && (
-                  <ul id="extracto-mensual-detalle" className="divide-y divide-border text-sm" data-testid="extracto-mensual-detalle">
-                    {noSalieron.map((d) => (
-                      <li key={d.propietarioId} className="flex flex-wrap items-baseline gap-x-2 py-1.5">
-                        <span className="font-medium text-foreground">{d.nombre}</span>
-                        <span className={cn('text-xs', d.estado === 'FALLIDO' ? 'text-danger' : 'text-muted-foreground')}>
-                          {t(`inmobiliaria.config.extractoMensual.estado.${d.estado}`)}
-                          {d.motivo ? ` · ${d.motivo}` : ''}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              data-testid="extracto-mensual-ver-en-el-centro"
+              onClick={() => abrirCentroDeProcesos({ procesoId: ultimoEnvio.procesoId })}
+            >
+              {ultimoEnvio.conDetalle
+                ? t('inmobiliaria.config.extractoMensual.verDetalleEnElCentro')
+                : t('inmobiliaria.config.extractoMensual.verEnElCentro')}
+            </button>
           </div>
         )}
       </div>

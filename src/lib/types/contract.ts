@@ -373,6 +373,12 @@ export interface PerfilesDelContrato {
 export interface PropietarioDelContrato {
   id: string;
   name: string;
+  /**
+   * QA-PROP-95 B-06 (04-10): el dueño del archivo de un contrato migrado sin
+   * ficha de propietario. Su `id` es el de la parte, no el de una ficha: no se
+   * enlaza. Ausente = tiene ficha.
+   */
+  sinFicha?: boolean;
   /** `null` = ficha creada sin documento (T-0128): se completa desde Propietarios. */
   documentNumber: string | null;
   documentType: string | null;

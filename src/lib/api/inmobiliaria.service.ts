@@ -471,6 +471,17 @@ export const propietariosApi = {
     });
   },
 
+  /**
+   * POST /inmobiliaria/propietarios/extractos/enviar-mes/en-el-centro → 202 `{ procesoId }`.
+   * QA-PROP-95 C-42: el mismo envío, en el centro de procesos (avance y «Detener»).
+   */
+  async enviarExtractosDelMesEnElCentro(month: string, soloSinEnviar = true): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/extractos/enviar-mes/en-el-centro`, {
+      month,
+      soloSinEnviar,
+    });
+  },
+
   /** GET /inmobiliaria/propietarios/:id/extractos — las últimas huellas de envío, de la más reciente. */
   async extractosDe(id: string): Promise<ExtractoEnviado[]> {
     const res = await apiClient.get<{ data: ExtractoEnviado[] } | ExtractoEnviado[]>(

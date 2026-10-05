@@ -5,7 +5,9 @@
  * del perfil (y vuelve atrás si el PUT falla), el día sólo se ve con el switch
  * prendido y se guarda al confirmar (1..28), el bloque «Último mes» pinta el
  * resumen real, y «Enviar ahora» pide confirmación ANTES de tocar el endpoint
- * (manda correos reales) y después lista a los que no salieron con su motivo.
+ * (manda correos reales) y lo lanza EN EL CENTRO DE PROCESOS (QA-PROP-95 C-42):
+ * al terminar dice el resumen del back y lleva al centro, donde está el CSV de
+ * los que no salieron.
  */
 
 import * as React from 'react'
@@ -24,16 +26,21 @@ const { toastMock } = vi.hoisted(() => ({
 }))
 vi.mock('sonner', () => ({ toast: toastMock }))
 
-const { extractosResumenMock, enviarExtractosDelMesMock } = vi.hoisted(() => ({
+const { extractosResumenMock, enviarExtractosDelMesMock, lanzarEnElCentroMock, abrirCentroMock } = vi.hoisted(() => ({
   extractosResumenMock: vi.fn(),
+  /** QA-PROP-95 C-42: ahora es `enviarExtractosDelMesEnElCentro` → `{ procesoId }`. */
   enviarExtractosDelMesMock: vi.fn(),
+  lanzarEnElCentroMock: vi.fn(),
+  abrirCentroMock: vi.fn(),
 }))
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
   propietariosApi: {
     extractosResumen: extractosResumenMock,
-    enviarExtractosDelMes: enviarExtractosDelMesMock,
+    enviarExtractosDelMesEnElCentro: enviarExtractosDelMesMock,
   },
 }))
+vi.mock('@/lib/procesos/en-el-centro', () => ({ lanzarEnElCentro: lanzarEnElCentroMock }))
+vi.mock('@/lib/api/procesos.service', () => ({ abrirCentroDeProcesos: abrirCentroMock }))
 
 import { ConfigExtractoMensual, mesAnterior } from './ConfigExtractoMensual'
 import type { AgencyProfile, ResumenDeExtractos } from '@/lib/types/inmobiliaria'
@@ -72,6 +79,8 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   extractosResumenMock.mockResolvedValue(RESUMEN_CON_ENVIOS)
+  // Como el de verdad: pide al back y devuelve el id; el seguimiento lo dispara cada prueba.
+  lanzarEnElCentroMock.mockImplementation(async (o: { pedir: () => Promise<{ procesoId: string }> }) => o.pedir())
 })
 
 afterEach(() => {
@@ -208,18 +217,8 @@ describe('ConfigExtractoMensual — último mes', () => {
 })
 
 describe('ConfigExtractoMensual — enviar ahora', () => {
-  it('pide confirmación antes de llamar al endpoint, y después lista a los que no salieron', async () => {
-    enviarExtractosDelMesMock.mockResolvedValue({
-      month: '2026-08',
-      enviados: 1,
-      fallidos: 1,
-      omitidos: 1,
-      detalle: [
-        { propietarioId: 'p1', nombre: 'Ana', estado: 'ENVIADO' },
-        { propietarioId: 'p2', nombre: 'Beto', estado: 'FALLIDO', motivo: 'SMTP 550' },
-        { propietarioId: 'p3', nombre: 'Carla', estado: 'OMITIDO', motivo: 'sin correo registrado' },
-      ],
-    })
+  it('pide confirmación antes de llamar al endpoint, lo lanza en el centro y al terminar dice el resumen', async () => {
+    enviarExtractosDelMesMock.mockResolvedValue({ procesoId: 'proc-1' })
     await render()
 
     const boton = q<HTMLButtonElement>('extracto-mensual-enviar-ahora')!
@@ -239,25 +238,54 @@ describe('ConfigExtractoMensual — enviar ahora', () => {
     })
     await flush()
 
+    // QA-PROP-95 C-42: va al centro de procesos como ENVIO_MASIVO.
+    expect(lanzarEnElCentroMock).toHaveBeenCalledTimes(1)
+    const opciones = lanzarEnElCentroMock.mock.calls[0][0] as {
+      tipoDeProceso: string
+      alTerminar: (p: Record<string, unknown>) => void
+    }
+    expect(opciones.tipoDeProceso).toBe('ENVIO_MASIVO')
     expect(enviarExtractosDelMesMock).toHaveBeenCalledWith('2026-08', true)
-    expect(toastMock.success).toHaveBeenCalledTimes(1)
-    // Se relee el resumen después de mandar.
-    expect(extractosResumenMock).toHaveBeenCalledTimes(2)
+    expect(q('extracto-mensual-resultado')!.textContent).toContain('centro de procesos')
+    expect(toastMock.success).not.toHaveBeenCalled()
 
-    const resultado = q('extracto-mensual-resultado')!
-    expect(resultado.textContent).toContain('1 enviados · 1 fallidos · 1 omitidos')
-
+    // Termina: el resumen en palabras del back, se relee el «Último mes» y lleva al CSV.
     await act(async () => {
-      q('extracto-mensual-ver-detalle')!.click()
+      opciones.alTerminar({
+        id: 'proc-1',
+        estado: 'TERMINADO',
+        mensaje: '1 enviado · 1 falló · 1 sin enviar',
+        archivo: { nombre: 'extractos-2026-08-no-salieron.csv' },
+      })
     })
-    const detalle = q('extracto-mensual-detalle')!
-    const filas = Array.from(detalle.querySelectorAll('li')).map((li) => li.textContent)
-    expect(filas).toHaveLength(2)
-    expect(filas[0]).toContain('Beto')
-    expect(filas[0]).toContain('SMTP 550')
-    expect(filas[1]).toContain('Carla')
-    expect(filas[1]).toContain('sin correo registrado')
-    expect(detalle.textContent).not.toContain('Ana')
+    await flush()
+    expect(toastMock.success).toHaveBeenCalledTimes(1)
+    expect(extractosResumenMock).toHaveBeenCalledTimes(2)
+    const resultado = q('extracto-mensual-resultado')!
+    expect(resultado.textContent).toContain('1 enviado · 1 falló · 1 sin enviar')
+    const ver = q<HTMLButtonElement>('extracto-mensual-ver-en-el-centro')!
+    expect(ver.textContent).toMatch(/quiénes no lo recibieron/)
+    await act(async () => {
+      ver.click()
+    })
+    expect(abrirCentroMock).toHaveBeenCalledWith({ procesoId: 'proc-1' })
+  })
+
+  it('si lo detienen en el centro, lo dice', async () => {
+    enviarExtractosDelMesMock.mockResolvedValue({ procesoId: 'proc-2' })
+    await render()
+    await act(async () => {
+      q('extracto-mensual-enviar-ahora')!.click()
+    })
+    await act(async () => {
+      q('extracto-mensual-confirmar', document.body)!.click()
+    })
+    await flush()
+    const { alTerminar } = lanzarEnElCentroMock.mock.calls[0][0] as { alTerminar: (p: Record<string, unknown>) => void }
+    await act(async () => {
+      alTerminar({ id: 'proc-2', estado: 'CANCELADO', mensaje: null, archivo: null })
+    })
+    expect(q('extracto-mensual-resultado')!.textContent).toContain('se detuvo antes de terminar')
   })
 
   it('si el envío falla avisa con el mensaje del back', async () => {

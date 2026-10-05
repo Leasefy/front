@@ -1365,6 +1365,8 @@ function PropietarioDetailContent() {
         abierto={showExtracto}
         onOpenChange={setShowExtracto}
         onEnviado={() => setExtractosVersion((v) => v + 1)}
+        // QA-PROP-95 C-24/F-08: mandarlo pide `dispersiones:edit` (como el back).
+        puedeEnviar={canAccess('dispersiones', 'edit')}
       />
 
       {/* Notes Modal */}

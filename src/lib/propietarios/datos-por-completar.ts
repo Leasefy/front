@@ -17,6 +17,8 @@ const ETIQUETA_DEL_DATO: Record<string, string> = {
   cuentaBancaria: 'cuenta bancaria',
   // COLA-FRONT (04-10): algo arrendado y ningún giro programado.
   diaDeGiro: 'día de giro',
+  // QA-PROP-95 B-08 (04-10): dice «CC» y el número tiene forma de NIT de empresa.
+  tipoDocumentoPorRevisar: 'revisar el tipo de documento (el número parece un NIT)',
 };
 
 /** El número de documento listo para pintar: «Sin registrar» si no hay. */

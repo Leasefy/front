@@ -346,6 +346,18 @@ export function PropietarioStats({
       </StatStrip>
 
       {/* Alertas: qué pasó (con el número), qué hacer, y el botón que lo hace. */}
+      {/* QA-PROP-95 B-40: el banco devolvió su giro por la cuenta → retenido hasta aprobar el cambio. */}
+      {!plataOculta && propietario.giroRetenidoPorLaCuenta === true && (
+        <AlertaAccionable
+          severidad="danger"
+          titulo="El banco devolvió su último giro por la cuenta"
+          accion={{ label: 'Cambiar cuenta', href: `/panel/inmobiliaria/propietarios/${propietario.id}?cambiarCuenta=1` }}
+          data-testid="alerta-giro-retenido"
+        >
+          Lo que se le debe queda retenido: no entra a ningún lote de giros hasta que un administrador apruebe el cambio de su cuenta bancaria.
+        </AlertaAccionable>
+      )}
+
       {sinCuenta && propietario.activeLeases > 0 && (
         <AlertaAccionable
           severidad="danger"

@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-05",
-  "cuantas": 1392,
+  "cuantas": 1393,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -1154,6 +1154,7 @@
     "POST /inmobiliaria/propietarios/:propietarioId/deducciones",
     "POST /inmobiliaria/propietarios/:propietarioId/deducciones/:grupoId/anular",
     "POST /inmobiliaria/propietarios/extractos/enviar-mes",
+    "POST /inmobiliaria/propietarios/extractos/enviar-mes/en-el-centro",
     "POST /inmobiliaria/publicacion/inmuebles/:propertyId/confirmar",
     "POST /inmobiliaria/publicacion/inmuebles/:propertyId/despublicar",
     "POST /inmobiliaria/publicacion/inmuebles/:propertyId/publicar",

@@ -37,6 +37,13 @@ interface ExtractoDelPropietarioDialogProps {
   onOpenChange: (abierto: boolean) => void;
   /** Se llama cuando «Enviar por email» terminó bien (la ficha refresca sus huellas). */
   onEnviado?: () => void;
+  /**
+   * QA-PROP-95 C-24/F-08 (04-10): ¿quien mira puede MANDAR el extracto?
+   * (`dispersiones:edit`, lo mismo que exige el back). Ver no es mandar: un rol
+   * con sólo `dispersiones:view` ve el extracto sin «Enviar por correo».
+   * Ausente = sí (como antes).
+   */
+  puedeEnviar?: boolean;
 }
 
 const FORMA_DE_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -53,6 +60,7 @@ export function ExtractoDelPropietarioDialog({
   abierto,
   onOpenChange,
   onEnviado,
+  puedeEnviar = true,
 }: ExtractoDelPropietarioDialogProps) {
   const { t } = useI18n();
   const [mes, setMes] = useState(() => mesDeHoy());
@@ -175,7 +183,7 @@ export function ExtractoDelPropietarioDialog({
               <ExtractoPropietario
                 extracto={extracto}
                 onDownloadPDF={descargarPdf}
-                onEmail={enviarPorCorreo}
+                onEmail={puedeEnviar ? enviarPorCorreo : undefined}
                 acciones="afuera"
               />
             )}
@@ -190,7 +198,7 @@ export function ExtractoDelPropietarioDialog({
             <AccionesDelExtracto
               extracto={extracto}
               onDownloadPDF={descargarPdf}
-              onEmail={enviarPorCorreo}
+              onEmail={puedeEnviar ? enviarPorCorreo : undefined}
               className="w-full"
             />
           </DialogFooter>

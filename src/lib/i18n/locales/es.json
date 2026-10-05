@@ -1996,6 +1996,10 @@
         "resultadoDesc": "{{enviados}} enviados · {{fallidos}} fallidos · {{omitidos}} omitidos",
         "errorEnvio": "No se pudieron enviar los extractos",
         "verDetalle": "Ver los que no salieron ({{n}})",
+        "enElCentro": "se están mandando en el centro de procesos. Ahí ves el avance y puedes detenerlo; mientras tanto puedes seguir trabajando.",
+        "detenido": "se detuvo antes de terminar. A los que faltaban no se les mandó nada.",
+        "verEnElCentro": "Ver en el centro de procesos",
+        "verDetalleEnElCentro": "Ver en el centro de procesos quiénes no lo recibieron",
         "todosSalieron": "Todos salieron.",
         "estado": {
           "ENVIADO": "Enviado",
@@ -2466,7 +2470,7 @@
         "exportError": "No se pudo exportar. Intenta de nuevo.",
         "createError": "No se pudo crear el propietario. Intenta de nuevo.",
         "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
-        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo.",
+        "deleteError": "No se pudo eliminar el propietario",
         "loadForEditError": "No se pudo abrir la ficha del propietario para editarla. Intenta de nuevo en un momento."
       },
       "detail": {
@@ -12912,6 +12916,7 @@
     "nav": "Migración",
     "enLaLista": {
       "titulo": "{{n}} contratos migrados todavía no están completos",
+      "tituloUno": "1 contrato migrado todavía no está completo",
       "detalle": "{{deuda}}. Hasta que no queden asociados no generan cobros ni aparecen acá.",
       "accion": "Completar la migración"
     },

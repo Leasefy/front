@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/format';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ExtractoEnviado, EstadoDelExtractoEnviado } from '@/lib/types/inmobiliaria';
 
 interface ExtractosEnviadosDelPropietarioProps {
@@ -52,7 +53,11 @@ export function ExtractosEnviadosDelPropietario({ propietarioId, version = 0 }: 
       .catch((e: unknown) => {
         if (!vigente) return;
         setHuellas(null);
-        setError({ mensaje: e instanceof Error && e.message ? e.message : null });
+        // QA-PROP-95 B-51: con la regla de oro del traductor (antes, `e.message`
+        // crudo: un 500 pintaba «Internal server error: TypeError…»).
+        setError({
+          mensaje: mensajeParaLaPersona(e, { accion: 'traer los extractos enviados', porDefecto: '' }) || null,
+        });
       })
       .finally(() => {
         if (vigente) setCargando(false);

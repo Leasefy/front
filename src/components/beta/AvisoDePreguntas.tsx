@@ -17,10 +17,16 @@
  * del chat saca a la persona del chat. (La cláusula decía
  * `/legal/privacidad#16`; la política vive en `/privacidad` y su §16 en el
  * ancla `#seccion-16`, que es a donde lleva.)
+ *
+ * 🔴 APAGADO desde el 05-10-2026 (Nico): «esto no debería ser tan directo,
+ * sólo meterlo en términos y condiciones o política de privacidad y ya». Lo
+ * dicen la §13 (12 meses) y la §16 (Leasefy revisa las preguntas, sin el
+ * nombre ni el correo) de la política v4.0, que cada persona vuelve a aceptar
+ * al entrar. El componente queda por si se vuelve a pedir la línea.
  */
 
-/** Prendido: la cláusula está aprobada y publicada (política v4.0). */
-export const AVISO_DE_PREGUNTAS_ENCENDIDO = true;
+/** Apagado (Nico, 05-10): lo dice la política v4.0 (§13 y §16), no una línea en el chat. */
+export const AVISO_DE_PREGUNTAS_ENCENDIDO = false;
 
 /** La §16 de la política publicada («Qué hacemos con la información de la plataforma»). */
 export const ENLACE_DE_LA_CLAUSULA = '/privacidad#seccion-16';

@@ -27,12 +27,10 @@ function pintar(el: React.ReactElement): HTMLDivElement {
 }
 
 describe('AvisoDePreguntas', () => {
-  it('🔴 está prendido: la cláusula se aprobó y la política v4.0 está publicada', () => {
-    expect(AVISO_DE_PREGUNTAS_ENCENDIDO).toBe(true);
+  it('🔴 Nico, 05-10: está APAGADO — no va debajo del chat, lo dice la política v4.0 (§13 y §16)', () => {
+    expect(AVISO_DE_PREGUNTAS_ENCENDIDO).toBe(false);
     const c = pintar(<AvisoDePreguntas />);
-    expect(c.querySelector('[data-testid="aviso-de-preguntas"]')?.textContent).toContain(
-      'Leasefy revisa las preguntas, sin tu nombre, para mejorar el asistente. Se guardan 12 meses.',
-    );
+    expect(c.querySelector('[data-testid="aviso-de-preguntas"]')).toBeNull();
   });
 
   it('apagado a mano, no se pinta', () => {

@@ -40,6 +40,7 @@ import { useLenis } from '@/components/providers/SmoothScroll';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { NotasDelLead } from '@/components/inmobiliaria/NotasDelLead';
+import { CaptacionDelLead } from '@/components/inmobiliaria/CaptacionDelLead';
 import { Combobox } from '@/components/ui/combobox';
 import { embudoApi } from '@/lib/api/embudo.service';
 import type { MiembroDelEquipo } from '@/lib/api/agenda.types';
@@ -649,6 +650,15 @@ export function PipelineDetail({
                 {t('inmobiliaria.pipeline.historyNotRecorded')}
               </p>
             </div>
+          </div>
+
+          {/* FALTANTES (05-10-2026, #2): la captación del propietario que llega. */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Buildings className="w-3.5 h-3.5" />
+              Captación
+            </h4>
+            <CaptacionDelLead pipelineItemId={item.id} puedeEditar={puedeEditar} />
           </div>
 
           {/* Notes Section */}

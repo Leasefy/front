@@ -465,13 +465,19 @@ export function TerminosContenido() {
                   <li>Informarle cualquier incidente de seguridad que afecte sus datos, y reportarlo a la autoridad cuando la ley nos obligue.</li>
                   <li>Devolver o suprimir los datos al terminar la relación, salvo lo que debamos conservar por ley.</li>
                 </ul>
-                {/* v2.1 (04-10-2026): la frase del Anexo de Encargo sobre las
-                    preguntas al asistente, aprobada tal cual por Nico junto
-                    con la §16 de la Política v4.0. */}
+                {/* v2.1 (04-10-2026): la frase sobre las preguntas al asistente,
+                    aprobada tal cual por Nico junto con la §16 de la Política v4.0.
+                    🔴 PENDIENTE REVISIÓN LEGAL (FALTANTES, 05-10-2026, decisión 2 del
+                    05-10): el «Anexo de Encargo» que esta frase suponía NO existe y no
+                    se inventa. La frase remite ahora al contrato de mandato firmado con
+                    la inmobiliaria; el abogado de Leasefy la revisa antes de publicarla
+                    (anotado para Víctor: no desplegar este texto sin su visto bueno). */}
                 <p className="mb-3">
                   La inmobiliaria autoriza a Leasefy a revisar, en los términos de
                   la §16 de la Política, las preguntas que su equipo hace al
-                  asistente, con el único fin de mejorar el servicio.
+                  asistente, con el único fin de mejorar el servicio. Esta
+                  autorización y el encargo de esta sección hacen parte del contrato
+                  de mandato que la inmobiliaria firma con Leasefy.
                 </p>
                 <p>
                   De los datos de nuestros propios clientes y de quien navega el sitio,

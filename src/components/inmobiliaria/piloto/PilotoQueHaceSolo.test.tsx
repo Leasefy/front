@@ -123,9 +123,13 @@ describe('Qué hace solo, por agente', () => {
   })
 
   it('escogido: dice quién y cuándo, y qué le falta hoy para actuar', () => {
-    const escogido = { ...RENOVACION, escogido: true, escogidoPor: 'ana@lab.test', escogidoEn: '2026-10-05T02:10:00.000Z', porQueNoActua: 'Contratos no está en Automático: mientras tanto pide tu clic.' }
+    // FALTANTES (05-10-2026, decisión 18): el NOMBRE de quien lo escogió, nunca su correo.
+    const escogido = { ...RENOVACION, escogido: true, escogidoPor: 'Ana Administradora Lab', escogidoEn: '2026-10-05T02:10:00.000Z', porQueNoActua: 'Contratos no está en Automático: mientras tanto pide tu clic.' }
     act(() => root.render(<PilotoQueHaceSoloDelAgente agente="contratos" datos={DATOS({ tipos: [escogido] })} ocupado={null} onEscoger={vi.fn()} />))
-    expect(q('piloto-tipo-quien-gerente.renovacion_propuesta')?.textContent).toBe('Lo escogió ana@lab.test el 4 de octubre de 2026.')
+    expect(q('piloto-tipo-quien-gerente.renovacion_propuesta')?.textContent).toBe('Lo escogió Ana Administradora Lab el 4 de octubre de 2026.')
+    // Un micro anterior que todavía manda el correo: el correo no se pinta.
+    act(() => root.render(<PilotoQueHaceSoloDelAgente agente="contratos" datos={DATOS({ tipos: [{ ...escogido, escogidoPor: 'ana@lab.test' }] })} ocupado={null} onEscoger={vi.fn()} />))
+    expect(q('piloto-tipo-quien-gerente.renovacion_propuesta')?.textContent).toBe('Lo escogió una persona del equipo el 4 de octubre de 2026.')
     expect(q('piloto-tipo-no-actua-gerente.renovacion_propuesta')?.textContent).toContain('no está en Automático')
   })
 

@@ -40,6 +40,17 @@ export function diaDeLaEleccion(iso: string | null): string | null {
   return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long', year: 'numeric' }).format(d)
 }
 
+/**
+ * FALTANTES (05-10-2026, decisión 18): quién lo escogió, con su NOMBRE. El micro
+ * ya lo manda con el nombre; un micro anterior mandaba el correo, y un correo
+ * nunca se pinta.
+ */
+export function quienLoEscogio(escogidoPor: string | null | undefined): string {
+  const q = (escogidoPor ?? '').trim()
+  if (!q) return 'un administrador'
+  return q.includes('@') ? 'una persona del equipo' : q
+}
+
 export interface PilotoQueHaceSoloDelAgenteProps {
   agente: string
   datos: PilotoTiposQueVanSolosResponse | null
@@ -103,7 +114,7 @@ export function PilotoQueHaceSoloDelAgente({ agente, datos, ocupado, onEscoger }
               >
                 {(t.escogidoPor || t.escogidoEn) && (
                   <p className="text-caption leading-snug text-fg-subtle" data-testid={`piloto-tipo-quien-${t.tipo}`}>
-                    Lo escogió {t.escogidoPor ?? 'un administrador'}
+                    Lo escogió {quienLoEscogio(t.escogidoPor)}
                     {diaDeLaEleccion(t.escogidoEn) ? ` el ${diaDeLaEleccion(t.escogidoEn)}` : ''}.
                   </p>
                 )}

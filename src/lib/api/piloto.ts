@@ -673,7 +673,7 @@ export interface TipoQueVaSolo {
   envio: 'cobranza' | 'aviso' | null
   porDefecto: string
   escogido: boolean
-  /** Quién lo escogió (su correo) y cuándo (ISO). */
+  /** Quién lo escogió (su NOMBRE: decisión 18 del 05-10-2026; nunca el correo) y cuándo (ISO). */
   escogidoPor: string | null
   escogidoEn: string | null
   /** ¿Hoy actuaría solo? (escogido, con el Piloto activo y su agente en Automático). */

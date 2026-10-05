@@ -15,6 +15,7 @@ import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacio
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
 import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
+import { AceptarLegalesAlEntrar } from "@/components/legal/AceptarLegalesAlEntrar";
 import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
 
@@ -148,6 +149,8 @@ export default async function RootLayout({
               <SessionRevocationHandler />
               <IdleSessionGuard />
               <SesionDeRecuperacionGuard />
+              {/* FALTANTES (05-10-2026, decisión 1): la política v4.0 y los términos v2.1 se aceptan una vez al próximo ingreso. */}
+              <AceptarLegalesAlEntrar />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>

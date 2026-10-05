@@ -54,7 +54,7 @@ import {
   rotuloDePorGirar,
   rotuloDeProximosGiros,
 } from '@/lib/propietarios/por-girar';
-import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
+import { SIN_MEDIR, tasaEnPantalla } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
@@ -98,8 +98,8 @@ export function definicionDelTramo(
  */
 export function textoDeLaVariacion(variacionPct: number | null): string {
   if (variacionPct === null || !Number.isFinite(variacionPct)) return SIN_MEDIR;
-  const signo = variacionPct > 0 ? '+' : '';
-  return `${signo}${variacionPct.toFixed(1)}%`;
+  // TB-04: «+4,2 %» como se escribe en Colombia (antes «+4.2%»).
+  return tasaEnPantalla(variacionPct, 1, { conSigno: true });
 }
 
 export function TableroFinancieroPanel() {
@@ -246,17 +246,18 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
         <CifraDeTexto
           id="tasa-de-recaudo"
           etiqueta="% recaudado"
-          texto={textoDeTasa(recaudo.tasaPct)}
+          texto={tasaEnPantalla(recaudo.tasaPct)}
           definicion={`Qué parte de ${base} llegó. ${recaudo.rotulo}`}
           pie={
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
               {formatCurrency(recaudo.mesAnterior.recaudadoCop)} de{' '}
-              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({textoDeTasa(recaudo.mesAnterior.tasaPct)}
+              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}
               ). Variación del recaudo:{' '}
               <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>
+              {/* TB-04: un solo guion (antes «— —»: la raya de la cifra y otra delante de la frase). */}
               {recaudo.variacionPct === null
-                ? ' — el mes anterior no recaudó nada, así que no hay contra qué comparar.'
+                ? '. El mes anterior no recaudó nada, así que no hay contra qué comparar.'
                 : '.'}
             </span>
           }
@@ -506,7 +507,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
             <span data-testid="margen-pct">
               {margen.margenPct === null
                 ? `${SIN_MEDIR} sobre ingresos: no hubo ingresos propios contra los cuales medirlo.`
-                : `${textoDeTasa(margen.margenPct)} de los ingresos propios.`}
+                : `${tasaEnPantalla(margen.margenPct)} de los ingresos propios.`}
             </span>
           }
         />

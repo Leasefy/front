@@ -653,6 +653,110 @@ export async function putPilotoModoPropio(
   }
 }
 
+// ── AUTONOMIA-POR-TIPO (04-10-2026): «Qué hace solo» ─────────────────────────
+//
+// Nico (31-08): «si la inmobiliaria eligió piloto automático, que se maneje
+// sola — según lo que haya escogido». Por defecto, lo que P-4 deja con clic
+// sigue con clic; un administrador puede escoger, tipo por tipo, que vaya solo
+// (con su código de ahora y una confirmación). Lo que nunca va solo, la
+// pantalla lo dice.
+
+export interface TipoQueVaSolo {
+  /** La llave de la elección (`gerente.renovacion_propuesta`). */
+  tipo: string
+  agente: string
+  procesos: string[]
+  nombre: string
+  queVaAPasar: string
+  aQuienLeLlega: string
+  condiciones: string[]
+  envio: 'cobranza' | 'aviso' | null
+  porDefecto: string
+  escogido: boolean
+  /** Quién lo escogió (su correo) y cuándo (ISO). */
+  escogidoPor: string | null
+  escogidoEn: string | null
+  /** ¿Hoy actuaría solo? (escogido, con el Piloto activo y su agente en Automático). */
+  actuaHoy: boolean
+  porQueNoActua: string | null
+}
+
+export interface LoQueNuncaVaSolo {
+  categoria: string
+  nombre: string
+  porQue: string
+  procesos: Array<{ id: string; agente: string; queHace: string }>
+}
+
+export interface LoQueNoPuedeIrSolo {
+  id: string
+  agente: string
+  queHace: string
+  porQue: string
+}
+
+export interface PilotoTiposQueVanSolosResponse {
+  tipos: TipoQueVaSolo[]
+  nunca: LoQueNuncaVaSolo[]
+  noPuedenIrSolos: LoQueNoPuedeIrSolo[]
+  puedeEditar: boolean
+  /** `false` = todavía no se puede guardar (falta una actualización de la base). */
+  guardable: boolean | null
+  porQueNo: string | null
+  pilotoActivo: boolean
+}
+
+/** «Qué hace solo». Un micro viejo responde 404: nada que escoger (todo pide el clic, como siempre). */
+export async function fetchPilotoTiposQueVanSolos(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; data?: PilotoTiposQueVanSolosResponse; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/tipos-que-van-solos`, { signal })
+    if (res.status === 404) {
+      return {
+        ok: true,
+        data: { tipos: [], nunca: [], noPuedenIrSolos: [], puedeEditar: false, guardable: null, porQueNo: null, pilotoActivo: false },
+      }
+    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as PilotoTiposQueVanSolosResponse }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'fetch_failed')
+  }
+}
+
+/** Escoge (`vaSolo: true`, pide el código de ahora) o quita que un tipo vaya solo. Sólo un administrador. */
+export async function putPilotoTipoQueVaSolo(
+  agencyId: string,
+  tipo: string,
+  vaSolo: boolean,
+): Promise<{
+  ok: boolean
+  data?: TipoQueVaSolo & { delegacion: { registrada: boolean; porQue: string | null } }
+  error?: string
+  fallo?: unknown
+}> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(
+      `${agentUrl}/api/agency/${agencyId}/piloto/tipos-que-van-solos/${encodeURIComponent(tipo)}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ vaSolo }),
+      },
+    )
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as TipoQueVaSolo & { delegacion: { registrada: boolean; porQue: string | null } } }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
 /**
  * Ejecuta la `accion` declarada por el micro en un item de la bandeja —
  * método + path + body (si viene) son del backend, VERBATIM; acá nunca se

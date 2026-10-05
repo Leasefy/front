@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Clock, Siren } from '@phosphor-icons/react';
+import { Clock, Siren, UserCircleCheck } from '@phosphor-icons/react';
 
 import { Button, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -88,6 +88,32 @@ export function SeccionSlaDePqrs() {
       );
     } finally {
       setGuardandoJefe(false);
+    }
+  };
+
+  // AUTONOMIA-POR-TIPO (04-10-2026): el responsable por defecto de las PQRS que
+  // llegan sin responsable (el Piloto se las asigna sola si la inmobiliaria lo
+  // escogió en Autonomía → «Qué hace solo»). Sólo administrador.
+  const [guardandoPorDefecto, setGuardandoPorDefecto] = useState(false);
+  const guardarPorDefecto = async (userId: string) => {
+    setGuardandoPorDefecto(true);
+    try {
+      const d = await slaDePqrsApi.guardarResponsablePorDefecto(userId || null);
+      setDatos(d);
+      toast.success(
+        d.responsablePorDefectoNombre
+          ? `Listo. Las PQRS sin responsable quedan a cargo de ${d.responsablePorDefectoNombre} cuando el Piloto las asigna solo.`
+          : 'Listo. Las PQRS sin responsable no tienen a quién asignarse solas: piden tu clic.',
+      );
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo guardar el responsable por defecto.',
+          accion: 'guardar el responsable por defecto de las PQRS',
+        }),
+      );
+    } finally {
+      setGuardandoPorDefecto(false);
     }
   };
 
@@ -243,8 +269,47 @@ export function SeccionSlaDePqrs() {
           </select>
         </FilaDeAjuste>
       </TarjetaDeAjustes>
+      {datos.responsablePorDefectoDisponible !== undefined && (
+        <TarjetaDeAjustes>
+          <FilaDeAjuste
+            icono={UserCircleCheck}
+            titulo="Responsable por defecto"
+            descripcion={
+              !datos.responsablePorDefectoDisponible
+                ? 'Todavía no se puede escoger: Leasefy tiene pendiente una actualización. Mientras tanto, las PQRS sin responsable piden tu clic.'
+                : datos.responsablePorDefectoNombre
+                  ? `Si tu inmobiliaria escogió en el Piloto que «Asignar la PQRS sin responsable» vaya solo, la PQRS que llega sin responsable queda a cargo de ${datos.responsablePorDefectoNombre}.`
+                  : 'Sin responsable por defecto, la PQRS que llega sin responsable pide tu clic aunque el Piloto esté en Automático.'
+            }
+          >
+            <select
+              aria-label="Responsable por defecto de las PQRS"
+              value={datos.responsablePorDefectoUserId ?? ''}
+              disabled={!isAdmin || guardandoPorDefecto || !datos.disponible || !datos.responsablePorDefectoDisponible}
+              onChange={(e) => void guardarPorDefecto(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
+              data-testid="pqrs-responsable-por-defecto"
+            >
+              <option value="">Nadie</option>
+              {datos.responsablePorDefectoUserId &&
+                !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
+                  <option value={datos.responsablePorDefectoUserId}>
+                    {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
+                  </option>
+                )}
+              {equipo.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
+          </FilaDeAjuste>
+        </TarjetaDeAjustes>
+      )}
       {!isAdmin && (
-        <p className="text-xs text-fg-muted">Sólo un administrador decide a quién se escalan las PQRS vencidas.</p>
+        <p className="text-xs text-fg-muted">
+          Sólo un administrador decide a quién se escalan las PQRS vencidas y quién es el responsable por defecto.
+        </p>
       )}
 
       <p className="text-xs text-fg-muted">

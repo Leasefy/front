@@ -55,12 +55,21 @@ import {
   MODOS_DEL_PILOTO,
   fetchPilotoGobierno,
   fetchPilotoModosPropios,
+  fetchPilotoTiposQueVanSolos,
   putPilotoGobierno,
   putPilotoModoPropio,
+  putPilotoTipoQueVaSolo,
   type GobiernoItem,
   type PilotoModosPropiosResponse,
+  type PilotoTiposQueVanSolosResponse,
+  type TipoQueVaSolo,
 } from '@/lib/api/piloto'
 import { PilotoModoPropio } from '@/components/inmobiliaria/piloto/PilotoModoPropio'
+import {
+  ExplicacionDeQueVayaSolo,
+  PilotoLoQueNuncaVaSolo,
+  PilotoQueHaceSoloDelAgente,
+} from '@/components/inmobiliaria/piloto/PilotoQueHaceSolo'
 import { useAuth } from '@/lib/auth'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
@@ -116,6 +125,9 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   // Ola E: los procesos con perilla propia (se cargan con el gobierno, al abrir).
   const [modosPropios, setModosPropios] = useState<PilotoModosPropiosResponse | null>(null)
   const [modoPropioBusy, setModoPropioBusy] = useState<string | null>(null)
+  // AUTONOMIA-POR-TIPO (04-10-2026): «Qué hace solo», por agente y por tipo.
+  const [tipos, setTipos] = useState<PilotoTiposQueVanSolosResponse | null>(null)
+  const [tipoBusy, setTipoBusy] = useState<string | null>(null)
   useEffect(() => {
     if (!abierto || !agency?.id) return
     const controller = new AbortController()
@@ -129,8 +141,39 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
       if (controller.signal.aborted || !r.ok || !r.data) return
       setModosPropios(r.data)
     })
+    // AUTONOMIA-POR-TIPO: lo que la inmobiliaria escoge que vaya solo. Un micro
+    // viejo no lo tiene: no se pinta nada (todo pide el clic, como siempre).
+    void fetchPilotoTiposQueVanSolos(agency.id, controller.signal).then((r) => {
+      if (controller.signal.aborted || !r.ok || !r.data) return
+      setTipos(r.data)
+    })
     return () => controller.abort()
   }, [abierto, agency?.id])
+
+  // ── «Qué hace solo» (AUTONOMIA-POR-TIPO, 04-10-2026) ────────────────────
+  const escogerTipo = async (tipo: TipoQueVaSolo, vaSolo: boolean): Promise<{ ok: boolean; fallo?: unknown }> => {
+    if (!agency?.id) return { ok: false }
+    setTipoBusy(tipo.tipo)
+    const res = await putPilotoTipoQueVaSolo(agency.id, tipo.tipo, vaSolo)
+    setTipoBusy(null)
+    if (res.ok && res.data) {
+      const { delegacion, ...guardado } = res.data
+      setTipos((cur) => (cur ? { ...cur, tipos: cur.tipos.map((t) => (t.tipo === tipo.tipo ? guardado : t)) } : cur))
+      if (delegacion && !delegacion.registrada && delegacion.porQue) toast.warning(delegacion.porQue)
+      else toast.success(vaSolo ? `«${tipo.nombre}» va solo desde ahora.` : `«${tipo.nombre}» vuelve a pedir tu clic.`)
+      return { ok: true }
+    }
+    if (!pideSegundoFactor(res.fallo)) {
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo guardar lo que escogiste.',
+          accion: vaSolo ? 'escoger que esto vaya solo' : 'quitar que esto vaya solo',
+        }),
+      )
+    }
+    return { ok: false, fallo: res.fallo }
+  }
+  const [pidiendoTipo, setPidiendoTipo] = useState<TipoQueVaSolo | null>(null)
 
   // ── La perilla PROPIA de un proceso (ola E, Nico C2-IA Q5) ──────────────
   const cambiarModoPropio = async (
@@ -446,6 +489,15 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                   </ul>
                 )}
 
+                {/* AUTONOMIA-POR-TIPO: lo que este agente detecta y la
+                    inmobiliaria puede escoger que vaya solo. */}
+                <PilotoQueHaceSoloDelAgente
+                  agente={row.agente}
+                  datos={tipos}
+                  ocupado={tipoBusy}
+                  onEscoger={(t, vaSolo) => (vaSolo ? setPidiendoTipo(t) : void escogerTipo(t, false))}
+                />
+
                 {/* Ola E: los procesos de este agente con perilla PROPIA (no
                     los mueve el modo de arriba). */}
                 {(modosPropios?.procesos ?? [])
@@ -470,9 +522,29 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           })}
         </div>
 
+        {/* AUTONOMIA-POR-TIPO: lo que nunca va solo y lo que no tiene cómo. */}
+        <PilotoLoQueNuncaVaSolo datos={tipos} nombreDelAgente={(a) => workspaceVocab(t, 'agente', a)} />
+
         {/* La configuración del director: gasto de IA y grupo de control. */}
         <PilotoDirectorAjustes />
       </SheetContent>
+
+      {/* AUTONOMIA-POR-TIPO: escoger que un tipo vaya solo se confirma diciendo qué
+          va a pasar y a quién le llega, con el código de ahora. */}
+      <ConfirmarAutomatico
+        abierto={pidiendoTipo !== null}
+        quien={pidiendoTipo ? `«${pidiendoTipo.nombre}»` : 'esto'}
+        pilotoActivo={tipos?.pilotoActivo !== false}
+        titulo={pidiendoTipo ? `¿Que «${pidiendoTipo.nombre}» vaya solo?` : undefined}
+        descripcion="Por defecto esto pide tu clic. Si lo escoges, el Piloto lo hace solo a tu nombre."
+        explicacion={
+          pidiendoTipo ? <ExplicacionDeQueVayaSolo tipo={pidiendoTipo} pilotoActivo={tipos?.pilotoActivo !== false} /> : undefined
+        }
+        textoSi="Sí, que vaya solo"
+        textoVerificar="Verificar y escoger"
+        onConfirmar={async () => (pidiendoTipo ? escogerTipo(pidiendoTipo, true) : { ok: false })}
+        onCerrar={() => setPidiendoTipo(null)}
+      />
 
       <ConfirmarAutomatico
         abierto={pidiendoAutomatico !== null}

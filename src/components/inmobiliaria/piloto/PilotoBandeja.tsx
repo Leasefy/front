@@ -386,15 +386,19 @@ export function PilotoBandeja({
                     </span>
                   </div>
                   {/* El resumen ya trae el monto de HOY cuando lo hay (contactos
-                      retenidos): no se repite al lado. */}
-                  <p className="mt-1 line-clamp-2 text-caption text-fg-muted">
-                    {item.resumen}
-                    {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
-                      <span className="ml-1 font-mono tabular-nums text-fg">
-                        · {formatCurrency(item.montoCop)}
-                      </span>
-                    )}
-                  </p>
+                      retenidos): no se repite al lado. 04-10 noche (hallazgo
+                      del orquestador): si el resumen ES el motivo, va una sola
+                      vez, con su «Por qué espera tu clic» de abajo. */}
+                  {!(item.motivo && item.resumen.trim() === item.motivo.trim()) && (
+                    <p className="mt-1 line-clamp-2 text-caption text-fg-muted" data-testid={`piloto-bandeja-resumen-${item.id}`}>
+                      {item.resumen}
+                      {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
+                        <span className="ml-1 font-mono tabular-nums text-fg">
+                          · {formatCurrency(item.montoCop)}
+                        </span>
+                      )}
+                    </p>
+                  )}
                   {/* Fase 1 del director: su por qué y su meta, y el motivo
                       de la perilla SIEMPRE que venga. */}
                   <PorQueEnLaFila director={item.director} motivo={item.motivo} id={item.id} />

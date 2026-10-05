@@ -287,6 +287,21 @@ describe('PilotoBandeja — el director', () => {
     expect(container.querySelector('[data-testid="piloto-bandeja-director-acc:2"]')).toBeNull()
   })
 
+  it('🔴 04-10 noche: si el resumen ES el motivo, la fila lo dice UNA sola vez (antes salía dos veces)', () => {
+    const motivo = 'Copiloto: queda listo en tu Bandeja y sale con tu clic.'
+    render({ items: [base({ id: 'acc:9', resumen: motivo, motivo })] })
+    const fila = container.querySelector('[data-testid="piloto-bandeja-fila-acc:9"]')!.closest('li')!
+    expect(fila.textContent!.split(motivo).length - 1).toBe(1)
+    expect(container.querySelector('[data-testid="piloto-bandeja-resumen-acc:9"]')).toBeNull()
+    expect(container.querySelector('[data-testid="piloto-bandeja-motivo-acc:9"]')?.textContent).toContain(motivo)
+  })
+
+  it('con un resumen distinto del motivo se leen los dos', () => {
+    render({ items: [base({ id: 'acc:8', resumen: 'Contrato #12 · vence en 80 días', motivo: 'Copiloto: espera tu clic.' })] })
+    expect(container.querySelector('[data-testid="piloto-bandeja-resumen-acc:8"]')?.textContent).toContain('Contrato #12')
+    expect(container.querySelector('[data-testid="piloto-bandeja-motivo-acc:8"]')?.textContent).toContain('Copiloto: espera tu clic.')
+  })
+
   it('ordena primero lo del director (de mayor a menor prioridad) y después quien más espera', () => {
     render({
       items: [

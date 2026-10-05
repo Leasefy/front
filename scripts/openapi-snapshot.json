@@ -27405,11 +27405,38 @@
             "items": {
               "$ref": "#/components/schemas/DirectorMeta"
             }
+          },
+          "sinMeta": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metrica": {
+                  "type": "string",
+                  "enum": [
+                    "recaudo_a_tiempo",
+                    "mora_30",
+                    "dias_de_vacancia",
+                    "renovacion",
+                    "pqrs_en_plazo",
+                    "horas_ahorradas"
+                  ]
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "metrica",
+                "nombre"
+              ]
+            }
           }
         },
         "required": [
           "encendido",
-          "metas"
+          "metas",
+          "sinMeta"
         ]
       },
       "DirectorError": {
@@ -27609,6 +27636,225 @@
           "activo"
         ],
         "additionalProperties": false
+      },
+      "PilotoDirectorInformeSemanal": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "desde": {
+            "type": "string"
+          },
+          "hasta": {
+            "type": "string"
+          },
+          "piloto": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "detectadas": {
+                "type": "number"
+              },
+              "hechasSolas": {
+                "type": "number"
+              },
+              "hechasConClic": {
+                "type": "number"
+              },
+              "esperanClic": {
+                "type": "number"
+              },
+              "fallidas": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "detectadas",
+              "hechasSolas",
+              "hechasConClic",
+              "esperanClic",
+              "fallidas"
+            ]
+          },
+          "director": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "planes": {
+                "type": "number"
+              },
+              "conLaIa": {
+                "type": "number"
+              },
+              "conReglas": {
+                "type": "number"
+              },
+              "fallidos": {
+                "type": "number"
+              },
+              "ordenes": {
+                "type": "number"
+              },
+              "aprobadas": {
+                "type": "number"
+              },
+              "hechas": {
+                "type": "number"
+              },
+              "descartadas": {
+                "type": "number"
+              },
+              "enBandeja": {
+                "type": "number"
+              },
+              "costoCop": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "planes",
+              "conLaIa",
+              "conReglas",
+              "fallidos",
+              "ordenes",
+              "aprobadas",
+              "hechas",
+              "descartadas",
+              "enBandeja",
+              "costoCop"
+            ]
+          },
+          "metas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metrica": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string"
+                },
+                "unidad": {
+                  "type": "string"
+                },
+                "direccion": {
+                  "type": "string",
+                  "enum": [
+                    "subir",
+                    "bajar"
+                  ]
+                },
+                "lineaBase": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "objetivo": {
+                  "type": "number"
+                },
+                "actual": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "vaBien": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "frase": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "metrica",
+                "nombre",
+                "estado",
+                "unidad",
+                "direccion",
+                "lineaBase",
+                "objetivo",
+                "actual",
+                "vaBien",
+                "frase"
+              ]
+            }
+          },
+          "gasto": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "mes": {
+                "type": "string"
+              },
+              "gastadoCop": {
+                "type": "number"
+              },
+              "topeCop": {
+                "type": "number"
+              },
+              "escalon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "mes",
+              "gastadoCop",
+              "topeCop",
+              "escalon"
+            ]
+          },
+          "resumen": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "encendido",
+          "desde",
+          "hasta",
+          "piloto",
+          "director",
+          "metas",
+          "gasto",
+          "resumen"
+        ]
+      },
+      "PilotoDirectorError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "cicloId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
       },
       "PilotoDirectorHoy": {
         "type": "object",
@@ -28172,26 +28418,6 @@
           "alertas",
           "rechazadas",
           "grupoDeControl"
-        ]
-      },
-      "PilotoDirectorError": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string"
-          },
-          "mensaje": {
-            "type": "string"
-          },
-          "cicloId": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "error"
         ]
       },
       "PilotoDirectorReplan": {
@@ -66255,6 +66481,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/semana": {
+      "get": {
+        "operationId": "getPilotoDirectorSemana",
+        "summary": "Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El informe (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorInformeSemanal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
                 }
               }
             }

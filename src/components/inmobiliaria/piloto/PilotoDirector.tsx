@@ -10,7 +10,9 @@
  * lee ese plan y donde viven sus metas:
  *
  *   · «Hoy»   — el plan (`PilotoDirectorHoy`);
- *   · «Metas» — las cinco metas y su aceptar/ajustar/pausar (`PilotoDirectorMetas`).
+ *   · «Metas» — las metas que propone y su aceptar/ajustar/pausar (`PilotoDirectorMetas`);
+ *   · «Semana» — el informe de la semana a la gerencia (#59, `PilotoDirectorSemana`):
+ *     lo mismo que el lunes llega en el correo de las 07:00. Se lee al abrirla.
  *
  * Pestañas y no dos bandas: el plan y las metas son del mismo actor, y dos
  * bloques más encima del pulso empujaban la Bandeja fuera de la pantalla.
@@ -51,8 +53,11 @@ import {
 } from '@/lib/hooks/piloto/use-piloto-director'
 import { PilotoDirectorHoy, type PorQueDeRespaldo } from './PilotoDirectorHoy'
 import { PilotoDirectorMetas } from './PilotoDirectorMetas'
+import { PilotoDirectorSemana, PilotoDirectorSemanaConectada } from './PilotoDirectorSemana'
+import type { DirectorSemana } from '@/lib/api/piloto-director'
+import type { LecturaDelDirector } from '@/lib/hooks/piloto/use-piloto-director'
 
-export type PestanaDelDirector = 'hoy' | 'metas'
+export type PestanaDelDirector = 'hoy' | 'metas' | 'semana'
 
 export interface PilotoDirectorVistaProps {
   hoy: UseDirectorHoy
@@ -63,6 +68,8 @@ export interface PilotoDirectorVistaProps {
   pestanaInicial?: PestanaDelDirector
   /** Para las pruebas: «hoy» en Bogotá. */
   hoyEnBogota?: string
+  /** Para las pruebas: la lectura del informe de la semana (por defecto, la de verdad al abrir la pestaña). */
+  semana?: LecturaDelDirector<DirectorSemana>
 }
 
 /** El marco de la tarjeta: el mismo en todos los estados, para que no salte. */
@@ -97,6 +104,7 @@ export function PilotoDirectorVista({
   onAbrirAccion,
   pestanaInicial = 'hoy',
   hoyEnBogota,
+  semana,
 }: PilotoDirectorVistaProps) {
   const { t } = useI18n()
   const [pestana, setPestana] = useState<PestanaDelDirector>(pestanaInicial)
@@ -213,6 +221,9 @@ export function PilotoDirectorVista({
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="semana" data-testid="piloto-director-pestana-semana">
+              {t('inmobiliaria.piloto.director.pestanas.semana')}
+            </TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="hoy" className="px-6 pb-6 pt-5">
@@ -225,6 +236,9 @@ export function PilotoDirectorVista({
         </TabsContent>
         <TabsContent value="metas" className="px-6 pb-6 pt-5">
           <PilotoDirectorMetas lectura={metas} isAdmin={isAdmin} enVuelo={metas.enVuelo} onActuar={metas.actuar} />
+        </TabsContent>
+        <TabsContent value="semana" className="px-6 pb-6 pt-5">
+          {semana ? <PilotoDirectorSemana lectura={semana} /> : <PilotoDirectorSemanaConectada />}
         </TabsContent>
       </Tabs>
     </Marco>

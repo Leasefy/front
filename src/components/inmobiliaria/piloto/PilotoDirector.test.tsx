@@ -38,7 +38,7 @@ vi.mock('sonner', () => ({
 }))
 
 import { PilotoDirectorVista } from './PilotoDirector'
-import { normalizarHoy, type DirectorHoy, type ResultadoDeReplanear } from '@/lib/api/piloto-director'
+import { normalizarHoy, normalizarSemana, type DirectorHoy, type ResultadoDeReplanear } from '@/lib/api/piloto-director'
 import type { UseDirectorHoy, UseDirectorMetas } from '@/lib/hooks/piloto/use-piloto-director'
 
 const HOY_BOGOTA = '2026-09-29'
@@ -215,6 +215,30 @@ describe('PilotoDirector — estados', () => {
       ;(q('piloto-director-replanear') as HTMLButtonElement).click()
     })
     expect(toasts).toEqual([['error', 'inmobiliaria.piloto.director.pilotoApagado']])
+  })
+
+  it('🔴 la pestaña «Semana» muestra el informe a la gerencia (#59)', () => {
+    act(() => {
+      root.render(
+        <PilotoDirectorVista
+          hoy={hoyCon(PLAN)}
+          metas={METAS}
+          isAdmin
+          onAbrirAccion={vi.fn()}
+          hoyEnBogota={HOY_BOGOTA}
+          pestanaInicial="semana"
+          semana={{
+            data: normalizarSemana({ encendido: true, desde: '2026-09-29', hasta: '2026-10-05', resumen: ['El Piloto hizo solo 4 cosas.'] }),
+            isLoading: false,
+            error: null,
+            notAvailable: false,
+            refetch: async () => {},
+          }}
+        />,
+      )
+    })
+    expect(q('piloto-director-pestana-semana')).not.toBeNull()
+    expect(q('piloto-director-semana-resumen')?.textContent).toContain('El Piloto hizo solo 4 cosas.')
   })
 
   it('un 404 (un micro sin estas rutas) no pinta nada', () => {

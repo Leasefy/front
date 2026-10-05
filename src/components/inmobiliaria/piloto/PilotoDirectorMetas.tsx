@@ -1,7 +1,8 @@
 'use client'
 
 /**
- * PilotoDirectorMetas — las cinco metas del director (fase 1, decisión 11).
+ * PilotoDirectorMetas — las metas del director (fase 1, decisión 11): las que
+ * propone de verdad, y cuáles no porque todavía no hay historia.
  *
  * El director las PROPONE a partir de la historia de la inmobiliaria (la
  * mediana de 90 días como línea base; un objetivo alcanzable de su propia
@@ -54,6 +55,18 @@ const BADGE_DE_LA_META: Record<string, VarianteDeBadge> = {
   pausada: 'secondary',
   cumplida: 'success',
   vencida: 'secondary',
+}
+
+/** «Renovación» → «renovación»; una sigla («PQRS en plazo») queda igual. */
+function enMinuscula(nombre: string): string {
+  const primera = nombre.split(' ')[0] ?? ''
+  return primera.length > 1 && primera === primera.toUpperCase() ? nombre : nombre.charAt(0).toLowerCase() + nombre.slice(1)
+}
+
+/** «a», «a y b», «a, b y c». */
+function listaEnPalabras(xs: string[]): string {
+  if (xs.length <= 1) return xs[0] ?? ''
+  return `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`
 }
 
 const HITOS_CONOCIDOS = new Set(['propuso', 'acepto', 'ajusto', 'pauso', 'cumplio', 'vencio'])
@@ -115,7 +128,20 @@ export function PilotoDirectorMetas({ lectura, isAdmin, enVuelo, onActuar }: Pil
 
   return (
     <div className="space-y-4" data-testid="piloto-director-metas">
-      <p className="max-w-3xl text-caption text-fg-muted">{t('inmobiliaria.piloto.director.metas.queEs')}</p>
+      {/* Cuántas propone DE VERDAD (no «cinco»): las que hay y las que faltan por falta de historia. */}
+      <p className="max-w-3xl text-caption text-fg-muted" data-testid="piloto-director-metas-que-es">
+        {data.metas.length === 1
+          ? t('inmobiliaria.piloto.director.metas.queEsUna')
+          : t('inmobiliaria.piloto.director.metas.queEsVarias', { n: String(data.metas.length) })}
+        {(data.sinMeta?.length ?? 0) > 0 && (
+          <>
+            {' '}
+            {t('inmobiliaria.piloto.director.metas.sinHistoria', {
+              lista: listaEnPalabras((data.sinMeta ?? []).map((m) => enMinuscula(m.nombre))),
+            })}
+          </>
+        )}
+      </p>
       {!isAdmin && (
         <p className="text-caption text-fg-subtle" data-testid="piloto-director-metas-solo-admin">
           {t('inmobiliaria.piloto.director.metas.soloAdmin')}

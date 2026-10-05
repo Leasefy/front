@@ -48,6 +48,8 @@ import {
   type ResultadoDeExperimento,
   type ResultadoDeMeta,
   type ResultadoDeReplanear,
+  fetchDirectorSemana,
+  type DirectorSemana,
 } from '@/lib/api/piloto-director'
 
 export const CADA_CUANTO_PREGUNTA_MS = 5_000
@@ -273,6 +275,15 @@ export function useDirectorMetas(): UseDirectorMetas {
   )
 
   return { data, isLoading, error, notAvailable, refetch, enVuelo, actuar }
+}
+
+// ── El informe de la semana (#59): sólo cuando se abre su pestaña ─────────────
+
+const leerSemana: Leer<DirectorSemana> = (agencyId, signal) => fetchDirectorSemana(agencyId, signal)
+
+export function useDirectorSemana(habilitada: boolean): LecturaDelDirector<DirectorSemana> {
+  const { data, isLoading, error, notAvailable, refetch } = useLectura(leerSemana, habilitada)
+  return { data, isLoading, error, notAvailable, refetch }
 }
 
 // ── Gasto y experimento (la configuración, sólo al abrirla) ─────────────────

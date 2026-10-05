@@ -140,6 +140,15 @@ describe('PilotoDirectorMetas — lo que se ve', () => {
     expect(h.textContent).toContain('inmobiliaria.piloto.director.metas.hito.propuso')
   })
 
+  it('🔴 dice cuántas metas propone DE VERDAD y cuáles faltan por falta de historia (no «cinco»)', () => {
+    render({ l: lectura({ data: { ...CINCO, sinMeta: [{ metrica: 'renovacion', nombre: 'Renovación' }, { metrica: 'pqrs_en_plazo', nombre: 'PQRS en plazo' }] } }) })
+    const texto = q('piloto-director-metas-que-es')?.textContent ?? ''
+    expect(texto).toContain(`inmobiliaria.piloto.director.metas.queEsVarias(${CINCO.metas.length})`)
+    expect(texto).toContain('inmobiliaria.piloto.director.metas.sinHistoria(renovación y PQRS en plazo)')
+    render({ l: lectura({ data: { ...CINCO, metas: CINCO.metas.slice(0, 1), sinMeta: [] } }) })
+    expect(q('piloto-director-metas-que-es')?.textContent).toBe('inmobiliaria.piloto.director.metas.queEsUna')
+  })
+
   it('apagado, sin fuente, error y vacío se dicen cada uno a su manera', () => {
     render({ l: lectura({ data: { encendido: false, metas: [] } }) })
     expect(q('piloto-director-metas-apagado')).not.toBeNull()

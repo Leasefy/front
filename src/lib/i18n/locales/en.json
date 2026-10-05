@@ -1480,7 +1480,8 @@
         "pestanas": {
           "hoy": "Today",
           "metas": "Goals",
-          "porAceptar": "{{n}} to accept"
+          "porAceptar": "{{n}} to accept",
+          "semana": "Week"
         },
         "replanear": {
           "boton": "Plan again",
@@ -1562,7 +1563,6 @@
           "motivoTitulo": "Why it waits for your click"
         },
         "metas": {
-          "queEs": "The director proposes five goals from your agency's history. You accept or adjust them.",
           "queEsFallo": "the director's goals",
           "cargando": "Reading the goals…",
           "sinFuente": "I could not read the goals: the Pilot does not publish them yet.",
@@ -1616,7 +1616,10 @@
             "cumplio": "was met",
             "vencio": "expired"
           },
-          "hitoObjetivo": "target {{valor}}"
+          "hitoObjetivo": "target {{valor}}",
+          "queEsUna": "This is your goal: the director proposes it from your agency's history and you accept or adjust it.",
+          "queEsVarias": "These are your {{n}} goals: the director proposes them from your agency's history and you accept or adjust them.",
+          "sinHistoria": "There is no history yet for {{lista}}: the director will propose them once there is."
         },
         "gasto": {
           "titulo": "AI spend this month",
@@ -1660,7 +1663,20 @@
           "toastApagado": "Control group off.",
           "fallo": "Could not change the control group. Try again."
         },
-        "pilotoApagado": "Autopilot is not active for your agency: the director will not plan or give orders until you turn it on."
+        "pilotoApagado": "Autopilot is not active for your agency: the director will not plan or give orders until you turn it on.",
+        "semana": {
+          "titulo": "Your week",
+          "periodo": "From {{desde}} to {{hasta}}",
+          "cargando": "Reading the weekly report…",
+          "queEsFallo": "the weekly report",
+          "hechasSolas": "done by Autopilot on its own",
+          "hechasConClic": "done with your click",
+          "esperanClic": "waiting for your click",
+          "gasto": "AI spend this month, out of {{tope}}",
+          "vaBien": "On track",
+          "vaMal": "Worse than its baseline",
+          "enElCorreo": "On Mondays at 7:00 a.m. this report arrives by email, together with the day plan."
+        }
       }
     },
     "mobileNav": {

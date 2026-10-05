@@ -208,6 +208,35 @@ export interface MetaDelDirector {
 export interface DirectorMetas {
   encendido: boolean
   metas: MetaDelDirector[]
+  /**
+   * Las métricas del catálogo que todavía no tienen meta (no hay historia para
+   * proponerla), con su nombre. Un micro anterior no lo manda: vacío.
+   */
+  sinMeta?: Array<{ metrica: string; nombre: string }>
+}
+
+/** El informe de la semana a la gerencia (#59): lo que hizo el Piloto, metas y gasto en pesos. */
+export interface DirectorSemana {
+  encendido: boolean
+  desde: string | null
+  hasta: string | null
+  piloto: { detectadas: number; hechasSolas: number; hechasConClic: number; esperanClic: number; fallidas: number } | null
+  director: {
+    planes: number
+    conLaIa: number
+    conReglas: number
+    fallidos: number
+    ordenes: number
+    aprobadas: number
+    hechas: number
+    descartadas: number
+    enBandeja: number
+    costoCop: number
+  } | null
+  metas: Array<{ metrica: string; nombre: string; vaBien: boolean | null; frase: string }>
+  gasto: { mes: string; gastadoCop: number; topeCop: number } | null
+  /** Las frases del informe, en orden de lectura. */
+  resumen: string[]
 }
 
 export type TramoDelTope = 'pequena' | 'mediana' | 'grande'
@@ -437,6 +466,52 @@ export function normalizarMetas(raw: unknown): DirectorMetas {
     metas: lista(r.metas)
       .map(normalizarMeta)
       .filter((m): m is MetaDelDirector => m !== null),
+    sinMeta: lista(r.sinMeta)
+      .filter(esObjeto)
+      .map((m) => ({ metrica: texto(m.metrica) ?? '', nombre: texto(m.nombre) ?? '' }))
+      .filter((m) => m.metrica !== '' && m.nombre !== ''),
+  }
+}
+
+const entero = (v: unknown): number => numero(v) ?? 0
+
+export function normalizarSemana(raw: unknown): DirectorSemana {
+  const r: Objeto = esObjeto(raw) ? raw : {}
+  const p = esObjeto(r.piloto) ? r.piloto : null
+  const d = esObjeto(r.director) ? r.director : null
+  const g = esObjeto(r.gasto) ? r.gasto : null
+  return {
+    encendido: r.encendido === true,
+    desde: texto(r.desde),
+    hasta: texto(r.hasta),
+    piloto: p
+      ? { detectadas: entero(p.detectadas), hechasSolas: entero(p.hechasSolas), hechasConClic: entero(p.hechasConClic), esperanClic: entero(p.esperanClic), fallidas: entero(p.fallidas) }
+      : null,
+    director: d
+      ? {
+          planes: entero(d.planes),
+          conLaIa: entero(d.conLaIa),
+          conReglas: entero(d.conReglas),
+          fallidos: entero(d.fallidos),
+          ordenes: entero(d.ordenes),
+          aprobadas: entero(d.aprobadas),
+          hechas: entero(d.hechas),
+          descartadas: entero(d.descartadas),
+          enBandeja: entero(d.enBandeja),
+          costoCop: entero(d.costoCop),
+        }
+      : null,
+    metas: lista(r.metas)
+      .filter(esObjeto)
+      .map((m) => ({
+        metrica: texto(m.metrica) ?? '',
+        nombre: texto(m.nombre) ?? '',
+        vaBien: typeof m.vaBien === 'boolean' ? m.vaBien : null,
+        frase: texto(m.frase) ?? '',
+      }))
+      .filter((m) => m.frase !== ''),
+    gasto: g ? { mes: texto(g.mes) ?? '', gastadoCop: entero(g.gastadoCop), topeCop: entero(g.topeCop) } : null,
+    resumen: lista(r.resumen).map(texto).filter((x): x is string => x !== null),
   }
 }
 
@@ -497,6 +572,13 @@ export function fetchDirectorHoy(
 ): Promise<PilotoFetchResult<DirectorHoy>> {
   const q = opciones.fecha ? `?fecha=${encodeURIComponent(opciones.fecha)}` : ''
   return leer(`${base(agencyId)}/hoy${q}`, normalizarHoy, signal)
+}
+
+export function fetchDirectorSemana(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<DirectorSemana>> {
+  return leer(`${base(agencyId)}/semana`, normalizarSemana, signal)
 }
 
 export function fetchDirectorMetas(

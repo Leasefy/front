@@ -1514,7 +1514,8 @@
         "pestanas": {
           "hoy": "Hoy",
           "metas": "Metas",
-          "porAceptar": "{{n}} por aceptar"
+          "porAceptar": "{{n}} por aceptar",
+          "semana": "Semana"
         },
         "replanear": {
           "boton": "Volver a planear",
@@ -1596,7 +1597,6 @@
           "motivoTitulo": "Por qué espera tu clic"
         },
         "metas": {
-          "queEs": "El director propone cinco metas con la historia de tu inmobiliaria. Tú las aceptas o las ajustas.",
           "queEsFallo": "las metas del director",
           "cargando": "Leyendo las metas…",
           "sinFuente": "No pude leer las metas: el Piloto no las publica todavía.",
@@ -1650,7 +1650,10 @@
             "cumplio": "se cumplió",
             "vencio": "venció"
           },
-          "hitoObjetivo": "objetivo {{valor}}"
+          "hitoObjetivo": "objetivo {{valor}}",
+          "queEsUna": "Esta es tu meta: el director la propone con la historia de tu inmobiliaria y tú la aceptas o la ajustas.",
+          "queEsVarias": "Estas son tus {{n}} metas: el director las propone con la historia de tu inmobiliaria y tú las aceptas o las ajustas.",
+          "sinHistoria": "Para {{lista}} todavía no hay historia: las propone cuando la haya."
         },
         "gasto": {
           "titulo": "Gasto de IA del mes",
@@ -1694,7 +1697,20 @@
           "toastApagado": "Grupo de control apagado.",
           "fallo": "No se pudo cambiar el grupo de control. Intenta de nuevo."
         },
-        "pilotoApagado": "El Piloto automático no está activo en tu inmobiliaria: el director no planea ni ordena hasta que lo actives."
+        "pilotoApagado": "El Piloto automático no está activo en tu inmobiliaria: el director no planea ni ordena hasta que lo actives.",
+        "semana": {
+          "titulo": "Tu semana",
+          "periodo": "Del {{desde}} al {{hasta}}",
+          "cargando": "Leyendo el informe de la semana…",
+          "queEsFallo": "el informe de la semana",
+          "hechasSolas": "hizo solo el Piloto",
+          "hechasConClic": "hizo con tu clic",
+          "esperanClic": "esperan tu clic",
+          "gasto": "gasto de IA del mes, de {{tope}}",
+          "vaBien": "Va bien",
+          "vaMal": "Va peor que su línea base",
+          "enElCorreo": "El lunes a las 7:00 a. m. te llega este informe por correo, junto con el plan del día."
+        }
       }
     },
     "mobileNav": {

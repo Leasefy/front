@@ -8890,6 +8890,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/director/semana": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos) */
+        get: operations["getPilotoDirectorSemana"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/director/hoy": {
         parameters: {
             query?: never;
@@ -15487,6 +15504,11 @@ export interface components {
         DirectorMetas: {
             encendido: boolean;
             metas: components["schemas"]["DirectorMeta"][];
+            sinMeta: {
+                /** @enum {string} */
+                metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas";
+                nombre: string;
+            }[];
         };
         DirectorError: {
             error: string;
@@ -15533,6 +15555,56 @@ export interface components {
         };
         DirectorExperimentoPutBody: {
             activo: boolean;
+        };
+        PilotoDirectorInformeSemanal: {
+            encendido: boolean;
+            desde: string;
+            hasta: string;
+            piloto: {
+                detectadas: number;
+                hechasSolas: number;
+                hechasConClic: number;
+                esperanClic: number;
+                fallidas: number;
+            } | null;
+            director: {
+                planes: number;
+                conLaIa: number;
+                conReglas: number;
+                fallidos: number;
+                ordenes: number;
+                aprobadas: number;
+                hechas: number;
+                descartadas: number;
+                enBandeja: number;
+                costoCop: number;
+            } | null;
+            metas: {
+                metrica: string;
+                nombre: string;
+                estado: string;
+                unidad: string;
+                /** @enum {string} */
+                direccion: "subir" | "bajar";
+                lineaBase: number | null;
+                objetivo: number;
+                actual: number | null;
+                vaBien: boolean | null;
+                frase: string;
+            }[];
+            gasto: {
+                mes: string;
+                gastadoCop: number;
+                topeCop: number;
+                escalon: string;
+            } | null;
+            resumen: string[];
+        };
+        PilotoDirectorError: {
+            error: string;
+            mensaje?: string;
+            cicloId?: string;
+            code?: string;
         };
         PilotoDirectorHoy: {
             encendido: boolean;
@@ -15651,12 +15723,6 @@ export interface components {
                 activo: boolean;
                 omitidas: number;
             };
-        };
-        PilotoDirectorError: {
-            error: string;
-            mensaje?: string;
-            cicloId?: string;
-            code?: string;
         };
         PilotoDirectorReplan: {
             cicloId: string;
@@ -35844,6 +35910,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorSemana: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El informe (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorInformeSemanal"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
                 };
             };
         };

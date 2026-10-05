@@ -195,6 +195,7 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/piloto/PilotoDirectorMetas.tsx',
   'components/inmobiliaria/piloto/PilotoDirectorPorQue.tsx',
   'components/inmobiliaria/piloto/PilotoDirectorAjustes.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorSemana.tsx',
   // — listados diarios ————————————————————————————————————————
   'components/inmobiliaria/InquilinosTable.tsx',
   'components/inmobiliaria/InquilinoDrawer.tsx',

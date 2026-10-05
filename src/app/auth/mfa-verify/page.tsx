@@ -18,7 +18,7 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
 import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
-import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
+import { laSesionSeCerro, mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
 import { leerErrorDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
@@ -345,10 +345,25 @@ export default function MfaVerifyPage() {
       // «Error 422» pelado (29-09).
       const e = err as { status?: number; code?: string };
       if (e.code === 'mfa_verification_failed') setRechazados((n) => n + 1);
-      toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
+      const datos = { status: e.status, codigo: e.code, mensaje: msg };
+      toast.error(mensajeDeSupabaseAuth(datos));
       setCode('');
+      // 🔴 Nico, 05-10: dejó esta pantalla abierta mucho rato, la sesión ya no
+      // se pudo renovar, el aviso dijo «Tu sesión se cerró…» y la pantalla se
+      // quedó pidiendo el código: con la sesión muerta ninguno entra. Se cierra
+      // y se va a la contraseña, con el destino que traía (el `returnUrl`).
+      if (laSesionSeCerro(datos)) {
+        setHayError(false);
+        const destino = returnUrlDeLaBarra();
+        try {
+          await signOut();
+        } catch {
+          // La sesión ya estaba muerta: no hay nada más que cerrar.
+        }
+        router.replace(destino ? `/auth?returnUrl=${encodeURIComponent(destino)}` : '/auth');
+      }
     }
-  }, [factorId, code, setMfaVerified, user, router]);
+  }, [factorId, code, setMfaVerified, user, router, signOut]);
 
   /** Seis dígitos y ya no hay nada más que preguntar: se envía solo. */
   const enviarSiSePuede = useCallback(

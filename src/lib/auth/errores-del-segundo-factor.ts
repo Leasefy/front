@@ -83,6 +83,16 @@ export function mensajeDeSupabaseAuth({ status, codigo, mensaje }: ErrorDeSupaba
   )
 }
 
+/**
+ * ¿La sesión ya no sirve? (vencida, renovación rechazada, token inválido). Con
+ * ella muerta ningún código entra: la pantalla del segundo factor tiene que
+ * mandar a la contraseña, no quedarse pidiendo códigos (Nico, 05-10). Decide
+ * el mismo traductor que pone el aviso, así que aviso y salida no se separan.
+ */
+export function laSesionSeCerro(datos: ErrorDeSupabaseAuth): boolean {
+  return mensajeDeSupabaseAuth(datos) === SESION_CERRADA
+}
+
 /** Un `Error` con el mensaje ya traducido (y el código crudo, por si sirve). */
 export class ErrorDelSegundoFactor extends Error {
   constructor(

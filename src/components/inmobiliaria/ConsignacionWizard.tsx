@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -34,6 +34,11 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import {
+  newPropertyCreationSession,
+  createPropertyOnce,
+  resetPropertyCreationSession,
+} from '@/lib/api/property-creation-session';
 import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
@@ -106,6 +111,22 @@ export function ConsignacionWizard({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   /** W2: sin fotos se pregunta antes de publicar (ver `handleSubmit`). */
   const [preguntarSinFotos, setPreguntarSinFotos] = useState(false);
+
+  /**
+   * T-0141 — una sesión de creación por asistente. `key` viaja como
+   * `Idempotency-Key` en cada intento (un reintento tras una respuesta perdida
+   * no crea un segundo inmueble) y `property` recuerda el inmueble ya creado:
+   * un reintento NUNCA vuelve a llamar a `create`, retoma en el paso que falló.
+   * Se reinicia sólo al terminar bien o al empezar de nuevo.
+   */
+  const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
+  const pasosHechos = useRef({ fotos: false, agente: false, consignacion: false, publicado: false });
+  /** Corta el doble clic: `isSubmitting` llega un render tarde. */
+  const enviandoRef = useRef(false);
+  const reiniciarCreacion = useCallback(() => {
+    resetPropertyCreationSession(sesionDeCreacion);
+    pasosHechos.current = { fotos: false, agente: false, consignacion: false, publicado: false };
+  }, [sesionDeCreacion]);
 
   // Form data state
   const [formData, setFormData] = useState<Partial<WizardFormData>>({
@@ -415,8 +436,10 @@ export function ConsignacionWizard({
    * mentira entera cuando aparece la factura.
    */
   const crearConsignacion = useCallback(async (publicar: boolean) => {
-    if (!isStepValid) return;
+    if (!isStepValid || enviandoRef.current) return;
+    enviandoRef.current = true;
     setIsSubmitting(true);
+    const hechos = pasosHechos.current;
 
     try {
       /**
@@ -456,6 +479,11 @@ export function ConsignacionWizard({
        * se acepta, y queda el centro del municipio. Nunca lanza y nunca
        * bloquea la creación.
        */
+      /*
+       * T-0141 — `createPropertyOnce`: si el inmueble ya existe (un intento
+       * anterior lo creó y falló DESPUÉS), no se vuelve a ubicar ni a crear.
+       */
+      const property = await createPropertyOnce(sesionDeCreacion, async (idempotencyKey) => {
       let latitud = formData.propertyLatitude;
       let longitud = formData.propertyLongitude;
       if (latitud == null || longitud == null) {
@@ -468,7 +496,7 @@ export function ConsignacionWizard({
         longitud = u.lng;
       }
 
-      const property = await propertiesApi.create({
+      return propertiesApi.create({
         title:        formData.propertyTitle ?? '',
         description:  formData.propertyDescription ?? '',
         type:         wizardType,
@@ -486,6 +514,7 @@ export function ConsignacionWizard({
         bathrooms:    formData.bathrooms ?? 1,
         area:         formData.area ?? 10,
         adminFee:     formData.adminFee,
+      }, { idempotencyKey });
       });
 
       /**
@@ -509,10 +538,12 @@ export function ConsignacionWizard({
       // would otherwise bury, and "some photos didn't upload" must not
       // read as "the consignment failed".
       const photosToUpload = formData.photos ?? [];
-      if (photosToUpload.length > 0) {
+      if (photosToUpload.length > 0 && !hechos.fotos) {
         setIsUploadingPhotos(true);
         try {
           const { uploaded, failed } = await uploadPropertyPhotos(property.id, photosToUpload);
+          // Las que subieron no se vuelven a subir en un reintento.
+          hechos.fotos = true;
           if (failed.length > 0) {
             toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.photosPartialTitle'), {
               description: t('inmobiliaria.consignaciones.wizard.toasts.photosPartialDesc', {
@@ -535,19 +566,23 @@ export function ConsignacionWizard({
        * un paso más, no el que decide si hay inmueble: se avisa y se sigue con
        * la consignación, que igual lleva `agenteUserId`.
        */
-      try {
-        if (isAgentRole && user?.email) {
-          // Agent creating → auto-assign to themselves
-          await propertiesApi.assignAgent(property.id, user.email);
-        } else if (!isAgentRole && selectedAgente?.email) {
-          // Admin → assign the selected agent by email
-          await propertiesApi.assignAgent(property.id, selectedAgente.email);
+      if (!hechos.agente) {
+        // Intentado una vez: su fallo ya se avisó y no frena la consignación.
+        hechos.agente = true;
+        try {
+          if (isAgentRole && user?.email) {
+            // Agent creating → auto-assign to themselves
+            await propertiesApi.assignAgent(property.id, user.email);
+          } else if (!isAgentRole && selectedAgente?.email) {
+            // Admin → assign the selected agent by email
+            await propertiesApi.assignAgent(property.id, selectedAgente.email);
+          }
+        } catch (error) {
+          console.error('Error assigning agent:', error);
+          toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.agentErrorDesc'),
+          });
         }
-      } catch (error) {
-        console.error('Error assigning agent:', error);
-        toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.agentErrorDesc'),
-        });
       }
 
       /**
@@ -574,71 +609,77 @@ export function ConsignacionWizard({
       // properties.service.ts (back) ya le da PropertyAccess al creador
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
-      try {
-        // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
-        // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
-        // que el back espera: mandar los dos a la vez es un 400.
-        const listaDeDuenos = aListaDelCable(
-          (formData.copropietarios ?? []).map((c) => ({
-            propietarioId: c.propietarioId,
-            participacionBps: c.participacionBps,
-          })),
-          formData.propietarioId ?? '',
-        );
+      if (!hechos.consignacion) {
+        try {
+          // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
+          // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
+          // que el back espera: mandar los dos a la vez es un 400.
+          const listaDeDuenos = aListaDelCable(
+            (formData.copropietarios ?? []).map((c) => ({
+              propietarioId: c.propietarioId,
+              participacionBps: c.participacionBps,
+            })),
+            formData.propietarioId ?? '',
+          );
 
-        await consignacionesApi.create({
-          propietarioId: formData.propietarioId ?? '',
-          ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
-          propertyId: property.id,
-          ...(agenteUserId ? { agenteUserId } : {}),
-          propertyTitle: formData.propertyTitle ?? '',
-          propertyAddress: formData.propertyAddress ?? '',
-          propertyCity: formData.propertyCity ?? '',
-          propertyZone: formData.propertyZone ?? '',
-          propertyType: formData.propertyType ?? 'apartment',
-          // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
-          // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
-          // mandate is unaffected — `isStepValid` already blocks step 2 from
-          // advancing without a positive `monthlyRent`, so no `?? 0`
-          // sentinel is needed here any more (the twin of the one WU-3
-          // already removed from the property-create path).
-          ...(isSaleListing
-            ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
-            : {
-                monthlyRent: formData.monthlyRent as number,
-                ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
-                ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+          await consignacionesApi.create({
+            propietarioId: formData.propietarioId ?? '',
+            ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
+            propertyId: property.id,
+            ...(agenteUserId ? { agenteUserId } : {}),
+            propertyTitle: formData.propertyTitle ?? '',
+            propertyAddress: formData.propertyAddress ?? '',
+            propertyCity: formData.propertyCity ?? '',
+            propertyZone: formData.propertyZone ?? '',
+            propertyType: formData.propertyType ?? 'apartment',
+            // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
+            // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
+            // mandate is unaffected — `isStepValid` already blocks step 2 from
+            // advancing without a positive `monthlyRent`, so no `?? 0`
+            // sentinel is needed here any more (the twin of the one WU-3
+            // already removed from the property-create path).
+            ...(isSaleListing
+              ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
+              : {
+                  monthlyRent: formData.monthlyRent as number,
+                  ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
+                  ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+                }),
+            commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
+            // §A.2 — the sale mandate's contractDate is the SAME value sent as
+            // Property.consignedAt above; the rent mandate keeps its own date.
+            contractDate: isSaleListing
+              ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
+              : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
+            agenteId: formData.agenteId ?? '',
+          });
+          hechos.consignacion = true;
+        } catch (error) {
+          // El inmueble YA existe. Decirlo es la diferencia entre que alguien lo
+          // busque en la lista y lo complete, o que lo dé por perdido y lo cargue
+          // de nuevo — y termine con dos.
+          console.error('Error creating consignacion:', error);
+          if (error instanceof ApiError && error.status === 409) {
+            // Ya hay consignación: el paso está hecho, aunque no la haya creado este intento.
+            hechos.consignacion = true;
+            // W3 — el back dice que ya hay una consignación para este inmueble
+            // (P2002, consignaciones.service.ts). «Ábrelo y completa la
+            // consignación» era falso: ya está completa. Se dice lo que el back
+            // dijo y que no se creó otra.
+            toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle'), {
+              description: t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateDesc', {
+                reason: error.message,
               }),
-          commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
-          // §A.2 — the sale mandate's contractDate is the SAME value sent as
-          // Property.consignedAt above; the rent mandate keeps its own date.
-          contractDate: isSaleListing
-            ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
-            : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
-          agenteId: formData.agenteId ?? '',
-        });
-      } catch (error) {
-        // El inmueble YA existe. Decirlo es la diferencia entre que alguien lo
-        // busque en la lista y lo complete, o que lo dé por perdido y lo cargue
-        // de nuevo — y termine con dos.
-        console.error('Error creating consignacion:', error);
-        if (error instanceof ApiError && error.status === 409) {
-          // W3 — el back dice que ya hay una consignación para este inmueble
-          // (P2002, consignaciones.service.ts). «Ábrelo y completa la
-          // consignación» era falso: ya está completa. Se dice lo que el back
-          // dijo y que no se creó otra.
-          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle'), {
-            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateDesc', {
-              reason: error.message,
-            }),
-          });
-        } else {
-          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
-            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
-          });
+            });
+          } else {
+            toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
+              description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
+            });
+          }
+          router.push(destinoAlSalir);
+          return;
         }
-        router.push(destinoAlSalir);
-        return;
+
       }
 
       if (!publicar) {
@@ -652,6 +693,7 @@ export function ConsignacionWizard({
           }),
         });
         router.push(destinoAlSalir);
+        reiniciarCreacion();
         return;
       }
 
@@ -664,7 +706,10 @@ export function ConsignacionWizard({
        * earlier would show a property to tenants with no mandate behind it.
        */
       try {
-        await propertiesApi.update(property.id, { status: 'AVAILABLE' });
+        if (!hechos.publicado) {
+          await propertiesApi.update(property.id, { status: 'AVAILABLE' });
+          hechos.publicado = true;
+        }
       } catch (error) {
         // The property AND the mandate already exist — only the publish
         // step failed (most commonly a 402 plan-cap). Never claim success
@@ -693,6 +738,8 @@ export function ConsignacionWizard({
       });
 
       router.push(destinoAlSalir);
+      // Terminó bien: la próxima creación (otro inmueble) lleva clave nueva.
+      reiniciarCreacion();
     } catch (error) {
       console.error('Error creating property:', error);
       /**
@@ -710,11 +757,25 @@ export function ConsignacionWizard({
           : error instanceof Error && error.message
             ? error.message
             : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
-      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+      if (sesionDeCreacion.property) {
+        /*
+         * T-0141 — el inmueble YA existe. «No pudimos crear el inmueble» sería
+         * falso y empujaría a cargarlo otra vez. Se dice qué quedó y que
+         * reintentar sólo completa lo que falta.
+         */
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.createdPendingTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.createdPendingDesc', {
+            reason: description,
+          }),
+        });
+      } else {
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+      }
     } finally {
+      enviandoRef.current = false;
       setIsSubmitting(false);
     }
-  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t, borrador]);
+  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t, borrador, sesionDeCreacion, reiniciarCreacion]);
 
   /**
    * W2 — publicar sin fotos deja un recuadro gris en el portal
@@ -744,9 +805,10 @@ export function ConsignacionWizard({
    * después simplemente cierra la pestaña — eso sí lo conserva.
    */
   const confirmCancel = useCallback(() => {
+    reiniciarCreacion();
     void borrador.limpiar();
     router.push(destinoAlSalir);
-  }, [router, destinoAlSalir, borrador]);
+  }, [router, destinoAlSalir, borrador, reiniciarCreacion]);
 
   // Render step content
   const renderStepContent = () => {
@@ -809,7 +871,10 @@ export function ConsignacionWizard({
           fotos={borrador.encontrado.fotos.length}
           fotosNoGuardadas={borrador.encontrado.fotosNoGuardadas}
           onContinuar={continuarBorrador}
-          onDescartar={() => void borrador.descartar()}
+          onDescartar={() => {
+            reiniciarCreacion();
+            void borrador.descartar();
+          }}
         />
       )}
 

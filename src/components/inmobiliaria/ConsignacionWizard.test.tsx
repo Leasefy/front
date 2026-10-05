@@ -949,3 +949,107 @@ describe('<ConsignacionWizard> — fallos a la mitad y publicar sin fotos (W1, W
     expect(titulos(toast.error)).toEqual(['inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'])
   })
 })
+
+describe('<ConsignacionWizard> — crear es idempotente y no se repite (T-0141)', () => {
+  const TOASTS = 'inmobiliaria.consignaciones.wizard.toasts'
+
+  async function llegarAlFinal() {
+    await renderWizard(AGENTE_LIST)
+    for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+  }
+
+  function titulos(fn: unknown): string[] {
+    return (fn as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]))
+  }
+
+  function llaveDe(llamada: number): string | undefined {
+    return propertiesApiMock.create.mock.calls[llamada]?.[1]?.idempotencyKey
+  }
+
+  beforeEach(() => {
+    stepFivePhotosHolder.photos = [new File(['a'], 'a.jpg', { type: 'image/jpeg' })]
+    uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 1, failed: [] })
+    ;(toast.success as ReturnType<typeof vi.fn>).mockReset()
+    ;(toast.error as ReturnType<typeof vi.fn>).mockReset()
+    ;(toast.warning as ReturnType<typeof vi.fn>).mockReset()
+  })
+
+  it('sends a UUID v4 Idempotency-Key with POST /properties', async () => {
+    await llegarAlFinal()
+    await enviar()
+
+    expect(llaveDe(0)).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+  })
+
+  it('reuses the SAME key when create itself failed and the user retries', async () => {
+    propertiesApiMock.create
+      .mockRejectedValueOnce(new ApiError(0, 'sin red'))
+      .mockResolvedValueOnce({ id: 'property-1' })
+
+    await llegarAlFinal()
+    await enviar()
+    await enviar()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(2)
+    expect(llaveDe(0)).toBeTruthy()
+    expect(llaveDe(0)).toBe(llaveDe(1))
+  })
+
+  it('a failure AFTER the property exists never re-POSTs it: the retry resumes at the failed step', async () => {
+    // The photo step blows up outside its own guards (the first-attempt escape).
+    uploadPropertyPhotosMock.mockRejectedValueOnce(new Error('boom'))
+
+    await llegarAlFinal()
+    await enviar()
+
+    // First attempt: property exists, user is told what is pending (not "nothing was saved").
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(titulos(toast.error)).toEqual([`${TOASTS}.createdPendingTitle`])
+    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+
+    await enviar()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(uploadPropertyPhotosMock).toHaveBeenCalledTimes(2)
+    expect(uploadPropertyPhotosMock.mock.calls[1][0]).toBe('property-1')
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('a retry after photos succeeded does not upload them twice, nor repeat the mandate or the publish', async () => {
+    // Everything ran; only the closing toast threw (a UI-layer error after all the writes).
+    ;(toast.success as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('toast exploded')
+    })
+
+    await llegarAlFinal()
+    await enviar()
+    await enviar()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(uploadPropertyPhotosMock).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('a double click while submitting creates one property', async () => {
+    let release: (v: { id: string }) => void = () => {}
+    propertiesApiMock.create.mockReturnValueOnce(new Promise((r) => { release = r }))
+
+    await llegarAlFinal()
+    const boton = findButtonByText(CONFIRMAR_CONSIGNACION)
+    await act(async () => {
+      boton.click()
+      boton.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {
+      release({ id: 'property-1' })
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+  })
+})

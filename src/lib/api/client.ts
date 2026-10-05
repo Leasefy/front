@@ -473,6 +473,8 @@ async function request<T>(
   token?: string,
   /** Interno: evita que el reintento por token renovado se encadene. */
   yaSeReintento = false,
+  /** Cabeceras extra (p. ej. `Idempotency-Key`). Se conservan en el reintento por token. */
+  cabecerasExtra?: Record<string, string>,
 ): Promise<T> {
   const url = `${BACKEND_URL}${path}`
 
@@ -492,6 +494,7 @@ async function request<T>(
   const headers: Record<string, string> = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     : getAuthHeaders()
+  if (cabecerasExtra) Object.assign(headers, cabecerasExtra)
 
   let res: Response
   try {
@@ -528,7 +531,7 @@ async function request<T>(
       if (code === 'AUTH_TOKEN_EXPIRED' && !yaSeReintento) {
         const tokenNuevo = await renovarTokenVencido(tokenUsado)
         if (tokenNuevo) {
-          return request<T>(method, path, body, tokenNuevo, true)
+          return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
         }
       }
       // Un SUPERSEDED para un token que YA no es el de esta pestaña es una
@@ -550,7 +553,7 @@ async function request<T>(
     if (!yaSeReintento) {
       const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
       if (tokenNuevo) {
-        return request<T>(method, path, body, tokenNuevo, true)
+        return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
       }
     }
 
@@ -758,7 +761,8 @@ export const apiClient = {
    */
   get: <T>(path: string, token?: string) =>
     compartirGet(claveDeGet(path, token), () => request<T>('GET', path, undefined, token)),
-  post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
+  post: <T>(path: string, body?: unknown, token?: string, cabecerasExtra?: Record<string, string>) =>
+    request<T>('POST', path, body, token, false, cabecerasExtra),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
   delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),

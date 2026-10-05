@@ -1406,14 +1406,15 @@
           "avaluos": "Appraises a property when you ask.",
           "retencion": "Spots owners at risk of leaving and builds a plan for your team. It never writes to them.",
           "calidad": "Reviews your listings and suggests fixes.",
-          "mantenimiento": "Classifies maintenance requests when you ask.",
+          "mantenimiento": "Classifies each maintenance request, asks your suppliers with up-to-date documents for quotes, proposes the best one and asks the supplier how it is going. The owner or a person approves the expense.",
           "prospectos": "Reminds scheduled viewings and follows up after each one.",
-          "aprobaciones": "Tracks the owner's approval for repairs and price changes. For now it does not send them messages.",
+          "aprobaciones": "Asks the owner, in their portal bell and by email, to approve their repairs and choose their tenant; reminds them and alerts the agent if they don’t answer.",
           "contratos": "Reminds pending signatures, warns about expirations and prepares renewals and increase letters. Closing a lease is always done by a person.",
           "facturacion": "Prepares the monthly invoice on the 1st and applies the advance. Issuing it to the DIAN is always done by a person.",
           "propietarios": "Sends each owner their monthly statement. Paying out their money is always approved by a person.",
           "contabilidad": "Records expenses and exports the ledger. Payment batches always wait for your click.",
-          "chat": "Runs the actions the panel chat suggests. In Automatic it only does what can be undone and never moves money or writes to anyone."
+          "chat": "Runs the actions the panel chat suggests. In Automatic it only does what can be undone and never moves money or writes to anyone.",
+          "inspeccion": "Schedules the move-in and move-out inspections with the report as a draft and compares move-out with move-in. You always decide what to deduct from the tenant."
         },
         "pantalla": {
           "titulo": "What you see on this screen",
@@ -8196,7 +8197,8 @@
           "contratos": "Contracts",
           "facturacion": "Billing and cash",
           "propietarios": "Owners",
-          "contabilidad": "Accounting"
+          "contabilidad": "Accounting",
+          "inspeccion": "Inspection"
         },
         "rol": {
           "cobrador": "Collector",
@@ -13257,16 +13259,15 @@
     },
     "aprobaciones": {
       "rol": "Owner approvals",
-      "historia": "Turns each decision waiting on the owner —a repair, a discount, a rent cut— into a clear request with its money impact.",
+      "historia": "Asks the owner for what they have to decide —approving a repair, choosing their tenant— in their portal, reminds them and alerts the agent if they don't answer.",
       "hace": {
-        "impacto": "Computes what deciding costs and what not deciding costs",
-        "solicitud": "Builds the request with its context and options",
-        "cadencia": "Follows up without harassing and escalates to the agent",
-        "cola": "Shows the queue of open requests"
+        "pide": "Asks the owner, in their portal bell and by email, to approve the repairs they pay for and to choose their tenant",
+        "recuerda": "Reminds them once a day, at most three times, within contact hours",
+        "escala": "If they don't answer or have no portal account, alerts the property's agent",
+        "mueve": "Their answer moves the process: the repair goes ahead and the chosen tenant is ready to be awarded"
       },
       "noHace": {
-        "ejecuta": "Doesn't carry out the decision or change the property or the lease",
-        "canal": "Doesn't message the owner yet: the channel to do it doesn't exist yet"
+        "ejecuta": "Doesn't award or deduct anything on its own: a person does it with one click"
       }
     },
     "facturacion": {
@@ -13381,30 +13382,30 @@
     },
     "mantenimiento": {
       "rol": "Maintenance",
-      "historia": "Takes each maintenance request, understands what happened and tells you how urgent it is and who is probably responsible.",
+      "historia": "Takes each maintenance request, classifies it, asks your suppliers for quotes and proposes the best one; then asks the supplier how the job is going until it's done.",
       "hace": {
-        "clasifica": "Classifies the request and computes its priority",
-        "fotos": "Analyzes photos of the damage",
-        "responsable": "Proposes who is probably responsible, as a hypothesis",
-        "costo": "Estimates the cost and whether it needs approval"
+        "clasifica": "Classifies the request (trade and urgency) and raises the priority if there's a risk",
+        "cotiza": "Emails a quote request to your suppliers of that trade with up-to-date documents",
+        "propone": "Proposes the cheapest quote from an up-to-date supplier and who pays for it",
+        "sigue": "Asks the supplier how the approved job is going until it's complete",
+        "fotos": "Analyzes photos of the damage"
       },
       "noHace": {
         "veredicto": "Doesn't give a verdict on who is responsible: it's a hypothesis",
-        "solo": "Doesn't act on its own yet: classifies when you ask",
-        "proveedores": "Doesn't coordinate suppliers"
+        "aprueba": "Doesn't approve the expense: the owner approves it in their portal, or a person with one click"
       }
     },
     "inspeccion": {
       "rol": "Property inspection",
-      "historia": "Guides the property photos, builds the move-in report and compares move-in with move-out.",
+      "historia": "Schedules the move-in and move-out inspections with the report as a draft, and compares move-out with move-in.",
       "hace": {
-        "fotos": "Guides the photos and checks none is missing",
-        "acta": "Generates the move-in report",
-        "compara": "Compares move-in with move-out and separates damage, wear and missing items",
-        "evidencia": "Builds the signed evidence package"
+        "agenda": "Schedules the move-in and move-out inspections in the calendar",
+        "acta": "Leaves the report as a draft with the rooms, the inventory and, at move-out, what was handed over at move-in",
+        "compara": "Compares move-out with move-in and separates damage, normal wear and missing items",
+        "propone": "Proposes the report's deductions; you set the amount"
       },
       "noHace": {
-        "cobra": "Doesn't charge or deduct anything: it only recommends"
+        "cobra": "Doesn't deduct anything from the tenant without a person's click"
       }
     },
     "documentos": {

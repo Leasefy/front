@@ -47,7 +47,10 @@ describe('estadoDeUnAgente — sólo lo que dice la flota', () => {
 
   it('los que no están en la flota: el chat los tiene, o están fuera del piloto automático', () => {
     expect(estadoDeUnAgente(agentePorId('documentos'), null).tipo).toBe('enElChat')
-    expect(estadoDeUnAgente(agentePorId('inspeccion'), null).tipo).toBe('fueraDelPiloto')
+    // MANOS-1 (04-10-2026): Vidi ya está en la flota; hoy ningún agente del
+    // equipo queda fuera del Piloto, así que la rama se prueba con uno armado.
+    expect(estadoDeUnAgente({ ...agentePorId('documentos'), autonomia: null, despachos: [] }, null).tipo).toBe('fueraDelPiloto')
+    expect(estadoDeUnAgente(agentePorId('inspeccion'), null).tipo).toBe('sinDato')
   })
 })
 

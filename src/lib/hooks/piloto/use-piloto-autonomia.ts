@@ -47,6 +47,8 @@ export type AgentePiloto =
   | 'facturacion'
   | 'propietarios'
   | 'contabilidad'
+  // MANOS-1 (04-10-2026): Vidi (inspección) entra a la flota con su propio modo.
+  | 'inspeccion'
 
 /** El orden del panel: primero los que actúan en el día a día, al final los que todavía no. */
 const ORDEN: AgentePiloto[] = [
@@ -64,6 +66,7 @@ const ORDEN: AgentePiloto[] = [
   'calidad',
   'aprobaciones',
   'mantenimiento',
+  'inspeccion',
   'estudio',
   'cotizador',
   'avaluos',

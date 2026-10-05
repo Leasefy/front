@@ -1,8 +1,8 @@
 {
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
-  "cuando": "2026-10-04",
-  "cuantas": 1378,
+  "cuando": "2026-10-05",
+  "cuantas": 1381,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -669,6 +669,7 @@
     "GET /portal/certificados",
     "GET /portal/certificados-de-retencion",
     "GET /portal/certificados/:documentoId/pdf",
+    "GET /portal/elecciones-de-inquilino",
     "GET /portal/estado-de-cuenta",
     "GET /portal/estado-de-cuenta/deducciones/:deduccionId/soporte",
     "GET /portal/pago-en-linea/arriendos/:leaseId",
@@ -1252,6 +1253,8 @@
     "POST /portal/autopago",
     "POST /portal/autopago/:contractId/cobrar-ahora",
     "POST /portal/certificados/:contractId",
+    "POST /portal/elecciones-de-inquilino/:id/escoger",
+    "POST /portal/elecciones-de-inquilino/:id/ninguno",
     "POST /portal/pago-en-linea/arriendos/:leaseId",
     "POST /postulaciones/reclamos/:agencyId",
     "POST /pqrs",

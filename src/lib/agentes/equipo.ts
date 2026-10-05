@@ -260,14 +260,15 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     orbe: orbe('peach', 'aprobaciones'),
     autonomia: 'aprobaciones',
     despachos: [],
-    hace: ['impacto', 'solicitud', 'cadencia', 'cola'],
-    noHace: [{ clave: 'ejecuta' }, { clave: 'canal' }],
-    herramientas: ['unClic', 'bandeja'],
+    // MANOS-1 (04-10-2026): las manos de Avali viven en el back (campana del portal + correo).
+    hace: ['pide', 'recuerda', 'escala', 'mueve'],
+    noHace: [{ clave: 'ejecuta' }],
+    herramientas: ['portal', 'correo', 'bandeja'],
     trabajaCon: ['mantenimiento', 'propietarios'],
     reportaA: 'equipo',
     fuentes: [
-      'src/mastra/agents/aprobaciones-propietario/agent.ts (colaSolicitudes, crearSolicitud, resumenImpacto)',
-      'src/piloto/que-hace-cada-modo.ts (aprobaciones: el canal al propietario es NOOP)',
+      'back: src/inmobiliaria/aprobaciones-del-propietario/avali-del-piloto.service.ts (pedir escoger inquilino, recordar, escalar, adjudicar con clic)',
+      'src/piloto/que-hace-cada-modo.ts (aprobaciones)',
     ],
   },
   {
@@ -413,14 +414,16 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     // El micro NO lo despacha desde el chat (no está en `DispatchAgentKeySchema`):
     // `mantenimiento` en `AgentType` del front es una categoría vieja.
     despachos: [],
-    hace: ['clasifica', 'fotos', 'responsable', 'costo'],
-    noHace: [{ clave: 'veredicto' }, { clave: 'solo' }, { clave: 'proveedores' }],
-    herramientas: ['vision', 'bandeja'],
+    // MANOS-1 (04-10-2026): las manos de Fixi viven en el back (cotizaciones, propuesta, seguimiento).
+    hace: ['clasifica', 'cotiza', 'propone', 'sigue', 'fotos'],
+    noHace: [{ clave: 'veredicto' }, { clave: 'aprueba', loHace: 'aprobaciones' }],
+    herramientas: ['correo', 'vision', 'bandeja'],
     trabajaCon: ['aprobaciones', 'inspeccion'],
     reportaA: 'equipo',
     fuentes: [
+      'back: src/inmobiliaria/mantenimiento/fixi/fixi-del-piloto.service.ts (pedir cotizaciones, proponer, pedir la aprobación, seguimiento)',
       'src/mastra/agents/mantenimiento/agent.ts (classifyTicket, analyzeDamagePhoto, estimateResponsible, computePriority, estimateCost, evaluateApproval)',
-      'src/piloto/que-hace-cada-modo.ts (mantenimiento: «Fixi clasifica una solicitud cuando se lo pides»)',
+      'src/piloto/que-hace-cada-modo.ts (mantenimiento)',
     ],
   },
   {
@@ -428,16 +431,17 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     nombrePropio: 'Vidi',
     frente: 'mantenimiento',
     orbe: orbe('glacier', 'inspeccion'),
-    autonomia: null,
+    // MANOS-1 (04-10-2026): Vidi entra a la flota con su propio modo; sus manos viven en el back.
+    autonomia: 'inspeccion',
     despachos: [],
-    hace: ['fotos', 'acta', 'compara', 'evidencia'],
+    hace: ['agenda', 'acta', 'compara', 'propone'],
     noHace: [{ clave: 'cobra' }],
-    herramientas: ['vision', 'whatsapp', 'firma'],
+    herramientas: ['agenda', 'inventario', 'bandeja'],
     trabajaCon: ['mantenimiento', 'aprobaciones'],
     reportaA: 'equipo',
     fuentes: [
-      'src/mastra/agents/inspeccion/agent.ts (11 herramientas; INSPECCION_ENABLED)',
-      'src/mastra/agents/inspeccion/comparison/deposit-basis.ts:14 (recomienda, nunca un cargo ejecutado)',
+      'back: src/inmobiliaria/actas/vidi/vidi-del-piloto.service.ts (agendar entrada y salida, comparar y proponer descuentos con clic)',
+      'src/mastra/agents/inspeccion/agent.ts (visión y firma; INSPECCION_ENABLED, apagado)',
     ],
   },
   {

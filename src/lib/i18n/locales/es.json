@@ -1440,14 +1440,15 @@
           "avaluos": "Hace el avalúo de un inmueble cuando se lo pides.",
           "retencion": "Detecta a los propietarios en riesgo de irse y arma un plan para tu equipo. Nunca les escribe.",
           "calidad": "Revisa tus publicaciones y propone correcciones.",
-          "mantenimiento": "Clasifica las solicitudes de mantenimiento cuando se lo pides.",
+          "mantenimiento": "Clasifica cada solicitud de mantenimiento, les pide cotización a tus proveedores con documentos al día, propone la mejor y le pregunta al proveedor cómo va. El gasto lo aprueba el propietario o una persona.",
           "prospectos": "Recuerda las visitas agendadas y hace el seguimiento después de cada visita.",
-          "aprobaciones": "Lleva el seguimiento del visto bueno del propietario en reparaciones y cambios de precio. Por ahora no le envía mensajes.",
+          "aprobaciones": "Le pide al propietario, en la campana de su portal y por correo, aprobar sus reparaciones y escoger a su inquilino; se lo recuerda y avisa al asesor si no responde.",
           "contratos": "Recuerda firmas pendientes, avisa vencimientos y prepara renovaciones y cartas de incremento. El cierre del arriendo siempre lo hace una persona.",
           "facturacion": "Prepara la factura del mes el día 1 y descuenta el anticipo. La emisión ante la DIAN siempre la hace una persona.",
           "propietarios": "Envía el extracto mensual a cada propietario. El giro de su plata siempre lo aprueba una persona.",
           "contabilidad": "Registra los egresos y exporta el libro contable. Los lotes de pago siempre esperan tu clic.",
-          "chat": "Ejecuta las acciones que te propone el chat del panel. En Automático solo hace lo que se puede deshacer y no mueve plata ni le escribe a nadie."
+          "chat": "Ejecuta las acciones que te propone el chat del panel. En Automático solo hace lo que se puede deshacer y no mueve plata ni le escribe a nadie.",
+          "inspeccion": "Agenda la inspección de entrada y de salida con el acta en borrador y compara la devolución con la entrega. Descontarle al inquilino siempre lo decides tú."
         },
         "pantalla": {
           "titulo": "Qué ves en esta pantalla",
@@ -8231,7 +8232,8 @@
           "contratos": "Contratos",
           "facturacion": "Facturación y caja",
           "propietarios": "Propietarios",
-          "contabilidad": "Contabilidad"
+          "contabilidad": "Contabilidad",
+          "inspeccion": "Inspección"
         },
         "rol": {
           "cobrador": "Cobrador",
@@ -13292,16 +13294,15 @@
     },
     "aprobaciones": {
       "rol": "Aprobaciones del propietario",
-      "historia": "Convierte cada decisión que espera al propietario —una reparación, un descuento, una rebaja— en una solicitud clara con su impacto en plata.",
+      "historia": "Le pide al propietario lo que tiene que decidir —aprobar una reparación, escoger a su inquilino— en su portal, se lo recuerda y avisa al asesor si no responde.",
       "hace": {
-        "impacto": "Calcula cuánto cuesta decidir y cuánto cuesta no decidir",
-        "solicitud": "Arma la solicitud con su contexto y sus opciones",
-        "cadencia": "Le hace seguimiento sin acoso y escala al asesor",
-        "cola": "Te muestra la cola de solicitudes abiertas"
+        "pide": "Le pide al propietario, en la campana de su portal y por correo, aprobar las reparaciones a su cargo y escoger a su inquilino",
+        "recuerda": "Se lo recuerda uno al día, como mucho tres, dentro del horario de contacto",
+        "escala": "Si no responde o no tiene cuenta en el portal, le avisa al asesor del inmueble",
+        "mueve": "Su respuesta mueve el proceso: la reparación avanza y el escogido queda listo para adjudicar"
       },
       "noHace": {
-        "ejecuta": "No ejecuta la decisión ni cambia el inmueble o el contrato",
-        "canal": "Hoy no le escribe al propietario: el canal para hacerlo todavía no existe"
+        "ejecuta": "No adjudica ni descuenta nada por su cuenta: eso lo hace una persona con un clic"
       }
     },
     "facturacion": {
@@ -13416,30 +13417,30 @@
     },
     "mantenimiento": {
       "rol": "Mantenimiento",
-      "historia": "Recibe cada solicitud de mantenimiento, entiende qué pasó y te dice qué tan urgente es y quién probablemente responde.",
+      "historia": "Recibe cada solicitud de mantenimiento, la clasifica, les pide cotización a tus proveedores y propone la mejor; después le pregunta al proveedor cómo va hasta que termina.",
       "hace": {
-        "clasifica": "Clasifica la solicitud y calcula su prioridad",
-        "fotos": "Analiza las fotos del daño",
-        "responsable": "Propone quién responde probablemente, como hipótesis",
-        "costo": "Estima el costo y si necesita aprobación"
+        "clasifica": "Clasifica la solicitud (oficio y urgencia) y sube la prioridad si hay riesgo",
+        "cotiza": "Les pide cotización por correo a tus proveedores de ese oficio con documentos al día",
+        "propone": "Propone la cotización más barata de un proveedor al día y a cargo de quién queda",
+        "sigue": "Le pregunta al proveedor cómo va el trabajo aprobado hasta que se completa",
+        "fotos": "Analiza las fotos del daño"
       },
       "noHace": {
         "veredicto": "No da un veredicto de quién responde: es una hipótesis",
-        "solo": "Todavía no actúa solo: clasifica cuando se lo pides",
-        "proveedores": "No coordina proveedores"
+        "aprueba": "No aprueba el gasto: lo aprueba el propietario en su portal o una persona con un clic"
       }
     },
     "inspeccion": {
       "rol": "Inspección del inmueble",
-      "historia": "Guía la toma de fotos del inmueble, arma el acta de entrada y compara la entrada con la salida.",
+      "historia": "Agenda la inspección de entrada y la de salida con el acta en borrador, y compara la devolución con la entrega.",
       "hace": {
-        "fotos": "Guía la toma de fotos y revisa que no falte ninguna",
-        "acta": "Genera el acta de entrada",
-        "compara": "Compara la entrada con la salida y separa daño, desgaste y faltantes",
-        "evidencia": "Arma el paquete de evidencia firmado"
+        "agenda": "Agenda la inspección de entrada y de salida en la Agenda",
+        "acta": "Deja el acta en borrador con los espacios, el inventario y, a la salida, lo que se recibió en la entrega",
+        "compara": "Compara la devolución con la entrega y separa daño, desgaste normal y faltantes",
+        "propone": "Propone los descuentos del acta; el valor lo pones tú"
       },
       "noHace": {
-        "cobra": "No cobra ni descuenta nada: sólo recomienda"
+        "cobra": "No le descuenta nada al inquilino sin el clic de una persona"
       }
     },
     "documentos": {

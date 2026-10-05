@@ -128,9 +128,10 @@ describe('<EquipoDeAgentes />', () => {
     expect(porId('equipo-fila-prospectos')).toBeNull()
     escribir('link de pago')
     expect(porId('equipo-fila-pagos')).toBeTruthy()
-    // «Firma electrónica» es una herramienta de Vidi, no una frase de «Hace».
-    escribir('firma electronica')
-    expect(porId('equipo-fila-inspeccion')).toBeTruthy()
+    // «Análisis de fotos» es una herramienta de Fixi, no una frase de «Hace»
+    // (MANOS-1, 04-10-2026: Vidi ya no lista la firma; agenda e inventario).
+    escribir('analisis de fotos')
+    expect(porId('equipo-fila-mantenimiento')).toBeTruthy()
     expect(porId('equipo-fila-cobranza')).toBeNull()
     escribir('zzzz')
     expect(texto()).toContain('Nadie del equipo coincide')

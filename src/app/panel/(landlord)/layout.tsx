@@ -68,6 +68,13 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     href: '/panel/aprobaciones',
     icon: Wrench,
   },
+  // 🔴 #14 (MANOS-1, 04-10-2026): cuando su inmueble tiene candidatos, el
+  // propietario escoge quién lo arrienda (Avali se lo pide y se lo recuerda).
+  {
+    label: 'Escoger inquilino',
+    href: '/panel/escoger-inquilino',
+    icon: UsersThree,
+  },
   // SO-27 (PQRS-FIX, 04-10-2026): el propietario radica sus PQRS y reporta
   // daños desde su portal (antes sólo podía escribir en Mensajes).
   {
@@ -148,6 +155,8 @@ const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
   { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
   { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
+  // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
+  { label: 'Escoger inquilino', href: '/panel/escoger-inquilino', icon: UsersThree },
   // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
   { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
   { label: 'Mis informes', href: '/panel/informes', icon: Receipt },

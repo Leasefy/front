@@ -21,6 +21,8 @@ export function useEsPropietarioDeInmobiliaria(): boolean {
 const RUTAS_DEL_PROPIETARIO_DE_INMOBILIARIA = [
   '/panel/estado-de-cuenta',
   '/panel/aprobaciones',
+  // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
+  '/panel/escoger-inquilino',
   '/panel/informes',
   '/panel/certificados',
   '/panel/mensajes',

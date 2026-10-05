@@ -72,6 +72,8 @@ const FLOTA_DEL_MICRO = [
   'retencion',
   'calidad',
   'mantenimiento',
+  // MANOS-1 (04-10-2026): Vidi entra al Piloto (inspección de entrada y salida).
+  'inspeccion',
   'prospectos',
   'aprobaciones',
   'contratos',

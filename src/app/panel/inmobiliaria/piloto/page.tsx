@@ -239,7 +239,7 @@ function PilotoContent() {
           de 30 días, prenderlo (un administrador, con su código) y lo que le
           falta a la operación para que trabaje (CR-31: los días de plazo…). */}
       <PilotoActivacion />
-      {/* El director: el plan de hoy y sus metas (fase 1). Arriba de todo. */}
+      {/* El director: el plan de hoy, sus metas y la semana (fase 1), debajo de la activación del Piloto. */}
       <PilotoDirector onAbrirAccion={abrirDesdeElDirector} onPlanDeHoy={setPlanDelDirectorHoy} />
 
       {/* El tablero vivo: qué pasa ahora y qué puede explotar */}

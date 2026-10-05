@@ -63,8 +63,8 @@ describe('PilotoDirectorSemana', () => {
     expect(q('piloto-director-semana-solas')?.textContent).toContain('4')
     expect(q('piloto-director-semana-con-clic')?.textContent).toContain('2')
     expect(q('piloto-director-semana-esperan')?.textContent).toContain('3')
-    expect(q('piloto-director-semana-gasto')?.textContent).toMatch(/\$ 25\.704/)
-    expect(q('piloto-director-semana-gasto')?.textContent).toMatch(/\$ 84\.000/)
+    expect(q('piloto-director-semana-gasto')?.textContent).toMatch(/\$\s25\.704/)
+    expect(q('piloto-director-semana-gasto')?.textContent).toMatch(/\$\s84\.000/)
     expect(container.textContent).not.toMatch(/US\$|USD/)
   })
 

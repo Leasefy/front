@@ -263,7 +263,7 @@ describe('PilotoDirector — estados', () => {
     const ciclo = q('piloto-director-ciclo')?.textContent ?? ''
     expect(ciclo).toContain('inmobiliaria.piloto.director.ciclo.listo(las 5:03')
     expect(ciclo).toContain('Claude Fable 5.1')
-    expect(q('piloto-director-costo')?.textContent).toMatch(/\$ 1\.722/)
+    expect(q('piloto-director-costo')?.textContent).toMatch(/\$\s1\.722/)
     expect(q('piloto-director-costo')?.textContent).not.toMatch(/US/)
     expect(q('piloto-director-resumen')?.textContent).toBe('Hoy el foco es el recaudo: 12 cuotas vencen mañana.')
     expect(q('piloto-director')?.getAttribute('data-estado')).toBe('listo')

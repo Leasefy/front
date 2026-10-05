@@ -129,8 +129,8 @@ describe('PilotoDirectorAjustes — gasto de IA', () => {
     expect(q('piloto-director-gasto')?.textContent).toContain('inmobiliaria.piloto.director.gasto.tituloDelMes(septiembre de 2026)')
     const total = q('piloto-director-gasto-total')?.textContent ?? ''
     // En PESOS, nunca en dólares (Nico, 04-10-2026).
-    expect(total).toMatch(/\$ 25\.704/)
-    expect(total).toMatch(/\$ 168\.000/)
+    expect(total).toMatch(/\$\s25\.704/)
+    expect(total).toMatch(/\$\s168\.000/)
     expect(total).not.toMatch(/US|USD/)
     expect(q('piloto-director-gasto-tramo')?.textContent).toBe('inmobiliaria.piloto.director.gasto.tramo.mediana')
     expect(q('piloto-director-gasto-escalon')?.textContent).toBe('inmobiliaria.piloto.director.gasto.escalon.normal')

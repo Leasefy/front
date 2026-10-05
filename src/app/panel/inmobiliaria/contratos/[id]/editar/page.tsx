@@ -396,7 +396,7 @@ function EditarContratoContent() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Reemplaza el PDF sólo si cambiaste el documento. Sino déjalo como está.
+                  Reemplaza el PDF sólo si cambiaste el documento. Si no, déjalo como está.
                 </p>
               </div>
               <label className="inline-flex items-center gap-2 cursor-pointer">

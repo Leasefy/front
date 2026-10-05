@@ -85,6 +85,12 @@ export interface ReciboDeCaja {
 export interface CobroConDesglose extends Cobro {
   conceptos?: ConceptoDelCobro[];
   recibosDeCaja?: ReciboDeCaja[];
+  /**
+   * 🔴 QA-INQ-95 (I-09): el back marca el cobro SIN cuota de un mes anterior a
+   * la fecha de cartera del contrato. No es deuda de aquí («Resta por pagar» no
+   * lo suma): la fila lo dice en vez de pintar su saldo. Ausente = cobro normal.
+   */
+  anteriorALaCartera?: true;
 }
 
 /**

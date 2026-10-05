@@ -13,7 +13,7 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
-import { useState, useMemo, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useState, useMemo, useRef, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
 import {
@@ -22,6 +22,7 @@ import {
   FILTROS_INICIALES,
   type CampoDeOrden,
   type FiltrosDeContratos,
+  vencidoSinRenovar,
 } from '@/lib/contratos/filtrar-contratos';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { ContratoFilters } from '@/components/contratos/ContratoFilters';
@@ -74,6 +75,9 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAccesoDeLaPantalla } from '@/components/auth/acceso-de-la-pantalla';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { clasificarFallo } from '@/lib/errores/clasificar';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -198,10 +202,35 @@ function ContratosContent() {
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
   const { contracts, stats, isLoading, error, errorCrudo, refetch } = useContracts();
+  /*
+   * 🔴 QA-CONT-95 (CR-33, H-07): la lista es el dato PRINCIPAL de la pantalla.
+   * Si el servidor la NIEGA (sin permiso, sin segundo factor), se apaga la
+   * pantalla entera con el cartel —como hace `EstadoDeDatos principal`—: antes
+   * el cartel salía dentro de la tabla y «Nuevo contrato» y el engranaje
+   * quedaban vivos. Un 500 no apaga nada.
+   */
+  const accesoDeLaPantalla = useAccesoDeLaPantalla();
+  const denegarLaPantalla = accesoDeLaPantalla?.denegar;
+  const pantallaYaDenegada = Boolean(accesoDeLaPantalla?.denegado);
+  useEffect(() => {
+    const fallo = errorCrudo ?? error;
+    if (!fallo || !denegarLaPantalla || pantallaYaDenegada) return;
+    const tipo = clasificarFallo(fallo, { queEs: 'los contratos' }).tipo;
+    if (tipo === 'sinPermiso' || tipo === 'sinSegundoFactor') {
+      denegarLaPantalla({ error: fallo, queEs: 'los contratos' });
+    }
+  }, [error, errorCrudo, denegarLaPantalla, pantallaYaDenegada]);
   // Contratos migrados que existen y no cobran (sin inmueble o sin
   // propietario). Vivía en la página de migración, que ya no existe: se dice
   // acá, que es donde la persona está mirando sus contratos.
   const deuda = useMigracionConDeuda();
+  /*
+   * 🔴 QA-CONT-95 (MC-15): migrar es ESCRIBIR contratos. Quien sólo los ve (el
+   * contador, el de sólo lectura) no recibe un enlace que lo lleva a una
+   * pantalla negada: el aviso se le dice igual, sin el botón que rebota.
+   */
+  const { canAccess, isAdmin } = usePermissions();
+  const puedeMigrar = isAdmin || canAccess('contratos', 'create');
 
   useAutoRefresh(refetch);
   const sinDato = tx('No se pudo traer', "Couldn't load");
@@ -228,6 +257,12 @@ function ContratosContent() {
    */
   const porEmpezar = useMemo(
     () => contracts.filter((c) => c.status === 'active' && noHaEmpezado(c)).length,
+    [contracts],
+  );
+  // QA-CONT-95 (A-03): los vencidos sin renovar tampoco son «Activos» (la fila
+  // dice «Vencido»); se cuentan aparte, como los por empezar.
+  const vencidosSinRenovar = useMemo(
+    () => contracts.filter((c) => vencidoSinRenovar(c)).length,
     [contracts],
   );
   const limpiarFiltros = () =>
@@ -314,12 +349,14 @@ function ContratosContent() {
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-56">
-              <DropdownListItem asChild data-testid="accion-migrar-contratos">
-                <Link href="/panel/inmobiliaria/contratos/migrar">
-                  <UploadSimple className="w-4 h-4" />
-                  <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
-                </Link>
-              </DropdownListItem>
+              {puedeMigrar && (
+                <DropdownListItem asChild data-testid="accion-migrar-contratos">
+                  <Link href="/panel/inmobiliaria/contratos/migrar">
+                    <UploadSimple className="w-4 h-4" />
+                    <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
+                  </Link>
+                </DropdownListItem>
+              )}
               <DropdownListItem asChild data-testid="accion-agregar-conceptos">
                 <Link href="/panel/inmobiliaria/contratos/conceptos">
                   <ListPlus className="w-4 h-4" />
@@ -361,10 +398,11 @@ function ContratosContent() {
                     `${deuda.sinPropietario} migrated ${deuda.sinPropietario === 1 ? 'contract' : 'contracts'} without an owner: will not bill.`,
                   )
           }
-          accion={{
+          accion={puedeMigrar ? {
+            
             label: tx('Completarlos en la migración', 'Complete them in the migration'),
             href: '/panel/inmobiliaria/contratos/migrar',
-          }}
+          } : undefined}
           data-testid="alerta-migrados-sin-cobrar"
         >
           {tx(
@@ -380,13 +418,16 @@ function ContratosContent() {
         <AlertaAccionable
           severidad="warning"
           titulo={tx(
-            `${deuda.pendientes} filas de tu migración nunca se activaron: no existen como contrato.`,
+            deuda.pendientes === 1
+              ? '1 fila de tu migración nunca se activó: no existe como contrato.'
+              : `${deuda.pendientes} filas de tu migración nunca se activaron: no existen como contrato.`,
             `${deuda.pendientes} rows of your migration were never activated: they do not exist as contracts.`,
           )}
-          accion={{
+          accion={puedeMigrar ? {
+            
             label: tx('Revisar las filas', 'Review the rows'),
             href: '/panel/inmobiliaria/contratos/migrar',
-          }}
+          } : undefined}
           data-testid="alerta-migracion-sin-activar"
         >
           {tx(
@@ -441,12 +482,22 @@ function ContratosContent() {
           />
           <CifraDeLaTabla
             label={tx('Activos', 'Active')}
-            value={isLoading || error ? '—' : stats.active - porEmpezar}
+            value={isLoading || error ? '—' : stats.active - porEmpezar - vencidosSinRenovar}
             sub={
               error
                 ? sinDato
-                : !isLoading && porEmpezar > 0
-                  ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`)
+                : !isLoading && (porEmpezar > 0 || vencidosSinRenovar > 0)
+                  ? [
+                      porEmpezar > 0 ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`) : null,
+                      vencidosSinRenovar > 0
+                        ? tx(
+                            `+ ${vencidosSinRenovar} ${vencidosSinRenovar === 1 ? 'vencido sin renovar' : 'vencidos sin renovar'}`,
+                            `+ ${vencidosSinRenovar} ended, not renewed`,
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
                   : undefined
             }
             dot="bg-success"

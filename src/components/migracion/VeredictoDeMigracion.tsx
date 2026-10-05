@@ -112,7 +112,7 @@ export function VeredictoDeMigracion({
             className="mt-4 font-mono text-sm tabular-nums text-fg"
             data-testid="veredicto-contratos"
           >
-            {t(`${RAIZ}.contratos`, { n: deuda.contratos })}
+            {t(`${RAIZ}.contratos`, { n: deuda.activados ?? deuda.contratos })}
           </p>
 
           <ul className="mt-3 space-y-2">
@@ -385,7 +385,8 @@ function FilaFrenada({
   return (
     <TableRow data-testid="veredicto-fila" data-faltas={faltas.join(",")}>
       <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
-        {fila.fila}
+        {/* QA-CONT-95: la fila como la ve la persona en su archivo (encabezado = 1), igual que las tarjetas («Fila 2 · …»); antes salía «0». */}
+        {fila.fila + 2}
       </TableCell>
       <TableCell className="max-w-[260px]">
         <span className="block truncate text-fg">

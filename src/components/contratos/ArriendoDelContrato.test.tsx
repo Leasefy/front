@@ -411,3 +411,15 @@ describe('AvisoDelContrato — el tono vive en el círculo, no en la caja', () =
     expect(secundaria).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('QA-CONT-95 (B-16) · el contrato cancelado', () => {
+  it('🔴 no muestra «Mes 1 de 12 · Quedan 11 meses»: dice que se canceló', async () => {
+    await pintar(
+      contrato({ status: 'cancelled', startDate: '2026-10-04T00:00:00.000Z', endDate: '2027-10-03T00:00:00.000Z' }),
+      '2026-10-04',
+    )
+    const linea = texto('linea-del-contrato') ?? ''
+    expect(linea).toContain('Se canceló')
+    expect(linea).not.toContain('Quedan')
+  })
+})

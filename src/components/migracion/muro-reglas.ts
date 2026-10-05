@@ -257,6 +257,12 @@ export const MODULO_DEL_PASO: Record<IdDePasoDeMigracion, string> = {
 export interface DeudaDeMigracion {
   /** Filas de migración de contratos de la agencia — `resumen.total`. */
   contratos: number;
+  /**
+   * QA-CONT-95: las filas que SÍ son contrato (`resumen.activados`). El
+   * veredicto decía «21 contratos migrados» contando las 10 filas sin activar.
+   * `null` = el back no lo mandó (se cae a `contratos`).
+   */
+  activados?: number | null;
   /** Contratos ACTIVOS sin inmueble: existen y no cobran un peso. */
   sinInmueble: number;
   /** Contratos ACTIVOS con inmueble y sin consignación: tampoco cobran. */
@@ -319,6 +325,7 @@ export function leerDeuda(bruto: unknown): DeudaDeMigracion | null {
 
   return {
     contratos,
+    activados: numeroNoNegativo(r.activados),
     pendientes,
     sinInmueble,
     sinPropietario,

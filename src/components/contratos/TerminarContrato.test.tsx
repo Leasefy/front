@@ -37,6 +37,9 @@ beforeEach(() => {
     motivos: [
       { codigo: 'MUTUO_ACUERDO', nombre: 'Mutuo acuerdo', exigeNota: false },
       { codigo: 'OTRO', nombre: 'Otro', exigeNota: true },
+      // QA-CONT-95: un motivo con la penalidad por defecto (CR-10 · A-08).
+      { codigo: 'ENTREGA_ANTICIPADA_DEL_INQUILINO', nombre: 'Entrega anticipada del inquilino', exigeNota: false },
+      { codigo: 'VENTA_DEL_INMUEBLE', nombre: 'Venta del inmueble', exigeNota: false },
     ],
   });
   api.vistaPreviaDeTerminacion.mockResolvedValue({
@@ -179,7 +182,9 @@ describe('TerminarContrato', () => {
 
     const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
     await act(async () => {
-      select.value = 'MUTUO_ACUERDO';
+      // QA-CONT-95 (CR-10 · A-08): la penalidad por defecto es de los motivos
+      // del inquilino; con mutuo acuerdo sólo va si se escribe.
+      select.value = 'ENTREGA_ANTICIPADA_DEL_INQUILINO';
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
     const reparto = q('[data-testid="penalidad-para-la-inmobiliaria"]') as HTMLInputElement;
@@ -286,5 +291,64 @@ describe('TerminarContrato', () => {
     });
     await montar();
     expect(q('[data-testid="sin-prorrateo"]')?.textContent).toContain('no se puede calcular');
+  });
+});
+
+describe('QA-CONT-95 · CR-10 la penalidad según el motivo', () => {
+  beforeEach(() => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: true,
+      razon: null,
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+      penalidadSugerida: { canones: 3, valorCop: 4_500_000 },
+    });
+  });
+
+  async function elegir(codigo: string) {
+    const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = codigo;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  it('🔴 con «Venta del inmueble» la penalidad se vacía, se apaga y dice por qué; no se manda', async () => {
+    await montar();
+    await elegir('VENTA_DEL_INMUEBLE');
+    const penalidad = q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement;
+    expect(penalidad.value).toBe('');
+    expect(penalidad.disabled).toBe(true);
+    expect(q('[data-testid="penalidad-no-aplica"]')?.textContent).toContain('la indemnización es del propietario');
+    await act(async () => { (q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).click(); });
+    expect(api.terminar).toHaveBeenCalledWith('c1', expect.objectContaining({ motivo: 'VENTA_DEL_INMUEBLE', penalidadCop: null }));
+  });
+
+  it('🔴 con «Mutuo acuerdo» no se prellena: sólo va si se escribe', async () => {
+    await montar();
+    await elegir('MUTUO_ACUERDO');
+    expect((q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement).value).toBe('');
+  });
+
+  it('con «Entrega anticipada del inquilino» se prellena la por defecto', async () => {
+    await montar();
+    await elegir('ENTREGA_ANTICIPADA_DEL_INQUILINO');
+    expect((q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement).value).toBe('4500000');
+  });
+
+  it('el porqué del botón apagado sale junto al botón, y la frase de la garantía una sola vez', async () => {
+    const frase = 'Falta la garantía de servicios públicos: regístrala y recáudala antes de recibir el inmueble.';
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: false,
+      razon: frase,
+      garantiaDeServiciosPendiente: frase,
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+    });
+    await montar();
+    expect(q('[data-testid="por-que-no-se-puede-terminar"]')?.textContent).toBe(frase);
+    expect(q('[data-testid="razon-para-no-terminar"]')).toBeNull();
   });
 });

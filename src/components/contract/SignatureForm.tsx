@@ -259,7 +259,7 @@ export function SignatureForm({
                 ? 'text-fg'
                 : 'text-fg-muted'
             )}>
-              {textos?.aceptacion ?? 'Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.'}
+              {textos?.aceptacion ?? 'Acepto los términos del contrato, incluidas sus obligaciones, los pagos y la terminación.'}
             </span>
           </label>
 

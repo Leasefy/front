@@ -89,6 +89,8 @@ import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato'
 import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { falloDeLaFicha } from '@/lib/contratos/fallo-de-la-ficha';
+import { fundirContrato } from '@/lib/contratos/fundir-contrato';
 import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
@@ -367,7 +369,7 @@ function ContratoDetalleContent() {
         <div className="max-w-2xl">
           <ContratoSinSenal contratoId={id}>
             <FalloDeCarga
-              error={errorCrudo ?? error}
+              error={falloDeLaFicha(errorCrudo ?? error)}
               queEs="este contrato"
               onReintentar={refetch}
               volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
@@ -495,11 +497,17 @@ function ContratoDetalleContent() {
             canEdit={canEditContracts}
             onReintentado={() => void refetch()}
           />
-          <DownloadContractPdfButton
-            contractId={contract.id}
-            contractStatus={contract.status}
-            variant="secondary"
-          />
+          {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece
+              «Descargar PDF» — rebotaba con 400 y un toast. La sección
+              «Documento» ya dice que se cargó desde el sistema anterior. */}
+          {!sinDocumento && (
+            <DownloadContractPdfButton
+              contractId={contract.id}
+              contractStatus={contract.status}
+              variant="secondary"
+              numero={numero.principal}
+            />
+          )}
           {chatHref && (
             <Button asChild variant="secondary" hideArrow className="gap-2">
               <Link href={chatHref}>
@@ -588,6 +596,7 @@ function ContratoDetalleContent() {
             onConfirm={handleCancel}
             isSubmitting={isCancelling}
             actor="landlord"
+            conPostulacion={Boolean(contract.applicationId)}
           />
         </>
       )}
@@ -627,8 +636,9 @@ function ContratoDetalleContent() {
                 todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
             <PartesDelContrato
               contract={contract}
-              puedeInvitar={canInviteTenant}
-              puedeEditar={canEditContracts}
+              /* QA-CONT-95 (B-16): un contrato CANCELADO no se edita ni invita. */
+              puedeInvitar={canInviteTenant && contract.status !== 'cancelled'}
+              puedeEditar={canEditContracts && contract.status !== 'cancelled'}
               onActualizado={(c) => setContract(c)}
               onConflicto={() => void refetch()}
             />
@@ -676,8 +686,8 @@ function ContratoDetalleContent() {
               se veían en ninguna pantalla — y el uso decide si hay IVA. */}
           <AdministracionDelContrato
             contract={contract}
-            puedeEditar={canEditContracts}
-            onActualizado={(c) => setContract(c)}
+            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+            onActualizado={(c) => setContract((anterior) => fundirContrato(anterior, c))}
           />
 
           {/* Cómo se llama la situación tributaria que forman las dos partes y
@@ -742,6 +752,7 @@ function ContratoDetalleContent() {
               <ProrrogaDelContrato
                 contract={contract}
                 puedeEditar={canEditContracts && !esTerminado}
+                puedeAvisar={(canEditContracts || canAccess('operaciones', 'edit')) && !esTerminado}
                 onCambio={() => void refetch()}
               />
               {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
@@ -750,8 +761,9 @@ function ContratoDetalleContent() {
               <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               {/* T-0109 contract.md §3.1.E — codeudores y su pagaré. Se ocultan
                   solos contra un back sin WU-4 (404 en E1/E5). */}
-              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts} />
-              <PagareSection contractId={contract.id} puedeEditar={canEditContracts} />
+              {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
+              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
@@ -772,7 +784,9 @@ function ContratoDetalleContent() {
                 En tres pestañas —ingresos · egresos · facturas— porque una
                 sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
-              <ComprobantesDelSistemaAnterior contractId={contract.id} />
+              {/* QA-CONT-95 (H-04): los comprobantes son de Contabilidad; quien no la
+                  lee (el de sólo lectura) no dispara un 403 en cada ficha. */}
+              {canAccess('contabilidad', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
               {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
               <PqrsDelContrato contractId={contract.id} />
               {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por

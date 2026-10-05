@@ -185,6 +185,13 @@ export function useContratoDesdePlantilla(
     let vigente = true;
     const b = JSON.parse(borradorSerializado) as BorradorDeContrato;
     const elegidas = JSON.parse(clausulasSerializadas) as string[];
+    /*
+     * 🔴 QA-CONT-95 (UC-06): sin inmueble ni uso no hay nada que preparar. El
+     * sondeo al abrir «Armarlo a mano» pedía `preparar` igual y el back
+     * contestaba 400 «elige el uso del inmueble»: un error en la consola en
+     * cada carga. Se sondea cuando ya hay un inmueble (o el uso).
+     */
+    if (!activo && !b.propertyId && !b.consignacionId && !b.uso) return;
 
     const temporizador = setTimeout(() => {
       yaSeSondeo.current = true;

@@ -51,12 +51,15 @@ import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formular
 import type { Propietario } from "@/lib/types/inmobiliaria";
 // QA-CONT C-10: la fecha larga de la casa, nunca el ISO crudo.
 import { diaLegible } from "@/lib/mandato/textos";
+import { hoyEnColombia } from "@/lib/fechas/fecha-de-la-casa";
 
 /** 100 % en puntos básicos, el mismo lenguaje del mandato. */
 const BPS_TOTAL = 10000;
 
 function hoyComoInput(): string {
-  return new Date().toISOString().slice(0, 10);
+  // QA-CONT-95: hoy EN COLOMBIA. `toISOString()` es UTC: desde las 7 p. m. de
+  // Bogotá ya daba mañana y la fecha precargada quedaba un día corrida.
+  return hoyEnColombia();
 }
 
 export interface CesionDelInmuebleProps {
@@ -187,7 +190,7 @@ export function CesionDelInmueble({
             <ErrorDelCampo
               id="desde-error"
               mensaje={errores.desde}
-              pista="Tiene que ser posterior al último período ya cobrado."
+              pista={pistaDeLaFechaDeCesion(desde, propietarioActual)}
               className="mt-0"
             />
           </div>
@@ -262,4 +265,20 @@ export function CesionDelInmueble({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * QA-CONT-95 (E-10): la cesión a mitad de mes NO reparte ese mes por días
+ * (una cuota por mes y lado; partirla necesita una migración, decidido el
+ * 03-10 y pendiente de Víctor). Mientras tanto, la pantalla lo dice antes de
+ * registrar: el mes que contiene la fecha queda completo del dueño de hoy.
+ */
+export function pistaDeLaFechaDeCesion(desde: string, propietarioActual?: string | null): string {
+  const base = 'Tiene que ser posterior al último período ya cobrado.';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(desde ?? '');
+  if (!m || m[3] === '01') return base;
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const mes = `${MESES[Number(m[2]) - 1]} de ${m[1]}`;
+  const quien = propietarioActual ? `de ${propietarioActual}` : 'del dueño de hoy';
+  return `${base} Ojo: ${mes} queda completo ${quien}; el nuevo dueño recibe desde el mes siguiente (Leasefy todavía no reparte un mes por días entre dos dueños).`;
 }

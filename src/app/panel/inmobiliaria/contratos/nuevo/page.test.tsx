@@ -16,8 +16,16 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { post, acciones, router } = vi.hoisted(() => ({
+const { post, get, iaDelGet, acciones, router } = vi.hoisted(() => ({
   post: vi.fn(),
+  /*
+   * QA-CONT-95 (UC-06): al abrir sin inmueble ya no se pide `preparar` (era un
+   * 400 en la consola en cada carga); `iaDisponible` llega por su propio GET
+   * (`…/plantilla/ia`), como en producción. `montar(x)` lo contesta con x; sin
+   * `montar`, no contesta (la prueba de «mientras no se sabe»).
+   */
+  get: vi.fn(),
+  iaDelGet: { valor: undefined as boolean | undefined },
   acciones: {
     uploadPdf: vi.fn(),
     create: vi.fn(),
@@ -30,7 +38,7 @@ const { post, acciones, router } = vi.hoisted(() => ({
 
 vi.mock('@/lib/api/client', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/client')>('@/lib/api/client')
-  return { ...real, apiClient: { post } }
+  return { ...real, apiClient: { post, get } }
 })
 // 🔴 Inventario del inmueble (Nico y Juan Camilo, 2026-09-16): al elegir el
 // inmueble se pregunta si su inventario permite iniciar. Acá no se exige
@@ -180,6 +188,13 @@ async function esperar() {
 
 beforeEach(() => {
   post.mockReset()
+  iaDelGet.valor = undefined
+  get.mockReset()
+  get.mockImplementation((ruta: string) =>
+    String(ruta).endsWith('/plantilla/ia') && iaDelGet.valor !== undefined
+      ? Promise.resolve({ iaDisponible: iaDelGet.valor })
+      : Promise.reject(new Error('sin respuesta en la prueba')),
+  )
   paraIniciar.mockReset()
   paraIniciar.mockResolvedValue({ exigible: false, motivoNoExigible: 'MIGRACION_PENDIENTE', consignacionId: null, vigencia: null })
   acciones.uploadPdf.mockReset()
@@ -200,6 +215,7 @@ afterEach(() => {
 })
 
 async function montar(iaDisponible = true) {
+  iaDelGet.valor = iaDisponible
   post.mockImplementation((ruta: string) => {
     if (ruta.endsWith('/preparar')) return Promise.resolve(preparacion(iaDisponible))
     if (ruta.endsWith('/generar')) return Promise.resolve(ARMADO)

@@ -242,6 +242,7 @@ export function ArriendoDelContrato({
           vigencia={vigencia}
           terminadoEn={terminaEl ? null : terminadoEn}
           terminaEl={terminaEl}
+          cancelado={contract.status === 'cancelled'}
           className="lg:pr-8"
         />
 
@@ -284,7 +285,7 @@ export function ArriendoDelContrato({
             {/* C-07: UNA regla, la del back (`reglaDeCobro.frase`); un back
                 anterior, la que se armaba aquí. */}
             <dd className="mt-1.5 text-body-sm text-fg" data-testid="ritmo-de-pago">
-              {contract.reglaDeCobro?.frase ?? ritmoDePago(contract, agencia)}
+              {fraseDeCuandoPaga(contract.reglaDeCobro?.frase ?? ritmoDePago(contract, agencia), plazoSinFijar)}
             </dd>
           </div>
         </dl>
@@ -318,6 +319,7 @@ export function ArriendoDelContrato({
         // espera: no se afirma «en plazo» ni «en cartera» sobre un supuesto.
         esperandoPlazo={contract.diasDePlazo == null && esperandoAgencia}
         reintentar={reintentar}
+        plazoSinFijar={plazoSinFijar}
       />
 
       {acciones ? (
@@ -339,11 +341,14 @@ function LineaDelContrato({
   vigencia,
   terminadoEn,
   terminaEl = null,
+  cancelado = false,
   className,
 }: {
   avance: AvanceDelContrato;
   vigencia: Vigencia;
   terminadoEn: string | null;
+  /** QA-CONT-95 (B-16): cancelado antes de regir: ni «Mes 1 de 12» ni «Quedan 11 meses». */
+  cancelado?: boolean;
   /** C-01: el último día de una terminación programada (futura). */
   terminaEl?: string | null;
   className?: string;
@@ -371,6 +376,17 @@ function LineaDelContrato({
           {avance.inicio || avance.fin
             ? 'Le falta la fecha de inicio o la de fin: sin las dos no se puede decir cuánto va.'
             : 'Este contrato no tiene cargadas sus fechas de inicio y fin.'}
+        </p>
+      </div>
+    );
+  }
+
+  if (cancelado) {
+    return (
+      <div className={className} data-testid="linea-del-contrato">
+        <p className="text-label uppercase tracking-wide text-fg-subtle">Avance</p>
+        <p className="mt-1.5 text-body-sm text-fg-muted" data-testid="linea-cancelado">
+          Se canceló: no corre ningún mes ni se cobra nada.
         </p>
       </div>
     );
@@ -619,6 +635,7 @@ function CuentaDelArriendo({
   diasDePlazo,
   esperandoPlazo,
   reintentar,
+  plazoSinFijar = false,
 }: {
   contract: Contract;
   cuenta: CuentaDelContrato;
@@ -626,6 +643,8 @@ function CuentaDelArriendo({
   diasDePlazo: number | null;
   esperandoPlazo: boolean;
   reintentar: () => void;
+  /** QA-CONT-95 (UC-12): el aviso del plazo ya salió arriba; no se repite acá. */
+  plazoSinFijar?: boolean;
 }) {
   const deuda = React.useMemo<DeudaDelContrato | null>(
     () =>
@@ -761,7 +780,9 @@ function CuentaDelArriendo({
               <EstadoDeLaDeuda deuda={deuda} interesPendiente={interesPendiente} />
             )}
           </div>
-          {intereses?.sinInteres?.sinReglas ? (
+          {/* QA-CONT-95 (UC-12): sin plazo fijado no corre interés de todos
+              modos, y el aviso del plazo ya está arriba; éste se repetía. */}
+          {intereses?.sinInteres?.sinReglas && !plazoSinFijar ? (
             <div className="md:col-span-3 md:pt-4">
               <AlertaAccionable
                 severidad="warning"
@@ -1023,4 +1044,15 @@ export function AvisoDelContrato({
       ) : null}
     </div>
   );
+}
+
+/**
+ * QA-CONT-95 (UC-12): con la inmobiliaria sin días de plazo, el aviso fuerte
+ * (con «Fijar los días de plazo») sale justo debajo; la frase de «Cuándo paga»
+ * no lo repite. Se queda con la regla («Se genera y vence el 1 de cada mes…»).
+ */
+export function fraseDeCuandoPaga(frase: string, plazoSinFijar: boolean): string {
+  if (!plazoSinFijar) return frase;
+  const corte = frase.search(/\s*(La inmobiliaria|Tu inmobiliaria) todavía no fijó sus días de plazo/);
+  return corte > 0 ? frase.slice(0, corte).trim() : frase;
 }

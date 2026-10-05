@@ -26,6 +26,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 export type CampoDelContrato =
   | 'startDate'
   | 'endDate'
+  | 'fechaDeCartera'
   | 'monthlyRent'
   | 'deposit'
   | 'paymentDay'
@@ -40,6 +41,7 @@ export type CampoDelContrato =
 export const CAMPOS_DEL_CONTRATO: readonly CampoDelContrato[] = [
   'startDate',
   'endDate',
+  'fechaDeCartera',
   'monthlyRent',
   'deposit',
   'paymentDay',

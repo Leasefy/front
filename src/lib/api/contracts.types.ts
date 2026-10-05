@@ -194,6 +194,10 @@ export interface BackendContract {
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | null;
   /** La del contrato. Llega como string: es Decimal en Prisma. */
   comisionPorcentaje?: number | string | null;
+  /** Decimal de Prisma (viaja como string): la penalidad propia del contrato, en cánones. QA-CONT-95. */
+  penalidadTerminacionCanones?: number | string | null;
+  /** `AAAA-MM-DD…` (columna DATE): desde cuándo se cobra. QA-CONT-95. */
+  fechaDeCartera?: string | null;
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
   /**
@@ -312,6 +316,11 @@ export interface CreateContractDto {
   prorratearPrimerMes?: boolean;
   /** Días de plazo antes de la mora (0-60). `null`/ausente = hereda los de la inmobiliaria. */
   diasDePlazo?: number | null;
+  /**
+   * QA-CONT-95 C-16: desde cuándo se cobra (el día en que recibe el inmueble),
+   * AAAA-MM-DD, ≥ inicio. Ausente = desde el inicio (`CreateContractDto.fechaDeCartera`).
+   */
+  fechaDeCartera?: string;
   insuranceTier?: InsuranceTier;          // default NONE
   customClauses?: CustomClause[];
   /** Default: 'GENERATED'. Use 'UPLOADED_PDF' when a landlord-provided PDF is attached. */

@@ -146,6 +146,14 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    /*
+     * 🔴 QA-CONT-95 (B-30, CR-07): el back los manda en `GET /contracts/:id` y
+     * acá se perdían. Sin la penalidad propia, «Cómo se cobra» decía «La de la
+     * inmobiliaria» con 2 cánones guardados y «Corregir» la traía vacía; sin la
+     * fecha de cartera, «Cuándo paga» y la vigencia contaban desde el inicio.
+     */
+    penalidadTerminacionCanones: aNumero(bc.penalidadTerminacionCanones),
+    fechaDeCartera: typeof bc.fechaDeCartera === 'string' ? bc.fechaDeCartera.slice(0, 10) : null,
     propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
     // Todos los dueños con su porcentaje y su parte del canon, y todos los
     // inquilinos. Passthrough: `undefined` = el back no lo mandó (lista,

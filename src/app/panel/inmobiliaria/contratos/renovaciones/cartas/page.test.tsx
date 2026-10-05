@@ -132,7 +132,7 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
     // 🔴 19-09: acá se esperaba el crudo `2026-10-01`. El testid sigue siendo
     // la fecha ISO —es la llave de la fila, no texto para leer—, pero lo que
     // se ESCRIBE es la fecha en español.
-    expect(fila.textContent).toContain('01 oct 2026');
+    expect(fila.textContent).toContain('1 oct 2026');
   });
 
   it('enviar es un clic y refresca la cola', async () => {

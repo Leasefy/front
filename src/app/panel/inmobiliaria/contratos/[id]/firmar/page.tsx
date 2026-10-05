@@ -105,7 +105,8 @@ function FirmarContratoContent() {
       });
       setContract(updated);
       setSigned(true);
-      toast.success('Contrato firmado. Proceso completado.');
+      // CR-28 · QA-CONT-95: sin «Proceso completado» cuando falta activarlo.
+      toast.success(updated.status === 'active' ? 'Contrato firmado y activo.' : 'Contrato firmado.');
     } catch (err) {
       // El back rechaza con 400 `INQUILINO_NO_HA_FIRMADO` si el arrendador
       // intenta firmar antes que el inquilino. Se decide con el CÓDIGO, nunca
@@ -191,24 +192,8 @@ function FirmarContratoContent() {
   const esperaAlInquilino =
     contract.status === 'pending_tenant' || (contract.status === 'pending_landlord' && !inquilinoYaFirmo);
 
-  if (contract.status !== 'pending_landlord' && !esperaAlInquilino) {
-    return (
-      <div className="max-w-2xl mx-auto p-8 space-y-4">
-        {/* El estado va traducido: antes salía el enum crudo del back
-            («pending_tenant») en la cara de la persona. */}
-        <AlertaAccionable
-          severidad="warning"
-          titulo="Este contrato no está pendiente de tu firma"
-          accion={{ label: 'Ver el contrato', href: `/panel/inmobiliaria/contratos/${contract.id}` }}
-          data-testid="firmar-no-pendiente"
-        >
-          Está en <strong>{CONTRACT_STATUS_LABELS[contract.status] ?? contract.status}</strong>.
-          {contract.status === 'signed' && ' Ya firmaron las dos partes.'}
-        </AlertaAccionable>
-      </div>
-    );
-  }
-
+  // 🔴 QA-CONT-95: el éxito va ANTES que «no está pendiente de tu firma»:
+  // recién firmado, el contrato ya no está pendiente y se pintaba el aviso.
   if (signed) {
     return (
       <div className="max-w-2xl mx-auto p-8">
@@ -229,8 +214,9 @@ function FirmarContratoContent() {
               quien firmó esperando una respuesta que no iba a llegar.
             */}
             <p className="text-sm text-success mt-1" data-testid="firmado-cierre">
-              Firmaron las dos partes. El contrato queda cerrado y el PDF final ya incluye
-              las dos firmas con su certificado.
+              {contract.status === 'active'
+                ? 'Firmaron las dos partes y el contrato ya está activo: nacieron sus cuotas. El PDF final incluye las dos firmas con su certificado.'
+                : 'Firmaron las dos partes. El contrato se activa en su fecha de inicio. El PDF final incluye las dos firmas con su certificado.'}
             </p>
           </div>
           <Button
@@ -245,6 +231,25 @@ function FirmarContratoContent() {
       </div>
     );
   }
+
+  if (contract.status !== 'pending_landlord' && !esperaAlInquilino) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 space-y-4">
+        {/* El estado va traducido: antes salía el enum crudo del back
+            («pending_tenant») en la cara de la persona. */}
+        <AlertaAccionable
+          severidad="warning"
+          titulo="Este contrato no está pendiente de tu firma"
+          accion={{ label: 'Ver el contrato', href: `/panel/inmobiliaria/contratos/${contract.id}` }}
+          data-testid="firmar-no-pendiente"
+        >
+          Está en <strong>{CONTRACT_STATUS_LABELS[contract.status] ?? contract.status}</strong>.
+          {contract.status === 'signed' && ' Ya firmaron las dos partes.'}
+        </AlertaAccionable>
+      </div>
+    );
+  }
+
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

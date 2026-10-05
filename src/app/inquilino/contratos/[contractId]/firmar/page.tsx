@@ -30,7 +30,8 @@ import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { CONTRACT_STATUS_LABELS, getContractTypeLabel } from '@/lib/types/contract';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { Contract, RejectionType, ContractRejection } from '@/lib/types/contract';
+import type { Contract, ContractStatus, RejectionType, ContractRejection } from '@/lib/types/contract';
+import { mensajeDeLaFirmaDelInquilino } from '@/lib/contratos/firma-del-inquilino';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
@@ -47,8 +48,11 @@ interface FirmarContractPageProps {
 // Success State Component
 // ============================================================================
 
-function SigningSuccess({ locale }: { locale: string }) {
+function SigningSuccess({ locale, estado }: { locale: string; estado: ContractStatus | null | undefined }) {
   const router = useRouter();
+  // 🔴 QA-CONT-95: lo que se dice sale del estado que devolvió la firma
+  // (antes «Ambas partes han firmado… está activo» con el propietario sin firmar).
+  const mensaje = mensajeDeLaFirmaDelInquilino(estado, locale);
 
   return (
     // Firmar → «¡Contrato firmado!»: la confirmación llega (es un cambio).
@@ -56,13 +60,11 @@ function SigningSuccess({ locale }: { locale: string }) {
       <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
         <Confetti className="w-10 h-10 text-success" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg mb-3">
-        {locale === 'es' ? '¡Contrato firmado exitosamente!' : 'Contract signed successfully!'}
+      <h2 className="text-2xl font-semibold text-fg mb-3" data-testid="firma-exitosa-titulo">
+        {mensaje.titulo}
       </h2>
-      <p className="text-fg-muted mb-8 max-w-sm mx-auto">
-        {locale === 'es'
-          ? 'Ambas partes han firmado. Tu contrato está activo y puedes descargarlo en cualquier momento.'
-          : 'Both parties have signed. Your contract is active and you can download it anytime.'}
+      <p className="text-fg-muted mb-8 max-w-sm mx-auto" data-testid="firma-exitosa-texto">
+        {mensaje.texto}
       </p>
       <Button
         size="lg"
@@ -351,7 +353,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
       });
       setLocalContract(updated);
       setSignedSuccess(true);
-      toast.success(locale === 'es' ? 'Contrato firmado exitosamente' : 'Contract signed successfully');
+      toast.success(locale === 'es' ? 'Firmaste el contrato.' : 'You signed the contract.');
     } catch (err) {
       // Las acciones relanzan el fallo del back: acá se dice su motivo.
       toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract', {
@@ -471,7 +473,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <SigningSuccess locale={locale} />
+          <SigningSuccess locale={locale} estado={activeContract?.status} />
           {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
               también el inventario con el que lo recibe. No bloquea nada. */}
           <div className="mt-8">
@@ -494,8 +496,8 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-fg">
             {isPendingTenant
-              ? (locale === 'es' ? 'Firmar Contrato' : 'Sign Contract')
-              : (locale === 'es' ? 'Contrato de Arrendamiento' : 'Rental Contract')}
+              ? (locale === 'es' ? 'Firmar el contrato' : 'Sign contract')
+              : (locale === 'es' ? 'Contrato de arrendamiento' : 'Rental contract')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {activeContract.propertyAddress} — {activeContract.propertyCity}
@@ -534,6 +536,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
           onConfirm={handleCancel}
           isSubmitting={isCancelling}
           actor="tenant"
+          conPostulacion={Boolean(activeContract?.applicationId)}
         />
 
         {/* Signing state — two column layout */}

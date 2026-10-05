@@ -19,6 +19,7 @@ import { toast } from "@/components/ui/toast";
 import { cicloDeVidaApi, type ContratoVencido } from "@/lib/api/ciclo-de-vida.service";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import { diaLegible } from '@/lib/mandato/textos';
 
 export function RenovarContratoVencido({
   contractId,
@@ -55,7 +56,7 @@ export function RenovarContratoVencido({
     setErrorDelDia(undefined);
     try {
       const r = await cicloDeVidaApi.extender(contractId, body);
-      toast.success(`Contrato renovado hasta el ${r.finNuevo}.`);
+      toast.success(`Contrato renovado hasta el ${diaLegible(r.finNuevo)}.`);
       setVencido(null);
       onRenovado();
     } catch (err) {
@@ -82,7 +83,7 @@ export function RenovarContratoVencido({
       data-testid="renovar-contrato-vencido"
     >
       <p>
-        <strong>El contrato venció el {vencido.endDate}</strong> con aviso de no renovación y el inquilino
+        <strong>El contrato venció el {diaLegible(vencido.endDate)}</strong> con aviso de no renovación y el inquilino
         sigue adentro. No se prorroga: elige cómo renovarlo, o termínalo.
       </p>
       <div className="flex flex-wrap items-end gap-2">
@@ -120,7 +121,7 @@ export function RenovarContratoVencido({
           disabled={ocupado}
           onClick={() => void renovar({ modo: "TERMINO_INICIAL" })}
         >
-          Renovar por el término inicial (hasta el {vencido.renovarPorTerminoInicialHasta})
+          Renovar por el término inicial (hasta el {diaLegible(vencido.renovarPorTerminoInicialHasta)})
         </Button>
       )}
     </section>

@@ -43,7 +43,14 @@ export interface MotivoDeTerminacion {
   nombre: string;
   /** `OTRO` — el back rechaza la terminación sin nota. */
   exigeNota: boolean;
+  /**
+   * QA-CONT-95 (CR-10 · A-08, CEO 18-09): con venta o incumplimiento del
+   * arrendador NO se le cobra penalidad al inquilino; con mutuo acuerdo o fuerza
+   * mayor, sólo si se escribe. Ausente (back viejo) = la regla de `penalidadSegunElMotivo`.
+   */
+  penalidad?: 'POR_DEFECTO' | 'SOLO_SI_SE_ESCRIBE' | 'NO_APLICA';
 }
+
 
 export interface ProrrateoDelUltimoMes {
   mes: string;

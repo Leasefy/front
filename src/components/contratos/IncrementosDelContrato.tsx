@@ -33,6 +33,7 @@ import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-contrato-vigente";
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
+import { diaLegible } from '@/lib/mandato/textos';
 
 const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
@@ -384,11 +385,12 @@ function Aniversario({
   return (
     <li className="space-y-2 py-3 text-sm" data-testid={`aniversario-${a.desde}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-medium">Desde el {a.desde}</span>
+        {/* QA-CONT-95 (C-10): la fecha larga de la casa, nunca el ISO crudo. */}
+        <span className="font-medium">Desde el {diaLegible(a.desde)}</span>
         {sube ? (
           <span>
             {PESOS.format(a.canonAnteriorCop)} → <strong>{PESOS.format(a.canonNuevoCop)}</strong>
-            {a.porcentaje != null && ` (${a.porcentaje} %)`}
+            {a.porcentaje != null && ` (${porcentajeLegible(a.porcentaje)} %)`}
           </span>
         ) : (
           <span className="text-muted-foreground">Sin incremento</span>
@@ -397,7 +399,7 @@ function Aniversario({
       <p className="text-caption text-muted-foreground">
         {sube ? ORIGEN[a.origen as string] : a.motivo}
         {a.carta && ` · ${CARTA[a.carta.estado]}`}
-        {enviada && a.carta?.enviadaAt && ` el ${a.carta.enviadaAt.slice(0, 10)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
+        {enviada && a.carta?.enviadaAt && ` el ${diaLegible(a.carta.enviadaAt)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
         {enviada && a.carta?.soporteNombre && (
           <>
             {" · "}
@@ -442,7 +444,7 @@ function Aniversario({
               limpiar("porcentaje");
             }}
             className="w-32"
-            aria-label={`Incremento del ${a.desde} en porcentaje`}
+            aria-label={`Incremento del ${diaLegible(a.desde)} en porcentaje`}
             aria-invalid={errores.porcentaje || errores.canonNuevoCop ? true : undefined}
             aria-describedby={`${ids.porcentaje}-error`}
           />
@@ -483,7 +485,7 @@ function Aniversario({
                 }}
                 rows={6}
                 maxLength={10_000}
-                aria-label={`Carta del incremento del ${a.desde}`}
+                aria-label={`Carta del incremento del ${diaLegible(a.desde)}`}
                 aria-invalid={errores.contenido ? true : undefined}
                 aria-describedby={`${ids.contenido}-error`}
               />
@@ -604,4 +606,9 @@ function Aniversario({
       )}
     </li>
   );
+}
+
+/** QA-CONT-95: «5,1» con coma decimal (es-CO), no «5.1». */
+export function porcentajeLegible(valor: number): string {
+  return valor.toLocaleString('es-CO', { maximumFractionDigits: 3 });
 }

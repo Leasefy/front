@@ -314,6 +314,8 @@ describe('leerDeuda', () => {
   it('lee el resumen real de la agencia de Nico', () => {
     expect(leerDeuda(RESUMEN_DE_NICO)).toEqual({
       contratos: 91,
+      // QA-CONT-95: también las que SÍ son contrato (el veredicto las nombra).
+      activados: 91,
       pendientes: 0,
       sinInmueble: 89,
       sinPropietario: 89,
@@ -348,6 +350,8 @@ describe('leerDeuda', () => {
     const r = leerDeuda({ lote: null, total: 10, pendientes: 2 });
     expect(r).toEqual({
       contratos: 10,
+      // QA-CONT-95: sin el conteo, `null` (el veredicto cae a `contratos`).
+      activados: null,
       pendientes: 2,
       sinInmueble: 0,
       sinPropietario: 0,

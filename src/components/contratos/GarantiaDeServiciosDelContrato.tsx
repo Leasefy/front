@@ -36,6 +36,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { errorDeLaFechaDelMovimiento } from '@/lib/contratos/limites-de-la-garantia';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { diaLegible } from '@/lib/mandato/textos';
 
 const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -647,7 +648,7 @@ function Movimientos({
       <ul className="space-y-2 text-caption">
         {datos.movimientos.map((m) => (
           <li key={m.id} className={m.anulado ? 'text-muted-foreground line-through' : ''} data-testid={`movimiento-${m.id}`}>
-            <span className="font-medium">{m.fecha}</span> · {NOMBRE_DEL_TIPO[m.tipo]} · {PESOS.format(m.valorCop)} ·{' '}
+            <span className="font-medium">{diaLegible(m.fecha)}</span> · {NOMBRE_DEL_TIPO[m.tipo]} · {PESOS.format(m.valorCop)} ·{' '}
             {m.descripcion}
             {m.medio ? ` (${m.medio})` : ''}
             {m.soporteNombre && (

@@ -23,6 +23,11 @@ interface CancelContractModalProps {
   isSubmitting?: boolean;
   /** Rol del usuario actual — cambia el copy ("tu" vs "el propietario"). */
   actor?: 'landlord' | 'tenant';
+  /**
+   * QA-CONT-95 (D-11): ¿el contrato salió de una postulación? Sin ella (un
+   * contrato armado a mano) no hay «aplicación» que cerrar.
+   */
+  conPostulacion?: boolean;
 }
 
 export function CancelContractModal({
@@ -31,6 +36,7 @@ export function CancelContractModal({
   onConfirm,
   isSubmitting = false,
   actor = 'landlord',
+  conPostulacion = true,
 }: CancelContractModalProps) {
   const [reason, setReason] = useState('');
 
@@ -66,9 +72,11 @@ export function CancelContractModal({
         <DialogHeader>
           <DialogTitle>Cancelar contrato</DialogTitle>
           <DialogDescription>
-            El contrato termina y la aplicación asociada queda cerrada; no se puede deshacer. Si
-            quieres volver a intentar con el mismo {otherParty}, vas a tener que crear una
-            aplicación nueva.
+            {/* QA-CONT-95 (D-11): «postulación», no «aplicación»; y lo que
+                pasa con el inmueble, que es lo que importa al cancelar. */}
+            {conPostulacion
+              ? `El contrato se cancela, el inmueble vuelve a quedar disponible y la postulación queda cerrada; no se puede deshacer. Si quieres volver a intentar con el mismo ${otherParty}, vas a tener que crear una postulación nueva.`
+              : 'El contrato se cancela y el inmueble vuelve a quedar disponible; no se puede deshacer.'}
           </DialogDescription>
         </DialogHeader>
 

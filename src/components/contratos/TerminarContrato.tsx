@@ -41,17 +41,21 @@ import {
   type MotivoDeTerminacion,
   type VistaPreviaDeTerminacion,
 } from "@/lib/api/ciclo-de-vida.service";
+import { penalidadSegunElMotivo } from "@/lib/contratos/penalidad-segun-el-motivo";
 import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limites-del-contrato-vigente";
 // QA-CONT C-10: las fechas con la fecha larga de la casa, nunca el ISO crudo.
 import { diaLegible, mesLegible } from "@/lib/mandato/textos";
+import { hoyEnColombia } from "@/lib/fechas/fecha-de-la-casa";
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
-  return new Date().toISOString().slice(0, 10);
+  // QA-CONT-95: hoy EN COLOMBIA. `toISOString()` es UTC: desde las 7 p. m. de
+  // Bogotá ya daba mañana y la fecha precargada quedaba un día corrida.
+  return hoyEnColombia();
 }
 
 const PESOS = plataEnPantalla("es-CO", {
@@ -144,14 +148,32 @@ export function TerminarContrato({
     if (abierto) void pedirVistaPrevia(terminadoEn);
   }, [abierto, terminadoEn, pedirVistaPrevia]);
 
-  // La penalidad por defecto (cánones del contrato o de la inmobiliaria) se
-  // prellena una vez; la persona la puede cambiar o borrar (17-09).
-  useEffect(() => {
-    const sugerida = vista?.penalidadSugerida;
-    if (sugerida && !penalidadTocada) setPenalidad(String(sugerida.valorCop));
-  }, [vista?.penalidadSugerida, penalidadTocada]);
-
   const elegido = motivos.find((m) => m.codigo === motivo);
+  /*
+   * 🔴 QA-CONT-95 (CR-10 · A-08, CEO 18-09): el motivo decide la penalidad. Con
+   * venta o incumplimiento del arrendador NO se le cobra al inquilino (el campo
+   * se apaga y lo dice); con mutuo acuerdo o fuerza mayor, sólo si se escribe;
+   * con los demás, la por defecto. Antes se prellenaba siempre y el back
+   * respondía 400 al confirmar.
+   */
+  const reglaDeLaPenalidad = motivo ? penalidadSegunElMotivo(elegido ?? { codigo: motivo }) : 'POR_DEFECTO';
+  const sinPenalidadPorElMotivo = reglaDeLaPenalidad === 'NO_APLICA';
+
+  // La penalidad por defecto (cánones del contrato o de la inmobiliaria) se
+  // prellena —sólo con los motivos que la llevan—; la persona la puede cambiar
+  // o borrar (17-09).
+  useEffect(() => {
+    if (penalidadTocada) return;
+    const sugerida = vista?.penalidadSugerida;
+    setPenalidad(reglaDeLaPenalidad === 'POR_DEFECTO' && sugerida ? String(sugerida.valorCop) : "");
+  }, [vista?.penalidadSugerida, penalidadTocada, reglaDeLaPenalidad]);
+  useEffect(() => {
+    if (sinPenalidadPorElMotivo) {
+      setPenalidad("");
+      setParaLaInmobiliaria("");
+    }
+  }, [sinPenalidadPorElMotivo]);
+
   const faltaNota = elegido?.exigeNota === true && nota.trim().length === 0;
   const penalidadCop = penalidad.trim() === "" ? null : Number(penalidad.replace(/\D/g, ""));
   const paraLaInmobiliariaCop =
@@ -326,6 +348,7 @@ export function TerminarContrato({
               inputMode="numeric"
               placeholder="$ 0"
               value={penalidad}
+              disabled={sinPenalidadPorElMotivo}
               onChange={(e) => {
                 setPenalidadTocada(true);
                 setPenalidad(e.target.value.replace(/[^\d]/g, ""));
@@ -345,7 +368,11 @@ export function TerminarContrato({
               mensaje={errorDeLaPenalidad}
               className="mt-0"
               pista={
-                <>
+                sinPenalidadPorElMotivo ? (
+                  <span data-testid="penalidad-no-aplica">
+                    Con el motivo «{elegido?.nombre ?? "elegido"}» no se le cobra penalidad al inquilino: la indemnización es del propietario.
+                  </span>
+                ) : <>
                   {penalidadCop
                     ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
                     : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
@@ -431,7 +458,7 @@ export function TerminarContrato({
             </p>
           )}
 
-          {vista?.razon && (
+          {vista?.razon && vista.razon !== vista.garantiaDeServiciosPendiente && (
             <p
               className="flex items-start gap-2 text-sm text-plan-status-yellow"
               data-testid="razon-para-no-terminar"
@@ -443,6 +470,13 @@ export function TerminarContrato({
         </div>
 
         <DialogFooter>
+          {/* QA-CONT-95: el porqué del botón apagado, junto al botón (antes
+              quedaba al final del cuerpo, fuera de la vista). */}
+          {vista?.puedeTerminarse === false && vista.razon && (
+            <p className="mr-auto self-center text-caption text-plan-status-yellow" data-testid="por-que-no-se-puede-terminar">
+              {vista.razon}
+            </p>
+          )}
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Volver
           </Button>

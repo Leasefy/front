@@ -20,6 +20,7 @@ import { ArrowsClockwise, CalendarX, Info, WarningCircle } from '@phosphor-icons
 
 import { AunNoDisponible } from './AunNoDisponible';
 import { fechaLegible } from '@/components/estado-de-cuenta/filas';
+import { diaEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -67,10 +68,13 @@ const HISTORIAL: Record<string, string> = {
 export function ProrrogaDelContrato({
   contract,
   puedeEditar,
+  puedeAvisar = puedeEditar,
   onCambio,
 }: {
   contract: Pick<Contract, 'id'>;
   puedeEditar: boolean;
+  /** QA-CONT-95 (CR-30): el aviso de no renovación también lo registra quien decide renovaciones (operaciones). */
+  puedeAvisar?: boolean;
   onCambio?: () => void;
 }) {
   const [plan, setPlan] = useState<PlanDeLaProrroga | null>(null);
@@ -156,6 +160,7 @@ export function ProrrogaDelContrato({
   if (plan.accion === 'NO_APLICA') return null;
 
   const editable = puedeEditar && plan.disponible && !ocupado;
+  const avisable = puedeAvisar && plan.disponible && !ocupado;
   const conAlerta = plan.accion.startsWith('ALERTA_');
 
   return (
@@ -233,10 +238,11 @@ export function ProrrogaDelContrato({
             <strong>
               {PARTES.find((p) => p.valor === plan.aviso?.por)?.nombre ?? 'Una de las partes'} avisó que no renueva
             </strong>{' '}
-            ({plan.aviso.at.slice(0, 10)}).
+            {/* QA-CONT-95: el aviso es un INSTANTE; cortado a 10 caracteres daba el día en UTC (a las 7 p. m. ya era «mañana»). */}
+            ({fechaLegible(diaEnColombia(plan.aviso.at) ?? plan.aviso.at.slice(0, 10))}).
           </p>
           {plan.aviso.motivo && <p className="text-caption text-muted-foreground">Motivo: {plan.aviso.motivo}</p>}
-          {editable && plan.aviso.fuente === 'CONTRATO' && (
+          {avisable && plan.aviso.fuente === 'CONTRATO' && (
             <Button
               size="sm"
               variant="secondary"
@@ -256,7 +262,7 @@ export function ProrrogaDelContrato({
           )}
         </div>
       ) : (
-        editable &&
+        avisable &&
         (plan.accion === 'NO_VENCIDO' || plan.accion === 'PRORROGAR') && (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-caption text-muted-foreground">
@@ -360,7 +366,7 @@ export function ProrrogaDelContrato({
         <ul className="space-y-1 border-t border-border pt-2 text-caption text-muted-foreground" data-testid="historial-de-prorrogas">
           {plan.historial.map((h) => (
             <li key={`${h.finAnterior}-${h.createdAt}`}>
-              {HISTORIAL[h.regla] ?? h.regla}: {h.finAnterior} → {h.finNuevo}
+              {HISTORIAL[h.regla] ?? h.regla}: {fechaLegible(h.finAnterior)} → {fechaLegible(h.finNuevo)}
               {h.origen === 'AUTOMATICA' ? ' (automática)' : ''}
             </li>
           ))}

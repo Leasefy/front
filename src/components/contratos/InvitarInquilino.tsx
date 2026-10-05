@@ -36,6 +36,7 @@ import { ApiError } from '@/lib/api/client'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type { Contract } from '@/lib/types/contract'
+import Link from 'next/link'
 
 interface Props {
   contract: Contract
@@ -179,9 +180,31 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
       {puedeInvitar && invitacion.accion ? (
         <BotonDeInvitar accion={invitacion.accion} enviando={enviando} onClick={() => void invitar()} />
       ) : null}
+      {/* 🔴 QA-CONT-95 (B-23): sin correo, «agrégalo» tenía que decir DÓNDE:
+          en Inquilinos, en la ficha de la persona («Editar datos»), que lo
+          escribe en sus contratos. Antes era un callejón. */}
+      {invitacion.estado === 'SIN_CUENTA' && !invitacion.accion && enlaceParaAgregarElCorreo(contract) ? (
+        <Link
+          href={enlaceParaAgregarElCorreo(contract)!}
+          className="inline-flex text-sm font-medium text-primary underline-offset-2 hover:underline"
+          data-testid="agregar-correo-del-inquilino"
+        >
+          Agregar el correo en su ficha de Inquilinos →
+        </Link>
+      ) : null}
       {mensajeDeError}
     </div>
   )
+}
+
+/** QA-CONT-95 (B-23): la ficha de la persona en Inquilinos (`doc:<documento>`), para escribirle el correo. */
+export function enlaceParaAgregarElCorreo(
+  contract: Pick<Contract, 'id' | 'tenantDocument'>,
+): string | null {
+  const documento = (contract.tenantDocument ?? '').replace(/\D/g, '')
+  if (!documento) return null
+  const volver = `/panel/inmobiliaria/contratos/${contract.id}`
+  return `/panel/inmobiliaria/inquilinos?persona=${encodeURIComponent(`doc:${documento}`)}&volver=${encodeURIComponent(volver)}`
 }
 
 function BotonDeInvitar({

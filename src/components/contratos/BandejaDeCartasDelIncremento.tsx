@@ -65,7 +65,8 @@ export function fechaCorta(iso: string | null | undefined): string {
   const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
   if (!partes) return '—';
   return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
-    .toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+    // QA-CONT-95: «1 nov 2026», no «01 nov 2026» (como todas las fechas de la casa).
+    .toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
     .replace(/ de /g, ' ')
     .replace(/\.$/, '');
 }

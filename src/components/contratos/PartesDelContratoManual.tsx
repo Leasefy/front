@@ -37,6 +37,13 @@ export type SeleccionDeInquilino =
   | { modo: 'existente'; tenantId: string }
   | { modo: 'nuevo'; nombre: string; documento: string; correo: string; telefono: string }
 
+export interface PersonaDelInquilino {
+  nombre: string
+  documento: string | null
+  correo: string | null
+  telefono: string | null
+}
+
 export interface PartesManuales {
   propertyId: string
   inquilino: SeleccionDeInquilino
@@ -106,6 +113,12 @@ interface Props {
    */
   onNombreDelInquilino?: (nombre: string | null) => void
   /**
+   * 🔴 QA-CONT-95: la persona de «Ya es inquilino» (nombre, documento, correo y
+   * teléfono), para el contrato de la plantilla: el art. 3 literal a de la Ley
+   * 820 los exige y sin ellos «Usar plantilla» nunca armaba.
+   */
+  onPersonaDelInquilino?: (persona: PersonaDelInquilino | null) => void
+  /**
    * El inmueble con el que se llegó (`?inmueble=<propertyId>`): la vuelta
    * desde el inventario de su ficha (QA con avatares, 04-10). Queda elegido
    * apenas llega la lista; si ya no es elegible, no se elige nada.
@@ -113,7 +126,7 @@ interface Props {
   inmueblePedido?: string | null
 }
 
-export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino, inmueblePedido = null }: Props) {
+export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino, onPersonaDelInquilino, inmueblePedido = null }: Props) {
   const [consignaciones, setConsignaciones] = useState<Consignacion[] | null>(null)
   const [errorInmuebles, setErrorInmuebles] = useState<string | null>(null)
   const { inquilinos, cargando: cargandoInquilinos } = useInquilinos({ buscar: '', estado: 'todos' })
@@ -209,6 +222,22 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
     valor.inquilino.modo === 'existente'
       ? (inquilinos.find((q) => q.tenantId === (valor.inquilino as { tenantId: string }).tenantId)?.nombre ?? null)
       : null
+  const personaElegida =
+    valor.inquilino.modo === 'existente'
+      ? (inquilinos.find((q) => q.tenantId === (valor.inquilino as { tenantId: string }).tenantId) ?? null)
+      : null
+  const llaveDeLaPersona = personaElegida
+    ? [personaElegida.tenantId, personaElegida.nombre, personaElegida.documento, personaElegida.email, personaElegida.telefono].join('|')
+    : ''
+  useEffect(() => {
+    onPersonaDelInquilino?.(
+      personaElegida
+        ? { nombre: personaElegida.nombre, documento: personaElegida.documento, correo: personaElegida.email, telefono: personaElegida.telefono }
+        : null,
+    )
+    // Sólo cuando cambia la persona: `onPersonaDelInquilino` es un setState del padre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [llaveDeLaPersona])
   useEffect(() => {
     onNombreDelInquilino?.(nombreElegido)
     // Sólo cuando cambia el nombre: `onNombreDelInquilino` es un setState del padre.

@@ -133,6 +133,13 @@ function coincideBusqueda(c: Partial<Contract>, q: string): boolean {
   const codigo = c.code != null ? String(c.code) : '';
   const externo = comparable(c.externalId).trim();
   /*
+   * QA-CONT-95 (A-06): con el numeral («#3») se busca ESE número, no los que
+   * lo contienen (antes «#3» traía 15 contratos y el #3 no iba primero).
+   */
+  if (q.startsWith('#') && sinNumeral !== '') {
+    return codigo === sinNumeral || externo === sinNumeral;
+  }
+  /*
    * 🔴 QA-CONT C-16: el documento del inquilino («1037600101», o con puntos)
    * se busca por sus DÍGITOS, desde 5 (menos que eso es cualquier número). Y
    * el propietario: la fila ahora lo muestra, así que también se encuentra.
@@ -262,6 +269,9 @@ export function filtrarContratos<T extends Partial<Contract>>(
   let resultado = contratos.filter((c) => {
     if (q && !coincideBusqueda(c, q)) return false;
     if (filtros.estado !== 'all' && c.status !== filtros.estado) return false;
+    // QA-CONT-95 (A-11): «Activo» es lo que la fila llama «Activo»: sin los que
+    // todavía no empiezan («Empieza el…») ni los vencidos sin renovar («Vencido»).
+    if (filtros.estado === 'active' && !esActivoDeVerdad(c, hoy)) return false;
     if (!coincideVigencia(c, filtros.vigencia, hoy)) return false;
     if (!coincideConOSin(c.propertyId, filtros.inmueble)) return false;
     if (!coincideConOSin(c.tenantId, filtros.inquilino)) return false;
@@ -272,6 +282,21 @@ export function filtrarContratos<T extends Partial<Contract>>(
     if (!coincideCanon(c, filtros.canon)) return false;
     return true;
   });
+
+  /*
+   * 🔴 QA-CONT-95 (A-06): un NÚMERO buscado («3» o «#3») pone primero al
+   * contrato que tiene ESE número (el nuestro o el de la inmobiliaria). Sin el
+   * numeral se sigue buscando también dentro de direcciones y documentos, pero
+   * el #3 ya no queda enterrado detrás del #53 y del #43. Un orden elegido a
+   * mano manda por encima de esto.
+   */
+  const numeroBuscado = q.replace(/^#+/, '');
+  if (!filtros.campo && /^\d+$/.test(numeroBuscado)) {
+    const esEseNumero = (c: Partial<Contract>) =>
+      (c.code != null && String(c.code) === numeroBuscado) ||
+      comparable(c.externalId).trim() === numeroBuscado;
+    resultado = [...resultado.filter(esEseNumero), ...resultado.filter((c) => !esEseNumero(c))];
+  }
 
   if (filtros.campo) {
     const campo = filtros.campo;
@@ -298,4 +323,23 @@ function esVacio(c: Partial<Contract>, campo: CampoDeOrden): boolean {
   if (campo === 'numero') return numeroParaOrdenar(c) === null;
   if (campo === 'monthlyRent') return c.monthlyRent == null;
   return fechaDeVigencia(c[campo]) === null;
+}
+
+/**
+ * QA-CONT-95 (A-03, A-11): un `active` que la fila llama «Activo»: ya empezó, no
+ * pasó su fecha de fin y no se terminó. Los demás `active` son «Empieza el…»
+ * o «Vencido».
+ */
+export function esActivoDeVerdad(c: Partial<Contract>, hoy: Date = new Date()): boolean {
+  if (c.status !== 'active') return false;
+  if (yaTermino(c, hoy) || empiezaDespues(c, hoy)) return false;
+  const fin = fechaDeVigencia(c.endDate);
+  return fin === null || dia(fin) >= dia(hoy);
+}
+
+/** QA-CONT-95 (A-03): un `active` cuya fecha de fin ya pasó y nadie renovó ni terminó. */
+export function vencidoSinRenovar(c: Partial<Contract>, hoy: Date = new Date()): boolean {
+  if (c.status !== 'active' || yaTermino(c, hoy) || empiezaDespues(c, hoy)) return false;
+  const fin = fechaDeVigencia(c.endDate);
+  return fin !== null && dia(fin) < dia(hoy);
 }

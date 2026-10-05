@@ -1,5 +1,6 @@
 'use client';
 
+import { nombreDelCandidato } from '@/lib/contratos/nombre-del-candidato';
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState, useCallback, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -75,6 +76,7 @@ import {
   PartesDelContratoManual,
   validarPartes,
   type PartesManuales,
+  type PersonaDelInquilino,
 } from '@/components/contratos/PartesDelContratoManual';
 import Link from 'next/link';
 import { useContractActions } from '@/lib/hooks/useContracts';
@@ -126,6 +128,8 @@ interface FormState {
   pdfFile: File | null;
   startDate: string;
   endDate: string;
+  /** QA-CONT-95 C-16: desde cuándo se cobra (recibe el inmueble). Vacío = desde el inicio. */
+  fechaDeCartera: string;
   monthlyRent: string;    // string for input binding
   deposit: string;
   paymentDay: string;
@@ -205,6 +209,8 @@ function NuevoContratoContent() {
   const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
   /** El nombre del inquilino ya elegido de la lista, para el resumen (C-22). */
   const [nombreDelInquilino, setNombreDelInquilino] = useState<string | null>(null);
+  // QA-CONT-95: la persona de «Ya es inquilino», para el contrato de la plantilla.
+  const [personaDelInquilino, setPersonaDelInquilino] = useState<PersonaDelInquilino | null>(null);
   /** El tipo del inmueble elegido a mano (de su consignación): decide si hay depósito. */
   const [tipoDelInmuebleElegido, setTipoDelInmuebleElegido] = useState<string | null>(null);
   /*
@@ -252,6 +258,7 @@ function NuevoContratoContent() {
       startDate: start,
       // C-13: inicio + 12 meses − 1 día (del 3-oct al 2-oct), no 12 meses y un día.
       endDate: finPorDefectoISO(start),
+      fechaDeCartera: '',
       monthlyRent: '',
       deposit: '',
       paymentDay: '1',
@@ -503,15 +510,24 @@ function NuevoContratoContent() {
   const borrador = useMemo<BorradorDeContrato>(() => {
     const canon = Number(form.monthlyRent);
     const dia = Number(form.paymentDay);
-    const inquilino = esManual && partes.inquilino.modo === 'nuevo' ? partes.inquilino : null;
+    /*
+     * 🔴 QA-CONT-95: también la persona de «Ya es inquilino» (antes sólo la
+     * «Nueva»): sin su nombre y documento la plantilla nunca armaba.
+     */
+    const inquilino = !esManual
+      ? null
+      : partes.inquilino.modo === 'nuevo'
+        ? partes.inquilino
+        : personaDelInquilino;
+    const texto = (v: string | null | undefined) => (v ?? '').trim() || undefined;
     return {
       consignacionId: consignacionElegida ?? undefined,
       propertyId: (esManual ? partes.propertyId : property?.id) || undefined,
       uso: uso || undefined,
-      arrendatarioNombre: inquilino?.nombre.trim() || application?.tenantName || undefined,
-      arrendatarioDocumento: inquilino?.documento.trim() || undefined,
-      arrendatarioEmail: inquilino?.correo.trim() || undefined,
-      arrendatarioTelefono: inquilino?.telefono.trim() || undefined,
+      arrendatarioNombre: texto(inquilino?.nombre) || application?.tenantName || undefined,
+      arrendatarioDocumento: texto(inquilino?.documento),
+      arrendatarioEmail: texto(inquilino?.correo),
+      arrendatarioTelefono: texto(inquilino?.telefono),
       canonMensual: Number.isFinite(canon) && canon > 0 ? canon : undefined,
       diaDePago: Number.isFinite(dia) && dia >= 1 && dia <= 31 ? dia : undefined,
       fechaInicio: form.startDate || undefined,
@@ -528,6 +544,7 @@ function NuevoContratoContent() {
     application?.tenantName,
     consignacionElegida,
     uso,
+    personaDelInquilino,
   ]);
 
   const armadoPorElSistema = form.mode === 'template' || form.mode === 'generate';
@@ -604,6 +621,17 @@ function NuevoContratoContent() {
         errors.startDate = `No puede empezar hace más de ${anios(ANIOS_HACIA_ATRAS)}. Revisa el año.`;
       } else if (form.startDate > dentroDe(ANIOS_HACIA_ADELANTE)) {
         errors.startDate = `No puede empezar dentro de más de ${anios(ANIOS_HACIA_ADELANTE)}. Revisa el año.`;
+      }
+    }
+    /*
+     * QA-CONT-95 C-16 (`fecha-de-cartera.md`, regla 3): la fecha de cartera es
+     * ≥ inicio SIEMPRE, y no después del fin. Vacía = se cobra desde el inicio.
+     */
+    if (form.fechaDeCartera) {
+      if (form.startDate && form.fechaDeCartera < form.startDate) {
+        errors.fechaDeCartera = 'No puede ser antes de la fecha de inicio: se cobra desde que recibe el inmueble.';
+      } else if (form.endDate && form.fechaDeCartera > form.endDate) {
+        errors.fechaDeCartera = 'No puede ser después de la fecha de fin.';
       }
     }
     if (!form.paymentDay.trim()) errors.paymentDay = MENSAJES_DEL_CONTRATO.diaDePago;
@@ -711,6 +739,8 @@ function NuevoContratoContent() {
       const terminos = {
         startDate: form.startDate,
         endDate: form.endDate,
+        // QA-CONT-95 C-16: sólo si la escribió; vacía = desde el inicio.
+        ...(form.fechaDeCartera ? { fechaDeCartera: form.fechaDeCartera } : {}),
         monthlyRent: Number(form.monthlyRent),
         deposit: pideDeposito ? Number(form.deposit) : 0,
         paymentDay: Number(form.paymentDay),
@@ -863,7 +893,7 @@ function NuevoContratoContent() {
    */
   const canonDelResumen = Number(form.monthlyRent) > 0 ? Number(form.monthlyRent) : null;
   const primerCanonDelResumen = canonDelResumen
-    ? primerCanon({ inicio: form.startDate, canon: canonDelResumen, prorratear: form.prorratearPrimerMes })
+    ? primerCanon({ inicio: form.fechaDeCartera || form.startDate, canon: canonDelResumen, prorratear: form.prorratearPrimerMes })
     : null;
   const mesesDelResumen = avanceDelContrato({ inicio: form.startDate, fin: form.endDate, hoy: form.startDate || todayISO() }).meses;
   const comoSeCobra =
@@ -973,7 +1003,7 @@ function NuevoContratoContent() {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground mt-1">
-            Candidato: <span className="font-medium text-foreground">{application?.tenantName}</span>
+            Candidato: <span className="font-medium text-foreground">{nombreDelCandidato(application)}</span>
             {property && (
               <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
             )}
@@ -1023,6 +1053,7 @@ function NuevoContratoContent() {
               }
             }}
             onNombreDelInquilino={setNombreDelInquilino}
+            onPersonaDelInquilino={setPersonaDelInquilino}
           />
         )}
 
@@ -1259,6 +1290,24 @@ function NuevoContratoContent() {
                 {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
+              />
+            </Field>
+            {/* QA-CONT-95 C-16 (`fecha-de-cartera.md`): dos fechas, la de inicio y
+                la de cartera; el primer mes se cobra desde la de cartera. */}
+            <Field
+              id={idDelCampoDelContrato('fechaDeCartera')}
+              label="Desde cuándo se cobra (opcional)"
+              error={errorDe('fechaDeCartera')}
+              hint="El día en que recibe el inmueble. Vacío = desde la fecha de inicio."
+            >
+              <Input
+                type="date"
+                {...ariaDelCampoDelContrato('fechaDeCartera', errorDe('fechaDeCartera'))}
+                value={form.fechaDeCartera}
+                min={form.startDate || undefined}
+                max={form.endDate || undefined}
+                onChange={(e) => updateForm('fechaDeCartera', e.target.value)}
+                data-testid="fecha-de-cartera"
               />
             </Field>
             {/* El monto se agrupa DENTRO del campo. La ayudita de abajo repetía

@@ -12,12 +12,13 @@ import { ArrowLeft } from '@phosphor-icons/react'
 import { Eyebrow } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { ConceptosYLiquidacion } from '@/components/contratos/ConceptosYLiquidacion'
 import { CONCEPTOS } from '@/lib/contratos/conceptos'
 
 export default function ConceptosPage() {
   return (
-    <PageGuard module="contratos">
+    <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1">
           <Link

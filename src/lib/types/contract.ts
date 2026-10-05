@@ -166,8 +166,9 @@ export const CONTRACT_TYPE_DESCRIPTIONS: Record<ContractType, string> = {
  */
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: 'Borrador',
-  pending_landlord: 'Pendiente firma arrendador',
-  pending_tenant: 'Pendiente firma arrendatario',
+  // QA-CONT-95 (A-11): las palabras de la casa, inquilino y propietario.
+  pending_landlord: 'Pendiente firma del propietario',
+  pending_tenant: 'Pendiente firma del inquilino',
   rejected_pending_modifications: 'Modificaciones solicitadas',
   signed: 'Firmado — pendiente activar',
   active: 'Activo',

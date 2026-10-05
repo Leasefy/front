@@ -18,6 +18,11 @@ export interface DownloadContractPdfButtonProps {
   className?: string;
   /** Texto custom — default "Descargar PDF" / "Descargar contrato". */
   label?: string;
+  /**
+   * QA-CONT-95 (B-06): el número del contrato que ve la inmobiliaria («53»,
+   * «1686»): el archivo se llama `contrato-53.pdf`, no `contrato-2dea8734.pdf`.
+   */
+  numero?: string | number | null;
 }
 
 /**
@@ -31,6 +36,7 @@ export function DownloadContractPdfButton({
   variant = 'secondary',
   className,
   label,
+  numero,
 }: DownloadContractPdfButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -51,7 +57,7 @@ export function DownloadContractPdfButton({
 
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `contrato-${contractId.slice(0, 8)}.pdf`;
+      a.download = nombreDelPdfDelContrato(contractId, numero);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -113,4 +119,10 @@ function tooltipForStatus(status: ContractStatus): string {
     default:
       return 'Descargar contrato en PDF.';
   }
+}
+
+/** QA-CONT-95 (B-06): `contrato-53.pdf`; sin número, los primeros 8 del id. */
+export function nombreDelPdfDelContrato(contractId: string, numero?: string | number | null): string {
+  const limpio = String(numero ?? '').replace(/^#/, '').trim().replace(/[^\p{L}\p{N}_-]+/gu, '-');
+  return limpio ? `contrato-${limpio}.pdf` : `contrato-${contractId.slice(0, 8)}.pdf`;
 }

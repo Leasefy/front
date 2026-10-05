@@ -107,6 +107,11 @@ describe('VeredictoDeMigracion', () => {
     expect(ir).toHaveBeenCalledTimes(1);
   });
 
+  it('🔴 QA-CONT-95: «N contratos migrados» cuenta los ACTIVADOS, no las filas sin activar', async () => {
+    await pintar(<VeredictoDeMigracion deuda={{ ...DEUDA_DE_NICO, contratos: 21, activados: 11, pendientes: 10 }} resolver={{}} />);
+    expect(q('veredicto-contratos')?.textContent).toContain('"n":11');
+  });
+
   it('🔴 un motivo que el back no cuenta no se dibuja — ni siquiera en cero', async () => {
     await pintar(<VeredictoDeMigracion deuda={DEUDA_DE_NICO} resolver={{ onIr: vi.fn() }} />);
     const motivos = todos('veredicto-linea').map((l) => l.getAttribute('data-motivo'));
@@ -170,7 +175,8 @@ describe('FilasFrenadas', () => {
     expect(fila).not.toBeNull();
     // Una fila ACTIVADA no trae `faltantes`: su deuda se ve en las columnas.
     expect(fila?.getAttribute('data-faltas')).toBe('inmueble');
-    expect(fila?.textContent).toContain('7');
+    // QA-CONT-95: el número como en el archivo y en las tarjetas («Fila 9 · …»): índice 7 + encabezado + base 1.
+    expect(fila?.querySelector('td')?.textContent?.trim()).toBe('9');
     expect(fila?.textContent).toContain('Calle 100 #11-20');
     expect(fila?.textContent).toContain('Ana Ruiz');
   });

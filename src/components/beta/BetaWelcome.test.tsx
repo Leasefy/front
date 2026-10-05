@@ -248,7 +248,7 @@ describe('las conversaciones recientes, en la bandeja', () => {
     contexto.filteredSummaries = conversaciones();
     pintar(<BetaWelcome />);
     act(() => acceso()!.click());
-    const papelera = panel()!.querySelector<HTMLButtonElement>('button[aria-label="Eliminar conversacion"]')!;
+    const papelera = panel()!.querySelector<HTMLButtonElement>('button[aria-label="Eliminar conversación"]')!; // CC-17 (CHAT-95): con tilde
     act(() => papelera.click());
     expect(contexto.deleteConversation).not.toHaveBeenCalled();
     const si = [...panel()!.querySelectorAll('button')].find((b) => b.textContent === 'Eliminar')!;

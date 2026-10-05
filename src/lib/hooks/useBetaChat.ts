@@ -488,6 +488,13 @@ export function mensajeDeFalloDelChat(error: unknown): string {
     case 'sinCreditos':
       return 'Tu plan se quedó sin créditos de IA. Pídele a quien administra la cuenta que recargue o cambie de plan.';
     case 'limitado':
+      // CHAT-95 (04-10): el cupo DIARIO de la inmobiliaria (micro
+      // `tope-de-ia.ts`, `motivo: 'inmobiliaria'`) no se arregla esperando un
+      // minuto. Antes decía «Espera un momento» y la persona reintentaba en
+      // vano hasta medianoche.
+      if (error instanceof ApiError && error.code === 'tope_de_ia' && error.detalle?.motivo === 'inmobiliaria') {
+        return 'Tu inmobiliaria llegó al límite de uso de la IA por hoy. Vuelve a intentarlo mañana o escríbenos si necesitas más.';
+      }
       // La misma frase que el 429 del back (`demasiadas-solicitudes.ts`), con
       // el plazo cuando el micro lo dijo: un mensaje por límite, no dos.
       return mensajeDeDemasiadasSolicitudes(

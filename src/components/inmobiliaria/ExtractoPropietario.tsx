@@ -510,13 +510,32 @@ export function ExtractoPropietario({
                   tiene inmuebles» y «este mes no se movió nada» son dos cosas
                   distintas que hay que poder decirle. El back manda cuál es.
                 */}
-                {extracto.lineItems.length === 0 && extracto.sinMovimiento && (
+                {extracto.lineItems.length === 0 &&
+                  !(extracto.cuotasSinRepartir?.length) &&
+                  extracto.sinMovimiento && (
                   <TableRowAnimada key="sin-movimiento">
                     <TableCell colSpan={9} className="py-10 text-center text-fg-muted">
                       {extracto.sinMovimiento.mensaje}
                     </TableCell>
                   </TableRowAnimada>
                 )}
+                {/*
+                  C-06 (QA-CONT-95 r3): la cuota de un inmueble con varios
+                  dueños y con IVA o retenciones de un solo perfil no se
+                  reparte. Antes tumbaba el extracto entero; ahora sale en su
+                  fila, con el porqué en palabras, y el resto carga.
+                */}
+                {page === 1 &&
+                  (extracto.cuotasSinRepartir ?? []).map((c) => (
+                    <TableRowAnimada key={`sin-repartir-${c.cuotaId}`} data-testid="cuota-sin-repartir">
+                      <TableCell className={cn('font-medium', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cuerpo'))}>
+                        <span className="text-foreground text-sm">{c.propertyTitle}</span>
+                      </TableCell>
+                      <TableCell colSpan={8} className="text-sm text-warning-700 dark:text-warning-100">
+                        {c.motivo}
+                      </TableCell>
+                    </TableRowAnimada>
+                  ))}
                 {lineasDeLaPagina.map((prop) => {
                   const estado = aCobroStatus(prop.status);
                   const StatusIcon = getStatusIcon(estado);
@@ -543,7 +562,10 @@ export function ExtractoPropietario({
                               className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
                               data-testid="participacion-en-el-extracto"
                             >
-                              {prop.participacionLabel} {t('inmobiliaria.propietario.extracto.delInmueble')}
+                              {/* E-10: el mes de una cesión dice sus días («15 de 30 días del mes»). */}
+                              {/días/.test(prop.participacionLabel)
+                                ? `${prop.participacionLabel} del mes (cesión)`
+                                : `${prop.participacionLabel} ${t('inmobiliaria.propietario.extracto.delInmueble')}`}
                             </span>
                           ) : null}
                         </div>

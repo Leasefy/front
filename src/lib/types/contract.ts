@@ -179,15 +179,21 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 /**
  * Status badge colors for contract status
  */
+/*
+ * QA-CONT-95 I-09 (04-10-2026): la TINTA va en el tono de texto de cada color
+ * (axe: el azul #3B82F6 sobre #DBEAFE daba 3,01:1; el verde sobre su fondo
+ * oscuro 3,28:1; el rojo 4,46:1 y 3,71:1). Fondo suave igual; letra legible
+ * (≥ 5:1 en claro y en oscuro).
+ */
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   draft: 'bg-muted text-foreground',
-  pending_landlord: 'bg-plan-status-yellow-bg text-plan-status-yellow',
-  pending_tenant: 'bg-plan-status-blue-bg text-plan-status-blue',
-  rejected_pending_modifications: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-  signed: 'bg-plan-status-blue-bg text-plan-status-blue',
-  active: 'bg-plan-status-green-bg text-plan-status-green',
+  pending_landlord: 'bg-plan-status-yellow-bg text-warning-700 dark:text-warning-100',
+  pending_tenant: 'bg-plan-status-blue-bg text-primary',
+  rejected_pending_modifications: 'bg-[#F8F0E0] text-warning-700 dark:bg-[#B7791F]/15 dark:text-warning-100',
+  signed: 'bg-plan-status-blue-bg text-primary',
+  active: 'bg-plan-status-green-bg text-success-700 dark:text-success-100',
   expired: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-plan-status-red-bg text-plan-status-red',
+  cancelled: 'bg-plan-status-red-bg text-danger',
 };
 
 // ============================================================================
@@ -504,6 +510,25 @@ export interface EscenarioDelArchivo {
   aplicado: boolean;
   /** Por qué no se aplicó. En español, se muestra tal cual. */
   motivo: string | null;
+  /**
+   * QA-CONT-95 B-32: el escenario del archivo choca con lo que la ficha del
+   * propietario afirma sobre la retención. Mientras venga, el escenario NO
+   * está confirmado y la ficha ofrece confirmar cuál rige.
+   */
+  conflicto?: {
+    /** El escenario que sale con la ficha; `null` si no está en el catálogo. */
+    codigoDeLaFicha: Exclude<CodigoDeEscenario, 'SIN_DEFINIR'> | null;
+    propietarioRetiene: boolean;
+    motivo: string;
+  };
+  /** Sólo cuando una persona de la inmobiliaria ya confirmó cuál rige. */
+  confirmado?: {
+    /** ISO. */
+    el: string;
+    por: string | null;
+    /** Lo que decía el archivo antes de confirmar. */
+    textoDelArchivo: string | null;
+  };
 }
 
 // ============================================================================

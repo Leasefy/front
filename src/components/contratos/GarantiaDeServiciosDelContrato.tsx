@@ -165,7 +165,7 @@ export function GarantiaDeServiciosDelContrato({
       )}
 
       {datos.avisoDelTope && (
-        <p className="text-caption text-plan-status-yellow" data-testid="garantia-aviso-del-tope">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="garantia-aviso-del-tope">
           {datos.avisoDelTope}
         </p>
       )}
@@ -280,7 +280,7 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         </div>
       </dl>
       {c.faltaPorRecaudarCop > 0 && (
-        <p className="text-caption text-plan-status-yellow">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
+        <p className="text-caption text-warning-700 dark:text-warning-100">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
       )}
       {c.diferenciaPorCobrarCop > 0 && (
         <p className="text-caption text-destructive" data-testid="garantia-diferencia">

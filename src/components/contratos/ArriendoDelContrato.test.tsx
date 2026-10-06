@@ -423,3 +423,31 @@ describe('QA-CONT-95 (B-16) · el contrato cancelado', () => {
     expect(linea).not.toContain('Quedan')
   })
 })
+
+describe('QA-CONT-95 r3 (D-25) · la deuda subrogada a la aseguradora', () => {
+  it('🔴 la ficha la dice aparte, con la aseguradora, el siniestro y el valor', async () => {
+    const conSubrogacion = {
+      ...estadoDeCuenta(),
+      subrogacion: {
+        aseguradoras: [
+          { nombre: 'Aseguradora Prueba S.A.', nit: '860000123', valorCop: 2_900_000, siniestros: ['SIN-PC-001'] },
+        ],
+        totalCop: 2_900_000,
+      },
+    }
+    uso.valor = listo({ cuenta: { estado: 'listo', contrato: conSubrogacion, tenantRef: '71234567' } })
+    await pintar(contrato(), '2026-09-16')
+    const caja = texto('subrogacion-del-contrato') ?? ''
+    expect(caja).toContain('Deuda subrogada a la aseguradora')
+    expect(caja).toContain('Aseguradora Prueba S.A. · NIT 860000123 · SIN-PC-001:')
+    expect(caja).toMatch(/2\.900\.000/)
+    expect(caja).toContain('no entran en «Resta por pagar»')
+    // No suma a lo que se le debe a la inmobiliaria.
+    expect(texto('resta-por-pagar')).toMatch(/19\.214\.516/)
+  })
+
+  it('sin subrogación no pinta nada', async () => {
+    await pintar(contrato(), '2026-09-16')
+    expect($('subrogacion-del-contrato')).toBeNull()
+  })
+})

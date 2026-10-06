@@ -242,7 +242,7 @@ function FilaDeRegla({
               : 'No se le aplica a este contrato.'}
           </p>
           {fila.noPactada ? (
-            <p className="text-caption font-medium text-plan-status-yellow" data-testid={`no-pactada-${regla.id}`}>
+            <p className="text-caption font-medium text-warning-700 dark:text-warning-100" data-testid={`no-pactada-${regla.id}`}>
               El contrato no pacta gastos de cobranza: esta regla no se causa. Se cambia en «Condiciones del contrato».
             </p>
           ) : null}

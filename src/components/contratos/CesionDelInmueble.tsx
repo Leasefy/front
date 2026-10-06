@@ -43,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
 import { SelectorDePropietario } from "@/components/contratos/SelectorDePropietario";
-import { cicloDeVidaApi } from "@/lib/api/ciclo-de-vida.service";
+import { cicloDeVidaApi, type ResultadoDeLaCesion } from "@/lib/api/ciclo-de-vida.service";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
@@ -123,7 +123,7 @@ export function CesionDelInmueble({
         nota: nota.trim() || undefined,
       });
       toast.success(`Cesión registrada desde el ${diaLegible(r.desde)}.`, {
-        description: `${r.cuotasReapuntadas} ${r.cuotasReapuntadas === 1 ? "período quedó" : "períodos quedaron"} a nombre de ${r.propietarioNuevo}. Lo anterior sigue siendo de ${r.propietarioAnterior ?? "el dueño anterior"}.`,
+        description: `${r.cuotasReapuntadas} ${r.cuotasReapuntadas === 1 ? "período quedó" : "períodos quedaron"} a nombre de ${r.propietarioNuevo}. Lo anterior sigue siendo de ${r.propietarioAnterior ?? "el dueño anterior"}.${queSeHizoConElMes(r)}`,
       });
       onCerrar();
       onRegistrada();
@@ -267,18 +267,46 @@ export function CesionDelInmueble({
   );
 }
 
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/** `'2026-11'` → «noviembre de 2026». */
+function mesEnPalabras(aaaaMm: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(aaaaMm ?? '');
+  return m ? `${MESES[Number(m[2]) - 1]} de ${m[1]}` : aaaaMm;
+}
+
 /**
- * QA-CONT-95 (E-10): la cesión a mitad de mes NO reparte ese mes por días
- * (una cuota por mes y lado; partirla necesita una migración, decidido el
- * 03-10 y pendiente de Víctor). Mientras tanto, la pantalla lo dice antes de
- * registrar: el mes que contiene la fecha queda completo del dueño de hoy.
+ * QA-CONT-95 r3 (E-10, Nico 05-10): la cesión a mitad de mes REPARTE ese mes
+ * por días entre el que vende y el que compra (back: `reparto-por-dias.ts`).
+ * La pantalla lo dice antes de registrar, con la excepción: un mes ya girado,
+ * o con IVA o retenciones, queda completo del que vende.
  */
 export function pistaDeLaFechaDeCesion(desde: string, propietarioActual?: string | null): string {
   const base = 'Tiene que ser posterior al último período ya cobrado.';
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(desde ?? '');
   if (!m || m[3] === '01') return base;
-  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-  const mes = `${MESES[Number(m[2]) - 1]} de ${m[1]}`;
+  const mes = mesEnPalabras(desde);
   const quien = propietarioActual ? `de ${propietarioActual}` : 'del dueño de hoy';
-  return `${base} Ojo: ${mes} queda completo ${quien}; el nuevo dueño recibe desde el mes siguiente (Leasefy todavía no reparte un mes por días entre dos dueños).`;
+  const diaAnterior = Number(m[3]) - 1;
+  return `${base} ${mes.charAt(0).toUpperCase()}${mes.slice(1)} se reparte por días: hasta el ${diaAnterior} es ${quien} y desde el ${Number(m[3])}, del nuevo dueño (si ese mes ya se giró o lleva IVA o retenciones, queda completo ${quien}).`;
+}
+
+/**
+ * Lo que el back hizo con el mes de la fecha (E-10), para el aviso de «listo».
+ * Vacío si la fecha no parte ningún mes.
+ */
+export function queSeHizoConElMes(
+  r: Pick<ResultadoDeLaCesion, 'mesRepartido' | 'propietarioAnterior' | 'propietarioNuevo'>,
+): string {
+  const m = r.mesRepartido;
+  if (!m) return '';
+  const mes = mesEnPalabras(m.mes);
+  const vende = r.propietarioAnterior ?? 'el dueño anterior';
+  if (m.diasDelQueVende && m.diasDelQueCompra) {
+    return ` ${mes.charAt(0).toUpperCase()}${mes.slice(1)} quedó repartido por días: ${m.diasDelQueVende} de ${vende} y ${m.diasDelQueCompra} de ${r.propietarioNuevo}.`;
+  }
+  if (m.sinRepartir) {
+    return ` ${mes.charAt(0).toUpperCase()}${mes.slice(1)} quedó completo de ${vende}: ${m.sinRepartir}.`;
+  }
+  return '';
 }

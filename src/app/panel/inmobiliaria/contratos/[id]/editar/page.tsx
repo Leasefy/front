@@ -55,6 +55,7 @@ import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { isoToInputDate } from './iso-to-input-date';
 import { depositoAplica } from '@/lib/contratos/deposito-del-contrato';
+import { errorDelArchivoDelContrato } from '@/lib/contratos/archivo-del-contrato';
 import {
   MAX_DIAS_DE_PLAZO,
   diasDePlazoComoTexto,
@@ -104,6 +105,8 @@ function EditarContratoContent() {
     Partial<Record<CampoDelContrato, string>>
   >({});
   const [isDragging, setIsDragging] = useState(false);
+  // QA-CONT-95 C-09: el archivo rechazado se dice junto al campo (como al crear).
+  const [errorDelPdf, setErrorDelPdf] = useState<string | null>(null);
   const [replacePdf, setReplacePdf] = useState(false);
 
   const isUploadedPdf = contract?.contractOrigin === 'UPLOADED_PDF';
@@ -140,14 +143,12 @@ function EditarContratoContent() {
 
   const onPickFile = useCallback((file: File | null) => {
     if (!file) return;
-    if (file.type !== 'application/pdf') {
-      setSubmitError('Solo se permiten archivos PDF.');
+    const error = errorDelArchivoDelContrato(file);
+    if (error) {
+      setErrorDelPdf(error);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setSubmitError('El PDF no puede superar los 10 MB.');
-      return;
-    }
+    setErrorDelPdf(null);
     setSubmitError(null);
     updateForm('pdfFile', file);
   }, [updateForm]);
@@ -452,7 +453,12 @@ function EditarContratoContent() {
                     id="pdf-replace"
                     type="file"
                     accept="application/pdf"
-                    onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
+                    aria-invalid={errorDelPdf ? true : undefined}
+                    aria-describedby={`${idDelCampoDelContrato('pdfFile')}-error`}
+                    onChange={(e) => {
+                      onPickFile(e.target.files?.[0] ?? null);
+                      e.target.value = '';
+                    }}
                     className="sr-only"
                   />
                 </label>
@@ -461,7 +467,7 @@ function EditarContratoContent() {
 
             <ErrorDelCampo
               id={`${idDelCampoDelContrato('pdfFile')}-error`}
-              mensaje={errorDe('pdfFile')}
+              mensaje={errorDelPdf ?? errorDe('pdfFile')}
               className="mt-0"
             />
           </section>

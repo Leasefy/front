@@ -156,7 +156,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
         es transparencia.
       </p>
       {!datos.disponible && (
-        <p className="text-caption text-plan-status-yellow">
+        <p className="text-caption text-warning-700 dark:text-warning-100">
           Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
         </p>
       )}
@@ -301,7 +301,7 @@ export function Fila({
           {carta.medio ? ` (${carta.medio.toLowerCase()})` : ''}.
         </p>
       ) : (
-        <p className="text-caption text-plan-status-yellow">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
+        <p className="text-caption text-warning-700 dark:text-warning-100">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
       )}
       {carta.ultimoIntento && carta.estado !== 'ENVIADA' && (
         <p className="text-caption text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>

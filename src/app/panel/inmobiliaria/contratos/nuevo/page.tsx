@@ -113,6 +113,7 @@ import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/Bloqu
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
 import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
+import { errorDelArchivoDelContrato } from '@/lib/contratos/archivo-del-contrato';
 import {
   bloqueoDeLaConsulta,
   bloqueoDelError,
@@ -292,6 +293,13 @@ function NuevoContratoContent() {
    */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  /*
+   * QA-CONT-95 C-09 (ronda 3): el archivo rechazado (.docx, PDF de más de
+   * 10 MB) lo dice JUNTO al campo. Antes el mensaje iba al aviso del final de
+   * la página, lejos de donde la persona acababa de soltar el archivo, y
+   * parecía que el archivo «sólo no se tomaba».
+   */
+  const [errorDelPdf, setErrorDelPdf] = useState<string | null>(null);
   // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
   // se registraba en ningún lado, así que meses después nadie sabía a quién
   // reclamarle. Ver src/lib/inmobiliaria/respaldo.ts.
@@ -481,14 +489,12 @@ function NuevoContratoContent() {
   // PDF handlers
   const onPickFile = useCallback((file: File | null) => {
     if (!file) return;
-    if (file.type !== 'application/pdf') {
-      setSubmitError('Solo se permiten archivos PDF.');
+    const error = errorDelArchivoDelContrato(file);
+    if (error) {
+      setErrorDelPdf(error);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setSubmitError('El PDF no puede superar los 10 MB.');
-      return;
-    }
+    setErrorDelPdf(null);
     setSubmitError(null);
     updateForm('pdfFile', file);
   }, [updateForm]);
@@ -1151,7 +1157,10 @@ function NuevoContratoContent() {
           {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
               puede deducir del inmueble: de esa respuesta depende qué LEY rige
               el contrato, así que no se elige por defecto. */}
-          {plantilla.usoIndeterminado && armadoPorElSistema && (
+          {/* QA-CONT-95 C-12: después de elegir sigue a la vista, para poder
+              cambiar de ley si se eligió mal (antes desaparecía al responder
+              `preparar` y sólo se corregía recargando). */}
+          {(plantilla.usoIndeterminado || uso) && armadoPorElSistema && (
             <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
               <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
                 Uso del inmueble
@@ -1170,7 +1179,9 @@ function NuevoContratoContent() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+              {plantilla.usoIndeterminado ? (
+                <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+              ) : null}
             </div>
           )}
         </section>
@@ -1234,14 +1245,20 @@ function NuevoContratoContent() {
                     id="pdf-upload"
                     type="file"
                     accept="application/pdf"
-                    onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
+                    aria-invalid={errorDelPdf ? true : undefined}
+                    aria-describedby={`${idDelCampoDelContrato('pdfFile')}-error`}
+                    onChange={(e) => {
+                      onPickFile(e.target.files?.[0] ?? null);
+                      // Volver a elegir el MISMO archivo (corregido afuera) dispara otra vez.
+                      e.target.value = '';
+                    }}
                     className="sr-only"
                   />
                 </label>
               )}
               <ErrorDelCampo
                 id={`${idDelCampoDelContrato('pdfFile')}-error`}
-                mensaje={errorDe('pdfFile')}
+                mensaje={errorDelPdf ?? errorDe('pdfFile')}
                 className="mt-0"
               />
 

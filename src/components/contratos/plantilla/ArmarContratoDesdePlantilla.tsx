@@ -359,6 +359,18 @@ function RevisionDeLaPropuesta({
         motivos={propuesta.pendientes}
       />
 
+      {/* QA-CONT-95 r3 (EX-01): notas cortas para quien revisa (no frenan nada),
+          p. ej. que en vivienda «sin mascotas» quedó como constancia. */}
+      {(propuesta.avisos ?? []).map((aviso) => (
+        <p
+          key={aviso}
+          className="text-caption text-warning-700 dark:text-warning-100"
+          data-testid="plantilla-aviso-propuesta"
+        >
+          {aviso}
+        </p>
+      ))}
+
       {propuestas.length === 0 ? (
         <p className="text-body-sm text-fg-muted" data-testid="plantilla-propuesta-sin-clausulas">
           {quitadas.length > 0

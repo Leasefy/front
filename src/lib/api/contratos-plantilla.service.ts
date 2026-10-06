@@ -198,6 +198,11 @@ export interface PropuestaDeLaIa {
   pendientes: MotivoDeRechazo[];
   /** `true` cuando no hay nada ilegal. Puede haber `pendientes` igual. */
   aplicable: boolean;
+  /**
+   * QA-CONT-95 r3 (EX-01): notas para quien revisa, que no frenan nada (p. ej.
+   * «En vivienda, prohibir mascotas no tiene efecto…»). Un back anterior no lo manda.
+   */
+  avisos?: string[];
 }
 
 // ============================================================================

@@ -560,14 +560,6 @@ function ConceptoEnLista({
                   </li>
                 ))}
               </ul>
-              {/* 17-09: qué entra en la base de la comisión de administración. */}
-              <div className="pt-1">
-                <ComisionableDelConcepto
-                  contractId={contract.id}
-                  concepto={concepto}
-                  puedeEditar={puedeEditar}
-                />
-              </div>
               {esSupuesto(concepto, perfiles) ? (
                 <p className="pt-1 text-[11px] text-muted-foreground">
                   Alguna de las dos partes no tiene el perfil tributario
@@ -577,6 +569,19 @@ function ConceptoEnLista({
               ) : null}
             </>
           ) : null}
+          {/*
+            17-09: qué entra en la base de la comisión de administración.
+            QA-CONT-95 r3 (E-13): FUERA de la liquidación. Que un concepto se
+            comisione no depende del uso del inmueble; sin el uso (contratos
+            migrados) el interruptor no aparecía y no había cómo marcarlo.
+          */}
+          <div className="pt-1">
+            <ComisionableDelConcepto
+              contractId={contract.id}
+              concepto={concepto}
+              puedeEditar={puedeEditar}
+            />
+          </div>
         </div>
       ) : null}
     </div>

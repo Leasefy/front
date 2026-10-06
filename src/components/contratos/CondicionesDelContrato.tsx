@@ -285,7 +285,7 @@ function GastosDeCobranza({
         ))}
       </RadioGroup>
       {g.resuelto === false && (
-        <p className="text-caption text-plan-status-yellow" data-testid="gastos-no-pactados">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="gastos-no-pactados">
           Este contrato no causa gastos de cobranza.
         </p>
       )}
@@ -715,7 +715,7 @@ function Administracion({
         editable={editable}
       />
       {a.porRespaldo && (
-        <p className="text-caption text-plan-status-yellow" data-testid="administracion-por-respaldo">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="administracion-por-respaldo">
           Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
           <strong>«la paga la inmobiliaria»</strong>: el inquilino no la paga aparte del canon y se le descuenta al
           propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
@@ -888,7 +888,7 @@ function ACualCopropiedad({
         ))}
       </select>
       {elegida === '' ? (
-        <p className="text-caption text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="copropiedad-sin-declarar">
           Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es
           lo que traba la exógena. Las copropiedades se registran en Contabilidad → Copropiedades.
         </p>

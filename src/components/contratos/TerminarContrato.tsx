@@ -460,7 +460,7 @@ export function TerminarContrato({
 
           {vista?.razon && vista.razon !== vista.garantiaDeServiciosPendiente && (
             <p
-              className="flex items-start gap-2 text-sm text-plan-status-yellow"
+              className="flex items-start gap-2 text-sm text-warning-700 dark:text-warning-100"
               data-testid="razon-para-no-terminar"
             >
               <Warning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -473,7 +473,7 @@ export function TerminarContrato({
           {/* QA-CONT-95: el porqué del botón apagado, junto al botón (antes
               quedaba al final del cuerpo, fuera de la vista). */}
           {vista?.puedeTerminarse === false && vista.razon && (
-            <p className="mr-auto self-center text-caption text-plan-status-yellow" data-testid="por-que-no-se-puede-terminar">
+            <p className="mr-auto self-center text-caption text-warning-700 dark:text-warning-100" data-testid="por-que-no-se-puede-terminar">
               {vista.razon}
             </p>
           )}

@@ -1016,5 +1016,23 @@ export const invitacionApi = {
         contractId: string
         tenantName: string | null
       }[]
+      /**
+       * QA-CONT-95 D-10: lo que va A TIEMPO (y los contratos en firma sin
+       * reloj, con `invitacionId`/`venceEl` en `null`). Un back anterior no lo
+       * manda.
+       */
+      aTiempo?: {
+        invitacionId: string | null
+        contractId: string
+        code: number | null
+        tenantName: string | null
+        esperaA: 'INQUILINO' | 'INMOBILIARIA'
+        enviadaEl: string | null
+        venceEl: string | null
+        diasQueFaltan: number | null
+        recordatoriosEnviados: number
+        de: number
+        proximoRecordatorioEl: string | null
+      }[]
     }>(`${BASE}/invitacion-a-firmar/barrido`),
 }

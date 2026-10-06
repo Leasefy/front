@@ -436,6 +436,18 @@ export interface ResultadoDeLaCesion {
   propietarioNuevo: string;
   cuotasReapuntadas: number;
   parteId: string;
+  /**
+   * QA-CONT-95 r3 (E-10): el mes que contiene la fecha, repartido por días
+   * entre el que vende y el que compra, o por qué quedó completo del que
+   * vende. `null`/ausente si la fecha no parte ningún mes.
+   */
+  mesRepartido?: {
+    /** `AAAA-MM`. */
+    mes: string;
+    diasDelQueVende?: number;
+    diasDelQueCompra?: number;
+    sinRepartir?: string;
+  } | null;
 }
 
 /**

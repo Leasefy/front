@@ -764,7 +764,7 @@ function ContratosContent() {
                         className={cn(
                           'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
                           estado.clave === 'POR_EMPEZAR'
-                            ? 'bg-plan-status-blue-bg text-plan-status-blue'
+                            ? 'bg-plan-status-blue-bg text-primary'
                             : colorDeVigencia(
                                 v,
                                 CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',

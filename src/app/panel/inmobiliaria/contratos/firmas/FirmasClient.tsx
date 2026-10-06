@@ -24,6 +24,7 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
@@ -45,6 +46,7 @@ import { invitacionApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 
 export function FirmasClient() {
   const { canAccess } = usePermissions()
@@ -59,10 +61,13 @@ export function FirmasClient() {
   const recordatorios = barrido.datos?.recordatorios ?? []
   const vencidas = barrido.datos?.vencidas ?? []
   const porVencer = barrido.datos?.porVencer ?? []
+  // QA-CONT-95 D-10: lo que va a tiempo también es «pendiente de firmar».
+  const aTiempo = barrido.datos?.aTiempo ?? []
   const vacio =
     recordatorios.length === 0 &&
     vencidas.length === 0 &&
-    porVencer.length === 0
+    porVencer.length === 0 &&
+    aTiempo.length === 0
 
   async function cancelar(contractId: string) {
     setResultado(null)
@@ -289,6 +294,50 @@ export function FirmasClient() {
               </Card>
             ) : null}
 
+            {/* 🔴 QA-CONT-95 D-10/UC-13 (04-10-2026): el primero de los tres
+                estados que explica la pantalla. Antes no venía nunca y, con el
+                #57 esperando firma, la pantalla decía «No hay nadie pendiente
+                de firmar». */}
+            {aTiempo.length > 0 ? (
+              <Card data-testid="a-tiempo">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    A tiempo ({aTiempo.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Stagger as="ul" className="divide-y">
+                    {aTiempo.map((a) => (
+                      <StaggerItem
+                        as="li"
+                        key={a.contractId}
+                        className="space-y-1 py-3"
+                        data-testid={`a-tiempo-${a.contractId}`}
+                      >
+                        <p className="text-sm">
+                          <Link
+                            href={`/panel/inmobiliaria/contratos/${a.contractId}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {a.code != null ? `Contrato #${a.code}` : 'Contrato'}
+                          </Link>
+                          {' · '}
+                          {a.tenantName ?? 'Sin nombre del inquilino'}
+                          {' · '}
+                          {a.esperaA === 'INQUILINO'
+                            ? 'espera la firma del inquilino'
+                            : 'el inquilino ya firmó: falta la firma de la inmobiliaria'}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {lineaDelPlazo(a)}
+                        </p>
+                      </StaggerItem>
+                    ))}
+                  </Stagger>
+                </CardContent>
+              </Card>
+            ) : null}
+
             {recordatorios.length > 0 ? (
               <Card data-testid="recordatorios">
                 <CardHeader>
@@ -324,4 +373,27 @@ export function FirmasClient() {
       )}
     </div>
   )
+}
+
+type ATiempo = NonNullable<
+  NonNullable<Awaited<ReturnType<typeof invitacionApi.barrido>>>['aTiempo']
+>[number]
+
+/** «Vence el 11 de octubre de 2026 (le quedan 7 días) · Próximo recordatorio: 7 de octubre de 2026». */
+export function lineaDelPlazo(a: ATiempo): string {
+  if (!a.venceEl) {
+    return 'Se mandó a firmar antes de que existiera el vencimiento: no vence sola. «Recordar» desde su ficha le pone los días para firmar.'
+  }
+  const quedan =
+    a.diasQueFaltan == null
+      ? ''
+      : a.diasQueFaltan === 1
+        ? ' (le queda 1 día)'
+        : ` (le quedan ${a.diasQueFaltan} días)`
+  const vence = `Vence el ${fechaLarga(diaEnColombia(a.venceEl))}${quedan}`
+  if (a.esperaA !== 'INQUILINO') return vence
+  const proximo = a.proximoRecordatorioEl
+    ? ` · Próximo recordatorio: ${fechaLarga(diaEnColombia(a.proximoRecordatorioEl))}`
+    : ''
+  return `${vence} · Recordatorios: ${a.recordatoriosEnviados} de ${a.de}${proximo}`
 }

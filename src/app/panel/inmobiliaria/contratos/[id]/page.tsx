@@ -74,6 +74,7 @@ import { AdministracionDelContrato } from '@/components/contratos/Administracion
 import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
+import { CastigoDelContrato } from '@/components/contratos/CastigoDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
 import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato';
 import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
@@ -699,7 +700,13 @@ function ContratoDetalleContent() {
               información sobre el escenario que se da en ese contrato»). Va
               pegado a Administración porque los datos que lo definen —el uso
               del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
-          <EscenarioTributario contract={contract} />
+          <EscenarioTributario
+            contract={contract}
+            // QA-CONT-95 B-32: si el escenario del archivo choca con la ficha
+            // del propietario, quien edita contratos confirma cuál rige.
+            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+            onConfirmado={() => void refetch()}
+          />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,
@@ -768,6 +775,8 @@ function ContratoDetalleContent() {
               {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
               <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
               <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              {/* D-24: si su cartera está castigada (o propuesta), se dice acá, con que sigue debiéndose. */}
+              <CastigoDelContrato contractId={contract.id} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
@@ -1186,7 +1195,7 @@ function decisionesDelContrato({
           titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
           // QA-CONT CR-19: «sigue activo» a secas hacía creer que la prórroga
           // corría sola. No: espera a que alguien la confirme (o lo renueve).
-          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: confírmala en «Prórroga» o renuévalo, o termina el arriendo.`}
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», acá abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
           principal={{
             label: 'Renovar contrato',
             icon: ArrowsClockwise,

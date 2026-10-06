@@ -876,6 +876,19 @@ export const contractsApi = {
   },
 
   /**
+   * QA-CONT-95 B-32: confirma cuál escenario tributario rige un contrato
+   * migrado cuyo escenario del archivo choca con la ficha del propietario.
+   * El back reescribe la nota del escenario y rehace las cuotas desde hoy;
+   * quien llama vuelve a leer el contrato.
+   */
+  async confirmarEscenario(
+    id: string,
+    codigo: 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9',
+  ): Promise<{ codigo: string; nombre: string; confirmadoEl: string; confirmadoPor: string | null }> {
+    return apiClient.put(`/contracts/${id}/escenario-tributario`, { codigo });
+  },
+
+  /**
    * POST /contracts/:id/reject — tenant rejects while in PENDING_TENANT_SIGNATURE.
    * type=DEFINITIVE → CANCELLED + application CONTRACT_FAILED.
    * type=MODIFICATIONS → REJECTED_PENDING_MODIFICATIONS, awaits landlord edit.

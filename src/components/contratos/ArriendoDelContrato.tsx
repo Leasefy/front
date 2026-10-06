@@ -794,6 +794,32 @@ function CuentaDelArriendo({
               </AlertaAccionable>
             </div>
           ) : null}
+          {/* QA-CONT-95 r3 (D-25): la deuda subrogada a la aseguradora también
+              se dice en la ficha, aparte: esas cuotas ya quedaron pagadas para
+              la inmobiliaria y no suman a «Resta por pagar». */}
+          {cuenta.contrato.subrogacion && cuenta.contrato.subrogacion.totalCop > 0 ? (
+            <div className="md:col-span-3 md:pt-4">
+              <div
+                className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+                data-testid="subrogacion-del-contrato"
+              >
+                <p className="text-label uppercase tracking-wide text-fg-subtle">
+                  Deuda subrogada a la aseguradora
+                </p>
+                {cuenta.contrato.subrogacion.aseguradoras.map((a) => (
+                  <p key={a.nit} className="text-body-sm text-fg">
+                    {a.nombre} · NIT {a.nit}
+                    {a.siniestros.length > 0 ? ` · ${a.siniestros.join(', ')}` : ''}:{' '}
+                    <Monto>{formatCurrency(a.valorCop)}</Monto>
+                  </p>
+                ))}
+                <p className="text-caption text-fg-muted">
+                  La aseguradora le pagó esas cuotas a la inmobiliaria: no entran en «Resta por
+                  pagar». El inquilino le debe ese valor a ella, no a la inmobiliaria.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <MensajeDeLaCuenta cuenta={cuenta} status={contract.status} reintentar={reintentar} />

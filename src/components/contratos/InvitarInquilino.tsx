@@ -170,7 +170,7 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
       {enPalabras ? (
         <p
           className={
-            invitacion.estado === 'VENCIDA' ? 'text-sm text-warning' : 'text-sm text-muted-foreground'
+            invitacion.estado === 'VENCIDA' ? 'text-sm text-warning-700 dark:text-warning-100' : 'text-sm text-muted-foreground'
           }
           data-testid="invitacion-estado"
         >

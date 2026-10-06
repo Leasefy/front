@@ -330,7 +330,7 @@ function FilaDePqrs({ pqrs, href }: { pqrs: Pqrs; href: string }) {
           <span
             className={cn(
               'text-caption tabular-nums',
-              sla.vencido ? 'font-medium text-destructive' : 'text-muted-foreground',
+              sla.vencido ? 'font-medium text-danger' : 'text-muted-foreground',
             )}
           >
             {sla.vencido ? sla.texto : `Vence en ${sla.texto}`}

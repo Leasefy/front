@@ -178,7 +178,7 @@ export function IncrementosDelContrato({
           El canon sube aunque la carta no se haya enviado.
         </p>
         {!datos.disponible && (
-          <p className="mt-1 text-caption text-plan-status-yellow">
+          <p className="mt-1 text-caption text-warning-700 dark:text-warning-100">
             Falta una actualización de la base: todavía no se puede digitar ni generar cartas.
           </p>
         )}
@@ -186,7 +186,7 @@ export function IncrementosDelContrato({
           La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario y se envía con un clic.
         </p>
         {datos.correoSaleDeVerdad === false && (
-          <p className="mt-1 text-caption text-plan-status-yellow" data-testid="correo-simulado">
+          <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
             En este entorno el correo no sale: enviar simula y no deja constancia.
           </p>
         )}
@@ -424,7 +424,7 @@ function Aniversario({
         </p>
       )}
       {a.bandeja?.estado === "POR_ENVIAR" && (
-        <p className="text-caption text-plan-status-yellow" data-testid={`carta-por-enviar-${a.desde}`}>
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid={`carta-por-enviar-${a.desde}`}>
           Carta por enviar: faltan {a.bandeja.diasParaElAniversario} días para el aniversario.
         </p>
       )}

@@ -193,7 +193,7 @@ export function etiquetaDeVigencia(v: Vigencia, etiquetaDelEstado: string): stri
 /** El color del chip. Un vencido es un aviso, no un estado neutro. */
 export function colorDeVigencia(v: Vigencia, colorDelEstado: string): string {
   return v.vencidoSinRenovar
-    ? 'bg-plan-status-yellow-bg text-plan-status-yellow'
+    ? 'bg-plan-status-yellow-bg text-warning-700 dark:text-warning-100'
     : colorDelEstado;
 }
 

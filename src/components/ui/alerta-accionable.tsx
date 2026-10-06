@@ -99,6 +99,19 @@ function BotonDeAccion({ accion, principal }: { accion: AccionDeAlerta; principa
   )
 }
 
+/**
+ * 🔴 QA-CONT-95 I-09 (04-10-2026): el `Alert` del DS pinta el título y el texto
+ * de las alertas de advertencia y de éxito con el color de RELLENO
+ * (`text-warning` #BF752B sobre #FBF1DD = 3,23:1; el texto, con su
+ * `opacity-90`, 2,84:1). La de información ya trae su título oscuro
+ * (#1B4F84); a éstas les faltaba. Los tonos de texto de la casa: `-700` en
+ * claro y `-100` en oscuro (≥ 4,7:1 con la opacidad del texto).
+ */
+const TINTA_LEGIBLE: Partial<Record<SeveridadDeAlerta, string>> = {
+  warning: 'text-warning-700 dark:text-warning-100',
+  success: 'text-success-700 dark:text-success-100',
+}
+
 export function AlertaAccionable({
   severidad = 'warning',
   titulo,
@@ -116,7 +129,7 @@ export function AlertaAccionable({
       title={titulo}
       icon={icon}
       // Dentro del `Presence` la entrada la pone él: sin la del DS, no sube dos veces.
-      className={cn(mostrar !== undefined && '!animate-none', className)}
+      className={cn(mostrar !== undefined && '!animate-none', TINTA_LEGIBLE[severidad], className)}
       data-severidad={severidad}
       {...props}
     >

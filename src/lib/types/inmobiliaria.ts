@@ -1053,6 +1053,19 @@ export interface CuotasTardias {
   complementaria?: boolean;
 }
 
+/** N-19: una cuota que la corrida aparta «por liquidar a mano». */
+export interface CuotaPorLiquidarAMano {
+  cuotaId: string;
+  contractId: string;
+  propertyId: string | null;
+  propertyTitle: string;
+  mes: string;
+  /** Cuántos dueños tiene el inmueble. */
+  duenos: number;
+  /** El porqué, en palabras. */
+  motivo: string;
+}
+
 export interface VistaPreviaDeDispersiones {
   month: string;
   /**
@@ -1061,6 +1074,12 @@ export interface VistaPreviaDeDispersiones {
    * manda.
    */
   sinPorcentaje?: InmuebleSinPorcentaje[];
+  /**
+   * 🔴 N-19 (QA-CONT-95 r3): las cuotas que la corrida aparta «por liquidar a
+   * mano» (varios dueños y IVA o retenciones de un solo perfil), con el
+   * inmueble y el motivo. Un back anterior no lo manda.
+   */
+  porLiquidarAMano?: CuotaPorLiquidarAMano[];
   /**
    * Con qué regla se liquidó: `CAUSADO` (el default del back: el canon del mes,
    * haya pagado el inquilino o no) o `RECAUDADO` (sólo lo que el inquilino ya
@@ -1405,6 +1424,20 @@ export interface ExtractoPropietario {
     codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
     mensaje: string;
   } | null;
+
+  /**
+   * C-06 (QA-CONT-95 r3): las cuotas que no entran porque el inmueble tiene
+   * varios dueños y la cuota lleva IVA o retenciones para un solo perfil
+   * tributario, cada una con su aviso en palabras. Antes tumbaban el extracto
+   * entero (400). Opcional por los back anteriores.
+   */
+  cuotasSinRepartir?: {
+    cuotaId: string;
+    contractId: string;
+    mes: string;
+    propertyTitle: string;
+    motivo: string;
+  }[];
 
   /**
    * La base del canon del extracto entero: `MIXTA` cuando conviven líneas de

@@ -559,3 +559,17 @@ describe('errores al guardar las condiciones y al enviar', () => {
     expect(texto).not.toContain('409')
   })
 })
+
+// QA-IA-95 (05-10-2026, IA95-16): «A quién le va a llegar el aviso de 2026-10» y «De N cuotas de
+// 2026-10…»: el mes en formato de máquina. Va en palabras.
+describe('el mes en palabras (QA-IA-95)', () => {
+  it('el título y la vista previa dicen «octubre de 2026», nunca «2026-10»', async () => {
+    await montar()
+    expect(contenedor.textContent).toContain('A quién le va a llegar el aviso de octubre de 2026')
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(contenedor.textContent).toContain('cuotas de octubre de 2026')
+    expect(contenedor.textContent).not.toMatch(/\b2026-10\b/)
+  })
+})

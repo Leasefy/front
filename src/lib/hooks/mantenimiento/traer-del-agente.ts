@@ -60,9 +60,21 @@ export function mensajeDeRespuestaFallida(res: Response, queEs: string): string 
   return `No pudimos traer ${queEs}. Vuelve a intentar en unos minutos.`
 }
 
+/**
+ * 🔴 QA-IA-95 (05-10-2026, IA95-06): los hooks lanzan la respuesta fallida DENTRO del `try`, y este
+ * `catch` la pisaba con «Revisa tu conexión»: con Fixi apagado (404 `feature_not_enabled`) la Bandeja
+ * priorizada culpaba a la red. Una respuesta que SÍ llegó se dice con `mensajeDeRespuestaFallida`.
+ */
+export class RespuestaDelAgente extends Error {
+  constructor(res: Response, queEs: string) {
+    super(mensajeDeRespuestaFallida(res, queEs))
+    this.name = 'RespuestaDelAgente'
+  }
+}
+
 /** El `catch` de red: un `TypeError: Failed to fetch` tampoco explica nada solo. */
 export function mensajeDeErrorDeRed(err: unknown, queEs: string): string {
+  if (err instanceof RespuestaDelAgente) return err.message
   // El texto del error del navegador («Failed to fetch») no le dice nada a quien mira.
-  void err
   return `No pudimos traer ${queEs}. Revisa tu conexión y vuelve a intentar.`
 }

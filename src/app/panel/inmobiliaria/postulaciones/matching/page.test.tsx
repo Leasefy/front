@@ -143,6 +143,48 @@ describe('Resumen de Matching — el vacío honesto', () => {
     expect(pantalla.querySelector('[data-testid="matching-resumen-datos"]')).toBeNull()
   })
 
+  it('IA-A-05 (QA-IA-95): los cuatro KPI del micro en cero son el mismo vacío honesto, sin «Calce promedio 0,0 %»', async () => {
+    overviewMock.mockReturnValue({
+      ...overviewBase,
+      notAvailable: false,
+      data: {
+        agente: 'matching',
+        kpis: [
+          { id: 'en_cola', label: 'Candidatos esperando tu visto bueno', value: 0, format: 'number' },
+          { id: 'candidatos_30d', label: 'Candidatos con opciones (30 días)', value: 0, format: 'number' },
+          { id: 'enviados_30d', label: 'Correos enviados (30 días)', value: 0, format: 'number' },
+          { id: 'calce_promedio', label: 'Calce promedio del mejor inmueble (30 días)', value: 0, format: 'percent' },
+        ],
+        pipeline: [],
+        feed: [],
+        generatedAt: '2026-10-05T12:00:00.000Z',
+      },
+    })
+    const pantalla = await montar()
+    expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain('Matching todavía no tiene casos en tu cartera')
+    expect(pantalla.textContent).not.toContain('Calce promedio')
+  })
+
+  it('con candidatos en la cola pero ninguno con opciones en 30 días, el calce promedio es «—»', async () => {
+    overviewMock.mockReturnValue({
+      ...overviewBase,
+      notAvailable: false,
+      data: {
+        agente: 'matching',
+        kpis: [
+          { id: 'en_cola', label: 'Candidatos esperando tu visto bueno', value: 2, format: 'number' },
+          { id: 'candidatos_30d', label: 'Candidatos con opciones (30 días)', value: 0, format: 'number' },
+          { id: 'calce_promedio', label: 'Calce promedio del mejor inmueble (30 días)', value: 0, format: 'percent' },
+        ],
+        pipeline: [{ estado: 'sugerido', count: 2 }],
+        feed: [],
+        generatedAt: '2026-10-05T12:00:00.000Z',
+      },
+    })
+    const pantalla = await montar()
+    expect(pantalla.querySelector('[data-testid="calce-sin-casos"]')?.textContent).toBe('—')
+  })
+
   it('con KPIs reales se pintan los números y el CTA lleva el conteo', async () => {
     overviewMock.mockReturnValue({
       ...overviewBase,

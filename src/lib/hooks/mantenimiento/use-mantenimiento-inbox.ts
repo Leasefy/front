@@ -20,12 +20,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
 import { agentFetch } from '@/lib/api/agent-fetch'
-import {
-  SIN_AGENTE_CONFIGURADO,
-  SIN_AGENCIA,
-  mensajeDeRespuestaFallida,
-  mensajeDeErrorDeRed,
-} from './traer-del-agente'
+import { SIN_AGENTE_CONFIGURADO, SIN_AGENCIA, mensajeDeErrorDeRed, RespuestaDelAgente } from './traer-del-agente'
 import { getMockInbox } from '@/lib/data/mock-mantenimiento'
 import type { InboxFilters, MaintenanceTicketCard } from '@/lib/types/mantenimiento'
 
@@ -144,7 +139,7 @@ export function useMantenimientoInbox(filters?: InboxFilters): UseMantenimientoI
         `${agentUrl}/api/agency/${agencyId}/mantenimiento/inbox`
       )
       if (!vigente()) return
-      if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'la bandeja de mantenimiento'))
+      if (!res.ok) throw new RespuestaDelAgente(res, 'la bandeja de mantenimiento')
       const json: MaintenanceTicketCard[] = await res.json()
       setRawCards(json)
       setError(null)

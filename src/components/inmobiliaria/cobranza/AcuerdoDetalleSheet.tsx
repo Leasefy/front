@@ -204,7 +204,8 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
           {acuerdo.planId && (
             <Button asChild hideArrow>
               <Link href={`${BASE}/pagos/planes/${acuerdo.planId}`}>
-                Revisar y aprobar
+                {/* QA-IA-95 (05-10-2026, IA-B-03): «aprobar» sólo si espera la aprobación; uno vigente o cerrado se ve. */}
+                {acuerdo.estado === 'por_aprobar' ? 'Revisar y aprobar' : 'Ver el plan'}
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>

@@ -98,9 +98,9 @@ export const CobranzaStageCard = React.forwardRef<
         </p>
 
         {/* Stage code + day range — secondary, muted */}
-        <p className={`text-xs tracking-wide uppercase mt-0.5 ${colors.text} opacity-60`}>
-          {stage}
-          {dayRange ? ` · ${dayRange}` : ''}
+        {/* QA-IA-95 (IA-B-09): sin el código crudo de la etapa («S1»); sólo el rango de días de mora. */}
+        <p className={`text-xs tracking-wide uppercase mt-0.5 min-h-4 ${colors.text} opacity-60`}>
+          {dayRange ?? ''}
         </p>
 
         {/* Count */}
@@ -120,7 +120,9 @@ export const CobranzaStageCard = React.forwardRef<
             salía «3.97885756959325 días promedio». Nadie lee catorce decimales:
             se redondea al día, que es la unidad en la que se piensa la mora. */}
         <p className="text-xs text-fg-subtle mt-1">
+          {/* QA-IA-95 (IA-B-09): son días EN LA ETAPA (no de mora), con su número gramatical («1 día»). */}
           <span className="font-mono tabular-nums">{Math.round(avgDaysInStage)}</span>{' '}
+          {Math.round(avgDaysInStage) === 1 ? (locale === 'es' ? 'día' : 'day') : locale === 'es' ? 'días' : 'days'}{' '}
           {t('inmobiliaria.ai.cobranza.overview.stages.avgDays')}
         </p>
 

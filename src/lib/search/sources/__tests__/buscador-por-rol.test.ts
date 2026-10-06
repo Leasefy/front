@@ -39,8 +39,6 @@ describe('buscador: la navegación por rol', () => {
     ['facturacion', 'Facturación'],
     ['contabilidad', 'Contabilidad'],
     ['liquidaciones', 'Liquidaciones'],
-    ['conciliacion', 'Conciliación'],
-    ['chat', 'Chat'],
     ['contratos', 'Contratos'],
     ['propietarios', 'Propietarios'],
     ['recaudo', 'Recaudo'],
@@ -49,6 +47,14 @@ describe('buscador: la navegación por rol', () => {
     ['mensajes', 'Mensajes'],
   ])('🔴 el auxiliar NO encuentra «%s»', async (q, titulo) => {
     expect(await titulos(q, aux)).not.toContain(titulo)
+  })
+
+  it('CF-01 (decisión 12, 05-10-2026): el auxiliar SÍ encuentra el Chat (su chat contesta sólo de cartera)', async () => {
+    expect(await titulos('chat', aux)).toContain('Chat')
+  })
+
+  it('IA95-34 (Nico, 05-10-2026, «Dejarlo conciliar»): el auxiliar SÍ encuentra Conciliación', async () => {
+    expect(await titulos('conciliacion', aux)).toContain('Conciliación')
   })
 
   it('el contador sí encuentra Facturación y Contabilidad; la asesora no', async () => {

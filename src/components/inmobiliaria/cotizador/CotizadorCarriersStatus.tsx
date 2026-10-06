@@ -47,7 +47,8 @@ function SlaBadge({ state, t }: { state: string; t: (k: string) => string }) {
   const key = slaKeyMap[state] ?? slaKeyMap.healthy
   return (
     <span className={`text-xs font-medium ${SLA_COLORS[state] ?? SLA_COLORS.healthy}`}>
-      SLA: {t(key)}
+      {/* QA-IA-95: «Responde bien / Lenta / Con fallas», sin la sigla «SLA:» ante la inmobiliaria. */}
+      {t(key)}
     </span>
   )
 }

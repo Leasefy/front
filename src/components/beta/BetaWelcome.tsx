@@ -10,7 +10,7 @@ import { AuthContext } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
-import { CHAT_TEMPLATES, ChatTemplatesMenu } from './ChatTemplates';
+import { CHAT_TEMPLATES, CHAT_TEMPLATES_DEL_AUXILIAR, ChatTemplatesMenu, esAuxiliarDeCartera } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
 import { AvisoDePreguntas } from './AvisoDePreguntas';
 import { ConversacionesRecientes } from './llegada/ConversacionesRecientes';
@@ -38,6 +38,12 @@ export const ATAJOS_DE_LLEGADA = ['cobros', 'contratos', 'propiedades'] as const
 
 /** Los ejemplos que se escriben solos en la caja: cosas que el chat SÍ contesta o hace. */
 const CLAVES_DE_EJEMPLOS = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] as const;
+
+/**
+ * CF-01 (decisión 12, 05-10-2026): los del auxiliar de cartera, que sólo
+ * conversa de cartera (cada uno con su consulta fija en el micro).
+ */
+const CLAVES_DE_EJEMPLOS_DEL_AUXILIAR = ['a1', 'a2', 'a3', 'a4', 'a5'] as const;
 
 /** La curva de la referencia (`sa-hero`): sale rápido y se posa despacio. */
 
@@ -81,7 +87,15 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [recientesAbiertas, setRecientesAbiertas] = useState(false);
 
-  const ejemplos = useMemo(() => CLAVES_DE_EJEMPLOS.map((k) => t(`beta.welcome.ejemplos.${k}`)), [t]);
+  // CF-01: el auxiliar de cartera ve la llegada de SU chat (sólo cartera).
+  const esAuxiliar = esAuxiliarDeCartera(useContext(AuthContext)?.agencyRole);
+  const ejemplos = useMemo(
+    () =>
+      esAuxiliar
+        ? CLAVES_DE_EJEMPLOS_DEL_AUXILIAR.map((k) => t(`beta.welcome.ejemplosAuxiliar.${k}`))
+        : CLAVES_DE_EJEMPLOS.map((k) => t(`beta.welcome.ejemplos.${k}`)),
+    [t, esAuxiliar]
+  );
 
   // ── La bandeja: sólo datos que el panel ya tiene ─────────────────────────
   // `AuthContext` directo (no `useAuth`): fuera del proveedor, sin bandeja.
@@ -162,9 +176,11 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
       </div>
     ) : null;
 
-  const atajos = ATAJOS_DE_LLEGADA.map((id) => CHAT_TEMPLATES.find((tpl) => tpl.id === id)).filter(
-    (tpl): tpl is (typeof CHAT_TEMPLATES)[number] => Boolean(tpl)
-  );
+  const atajos = esAuxiliar
+    ? CHAT_TEMPLATES_DEL_AUXILIAR.slice(0, 3)
+    : ATAJOS_DE_LLEGADA.map((id) => CHAT_TEMPLATES.find((tpl) => tpl.id === id)).filter(
+        (tpl): tpl is (typeof CHAT_TEMPLATES)[number] => Boolean(tpl)
+      );
 
   return (
     // Movimiento reducido: lo resuelve `MotionProvider reducedMotion="user"`
@@ -189,7 +205,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             {...entrada(1)}
             className="mt-4 max-w-[560px] text-center text-[16px] leading-[1.5] text-fg-muted sm:text-[17px] [text-wrap:balance]"
           >
-            {t('beta.welcome.heroSubtitle')}
+            {t(esAuxiliar ? 'beta.welcome.heroSubtitleAuxiliar' : 'beta.welcome.heroSubtitle')}
           </motion.p>
 
           {/* La caja — `z-10`: el menú y el panel de conversaciones pasan por encima de los atajos */}
@@ -267,14 +283,18 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
               botón y no a su lado (Nico, 03-10: «mira esto como se ve de feo»:
               al lado, la frase partía en dos renglones corridos a la derecha).
               Debajo de la frase, el botón no se confunde con un cuarto atajo. */}
-          <motion.div
-            {...entrada(5)}
-            className="mt-8 flex max-w-[680px] flex-col items-center gap-3 text-center text-[13px] leading-snug text-fg-subtle"
-            data-testid="fila-del-equipo"
-          >
-            <span className="[text-wrap:balance]">{t('beta.welcome.especialistas')}</span>
-            <BotonDelEquipo className="shrink-0" />
-          </motion.div>
+          {/* CF-01: el chat del auxiliar de cartera no llama especialistas (sólo
+              consultas fijas de cartera): la frase no sería verdad para él. */}
+          {!esAuxiliar && (
+            <motion.div
+              {...entrada(5)}
+              className="mt-8 flex max-w-[680px] flex-col items-center gap-3 text-center text-[13px] leading-snug text-fg-subtle"
+              data-testid="fila-del-equipo"
+            >
+              <span className="[text-wrap:balance]">{t('beta.welcome.especialistas')}</span>
+              <BotonDelEquipo className="shrink-0" />
+            </motion.div>
+          )}
         </div>
       </div>
   );

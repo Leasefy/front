@@ -81,6 +81,7 @@ import { textosDelFallo } from './fallo-de-la-accion'
 import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
 import { ordenarBandeja } from '@/lib/piloto/director'
 import { PorQueEnLaFila } from './PilotoDirectorPorQue'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 const POR_PAGINA = 10
 
@@ -375,7 +376,7 @@ export function PilotoBandeja({
                       className="line-clamp-2 text-left text-body-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                       data-testid={`piloto-bandeja-fila-${item.id}`}
                     >
-                      {item.titulo}
+                      {conLaPlataPegada(item.titulo)}
                     </button>
                     <span
                       className={`ml-auto flex shrink-0 items-center gap-1 font-mono text-caption tabular-nums ${tonoDeEspera(item.desde)}`}
@@ -391,7 +392,7 @@ export function PilotoBandeja({
                       vez, con su «Por qué espera tu clic» de abajo. */}
                   {!(item.motivo && item.resumen.trim() === item.motivo.trim()) && (
                     <p className="mt-1 line-clamp-2 text-caption text-fg-muted" data-testid={`piloto-bandeja-resumen-${item.id}`}>
-                      {item.resumen}
+                      {conLaPlataPegada(item.resumen)}
                       {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
                         <span className="ml-1 font-mono tabular-nums text-fg">
                           · {formatCurrency(item.montoCop)}

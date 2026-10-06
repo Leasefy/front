@@ -23,7 +23,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
+import { CARTERA_STAGES, STAGE_LABELS_ES, stageDisplayName, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -40,7 +40,6 @@ import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Button, Input, Badge } from '@/components/ui'
 import { Card } from '@leasefy/cadence'
 import { Chip, RangeSlider } from '@leasefy/cadence'
-import { ETAPAS_ES } from '@/lib/cobranza/acuerdo-general-vocab'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   PAGE_SIZE_OPTIONS,
@@ -367,9 +366,10 @@ export default function DeudoresListClient() {
                   data-testid={`stage-chip-${s}`}
                   // El código no dice nada solo: el nombre va en el título para
                   // quien no se sabe la taxonomía de memoria.
-                  title={ETAPAS_ES[s]}
+                  title={STAGE_LABELS_ES[s]}
                 >
-                  {s}
+                  {/* QA-IA-95 (IA-B-09): el nombre de la etapa, no su código («S1»). */}
+                  {stageDisplayName(s, 'es')}
                 </Chip>
               ))}
             </fieldset>
@@ -509,8 +509,8 @@ export default function DeudoresListClient() {
                         {d.fullName}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
-                          {d.currentStage}
+                        <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
+                          {stageDisplayName(d.currentStage, 'es')}
                         </Badge>
                       </TableCell>
                       {/* Números a la derecha y tabulares: es la columna por la
@@ -547,8 +547,8 @@ export default function DeudoresListClient() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-fg truncate">{d.fullName}</p>
-                      <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
-                        {d.currentStage}
+                      <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
+                        {stageDisplayName(d.currentStage, 'es')}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">

@@ -874,8 +874,9 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     expect(gate('asegurabilidad')).toEqual({ module: 'cotizador', roles: undefined, scope: 'comercial' });
     // De Pagos: heredaba `finanzas`, sin gate de rol.
     expect(gate('cobranza')).toEqual({ module: 'cobranza', roles: undefined, scope: 'finanzas' });
-    // De Dinero, donde ya era fila: idéntica.
-    expect(gate('conciliacion')).toEqual({ module: null, roles: ADMIN_Y_CONTADOR, scope: 'finanzas' });
+    // De Dinero, donde ya era fila: idéntica, salvo el auxiliar de cartera, que
+    // también concilia (IA95-34, Nico, 05-10-2026, «Dejarlo conciliar»).
+    expect(gate('conciliacion')).toEqual({ module: null, roles: [...ADMIN_Y_CONTADOR, AGENCY_ROLES.AUXILIAR_CARTERA], scope: 'finanzas' });
     // De Reportes: heredaba `general`.
     expect(gate('desempeno-ia')).toEqual({ module: 'analytics', roles: undefined, scope: 'general' });
     // El equipo de pagos, con el gate de la Sala de la que viene.

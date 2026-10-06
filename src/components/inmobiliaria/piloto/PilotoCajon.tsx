@@ -86,6 +86,7 @@ import {
 } from '@/lib/api/piloto'
 import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
 import { PorQueEnElCajon } from './PilotoDirectorPorQue'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 /** Qué está abierto en el cajón. `null` = cerrado. */
 export type PilotoApertura =
@@ -181,7 +182,9 @@ function fechaCorta(iso: string): string {
   })
 }
 
-function aItemDS(fila: { label: string; valor: string; enfasis?: boolean }): KeyValueItem {
+function aItemDS(filaCruda: { label: string; valor: string; enfasis?: boolean }): KeyValueItem {
+  // QA-IA-95 (PI-16): la plata que escribe el micro («$5.750.000») con el espacio duro de la casa.
+  const fila = { ...filaCruda, valor: conLaPlataPegada(filaCruda.valor) }
   const prosa = fila.valor.length > LARGO_QUE_YA_ES_PROSA
   if (prosa) {
     return {
@@ -279,7 +282,7 @@ export function PilotoCajon({
         if (res.ok) {
           // Lo que PASÓ, dicho por el micro (p. ej. «la programé para mañana
           // a las 8:00»); «listo» sólo si el micro no dijo nada.
-          toast.success(res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: accion.label }))
+          toast.success(res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: conLaPlataPegada(accion.label) }))
           setAbierta(null)
           await Promise.allSettled([refetch(), onAccionEjecutada?.() ?? Promise.resolve()])
         } else {
@@ -628,7 +631,7 @@ export function PilotoCajon({
                     }}
                     data-testid={`piloto-cajon-accion-${i}`}
                   >
-                    {accion.label}
+                    {conLaPlataPegada(accion.label)}
                   </Button>
                 ))}
                 {data.acciones.some((a) => a.permitida === false && a.porQueNo) && (

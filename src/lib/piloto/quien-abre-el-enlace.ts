@@ -12,14 +12,15 @@
  *
  * Los roles son los de cada pantalla: el `gate` de su sección en
  * `configuracion/secciones.ts` (la prueba lo compara) y el `PageGuard` de
- * Facturación y de Conciliación (administrador y contador). Una ruta que no
- * está aquí es de todos.
+ * Facturación (administrador y contador) y de Conciliación (además, el
+ * auxiliar de cartera: IA95-34). Una ruta que no está aquí es de todos.
  */
 const PANTALLAS: ReadonlyArray<{ ruta: string; roles: readonly string[] }> = [
   { ruta: '/panel/inmobiliaria/configuracion/perfil', roles: ['ADMIN'] },
   { ruta: '/panel/inmobiliaria/configuracion/medios-de-pago', roles: ['ADMIN'] },
   { ruta: '/panel/inmobiliaria/facturacion', roles: ['ADMIN', 'CONTADOR'] },
-  { ruta: '/panel/inmobiliaria/conciliacion', roles: ['ADMIN', 'CONTADOR'] },
+  // IA95-34 (Nico, 05-10-2026): el auxiliar de cartera también concilia.
+  { ruta: '/panel/inmobiliaria/conciliacion', roles: ['ADMIN', 'CONTADOR', 'AUXILIAR_CARTERA'] },
 ]
 
 export function rolesDelEnlace(href: string): readonly string[] | undefined {

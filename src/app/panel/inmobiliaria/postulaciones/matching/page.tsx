@@ -93,6 +93,9 @@ function ComoFunciona() {
 function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
   const { t, locale } = useI18n()
   const segmentos = data.pipeline.filter((seg) => seg.count > 0)
+  // IA-A-05 (QA-IA-95, 05-10-2026): sin candidatos con opciones en 30 días no
+  // hubo calce que promediar: «0,0 %» era una medición que no ocurrió.
+  const sinCasos = data.kpis.find((k) => k.id === 'candidatos_30d')?.value === 0
 
   return (
     <div className="space-y-6" data-testid="matching-resumen-datos">
@@ -102,11 +105,15 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
           <StaggerItem key={kpi.id} className="rounded-lg border border-border bg-surface p-4">
             <p className="text-xs leading-tight text-fg-muted">{kpi.label}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-fg">
-              <AnimatedNumber
-                value={kpi.value}
-                from={0}
-                format={(n) => formatKpiValue(n, kpi.format)}
-              />
+              {kpi.id === 'calce_promedio' && sinCasos ? (
+                <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
+              ) : (
+                <AnimatedNumber
+                  value={kpi.value}
+                  from={0}
+                  format={(n) => formatKpiValue(n, kpi.format)}
+                />
+              )}
             </p>
           </StaggerItem>
         ))}
@@ -156,7 +163,11 @@ function MatchingResumen() {
 
   // «Encendido» = el micro devolvió KPIs. Un 404 o un overview con todo en
   // cero es el mismo caso: el agente todavía no trabaja esta cartera.
-  const tieneDatos = Boolean(data && data.kpis.length > 0)
+  // IA-A-05 (QA-IA-95): el micro manda SIEMPRE sus cuatro KPI, también en cero;
+  // «tiene datos» es que alguno se mueva, no que lleguen.
+  const tieneDatos = Boolean(
+    data && (data.kpis.some((k) => k.value > 0) || data.pipeline.some((p) => p.count > 0) || data.feed.length > 0),
+  )
   const enCola = data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value
 
   return (

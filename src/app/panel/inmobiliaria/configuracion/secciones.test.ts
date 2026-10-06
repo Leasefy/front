@@ -187,6 +187,12 @@ describe('permisos: unificar no abre ni cierra pantallas', () => {
     expect(puedeVerSeccion(seccionPorId('ia'), ctx())).toBe(true);
   });
 
+  it('CF-01 (QA-IA-95): el auxiliar de cartera no ve Automatización IA (las lecciones traen preguntas de todas las áreas)', () => {
+    expect(puedeVerSeccion(seccionPorId('ia'), { ...ctx({ modulos: ['cobros'] }), agencyRole: 'AUXILIAR_CARTERA' })).toBe(false);
+    expect(puedeVerSeccion(seccionPorId('ia'), { ...ctx(), agencyRole: 'CONTADOR' })).toBe(true);
+    expect(puedeVerSeccion(seccionPorId('ia'), { ...ctx(), agencyRole: 'AGENTE' })).toBe(true);
+  });
+
   it('a un miembro sin permisos le queda una sección, no una pantalla vacía', () => {
     const visibles = seccionesVisibles(ctx());
     // QA 04-10: también sus Notificaciones (las de cada persona).

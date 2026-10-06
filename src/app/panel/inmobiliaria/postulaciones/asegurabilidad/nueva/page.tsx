@@ -25,6 +25,7 @@ import {
 } from '@/components/inmobiliaria/cotizador/WizardStep3Config'
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
+import { mostrarElAvisoDelBorrador } from '@/lib/cotizador/aviso-del-borrador'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 import { Button } from '@/components/ui/button'
@@ -113,6 +114,10 @@ export default function NuevaCotizacionPage() {
     pasoAnterior.current = step
   }, [step])
   const [showRestoreBanner, setShowRestoreBanner] = useState(true)
+  // 🔴 QA-IA-95 (05-10-2026, IA-A-12): el aviso «Tienes una cotización en progreso» salía en los pasos
+  // 2-4: el borrador que el propio asistente acaba de guardar al avanzar. Sólo vale para un borrador que
+  // YA estaba al entrar, y sólo en el primer paso.
+  const [habiaBorradorAlEntrar] = useState(hasDraft)
   const [candidato, setCandidato] = useState(EMPTY_CANDIDATO)
   const [propiedad, setPropiedad] = useState<{
     canonCop: number | ''
@@ -519,7 +524,10 @@ export default function NuevaCotizacionPage() {
               </div>
           </Presence>
 
-          <Presence show={hasDraft && showRestoreBanner} initial={false}>
+          <Presence
+            show={mostrarElAvisoDelBorrador({ habiaAlEntrar: habiaBorradorAlEntrar, hayBorrador: hasDraft, abierto: showRestoreBanner, paso: step })}
+            initial={false}
+          >
             <WizardRestoreBanner
               onContinue={handleContinue}
               onStartFresh={handleStartFresh}

@@ -31,6 +31,11 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => ({
 vi.mock('@/lib/hooks/ai/use-agent-overview', () => ({
   useAgentOverview: (agente: string) => overviewMock(agente),
 }))
+// QA-IA-95 (IA95-08): lo que hicieron los agentes con manos (acciones del Piloto del back).
+const { conManos } = vi.hoisted(() => ({
+  conManos: { valor: { data: null as unknown, isLoading: false, error: null as unknown, sinLaRuta: true, refetch: () => {} } },
+}))
+vi.mock('@/lib/hooks/ai/use-desempeno-de-los-agentes', () => ({ useDesempenoDeLosAgentes: () => conManos.valor }))
 
 import AnalyticsPage from './page'
 
@@ -43,7 +48,8 @@ const COBRANZA = {
     { id: 'recovery_rate_30d', label: 'Tasa de recuperación (30 días)', value: 0.25, format: 'percent' },
     { id: 'open_escalations', label: 'Escalaciones abiertas', value: 2, format: 'number' },
   ],
-  pipeline: [{ estado: 'detectado', count: 6 }],
+  // QA-IA-95: los 19 en S0 («detectado», pre-vencimiento) no son casos en curso; los 6 en S1 sí.
+  pipeline: [{ estado: 'detectado', count: 19 }, { estado: 'sugerido', count: 6 }],
   feed: [{ id: 'f1', titulo: 'x', detalle: 'y', actorType: 'agent', occurredAt: '2026-10-03T10:00:00-05:00' }],
   generatedAt: '2026-10-04T04:00:00-05:00',
 }
@@ -131,6 +137,19 @@ describe('Desempeño IA', () => {
     expect(t).toContain('$\u00a01.500.000')
   })
 
+  it('🔴 QA-IA-95: los deudores en S0 (pre-vencimiento) no son «casos en curso» de la cobranza (Cobranza › Casos no los cuenta)', async () => {
+    overviewMock.mockImplementation((agente: string) => ({
+      data: agente === 'cobranza' ? { ...COBRANZA, pipeline: [{ estado: 'detectado', count: 19 }] } : vacio(agente),
+      isLoading: false,
+      errorCrudo: null,
+      notAvailable: false,
+      refetch: vi.fn(),
+    }))
+    await render()
+    expect(tarjeta('cobranza')).not.toContain('Casos en curso')
+    expect(tarjeta('cobranza')).toContain('Recaudo recuperado (30 días)')
+  })
+
   it('🔴 sin actividad dice «Sin actividad todavía», no una fila de ceros', async () => {
     await render()
     expect(tarjeta('conciliacion')).toContain('Sin actividad todavía')
@@ -172,5 +191,41 @@ describe('Desempeño IA', () => {
     expect(texto).not.toContain('90d')
     expect(texto).not.toContain('Meta:')
     expect(texto).not.toContain('+0.0')
+  })
+})
+
+describe('🔴 QA-IA-95 (IA95-08): los agentes con manos tienen tarjeta', () => {
+  const agente = (a: string, nombre: string, extra: Record<string, number> = {}) => ({ agente: a, nombre, hechas: 0, fallidas: 0, deshechas: 0, descartadas: 0, programadas: 0, esperan: 0, ...extra })
+  it('Fixi, Avali, Vidi, Niti, Imana y el precio salen con lo que hicieron en 30 días; sin nada, «Sin actividad todavía»', async () => {
+    conManos.valor = {
+      data: {
+        disponible: true, dias: 30, recortado: false,
+        agentes: [
+          agente('mantenimiento', 'Fixi · mantenimiento', { hechas: 3, esperan: 1 }),
+          agente('aprobaciones', 'Avali · aprobaciones'),
+          agente('inspeccion', 'Vidi · inspección', { programadas: 2 }),
+          agente('calidad', 'Niti · calidad', { deshechas: 1 }),
+          agente('prospectos', 'Imana · prospectos'),
+          agente('avaluos', 'Avalúos'),
+          agente('matching', 'Matching', { hechas: 9 }),
+        ],
+      },
+      isLoading: false, error: null, sinLaRuta: false, refetch: () => {},
+    }
+    await render()
+    const fixi = container.querySelector('[data-testid="desempeno-mantenimiento"]')?.textContent ?? ''
+    expect(fixi).toContain('Fixi · mantenimiento')
+    expect(fixi).toContain('Hechas en 30 días')
+    expect(fixi).toContain('Esperan tu decisión')
+    expect(container.querySelector('[data-testid="desempeno-inspeccion"]')?.textContent).toContain('Programadas')
+    expect(container.querySelector('[data-testid="desempeno-aprobaciones"]')?.textContent).toContain('Sin actividad todavía')
+    for (const id of ['calidad', 'prospectos', 'avaluos']) expect(container.querySelector(`[data-testid="desempeno-${id}"]`)).not.toBeNull()
+    // Matching ya tiene su tarjeta (la de su Sala): no se repite.
+    expect(container.querySelectorAll('[data-testid="desempeno-matching"]').length).toBe(1)
+  })
+  it('sin poder leerlo, lo dice (no pinta ceros)', async () => {
+    conManos.valor = { data: { disponible: false, dias: 30, recortado: false, agentes: [] }, isLoading: false, error: null, sinLaRuta: false, refetch: () => {} }
+    await render()
+    expect(container.querySelector('[data-testid="desempeno-con-manos-sin-dato"]')?.textContent).toContain('No pudimos leer')
   })
 })

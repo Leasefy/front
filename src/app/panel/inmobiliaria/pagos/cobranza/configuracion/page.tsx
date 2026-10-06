@@ -48,6 +48,7 @@ import {
   type AgencyPolicyPatchBody,
 } from '@/lib/hooks/cobranza/use-agency-policy'
 import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autonomy'
+import { NOMBRE_DEL_MODO, useModoDeCobranzaEnElPiloto } from '@/lib/hooks/cobranza/use-modo-de-cobranza-en-el-piloto'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
@@ -384,6 +385,8 @@ function CobranzaConfiguracionContent() {
 
   const policy = useAgencyPolicy()
   const autonomy = useAutonomy()
+  // QA-IA-95: si la cobranza ya tiene su modo en el Piloto, ese manda y este nivel no decide nada.
+  const modoDelPiloto = useModoDeCobranzaEnElPiloto()
 
   // ── Negotiation local draft ────────────────────────────────────────────
   const [negDraft, setNegDraft] = useState<NegotiationDraft | null>(null)
@@ -658,7 +661,19 @@ function CobranzaConfiguracionContent() {
           <SectionErrorBanner testId="autonomia-error" onRetry={() => void autonomy.refetch()} />
         )}
 
-        {!autonomy.notProvisioned && autonomy.data && (
+        {modoDelPiloto && (
+          <div data-testid="autonomia-en-el-piloto" className="rounded-md border border-border bg-surface-muted p-4 text-sm text-fg space-y-2">
+            <p>
+              La cobranza sigue el modo que elegiste en el Piloto automático: <strong>{NOMBRE_DEL_MODO[modoDelPiloto]}</strong>.
+              Este nivel ya no decide nada mientras ese modo esté elegido.
+            </p>
+            <Link href="/panel/inmobiliaria/piloto" className="font-medium text-primary hover:underline">
+              Cambiar el modo en el Piloto (Autonomía)
+            </Link>
+          </div>
+        )}
+
+        {!modoDelPiloto && !autonomy.notProvisioned && autonomy.data && (
           <>
             <RadioCardGroup
               orientation="vertical"

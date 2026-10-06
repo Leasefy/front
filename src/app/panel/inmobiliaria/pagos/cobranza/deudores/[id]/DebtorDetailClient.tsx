@@ -24,7 +24,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
-import { stageColorClasses, humanCaseState } from '@/lib/cartera'
+import { stageColorClasses, humanCaseState, stageDisplayName } from '@/lib/cartera'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
 import { useDebtorStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-debtor-stage-transitions-realtime'
@@ -257,7 +257,8 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   ' border'
                 }
               >
-                {t('inmobiliaria.ai.cobranza.detail.header.stage')}: {data.currentStage}
+                {/* QA-IA-95 (IA-B-09): el nombre de la etapa, no su código («S0»). */}
+                {t('inmobiliaria.ai.cobranza.detail.header.stage')}: {stageDisplayName(data.currentStage, 'es')}
               </CrossFade>
             )}
             {data && (
@@ -267,7 +268,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   daysBadgeClasses(data.daysInStage)
                 }
               >
-                <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} /> d
+                {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». */}
+                <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
+                {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
               </span>
             )}
             <Presence as="span" show={Boolean(data?.isPaused)} direction="none" initial={false}>

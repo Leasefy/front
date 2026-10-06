@@ -267,7 +267,8 @@ function EstadoDelCiclo({ hoy, isAdmin, hoyEnBogota }: { hoy: DirectorHoy; isAdm
           titulo={t('inmobiliaria.piloto.director.ciclo.sinModeloTitulo')}
           texto={
             ciclo.sinModeloPorque
-              ? t('inmobiliaria.piloto.director.ciclo.sinModeloPorque', { porque: ciclo.sinModeloPorque })
+              ? // QA-IA-95 (DIR-08): el porqué del micro ya termina en punto y la frase pone el suyo («…reglas..»).
+                t('inmobiliaria.piloto.director.ciclo.sinModeloPorque', { porque: ciclo.sinModeloPorque.replace(/[.\s]+$/, '') })
               : null
           }
           testid="piloto-director-sin-modelo"

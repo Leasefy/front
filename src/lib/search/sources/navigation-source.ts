@@ -30,7 +30,6 @@ import { Compass } from '@phosphor-icons/react';
 import { pantallaDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 import { pasaGateDeFila, type NavFilterContext } from '@/lib/nav/agency-nav-filter';
 import { canSeeBusinessModule } from '@/lib/nav/agency-module-scope';
-import { SIN_EL_AUXILIAR_DE_CARTERA } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 
 interface NavEntry {
   /** Label as shown in the sidebar / tab / page. */
@@ -53,7 +52,8 @@ const P = '/panel/inmobiliaria';
 const NAV_CATALOG: NavEntry[] = [
   // ── Cabecera ──────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Inicio', context: 'Inicio', href: `${P}/piloto`, keywords: 'inicio piloto automatico torre control bandeja briefing autonomia agentes home' },
-  { kind: 'page', title: 'Chat', context: 'Inicio', href: P, keywords: 'asistente chat ia preguntar', roles: SIN_EL_AUXILIAR_DE_CARTERA },
+  // CF-01 (decisión 12, 05-10-2026): el auxiliar de cartera también tiene chat (sólo de cartera).
+  { kind: 'page', title: 'Chat', context: 'Inicio', href: P, keywords: 'asistente chat ia preguntar' },
 
   // ── Agentes IA ────────────────────────────────────────────────────────────
   // Nico, 2026-09-16: una sección sólo de agentes, arriba de Captación. El
@@ -73,7 +73,7 @@ const NAV_CATALOG: NavEntry[] = [
   // Dinero). Se encuentra por los nombres de sus agentes y por lo que hace.
   // Sin `permission`: la fila se gatea por rol (ADMIN y CONTADOR) y la página
   // se defiende sola, igual que Conciliación.
-  { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela laura nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' },
+  { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela mariana nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' }, // IA95-10: Mariana prepara el cobro (Laura es la voz de cobranza)
   { kind: 'page', title: 'Desempeño IA', context: 'Agentes IA', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
 
   // ── Captación y arriendo ──────────────────────────────────────────────────

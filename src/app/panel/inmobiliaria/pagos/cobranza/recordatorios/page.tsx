@@ -91,6 +91,8 @@ import {
   type CampoDelReglaje,
 } from '@/lib/hooks/cobranza/limites-de-cobranza'
 import { decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+// QA-IA-95 (05-10-2026): el mes en palabras («octubre de 2026»), no «2026-10».
+import { nombreDelMes } from '@/lib/recaudo/meses'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -648,7 +650,7 @@ function PagosRecordatorios() {
           <div className="space-y-1">
             <Eyebrow>Disparo desde la cartera</Eyebrow>
             <h2 className="text-base font-semibold text-fg">
-              A quién le va a llegar el aviso de {mes}
+              A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">
               Sólo a quienes deban ese mes. Quien ya pagó —o adelantó la cuota— no recibe nada, y en
@@ -713,7 +715,7 @@ function PagosRecordatorios() {
                   <strong>
                     <AnimatedNumber value={previa.revisados} format={(n) => String(Math.round(n))} />
                   </strong>{' '}
-                  cuotas de {previa.mes}, le va a llegar a{' '}
+                  cuotas de {nombreDelMes(previa.mes)}, le va a llegar a{' '}
                   <strong className="text-primary">
                     <AnimatedNumber value={previa.lesLlega} format={(n) => String(Math.round(n))} />
                   </strong>{' '}

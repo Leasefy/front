@@ -122,7 +122,15 @@ describe('EQUIPO_DE_PAGOS', () => {
   const P = '/panel/inmobiliaria'
 
   it('son los seis del micro: Gabriela coordina y cinco especialistas', () => {
-    expect(EQUIPO_DE_PAGOS.map((e) => e.id)).toEqual(['gabriela', 'laura', 'nicolas', 'valentina', 'samuel', 'sofia'])
+    // IA95-10 (Nico, 05-10-2026): el que prepara el cobro es Mariana; Laura es sólo la voz de cobranza.
+    expect(EQUIPO_DE_PAGOS.map((e) => e.id)).toEqual(['gabriela', 'mariana', 'nicolas', 'valentina', 'samuel', 'sofia'])
+  })
+
+  it('IA95-10: ningún especialista de pagos se llama Laura (Laura es la voz y el WhatsApp de cobranza)', () => {
+    expect(EQUIPO_DE_PAGOS.map((e) => e.nombre)).toEqual(['Gabriela', 'Mariana', 'Nicolás', 'Valentina', 'Samuel', 'Sofía'])
+    const textos = EQUIPO_DE_PAGOS.flatMap((e) => [e.nombre, e.rol, e.queHace, e.sinPantalla ?? ''])
+    for (const t of textos) expect(t).not.toMatch(/Laura/)
+    expect(EQUIPO_DE_PAGOS.find((e) => e.id === 'nicolas')?.sinPantalla).toBe('No tiene pantalla propia: trabaja sobre el cobro que preparó Mariana.')
   })
 
   it('quien no tiene pantalla propia lo dice, y quien la tiene no trae ese texto', () => {
@@ -155,5 +163,14 @@ describe('EQUIPO_DE_PAGOS', () => {
     expect(hrefs).toContain(`${P}/pagos/cobranza/fallidos`)
     expect(hrefs).toContain(`${P}/pagos/cobranza/recordatorios`)
     expect(hrefs).toContain(`${P}/pagos/liquidaciones`)
+  })
+})
+
+// QA-IA-95 (05-10-2026, IA95-18): «El que lo emite es el ERP», «Le pide al ERP el link de pago»:
+// «ERP» es palabra del equipo, no de la inmobiliaria.
+describe('el equipo en palabras de la inmobiliaria (QA-IA-95)', () => {
+  it('ningún especialista dice «ERP»', () => {
+    const conErp = EQUIPO_DE_PAGOS.filter((e) => /\bERP\b/.test(JSON.stringify(e))).map((e) => e.nombre)
+    expect(conErp).toEqual([])
   })
 })

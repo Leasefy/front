@@ -450,3 +450,20 @@ describe('PilotoDirector — el plan', () => {
 
 // Para que el tipo del plan de prueba no se aleje del contrato.
 void (PLAN as unknown as DirectorHoy)
+
+describe('PilotoDirector — el porqué sin el punto doble (QA-IA-95, DIR-08)', () => {
+  it('el micro termina su porqué con punto y la frase de la tarjeta pone el suyo: uno solo', () => {
+    render(
+      hoyCon(
+        conCiclo({
+          estado: 'sin_modelo',
+          modelo: null,
+          costoCop: 0,
+          sinModeloPorque: 'El modelo de IA no está conectado por ahora: planeó el planificador de reglas.',
+        }),
+      ),
+    )
+    const aviso = q('piloto-director-sin-modelo')?.textContent ?? ''
+    expect(aviso).toContain('(El modelo de IA no está conectado por ahora: planeó el planificador de reglas)')
+  })
+})

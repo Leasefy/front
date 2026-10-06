@@ -1182,7 +1182,7 @@
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
         "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
-        "sinBack": "La conciliación del Piloto está apagada en el servidor: los depósitos del banco no se ven acá ni llegan a la Bandeja. La enciende el equipo técnico.",
+        "sinBack": "La conciliación del Piloto todavía no está activada para tu inmobiliaria: los depósitos del banco no se ven acá ni llegan a la Bandeja. La activa el equipo de Leasefy.",
         "contador": "{{visibles}} de {{total}}",
         "verPasos": "Ver pasos",
         "ocultarPasos": "Ocultar pasos",
@@ -6026,7 +6026,7 @@
         "overview": {
           "title": "Asegurabilidad",
           "subtitle": "Estado de las cotizaciones y aseguradoras activas",
-          "lastUpdated": "Actualizado hace",
+          "lastUpdated": "Actualizado",
           "newQuoteCta": "Nueva cotización",
           "kpis": {
             "quotesToday": "Cotizaciones hoy",
@@ -6053,15 +6053,15 @@
           },
           "carriers": {
             "title": "Estado de aseguradoras",
-            "routeModeRest": "REST",
-            "routeModeStub": "Stub",
+            "routeModeRest": "Conectada",
+            "routeModeStub": "De prueba (simulada)",
             "routeModeDisabled": "Deshabilitada",
-            "slaOk": "OK",
-            "slaWarning": "Alerta",
-            "slaBreach": "Incumplimiento",
+            "slaOk": "Responde bien",
+            "slaWarning": "Lenta",
+            "slaBreach": "Con fallas",
             "lastVerdict": "Último veredicto",
             "neverSeen": "Sin veredictos",
-            "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
+            "allBreachBanner": "Todas las aseguradoras están respondiendo con fallas: los resultados pueden tardar"
           },
           "errorLoading": "Error al cargar datos del cotizador",
           "empty": {
@@ -6724,7 +6724,7 @@
           }
         },
         "costos": {
-          "pageTitle": "Dashboard de costos",
+          "pageTitle": "Costos",
           "pageSubtitle": "Resumen de costos de cotización por fuente",
           "kpiCostPerQuote": "Costo por cotización",
           "kpiMonthlyBurn": "Gasto mensual",
@@ -7064,7 +7064,7 @@
           "subtitle": "El agente cobra por ti; tú decides solo los casos críticos.",
           "stages": {
             "title": "Estado por etapa",
-            "avgDays": "días promedio",
+            "avgDays": "en la etapa, en promedio",
             "ariaLabel": "Etapa {{stage}}, {{count}} deudores, click para ver detalle"
           },
           "funnel": {
@@ -11825,6 +11825,7 @@
       },
       "historyLabel": "Conversaciones recientes",
       "heroSubtitle": "Pregúntale a tu inmobiliaria por cartera, contratos, inmuebles y pagos.",
+      "heroSubtitleAuxiliar": "Pregúntale a tu inmobiliaria por la cartera: quién debe, cuánto y desde cuándo, los acuerdos y las promesas de pago.",
       "inputLabel": "Escribe tu pregunta para el chat",
       "inputHint": "Enter envía. Shift + Enter, salto de línea.",
       "enviarCon": "Enviar con",
@@ -11836,6 +11837,25 @@
         "e4": "¿Cuál es mi ocupación hoy?",
         "e5": "Mándale el recordatorio de pago a los que deben más de 30 días",
         "e6": "¿Qué giros a propietarios quedan pendientes?"
+      },
+      "ejemplosAuxiliar": {
+        "a1": "¿Quién no ha pagado este mes?",
+        "a2": "¿Cuánto me deben?",
+        "a3": "Morosos de más de 30 días",
+        "a4": "¿Qué acuerdos de pago están activos?",
+        "a5": "¿Qué promesas de pago hay esta semana?"
+      },
+      "promptsAuxiliar": {
+        "noHanPagado": "No han pagado",
+        "noHanPagado_desc": "¿Quién no ha pagado este mes?",
+        "meDeben": "Lo que me deben",
+        "meDeben_desc": "¿Cuánto me deben?",
+        "masDeben": "Los que más deben",
+        "masDeben_desc": "Los 10 que más deben",
+        "acuerdos": "Acuerdos de pago",
+        "acuerdos_desc": "¿Qué acuerdos de pago están activos?",
+        "promesas": "Promesas de pago",
+        "promesas_desc": "¿Qué promesas de pago hay esta semana?"
       },
       "atajosLabel": "Atajos",
       "bandeja": {

@@ -212,7 +212,9 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       {/* Las tarjetas se montan a medida que cada fuente responde (recaudo,
           reporte diario): entran escalonadas y las demás se corren a su lugar
           (`layout`), en vez de saltar de golpe. */}
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* QA-IA-95 (IA-B-09): en cinco columnas a 1440 px los rótulos se cortaban («TASA DE RESPUES…»,
+          «VARIACIÓN DE MO…»): las cinco en fila sólo con pantalla ancha. */}
+      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-[1680px]:grid-cols-5 gap-3">
         {metricas.map((m) => {
           const MetricaIcon = m.icon
           return (

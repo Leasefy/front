@@ -21,6 +21,8 @@ interface QuoteHeaderProps {
   /** Growing live from agent.cost_recorded events — 🔴 en PESOS (04-10-2026). */
   totalCostCop: number
   isConnected: boolean
+  /** QA-IA-95 (IA-A-11): la cotización ya tiene su veredicto final: no está «Desconectado», está completa. */
+  terminada?: boolean
 }
 
 export function QuoteHeader({
@@ -33,6 +35,7 @@ export function QuoteHeader({
   codeudores,
   totalCostCop,
   isConnected,
+  terminada = false,
 }: QuoteHeaderProps) {
   const { t, locale } = useI18n()
 
@@ -115,7 +118,9 @@ export function QuoteHeader({
           <span className="text-[10px] text-muted-foreground font-mono pr-1">
             {isConnected
               ? t('inmobiliaria.ai.cotizador.detail.header.liveLabel')
-              : t('inmobiliaria.ai.cotizador.detail.header.disconnectedLabel')}
+              : terminada
+                ? locale === 'es' ? 'Completa' : 'Complete'
+                : t('inmobiliaria.ai.cotizador.detail.header.disconnectedLabel')}
           </span>
         </div>
       </div>

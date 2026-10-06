@@ -84,6 +84,18 @@ const CARRIER_EVENT_TYPES = [
   'agent.session_expired',
 ] as const
 
+/**
+ * 🔴 QA-IA-95 (05-10-2026, IA-A-11): la latencia se mide al llegar el veredicto (`Date.now() − inicio`).
+ * Al abrir una cotización VIEJA los eventos se reproducen y eso daba «129.665,4 s» (36 horas). Una
+ * aseguradora no tarda más de 10 minutos: más que eso es una reproducción y no se sabe; queda «—».
+ */
+export const LATENCIA_MAXIMA_EN_VIVO_MS = 10 * 60_000
+export function latenciaEnVivo(inicioMs: number | null | undefined, ahora: number = Date.now()): number | null {
+  if (!inicioMs) return null
+  const ms = ahora - inicioMs
+  return ms >= 0 && ms <= LATENCIA_MAXIMA_EN_VIVO_MS ? ms : null
+}
+
 // ---------------------------------------------------------------------------
 // Sorting helpers
 // ---------------------------------------------------------------------------
@@ -199,9 +211,7 @@ export function useQuoteStream(
       setCarriersMap(prev => {
         const next = new Map(prev)
         const existing = next.get(carrier)
-        const latencyMs = existing?.startedAtMs
-          ? Date.now() - existing.startedAtMs
-          : null
+        const latencyMs = latenciaEnVivo(existing?.startedAtMs)
         next.set(carrier, {
           ...(existing ?? {
             carrier,
@@ -235,7 +245,7 @@ export function useQuoteStream(
           primaMensualCop: null,
           condiciones: [],
           motivoRechazo: message,
-          latencyMs: existing?.startedAtMs ? Date.now() - existing.startedAtMs : null,
+          latencyMs: latenciaEnVivo(existing?.startedAtMs),
         } as CarrierState)
         return next
       })
@@ -254,6 +264,14 @@ export function useQuoteStream(
 
     if (parsed.type === 'agent.final_verdict') {
       setFinalVerdict(parsed.data)
+      // QA-IA-95: si el micro dice que las aseguradoras fueron simuladas, cada una es «estimado».
+      if (parsed.data.stub_mode === true) {
+        setCarriersMap(prev => {
+          const next = new Map(prev)
+          for (const [k, c] of next) next.set(k, { ...c, isStub: true })
+          return next
+        })
+      }
       setAllFinal(true)
       setIsConnected(false)
       abortRef.current?.abort()

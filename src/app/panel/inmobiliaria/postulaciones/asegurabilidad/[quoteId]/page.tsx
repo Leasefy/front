@@ -110,7 +110,8 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   const allFinal =
     carriers.length > 0 && carriers.every(c => c.status !== 'pending')
-  const isStubMode = carriers.length > 0 && carriers.every(c => c.isStub)
+  // QA-IA-95: lo que dice el veredicto final del micro (`stub_mode`) manda; sin él, como antes.
+  const isStubMode = finalVerdict?.stub_mode ?? (carriers.length > 0 && carriers.every(c => c.isStub))
 
   // D-33-10: header buttons visible whenever ≥1 carrier has a final verdict —
   // does NOT require allFinal so operators can re-quote / ask-why even when a
@@ -231,6 +232,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         codeudores={null}
         totalCostCop={totalCostCop}
         isConnected={isConnected}
+        terminada={finalVerdict !== null}
       />
 
       {/* Main content — ficha del caso en 3 columnas (visión #14):

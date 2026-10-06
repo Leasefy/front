@@ -5,7 +5,6 @@ import { usePathname /* , useRouter */ } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
-import { SIN_EL_AUXILIAR_DE_CARTERA } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
 import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { SegundoFactorDentroDelPanel } from '@/components/auth/SegundoFactorDentroDelPanel';
@@ -214,8 +213,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // «Inicio» y eso lo escondía: nadie busca un chat bajo ese nombre, y el
     // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
     // `exact` para que no quede resaltado en cada subruta.
-    // COBRANZA-MANUAL (04-10-2026): sin el auxiliar de cartera (el chat responde sobre todo el negocio).
-    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, roles: SIN_EL_AUXILIAR_DE_CARTERA, dataTourTarget: 'sidebar-chat' },
+    // CF-01 (decisión 12, 05-10-2026): también el auxiliar de cartera; su chat contesta sólo de cartera (micro).
+    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
 
     // ── LOS MÓDULOS ── los agentes arriba, y después el ciclo de vida del contrato.
     //

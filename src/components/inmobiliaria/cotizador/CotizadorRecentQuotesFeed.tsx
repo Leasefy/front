@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, Tray } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { formatCurrency } from '@/lib/format'
 import { SinDatos } from '@/components/estado/SinDatos'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -11,10 +12,12 @@ import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * QA-IA-95 (05-10-2026): la plata como en la casa («$ 54.600», «$ 1.400.000»),
+ * no «$55K» ni «$1.4M» (abreviaturas y punto decimal en inglés).
+ */
 function formatCOP(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
-  return String(value)
+  return formatCurrency(value)
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +126,7 @@ export function CotizadorRecentQuotesFeed({
                       de cédula es solo una referencia técnica → "Ref. {hash}" */}
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium text-fg">
-                      {q.ciudad} · ${formatCOP(q.canonCop)}/mes
+                      {q.ciudad} · {formatCOP(q.canonCop)}/mes
                     </span>
                     <span className="text-xs font-mono text-fg-muted">
                       Ref. {q.cedulaHashPrefix8}

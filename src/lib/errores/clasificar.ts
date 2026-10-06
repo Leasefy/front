@@ -224,6 +224,8 @@ export interface CuerpoDelNo {
   module?: string
   action?: string
   role?: string
+  /** IA95-41: los roles que SÍ entran, separados por coma (lo manda `PageGuard` con `SIN_PERMISO_POR_ROL`). */
+  roles?: string
 }
 
 export function cuerpoDelNo(error: unknown): CuerpoDelNo {
@@ -236,6 +238,7 @@ export function cuerpoDelNo(error: unknown): CuerpoDelNo {
       module: texto(e.module),
       action: texto(e.action),
       role: texto(e.role),
+      roles: texto(e.roles),
     }
   }
   /*
@@ -263,6 +266,7 @@ export function cuerpoDelNo(error: unknown): CuerpoDelNo {
     module: primero('module'),
     action: primero('action'),
     role: primero('role'),
+    roles: primero('roles'),
   }
 }
 
@@ -276,6 +280,28 @@ export function esSegundoFactor(error: unknown): boolean {
  * Cómo se llama en pantalla el módulo que el back nombró. Sin esto el cartel
  * diría «pipeline» —una llave interna— o, peor, no diría cuál.
  */
+/** IA95-41: cómo se nombra cada rol de la inmobiliaria en una frase («el contador»). */
+const ROL_EN_LA_FRASE: Record<string, string> = {
+  ADMIN: 'el administrador',
+  CONTADOR: 'el contador',
+  AGENTE: 'el asesor comercial',
+  VIEWER: 'el visualizador',
+  COORDINADOR: 'el coordinador',
+  AUXILIAR_CARTERA: 'el auxiliar de cartera',
+  ABOGADO_EXTERNO: 'el abogado externo',
+}
+
+/** `'ADMIN,CONTADOR'` → «el administrador y el contador»; vacío o desconocido → `null`. Pura. */
+export function rolesEnPalabras(roles: string | undefined): string | null {
+  const nombres = (roles ?? '')
+    .split(',')
+    .map((r) => ROL_EN_LA_FRASE[r.trim()])
+    .filter((n): n is string => Boolean(n))
+  if (nombres.length === 0) return null
+  if (nombres.length === 1) return nombres[0]!
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
+
 const NOMBRE_DEL_MODULO: Record<string, string> = {
   pipeline: 'Pipeline',
   inmuebles: 'Inmuebles',
@@ -557,6 +583,27 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         descripcion: seccion
           ? `Tu rol en la inmobiliaria no incluye ${seccion}. Pídele a un administrador que te lo habilite.`
           : 'Tu rol en la inmobiliaria no incluye esta sección. Pídele a un administrador que te lo habilite.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    /*
+     * 🟡 IA95-41 (QA-IA-95, 05-10-2026): la pantalla es de ciertos ROLES y el
+     * tuyo no está. Decir «tu rol no incluye Cobros» a quien sí tiene Cobros
+     * (el auxiliar de cartera en una pantalla de administrador y contador)
+     * mandaba a pedir un permiso que ya tenía. Se dice quiénes la usan.
+     */
+    if (cuerpo.code === 'SIN_PERMISO_POR_ROL') {
+      const quienes = rolesEnPalabras(cuerpo.roles)
+      const seccion = cuerpo.module ? (NOMBRE_DEL_MODULO[cuerpo.module] ?? cuerpo.module) : null
+      return {
+        tipo: 'sinPermiso',
+        titulo: seccion ? `No tienes acceso a ${seccion}` : 'No tienes acceso a esta pantalla',
+        descripcion: quienes
+          ? `Esta pantalla la usan ${quienes}, y tu rol en la inmobiliaria no está entre ellos. Si la necesitas, pídele a un administrador.`
+          : 'Esta pantalla es de otros roles de la inmobiliaria, y el tuyo no está entre ellos. Si la necesitas, pídele a un administrador.',
         sePuedeReintentar: false,
         status,
         mensajeOriginal,

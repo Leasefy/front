@@ -14,7 +14,8 @@ describe('quién abre la pantalla de cada enlace del Piloto', () => {
     expect(rolesDelEnlace('/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo')).toEqual(['ADMIN'])
     expect(rolesDelEnlace('/panel/inmobiliaria/configuracion/medios-de-pago')).toEqual(['ADMIN'])
     expect(rolesDelEnlace('/panel/inmobiliaria/facturacion?tab=resolucion')).toEqual(['ADMIN', 'CONTADOR'])
-    expect(rolesDelEnlace('/panel/inmobiliaria/conciliacion')).toEqual(['ADMIN', 'CONTADOR'])
+    // IA95-34 (Nico, 05-10-2026, «Dejarlo conciliar»): el auxiliar de cartera también entra.
+    expect(rolesDelEnlace('/panel/inmobiliaria/conciliacion')).toEqual(['ADMIN', 'CONTADOR', 'AUXILIAR_CARTERA'])
     expect(rolesDelEnlace('/panel/inmobiliaria/piloto#piloto-activacion')).toBeUndefined()
   })
 

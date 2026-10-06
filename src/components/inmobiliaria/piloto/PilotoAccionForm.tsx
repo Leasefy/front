@@ -54,6 +54,8 @@ import { Button } from '@/components/ui/button'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useI18n } from '@/lib/i18n'
 import type { AccionCampo, InboxAccion } from '@/lib/api/piloto'
+// QA-IA-95 (PI-16): la plata que escribe el micro («$1.950.000») se pinta con el espacio de la casa.
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 export interface PilotoAccionFormProps {
   accion: InboxAccion
@@ -247,7 +249,7 @@ export function PilotoAccionForm({
                       className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
                     >
                       <RadioGroupItem value={o.valor} id={`${id}-${o.valor}`} />
-                      <span>{o.label}</span>
+                      <span>{conLaPlataPegada(o.label)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -273,7 +275,7 @@ export function PilotoAccionForm({
                             )
                           }
                         />
-                        <span>{o.label}</span>
+                        <span>{conLaPlataPegada(o.label)}</span>
                       </label>
                     )
                   })}
@@ -315,7 +317,7 @@ export function PilotoAccionForm({
           disabled={!listo || enVuelo}
           data-testid="piloto-cajon-formulario-enviar"
         >
-          {accion.label}
+          {conLaPlataPegada(accion.label)}
         </Button>
       </div>
     </form>

@@ -104,6 +104,23 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
   }
 
   if (!isLoading && !hasAccess) {
+    /*
+     * 🟡 IA95-41 (QA-IA-95, 05-10-2026): lo que falla es el ROL, no el módulo.
+     * El auxiliar de cartera (con Cobros) abría una pantalla de `roles` y leía
+     * «No tienes acceso a Cobros. Tu rol no incluye Cobros», que es falso: su
+     * rol sí tiene Cobros. Cuando el módulo pasa y el rol no, el cartel dice
+     * quiénes usan la pantalla.
+     */
+    if (!adminOnly && moduleAllowed && !roleAllowed && roles && roles.length > 0) {
+      return (
+        <div className="p-4 md:p-6" data-testid="pantalla-negada">
+          <FalloDeCarga
+            error={{ status: 403, code: 'SIN_PERMISO_POR_ROL', module: seccion, roles: roles.join(','), role: agencyRole ?? undefined }}
+            volverA={{ label: 'Ir al inicio del panel', href: '/panel/inmobiliaria' }}
+          />
+        </div>
+      );
+    }
     const modulo = adminOnly ? undefined : module ?? (modulos && modulos.length === 1 ? modulos[0] : undefined);
     return (
       <div className="p-4 md:p-6" data-testid="pantalla-negada">

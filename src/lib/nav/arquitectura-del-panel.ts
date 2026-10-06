@@ -46,7 +46,7 @@ import {
   HeartStraight,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
-import { ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
+import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
 import type { BusinessModule } from './agency-module-scope';
 
 /**
@@ -366,7 +366,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       { key: 'cobranza', labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/pagos/cobranza'), icon: ChatCircleText, module: 'cobranza', scope: 'finanzas', agente: 'cobranza', dataTourTarget: 'sidebar-cobranza' },
       // Venía de Dinero, donde ya era la raíz de su propio módulo: sólo cambió
       // de grupo. Sus pestañas son las suyas.
-      { key: 'conciliacion', labelKey: 'inmobiliaria.nav.conciliacion', href: r('/conciliacion'), icon: Bank, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', agente: 'conciliacion' },
+      // IA95-34 (Nico, 05-10-2026): el auxiliar de cartera también concilia.
+      { key: 'conciliacion', labelKey: 'inmobiliaria.nav.conciliacion', href: r('/conciliacion'), icon: Bank, module: null, roles: ROLES_QUE_CONCILIAN, scope: 'finanzas', agente: 'conciliacion' },
       // 🔴 El EQUIPO de pagos (Gabriela y sus cinco especialistas), no el
       // módulo de la plata: «Pagos», en Dinero, sigue siendo la pantalla del
       // ERP con sus dos caras. Se llama «Agente de pagos» porque dos filas

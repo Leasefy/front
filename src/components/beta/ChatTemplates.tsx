@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
 import {
@@ -11,10 +11,16 @@ import {
   Wrench,
   UsersThree,
   ChartBar,
+  Coins,
+  Handshake,
+  CalendarCheck,
+  ListNumbers,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { AuthContext } from '@/lib/auth/auth-context';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 
 // ============================================================================
 // Catálogo
@@ -57,6 +63,31 @@ export const CHAT_TEMPLATES: ChatTemplate[] = [
   { id: 'reportes',      titleKey: 'beta.welcome.prompts.reportes',      descKey: 'beta.welcome.prompts.reportes_desc',      icon: ChartBar },
 ];
 
+/**
+ * 🔴 CF-01 (decisión 12 de Nico, 05-10-2026): el auxiliar de cartera tiene
+ * chat, SÓLO de cartera. Sus preguntas predeterminadas son de cartera y cada
+ * una tiene su consulta fija en el micro (`ai-hub/en-el-chat/chat-del-auxiliar.ts`):
+ * ofrecerle «Resume el estado de mis propiedades» sería ofrecerle un «no te
+ * corresponde».
+ */
+export const CHAT_TEMPLATES_DEL_AUXILIAR: ChatTemplate[] = [
+  { id: 'no_han_pagado', titleKey: 'beta.welcome.promptsAuxiliar.noHanPagado', descKey: 'beta.welcome.promptsAuxiliar.noHanPagado_desc', icon: CurrencyDollar },
+  { id: 'me_deben',      titleKey: 'beta.welcome.promptsAuxiliar.meDeben',     descKey: 'beta.welcome.promptsAuxiliar.meDeben_desc',     icon: Coins },
+  { id: 'mas_deben',     titleKey: 'beta.welcome.promptsAuxiliar.masDeben',    descKey: 'beta.welcome.promptsAuxiliar.masDeben_desc',    icon: ListNumbers },
+  { id: 'acuerdos',      titleKey: 'beta.welcome.promptsAuxiliar.acuerdos',    descKey: 'beta.welcome.promptsAuxiliar.acuerdos_desc',    icon: Handshake },
+  { id: 'promesas',      titleKey: 'beta.welcome.promptsAuxiliar.promesas',    descKey: 'beta.welcome.promptsAuxiliar.promesas_desc',    icon: CalendarCheck },
+];
+
+/** ¿Quien mira es el auxiliar de cartera? (su chat es sólo de cartera). */
+export function esAuxiliarDeCartera(rol: string | null | undefined): boolean {
+  return rol === AGENCY_ROLES.AUXILIAR_CARTERA;
+}
+
+/** Las preguntas predeterminadas que le sirven a ese rol. */
+export function plantillasDelRol(rol: string | null | undefined): ChatTemplate[] {
+  return esAuxiliarDeCartera(rol) ? CHAT_TEMPLATES_DEL_AUXILIAR : CHAT_TEMPLATES;
+}
+
 // ============================================================================
 // Menú
 // ============================================================================
@@ -94,6 +125,8 @@ export function ChatTemplatesMenu({
 }: ChatTemplatesMenuProps) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
+  // `AuthContext` directo (no `useAuth`): fuera del proveedor, las de siempre.
+  const plantillas = plantillasDelRol(useContext(AuthContext)?.agencyRole);
 
   /**
    * Alto y dirección medidos contra la ventana, no fijos (Nico, 2026-08-27:
@@ -187,7 +220,7 @@ export function ChatTemplatesMenu({
             <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
               {t('beta.templates.title')}
             </span>
-            <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{CHAT_TEMPLATES.length}</span>
+            <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{plantillas.length}</span>
           </div>
 
           <div
@@ -195,7 +228,7 @@ export function ChatTemplatesMenu({
             data-lenis-prevent
             style={{ maxHeight: Math.max(140, caja.maxH - 44) }}
           >
-            {CHAT_TEMPLATES.map((tpl, i) => {
+            {plantillas.map((tpl, i) => {
               const title = t(tpl.titleKey);
               const desc = t(tpl.descKey);
               const TplIcon = tpl.icon;

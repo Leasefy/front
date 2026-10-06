@@ -105,7 +105,7 @@ describe('AgenteDePagos — hoy: interruptor apagado y tablero sin publicar', ()
 
   it('presenta a los seis del equipo, cada uno con lo que hace', () => {
     render(lectura({}))
-    for (const id of ['gabriela', 'laura', 'nicolas', 'valentina', 'samuel', 'sofia']) {
+    for (const id of ['gabriela', 'mariana', 'nicolas', 'valentina', 'samuel', 'sofia']) {
       expect(q(`[data-testid="especialista-${id}"]`), id).not.toBeNull()
     }
   })
@@ -133,7 +133,7 @@ describe('AgenteDePagos — hoy: interruptor apagado y tablero sin publicar', ()
     const valentina = q('[data-testid="especialista-valentina"]')
     expect(valentina?.textContent).toContain('Cobranza › Pagos fallidos')
     expect(valentina?.querySelector('a')).toBeNull()
-    expect(q('[data-testid="especialista-laura"] a')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros')
+    expect(q('[data-testid="especialista-mariana"] a')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros')
   })
 
   it('con todo leído no ofrece «Volver a consultar»: no hay nada sin verificar', () => {

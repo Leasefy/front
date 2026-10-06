@@ -7030,7 +7030,7 @@
           "subtitle": "The agent collects for you; you only decide the critical cases.",
           "stages": {
             "title": "Stage breakdown",
-            "avgDays": "avg days",
+            "avgDays": "in this stage, on average",
             "ariaLabel": "Stage {{stage}}, {{count}} debtors, click to drill down"
           },
           "funnel": {
@@ -11790,6 +11790,7 @@
       },
       "historyLabel": "Recent conversations",
       "heroSubtitle": "Ask your agency about receivables, leases, properties and payments.",
+      "heroSubtitleAuxiliar": "Ask your agency about receivables: who owes, how much and since when, payment plans and promises.",
       "inputLabel": "Type your question for the chat",
       "inputHint": "Enter sends. Shift + Enter adds a new line.",
       "enviarCon": "Send with",
@@ -11801,6 +11802,25 @@
         "e4": "What is my occupancy today?",
         "e5": "Send the payment reminder to everyone more than 30 days overdue",
         "e6": "Which owner payouts are still pending?"
+      },
+      "ejemplosAuxiliar": {
+        "a1": "Who hasn't paid this month?",
+        "a2": "How much am I owed?",
+        "a3": "Overdue more than 30 days",
+        "a4": "Which payment plans are active?",
+        "a5": "Which payment promises are due this week?"
+      },
+      "promptsAuxiliar": {
+        "noHanPagado": "Haven't paid",
+        "noHanPagado_desc": "Who hasn't paid this month?",
+        "meDeben": "What I'm owed",
+        "meDeben_desc": "How much am I owed?",
+        "masDeben": "Biggest debtors",
+        "masDeben_desc": "The 10 who owe the most",
+        "acuerdos": "Payment plans",
+        "acuerdos_desc": "Which payment plans are active?",
+        "promesas": "Payment promises",
+        "promesas_desc": "Which payment promises are due this week?"
       },
       "atajosLabel": "Shortcuts",
       "bandeja": {

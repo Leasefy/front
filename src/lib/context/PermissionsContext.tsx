@@ -215,6 +215,30 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
       if (isLoading) return false;
+      /*
+       * 🔴 QA-IA-95 (05-10-2026): Avalúos lo sirve el BACK (`/inmobiliaria/avaluos`),
+       * no el micro. Con la llave «ausente = permitido» del micro, el auxiliar de
+       * cartera (back: `avaluos: []`) abría la pantalla entera por URL y sólo la
+       * lista decía «No tienes acceso» (403 del back). Si el back ya dice algo del
+       * módulo, manda él; si no lo dice, sigue la postura del micro.
+       */
+      if (module === 'avaluos' && permissions && !permissions.isAdmin) {
+        const delBack = permissions.effectivePermissions;
+        const avaluosDelBack =
+          delBack && typeof delBack === 'object' ? (delBack as Record<string, string[] | undefined>).avaluos : undefined;
+        if (Array.isArray(avaluosDelBack) && !avaluosDelBack.includes(action)) return false;
+      }
+      // Y el auxiliar de cartera, que sólo cobra (COBRANZA-MANUAL, decisión 12),
+      // no entra a los agentes comerciales (matching, estudio) aunque el micro no
+      // mande su llave: por URL veía el Resumen de Matching.
+      if (
+        (module === 'matching' || module === 'estudio') &&
+        permissions?.role === 'AUXILIAR_CARTERA' &&
+        !permissions.isAdmin &&
+        (agentPerms as Record<string, string[] | undefined> | null)?.[module] == null
+      ) {
+        return false;
+      }
       if (isAgentModule(module)) {
         // Posture per module lives in agent-module-access.ts:
         // cobranza/cotizador fail CLOSED; estudio/matching treat an ABSENT

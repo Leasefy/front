@@ -162,7 +162,7 @@ function MatrizTable({
   recommendedCarrier: string | null
   labelsByCarrier: Map<string, CarrierLabel[]>
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
@@ -199,9 +199,12 @@ function MatrizTable({
             const tiempo = formatLatency(carrier.latencyMs)
             const condicionResumen =
               carrier.condiciones.length > 0
-                ? t('inmobiliaria.ai.cotizador.detail.matriz.condicionesCount', {
-                    n: carrier.condiciones.length,
-                  })
+                ? // QA-IA-95 (IA-A-11): «1 condición por resolver», no «1 condiciones».
+                  carrier.condiciones.length === 1 && locale === 'es'
+                  ? '1 condición por resolver'
+                  : t('inmobiliaria.ai.cotizador.detail.matriz.condicionesCount', {
+                      n: carrier.condiciones.length,
+                    })
                 : carrier.motivoRechazo ?? '—'
             const rowId = `matriz-row-${carrier.carrier.replace(/\s+/g, '-')}`
             const detailId = `matriz-detail-${carrier.carrier.replace(/\s+/g, '-')}`

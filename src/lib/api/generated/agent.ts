@@ -1952,7 +1952,7 @@ export interface paths {
         head?: never;
         /**
          * Update the agency negotiation policy (ADMIN/OWNER)
-         * @description Partial update of the AgencyPolicy row. Writes an audit_log row with `actorType="user"` + `payload={changedFields, before, after}` in the same transaction so the diff cannot diverge from the actual mutation. Requires bearer JWT + membership row with role ∈ {OWNER, ADMIN} (D-02 hierarchy).
+         * @description Partial update of the AgencyPolicy row. Writes an audit_log row with `actorType="user"` + `payload={changedFields, before, after}` in the same transaction so the diff cannot diverge from the actual mutation. Requires bearer JWT + membership row with role ∈ {OWNER, ADMIN} (D-02 hierarchy). The SaaS billing fields (billingModel, successFeePct, hybridPct, monthlyMinCop, perDeudorCop, baseFeeCop) are rejected with 403 MODELO_DE_COBRO_SOLO_LEASEFY: only Leasefy changes them (back /admin).
          */
         patch: {
             parameters: {
@@ -1996,7 +1996,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description agencyId mismatch / no membership / insufficient role */
+                /** @description agencyId mismatch / no membership / insufficient role / MODELO_DE_COBRO_SOLO_LEASEFY (the SaaS billing fields are edited only by Leasefy) */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3123,7 +3123,7 @@ export interface paths {
         };
         /**
          * Cost dashboard summary — KPIs, 4-source totals, forecast (Phase 35)
-         * @description Returns KPIs (costPerQuoteUsd, monthlyBurnUsd, forecast30dUsd), 4-source cost totals (anthropicTotal, carrierApiTotal, sekureCommissionTotal, datacreditoTotal), and costSources registry rows with populated flag. Tenant from JWT only (agencyId from c.get("agencyId") — T-35-08). Forecast: trailing 7-day daily avg × 30. Null when <7 distinct days (T-35-09). Requires cotizador:view.
+         * @description Returns KPIs in COP (costPerQuoteCop, monthlyBurnCop, forecast30dCop), 4-source cost totals in COP (anthropicTotalCop, carrierApiTotalCop, sekureCommissionTotalCop, datacreditoTotalCop), converted from the provider USD with COSTOS_TASA_COP_POR_USD (04-10-2026: no dollars to the agency). and costSources registry rows with populated flag. Tenant from JWT only (agencyId from c.get("agencyId") — T-35-08). Forecast: trailing 7-day daily avg × 30. Null when <7 distinct days (T-35-09). Requires cotizador:view.
          */
         get: operations["getAgencyCotosCostSummary"];
         put?: never;
@@ -4804,6 +4804,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/chat/conversacion/borrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat del panel — borrar una conversación también del servidor
+         * @description Borra del servidor lo que quedó de una conversación del chat de quien llama: sus señales, su pulgar, la memoria del chat de esos turnos y los mensajes de la memoria de corto plazo. Sólo lo de esa persona en esa inmobiliaria. Cualquier miembro de la agencia.
+         */
+        post: operations["postAiHubChatBorrarConversacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/chat/ejecuciones/{ejecucionId}": {
         parameters: {
             query?: never;
@@ -5143,6 +5163,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/recibos-que-suman": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — los recibos ya emitidos que suman este movimiento del banco (muchos a uno) */
+        get: operations["pilotoRecibosQueSuman"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/conciliar-con-recibos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — conciliar un movimiento del banco contra varios recibos ya emitidos (no emite recibos) */
+        post: operations["pilotoConciliarConRecibos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/agente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agente de conciliación — qué propone para un movimiento del banco, con su explicación (no escribe) */
+        get: operations["conciliacionAgenteAnalizarMovimiento"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/agente/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agente de conciliación — «esto no es»: no volver a proponer esa opción para ese movimiento */
+        post: operations["conciliacionAgenteRechazarPropuesta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/perilla": {
         parameters: {
             query?: never;
@@ -5171,6 +5259,95 @@ export interface paths {
         get: operations["getPilotoPreferencias"];
         /** Piloto — topes por acción (P-3) y gracia de «Deshacer» (P-10) de la inmobiliaria */
         put: operations["putPilotoPreferencias"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/modos-propios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — los procesos con perilla propia (hoy, conciliar por un alias confirmado) y su modo */
+        get: operations["getPilotoModosPropios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/modos-propios/{procesoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Piloto — cambia el modo (Manual / Copiloto / Automático) de un proceso con perilla propia */
+        put: operations["putPilotoModoPropio"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/activo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — ¿está activo en la inmobiliaria? (la prueba de 30 días y lo que le falta) */
+        get: operations["getPilotoActivo"];
+        /**
+         * Piloto automático — prenderlo (empieza la prueba de 30 días) o apagarlo. Sólo un administrador.
+         * @description Prenderlo exige el segundo factor verificado hace poco (403 `SEGUNDO_FACTOR_RECIENTE`); apagarlo no. Con la prueba terminada responde 409 `PRUEBA_TERMINADA`; con el Piloto apagado por Leasefy, 409 `APAGADO_POR_LEASEFY`.
+         */
+        put: operations["putPilotoActivo"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/tipos-que-van-solos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — qué puede escoger tu inmobiliaria que vaya solo, lo que nunca va solo y lo que no puede */
+        get: operations["getPilotoTiposQueVanSolos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/tipos-que-van-solos/{tipo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Piloto — escoger (vaSolo: true) o quitar (false) que un tipo de detección vaya solo */
+        put: operations["putPilotoTipoQueVaSolo"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5280,6 +5457,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/director/metas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — las metas propuestas y aceptadas, con su serie diaria y su historial */
+        get: operations["getPilotoDirectorMetas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/aceptar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — aceptar una meta propuesta (o reactivar una pausada). Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaAceptar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/ajustar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — ajustar el objetivo de una meta (422 objetivo_invalido si no cabe en los topes). Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaAjustar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/pausar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — pausar una meta. Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaPausar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/gasto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — gasto de IA del mes contra el tope (tramo, escalón, por componente y por día); cobranza aparte */
+        get: operations["getPilotoDirectorGasto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/experimento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el grupo de control del 10 % (si la inmobiliaria lo aceptó) */
+        get: operations["getPilotoDirectorExperimento"];
+        /** Piloto director — prender o apagar el grupo de control (sólo ADMIN; apagarlo no borra las asignaciones) */
+        put: operations["putPilotoDirectorExperimento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/semana": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos) */
+        get: operations["getPilotoDirectorSemana"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/hoy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el plan del día: prioridades, órdenes, retenciones, lo rechazado y cómo lo pensó */
+        get: operations["getPilotoDirectorHoy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/replanear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — «Volver a planear» (sólo ADMIN; máximo 3 al día) */
+        post: operations["postPilotoDirectorReplanear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/pulso": {
         parameters: {
             query?: never;
@@ -5289,6 +5620,40 @@ export interface paths {
         };
         /** Piloto automático — tablero vivo (en curso, alertas, hoy) */
         get: operations["getAiHubPulso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/desempeno": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Desempeño IA — lo que hizo cada agente con manos en los últimos 30 días */
+        get: operations["getAiHubDesempeno"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/tendencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — tendencias del centro de mando (recuperado, acciones, horas y mora) */
+        get: operations["getAiHubTendencias"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5613,7 +5978,7 @@ export interface paths {
         put?: never;
         /**
          * Mark a payment plan as accepted (offered → active)
-         * @description Idempotent transition from `offered` to `active`. Repeated calls return the same accepted_at and 200. Status outside `offered`/`active` returns 409.
+         * @description Idempotent transition from `offered` to `active`. Repeated calls return the same accepted_at and 200. Status outside `offered`/`active` returns 409. 🔴 (Nico, S5 Q4, 03-10-2026) The agency panel ALSO needs the plan approved first: an `offered` plan without `operator_approved_at` returns 409 `ACUERDO_SIN_APROBAR` and nothing is written.
          */
         post: {
             parameters: {
@@ -5663,7 +6028,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Plan is in a status that cannot accept (defaulted/cancelled/completed) */
+                /** @description Plan is in a status that cannot accept (defaulted/cancelled/completed), or the agency has not approved it yet (`ACUERDO_SIN_APROBAR`) */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -5831,6 +6196,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cartera/legal-artifacts/carta-a-mano": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generar a mano la carta prejurídica de un deudor (PDF, sin enviar)
+         * @description Con los datos reales del deudor y de la inmobiliaria; si falta alguno, responde 422 con cuáles. No crea una carta por aprobar ni envía nada. Requires cobranza:view.
+         */
+        post: operations["postCarteraCartaAMano"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/approve": {
         parameters: {
             query?: never;
@@ -5919,6 +6304,57 @@ export interface paths {
         get: operations["getCarteraDailyReport"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/solicitudes-de-acuerdo/{solicitudId}/atender": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar como atendida la solicitud de acuerdo que un inquilino mandó desde su portal */
+        post: operations["atenderSolicitudDeAcuerdo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/pagos-del-plan-entero/{avisoId}/atender": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar como atendido el pago del acuerdo entero que un inquilino hizo por Wompi */
+        post: operations["atenderPagoDelPlanEntero"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/pagos-del-plan-entero/{avisoId}/aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aplicar al acuerdo el pago del acuerdo entero: recibo de caja, conciliación y cuotas cerradas */
+        post: operations["aplicarPagoDelPlanEntero"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8787,160 +9223,6 @@ export interface paths {
         patch: operations["cotizadorAdminPrescoringConfigUpdate"];
         trace?: never;
     };
-    "/api/agency/{agencyId}/piloto/director/metas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto director — las metas propuestas y aceptadas, con su serie diaria y su historial */
-        get: operations["getPilotoDirectorMetas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/aceptar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Piloto director — aceptar una meta propuesta (o reactivar una pausada). Sólo ADMIN */
-        post: operations["postPilotoDirectorMetaAceptar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/ajustar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Piloto director — ajustar el objetivo de una meta (422 objetivo_invalido si no cabe en los topes). Sólo ADMIN */
-        post: operations["postPilotoDirectorMetaAjustar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/pausar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Piloto director — pausar una meta. Sólo ADMIN */
-        post: operations["postPilotoDirectorMetaPausar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/gasto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto director — gasto de IA del mes contra el tope (tramo, escalón, por componente y por día); cobranza aparte */
-        get: operations["getPilotoDirectorGasto"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/experimento": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto director — el grupo de control del 10 % (si la inmobiliaria lo aceptó) */
-        get: operations["getPilotoDirectorExperimento"];
-        /** Piloto director — prender o apagar el grupo de control (sólo ADMIN; apagarlo no borra las asignaciones) */
-        put: operations["putPilotoDirectorExperimento"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/semana": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos) */
-        get: operations["getPilotoDirectorSemana"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/hoy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto director — el plan del día: prioridades, órdenes, retenciones, lo rechazado y cómo lo pensó */
-        get: operations["getPilotoDirectorHoy"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/piloto/director/replanear": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Piloto director — «Volver a planear» (sólo ADMIN; máximo 3 al día) */
-        post: operations["postPilotoDirectorReplanear"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9196,8 +9478,20 @@ export interface components {
                 complianceFlagCount: number;
             };
         };
+        SobreDeErrorCampo: {
+            campo: string;
+            regla: string;
+            mensaje: string;
+            valor?: number | boolean;
+        };
         ErrorResponse: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         PromiseStatusBreakdownRow: {
             status: string;
@@ -9277,7 +9571,7 @@ export interface components {
                  * @example 3500
                  */
                 workflowLatencyP95?: number;
-                tokenCostUsd: number;
+                tokenCostCop: number;
             };
         };
         OnboardingStartResponse: {
@@ -10015,6 +10309,12 @@ export interface components {
         };
         CotizadorOverviewError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CotizadorAseguradoraRegistryRow: {
             /** Format: uuid */
@@ -10053,6 +10353,12 @@ export interface components {
         };
         CotizadorAseguradorasRegistryError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         PutCarrierOverrideResponse: {
             /** Format: uuid */
@@ -10070,6 +10376,12 @@ export interface components {
         };
         CarrierOverrideError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         PutCarrierOverrideBody: {
             /**
@@ -10091,10 +10403,23 @@ export interface components {
         };
         AgencyCotizadorQuoteError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         AgencyCotizadorQuoteArcoError: {
             reason: string;
             cedulaHash: string;
+            error?: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         AgencyCotizadorQuoteBody: {
             cedulaHash: string;
@@ -10122,15 +10447,27 @@ export interface components {
         };
         AgencyCotizadorQuoteDetailError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         AgencyAskWhyResponse: {
             reasoning_trace_es: string;
-            cost_usd: number;
+            cost_cop: number;
             /** @enum {string} */
             variable_changed: "canon" | "ciudad" | "tipo" | "codeudores";
         };
         AgencyAskWhyError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         AgencyAskWhyCapError: {
             /** @enum {string} */
@@ -10139,6 +10476,12 @@ export interface components {
             used: number;
             /** Format: date-time */
             resets_at: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         AgencyAskWhyBody: {
             /** Format: uuid */
@@ -10169,13 +10512,19 @@ export interface components {
         };
         AgencyAskWhyUsageError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CarrierDeepDiveResponse: {
             kpis: {
                 latencyP95Ms: number;
                 errorRate24h: number;
                 approvalRate30d: number;
-                costPerQuoteUsd30d: number;
+                costPerQuoteCop30d: number;
             };
             sparkline: {
                 hour: string;
@@ -10193,6 +10542,12 @@ export interface components {
         };
         CarrierDeepDiveError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CarrierRecentQuotesResponse: {
             quotes: {
@@ -10231,6 +10586,15 @@ export interface components {
             month: string;
             approval_rate_pct: number;
         };
+        ErrorConSobre: {
+            error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
         CotizadorInsightsPrimaDistributionRow: {
             carrier: string;
             canon_range: string;
@@ -10255,11 +10619,11 @@ export interface components {
         };
         CotizadorInsightsMonthlyCostTrendRow: {
             month: string;
-            anthropic: string;
-            carrier_api: string;
-            sekure_commission: string;
-            datacredito: string;
-            total: string;
+            anthropic: number;
+            carrier_api: number;
+            sekure_commission: number;
+            datacredito: number;
+            total: number;
         };
         CostSourceRegistryRow: {
             source: string;
@@ -10267,19 +10631,25 @@ export interface components {
             computationStrategyNote: string | null;
         };
         CostosSummaryResponse: {
-            costPerQuoteUsd: number;
-            monthlyBurnUsd: number;
-            forecast30dUsd: number | null;
+            costPerQuoteCop: number;
+            monthlyBurnCop: number;
+            forecast30dCop: number | null;
             forecastNullReason?: string;
-            anthropicTotal: string;
-            carrierApiTotal: string;
-            sekureCommissionTotal: string;
-            datacreditoTotal: string;
+            anthropicTotalCop: number;
+            carrierApiTotalCop: number;
+            sekureCommissionTotalCop: number;
+            datacreditoTotalCop: number;
             costSources: components["schemas"]["CostSourceRegistryRow"][];
             generatedAt: string;
         };
         CostosError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CostSeriesResponse: {
             /** @enum {string} */
@@ -10290,6 +10660,12 @@ export interface components {
         };
         CobranzaCotizadorPdfError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CarteraOverviewKpis: {
             deudoresActivos: number;
@@ -10593,11 +10969,11 @@ export interface components {
             createdAt: string;
         };
         CallCostBreakdown: {
-            llmUsd: number;
-            voiceUsd: number;
-            platformUsd: number;
-            whatsappUsd: number;
-            totalUsd: number;
+            llmCop: number;
+            voiceCop: number;
+            platformCop: number;
+            whatsappCop: number;
+            totalCop: number;
         };
         CobranzaCallDetailResponse: {
             /** Format: uuid */
@@ -10744,6 +11120,12 @@ export interface components {
             /** @enum {string} */
             valla: "opt_out" | "horario" | "frecuencia";
             motivo: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CobranzaManualCallBody: {
             reason: string;
@@ -10800,6 +11182,12 @@ export interface components {
         };
         CobranzaEscalationError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CobranzaEscalationDetail: {
             id: string;
@@ -11054,7 +11442,7 @@ export interface components {
             populated: boolean;
             reason?: string;
             cost_per_peso?: number | null;
-            numerator_usd_voice?: number | null;
+            numerator_cop_voice?: number | null;
             denominator_cop_paid?: number | null;
             sparkline_90d?: components["schemas"]["CobranzaCostPerPesoSparklinePoint"][];
         };
@@ -11789,6 +12177,12 @@ export interface components {
         };
         CarteraImportError: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         CarteraImportBody: {
             /**
@@ -11857,6 +12251,7 @@ export interface components {
             requiresApproval: true;
         };
         AiHubChatDispatch: {
+            id?: string;
             /** @enum {string} */
             agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
             taskDescription: string;
@@ -11906,6 +12301,11 @@ export interface components {
             }[];
             turnoId: string;
             snapshot: components["schemas"]["AiHubChatSnapshot"];
+            razonamiento?: {
+                /** @enum {string} */
+                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
+                texto: string;
+            }[];
             generatedAt: string;
         };
         AiHubChatError: {
@@ -12039,6 +12439,22 @@ export interface components {
             };
             propuestaId?: string;
         };
+        AiHubChatBorrarConversacionResponse: {
+            turnos: number;
+            senales: number;
+            feedback: number;
+            memoria: number;
+            mensajesDeRedis: number;
+        };
+        AiHubChatBorrarConversacionError: {
+            error: string;
+        };
+        AiHubChatBorrarConversacionRequest: {
+            /** @default [] */
+            turnoIds: string[];
+            mensajeIds?: string[];
+            preguntas?: string[];
+        };
         AiHubChatEjecucionRespuesta: {
             tarjeta: components["schemas"]["AiHubChatTarjetaDeEjecucion"];
         };
@@ -12138,6 +12554,24 @@ export interface components {
                     [key: string]: "string" | "number" | "enum" | "empty";
                 };
                 requiresReason?: boolean;
+                campos?: {
+                    nombre: string;
+                    etiqueta: string;
+                    /** @enum {string} */
+                    tipo: "opcion" | "texto" | "confirmacion";
+                    obligatorio: boolean;
+                    opciones?: {
+                        valor: string;
+                        etiqueta: string;
+                    }[];
+                    minimo?: number;
+                    maximo?: number;
+                    visibleSi?: {
+                        campo: string;
+                        valor: string;
+                    };
+                    aviso?: string;
+                }[];
                 perm?: string;
             }[];
             subject: {
@@ -12165,14 +12599,20 @@ export interface components {
             id: string;
             label: string;
             /** @enum {string} */
-            tipo: "opcion" | "multiple" | "texto";
+            tipo: "opcion" | "multiple" | "texto" | "confirmacion";
             opciones?: {
                 valor: string;
                 label: string;
             }[];
             requerido?: boolean;
             placeholder?: string;
+            minLargo?: number;
             maxLargo?: number;
+            visibleSi?: {
+                campo: string;
+                valor: string;
+            };
+            aviso?: string;
         };
         PilotoInboxAccion: {
             label: string;
@@ -12190,6 +12630,20 @@ export interface components {
             permitida?: boolean;
             porQueNo?: string;
         };
+        PilotoDirectorEnLaBandeja: {
+            prioridad: number;
+            porQue: string;
+            evidencia: {
+                tipo: string;
+                ref: string;
+            }[];
+            meta: {
+                id: string;
+                metrica: string;
+                nombre: string;
+            } | null;
+            alternativaDescartada: string | null;
+        } | null;
         PilotoInboxItem: {
             id: string;
             fuente: string;
@@ -12227,6 +12681,8 @@ export interface components {
             titulo: string;
             detalle?: string;
             href?: string;
+            /** @enum {string} */
+            quien: "solo" | "equipo" | "tu";
         };
         PilotoActivityResponse: {
             items: components["schemas"]["PilotoActivityItem"][];
@@ -12443,6 +12899,7 @@ export interface components {
                 captacion: number;
                 plataforma: number;
             };
+            procesosDelPiloto?: number;
             activo: boolean;
             tomadoAt: string;
         };
@@ -12453,6 +12910,9 @@ export interface components {
                 movimientoId: string;
                 mensaje: string;
             }[];
+            enElLote?: number;
+            loteId?: string | null;
+            mensaje: string;
         };
         PilotoConciliacionConciliarResponse: {
             movimientoId: string;
@@ -12461,7 +12921,9 @@ export interface components {
         };
         PilotoConciliacionConciliarBody: {
             /** Format: uuid */
-            cobroId: string;
+            cobroId?: string;
+            /** Format: uuid */
+            tenantId?: string;
         };
         PilotoConciliacionIgnorarResponse: {
             movimientoId: string;
@@ -12469,6 +12931,196 @@ export interface components {
         };
         PilotoConciliacionIgnorarBody: {
             motivo: string;
+        };
+        PilotoConciliacionPagador: {
+            nombre: string;
+            nit: string;
+            siniestroReferencia: string | null;
+        } | null;
+        PilotoConciliacionReciboDeLaPropuesta: {
+            id: string;
+            numero: number;
+            valorCop: number;
+            fecha: string;
+            medio: string;
+            tenantName: string | null;
+            propertyTitle: string | null;
+            pagador: components["schemas"]["PilotoConciliacionPagador"];
+        };
+        PilotoConciliacionDiferenciaConocida: {
+            /** @enum {string} */
+            tipo: "GMF_4X1000" | "COMISION" | "RETENCION";
+            valorCop: number;
+            regla: string;
+            nombre?: string;
+        } | null;
+        PilotoConciliacionPropuestaMuchosAUno: {
+            reciboIds: string[];
+            recibos: components["schemas"]["PilotoConciliacionReciboDeLaPropuesta"][];
+            sumaCop: number;
+            diferencia: components["schemas"]["PilotoConciliacionDiferenciaConocida"];
+            confianza: number;
+            /** @enum {string} */
+            nivel: "alta" | "media" | "baja";
+            unica: boolean;
+            porQue: string[];
+            regla?: {
+                id: string;
+                nombre: string;
+                orden: number;
+            };
+        };
+        PilotoConciliacionPropuestaParcial: {
+            reciboIds: string[];
+            recibos: components["schemas"]["PilotoConciliacionReciboDeLaPropuesta"][];
+            sumaCop: number;
+            sobranteCop: number;
+            confianza: number;
+            porQue: string[];
+        } | null;
+        PilotoConciliacionOpcionDelCajon: {
+            label: string;
+            /** @enum {string} */
+            method: "POST";
+            path: string;
+            body: {
+                reciboIds: string[];
+            };
+            /** @enum {string} */
+            nivel: "alta" | "media" | "baja";
+            confianza: number;
+            porQue: string[];
+            habilitada: boolean;
+        };
+        PilotoConciliacionRecibosQueSumanResponse: {
+            movimiento?: {
+                id: string;
+                fecha: string;
+                valorCop: number;
+                descripcion: string;
+                referencia: string | null;
+                estado: string;
+                extractoNombre: string | null;
+            };
+            propuestas: components["schemas"]["PilotoConciliacionPropuestaMuchosAUno"][];
+            ambigua: boolean;
+            agotada: boolean;
+            parcial: components["schemas"]["PilotoConciliacionPropuestaParcial"];
+            sePuedeAplicar: boolean;
+            opciones: components["schemas"]["PilotoConciliacionOpcionDelCajon"][];
+        };
+        PilotoConciliacionConciliarConRecibosResponse: {
+            movimiento: {
+                id: string;
+                estado: string;
+                valorCop: number;
+            };
+            recibos: components["schemas"]["PilotoConciliacionReciboDeLaPropuesta"][];
+            vinculos: {
+                id: string;
+                reciboId: string;
+                valorCop: number;
+            }[];
+            diferencia: components["schemas"]["PilotoConciliacionDiferenciaConocida"];
+        };
+        PilotoConciliacionConciliarConRecibosBody: {
+            reciboIds: string[];
+        };
+        ConciliacionAgenteAnalisis: {
+            movimientoId: string;
+            estado: string;
+            valorCop: number;
+            fecha: string;
+            propuestas: {
+                ref: string;
+                /** @enum {string} */
+                tipo: "cobro" | "contrato" | "recibos" | "cuotas" | "gasto_bancario" | "giro" | "egreso";
+                ids: string[];
+                titulo: string;
+                persona: string | null;
+                sumaCop: number;
+                diferenciaCop: number;
+                calza: boolean;
+                seAplicaSola: boolean;
+                porQueNoSeAplicaSola: string | null;
+                frases: string[];
+                porQue: {
+                    /** @enum {string} */
+                    tipo: "alias" | "grafo" | "back" | "regla" | "libro" | "valor";
+                    texto: string;
+                    fuente?: string;
+                }[];
+                avisos: string[];
+                verificadaPorElBack: boolean | null;
+                accion: {
+                    /** @enum {string} */
+                    tipo: "conciliar_uno";
+                    body: {
+                        cobroId: string;
+                    } | {
+                        tenantId: string;
+                    };
+                } | {
+                    /** @enum {string} */
+                    tipo: "conciliar_con_recibos";
+                    body: {
+                        reciboIds: string[];
+                    };
+                } | null;
+                rechazar: {
+                    /** @enum {string} */
+                    tipo: "cobro" | "contrato" | "recibos" | "cuotas" | "gasto_bancario" | "giro" | "egreso";
+                    ids: string[];
+                };
+                destino: {
+                    /** @enum {string} */
+                    tipo: "contrato" | "pagador";
+                    id: string;
+                } | null;
+                /** @enum {string|null} */
+                comoSeAplicaSola: "exacto" | "muchos_a_uno" | "alias" | null;
+                contractId: string | null;
+                cuotaIds: string[];
+                tenantId: string | null;
+                alias: {
+                    muestra: string;
+                    senalLlave: string;
+                    personas: number;
+                    piloto: number;
+                    confirmaciones: number;
+                } | null;
+            }[];
+            descartadas: {
+                titulo: string;
+                motivo: string;
+            }[];
+            memoria: {
+                disponible: boolean;
+                aliasUsados: number;
+            };
+            razonador: string;
+            libros: {
+                id: string;
+                titulo: string;
+                fuente: string;
+            }[];
+            resumen: string;
+            inventadas: number;
+            /** @enum {string} */
+            sentido: "entrada" | "salida";
+        };
+        ConciliacionAgenteRechazarResponse: {
+            opcionLlave: string;
+            bloqueaAlias: boolean;
+        };
+        ConciliacionAgenteRechazarBody: {
+            opcion: {
+                /** @enum {string} */
+                tipo: "cobro" | "contrato" | "recibos" | "cuotas" | "gasto_bancario" | "giro" | "egreso";
+                ids: string[];
+            };
+            noEsLaPersona?: boolean;
+            motivo?: string;
         };
         PilotoPreferencias: {
             topeMontoCop: number;
@@ -12500,6 +13152,7 @@ export interface components {
                 copiloto: string;
                 autonomo: string;
             };
+            modoPropio?: boolean;
         };
         PilotoPerilla: {
             preferencias: components["schemas"]["PilotoPreferencias"];
@@ -12510,7 +13163,12 @@ export interface components {
         };
         PilotoPerillaError: {
             error: string;
+            statusCode?: number;
             code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         PilotoPantallaDePreferencias: {
             preferencias: components["schemas"]["PilotoPreferencias"];
@@ -12544,6 +13202,134 @@ export interface components {
             topeDestinatarios?: number;
             graciaSegundos?: number;
         };
+        PilotoModoPropio: {
+            id: string;
+            agente: string;
+            nombre: string;
+            queHace: string;
+            nota: string | null;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+            /** @enum {string} */
+            origen: "piloto" | "default";
+            queHaceEnCadaModo: {
+                sombra: string;
+                copiloto: string;
+                autonomo: string;
+            };
+            cambiadoPor: string | null;
+            cambiadoEn: string | null;
+        };
+        PilotoModosPropios: {
+            procesos: components["schemas"]["PilotoModoPropio"][];
+            puedeEditar: boolean;
+            guardable: boolean | null;
+            porQueNo: string | null;
+        };
+        PilotoModoPropioPutBody: {
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+        };
+        PilotoActivoResponse: {
+            activo: boolean;
+            /** @enum {string} */
+            motivo: "activo" | "apagado_por_leasefy" | "sin_activar" | "apagado_por_la_inmobiliaria" | "prueba_terminada" | "no_se_pudo_leer";
+            maestro: boolean;
+            activoDesde: string | null;
+            prueba: {
+                desde: string;
+                hasta: string;
+                diasRestantes: number;
+                terminada: boolean;
+            } | null;
+            sinVencimiento: boolean;
+            sePuedeActivar: boolean;
+            guardable: boolean | null;
+            frase: string;
+            puedeCambiarlo: boolean;
+            diasDePrueba: number;
+            pruebaHastaSiSeActivaHoy: string | null;
+            enAutomatico: {
+                agente: string;
+                nombre: string;
+            }[];
+            topes: {
+                topeMontoCop: number;
+                topeDestinatarios: number;
+                graciaSegundos: number;
+            };
+            requisitos: {
+                id: string;
+                agentes: string[];
+                que: string;
+                como: string;
+                enlace: {
+                    href: string;
+                    texto: string;
+                };
+            }[] | null;
+        };
+        PilotoActivoPutBody: {
+            activo: boolean;
+        };
+        PilotoTipoQueVaSolo: {
+            tipo: string;
+            agente: string;
+            procesos: string[];
+            nombre: string;
+            queVaAPasar: string;
+            aQuienLeLlega: string;
+            condiciones: string[];
+            /** @enum {string|null} */
+            envio: "cobranza" | "aviso" | null;
+            porDefecto: string;
+            escogido: boolean;
+            escogidoPor: string | null;
+            escogidoEn: string | null;
+            actuaHoy: boolean;
+            porQueNoActua: string | null;
+        };
+        PilotoTiposQueVanSolos: {
+            tipos: components["schemas"]["PilotoTipoQueVaSolo"][];
+            nunca: {
+                categoria: string;
+                nombre: string;
+                porQue: string;
+                procesos: {
+                    id: string;
+                    agente: string;
+                    queHace: string;
+                }[];
+            }[];
+            noPuedenIrSolos: {
+                id: string;
+                agente: string;
+                queHace: string;
+                porQue: string;
+            }[];
+            puedeEditar: boolean;
+            guardable: boolean | null;
+            porQueNo: string | null;
+            pilotoActivo: boolean;
+        };
+        PilotoTiposError: {
+            error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
+        PilotoTipoQueVaSoloGuardado: components["schemas"]["PilotoTipoQueVaSolo"] & {
+            delegacion: {
+                registrada: boolean;
+                porQue: string | null;
+            };
+        };
+        PilotoTipoQueVaSoloPutBody: {
+            vaSolo: boolean;
+        };
         PilotoAccionDelBack: {
             id: string;
             proceso: string;
@@ -12563,7 +13349,15 @@ export interface components {
         };
         PilotoAccionError: {
             error: string;
+            statusCode?: number;
             code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
+        PilotoAccionClic: {
+            fueraDelHorarioConfirmado?: boolean;
         };
         PilotoEnvioDeshecho: {
             id: string;
@@ -12573,7 +13367,12 @@ export interface components {
         };
         PilotoEnvioError: {
             error: string;
+            statusCode?: number;
             code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         PilotoLauraDeHoy: {
             dia: string;
@@ -12620,11 +13419,15 @@ export interface components {
         PilotoQueFaltaFalta: {
             id: string;
             /** @enum {string} */
-            tipo: "interruptor" | "pases" | "migracion" | "agente_apagado" | "sin_modo" | "modo" | "delegacion" | "sin_cablear" | "laura" | "no_medido";
+            tipo: "interruptor" | "pases" | "migracion" | "agente_apagado" | "sin_modo" | "modo" | "delegacion" | "sin_cablear" | "laura" | "no_medido" | "piloto_inactivo" | "requisito";
             que: string;
             /** @enum {string} */
             quien: "leasefy" | "administrador" | "programar";
             como: string;
+            enlace?: {
+                href: string;
+                texto: string;
+            };
         };
         PilotoQueFaltaProceso: {
             id: string;
@@ -12698,6 +13501,263 @@ export interface components {
             agentes: components["schemas"]["PilotoQueFaltaAgente"][];
             tomadoAt: string;
         };
+        DirectorMeta: {
+            id: string;
+            /** @enum {string} */
+            metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas" | "recuperado";
+            nombre: string;
+            /** @enum {string} */
+            estado: "propuesta" | "activa" | "pausada" | "cumplida" | "vencida";
+            /** @enum {string} */
+            direccion: "subir" | "bajar";
+            /** @enum {string} */
+            unidad: "porcentaje" | "dias" | "horas" | "pesos";
+            lineaBase: number | null;
+            objetivo: number;
+            actual: number | null;
+            desde: string;
+            hasta: string;
+            estimada: boolean;
+            porQue: string;
+            serie: {
+                fecha: string;
+                valor: number | null;
+            }[];
+            historial: {
+                en: string;
+                quien: string;
+                /** @enum {string} */
+                que: "propuso" | "acepto" | "ajusto" | "pauso" | "cumplio" | "vencio";
+                objetivo: number | null;
+            }[];
+        };
+        DirectorMetas: {
+            encendido: boolean;
+            metas: components["schemas"]["DirectorMeta"][];
+            sinMeta: {
+                /** @enum {string} */
+                metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas" | "recuperado";
+                nombre: string;
+            }[];
+        };
+        DirectorError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorMetaAjustarBody: {
+            objetivo: number;
+        };
+        DirectorGasto: {
+            encendido: boolean;
+            mes: string;
+            topeCop: number;
+            /** @enum {string|null} */
+            tramo: "pequena" | "mediana" | "grande" | null;
+            gastadoCop: number;
+            excluidoCop: number;
+            /** @enum {string|null} */
+            escalon: "normal" | "ahorro" | "sinModelo" | null;
+            porComponente: {
+                /** @enum {string} */
+                componente: "director.plan" | "director.replan" | "director.chat" | "director.resumen" | "chat" | "cobranza" | "otro";
+                cop: number;
+                cuentaParaTope: boolean;
+            }[];
+            porDia: {
+                fecha: string;
+                cop: number;
+            }[];
+        };
+        DirectorGastoError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorExperimento: {
+            encendido: boolean;
+            activo: boolean;
+            porcentajeControl: number;
+            desde: string | null;
+            entidadesEnControl: number;
+        };
+        DirectorExperimentoError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorExperimentoPutBody: {
+            activo: boolean;
+        };
+        PilotoDirectorInformeSemanal: {
+            encendido: boolean;
+            desde: string;
+            hasta: string;
+            piloto: {
+                detectadas: number;
+                hechasSolas: number;
+                hechasConClic: number;
+                esperanClic: number;
+                fallidas: number;
+            } | null;
+            director: {
+                planes: number;
+                conLaIa: number;
+                conReglas: number;
+                fallidos: number;
+                ordenes: number;
+                aprobadas: number;
+                hechas: number;
+                descartadas: number;
+                enBandeja: number;
+                costoCop: number;
+            } | null;
+            metas: {
+                metrica: string;
+                nombre: string;
+                estado: string;
+                unidad: string;
+                /** @enum {string} */
+                direccion: "subir" | "bajar";
+                lineaBase: number | null;
+                objetivo: number;
+                actual: number | null;
+                vaBien: boolean | null;
+                frase: string;
+            }[];
+            gasto: {
+                mes: string;
+                gastadoCop: number;
+                topeCop: number;
+                escalon: string;
+            } | null;
+            resumen: string[];
+        };
+        PilotoDirectorError: {
+            error: string;
+            mensaje?: string;
+            cicloId?: string;
+            code?: string;
+        };
+        PilotoDirectorHoy: {
+            encendido: boolean;
+            pilotoActivo?: boolean;
+            fecha: string | null;
+            ciclo: {
+                id: string;
+                /** @enum {string} */
+                tipo: "dia" | "replan";
+                /** @enum {string} */
+                estado: "en_curso" | "listo" | "fallido" | "sin_modelo";
+                inicio: string;
+                fin: string | null;
+                modelo: string | null;
+                esfuerzo: string | null;
+                costoCop: number;
+                sinModeloPorque: string | null;
+            } | null;
+            resumen: string | null;
+            pensamiento: string | null;
+            prioridades: {
+                meta: {
+                    id: string;
+                    metrica: string;
+                    nombre: string;
+                };
+                porQue: string;
+            }[];
+            ordenes: {
+                ordenId: string;
+                agente: string;
+                agenteNombre: string;
+                proceso: string;
+                procesoNombre: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                cuando: string;
+                cuandoIso: string | null;
+                prioridad: number;
+                porQue: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                    texto: string;
+                    enlace: string | null;
+                }[];
+                meta: {
+                    id: string;
+                    metrica: string;
+                    nombre: string;
+                } | null;
+                alternativaDescartada: string | null;
+                conflictoResuelto: string | null;
+                estado: string;
+                accionId: string | null;
+                motivoDeLaPerilla: string | null;
+            }[];
+            retenciones: {
+                retencionId: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                agentes: string[];
+                hasta: string;
+                porQue: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                    texto: string;
+                    enlace: string | null;
+                }[];
+                /** @enum {string} */
+                estado: "en_bandeja" | "activa" | "vencida" | "descartada";
+                accionId: string | null;
+            }[];
+            sugerencias: {
+                agente: string;
+                agenteNombre: string;
+                que: string;
+                porQue: string;
+            }[];
+            propuestasDeAutonomia: {
+                agente: string;
+                agenteNombre: string;
+                de: string;
+                a: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                }[];
+            }[];
+            alertas: {
+                nivel: string;
+                que: string;
+                porQue: string;
+            }[];
+            rechazadas: {
+                ordenId: string;
+                proceso: string;
+                procesoNombre: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                motivo: string;
+            }[];
+            grupoDeControl: {
+                activo: boolean;
+                omitidas: number;
+            };
+        };
+        PilotoDirectorReplan: {
+            cicloId: string;
+        };
         PilotoPulsoEnCurso: {
             id: string;
             tipo: string;
@@ -12705,6 +13765,7 @@ export interface components {
             detalle?: string;
             desde?: string;
             href?: string;
+            agente?: string;
         };
         PilotoPulsoCasoRef: {
             id: string;
@@ -12732,6 +13793,70 @@ export interface components {
                 decisionesResueltas: number;
                 contactosPlaneados?: number;
             };
+        };
+        DesempenoDelAgente: {
+            agente: string;
+            nombre: string;
+            hechas: number;
+            fallidas: number;
+            deshechas: number;
+            descartadas: number;
+            programadas: number;
+            esperan: number;
+        };
+        DesempenoDeLosAgentesResponse: {
+            disponible: boolean;
+            dias: number;
+            recortado: boolean;
+            agentes: components["schemas"]["DesempenoDelAgente"][];
+        };
+        PilotoTendenciasResponse: {
+            hoy: string;
+            recuperado: {
+                desde: string;
+                hasta: string;
+                dias: {
+                    fecha: string;
+                    cop: number;
+                }[];
+            } | null;
+            acciones: {
+                desde: string;
+                hasta: string;
+                dias: {
+                    fecha: string;
+                    total: number;
+                    solos: number;
+                    conPersona: number;
+                    porAgente: {
+                        agente: string;
+                        solos: number;
+                        conPersona: number;
+                    }[];
+                }[];
+                recortada: boolean;
+            } | null;
+            horas: {
+                desde: string;
+                hasta: string;
+                total: number | null;
+                medidas: number;
+                estimadas: number | null;
+                llamadas: number;
+                acciones: number | null;
+                estimada: boolean;
+                supuesto: string;
+            } | null;
+            mora: {
+                desde: string;
+                hasta: string;
+                dias: {
+                    fecha: string;
+                    valor: number | null;
+                    saldoCop: number | null;
+                }[];
+                definicion: string;
+            } | null;
         };
         PilotoPreparacionRequisito: {
             id: string;
@@ -12951,6 +14076,7 @@ export interface components {
             offeredAt: string;
             acceptedAt: string | null;
             defaultedAt: string | null;
+            operatorApprovedAt?: string | null;
             installments: {
                 number: number;
                 dueDate: string;
@@ -13049,6 +14175,49 @@ export interface components {
         CarteraLegalArtifactError: {
             error: string;
         };
+        CarteraCartaAManoRevision: {
+            /** @enum {string} */
+            estado: "revision";
+            faltan: {
+                campo: string;
+                etiqueta: string;
+            }[];
+            conocidos: {
+                [key: string]: string;
+            };
+        };
+        CarteraCartaAManoError: {
+            error: string;
+            code?: string;
+            message?: string;
+        };
+        CarteraCartaAManoFaltan: {
+            statusCode: number;
+            /** @enum {string} */
+            code: "FALTAN_DATOS_DE_LA_CARTA";
+            message: string;
+            faltan: {
+                campo: string;
+                etiqueta: string;
+            }[];
+            conocidos: {
+                [key: string]: string;
+            };
+        };
+        CarteraCartaAManoBody: {
+            /** Format: uuid */
+            debtorId: string;
+            revisar?: boolean;
+            /** @default {} */
+            datos: {
+                ciudad?: string;
+                numContrato?: string;
+                direccionInmueble?: string;
+                nombreInmobiliaria?: string;
+                firmante?: string;
+                cargoDelFirmante?: string;
+            };
+        };
         CarteraSiniestroInsurerResult: {
             insurer: string;
             sent: boolean;
@@ -13130,6 +14299,41 @@ export interface components {
         CarteraDailyReportError: {
             error: string;
         };
+        SolicitudDeAcuerdoAtenderResponse: {
+            /** Format: uuid */
+            solicitudId: string;
+            /** @enum {string} */
+            estado: "atendida";
+            /** Format: date-time */
+            atendidaEn: string;
+        };
+        SolicitudDeAcuerdoAtenderRequest: {
+            nota: string;
+        };
+        PagoDelPlanEnteroAtenderResponse: {
+            /** Format: uuid */
+            avisoId: string;
+            /** @enum {string} */
+            estado: "atendido";
+            /** Format: date-time */
+            atendidoEn: string;
+        };
+        PagoDelPlanEnteroAtenderRequest: {
+            nota: string;
+        };
+        PagoDelPlanEnteroAplicarResponse: {
+            /** Format: uuid */
+            avisoId: string;
+            /** @enum {string} */
+            estado: "aplicado";
+            reciboNumero: number | null;
+            /** @enum {string} */
+            acuerdo: "completado" | "parcial" | "no-vivo";
+            mensaje: string;
+            /** Format: date-time */
+            atendidoEn: string;
+        };
+        PagoDelPlanEnteroAplicarRequest: Record<string, never>;
         /** @enum {string} */
         TargetMetric: "kept_promise_rate" | "recovered_cop_per_call" | "completion_rate";
         ExperimentVariantResponse: {
@@ -13409,7 +14613,7 @@ export interface components {
             };
             adjuntoUrl: string | null;
             tokensUsed: number;
-            estimatedCostUsd: number;
+            estimatedCostCop: number;
         };
         ApBillExtractError: {
             /** @enum {boolean} */
@@ -13919,7 +15123,7 @@ export interface components {
                 classified: number;
                 skippedNoKey: number;
                 alreadyFrozen: boolean;
-                costUsd: number;
+                costCop: number;
             };
             rendered?: boolean;
         };
@@ -15165,6 +16369,12 @@ export interface components {
             /** @enum {boolean} */
             success: false;
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         /** @description POST /api/cotizador/quote body. cedula is HASHED at the server boundary (sha256(cedula | tenant_salt)) — raw cedula NEVER persisted (Habeas Data). */
         CotizadorQuoteRequest: {
@@ -15289,6 +16499,12 @@ export interface components {
             /** @enum {boolean} */
             success: false;
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         /** @description POST /api/cotizador/policy-outcome body. source_actor is hardcoded server-side to "inmobiliaria_relay" — callers cannot forge carrier_direct source (D-25-02, T-25-05-03). observed_at is the caller-supplied event time; recorded_at is the server-side ingest time. */
         PolicyOutcomeRequest: {
@@ -15370,6 +16586,12 @@ export interface components {
         /** @description Standard ARCO error response. */
         ArcoErrorResponse: {
             error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         /** @description Two-key counsel gate block (D-26-11). Returned when COTIZADOR_ARCO_ENABLED is unset or the compliance_acknowledgments ACK row is absent. Contact compliance@leasefy.co. */
         Arco503Response: {
@@ -15377,12 +16599,25 @@ export interface components {
             pending_counsel_review: true;
             /** @enum {string} */
             contact: "compliance@leasefy.co";
+            error?: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         ArcoFieldNotRectifiable: {
             /** @enum {string} */
             error: "field_not_rectifiable";
             field: string;
             allowlist: string[];
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         /** @description Rectificación request body. Raw cédula keys (cedula, cedula_raw) are blocked at Zod refine (T-26-06-01). */
         ArcoRectifyRequest: {
@@ -15432,6 +16667,12 @@ export interface components {
             success: false;
             error: string;
             details?: unknown;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
         /** @description Tier-2 applicant evaluation status row. `result` is the consolidated study output once available. */
         CotizadorEvaluationRow: {
@@ -15456,276 +16697,12 @@ export interface components {
             success: false;
             error: string;
             details?: unknown;
-        };
-        PilotoDirectorEnLaBandeja: {
-            prioridad: number;
-            porQue: string;
-            evidencia: {
-                tipo: string;
-                ref: string;
-            }[];
-            meta: {
-                id: string;
-                metrica: string;
-                nombre: string;
-            } | null;
-            alternativaDescartada: string | null;
-        } | null;
-        DirectorMeta: {
-            id: string;
-            /** @enum {string} */
-            metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas";
-            nombre: string;
-            /** @enum {string} */
-            estado: "propuesta" | "activa" | "pausada" | "cumplida" | "vencida";
-            /** @enum {string} */
-            direccion: "subir" | "bajar";
-            /** @enum {string} */
-            unidad: "porcentaje" | "dias" | "horas";
-            lineaBase: number | null;
-            objetivo: number;
-            actual: number | null;
-            desde: string;
-            hasta: string;
-            estimada: boolean;
-            porQue: string;
-            serie: {
-                fecha: string;
-                valor: number | null;
-            }[];
-            historial: {
-                en: string;
-                quien: string;
-                /** @enum {string} */
-                que: "propuso" | "acepto" | "ajusto" | "pauso" | "cumplio" | "vencio";
-                objetivo: number | null;
-            }[];
-        };
-        DirectorMetas: {
-            encendido: boolean;
-            metas: components["schemas"]["DirectorMeta"][];
-            sinMeta: {
-                /** @enum {string} */
-                metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas";
-                nombre: string;
-            }[];
-        };
-        DirectorError: {
-            error: string;
-            mensaje?: string;
-        };
-        DirectorMetaAjustarBody: {
-            objetivo: number;
-        };
-        DirectorGasto: {
-            encendido: boolean;
-            mes: string;
-            topeCop: number;
-            /** @enum {string|null} */
-            tramo: "pequena" | "mediana" | "grande" | null;
-            gastadoCop: number;
-            excluidoCop: number;
-            /** @enum {string|null} */
-            escalon: "normal" | "ahorro" | "sinModelo" | null;
-            porComponente: {
-                /** @enum {string} */
-                componente: "director.plan" | "director.replan" | "director.chat" | "director.resumen" | "chat" | "cobranza" | "otro";
-                cop: number;
-                cuentaParaTope: boolean;
-            }[];
-            porDia: {
-                fecha: string;
-                cop: number;
-            }[];
-        };
-        DirectorGastoError: {
-            error: string;
-            mensaje?: string;
-        };
-        DirectorExperimento: {
-            encendido: boolean;
-            activo: boolean;
-            porcentajeControl: number;
-            desde: string | null;
-            entidadesEnControl: number;
-        };
-        DirectorExperimentoError: {
-            error: string;
-            mensaje?: string;
-        };
-        DirectorExperimentoPutBody: {
-            activo: boolean;
-        };
-        PilotoDirectorInformeSemanal: {
-            encendido: boolean;
-            desde: string;
-            hasta: string;
-            piloto: {
-                detectadas: number;
-                hechasSolas: number;
-                hechasConClic: number;
-                esperanClic: number;
-                fallidas: number;
-            } | null;
-            director: {
-                planes: number;
-                conLaIa: number;
-                conReglas: number;
-                fallidos: number;
-                ordenes: number;
-                aprobadas: number;
-                hechas: number;
-                descartadas: number;
-                enBandeja: number;
-                costoCop: number;
-            } | null;
-            metas: {
-                metrica: string;
-                nombre: string;
-                estado: string;
-                unidad: string;
-                /** @enum {string} */
-                direccion: "subir" | "bajar";
-                lineaBase: number | null;
-                objetivo: number;
-                actual: number | null;
-                vaBien: boolean | null;
-                frase: string;
-            }[];
-            gasto: {
-                mes: string;
-                gastadoCop: number;
-                topeCop: number;
-                escalon: string;
-            } | null;
-            resumen: string[];
-        };
-        PilotoDirectorError: {
-            error: string;
-            mensaje?: string;
-            cicloId?: string;
+            statusCode?: number;
             code?: string;
-        };
-        PilotoDirectorHoy: {
-            encendido: boolean;
-            pilotoActivo?: boolean;
-            fecha: string | null;
-            ciclo: {
-                id: string;
-                /** @enum {string} */
-                tipo: "dia" | "replan";
-                /** @enum {string} */
-                estado: "en_curso" | "listo" | "fallido" | "sin_modelo";
-                inicio: string;
-                fin: string | null;
-                modelo: string | null;
-                esfuerzo: string | null;
-                costoCop: number;
-                sinModeloPorque: string | null;
-            } | null;
-            resumen: string | null;
-            pensamiento: string | null;
-            prioridades: {
-                meta: {
-                    id: string;
-                    metrica: string;
-                    nombre: string;
-                };
-                porQue: string;
-            }[];
-            ordenes: {
-                ordenId: string;
-                agente: string;
-                agenteNombre: string;
-                proceso: string;
-                procesoNombre: string;
-                entidad: {
-                    tipo: string;
-                    id: string;
-                    nombre: string;
-                    enlace: string | null;
-                };
-                cuando: string;
-                prioridad: number;
-                porQue: string;
-                evidencia: {
-                    tipo: string;
-                    ref: string;
-                    texto: string;
-                    enlace: string | null;
-                }[];
-                meta: {
-                    id: string;
-                    metrica: string;
-                    nombre: string;
-                } | null;
-                alternativaDescartada: string | null;
-                conflictoResuelto: string | null;
-                estado: string;
-                accionId: string | null;
-                motivoDeLaPerilla: string | null;
-            }[];
-            retenciones: {
-                retencionId: string;
-                entidad: {
-                    tipo: string;
-                    id: string;
-                    nombre: string;
-                    enlace: string | null;
-                };
-                agentes: string[];
-                hasta: string;
-                porQue: string;
-                evidencia: {
-                    tipo: string;
-                    ref: string;
-                    texto: string;
-                    enlace: string | null;
-                }[];
-                /** @enum {string} */
-                estado: "en_bandeja" | "activa" | "vencida" | "descartada";
-                accionId: string | null;
-            }[];
-            sugerencias: {
-                agente: string;
-                agenteNombre: string;
-                que: string;
-                porQue: string;
-            }[];
-            propuestasDeAutonomia: {
-                agente: string;
-                agenteNombre: string;
-                de: string;
-                a: string;
-                evidencia: {
-                    tipo: string;
-                    ref: string;
-                }[];
-            }[];
-            alertas: {
-                nivel: string;
-                que: string;
-                porQue: string;
-            }[];
-            rechazadas: {
-                ordenId: string;
-                proceso: string;
-                procesoNombre: string;
-                entidad: {
-                    tipo: string;
-                    id: string;
-                    nombre: string;
-                    enlace: string | null;
-                };
-                motivo: string;
-            }[];
-            grupoDeControl: {
-                activo: boolean;
-                omitidas: number;
-            };
-        };
-        PilotoDirectorReplan: {
-            cicloId: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
         };
     };
     responses: never;
@@ -15947,6 +16924,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -15958,6 +16941,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -15969,6 +16958,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16015,6 +17010,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16026,6 +17027,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16037,6 +17044,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16048,6 +17061,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16093,6 +17112,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16104,6 +17129,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16115,6 +17146,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16126,6 +17163,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16164,6 +17207,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16175,6 +17224,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16186,6 +17241,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16197,6 +17258,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16208,6 +17275,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16258,6 +17331,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16269,6 +17348,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16280,6 +17365,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16291,6 +17382,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16302,6 +17399,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16335,6 +17438,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16346,6 +17455,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16357,6 +17472,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16390,6 +17511,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16401,6 +17528,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16412,6 +17545,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16446,6 +17585,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16457,6 +17602,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16468,6 +17619,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16479,6 +17636,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16490,6 +17653,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16524,6 +17693,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16535,6 +17710,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16546,6 +17727,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16557,6 +17744,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16568,6 +17761,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16579,6 +17778,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16613,6 +17818,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16624,6 +17835,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16635,6 +17852,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16646,6 +17869,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16657,6 +17886,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16668,6 +17903,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16679,6 +17920,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16713,6 +17960,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16724,6 +17977,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16735,6 +17994,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16746,6 +18011,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16757,6 +18028,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16768,6 +18045,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16779,6 +18062,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16790,6 +18079,12 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ArcoTwoKeyGateBlocked"] | {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16824,6 +18119,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16835,6 +18136,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16846,6 +18153,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16857,6 +18170,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16868,6 +18187,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -16879,6 +18204,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -17362,9 +18693,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Forbidden — cotizador:view required */
@@ -17373,9 +18702,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Database unavailable */
@@ -17384,9 +18711,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -17419,9 +18744,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Forbidden — cotizador:view required */
@@ -17430,9 +18753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Database unavailable */
@@ -17441,9 +18762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -17476,9 +18795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Forbidden — cotizador:view required */
@@ -17487,9 +18804,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Database unavailable */
@@ -17498,9 +18813,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -17533,9 +18846,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Forbidden — cotizador:view required */
@@ -17544,9 +18855,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Database unavailable */
@@ -17555,9 +18864,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -20190,6 +21497,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20201,6 +21514,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20212,6 +21531,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20247,6 +21572,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20258,6 +21589,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20269,6 +21606,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20302,6 +21645,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20313,6 +21662,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20324,6 +21679,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20357,6 +21718,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20368,6 +21735,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20379,6 +21752,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20412,6 +21791,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20423,6 +21808,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20434,6 +21825,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20467,6 +21864,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20478,6 +21881,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -20489,6 +21898,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -22335,9 +23750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22346,9 +23759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22357,9 +23768,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22394,9 +23803,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Falta el bearer JWT o es inválido */
@@ -22405,9 +23812,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22416,9 +23821,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22427,9 +23830,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22466,9 +23867,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22477,9 +23876,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El acuerdo no existe en este tenant */
@@ -22488,9 +23885,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22499,9 +23894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22537,9 +23930,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Falta el bearer JWT o es inválido */
@@ -22548,9 +23939,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22559,9 +23948,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El acuerdo no existe en este tenant */
@@ -22570,9 +23957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22581,9 +23966,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22614,9 +23997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22625,9 +24006,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22636,9 +24015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22673,9 +24050,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Falta el bearer JWT o es inválido */
@@ -22684,9 +24059,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22695,9 +24068,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible o migración sin aplicar */
@@ -22706,9 +24077,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22739,9 +24108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22750,9 +24117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22761,9 +24126,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22799,9 +24162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description agencyId cruzado / sin membresía / permiso insuficiente */
@@ -22810,9 +24171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Ese aviso no existe en esta inmobiliaria */
@@ -22821,9 +24180,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Ese aviso ya estaba registrado como enviado */
@@ -22832,9 +24189,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
@@ -22843,9 +24198,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -22941,6 +24294,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -22952,6 +24311,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -22963,6 +24328,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23366,6 +24737,50 @@ export interface operations {
             };
         };
     };
+    postAiHubChatBorrarConversacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatBorrarConversacionRequest"];
+            };
+        };
+        responses: {
+            /** @description Lo que se borró */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatBorrarConversacionResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatBorrarConversacionError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatBorrarConversacionError"];
+                };
+            };
+        };
+    };
     getAiHubChatEjecucion: {
         parameters: {
             query?: never;
@@ -23533,6 +24948,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23544,6 +24965,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23555,6 +24982,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23593,6 +25026,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23604,6 +25043,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23615,6 +25060,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23648,6 +25099,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23659,6 +25116,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23670,6 +25133,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23703,6 +25172,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23714,6 +25189,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23725,6 +25206,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23760,6 +25247,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23771,6 +25264,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23782,6 +25281,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23816,6 +25321,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23827,6 +25338,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23838,6 +25355,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23849,6 +25372,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23887,6 +25416,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23898,6 +25433,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23909,6 +25450,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23920,6 +25467,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23954,6 +25507,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23965,6 +25524,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23976,6 +25541,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23987,6 +25558,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -23998,6 +25575,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24032,6 +25615,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24043,6 +25632,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24054,6 +25649,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24065,6 +25666,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24076,6 +25683,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24109,6 +25722,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24120,6 +25739,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24131,6 +25756,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24169,6 +25800,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24180,6 +25817,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24191,6 +25834,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24202,6 +25851,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24235,6 +25890,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24246,6 +25907,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24257,6 +25924,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24294,6 +25967,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24305,6 +25984,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24316,6 +26001,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24352,6 +26043,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24363,6 +26060,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24396,6 +26099,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24407,6 +26116,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -24432,15 +26147,13 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoConciliacionSegurosResponse"];
                 };
             };
-            /** @description Rol insuficiente */
+            /** @description Sin membresía o sin el permiso cobros:create del ERP */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El agente de conciliación no está habilitado para la inmobiliaria */
@@ -24449,9 +26162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El back no respondió */
@@ -24460,9 +26171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -24498,9 +26207,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El agente de conciliación no está habilitado, o el movimiento ya no está pendiente */
@@ -24509,9 +26216,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El back no respondió */
@@ -24520,9 +26225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -24558,9 +26261,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El agente de conciliación no está habilitado, o el movimiento ya no está pendiente */
@@ -24569,9 +26270,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El back no respondió */
@@ -24580,9 +26279,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
             /** @description El back no está configurado */
@@ -24591,9 +26288,305 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    pilotoRecibosQueSuman: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las propuestas (la mejor primero), si es ambigua, el sobrante y las opciones del cajón */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoConciliacionRecibosQueSumanResponse"];
+                };
+            };
+            /** @description El back rechazó lo que se le pidió */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Sin el permiso cobros:view del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El movimiento no existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El agente de conciliación no está habilitado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no está configurado o todavía no tiene esta función */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    pilotoConciliarConRecibos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoConciliacionConciliarConRecibosBody"];
+            };
+        };
+        responses: {
+            /** @description Movimiento conciliado contra esos recibos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoConciliacionConciliarConRecibosResponse"];
+                };
+            };
+            /** @description La suma no calza (LA_SUMA_NO_CALZA) o el movimiento es una salida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso cobros:create del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El movimiento o un recibo no existen */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Agente apagado, movimiento ya conciliado o ignorado, recibo anulado o ya conciliado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Falta la migración del back (FALTA_UNA_MIGRACION) o el back no tiene la función */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    conciliacionAgenteAnalizarMovimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo que el agente propone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliacionAgenteAnalisis"];
+                };
+            };
+            /** @description Sin el permiso cobros:view del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El movimiento no existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El agente de conciliación no está habilitado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    conciliacionAgenteRechazarPropuesta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConciliacionAgenteRechazarBody"];
+            };
+        };
+        responses: {
+            /** @description Rechazo guardado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliacionAgenteRechazarResponse"];
+                };
+            };
+            /** @description Sin el permiso cobros:edit del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El movimiento no existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El agente de conciliación no está habilitado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Falta la migración de la memoria, o el back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
                 };
             };
         };
@@ -24740,6 +26733,449 @@ export interface operations {
             };
         };
     };
+    getPilotoModosPropios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los procesos con perilla propia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoModosPropios"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+        };
+    };
+    putPilotoModoPropio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                procesoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoModoPropioPutBody"];
+            };
+        };
+        responses: {
+            /** @description Guardado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoModoPropio"];
+                };
+            };
+            /** @description Modo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description Sólo un administrador cambia el modo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description El proceso no existe o no tiene perilla propia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description No se pudo guardar */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description Falta la migración de la tabla (FALTA_UNA_MIGRACION) o sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+        };
+    };
+    getPilotoActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El estado del Piloto de la inmobiliaria */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoActivoResponse"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No es miembro de la inmobiliaria */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    putPilotoActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoActivoPutBody"];
+            };
+        };
+        responses: {
+            /** @description Hecho */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoActivoResponse"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo un administrador / falta el segundo factor de ahora */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description La prueba terminó o Leasefy lo tiene apagado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo guardar */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Falta la migración de la tabla (FALTA_UNA_MIGRACION) o sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    getPilotoTiposQueVanSolos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Qué hace solo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposQueVanSolos"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+        };
+    };
+    putPilotoTipoQueVaSolo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                tipo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoTipoQueVaSoloPutBody"];
+            };
+        };
+        responses: {
+            /** @description Guardado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTipoQueVaSoloGuardado"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description Sólo un administrador, y con el segundo factor de ahora */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description Ese tipo no se puede escoger */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description No se pudo guardar */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+            /** @description Falta la migración de la tabla o sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTiposError"];
+                };
+            };
+        };
+    };
     pilotoAccionEjecutar: {
         parameters: {
             query?: never;
@@ -24750,7 +27186,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PilotoAccionClic"];
+            };
+        };
         responses: {
             /** @description Cómo quedó la acción */
             200: {
@@ -24797,7 +27237,7 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoAccionError"];
                 };
             };
-            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió), o un proceso de cobranza fuera del horario de ley sin la confirmación (`FUERA_DEL_HORARIO_DE_LEY`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24817,6 +27257,15 @@ export interface operations {
             };
             /** @description El back no está configurado */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no contestó a tiempo la decisión: puede seguir haciéndola (`DECISION_EN_CURSO`) */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24836,7 +27285,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PilotoAccionClic"];
+            };
+        };
         responses: {
             /** @description Cómo quedó la acción */
             200: {
@@ -24883,7 +27336,7 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoAccionError"];
                 };
             };
-            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió), o un proceso de cobranza fuera del horario de ley sin la confirmación (`FUERA_DEL_HORARIO_DE_LEY`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24903,6 +27356,15 @@ export interface operations {
             };
             /** @description El back no está configurado */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no contestó a tiempo la decisión: puede seguir haciéndola (`DECISION_EN_CURSO`) */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24922,7 +27384,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PilotoAccionClic"];
+            };
+        };
         responses: {
             /** @description Cómo quedó la acción */
             200: {
@@ -24969,7 +27435,7 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoAccionError"];
                 };
             };
-            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió), o un proceso de cobranza fuera del horario de ley sin la confirmación (`FUERA_DEL_HORARIO_DE_LEY`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24989,6 +27455,15 @@ export interface operations {
             };
             /** @description El back no está configurado */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no contestó a tiempo la decisión: puede seguir haciéndola (`DECISION_EN_CURSO`) */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25148,6 +27623,610 @@ export interface operations {
             };
         };
     };
+    getPilotoDirectorMetas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las metas (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMetas"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaAceptar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaAjustar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorMetaAjustarBody"];
+            };
+        };
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description El objetivo no cabe en los topes duros (`objetivo_invalido`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaPausar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorGasto: {
+        parameters: {
+            query?: {
+                mes?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El gasto (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGasto"];
+                };
+            };
+            /** @description Mes mal escrito */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorExperimento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El experimento (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimento"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+        };
+    };
+    putPilotoDirectorExperimento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorExperimentoPutBody"];
+            };
+        };
+        responses: {
+            /** @description El experimento, como en el GET */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimento"];
+                };
+            };
+            /** @description Cuerpo que no es `{ activo: boolean }` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description El director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorSemana: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El informe (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorInformeSemanal"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorHoy: {
+        parameters: {
+            query?: {
+                fecha?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El plan (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorHoy"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorReplanear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El ciclo quedó en curso */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorReplan"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Sólo un administrador vuelve a planear */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Ya hay un ciclo en curso (o el director o el Piloto automático están apagados) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Ya se usaron los re-planes del día */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No se pudo encargar el re-plan */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Falta la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+        };
+    };
     getAiHubPulso: {
         parameters: {
             query?: never;
@@ -25176,6 +28255,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25187,6 +28272,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25198,6 +28289,141 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubDesempeno: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo que hizo cada agente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesempenoDeLosAgentesResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubTendencias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las tendencias (cada pieza `null` si no se pudo leer) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoTendenciasResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25231,6 +28457,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25242,6 +28474,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25253,6 +28491,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25287,6 +28531,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25298,6 +28548,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25309,6 +28565,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25320,6 +28582,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25353,6 +28621,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25364,6 +28638,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25375,6 +28655,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25410,6 +28696,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25421,6 +28713,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25432,6 +28730,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25466,6 +28770,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25477,6 +28787,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25488,6 +28804,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25544,6 +28866,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25555,6 +28883,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25566,6 +28900,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25577,6 +28917,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25588,6 +28934,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25621,6 +28973,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25632,6 +28990,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -25643,6 +29007,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26149,6 +29519,87 @@ export interface operations {
             };
         };
     };
+    postCarteraCartaAMano: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraCartaAManoBody"];
+            };
+        };
+        responses: {
+            /** @description La carta en PDF, para descargar; con `revisar: true`, JSON con lo que se sabe y lo que falta (sin carta ni rastro). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/json": components["schemas"]["CarteraCartaAManoRevision"];
+                };
+            };
+            /** @description Missing JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoError"];
+                };
+            };
+            /** @description Debtor not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoError"];
+                };
+            };
+            /** @description El deudor no tiene deuda abierta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoError"];
+                };
+            };
+            /** @description Faltan datos para la carta */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoFaltan"];
+                };
+            };
+            /** @description DB unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraCartaAManoError"];
+                };
+            };
+        };
+    };
     approveSiniestroInsuranceClaim: {
         parameters: {
             query?: never;
@@ -26497,6 +29948,213 @@ export interface operations {
             };
         };
     };
+    atenderSolicitudDeAcuerdo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                solicitudId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitudDeAcuerdoAtenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Atendida */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudDeAcuerdoAtenderResponse"];
+                };
+            };
+            /** @description La nota no cumple */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Sin cobranza:intervene */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Ya estaba atendida */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base no disponible o la tabla todavía no está */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    atenderPagoDelPlanEntero: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                avisoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagoDelPlanEnteroAtenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Atendido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoDelPlanEnteroAtenderResponse"];
+                };
+            };
+            /** @description La nota no cumple */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Sin cobranza:intervene */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Ya estaba atendido */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    aplicarPagoDelPlanEntero: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                avisoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PagoDelPlanEnteroAplicarRequest"];
+            };
+        };
+        responses: {
+            /** @description Aplicado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoDelPlanEnteroAplicarResponse"];
+                };
+            };
+            /** @description Sin cobranza:intervene */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Ya estaba atendido, sin el monto de Wompi, o el back no pudo emitir el recibo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base o back no disponibles */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
     listApVendors: {
         parameters: {
             query?: never;
@@ -26686,6 +30344,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26697,6 +30361,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26708,6 +30378,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26752,6 +30428,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26763,6 +30445,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26774,6 +30462,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26785,6 +30479,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26826,6 +30526,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26837,6 +30543,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26848,6 +30560,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26886,6 +30604,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26897,6 +30621,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26908,6 +30638,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26919,6 +30655,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -26930,6 +30672,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27300,6 +31048,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27311,6 +31065,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27322,6 +31082,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27333,6 +31099,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27344,6 +31116,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27355,6 +31133,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27366,6 +31150,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27413,6 +31203,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27424,6 +31220,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27435,6 +31237,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27446,6 +31254,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27457,6 +31271,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27468,6 +31288,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27479,6 +31305,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27528,6 +31360,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27539,6 +31377,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27550,6 +31394,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27561,6 +31411,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27572,6 +31428,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27583,6 +31445,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27594,6 +31462,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27643,6 +31517,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27654,6 +31534,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27665,6 +31551,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27676,6 +31568,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27687,6 +31585,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27698,6 +31602,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27709,6 +31619,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27758,6 +31674,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27803,6 +31725,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27814,6 +31742,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27825,6 +31759,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27836,6 +31776,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27883,6 +31829,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27894,6 +31846,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27905,6 +31863,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27916,6 +31880,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27959,6 +31929,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27970,6 +31946,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -27981,6 +31963,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -28031,6 +32019,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -28042,6 +32036,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -28090,6 +32090,7 @@ export interface operations {
                             };
                         };
                         matchRatePct: number | null;
+                        suggestedRatePct: number | null;
                         fraudFlags: {
                             /** @enum {string} */
                             flag: "posible_lapping" | "monto_subumbral" | "duplicado_ventana" | "beneficiario_inusual" | "referencia_dudosa" | "lote_anomalo";
@@ -28113,6 +32114,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -28124,6 +32131,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29216,6 +33229,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29227,6 +33246,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29271,6 +33296,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29282,6 +33313,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29340,6 +33377,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29351,6 +33394,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29362,6 +33411,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29419,6 +33474,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29464,6 +33525,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29475,6 +33542,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29534,6 +33607,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29545,6 +33624,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29597,6 +33682,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29608,6 +33699,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29619,6 +33716,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29680,6 +33783,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29691,6 +33800,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29768,6 +33883,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29779,6 +33900,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29790,6 +33917,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29858,6 +33991,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29869,6 +34008,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29880,6 +34025,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -29891,6 +34042,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -34481,6 +38638,12 @@ export interface operations {
                     "application/json": {
                         /** @enum {string} */
                         error: "invalid_signature";
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -34493,6 +38656,12 @@ export interface operations {
                     "application/json": {
                         /** @enum {string} */
                         error: "unknown_carrier";
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -34505,6 +38674,12 @@ export interface operations {
                     "application/json": {
                         /** @enum {string} */
                         error: "webhook_not_configured";
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -35341,6 +39516,12 @@ export interface operations {
                         /** @enum {string} */
                         error: "consent_required";
                         detail: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
                     };
                 };
             };
@@ -35464,610 +39645,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
-                };
-            };
-        };
-    };
-    getPilotoDirectorMetas: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Las metas (o `encendido: false`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorMetas"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-        };
-    };
-    postPilotoDirectorMetaAceptar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                metaId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description La meta, con la misma forma que en el listado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorMeta"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-        };
-    };
-    postPilotoDirectorMetaAjustar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                metaId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DirectorMetaAjustarBody"];
-            };
-        };
-        responses: {
-            /** @description La meta, con la misma forma que en el listado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorMeta"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description El objetivo no cabe en los topes duros (`objetivo_invalido`) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-        };
-    };
-    postPilotoDirectorMetaPausar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                metaId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description La meta, con la misma forma que en el listado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorMeta"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorError"];
-                };
-            };
-        };
-    };
-    getPilotoDirectorGasto: {
-        parameters: {
-            query?: {
-                mes?: string;
-            };
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El gasto (o `encendido: false`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorGasto"];
-                };
-            };
-            /** @description Mes mal escrito */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorGastoError"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorGastoError"];
-                };
-            };
-            /** @description No es miembro activo */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorGastoError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorGastoError"];
-                };
-            };
-        };
-    };
-    getPilotoDirectorExperimento: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El experimento (o `encendido: false`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimento"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description No es miembro activo */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-        };
-    };
-    putPilotoDirectorExperimento: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DirectorExperimentoPutBody"];
-            };
-        };
-        responses: {
-            /** @description El experimento, como en el GET */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimento"];
-                };
-            };
-            /** @description Cuerpo que no es `{ activo: boolean }` */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description El director está apagado (`director_apagado`) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-            /** @description Sin base o sin la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DirectorExperimentoError"];
-                };
-            };
-        };
-    };
-    getPilotoDirectorSemana: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El informe (o `encendido: false`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorInformeSemanal"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description No es miembro activo */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-        };
-    };
-    getPilotoDirectorHoy: {
-        parameters: {
-            query?: {
-                fecha?: string;
-            };
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El plan (o `encendido: false`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorHoy"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description No es miembro activo */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-        };
-    };
-    postPilotoDirectorReplanear: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El ciclo quedó en curso */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorReplan"];
-                };
-            };
-            /** @description Sin JWT válido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description Sólo un administrador vuelve a planear */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description Ya hay un ciclo en curso (o el director o el Piloto automático están apagados) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description Ya se usaron los re-planes del día */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description No se pudo encargar el re-plan */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
-                };
-            };
-            /** @description Falta la migración del director */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PilotoDirectorError"];
                 };
             };
         };

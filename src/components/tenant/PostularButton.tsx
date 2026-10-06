@@ -221,11 +221,15 @@ export function AntesDePostularte({
   /*
    * T-0132 (owner decision, ledger §2.4): la aprobación ya NUNCA bloquea
    * postularse — el back no vuelve a rechazar con 409 por esto. Todo
-   * motivo salvo `sin_sesion` (O-1, fuera de alcance, sin cambios: sin
-   * sesión no sabemos si la persona ya tiene cuenta y aprobación) gana una
-   * salida para seguir sin este dato.
+   * motivo gana una salida para seguir sin este dato.
+   *
+   * T-0143 (cierra O-1): `sin_sesion` también la gana. El visitante sin
+   * sesión que abre `/aplicar/:id` de una ya corre el flujo de invitado sin
+   * ningún portón (`createGuestApplication`, back); negarle la misma salida
+   * acá, en este diálogo, sólo creaba una inconsistencia entre dos caminos
+   * al mismo lugar — no protegía nada que el enlace directo no abriera igual.
    */
-  const puedeContinuarSinAprobacion = motivo !== 'sin_sesion'
+  const puedeContinuarSinAprobacion = true
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -342,6 +346,14 @@ export function AntesDePostularte({
   )
 }
 
+/*
+ * T-0143: ninguno de estos textos puede leerse como «hace falta esto para
+ * postularte» — la aprobación es un dato que conviene tener (la inmobiliaria
+ * lo mira al decidir), nunca un portón. `sin_aprobacion` decía literal
+ * "necesitas"; `en_proceso` decía "vas a poder postularte" (cuando ya puede,
+ * justo arriba del botón que lo prueba); `vencida` decía "hay que
+ * renovarla". Las tres se corrigen a un tono de recomendación.
+ */
 const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; href: string }> = {
   /*
    * El CTA principal es «conocer el tope», no «crear cuenta»: la cuenta se
@@ -357,19 +369,19 @@ const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; hr
   },
   sin_aprobacion: {
     title: 'Antes de postularte',
-    desc: 'Para postularte necesitas saber hasta cuánto te respaldan las aseguradoras. Son tres pasos y se hace una sola vez.',
+    desc: 'Te conviene saber hasta cuánto te respaldamos: la inmobiliaria lo tiene en cuenta al decidir. Son tres pasos y se hace una sola vez.',
     cta: 'Conoce hasta cuánto te arrendamos',
     href: '/aprobacion',
   },
   vencida: {
     title: 'Tu aprobación venció',
-    desc: 'Las aseguradoras revisan tu situación cada vez, así que hay que renovarla. Es el mismo proceso de antes.',
+    desc: 'Te conviene renovarla: la inmobiliaria la tiene en cuenta al decidir. Es el mismo proceso de antes.',
     cta: 'Renovar mi aprobación',
     href: '/aprobacion',
   },
   en_proceso: {
     title: 'Estamos consultando a las aseguradoras',
-    desc: 'Todavía no tenemos respuesta. En cuanto la tengamos vas a poder postularte a esta y a las demás que vayan con tu tope.',
+    desc: 'Todavía no tenemos respuesta, pero no hace falta esperar para postularte. En cuanto la tengamos, vas a conocer tu tope para esta y las demás propiedades que te interesen.',
     cta: 'Ver el estado',
     href: '/inquilino/aprobacion',
   },

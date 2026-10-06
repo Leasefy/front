@@ -67,6 +67,13 @@ interface PermissionsContextValue {
 
 const PermissionsContext = createContext<PermissionsContextValue | null>(null);
 
+/**
+ * 🟡 QA-PILOTO-95 r2 (06-10-2026): el tope de `my-permissions` del micro. Sin tope, con el micro
+ * colgado (acepta y no contesta) `isLoading` no bajaba nunca y el panel entero se quedaba en
+ * esqueleto. Al vencer se sigue con los permisos del back y el agente queda `sin-verificar`.
+ */
+export const TOPE_DE_LOS_PERMISOS_DEL_MICRO_MS = 10_000;
+
 async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions | null> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
   if (!agentUrl) return null;
@@ -81,11 +88,18 @@ async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions
   const headers: Record<string, string> = token
     ? { Authorization: `Bearer ${token}` }
     : {};
-  const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
-    headers,
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as AgentPermissions;
+  const tope = new AbortController();
+  const reloj = setTimeout(() => tope.abort(), TOPE_DE_LOS_PERMISOS_DEL_MICRO_MS);
+  try {
+    const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
+      headers,
+      signal: tope.signal,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as AgentPermissions;
+  } finally {
+    clearTimeout(reloj);
+  }
 }
 
 /**

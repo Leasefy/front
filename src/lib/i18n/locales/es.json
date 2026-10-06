@@ -1755,6 +1755,8 @@
           "hechasSolas": "hizo solo el Piloto",
           "hechasConClic": "hizo con tu clic",
           "esperanClic": "esperan tu clic",
+          "enLaBandeja": "te esperan hoy en la Bandeja",
+          "esperanClicDeLaSemana": "de esta semana esperan tu clic",
           "gasto": "gasto de IA del mes, de {{tope}}",
           "vaBien": "Va bien",
           "vaMal": "Va peor que su línea base",

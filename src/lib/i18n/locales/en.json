@@ -1720,6 +1720,8 @@
           "hechasSolas": "done by Autopilot on its own",
           "hechasConClic": "done with your click",
           "esperanClic": "waiting for your click",
+          "enLaBandeja": "waiting for you in the Inbox today",
+          "esperanClicDeLaSemana": "from this week await your click",
           "gasto": "AI spend this month, out of {{tope}}",
           "vaBien": "On track",
           "vaMal": "Worse than its baseline",

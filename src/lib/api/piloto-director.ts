@@ -227,6 +227,8 @@ export interface DirectorSemana {
   desde: string | null
   hasta: string | null
   piloto: { detectadas: number; hechasSolas: number; hechasConClic: number; esperanClic: number; fallidas: number } | null
+  /** 🟡 QA-PILOTO-95 r2: lo que espera hoy en la Bandeja (su mismo total). `null` = el micro no lo contó. */
+  enLaBandeja: number | null
   director: {
     planes: number
     conLaIa: number
@@ -494,6 +496,7 @@ export function normalizarSemana(raw: unknown): DirectorSemana {
     piloto: p
       ? { detectadas: entero(p.detectadas), hechasSolas: entero(p.hechasSolas), hechasConClic: entero(p.hechasConClic), esperanClic: entero(p.esperanClic), fallidas: entero(p.fallidas) }
       : null,
+    enLaBandeja: typeof r.enLaBandeja === 'number' && Number.isFinite(r.enLaBandeja) ? Math.max(0, Math.trunc(r.enLaBandeja)) : null,
     director: d
       ? {
           planes: entero(d.planes),

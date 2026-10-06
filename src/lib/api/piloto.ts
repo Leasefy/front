@@ -245,11 +245,19 @@ export interface PilotoFetchResult<T> {
 export const ERROR_SIN_RESPUESTA = 'timeout: el Piloto no contestó a tiempo'
 
 /** La lectura GET del micro que usan todas las tarjetas del Piloto (también las del director). */
+/**
+ * 🟡 QA-PILOTO-95 r2 (06-10-2026): el tope de TODA lectura que no pide uno propio. Con el micro
+ * colgado (acepta y no contesta) la Bandeja, la actividad, las tendencias, el briefing y la flota no
+ * tenían tope y la Cabina se quedaba en esqueleto para siempre; ahora, pasado este tiempo, es el
+ * error «no contestó a tiempo» que cada tarjeta dice en palabras, con su «Intentar de nuevo».
+ */
+export const TOPE_DE_LECTURA_MS = 20_000
+
 export async function getJson<T>(
   path: string,
   signal?: AbortSignal,
-  /** Tope de espera (ms). Sin tope, una lectura colgada dejaba el esqueleto para siempre. */
-  topeMs?: number,
+  /** Tope de espera (ms). Sin tope propio vale `TOPE_DE_LECTURA_MS`: nunca un esqueleto eterno. */
+  topeMs: number = TOPE_DE_LECTURA_MS,
 ): Promise<PilotoFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')

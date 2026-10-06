@@ -74,7 +74,12 @@ export function PilotoDirectorSemana({ lectura }: { lectura: LecturaDelDirector<
           <>
             <Cifra testid="piloto-director-semana-solas" valor={String(data.piloto.hechasSolas)} etiqueta={t('inmobiliaria.piloto.director.semana.hechasSolas')} />
             <Cifra testid="piloto-director-semana-con-clic" valor={String(data.piloto.hechasConClic)} etiqueta={t('inmobiliaria.piloto.director.semana.hechasConClic')} />
-            <Cifra testid="piloto-director-semana-esperan" valor={String(data.piloto.esperanClic)} etiqueta={t('inmobiliaria.piloto.director.semana.esperanClic')} />
+            {/* 🟡 QA-PILOTO-95 r2: con el total de la Bandeja, su mismo número; sin él, qué cuenta. */}
+            {data.enLaBandeja !== null ? (
+              <Cifra testid="piloto-director-semana-esperan" valor={String(data.enLaBandeja)} etiqueta={t('inmobiliaria.piloto.director.semana.enLaBandeja')} />
+            ) : (
+              <Cifra testid="piloto-director-semana-esperan" valor={String(data.piloto.esperanClic)} etiqueta={t('inmobiliaria.piloto.director.semana.esperanClicDeLaSemana')} />
+            )}
           </>
         )}
         {data.gasto && (

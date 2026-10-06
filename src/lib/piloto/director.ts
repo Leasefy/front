@@ -17,7 +17,15 @@ const localeDe = (idioma: Idioma) => (idioma === 'en' ? 'en-US' : 'es-CO')
  * menor prioridad; después el orden de siempre, quien más lleva esperando.
  * Orden estable y sin tocar la lista que recibe.
  */
-export function ordenarBandeja<T extends { desde: string; director?: { prioridad: number } | null }>(
+/**
+ * 🟡 QA-PILOTO-95 r2: ¿tiene «Deshacer» con el tiempo corriendo? (lo programado y los envíos en su
+ * gracia: salen solos si nadie los deshace). Va arriba de todo, como en el micro (`ordenarLaBandeja`).
+ */
+export function conRelojCorriendo(i: { accion?: { path?: string } | null }): boolean {
+  return typeof i.accion?.path === 'string' && /\/deshacer$/.test(i.accion.path)
+}
+
+export function ordenarBandeja<T extends { desde: string; director?: { prioridad: number } | null; accion?: { path?: string } | null }>(
   items: readonly T[],
 ): T[] {
   const espera = (i: T) => {
@@ -25,6 +33,8 @@ export function ordenarBandeja<T extends { desde: string; director?: { prioridad
     return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY
   }
   return [...items].sort((a, b) => {
+    const reloj = Number(conRelojCorriendo(b)) - Number(conRelojCorriendo(a))
+    if (reloj !== 0) return reloj
     const pa = a.director ? a.director.prioridad : null
     const pb = b.director ? b.director.prioridad : null
     if (pa !== null && pb !== null && pa !== pb) return pb - pa

@@ -699,6 +699,11 @@ export interface NotaDelMes {
   ivaCop: number | null
   /** Nació al anular un cobro que tenía factura. */
   deCobroAnulado: boolean
+  /**
+   * N-31 (QA-FACT-CONTA-95 r3): nació al terminar el contrato (la factura de un
+   * mes que el fin recortó o anuló). Un back viejo no lo manda.
+   */
+  delFinDelContrato?: boolean
   creadaAt: string
   /** `AAAA-MM-DD` en Bogotá. */
   dia: string
@@ -970,7 +975,13 @@ export const facturacionPorMesService = {
    * cobro con factura; Q6/Q7, 03-10-2026). Un back sin la ruta responde 404.
    */
   emitirNotaGenerada: (notaId: string) =>
-    apiClient.post<{ id: string; numeroDeLaNota: string; valorCop: number }>(
+    apiClient.post<{
+      id: string
+      numeroDeLaNota: string
+      valorCop: number
+      /** Lo que pasó, en palabras (la corregida, si salió; N-31). */
+      explicacion?: string
+    }>(
       `${BASE}/notas-credito/${encodeURIComponent(notaId)}/emitir`,
       {},
     ),

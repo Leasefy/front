@@ -55,6 +55,7 @@ import {
   useNombreDeAgente,
 } from './piezas'
 import { OrbeDelPilotoConPopover } from './popovers'
+import { SerieDeLoRecuperado } from './tendencias'
 import { Ticker } from './ticker'
 import { TEXTOS } from './textos'
 import type { PropsDeDireccion } from './tipos'
@@ -119,8 +120,22 @@ export function DireccionNucleo({ datos, acciones, activacion, variante = 'compl
         valor={ind.avanceDeMetas?.avance ?? null}
         centro={ind.avanceDeMetas ? <Cifra valor={Math.round(ind.avanceDeMetas.avance * 100)} formato={(v) => `${Math.round(v)} %`} /> : '—'}
         etiqueta={TEXTOS.kpi.metas}
-        nota={ind.avanceDeMetas ? TEXTOS.kpi.metasDe(ind.avanceDeMetas.n) : 'sin metas'}
-        descripcion={ind.avanceDeMetas ? `Metas: avance medio ${porcentaje(ind.avanceDeMetas.avance)}` : 'Metas: sin dato'}
+        nota={
+          // MANDO-DATOS: el promedio va sólo con las metas de cifra real; las estimadas se dicen aparte.
+          (ind.avanceDeMetas
+            ? TEXTOS.kpi.metasDe(ind.avanceDeMetas.n)
+            : ind.metasEnSuPuntoDePartida > 0
+              ? TEXTOS.tendencias.metasEnSuPunto(ind.metasEnSuPuntoDePartida)
+              : 'sin metas') +
+          (ind.metasEstimadasAparte > 0 ? ` · ${TEXTOS.tendencias.metasAparte(ind.metasEstimadasAparte)}` : '')
+        }
+        descripcion={
+          ind.avanceDeMetas
+            ? `Metas: avance medio ${porcentaje(ind.avanceDeMetas.avance)}`
+            : ind.metasEnSuPuntoDePartida > 0
+              ? `Metas: ${TEXTOS.tendencias.metasEnSuPunto(ind.metasEnSuPuntoDePartida)}`
+              : 'Metas: sin dato'
+        }
       />
     ),
     decisiones: (
@@ -261,6 +276,10 @@ export function DireccionNucleo({ datos, acciones, activacion, variante = 'compl
               <span className="font-mono text-label uppercase tracking-wide">{TEXTOS.kpi.recuperado}</span>
               <Cifra valor={ind.recuperado} formato={pesos} className="text-xl font-semibold text-ink-fg" />
             </p>
+          )}
+          {/* MANDO-DATOS: lo recuperado día por día en 30 días (la misma definición, por día). */}
+          {ind.recuperadoPorDia && ind.recuperadoPorDia.length > 0 && (
+            <SerieDeLoRecuperado dias={ind.recuperadoPorDia} tono="tinta" className="mx-auto mt-3" />
           )}
         </div>
 

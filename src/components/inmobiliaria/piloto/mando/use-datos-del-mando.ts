@@ -19,11 +19,13 @@ import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
 import { usePilotoActivity } from '@/lib/hooks/piloto/use-piloto-activity'
 import { usePilotoBriefing } from '@/lib/hooks/piloto/use-piloto-briefing'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
+import { usePilotoTendencias } from '@/lib/hooks/piloto/use-piloto-tendencias'
 import type { UseDirectorHoy, UseDirectorMetas } from '@/lib/hooks/piloto/use-piloto-director'
 import type { ActivityItem } from '@/lib/api/piloto'
 
 import { crearMuestra, GOTAS, type DatosDeMuestra } from './muestra'
 import type { DatosDelMando, Pieza } from './tipos'
+import { useRecaudoDelMes } from './use-recaudo-del-mes'
 
 /** Lo mismo que pide la torre (`usePilotoActivity(50)`). */
 export const LIMITE_DE_ACTIVIDAD = 50
@@ -44,6 +46,9 @@ export function useDatosReales(director: LecturasDelDirector): DatosDelMando {
   const actividad = usePilotoActivity(LIMITE_DE_ACTIVIDAD)
   const briefing = usePilotoBriefing()
   const flota = usePilotoFlotaCompartida()
+  // MANDO-DATOS (05-10-2026): las tendencias del micro y el recaudo del mes del back.
+  const tendencias = usePilotoTendencias()
+  const recaudo = useRecaudoDelMes()
   const { hoy, metas } = director
 
   return useMemo<DatosDelMando>(
@@ -70,6 +75,14 @@ export function useDatosReales(director: LecturasDelDirector): DatosDelMando {
       flota: { data: flota.data, isLoading: flota.isLoading, error: flota.error, notAvailable: flota.notAvailable, reintentar: flota.refetch },
       hoy: { data: hoy.data, isLoading: hoy.isLoading, error: hoy.error, notAvailable: hoy.notAvailable, reintentar: hoy.refetch },
       metas: { data: metas.data, isLoading: metas.isLoading, error: metas.error, notAvailable: metas.notAvailable, reintentar: metas.refetch },
+      tendencias: {
+        data: tendencias.data,
+        isLoading: tendencias.isLoading,
+        error: tendencias.error,
+        notAvailable: tendencias.notAvailable,
+        reintentar: tendencias.refetch,
+      },
+      recaudo,
     }),
     [
       pulso.data, pulso.isLoading, pulso.error, pulso.notAvailable, pulso.refetch,
@@ -79,6 +92,8 @@ export function useDatosReales(director: LecturasDelDirector): DatosDelMando {
       flota.data, flota.isLoading, flota.error, flota.notAvailable, flota.refetch,
       hoy.data, hoy.isLoading, hoy.error, hoy.notAvailable, hoy.refetch,
       metas.data, metas.isLoading, metas.error, metas.notAvailable, metas.refetch,
+      tendencias.data, tendencias.isLoading, tendencias.error, tendencias.notAvailable, tendencias.refetch,
+      recaudo,
     ],
   )
 }
@@ -136,6 +151,8 @@ export function useMuestraViva(activa: boolean): DatosDelMando {
       flota: { data: null, isLoading: true, error: null, notAvailable: false },
       hoy: { data: null, isLoading: true, error: null, notAvailable: false },
       metas: { data: null, isLoading: true, error: null, notAvailable: false },
+      tendencias: { data: null, isLoading: true, error: null, notAvailable: false },
+      recaudo: { data: null, isLoading: true, error: null, notAvailable: false },
     }
     if (!activa || !base) return vacia
 
@@ -171,6 +188,8 @@ export function useMuestraViva(activa: boolean): DatosDelMando {
       flota: lista(base.flota),
       hoy: lista(base.hoy),
       metas: lista(base.metas),
+      tendencias: lista(base.tendencias),
+      recaudo: lista(base.recaudo),
     }
   }, [activa, base, gotas])
 }

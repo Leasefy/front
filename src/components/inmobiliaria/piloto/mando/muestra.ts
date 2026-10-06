@@ -23,10 +23,12 @@ import type {
   PilotoBriefing,
   PilotoFlotaResponse,
   PilotoInboxResponse,
+  PilotoTendencias,
   PulsoEnCurso,
   PulsoResponse,
 } from '@/lib/api/piloto'
 import type { DirectorHoy, DirectorMetas, MetaDelDirector, OrdenDelDirector } from '@/lib/api/piloto-director'
+import type { ComoSeMideLaTasa } from '@/lib/tasa-de-recaudo'
 
 const MIN = 60_000
 const HORA = 60 * MIN
@@ -90,9 +92,9 @@ const INMUEBLES = ['Cra. 43A # 1-50 Apto 1203', 'Cl. 10 # 32-15 Apto 402', 'Cra.
 
 function enCursoDeMuestra(ahora: number): PulsoEnCurso[] {
   return [
-    { id: 'muestra:call:1', tipo: 'llamada', titulo: `Laura está llamando a ${P.julian}`, detalle: 'Canon de octubre · 12 días de mora', desde: iso(ahora - 3 * MIN) },
-    { id: 'muestra:wa:1', tipo: 'conversacion', titulo: `WhatsApp abierto con ${P.valentina}`, detalle: 'Pidió el estado de cuenta', desde: iso(ahora - 9 * MIN) },
-    { id: 'muestra:mov:1', tipo: 'deposito', titulo: 'Conciliando un depósito de $ 2.350.000', detalle: 'Bancolombia · un solo candidato', desde: iso(ahora - 1 * MIN) },
+    { id: 'muestra:call:1', tipo: 'llamada', titulo: `Laura está llamando a ${P.julian}`, detalle: 'Canon de octubre · 12 días de mora', desde: iso(ahora - 3 * MIN), agente: 'cobranza' },
+    { id: 'muestra:wa:1', tipo: 'conversacion', titulo: `WhatsApp abierto con ${P.valentina}`, detalle: 'Pidió el estado de cuenta', desde: iso(ahora - 9 * MIN), agente: 'cobranza' },
+    { id: 'muestra:mov:1', tipo: 'deposito', titulo: 'Conciliando un depósito de $ 2.350.000', detalle: 'Bancolombia · un solo candidato', desde: iso(ahora - 1 * MIN), agente: 'conciliacion' },
   ]
 }
 
@@ -226,18 +228,21 @@ const DE_ANTIER: Semilla[] = [
   { agente: 'calidad', tipo: 'piloto', titulo: 'Niti mejoró 3 títulos de publicación' },
 ]
 
+/** Quién (el campo del micro, MANDO-DATOS): los cambios de modo los hizo quien mira; lo demás, los agentes solos. */
+const quienDeLaSemilla = (s: Semilla): ActivityItem['quien'] => (s.agente === 'equipo' ? 'tu' : 'solo')
+
 function actividadDeMuestra(ahora: number): ActivityItem[] {
   const items: ActivityItem[] = []
   const medianoche = medianocheDeHoy(ahora)
   // De hoy: del más nuevo al más viejo.
   DE_HOY.forEach((s, i) => {
-    items.push({ id: `muestra:act:hoy:${i}`, at: iso(hoyA(ahora, 1 - (i + 1) / (DE_HOY.length + 1))), ...s })
+    items.push({ id: `muestra:act:hoy:${i}`, at: iso(hoyA(ahora, 1 - (i + 1) / (DE_HOY.length + 1))), ...s, quien: quienDeLaSemilla(s) })
   })
   DE_AYER.forEach((s, i) => {
-    items.push({ id: `muestra:act:ayer:${i}`, at: iso(medianoche - DIA + (20 - i) * 50 * MIN + 6 * HORA), ...s })
+    items.push({ id: `muestra:act:ayer:${i}`, at: iso(medianoche - DIA + (20 - i) * 50 * MIN + 6 * HORA), ...s, quien: quienDeLaSemilla(s) })
   })
   DE_ANTIER.forEach((s, i) => {
-    items.push({ id: `muestra:act:antier:${i}`, at: iso(medianoche - 2 * DIA + (20 - i) * 50 * MIN + 6 * HORA), ...s })
+    items.push({ id: `muestra:act:antier:${i}`, at: iso(medianoche - 2 * DIA + (20 - i) * 50 * MIN + 6 * HORA), ...s, quien: quienDeLaSemilla(s) })
   })
   return items.slice(0, 50)
 }
@@ -436,6 +441,7 @@ function metasDeMuestra(ahora: number): DirectorMetas {
       meta(ahora, { id: 'muestra:meta:2', metrica: 'mora_30', nombre: 'Mora de más de 30 días (días de facturación)', direccion: 'bajar', unidad: 'dias', lineaBase: 9.4, objetivo: 7, actual: 8.1, estimada: false, porQue: 'La mora larga es la que termina en cobro jurídico.' }, 0.25),
       meta(ahora, { id: 'muestra:meta:3', metrica: 'renovacion', nombre: 'Renovación', direccion: 'subir', unidad: 'porcentaje', lineaBase: 0.71, objetivo: 0.8, actual: 0.76, estimada: false, porQue: 'Cada renovación evita un mes de vacancia.' }, 0.006),
       meta(ahora, { id: 'muestra:meta:4', metrica: 'horas_ahorradas', nombre: 'Horas ahorradas', direccion: 'subir', unidad: 'horas', lineaBase: 0, objetivo: 120, actual: 84, estimada: true, porQue: 'Estimadas por acción hecha sola.' }, 3),
+      meta(ahora, { id: 'muestra:meta:5', metrica: 'recuperado', nombre: 'Plata recuperada (30 días)', direccion: 'subir', unidad: 'pesos', lineaBase: 41_200_000, objetivo: 55_000_000, actual: 48_750_000, estimada: false, porQue: 'Lo que los agentes ayudaron a cobrar en 30 días: la sexta meta.' }, 900_000),
     ],
     sinMeta: [],
   }
@@ -451,6 +457,71 @@ export interface DatosDeMuestra {
   flota: PilotoFlotaResponse
   hoy: DirectorHoy
   metas: DirectorMetas
+  tendencias: PilotoTendencias
+  recaudo: ComoSeMideLaTasa
+}
+
+// ── Las tendencias (MANDO-DATOS) ───────────────────────────────────────────
+
+const diaDe = (t: number) => new Date(t).toLocaleDateString('en-CA', { timeZone: ZONA })
+
+/** 30 días de lo recuperado, 14 de acciones, las horas y la mora: inventados y deterministas (sin azar). */
+function tendenciasDeMuestra(ahora: number): PilotoTendencias {
+  const hoy = diaDe(ahora)
+  const recuperado = Array.from({ length: 30 }, (_, i) => {
+    const dia = 29 - i
+    const base = [0, 1_850_000, 620_000, 3_812_500, 0, 2_350_000, 940_000][dia % 7] as number
+    return { fecha: diaDe(ahora - dia * DIA), cop: dia === 0 ? 1_850_000 : base }
+  })
+  const agentes = ['cobranza', 'conciliacion', 'facturacion', 'contabilidad', 'mantenimiento']
+  const acciones = Array.from({ length: 14 }, (_, i) => {
+    const dia = 13 - i
+    const finDeSemana = [0, 6].includes(new Date(ahora - dia * DIA).getUTCDay())
+    const porAgente = agentes.map((agente, k) => ({
+      agente,
+      solos: Math.max(0, (finDeSemana ? 3 : 9) - k * 2 + ((dia + k) % 3)),
+      conPersona: k === 0 && !finDeSemana ? 2 : 0,
+    }))
+    const solos = porAgente.reduce((s, a) => s + a.solos, 0)
+    const conPersona = porAgente.reduce((s, a) => s + a.conPersona, 0)
+    return { fecha: diaDe(ahora - dia * DIA), total: solos + conPersona, solos, conPersona, porAgente: porAgente.filter((a) => a.solos + a.conPersona > 0) }
+  })
+  const mora = Array.from({ length: 30 }, (_, i) => {
+    const dia = 29 - i
+    const saldo = 38_400_000 - (29 - dia) * 310_000 + (dia % 4) * 120_000
+    return { fecha: diaDe(ahora - dia * DIA), valor: Math.round((saldo / 141_000_000) * 30 * 10) / 10, saldoCop: saldo }
+  })
+  return {
+    hoy,
+    recuperado: { desde: recuperado[0]?.fecha ?? hoy, hasta: hoy, dias: recuperado },
+    acciones: { desde: acciones[0]?.fecha ?? hoy, hasta: hoy, dias: acciones, recortada: false },
+    horas: {
+      desde: diaDe(ahora - 29 * DIA),
+      hasta: hoy,
+      total: 84,
+      medidas: 12,
+      estimadas: 72,
+      llamadas: 146,
+      acciones: 612,
+      estimada: true,
+      supuesto:
+        'Medidas: el tiempo real al teléfono de Laura. Estimadas: cada acción que el Piloto hizo, por los minutos que le tomaría a una persona con todo a la vista (una tabla conservadora por proceso; ninguno pasa de una hora).',
+    },
+    mora: { desde: mora[0]?.fecha ?? hoy, hasta: hoy, dias: mora, definicion: 'Saldo de las cuotas con más de 30 días de mora.' },
+  }
+}
+
+function recaudoDeMuestra(ahora: number): ComoSeMideLaTasa {
+  return {
+    month: diaDe(ahora).slice(0, 7),
+    base: 'CAUSADO',
+    porDefecto: true,
+    disponible: true,
+    opciones: [
+      { base: 'CAUSADO', porDefecto: true, rotulo: 'Recaudo sobre lo causado', definicion: '', numeradorCop: 98_460_000, denominadorCop: 141_000_000, pct: 69.8298 },
+      { base: 'EMITIDO', porDefecto: false, rotulo: 'Pagado de lo emitido', definicion: '', numeradorCop: 98_460_000, denominadorCop: 118_200_000, pct: 83.2995 },
+    ],
+  }
 }
 
 export function crearMuestra(ahora: number): DatosDeMuestra {
@@ -462,6 +533,8 @@ export function crearMuestra(ahora: number): DatosDeMuestra {
     flota: flotaDeMuestra(ahora),
     hoy: hoyDeMuestra(ahora),
     metas: metasDeMuestra(ahora),
+    tendencias: tendenciasDeMuestra(ahora),
+    recaudo: recaudoDeMuestra(ahora),
   }
 }
 

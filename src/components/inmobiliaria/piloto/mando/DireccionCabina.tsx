@@ -30,7 +30,7 @@ import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
-import { avanceDeMeta, horaCorta, horaDelCuando, porcentaje } from './calculos'
+import { avanceDeMeta, cuandoDeLaOrden, horaCorta, horaDelCuando, porcentaje } from './calculos'
 import { indicadoresDelMando, type IndicadoresDelMando } from './indicadores'
 import { BarraDeAvance, Cifra, EnPieza, FilaDeDecision, ListaEnVivo, OrbeDelPiloto, PuntoDeEstado, Reloj, pesos, unir, useAhora, useNombreDeAgente } from './piezas'
 import { TEXTOS } from './textos'
@@ -190,7 +190,7 @@ export function PlanDelDirector({
     const ordenes = ind.director?.ordenes ?? []
     return ordenes
       .filter((o) => !['ejecutada', 'descartada', 'fallida', 'deshecha', 'vencida'].includes(String(o.estado)))
-      .map((o) => ({ o, cuando: horaDelCuando(o.cuando, ahora) }))
+      .map((o) => ({ o, cuando: horaDelCuando(cuandoDeLaOrden(o), ahora) }))
       .sort((a, b) => (a.cuando.at?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.cuando.at?.getTime() ?? Number.MAX_SAFE_INTEGER))
       .slice(0, 5)
   }, [ind.director, ahora])

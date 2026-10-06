@@ -9,8 +9,10 @@
  */
 
 import type {
+  AccionesDelDia,
   ActivityItem,
   AutonomiaModo,
+  DiaRecuperado,
   BriefingNumeros,
   InboxItem,
   PilotoBriefing,
@@ -20,8 +22,10 @@ import type {
   PulsoResponse,
   PulsoSeveridad,
 } from '@/lib/api/piloto'
-import type { DirectorHoy, MetaDelDirector } from '@/lib/api/piloto-director'
+import type { DirectorHoy, MetaDelDirector, OrdenDelDirector } from '@/lib/api/piloto-director'
 import type { EstadoDelOrbe } from '@/lib/agentes/agente-que-habla'
+import { restar, sumar } from '@/lib/plata/plata'
+import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo'
 
 export const ZONA = 'America/Bogota'
 const DIA_MS = 86_400_000
@@ -237,10 +241,15 @@ export function metasParaMostrar(metas: readonly MetaDelDirector[]): MetaDelDire
   return [...metas].filter((m) => String(m.estado) !== 'pausada').sort((a, b) => peso(String(a.estado)) - peso(String(b.estado)))
 }
 
-/** El avance medio de las metas ACTIVAS con avance medible. */
+/**
+ * El avance medio de las metas ACTIVAS con avance medible y cifra REAL. Una
+ * meta estimada (las horas ahorradas: una parte es una estimación) no entra al
+ * promedio: se ve en su tarjeta con su rótulo (MANDO-DATOS, Nico 05-10-2026).
+ * Lo recuperado, en pesos y real, sí entra.
+ */
 export function avanceMedio(metas: readonly MetaDelDirector[]): { n: number; avance: number } | null {
   const avances = metas
-    .filter((m) => String(m.estado) === 'activa')
+    .filter((m) => String(m.estado) === 'activa' && !m.estimada)
     .map(avanceDeMeta)
     .filter((a): a is number => a !== null)
   if (avances.length === 0) return null
@@ -278,11 +287,13 @@ export function conteoDeLaFlota(flota: PilotoFlotaResponse | null): ConteoDeLaFl
 }
 
 /**
- * Qué agente está detrás de algo EN CURSO, leído del tipo (una llamada o un
- * WhatsApp son de cobranza; un depósito, de conciliación). Sin coincidencia,
- * nadie (no se inventa).
+ * Qué agente está detrás de algo EN CURSO: el campo `agente` del pulso
+ * (MANDO-DATOS, 05-10-2026). Un micro anterior no lo manda: entonces se lee
+ * del tipo como antes (una llamada o un WhatsApp son de cobranza; un depósito,
+ * de conciliación). Sin coincidencia, nadie (no se inventa).
  */
-export function agenteDelEnCurso(e: Pick<PulsoEnCurso, 'tipo'>): string | null {
+export function agenteDelEnCurso(e: Pick<PulsoEnCurso, 'tipo' | 'agente'>): string | null {
+  if (typeof e.agente === 'string' && e.agente) return e.agente
   if (/llamada|whatsapp|conversaci/i.test(e.tipo)) return 'cobranza'
   if (/dep[oó]sito|concilia/i.test(e.tipo)) return 'conciliacion'
   return null
@@ -343,12 +354,12 @@ export interface HechoHoy {
   promesas: number | null
 }
 
-/** Los acuerdos del día vienen del briefing (`promesasHoy`, o `promesasCreadasHoy` según la versión del micro). */
+/**
+ * Los acuerdos del día vienen del briefing: `promesasCreadasHoy`, un solo
+ * nombre en el micro y en el tipo del front (MANDO-DATOS, 05-10-2026).
+ */
 function promesasDelBriefing(n: BriefingNumeros | undefined): number | null {
-  if (!n) return null
-  if (typeof (n as Record<string, unknown>).promesasHoy === 'number') return (n as Record<string, number>).promesasHoy as number
-  const otra = (n as Record<string, unknown>).promesasCreadasHoy
-  return typeof otra === 'number' ? otra : null
+  return typeof n?.promesasCreadasHoy === 'number' ? n.promesasCreadasHoy : null
 }
 
 export function hechoHoy(pulso: PulsoResponse | null, briefing: PilotoBriefing | null): HechoHoy | null {
@@ -372,10 +383,13 @@ export function recuperadoDelMes(briefing: PilotoBriefing | null): number | null
 export const DEL_EQUIPO = 'equipo'
 
 /**
- * ¿La hizo (o la decidió) una persona? Firma `equipo`, o «Lo decidió una
- * persona del equipo» en las acciones del back.
+ * ¿La hizo (o la decidió) una persona? El micro lo dice como CAMPO en cada
+ * entrada (`quien`: solo | equipo | tu; MANDO-DATOS, 05-10-2026). Un micro
+ * anterior no lo manda: entonces se lee como antes (firma `equipo`, o «Lo
+ * decidió una persona del equipo» en las acciones del back).
  */
-export function esDeUnaPersona(i: Pick<ActivityItem, 'agente' | 'detalle'>): boolean {
+export function esDeUnaPersona(i: Pick<ActivityItem, 'agente' | 'detalle' | 'quien'>): boolean {
+  if (i.quien) return i.quien !== 'solo'
   return i.agente === DEL_EQUIPO || /decidi[oó] una persona/i.test(i.detalle ?? '')
 }
 
@@ -496,6 +510,14 @@ export function horaDelCuando(cuando: string | null, ahora: number): { at: Date 
   return { at: new Date(Date.UTC(y, m - 1, d, horas + 5, Number(h[2]))), esDeHoy: true }
 }
 
+/**
+ * El «cuándo» de una orden para ubicarla: el instante ISO que manda el micro
+ * (`cuandoIso`, MANDO-DATOS 05-10-2026) y, de un micro anterior, las palabras.
+ */
+export function cuandoDeLaOrden(o: Pick<OrdenDelDirector, 'cuando' | 'cuandoIso'>): string | null {
+  return o.cuandoIso ?? o.cuando
+}
+
 const ORDEN_TERMINADA = new Set(['ejecutada', 'descartada', 'fallida', 'deshecha', 'vencida'])
 
 export function eventosDeHoy(args: {
@@ -539,7 +561,7 @@ export function eventosDeHoy(args: {
   if (hoy?.encendido) {
     for (const o of hoy.ordenes) {
       if (ORDEN_TERMINADA.has(String(o.estado))) continue
-      const { at, esDeHoy } = horaDelCuando(o.cuando, ahora)
+      const { at, esDeHoy } = horaDelCuando(cuandoDeLaOrden(o), ahora)
       if (!esDeHoy) continue
       const ev: EventoDelDia = {
         id: `orden:${o.ordenId}`,
@@ -587,3 +609,89 @@ export function porcentaje(x: number): string {
   return `${Math.round(x * 100)}\u00a0%`
 }
 
+// ── Las tendencias (MANDO-DATOS, 05-10-2026) ────────────────────────────────
+
+/**
+ * Lo recuperado en el mes de Colombia de `ahora`, sumado de la serie diaria del
+ * micro (la MISMA definición de `recuperadoMesCop`, por día). Sirve cuando el
+ * briefing no manda la cifra del mes (el micro la omite en 0): con la serie sí
+ * se sabe que fue 0. `null` si la serie no trae días de este mes.
+ */
+export function recuperadoDelMesDeLaSerie(dias: readonly DiaRecuperado[], ahora: number): number | null {
+  const mes = diaEnColombia(new Date(ahora)).slice(0, 7)
+  const delMes = dias.filter((d) => d.fecha.startsWith(mes))
+  return delMes.length === 0 ? null : sumar(...delMes.map((d) => d.cop))
+}
+
+export interface TendenciaDeMora {
+  /** El saldo con más de 30 días de mora, en pesos, del último día con dato. */
+  saldo: number
+  /** Lo mismo en días de facturación (la unidad de la meta `mora_30`). */
+  dias: number | null
+  /** Cuánto cambió el saldo desde el primer día de la serie (pesos; + = subió). */
+  cambio: number
+  /** Los días que cubre la comparación. */
+  diasDeLaSerie: number
+  /** Los saldos día por día, para la mini-gráfica. */
+  serie: number[]
+}
+
+/** La tendencia de la mora larga. `null` con menos de dos días con saldo (una tendencia de un punto no existe). */
+export function tendenciaDeMora(dias: ReadonlyArray<{ fecha: string; valor: number | null; saldoCop: number | null }>): TendenciaDeMora | null {
+  const con = [...dias].filter((d): d is { fecha: string; valor: number | null; saldoCop: number } => typeof d.saldoCop === 'number').sort((a, b) => a.fecha.localeCompare(b.fecha))
+  if (con.length < 2) return null
+  const primero = con[0] as (typeof con)[number]
+  const ultimo = con[con.length - 1] as (typeof con)[number]
+  return {
+    saldo: ultimo.saldoCop,
+    dias: typeof ultimo.valor === 'number' ? ultimo.valor : null,
+    cambio: restar(ultimo.saldoCop, primero.saldoCop),
+    diasDeLaSerie: con.length,
+    serie: con.map((d) => d.saldoCop),
+  }
+}
+
+/** «84 h», «1,5 h», «45 min» (menos de una hora, en minutos). */
+export function horasEnPalabras(h: number): string {
+  if (!Number.isFinite(h) || h <= 0) return '0 h'
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}\u00a0min` // redondeo: no es plata
+  return `${h.toLocaleString('es-CO', { maximumFractionDigits: h < 10 ? 1 : 0 })}\u00a0h`
+}
+
+export interface BarraDeAcciones {
+  fecha: string
+  /** Lo que hicieron solos, por agente (de más a menos). */
+  porAgente: Array<{ agente: string; n: number }>
+  solos: number
+  conPersona: number
+  esHoy: boolean
+}
+
+/** Las barras de las acciones por día (14 días): sólo lo que hicieron SOLOS se apila por agente. */
+export function barrasDeLasAcciones(dias: readonly AccionesDelDia[], hoy: string): BarraDeAcciones[] {
+  return [...dias]
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .map((d) => ({
+      fecha: d.fecha,
+      porAgente: d.porAgente
+        .filter((a) => a.solos > 0)
+        .map((a) => ({ agente: a.agente, n: a.solos }))
+        .sort((a, b) => b.n - a.n),
+      solos: d.solos,
+      conPersona: d.conPersona,
+      esHoy: d.fecha === hoy,
+    }))
+}
+
+/** Los agentes que aparecen en las barras, del que más hizo al que menos (para la leyenda y los colores). */
+export function agentesDeLasBarras(barras: readonly BarraDeAcciones[]): string[] {
+  const total = new Map<string, number>()
+  for (const b of barras) for (const a of b.porAgente) total.set(a.agente, (total.get(a.agente) ?? 0) + a.n)
+  return [...total.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([a]) => a)
+}
+
+/** La tasa de recaudo del mes con la base que eligió la inmobiliaria (la mide el back: aquí no se divide nada). */
+export function recaudoConSuBase(r: ComoSeMideLaTasa | null): TasaDeRecaudo | null {
+  if (!r) return null
+  return r.opciones.find((o) => o.base === r.base) ?? null
+}

@@ -6,14 +6,17 @@
  * Cada campo es `null` cuando su lectura no llegó: «sin dato», nunca 0.
  */
 
-import type { ActivityItem, InboxItem, PulsoAlerta, PulsoEnCurso, PulsoSeveridad } from '@/lib/api/piloto'
+import type { ActivityItem, InboxItem, PilotoTendencias, PulsoAlerta, PulsoEnCurso, PulsoSeveridad } from '@/lib/api/piloto'
+import type { TasaDeRecaudo } from '@/lib/tasa-de-recaudo'
 import type { DirectorHoy, MetaDelDirector } from '@/lib/api/piloto-director'
 
 import {
   alertasParaMostrar,
   alertasPorSeveridad,
+  agentesDeLasBarras,
   atrasadas,
   avanceDelPlan,
+  barrasDeLasAcciones,
   avanceMedio,
   conteoDeLaFlota,
   estadoDelMando,
@@ -21,17 +24,22 @@ import {
   hechoHoy,
   metasParaMostrar,
   pilotoActivo,
+  recaudoConSuBase,
   recuperadoDelMes,
+  recuperadoDelMesDeLaSerie,
   solosHoyPorAgente,
+  tendenciaDeMora,
   tripulacion,
   urgentes,
   vozDelDia,
   type AvanceDelPlan,
+  type BarraDeAcciones,
   type ConteoDeLaFlota,
   type EstadoDelMando,
   type HechoHoy,
   type MiembroDeLaTripulacion,
   type SoloPorAgente,
+  type TendenciaDeMora,
   type VozDelDia,
 } from './calculos'
 import type { EstadoDelOrbe } from '@/lib/agentes/agente-que-habla'
@@ -75,6 +83,21 @@ export interface IndicadoresDelMando {
   /** Actividad. */
   actividad: ActivityItem[]
   solosHoy: { porAgente: SoloPorAgente[]; total: number; recortado: boolean } | null
+  /** MANDO-DATOS (05-10-2026): las tendencias. Cada una `null` = sin dato. */
+  recuperadoPorDia: Array<{ fecha: string; cop: number }> | null
+  /** Las metas activas que no entran al promedio por ser estimadas (se ven en su tarjeta). */
+  metasEstimadasAparte: number
+  /**
+   * Las metas activas de cifra real SIN tramo que medir (el objetivo es su
+   * línea base: «arranca en tu nivel de hoy» o «sostenerla»). Existen: el
+   * medidor no puede decir «sin metas».
+   */
+  metasEnSuPuntoDePartida: number
+  acciones: { barras: BarraDeAcciones[]; agentes: string[]; recortada: boolean } | null
+  horas: PilotoTendencias['horas']
+  mora: (TendenciaDeMora & { definicion: string }) | null
+  /** La tasa de recaudo del mes con la base que eligió la inmobiliaria (la mide el back). */
+  recaudo: TasaDeRecaudo | null
 }
 
 export function indicadoresDelMando(d: DatosDelMando, ahora: number): IndicadoresDelMando {
@@ -88,6 +111,9 @@ export function indicadoresDelMando(d: DatosDelMando, ahora: number): Indicadore
   const director = d.hoy.data
   const metas = d.metas.data?.encendido ? metasParaMostrar(d.metas.data.metas) : []
   const actividad = d.actividad.data ?? []
+  const tendencias = d.tendencias?.data ?? null
+  const barras = tendencias?.acciones ? barrasDeLasAcciones(tendencias.acciones.dias, tendencias.hoy) : null
+  const mora = tendencias?.mora ? tendenciaDeMora(tendencias.mora.dias) : null
   return {
     activo,
     estado,
@@ -103,7 +129,8 @@ export function indicadoresDelMando(d: DatosDelMando, ahora: number): Indicadore
     atrasadas: bandeja ? atrasadas(bandeja.items, ahora) : null,
     urgentes: bandeja ? urgentes(bandeja.items, 5) : [],
     hoy: hechoHoy(pulso, d.briefing.data),
-    recuperado: recuperadoDelMes(d.briefing.data),
+    // El del briefing; si no lo manda (lo omite en 0), el del mes sumado de la serie diaria (la misma definición).
+    recuperado: recuperadoDelMes(d.briefing.data) ?? (tendencias?.recuperado ? recuperadoDelMesDeLaSerie(tendencias.recuperado.dias, ahora) : null),
     flota: conteoDeLaFlota(flota),
     tripulacion: tripulacion(flota, actividad, enCurso),
     director,
@@ -113,5 +140,12 @@ export function indicadoresDelMando(d: DatosDelMando, ahora: number): Indicadore
     avanceDeMetas: avanceMedio(metas),
     actividad,
     solosHoy: d.actividad.data ? solosHoyPorAgente(d.actividad.data, ahora, d.limiteDeActividad) : null,
+    recuperadoPorDia: tendencias?.recuperado?.dias ?? null,
+    metasEstimadasAparte: metas.filter((m) => String(m.estado) === 'activa' && m.estimada).length,
+    metasEnSuPuntoDePartida: metas.filter((m) => String(m.estado) === 'activa' && !m.estimada && m.lineaBase !== null && m.lineaBase === m.objetivo).length,
+    acciones: barras ? { barras, agentes: agentesDeLasBarras(barras), recortada: Boolean(tendencias?.acciones?.recortada) } : null,
+    horas: tendencias?.horas ?? null,
+    mora: mora && tendencias?.mora ? { ...mora, definicion: tendencias.mora.definicion } : null,
+    recaudo: recaudoConSuBase(d.recaudo?.data ?? null),
   }
 }

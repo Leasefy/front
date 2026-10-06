@@ -39,6 +39,7 @@ import { HoyHoraPorHora } from './DireccionMision'
 import { DireccionNucleo } from './DireccionNucleo'
 import { indicadoresDelMando } from './indicadores'
 import { useAhora } from './piezas'
+import { RitmoDeLosAgentes, TarjetaDelNegocio } from './tendencias'
 import type { PropsDeDireccion } from './tipos'
 
 export function DireccionElegida({ datos, acciones, activacion }: PropsDeDireccion) {
@@ -78,8 +79,12 @@ export function DireccionElegida({ datos, acciones, activacion }: PropsDeDirecci
           <section className={cn(TARJETA, 'p-5')} aria-label="Lo urgente">
             <LoUrgente ind={ind} datos={datos} acciones={acciones} ahora={ahora} {...(acciones.abrirBandeja ? { onAbrirBandeja: acciones.abrirBandeja } : {})} />
           </section>
+          {/* MANDO-DATOS: lo que hicieron solos, por día y por agente (14 días). */}
+          <RitmoDeLosAgentes ind={ind} datos={datos} />
         </StaggerItem>
         <StaggerItem key="derecha" className="min-w-0 space-y-4 lg:col-span-5">
+          {/* MANDO-DATOS: el recaudo del mes, la mora de más de 30 días y las horas ahorradas. */}
+          <TarjetaDelNegocio ind={ind} datos={datos} />
           <TarjetaDeAlertas ind={ind} />
           <section className={cn(TARJETA, 'p-5')} aria-label="En vivo">
             <EnVivo ind={ind} datos={datos} acciones={acciones} {...(acciones.abrirActividad ? { onAbrirActividad: acciones.abrirActividad } : {})} />

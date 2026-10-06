@@ -15,10 +15,12 @@ import type {
   InboxItem,
   PilotoBriefing,
   PilotoFlotaResponse,
+  PilotoTendencias,
   PulsoAlerta,
   PulsoResponse,
 } from '@/lib/api/piloto'
 import type { DirectorHoy, DirectorMetas } from '@/lib/api/piloto-director'
+import type { ComoSeMideLaTasa } from '@/lib/tasa-de-recaudo'
 import type { ControlDeAgentes } from './control-de-agentes'
 import type { Fuente } from './textos'
 
@@ -50,6 +52,14 @@ export interface DatosDelMando {
   flota: Pieza<PilotoFlotaResponse>
   hoy: Pieza<DirectorHoy>
   metas: Pieza<DirectorMetas>
+  /**
+   * MANDO-DATOS (05-10-2026): las tendencias del micro (lo recuperado por día,
+   * las acciones por día y por agente, las horas ahorradas y la mora) y la
+   * tasa de recaudo del mes del back. Opcionales: sin ellas, la pantalla de
+   * antes (cada pieza dice «sin dato»).
+   */
+  tendencias?: Pieza<PilotoTendencias>
+  recaudo?: Pieza<ComoSeMideLaTasa>
   /** Cuántas acciones se pidieron al feed (para saber si la lista vino recortada). */
   limiteDeActividad: number
 }

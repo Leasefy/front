@@ -6,6 +6,8 @@
  * Bandeja como dice el contrato (`director-api-front.md`, «Bandeja»).
  */
 
+import { formatCurrency } from '@/lib/format'
+
 type Idioma = 'es' | 'en'
 
 const localeDe = (idioma: Idioma) => (idioma === 'en' ? 'en-US' : 'es-CO')
@@ -35,6 +37,8 @@ export function ordenarBandeja<T extends { desde: string; director?: { prioridad
 /** Un valor de una meta en su unidad: «84 %», «12 días», «36 h». */
 export function valorDeMeta(valor: number | null, unidad: string, idioma: Idioma = 'es'): string {
   if (valor === null || !Number.isFinite(valor)) return '—'
+  // La meta de lo recuperado (MANDO-DATOS, 05-10-2026): pesos como se escriben en Colombia.
+  if (unidad === 'pesos') return formatCurrency(valor, idioma)
   const loc = localeDe(idioma)
   if (unidad === 'porcentaje') {
     return new Intl.NumberFormat(loc, { style: 'percent', maximumFractionDigits: 1 }).format(valor)
@@ -56,6 +60,13 @@ export function objetivoEnElCampo(valor: number, unidad: string): string {
 
 /** Lo que se escribió en el campo, de vuelta a la unidad del micro. `null` si no es un número. */
 export function objetivoDesdeElCampo(escrito: string, unidad: string): number | null {
+  // Pesos como se escriben («$ 5.000.000» o «5000000,50»): el punto es de mil y la coma, de los centavos.
+  if (unidad === 'pesos') {
+    const pesos = escrito.trim().replace(/[\s$]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')
+    if (pesos === '' || !/^\d+(\.\d{1,2})?$/.test(pesos)) return null
+    const n = Number(pesos)
+    return Number.isFinite(n) ? n : null
+  }
   const limpio = escrito.trim().replace(/\s|%/g, '').replace(',', '.')
   if (limpio === '' || !/^-?\d+(\.\d+)?$/.test(limpio)) return null
   const n = Number(limpio)

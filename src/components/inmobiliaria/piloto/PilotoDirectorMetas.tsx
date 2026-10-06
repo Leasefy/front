@@ -241,7 +241,8 @@ function TarjetaDeMeta({
         </Badge>
       </div>
 
-      <dl className="grid grid-cols-3 gap-2">
+      {/* En pesos («$ 14.302.500,75») las tres cifras no caben en tres columnas: una debajo de otra, con todo el ancho (MANDO-DATOS). */}
+      <dl className={m.unidad === 'pesos' ? 'grid grid-cols-1 gap-1.5' : 'grid grid-cols-3 gap-2'}>
         {(
           [
             ['lineaBase', m.lineaBase],
@@ -330,7 +331,11 @@ function TarjetaDeMeta({
         <form onSubmit={enviarAjuste} className="space-y-1.5" data-testid={`piloto-director-meta-form-${m.metrica}`}>
           <Label htmlFor={idCampo} className="text-caption text-fg-muted">
             {t('inmobiliaria.piloto.director.metas.nuevoObjetivo', {
-              unidad: t(`inmobiliaria.piloto.director.metas.unidad.${['porcentaje', 'dias', 'horas'].includes(unidad) ? unidad : 'porcentaje'}`),
+              // La meta de lo recuperado va en pesos (MANDO-DATOS, 05-10-2026): el símbolo, como el «%».
+              unidad:
+                unidad === 'pesos'
+                  ? '$'
+                  : t(`inmobiliaria.piloto.director.metas.unidad.${['porcentaje', 'dias', 'horas'].includes(unidad) ? unidad : 'porcentaje'}`),
             })}
           </Label>
           <div className="flex flex-wrap items-center gap-2">

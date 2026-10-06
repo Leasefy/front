@@ -38,6 +38,13 @@ export interface ActivityItem {
   titulo: string
   detalle?: string
   href?: string
+  /**
+   * MANDO-DATOS (05-10-2026): quién lo hizo, como campo del micro (no del
+   * texto): `solo` = el Piloto o el agente sin una persona; `equipo` = otra
+   * persona del equipo; `tu` = quien mira. Sin nombre ni correo (ARREGLOS-4).
+   * Un micro anterior no lo manda.
+   */
+  quien?: 'solo' | 'equipo' | 'tu'
 }
 
 export interface PilotoActivityResponse {
@@ -198,8 +205,13 @@ export interface BriefingNumeros {
   pendientes?: number
   altas?: number
   llamadasHoy?: number
-  promesasHoy?: number
-  /** Plata recuperada por los agentes en el mes corriente (entero COP). */
+  /**
+   * Las promesas de pago CREADAS hoy. Un solo nombre en el micro y aquí
+   * (MANDO-DATOS, 05-10-2026): antes este tipo decía `promesasHoy`, que en el
+   * pulso son las que VENCEN hoy, y el micro siempre mandó éste.
+   */
+  promesasCreadasHoy?: number
+  /** Plata recuperada por los agentes en el mes corriente (pesos, al centavo). */
   recuperadoMesCop?: number
 }
 
@@ -332,6 +344,11 @@ export interface PulsoEnCurso {
   /** ISO-8601 — desde cuándo está en curso. */
   desde?: string
   href?: string
+  /**
+   * MANDO-DATOS (05-10-2026): el agente detrás (id de la flota: `cobranza`,
+   * `retencion`…), como campo. Sin agente conocido no viene.
+   */
+  agente?: string
 }
 
 /** Un caso concreto detrás del número de una alerta. Su `id` abre el cajón. */
@@ -491,6 +508,63 @@ export function fetchPilotoDetalle(
     `/api/agency/${agencyId}/ai-hub/detalle/${encodeURIComponent(itemId)}`,
     signal,
   )
+}
+
+// ── Tendencias del centro de mando (MANDO-DATOS, 05-10-2026) ────────────────
+
+/** Lo recuperado un día de Bogotá (la definición de «Recuperado este mes»). */
+export interface DiaRecuperado {
+  fecha: string
+  cop: number
+}
+
+export interface AccionesDelDia {
+  fecha: string
+  total: number
+  /** Lo que hicieron el Piloto o los agentes sin una persona. */
+  solos: number
+  /** Lo que hizo o decidió una persona del equipo. */
+  conPersona: number
+  porAgente: Array<{ agente: string; solos: number; conPersona: number }>
+}
+
+/**
+ * `GET …/ai-hub/tendencias`: cada pieza `null` si el micro no la pudo leer
+ * (o quien mira no ve la cobranza: lo recuperado y la mora).
+ */
+export interface PilotoTendencias {
+  /** Hoy en Bogotá: el último día de cada serie (va a medias). */
+  hoy: string
+  /** 30 días, todos (los que no tuvieron pagos, en 0). */
+  recuperado: { desde: string; hasta: string; dias: DiaRecuperado[] } | null
+  /** 14 días, con las MISMAS entradas de la Actividad. */
+  acciones: { desde: string; hasta: string; dias: AccionesDelDia[]; recortada: boolean } | null
+  /** Las horas ahorradas en 30 días (v2: medidas + estimadas). */
+  horas: {
+    desde: string
+    hasta: string
+    total: number | null
+    medidas: number
+    estimadas: number | null
+    llamadas: number
+    acciones: number | null
+    estimada: boolean
+    supuesto: string
+  } | null
+  /** La mora de más de 30 días por día (la `mora_30` del director, al momento). */
+  mora: {
+    desde: string
+    hasta: string
+    dias: Array<{ fecha: string; valor: number | null; saldoCop: number | null }>
+    definicion: string
+  } | null
+}
+
+export function fetchPilotoTendencias(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoTendencias>> {
+  return getJson<PilotoTendencias>(`/api/agency/${agencyId}/ai-hub/tendencias`, signal)
 }
 
 export function fetchPilotoBriefing(

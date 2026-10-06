@@ -86,6 +86,11 @@ export interface OrdenDelDirector {
   procesoNombre: string
   entidad: EntidadDelDirector | null
   cuando: string | null
+  /**
+   * MANDO-DATOS (05-10-2026): el mismo «cuándo» como instante ISO (`null` =
+   * «hoy» o «ahora», sin hora fija). Un micro anterior no lo manda.
+   */
+  cuandoIso?: string | null
   prioridad: number
   porQue: string
   evidencia: EvidenciaDelDirector[]
@@ -170,7 +175,8 @@ export interface DirectorHoy {
   grupoDeControl: { activo: boolean; omitidas: number }
 }
 
-export type UnidadDeMeta = 'porcentaje' | 'dias' | 'horas'
+/** `pesos`: la meta de lo recuperado (la sexta, Nico 05-10-2026). */
+export type UnidadDeMeta = 'porcentaje' | 'dias' | 'horas' | 'pesos'
 export type EstadoDeMeta = 'propuesta' | 'activa' | 'pausada' | 'cumplida' | 'vencida'
 export type AccionSobreMeta = 'aceptar' | 'ajustar' | 'pausar'
 
@@ -363,6 +369,7 @@ export function normalizarHoy(raw: unknown): DirectorHoy {
         procesoNombre: texto(o.procesoNombre) ?? '',
         entidad: normalizarEntidad(o.entidad),
         cuando: texto(o.cuando),
+        cuandoIso: texto(o.cuandoIso),
         prioridad: numero(o.prioridad) ?? 0,
         porQue: texto(o.porQue) ?? '',
         evidencia: normalizarEvidencias(o.evidencia),

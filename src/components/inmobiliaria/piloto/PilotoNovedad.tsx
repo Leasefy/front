@@ -4,10 +4,12 @@
  * PilotoNovedad — la presentación del Piloto automático, la primera vez.
  *
  * Nico (30-09): «quizás cuando entren puedan ver con un modal de esos donde
- * mostramos nuevo feature y explicamos qué hace esto». Es el patrón §Novedades
- * del sistema de diseño (`FeatureAnnouncement` de cadence), el mismo que
- * presenta a cada agente al entrar a su espacio (`AgentIntroModal`): tres
- * pasos cortos y «Entendido».
+ * mostramos nuevo feature y explicamos qué hace esto». Desde el 05-10-2026 es
+ * la dirección A «Escenario» que eligió Nico, la MISMA de cada agente
+ * (`PresentacionEscenario`, `components/agentes/presentacion/`): el orbe de
+ * Ori despierta en el centro de la marca, con sus dos anillos y sin las
+ * líneas grandes alrededor; qué hacen tus agentes, lo que necesita de ti y el
+ * modo (de la flota), y «Entendido».
  *
  * ── Una vez por PERSONA, guardado en el servidor ──────────────────────────
  * El «ya la vi» usa el mismo mecanismo que el recorrido del panel y las
@@ -21,10 +23,9 @@
  *   · «Entendido» la deja `completo`; Esc, el fondo o la ✕, `omitido`.
  *   · Mientras no se sabe si ya la vio (`estaVista` → `null`) no sale.
  *   · Se vuelve a ver desde «¿Cómo funciona?» (`forzada`), sin tocar la marca.
- *   · El héroe es el ORBE de Ori, no la aurora (Nico, 02-10-2026: la
- *     presentación de cada agente usa su orbe grande): el mismo
- *     `PresentacionConOrbe` de `AgentIntroModal`. El orbe entra y despierta
- *     —quieto → trabajando → listo— mientras aparece el texto. Sin la píldora
+ *   · El héroe es el ORBE de Ori (Nico, 02-10-2026), en el escenario de la
+ *     dirección A (05-10): entra y despierta —quieto → pensando →
+ *     trabajando → listo— mientras aparece el texto. Sin la píldora
  *     «L Leasefy».
  *
  * ── Nunca encima de otra bienvenida (coordinación, 30-09) ────────────────
@@ -42,23 +43,19 @@
  *     recorrido (`CAPAS_QUE_BLOQUEAN` en `pasos-del-tour.ts`). Las pantallas
  *     del segundo factor son otra ruta: el Inicio ni está montado.
  *
- * A11y: `Dialog` de Radix — foco atrapado y devuelto al cerrar, Esc, título y
+ * A11y: el `Dialog` del DS — foco atrapado y devuelto al cerrar, Esc, título y
  * descripción anunciados.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { Robot, SlidersHorizontal, Tray, X } from '@phosphor-icons/react'
 
-import { PresentacionConOrbe } from '@/components/agentes/PresentacionConOrbe'
-import { useI18n } from '@/lib/i18n'
+import { FICHAS, PresentacionEscenario } from '@/components/agentes/presentacion'
 import { useAuth } from '@/lib/auth'
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext'
-import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre'
+import { MODOS_DEL_PILOTO, type AutonomiaModo } from '@/lib/api/piloto'
 import type { EstadoDelOnboarding } from '@/lib/api/onboarding-visto.service'
+import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { claveDeLaNovedadDelPiloto } from './como-funciona'
-
-const NS = 'inmobiliaria.piloto.novedad'
 
 /** El mismo respiro que la presentación de los agentes: que la pantalla pinte primero. */
 const ESPERA_AL_ENTRAR_MS = 600
@@ -113,7 +110,6 @@ export interface PilotoNovedadProps {
 }
 
 export function PilotoNovedad({ forzada = false, onCerrarForzada }: PilotoNovedadProps) {
-  const { t } = useI18n()
   const { user } = useAuth()
   const prefs = usePanelPrefsSafe()
   const clave = claveDeLaNovedadDelPiloto(user?.id)
@@ -179,58 +175,25 @@ export function PilotoNovedad({ forzada = false, onCerrarForzada }: PilotoNoveda
     [vista, prefs, clave, forzada, onCerrarForzada],
   )
 
-  const titulo = t(`${NS}.titulo`)
-  const descripcion = t(`${NS}.descripcion`)
+  // El modo del piloto automático y si está activo: la misma lectura de la flota
+  // que la píldora del header. Sin flota, el modo con el que arranca: Copiloto.
+  const flota = usePilotoFlotaCompartida().data
+  const modo =
+    flota && (MODOS_DEL_PILOTO as readonly string[]).includes(flota.modo) ? (flota.modo as AutonomiaModo) : undefined
+  const pilotoActivo = flota ? (flota.piloto?.activo ?? flota.activo) : null
 
+  // A «Escenario» (Nico, 05-10-2026), con el orbe de Ori y sus dos anillos.
+  // Los textos son los de siempre (`inmobiliaria.piloto.novedad.*`), corregidos.
   return (
-    <DialogPrimitive.Root open={abierta} onOpenChange={(o) => !o && cerrar('omitido')}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[300] bg-black/60 motion-safe:animate-in motion-safe:fade-in-0" />
-        <DialogPrimitive.Content
-          className="fixed left-1/2 top-1/2 z-[300] max-h-[90dvh] w-[calc(100vw-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[20px] outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95"
-          data-lenis-prevent
-          data-testid="piloto-novedad"
-          onCloseAutoFocus={devolverElFoco}
-        >
-          <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
-          {/*
-            El orbe de Ori en lugar de la aurora (Nico, 02-10), y sin la
-            píldora «L Leasefy» (Nico, 30-09: «quitale eso a las imágenes»).
-          */}
-          <PresentacionConOrbe
-            agente="orquestador"
-            title={titulo}
-            description={descripcion}
-            items={[
-              {
-                icon: <Robot weight="duotone" aria-hidden="true" />,
-                title: t(`${NS}.paso1.titulo`),
-                description: t(`${NS}.paso1.texto`),
-              },
-              {
-                icon: <Tray weight="duotone" aria-hidden="true" />,
-                title: t(`${NS}.paso2.titulo`),
-                description: t(`${NS}.paso2.texto`),
-              },
-              {
-                icon: <SlidersHorizontal weight="duotone" aria-hidden="true" />,
-                title: t(`${NS}.paso3.titulo`),
-                description: t(`${NS}.paso3.texto`),
-              },
-            ]}
-            ctaLabel={t(`${NS}.cta`)}
-            onCta={() => cerrar('completo')}
-          />
-          <DialogPrimitive.Close
-            aria-label={t('common.close')}
-            className={`${ASPA_DE_CIERRE} absolute right-3 top-3`}
-            data-testid="piloto-novedad-cerrar"
-          >
-            <X size={16} weight="bold" aria-hidden="true" />
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+    <PresentacionEscenario
+      ficha={FICHAS.piloto}
+      abierta={abierta}
+      onCerrar={cerrar}
+      onCloseAutoFocus={devolverElFoco}
+      modo={modo}
+      pilotoActivo={pilotoActivo}
+      testid="piloto-novedad"
+      testidCerrar="piloto-novedad-cerrar"
+    />
   )
 }

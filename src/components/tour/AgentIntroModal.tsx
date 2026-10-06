@@ -1,15 +1,14 @@
 'use client'
 
 /**
- * AgentIntroModal — per-agent presentation card, rendered with the cadence
- * §Novedades `<FeatureAnnouncement>`. Desde el 02-10-2026 el héroe ya no es la
- * aurora: es el ORBE GRANDE del agente (Nico: «la presentación de cada agente
- * usa su orbe grande en vez de la aurora»), con su paleta del registro
- * (`equipo.ts`), centrado sobre el fondo de la tarjeta, que entra y despierta
- * —quieto → trabajando → listo— mientras aparece el texto. Lo arma
- * `PresentacionConOrbe` (`src/components/agentes/`), el mismo de la
- * presentación del Piloto (`PilotoNovedad`, con Ori). Sin la píldora
- * «L Leasefy» (Nico, 02-10).
+ * AgentIntroModal — la presentación de cada agente la primera vez que la
+ * inmobiliaria entra a su espacio. Desde el 05-10-2026 es la dirección A
+ * «Escenario» que eligió Nico (`components/agentes/presentacion/`): el orbe
+ * grande del agente despierta en el centro de la marca —SÓLO con sus dos
+ * anillos, sin las líneas grandes alrededor (Nico, 05-10 19:10)—, con lo que
+ * hace por ti, lo que necesita de ti y su modo, y «¿Cómo funciona?», que abre
+ * el cajón de explicaciones encima. Antes (02-10) era la tarjeta §Novedades
+ * con el orbe (`PresentacionConOrbe`).
  *
  * The FIRST time the user enters an agent's workspace
  * (el workspace del agente dentro de su módulo) a centered announcement presents that
@@ -24,30 +23,25 @@
  * «Entendido» `completo`, y mientras no se sabe si la agencia ya la vio no se
  * muestra.
  *
- * ── La cáscara (02-10-2026) ────────────────────────────────────────────────
- * El mismo patrón que `PilotoNovedad`, que ya resolvió la tarjeta dentro del
- * modal: el `Dialog` de Radix (foco atrapado y devuelto, Esc, velo, capa
- * `z-[300]` de los modales) con un Content transparente, y adentro la tarjeta
- * TAL CUAL la pinta `FeatureAnnouncement` —que trae su propio fondo, radio y
- * sombra— más la ✕ del producto (`ASPA_DE_CIERRE`). `FeatureAnnouncement` no
- * se toca. La vista es `PresentacionDelAgente` (abierta o no, y qué hacer al
- * cerrar); `AgentIntroModal` sólo decide CUÁNDO sale. La vista previa
+ * ── La cáscara ──────────────────────────────────────────────────────────────
+ * El `Dialog` del DS (`ui/dialog`): foco atrapado y devuelto, Esc, velo, capa
+ * `z-[300]`, la ✕ del producto y, bajo 640 px, la hoja que sube desde abajo.
+ * La vista es `PresentacionDelAgente` (abierta o no, y qué hacer al cerrar);
+ * `AgentIntroModal` sólo decide CUÁNDO sale. La vista previa
  * `/agentes-preview` abre la vista sola, sin la marca de la agencia.
  *
- * A11y: título y descripción anunciados (sr-only: la tarjeta los pinta); el
- * foco vuelve a donde estaba al abrirse. El orbe es decorativo (el título ya
- * nombra al agente).
+ * A11y: título y descripción anunciados (sr-only: el escenario los pinta); el
+ * foco arranca en el llamado y vuelve a donde estaba al cerrar. El orbe es
+ * decorativo (el título ya nombra al agente).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from '@phosphor-icons/react'
-import { PresentacionConOrbe } from '@/components/agentes/PresentacionConOrbe'
-import type { IdDeAgente } from '@/lib/agentes/equipo'
-import { useI18n } from '@/lib/i18n'
+import { PresentacionEscenario, fichaDelAgente } from '@/components/agentes/presentacion'
+import { agentePorId, type IdDeAgente } from '@/lib/agentes/equipo'
+import { MODOS_DEL_PILOTO, type AutonomiaModo } from '@/lib/api/piloto'
+import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
-import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre'
 import {
   claveDeLaPresentacionDelAgente,
   type EstadoDelOnboarding,
@@ -214,46 +208,47 @@ export interface PresentacionDelAgenteProps {
 }
 
 /**
- * La presentación de un agente, sin decidir cuándo sale: el `Dialog` con la
- * tarjeta de su orbe. La usa `AgentIntroModal` y la vista previa.
+ * La presentación de un agente, sin decidir cuándo sale. Desde el 05-10-2026
+ * es la dirección A «Escenario» que eligió Nico (`PresentacionEscenario`,
+ * `components/agentes/presentacion/`): el orbe del agente despierta en el
+ * centro de la marca, con lo que hace por ti, lo que necesita de ti y su
+ * modo. El modo y si el piloto automático está activo salen de la flota
+ * (`usePilotoFlotaCompartida`, la misma lectura que la píldora del header);
+ * sin flota, el modo con el que arranca todo agente: Copiloto. La usa
+ * `AgentIntroModal` y la vista previa `/agentes-preview`.
+ *
+ * Un agente sin presentación propia (Pagos, que hoy no tiene espacio) no
+ * pinta nada.
  */
 export function PresentacionDelAgente({ agente, abierta, onCerrar, onCloseAutoFocus }: PresentacionDelAgenteProps) {
-  const { t } = useI18n()
-  const titulo = agente ? t(agente.titleKey) : ''
-  const descripcion = agente ? t(agente.descriptionKey) : ''
-
+  const ficha = agente ? fichaDelAgente(agente.id) : null
+  const { modo, pilotoActivo } = useModoDelAgente(agente?.id ?? null)
+  if (!ficha) return null
   return (
-    // El fondo, Esc y la ✕ la dejan de lado; «Entendido» es haberla leído.
-    <DialogPrimitive.Root open={Boolean(agente) && abierta} onOpenChange={(o) => !o && onCerrar('omitido')}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[300] bg-black/60 motion-safe:animate-in motion-safe:fade-in-0" />
-        <DialogPrimitive.Content
-          className="fixed left-1/2 top-1/2 z-[300] max-h-[90dvh] w-[calc(100vw-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[20px] outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95"
-          data-lenis-prevent
-          data-testid="presentacion-del-agente"
-          data-agente={agente?.id}
-          onCloseAutoFocus={onCloseAutoFocus}
-        >
-          <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
-          {agente && (
-            <PresentacionConOrbe
-              agente={agente.id}
-              title={titulo}
-              description={descripcion}
-              ctaLabel={t('inmobiliaria.ai.tour.finish')}
-              onCta={() => onCerrar('completo')}
-            />
-          )}
-          <DialogPrimitive.Close
-            aria-label={t('common.close')}
-            className={`${ASPA_DE_CIERRE} absolute right-3 top-3`}
-            data-testid="presentacion-del-agente-cerrar"
-          >
-            <X size={16} weight="bold" aria-hidden="true" />
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+    <PresentacionEscenario
+      ficha={ficha}
+      abierta={abierta}
+      onCerrar={onCerrar}
+      onCloseAutoFocus={onCloseAutoFocus}
+      modo={modo}
+      pilotoActivo={pilotoActivo}
+      testid="presentacion-del-agente"
+      testidCerrar="presentacion-del-agente-cerrar"
+    />
   )
+}
+
+/**
+ * El modo del agente para esta inmobiliaria y si el piloto automático está
+ * activo, de la flota (`GET /ai-hub/autonomia`). Sin flota o sin su fila,
+ * `undefined`: la presentación dice el modo con el que arranca (Copiloto).
+ */
+export function useModoDelAgente(id: IdDeAgente | null): { modo?: AutonomiaModo; pilotoActivo: boolean | null } {
+  const flota = usePilotoFlotaCompartida().data
+  if (!flota) return { pilotoActivo: null }
+  const pilotoActivo = flota.piloto?.activo ?? flota.activo
+  const clave = id ? agentePorId(id)?.autonomia : null
+  const fila = clave ? flota.agentes.find((a) => a.agente === clave) : undefined
+  const general = (MODOS_DEL_PILOTO as readonly string[]).includes(flota.modo) ? (flota.modo as AutonomiaModo) : undefined
+  return { modo: fila?.modo ?? general, pilotoActivo }
 }

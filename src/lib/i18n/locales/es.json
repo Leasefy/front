@@ -1499,21 +1499,53 @@
         "verPresentacion": "Ver la presentación otra vez"
       },
       "novedad": {
-        "titulo": "Así funciona tu Piloto automático",
-        "descripcion": "Tus agentes de IA hacen parte del trabajo de la inmobiliaria. Esta pantalla es tu Inicio: aquí ves lo que hicieron y lo que te dejaron para decidir.",
+        "titulo": "Piloto automático",
+        "descripcion": "Tus agentes hacen parte del trabajo de la inmobiliaria, y tú decides cuánto hacen solos.",
         "paso1": {
           "titulo": "Tus agentes trabajan",
-          "texto": "Cada uno en su tarea: cobran, concilian los pagos del banco y hacen seguimiento a contratos, facturas y propietarios."
+          "texto": "Cada uno en lo suyo: Laura cobra, Conciliación cruza el banco, Fixi atiende los mantenimientos y Avali le recuerda al propietario lo que tiene por aprobar."
         },
         "paso2": {
-          "titulo": "Lo que necesita de ti queda en la Bandeja",
-          "texto": "Cuando algo requiere tu visto bueno, te lo dejan con su botón. Lo que hicieron por su cuenta queda en Actividad en vivo."
+          "titulo": "Te dejan lo tuyo en la Bandeja",
+          "texto": "Lo que necesita tu visto bueno queda ahí con su botón; lo que hicieron, en la actividad en vivo."
         },
         "paso3": {
-          "titulo": "Tú decides cuánto hacen solos",
-          "texto": "Manual, Copiloto o Automático: el modo dice quién decide antes de que algo salga. Lo ves en «Piloto», en la barra de arriba."
+          "titulo": "Tú decides el modo",
+          "texto": "Manual, Copiloto o Automático: para todos desde la píldora «Piloto» de arriba, o agente por agente en «Autonomía»."
         },
-        "cta": "Entendido"
+        "cta": "Entendido",
+        "rol": "Tus agentes, trabajando",
+        "necesita": {
+          "n1": "Activarlo: lo prende un administrador desde esta pantalla, con su segundo factor. Empieza una prueba de 30 días.",
+          "n2": "Revisar la Bandeja: lo que no se puede hacer solo espera tu clic."
+        },
+        "modo": {
+          "sombra": "Prepara cada acción y te la deja en la Bandeja con su botón. Nada sale sin ti, y no te interrumpe con avisos.",
+          "copiloto": "Prepara cada acción y te la deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
+          "autonomo": "Los agentes que ya saben actuar solos lo hacen sin preguntarte, dentro del horario; lo dudoso te lo siguen dejando en la Bandeja."
+        },
+        "comoFunciona": {
+          "titulo": "Cómo funciona el piloto automático",
+          "descripcion": "Qué hacen tus agentes solos, qué te dejan a ti y cómo lo decides.",
+          "p1": {
+            "titulo": "Lo activas",
+            "explicacion": "Un administrador lo prende en esta pantalla con su segundo factor. Empieza una prueba de 30 días; al terminar, todo vuelve solo a Copiloto.",
+            "tuParte": "toca «Activar la prueba de 30 días» en la tarjeta del piloto automático."
+          },
+          "p2": {
+            "titulo": "Eliges el modo de cada agente",
+            "explicacion": "En «Autonomía»: Manual (prepara y no te interrumpe), Copiloto (prepara y pide tu clic) o Automático (hace solo lo que ya sabe hacer solo)."
+          },
+          "p3": {
+            "titulo": "Tus agentes trabajan",
+            "explicacion": "Dentro del horario y de tus topes. Algunas cosas siempre piden tu clic, en cualquier modo: los giros al propietario, aprobar un gasto, adjudicar un inmueble o cambiar un canon."
+          },
+          "p4": {
+            "titulo": "Revisas la Bandeja",
+            "explicacion": "Lo que espera a una persona queda ahí con su botón; lo que hicieron, en la actividad en vivo.",
+            "tuParte": "abre la Bandeja y resuelve lo que te dejaron."
+          }
+        }
       },
       "director": {
         "titulo": "El director",
@@ -8379,28 +8411,175 @@
       },
       "intro": {
         "cobranza": {
-          "title": "Agente de Cobranza",
-          "description": "Automatiza la recuperación de cartera: llamadas, WhatsApp y cartas con cumplimiento de Ley 2300 integrado. El agente trabaja la mora estándar solo y te escala únicamente los casos críticos."
+          "title": "Laura",
+          "description": "Contacta a quien tiene el arriendo atrasado, propone acuerdos dentro de tus reglas y deja constancia de cada contacto.",
+          "rol": "Cobranza por voz, WhatsApp y correo",
+          "hace": {
+            "c1": {
+              "titulo": "Llama y escribe",
+              "texto": "Por teléfono, WhatsApp y correo, en nombre de tu inmobiliaria, después de verificar la identidad."
+            },
+            "c2": {
+              "titulo": "Propone acuerdos",
+              "texto": "Planes de cuotas dentro de tus topes. Más de $ 5.000.000, más de 6 meses o más de 20 % de descuento lo aprueba una persona."
+            },
+            "c3": {
+              "titulo": "Cumple la Ley 2300",
+              "texto": "Un contacto al día por persona, de lunes a viernes de 8 a. m. a 7 p. m. y los sábados hasta las 3 p. m."
+            }
+          },
+          "necesita": {
+            "n1": "Los días de plazo fijados: sin plazo no corre la mora y no hay nada que cobrar.",
+            "n2": "La llamada y el WhatsApp los activa Leasefy para tu inmobiliaria.",
+            "n3": "Revisar «Te toca a ti»: disputas, cartas y acuerdos por aprobar."
+          },
+          "modo": {
+            "sombra": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja: nada sale sin ti, y no te interrumpe con avisos.",
+            "copiloto": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
+            "autonomo": "Laura llama y escribe sola, dentro del horario de ley y con un contacto al día por persona."
+          },
+          "empezar": "Ver la cobranza"
         },
         "cotizador": {
           "title": "Agente de Asegurabilidad",
-          "description": "Evalúa postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo. Cada decisión queda auditada y puedes pedir el porqué de cada veredicto."
+          "description": "Le pregunta a la vez a cada aseguradora activa si respalda a tu candidato, y te trae cada respuesta con su porqué.",
+          "rol": "La póliza de arrendamiento",
+          "hace": {
+            "c1": {
+              "titulo": "Consulta en paralelo",
+              "texto": "A cada aseguradora activa al mismo tiempo; tú no llamas a ninguna."
+            },
+            "c2": {
+              "titulo": "Todo en una matriz",
+              "texto": "El veredicto, las condiciones y el costo de cada una, lado a lado. Lo que responde en modo de prueba sale marcado como estimado."
+            },
+            "c3": {
+              "titulo": "Te dice el porqué",
+              "texto": "Dentro de la cotización te explica cada respuesta y qué cambiaría el resultado."
+            }
+          },
+          "necesita": {
+            "n1": "La cédula, el nombre y la ciudad del candidato, y su autorización para consultarlo.",
+            "n2": "El canon y el tipo de inmueble."
+          },
+          "modo": {
+            "aPedido": "Cotiza cuando tú se lo pides: el modo del piloto automático no cambia nada aquí."
+          },
+          "empezar": "Nueva cotización"
         },
         "avaluos": {
           "title": "Agente de Avalúos",
-          "description": "Solicita estimaciones de valor referencial y sigue cada solicitud desde Mis solicitudes sin salir del panel. Son 100% remotas, sin visita física: un revisor de Leasefy revisa y firma el certificado."
+          "description": "Te ayuda a pedir avalúos remotos y, cuando un inmueble se queda desocupado, a hablar del canon con su propietario.",
+          "rol": "Valor, canon y vacancia",
+          "hace": {
+            "c1": {
+              "titulo": "Pide el avalúo",
+              "texto": "Sin visita física: se paga en línea, el motor estima el valor y un revisor de Leasefy firma el certificado."
+            },
+            "c2": {
+              "titulo": "Sigue cada solicitud",
+              "texto": "En la lista ves si está en borrador, en revisión o entregado; el certificado llega al correo de la inmobiliaria."
+            },
+            "c3": {
+              "titulo": "Te avisa de la vacancia",
+              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon. El número lo pone él."
+            }
+          },
+          "necesita": {
+            "n1": "Dirección, ciudad, tipo, área, estrato, habitaciones y baños del inmueble. La matrícula y las fotos son opcionales.",
+            "n2": "Pagarlo en línea, tú o tu cliente con el enlace que le compartes."
+          },
+          "modo": {
+            "sombra": "No le escribe al propietario: te propone cuándo preguntarle por el canon y, si quieres, sale con un clic.",
+            "copiloto": "Te deja en la Bandeja, lista para un clic, la pregunta al propietario de un inmueble desocupado hace más de un mes.",
+            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon. Cambiar el canon y pedir un avalúo siempre te piden un clic."
+          },
+          "empezar": "Ver mis avalúos"
         },
         "conciliacion": {
           "title": "Agente de Conciliación",
-          "description": "Cruza los extractos bancarios con tus cobros automáticamente. El agente sugiere los cruces y deja en la cola solo los casos dudosos para tu aprobación."
+          "description": "Cruza cada movimiento de tu banco con lo que esperabas recibir o pagar, y te dice con qué cuadra.",
+          "rol": "Conciliación bancaria",
+          "hace": {
+            "c1": {
+              "titulo": "Cruza entradas y salidas",
+              "texto": "Cada entrada, con las cuotas y los recibos de tus inquilinos; cada salida, con los giros, los proveedores y los gastos del banco."
+            },
+            "c2": {
+              "titulo": "Lee la referencia",
+              "texto": "Mira la referencia y el valor de cada movimiento para saber de quién es, y te propone con qué conciliarlo."
+            },
+            "c3": {
+              "titulo": "Te deja lo exacto listo",
+              "texto": "Lo que cuadra exacto te queda en un lote para aprobar; lo dudoso, para que lo decidas tú."
+            }
+          },
+          "necesita": {
+            "n1": "El extracto de tu banco, en CSV o Excel, tal como lo exporta el banco.",
+            "n2": "Elegir de qué cuenta es: sin la cuenta no se puede cargar."
+          },
+          "modo": {
+            "sombra": "Sólo anota que llegó el extracto: no concilia ni te ofrece el botón.",
+            "copiloto": "Nada se concilia sin tu clic: te propone cada cruce y lo exacto te queda en un lote para aprobar.",
+            "autonomo": "Concilia sola lo exacto y emite su recibo; lo dudoso te lo deja en la Bandeja. Los giros al propietario siempre esperan tu aprobación."
+          },
+          "empezar": "Empezar a conciliar"
         },
         "estudio": {
           "title": "Agente de Evaluación",
-          "description": "Evaluación de candidatos completo: identidad, ingresos y antecedentes verificados en minutos, con una decisión auditable y trazable para cada postulante."
+          "description": "Cuando un candidato pide su estudio, te trae su historial y su capacidad de pago para que decidas tú.",
+          "rol": "Estudio del candidato",
+          "hace": {
+            "c1": {
+              "titulo": "Lee sus documentos",
+              "texto": "Extrae los datos de los documentos que sube el candidato."
+            },
+            "c2": {
+              "titulo": "Consulta y calcula",
+              "texto": "Con su autorización, se consultan centrales de riesgo y listas restrictivas, y se calcula cuánto puede pagar al mes."
+            },
+            "c3": {
+              "titulo": "Decide una persona",
+              "texto": "El agente no rechaza a nadie: el resultado queda en la postulación y ahí lo apruebas o lo rechazas tú."
+            }
+          },
+          "necesita": {
+            "n1": "Nada para arrancar: el estudio es opcional y lo pide el candidato desde su portal.",
+            "n2": "Abrir la postulación y decidir con el resultado."
+          },
+          "modo": {
+            "aPedido": "Corre cuando el candidato pide su estudio: el modo sólo decide si el piloto automático te avisa."
+          },
+          "empezar": "Ver las postulaciones"
         },
         "matching": {
           "title": "Agente de Matching",
-          "description": "Conecta propiedades vacantes con candidatos aprobados. El agente propone los mejores cruces y el contacto sale únicamente con tu aprobación."
+          "description": "Cuando un candidato se queda sin inmueble, le busca otros entre los tuyos y te los propone.",
+          "rol": "Un inmueble para cada candidato",
+          "hace": {
+            "c1": {
+              "titulo": "Cruza con tus inmuebles",
+              "texto": "Compara ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles, y se queda con los que calzan 70 % o más."
+            },
+            "c2": {
+              "titulo": "Arma la lista corta",
+              "texto": "De cada inmueble con dos o más postulaciones, para que el propietario la vea primero."
+            },
+            "c3": {
+              "titulo": "Prepara el correo",
+              "texto": "Con las opciones que le calzan al candidato; nunca más de un correo cada 24 horas por persona."
+            }
+          },
+          "necesita": {
+            "n1": "Inmuebles disponibles en arriendo, con su canon.",
+            "n2": "Tu visto bueno en la cola antes de que salga cada correo, en Manual y en Copiloto."
+          },
+          "modo": {
+            "sombra": "No hace nada solo: te propone la lista corta y las opciones de cada interesado y, si quieres, lo hace con un clic.",
+            "copiloto": "Te deja en la Bandeja, listas para un clic, la lista corta de cada inmueble y las opciones de cada interesado nuevo.",
+            "autonomo": "Arma sola la lista corta y le manda por correo a cada interesado nuevo lo que le calza, dentro del horario y con tu gracia para deshacerlo."
+          },
+          "empezar": "Ver la cola"
         },
         "pagos": {
           "title": "Agente de Pagos",
@@ -9699,6 +9878,14 @@
           },
           "close": "Cerrar"
         }
+      },
+      "presentacion": {
+        "comoFunciona": "¿Cómo funciona?",
+        "loQueHace": "Lo que hace por ti",
+        "loQueNecesita": "Lo que necesita de ti",
+        "modo": "Modo",
+        "aPedido": "A pedido",
+        "sinPilotoActivo": "Automático sólo corre con el piloto automático activo; mientras tanto rige Copiloto. El modo se cambia en la píldora «Piloto» de arriba o en «Autonomía»."
       }
     },
     "hoy": {
@@ -10650,7 +10837,14 @@
         "empezar": "Empezar",
         "ahoraNo": "Ahora no",
         "soloPrimeraVez": "Esto se muestra una sola vez.",
-        "nuevaPestana": "Se abre en otra pestaña"
+        "nuevaPestana": "Se abre en otra pestaña",
+        "momento": {
+          "captar": "Nuevo · Captar",
+          "evaluar": "Nuevo · Evaluar",
+          "cerrar": "Nuevo · Cerrar"
+        },
+        "listo": "Todo a mano",
+        "marcaLoQueTienes": "Marca lo que ya tienes a mano: no es obligatorio para empezar."
       },
       "flujos": {
         "consignacion": {
@@ -10658,11 +10852,34 @@
           "desc": "Suma un inmueble al portafolio con su propietario",
           "intro": {
             "titulo": "Vas a crear una consignación",
-            "resumen": "Es el acuerdo con el propietario para administrar su inmueble. Queda guardado en el portafolio y desde ahí puedes publicarlo.",
-            "paso1": "Eliges al propietario, o lo creas si todavía no está.",
-            "paso2": "Cargas los datos del inmueble y el canon.",
-            "paso3": "Defines la comisión y quién lo atiende.",
-            "necesitas": "Ten a mano el documento del propietario y la dirección exacta del inmueble."
+            "resumen": "Es el acuerdo con el propietario para administrar su inmueble. Queda en tu portafolio y desde ahí lo publicas.",
+            "pasos": {
+              "p1": {
+                "titulo": "El propietario",
+                "texto": "Lo eliges, o lo creas si todavía no está. Con varios dueños, repartes la participación."
+              },
+              "p2": {
+                "titulo": "El inmueble",
+                "texto": "Tipo, título, dirección, ciudad y canon (o precio de venta). Lo demás puede esperar."
+              },
+              "p3": {
+                "titulo": "La comisión",
+                "texto": "Los términos del mandato con el propietario."
+              },
+              "p4": {
+                "titulo": "Quién lo atiende",
+                "texto": "Si eres administrador, eliges el asesor; si no eliges, quedas tú."
+              },
+              "p5": {
+                "titulo": "Inventario y fotos",
+                "texto": "Opcional: el acta con sus espacios y las fotos. Al final confirmas."
+              }
+            },
+            "antes": {
+              "a1": "Los datos del propietario: nombre y documento.",
+              "a2": "La dirección exacta, la ciudad y el canon del inmueble.",
+              "a3": "Las fotos y el inventario, si ya los tienes."
+            }
           }
         },
         "avaluo": {
@@ -10670,11 +10887,30 @@
           "desc": "Pide el avalúo comercial de un inmueble",
           "intro": {
             "titulo": "Vas a solicitar un avalúo",
-            "resumen": "Es una estimación de valor referencial, 100% remota y sin visita física: un revisor de Leasefy la revisa y firma. La solicitud vive fuera del panel, así que se abre en otra pestaña y no pierdes lo que tengas abierto acá.",
-            "paso1": "Cargas la dirección y los datos del inmueble.",
-            "paso2": "Indicas para qué lo necesitas.",
-            "paso3": "Lo sigues desde Avalúos hasta que llega firmado.",
-            "necesitas": "Ten a mano la matrícula inmobiliaria."
+            "resumen": "Es una estimación de valor referencial, 100 % remota y sin visita física: un revisor de Leasefy la revisa y la firma. La solicitud se abre en otra pestaña, así no pierdes lo que tienes abierto aquí.",
+            "pasos": {
+              "p1": {
+                "titulo": "Cargas el inmueble",
+                "texto": "En el asistente de avalúos: tú, o tu cliente con el enlace que le compartes."
+              },
+              "p2": {
+                "titulo": "Se paga en línea",
+                "texto": "La estimación arranca cuando el pago queda confirmado."
+              },
+              "p3": {
+                "titulo": "Un revisor lo firma",
+                "texto": "El motor cruza el inmueble con datos del mercado y un revisor de Leasefy revisa y firma el certificado."
+              },
+              "p4": {
+                "titulo": "Te llega firmado",
+                "texto": "Al correo de la inmobiliaria, con el PDF. En Avalúos lo ves «Entregado»."
+              }
+            },
+            "antes": {
+              "a1": "Dirección, ciudad, tipo, área, estrato, habitaciones y baños del inmueble.",
+              "a2": "Con qué pagarlo en línea, o el correo de tu cliente si lo paga él.",
+              "a3": "La matrícula y las fotos ayudan, pero son opcionales."
+            }
           }
         },
         "asegurabilidad": {
@@ -10682,11 +10918,29 @@
           "desc": "Dice si las aseguradoras lo respaldan, y hasta cuánto",
           "intro": {
             "titulo": "Vas a consultar la asegurabilidad",
-            "resumen": "Es la primera pregunta y la que decide si hay algo que seguir: ¿las aseguradoras respaldan a esta persona? Si la respuesta es sí, queda además el máximo afianzable, que te dice qué inmuebles puedes ofrecerle. Se consulta una sola vez y sin propiedad. La evaluación A, B, C o D es otra cosa y viene después: arranca sola cuando el candidato se postula.",
-            "paso1": "Identificas al candidato.",
-            "paso2": "Eliges a qué aseguradoras consultar.",
-            "paso3": "Comparas las respuestas y te quedas con la mejor.",
-            "necesitas": "Necesitas la cédula del candidato y su autorización para consultarlo."
+            "resumen": "Es la primera pregunta sobre un candidato: ¿las aseguradoras lo respaldan para este canon? La evaluación A, B, C o D es otra cosa y viene después: arranca sola cuando el candidato se postula.",
+            "pasos": {
+              "p1": {
+                "titulo": "El candidato",
+                "texto": "Su cédula, su nombre y su ciudad."
+              },
+              "p2": {
+                "titulo": "El inmueble",
+                "texto": "El canon y el tipo: apartamento, casa, oficina o local."
+              },
+              "p3": {
+                "titulo": "El agente consulta",
+                "texto": "Le pregunta a la vez a cada aseguradora activa; tú no llamas a ninguna."
+              },
+              "p4": {
+                "titulo": "Ves cada respuesta",
+                "texto": "El veredicto, las condiciones, el costo y el porqué de cada una, en una sola matriz."
+              }
+            },
+            "antes": {
+              "a1": "La cédula del candidato y su autorización para consultarlo.",
+              "a2": "El canon que va a pagar y el tipo de inmueble."
+            }
           }
         },
         "contrato": {
@@ -10694,11 +10948,30 @@
           "desc": "Prepara el contrato de arrendamiento",
           "intro": {
             "titulo": "Vas a preparar un contrato",
-            "resumen": "Se arma sobre una postulación ya aprobada: de ahí salen el inquilino, la propiedad y el canon. Primero eliges cuál.",
-            "paso1": "Eliges la postulación aprobada.",
-            "paso2": "Confirmas canon, fechas y garantía.",
-            "paso3": "Revisas las cláusulas y lo mandas a firmar.",
-            "necesitas": "Necesitas tener al candidato ya aprobado."
+            "resumen": "Se arma sobre una postulación aprobada: de ahí salen el inquilino, el inmueble y el canon. Si el arriendo se cerró por fuera de Leasefy, también lo puedes armar a mano.",
+            "pasos": {
+              "p1": {
+                "titulo": "Eliges la postulación",
+                "texto": "Una aprobada que todavía no tenga contrato, o «a mano» con el inquilino y un inmueble consignado."
+              },
+              "p2": {
+                "titulo": "Armas el documento",
+                "texto": "Subes el PDF de tu inmobiliaria o usas la plantilla de ley con las cláusulas que elijas."
+              },
+              "p3": {
+                "titulo": "Pones los términos",
+                "texto": "Fechas, canon y día de pago; el depósito sólo en arriendo comercial y el seguro, si quieres."
+              },
+              "p4": {
+                "titulo": "Lo mandas a firmar",
+                "texto": "Desde el contrato; cuando firman, lo activas."
+              }
+            },
+            "antes": {
+              "a1": "Una postulación aprobada, o el nombre, el documento y el correo del inquilino si lo armas a mano.",
+              "a2": "Las fechas, el canon y el día de pago acordados.",
+              "a3": "El PDF del contrato, si ya lo tienes."
+            }
           }
         }
       }

@@ -9,10 +9,12 @@
  *   · `false` → sale, y al cerrarla queda vista para la agencia: el fondo,
  *     Esc y la ✕ la dejan `omitido`, «Entendido» `completo`.
  *
- * Desde el 02-10 es el `Dialog` de Radix, como `PilotoNovedad`: la tarjeta de
- * `FeatureAnnouncement` adentro de un Content transparente, con la ✕ del
- * producto. Y el héroe ya no es la aurora: es el orbe grande del agente
- * (`PresentacionConOrbe`), que despierta quieto → trabajando → listo.
+ * Desde el 05-10-2026 es la dirección A «Escenario» que eligió Nico
+ * (`PresentacionEscenario`): el Dialog del DS, con el orbe grande del agente
+ * que despierta —quieto → pensando → trabajando → listo— y SÓLO sus dos
+ * anillos (sin las líneas grandes alrededor). Antes (02-10) era la tarjeta
+ * §Novedades con el orbe; las pruebas de esa tarjeta se cambiaron por las del
+ * escenario.
  */
 
 import * as React from 'react'
@@ -38,47 +40,6 @@ vi.mock('@/lib/context/PanelPrefsContext', () => ({
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
-}))
-
-// La tarjeta de la marca no es lo que se prueba acá: un doble con su CTA que
-// además deja ver el héroe tal como lo pinta cadence (`brand ?? <píldora>`,
-// sobre `heroGradient ?? heroImage`). El orbe (`AgentOrb`) es el de verdad:
-// en happy-dom no hay WebGL y pinta su respaldo SVG.
-vi.mock('@leasefy/cadence', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@leasefy/cadence')>()),
-  FeatureAnnouncement: ({
-    title,
-    ctaLabel,
-    onCta,
-    brand,
-    appName = 'Cadence',
-    heroGradient,
-    heroImage,
-    className,
-  }: {
-    title: string
-    ctaLabel: string
-    onCta: () => void
-    brand?: React.ReactNode
-    appName?: string
-    heroGradient?: string
-    heroImage?: string
-    className?: string
-  }) => (
-    <div className={className} data-testid="presentacion-tarjeta">
-      <div
-        data-testid="presentacion-heroe"
-        data-hero-gradient={heroGradient ?? ''}
-        data-hero-image={heroImage ?? ''}
-      >
-        {brand ?? <span data-testid="presentacion-pildora">{appName}</span>}
-      </div>
-      <h3>{title}</h3>
-      <button type="button" data-testid="presentacion-cta" onClick={onCta}>
-        {ctaLabel}
-      </button>
-    </div>
-  ),
 }))
 
 import { AgentIntroModal } from './AgentIntroModal'
@@ -147,7 +108,7 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
   it('🔴 «Entendido» la deja COMPLETA para la agencia', () => {
     prefs.vistas[CLAVE] = false
     pintar()
-    const cta = document.querySelector('[data-testid="presentacion-cta"]') as HTMLElement
+    const cta = document.querySelector('[data-testid="presentacion-empezar"]') as HTMLElement
     act(() => cta.click())
     expect(prefs.marcarVista).toHaveBeenCalledWith(CLAVE, 'completo')
     expect(dialogo()).toBeNull()
@@ -189,53 +150,51 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
     expect(prefs.marcarVista).toHaveBeenCalledWith(CLAVE, 'omitido')
   })
 
-  it('es el Dialog de la plataforma: capa de los modales, título anunciado, y la tarjeta adentro', () => {
+  it('es el Dialog de la plataforma: capa de los modales, título anunciado, y el llamado adentro', () => {
     prefs.vistas[CLAVE] = false
     pintar()
     const modal = dialogo() as HTMLElement
     expect(modal.className).toContain('z-[300]')
-    // El título lo pinta la tarjeta; Radix lo anuncia con `aria-labelledby`.
+    // El título lo pinta el escenario; Radix lo anuncia con `aria-labelledby`.
     const titulo = document.getElementById(modal.getAttribute('aria-labelledby') ?? '')
     expect(titulo?.textContent).toBe('inmobiliaria.ai.intro.cobranza.title')
-    expect(modal.querySelector('[data-testid="presentacion-cta"]')).not.toBeNull()
+    expect(modal.querySelector('[data-testid="presentacion-empezar"]')).not.toBeNull()
   })
 
-  it('🔴 sin la píldora «L Leasefy» sobre el halo (Nico, 02-10)', () => {
+  it('🔴 A «Escenario»: el orbe grande del agente, SÓLO con sus dos anillos (Nico, 05-10)', () => {
     prefs.vistas[CLAVE] = false
     pintar()
-    const heroe = document.querySelector('[data-testid="presentacion-heroe"]') as HTMLElement
-    expect(heroe).not.toBeNull()
-    expect(heroe.querySelector('[data-testid="presentacion-pildora"]')).toBeNull()
-    expect(heroe.textContent).toBe('')
-  })
-
-  it('🔴 el héroe es el ORBE grande del agente, no la aurora (Nico, 02-10)', () => {
-    prefs.vistas[CLAVE] = false
-    pintar()
-    const heroe = document.querySelector('[data-testid="presentacion-heroe"]') as HTMLElement
-    // Sin la foto ni la aurora: el fondo de la tarjeta.
-    expect(heroe.dataset.heroGradient).toBe('transparent')
-    expect(heroe.dataset.heroImage).toBe('')
-    // El orbe del agente de ESTA presentación, con su paleta del registro.
-    const orbe = heroe.querySelector('.cdc-orb') as HTMLElement
+    const modal = dialogo() as HTMLElement
+    const orbe = modal.querySelector('[data-orbe-de-la-presentacion] .cdc-orb') as HTMLElement
     expect(orbe).not.toBeNull()
     expect(orbe.dataset.agente).toBe('cobranza')
-    expect(orbe.style.width).toBe('120px')
     // Decorativo: el título ya nombra al agente.
     expect(orbe.getAttribute('aria-hidden')).toBe('true')
-    // El héroe crece a su alto sólo si contiene el escenario del orbe.
-    expect(heroe.querySelector('[data-escenario-del-orbe]')).not.toBeNull()
-    const tarjeta = document.querySelector('[data-testid="presentacion-tarjeta"]') as HTMLElement
-    expect(tarjeta.className).toContain('[&>div:has([data-escenario-del-orbe])]:h-auto')
+    // Sin la retícula de círculos grandes ni líneas de puntos: el fondo no tiene SVG.
+    expect(modal.querySelector('[data-fondo-de-marca] svg')).toBeNull()
+    // Cada orbe (el del escritorio y el del celular) con SUS dos anillos, y nada más.
+    for (const o of modal.querySelectorAll<HTMLElement>('[data-orbe-de-la-presentacion]')) {
+      const anillos = Array.from(o.querySelectorAll<HTMLElement>('[data-anillo-del-orbe]')).map((a) => a.dataset.anilloDelOrbe)
+      expect(anillos).toEqual(['punteado', 'arco'])
+    }
+    expect(modal.querySelectorAll('[data-anillo-del-orbe]').length).toBe(
+      modal.querySelectorAll('[data-orbe-de-la-presentacion]').length * 2,
+    )
+    // Sin la píldora «L Leasefy» de la tarjeta vieja.
+    expect(modal.textContent).not.toContain('Leasefy')
   })
 
-  it('el orbe despierta mientras aparece el texto: quieto → trabajando → listo', () => {
+  it('el orbe despierta mientras aparece el texto: quieto → pensando → trabajando → listo', () => {
     prefs.vistas[CLAVE] = false
     pintar()
-    const estado = () => (document.querySelector('[data-testid="presentacion-heroe"] .cdc-orb') as HTMLElement).dataset.estado
+    const estado = () => (document.querySelector('[data-orbe-de-la-presentacion] .cdc-orb') as HTMLElement).dataset.estado
     expect(estado()).toBe('quieto')
     act(() => {
-      vi.advanceTimersByTime(500)
+      vi.advanceTimersByTime(400)
+    })
+    expect(estado()).toBe('pensando')
+    act(() => {
+      vi.advanceTimersByTime(800)
     })
     expect(estado()).toBe('trabajando')
     act(() => {
@@ -253,12 +212,18 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
   it('con movimiento reducido el orbe queda listo de una, sin la secuencia', () => {
     prefs.vistas[CLAVE] = false
     pintar(false, true)
-    const orbe = document.querySelector('[data-testid="presentacion-heroe"] .cdc-orb') as HTMLElement
+    const orbe = document.querySelector('[data-orbe-de-la-presentacion] .cdc-orb') as HTMLElement
     expect(orbe.dataset.estado).toBe('listo')
     act(() => {
       vi.advanceTimersByTime(3000)
     })
     expect(orbe.dataset.estado).toBe('listo')
+  })
+
+  it('el modo sale de la flota: sin flota, Copiloto (con el que arranca todo agente)', () => {
+    prefs.vistas[CLAVE] = false
+    pintar()
+    expect(document.querySelector('[data-testid="modo-del-agente"]')?.getAttribute('data-modo')).toBe('copiloto')
   })
 
   it('al cerrarse devuelve el foco a donde estaba', () => {
@@ -267,7 +232,7 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
     document.body.appendChild(boton)
     boton.focus()
     pintar()
-    const cta = document.querySelector('[data-testid="presentacion-cta"]') as HTMLElement
+    const cta = document.querySelector('[data-testid="presentacion-empezar"]') as HTMLElement
     act(() => cta.click())
     // Radix devuelve el foco un tic después de desmontar el contenido.
     act(() => {
@@ -279,7 +244,7 @@ describe('la presentación del agente, una vez por inmobiliaria', () => {
   it('ya no guarda nada en localStorage: la marca es de la agencia', () => {
     prefs.vistas[CLAVE] = false
     pintar()
-    const cta = document.querySelector('[data-testid="presentacion-cta"]') as HTMLElement
+    const cta = document.querySelector('[data-testid="presentacion-empezar"]') as HTMLElement
     act(() => cta.click())
     expect(window.localStorage.getItem('leasefy.agent-intro.cobranza')).toBeNull()
   })

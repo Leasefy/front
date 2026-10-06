@@ -9,6 +9,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+import { INTROS } from '@/components/inmobiliaria/intro-de-flujo/textos'
 import es from '../i18n/locales/es.json'
 import en from '../i18n/locales/en.json'
 import {
@@ -203,11 +204,17 @@ describe('estadoDelFlujo — negado y no-resuelto no son lo mismo', () => {
 })
 
 describe('flujoIntro', () => {
-  it('arma tres pasos y las claves del bloque', () => {
+  // PRESENTACIONES (05-10-2026): la explicación es `IntroHeroe`; cada flujo
+  // tiene los pasos de SU asistente (no tres fijos) y «Antes de empezar» es
+  // una lista (`intro-de-flujo/textos.ts` dice cuántos).
+  it('arma las claves del título, de cada paso y de lo de antes', () => {
     const c = flujoIntro('consignacion')
-    expect(c.pasos).toHaveLength(3)
     expect(c.titulo).toBe('inmobiliaria.nuevo.flujos.consignacion.intro.titulo')
-    expect(c.pasos[2]).toBe('inmobiliaria.nuevo.flujos.consignacion.intro.paso3')
+    expect(c.paso(3)).toEqual({
+      titulo: 'inmobiliaria.nuevo.flujos.consignacion.intro.pasos.p3.titulo',
+      texto: 'inmobiliaria.nuevo.flujos.consignacion.intro.pasos.p3.texto',
+    })
+    expect(c.antes(2)).toBe('inmobiliaria.nuevo.flujos.consignacion.intro.antes.a2')
   })
 })
 
@@ -219,13 +226,14 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
     ...GRUPOS.map(grupoLabelKey),
     ...FLUJOS.flatMap((f) => {
       const intro = flujoIntro(f.key)
+      const { pasos, antes } = INTROS[f.key]
       return [
         flujoLabelKey(f.key),
         flujoDescKey(f.key),
         intro.titulo,
         intro.resumen,
-        intro.necesitas,
-        ...intro.pasos,
+        ...pasos.flatMap((_, i) => [intro.paso(i + 1).titulo, intro.paso(i + 1).texto]),
+        ...Array.from({ length: antes }, (_, i) => intro.antes(i + 1)),
       ]
     }),
     ...[
@@ -237,6 +245,9 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
       'intro.ahoraNo',
       'intro.soloPrimeraVez',
       'intro.nuevaPestana',
+      'intro.listo',
+      'intro.marcaLoQueTienes',
+      ...GRUPOS.map((g) => `intro.momento.${g}`),
       'sinResolver',
     ].map((c) => `inmobiliaria.nuevo.${c}`),
   ]
@@ -248,8 +259,9 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
     return typeof v === 'string' && v.length > 0
   }
 
-  it('cada flujo aporta 8 claves', () => {
-    expect(claves.length).toBe(GRUPOS.length + FLUJOS.length * 8 + 9)
+  it('cada flujo aporta sus claves: nombre, descripción, título, resumen, cada paso y lo de antes', () => {
+    const delFlujo = FLUJOS.reduce((n, f) => n + 4 + INTROS[f.key].pasos.length * 2 + INTROS[f.key].antes, 0)
+    expect(claves.length).toBe(GRUPOS.length + delFlujo + 11 + GRUPOS.length)
   })
 
   it('todas están en español', () => {

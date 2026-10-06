@@ -1465,21 +1465,53 @@
         "verPresentacion": "See the introduction again"
       },
       "novedad": {
-        "titulo": "This is how your Autopilot works",
-        "descripcion": "Your AI agents take part in the agency's work. This screen is your Home: here you see what they did and what they left for you to decide.",
+        "titulo": "Autopilot",
+        "descripcion": "Your agents take part in the agency's work, and you decide how much they do on their own.",
         "paso1": {
           "titulo": "Your agents work",
-          "texto": "Each on its own task: they collect, reconcile bank payments and follow up on contracts, invoices and owners."
+          "texto": "Each on its own job: Laura collects, Reconciliation matches the bank, Fixi handles maintenance and Avali reminds owners of what they have to approve."
         },
         "paso2": {
-          "titulo": "What needs you lands in the Inbox",
-          "texto": "When something needs your approval, they leave it with its button. What they did on their own shows up in Live activity."
+          "titulo": "They leave your part in the Inbox",
+          "texto": "What needs your approval waits there with its button; what they did, in the live activity."
         },
         "paso3": {
-          "titulo": "You decide how much they do alone",
-          "texto": "Manual, Copilot or Automatic: the mode says who decides before something goes out. You see it in «Pilot» in the top bar."
+          "titulo": "You choose the mode",
+          "texto": "Manual, Copilot or Automatic: for everyone from the «Pilot» pill at the top, or agent by agent in «Autonomy»."
         },
-        "cta": "Got it"
+        "cta": "Got it",
+        "rol": "Your agents, at work",
+        "necesita": {
+          "n1": "Turning it on: an administrator switches it on from this screen, with their second factor. A 30-day trial starts.",
+          "n2": "Reviewing the Inbox: what can't be done alone waits for your click."
+        },
+        "modo": {
+          "sombra": "It prepares each action and leaves it in your Inbox with its button. Nothing goes out without you, and it doesn't interrupt you with alerts.",
+          "copiloto": "It prepares each action and leaves it in your Inbox with its button: nothing goes out without your approval.",
+          "autonomo": "Agents that already know how to act alone do it without asking, within contact hours; doubtful items still go to your Inbox."
+        },
+        "comoFunciona": {
+          "titulo": "How the autopilot works",
+          "descripcion": "What your agents do alone, what they leave for you and how you decide.",
+          "p1": {
+            "titulo": "You turn it on",
+            "explicacion": "An administrator switches it on from this screen with their second factor. A 30-day trial starts; when it ends, everything goes back to Copilot on its own.",
+            "tuParte": "tap «Start the 30-day trial» on the autopilot card."
+          },
+          "p2": {
+            "titulo": "You choose each agent's mode",
+            "explicacion": "In «Autonomy»: Manual (prepares and doesn't interrupt), Copilot (prepares and asks for your click) or Automatic (does on its own what it already knows how to do alone)."
+          },
+          "p3": {
+            "titulo": "Your agents work",
+            "explicacion": "Within contact hours and your limits. Some things always ask for your click, in any mode: owner payouts, approving an expense, awarding a property or changing a rent."
+          },
+          "p4": {
+            "titulo": "You review the Inbox",
+            "explicacion": "What waits for a person stays there with its button; what they did, in the live activity.",
+            "tuParte": "open the Inbox and resolve what they left you."
+          }
+        }
       },
       "director": {
         "titulo": "The director",
@@ -8345,28 +8377,175 @@
       },
       "intro": {
         "cobranza": {
-          "title": "Collections Agent",
-          "description": "Automate portfolio recovery: calls, WhatsApp and letters with Colombian compliance built in. The agent works standard delinquency on its own and only escalates critical cases."
+          "title": "Laura",
+          "description": "Contacts whoever is behind on rent, proposes agreements within your rules and keeps a record of every contact.",
+          "rol": "Collections by voice, WhatsApp and email",
+          "hace": {
+            "c1": {
+              "titulo": "Calls and writes",
+              "texto": "By phone, WhatsApp and email, on behalf of your agency, after verifying identity."
+            },
+            "c2": {
+              "titulo": "Proposes agreements",
+              "texto": "Installment plans within your limits. Over $ 5,000,000, over 6 months or over 20% off is approved by a person."
+            },
+            "c3": {
+              "titulo": "Follows Law 2300",
+              "texto": "One contact per person per day, Monday to Friday 8 a.m. to 7 p.m. and Saturdays until 3 p.m."
+            }
+          },
+          "necesita": {
+            "n1": "Grace days set: without them no late fees accrue and there is nothing to collect.",
+            "n2": "Calls and WhatsApp are enabled by Leasefy for your agency.",
+            "n3": "Reviewing «Your turn»: disputes, letters and agreements to approve."
+          },
+          "modo": {
+            "sombra": "Laura prepares each call, WhatsApp and email and leaves it in your Inbox: nothing goes out without you, and she doesn't interrupt you with alerts.",
+            "copiloto": "Laura prepares each call, WhatsApp and email and leaves it in your Inbox with its button: nothing goes out without your approval.",
+            "autonomo": "Laura calls and writes on her own, within legal hours and with one contact per person per day."
+          },
+          "empezar": "See collections"
         },
         "cotizador": {
           "title": "Insurability Agent",
-          "description": "Evaluate applicants in seconds: scoring, co-signers and insurer verdicts in a single flow. Every decision is audited and you can ask the why behind each verdict."
+          "description": "Asks every active insurer at once whether they back your candidate, and brings you each answer with its reason.",
+          "rol": "The rental insurance policy",
+          "hace": {
+            "c1": {
+              "titulo": "Queries in parallel",
+              "texto": "Every active insurer at the same time; you don't call any of them."
+            },
+            "c2": {
+              "titulo": "All in one matrix",
+              "texto": "Each insurer's verdict, terms and cost, side by side. Answers in test mode are marked as estimates."
+            },
+            "c3": {
+              "titulo": "Tells you why",
+              "texto": "Inside the quote it explains each answer and what would change the result."
+            }
+          },
+          "necesita": {
+            "n1": "The candidate's ID number, name and city, and their consent to be checked.",
+            "n2": "The rent and the property type."
+          },
+          "modo": {
+            "aPedido": "It quotes when you ask: the autopilot mode changes nothing here."
+          },
+          "empezar": "New quote"
         },
         "avaluos": {
           "title": "Appraisals Agent",
-          "description": "Request reference value estimates and track every request from My requests without leaving the panel. They are 100% remote, with no site visit: a Leasefy reviewer reviews and signs the certificate."
+          "description": "Helps you request remote appraisals and, when a property sits vacant, talk about the rent with its owner.",
+          "rol": "Value, rent and vacancy",
+          "hace": {
+            "c1": {
+              "titulo": "Requests the appraisal",
+              "texto": "No site visit: it's paid online, the engine estimates the value and a Leasefy reviewer signs the certificate."
+            },
+            "c2": {
+              "titulo": "Tracks each request",
+              "texto": "The list shows whether it's a draft, under review or delivered; the certificate arrives at the agency's email."
+            },
+            "c3": {
+              "titulo": "Flags vacancy",
+              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent. The owner sets the number."
+            }
+          },
+          "necesita": {
+            "n1": "The property's address, city, type, area, stratum, bedrooms and bathrooms. The registration number and photos are optional.",
+            "n2": "Paying online: you, or your client with the link you share."
+          },
+          "modo": {
+            "sombra": "It doesn't write to the owner: it suggests when to ask about the rent and, if you want, it goes out with one click.",
+            "copiloto": "It leaves in your Inbox, one click away, the question to the owner of a property vacant for over a month.",
+            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent. Changing the rent and requesting an appraisal always need your click."
+          },
+          "empezar": "See my appraisals"
         },
         "conciliacion": {
           "title": "Reconciliation Agent",
-          "description": "Match bank statements against your collections automatically. The agent suggests matches and leaves only doubtful cases in the queue for your approval."
+          "description": "Matches every bank movement with what you expected to receive or pay, and tells you what it matches.",
+          "rol": "Bank reconciliation",
+          "hace": {
+            "c1": {
+              "titulo": "Matches money in and out",
+              "texto": "Each deposit with your tenants' installments and receipts; each withdrawal with owner payouts, suppliers and bank fees."
+            },
+            "c2": {
+              "titulo": "Reads the reference",
+              "texto": "Looks at each movement's reference and amount to know whose it is, and proposes what to reconcile it with."
+            },
+            "c3": {
+              "titulo": "Leaves exact matches ready",
+              "texto": "Exact matches wait in a batch for your approval; doubtful ones, for you to decide."
+            }
+          },
+          "necesita": {
+            "n1": "Your bank statement, in CSV or Excel, as your bank exports it.",
+            "n2": "Choosing which account it belongs to: without the account it can't be uploaded."
+          },
+          "modo": {
+            "sombra": "It only records that the statement arrived: it doesn't reconcile or offer you the button.",
+            "copiloto": "Nothing is reconciled without your click: it proposes each match and exact ones wait in a batch for your approval.",
+            "autonomo": "It reconciles exact matches on its own and issues the receipt; doubtful ones go to your Inbox. Owner payouts always wait for your approval."
+          },
+          "empezar": "Start reconciling"
         },
         "estudio": {
           "title": "Candidate Evaluation Agent",
-          "description": "Full candidate evaluation: identity, income and background verified in minutes, with an auditable, traceable decision for every applicant."
+          "description": "When a candidate requests their screening, it brings you their history and payment capacity so you can decide.",
+          "rol": "Candidate screening",
+          "hace": {
+            "c1": {
+              "titulo": "Reads their documents",
+              "texto": "Extracts the data from the documents the candidate uploads."
+            },
+            "c2": {
+              "titulo": "Checks and calculates",
+              "texto": "With their consent, credit bureaus and restrictive lists are checked, and their monthly payment capacity is calculated."
+            },
+            "c3": {
+              "titulo": "A person decides",
+              "texto": "The agent rejects no one: the result goes to the application, where you approve or reject it."
+            }
+          },
+          "necesita": {
+            "n1": "Nothing to start: the screening is optional and the candidate requests it from their portal.",
+            "n2": "Opening the application and deciding with the result."
+          },
+          "modo": {
+            "aPedido": "It runs when the candidate requests their screening: the mode only decides whether the autopilot notifies you."
+          },
+          "empezar": "See applications"
         },
         "matching": {
           "title": "Matching Agent",
-          "description": "Connect vacant properties with approved candidates. The agent proposes the best matches and outreach only happens with your approval."
+          "description": "When a candidate is left without a property, it looks for others among yours and proposes them.",
+          "rol": "A property for every candidate",
+          "hace": {
+            "c1": {
+              "titulo": "Matches with your properties",
+              "texto": "Compares income, job tenure, budget and area with your available properties, and keeps those that fit 70% or more."
+            },
+            "c2": {
+              "titulo": "Builds the shortlist",
+              "texto": "For each property with two or more applications, so the owner sees it first."
+            },
+            "c3": {
+              "titulo": "Prepares the email",
+              "texto": "With the options that fit the candidate; never more than one email every 24 hours per person."
+            }
+          },
+          "necesita": {
+            "n1": "Properties available for rent, with their rent.",
+            "n2": "Your approval in the queue before each email goes out, in Manual and Copilot."
+          },
+          "modo": {
+            "sombra": "It does nothing on its own: it proposes the shortlist and each lead's options and, if you want, does it with one click.",
+            "copiloto": "It leaves in your Inbox, one click away, each property's shortlist and the options for each new lead.",
+            "autonomo": "It builds the shortlist on its own and emails each new lead what fits them, within contact hours and with your grace period to undo it."
+          },
+          "empezar": "See the queue"
         },
         "pagos": {
           "title": "Payments Agent",
@@ -9664,6 +9843,14 @@
           },
           "close": "Close"
         }
+      },
+      "presentacion": {
+        "comoFunciona": "How does it work?",
+        "loQueHace": "What it does for you",
+        "loQueNecesita": "What it needs from you",
+        "modo": "Mode",
+        "aPedido": "On demand",
+        "sinPilotoActivo": "Automatic only runs with the autopilot on; until then Copilot applies. Change the mode in the «Pilot» pill at the top or in «Autonomy»."
       }
     },
     "hoy": {
@@ -10615,7 +10802,14 @@
         "empezar": "Start",
         "ahoraNo": "Not now",
         "soloPrimeraVez": "You'll only see this once.",
-        "nuevaPestana": "Opens in a new tab"
+        "nuevaPestana": "Opens in a new tab",
+        "momento": {
+          "captar": "New · Acquire",
+          "evaluar": "New · Assess",
+          "cerrar": "New · Close"
+        },
+        "listo": "All at hand",
+        "marcaLoQueTienes": "Check what you already have at hand: it's not required to start."
       },
       "flujos": {
         "consignacion": {
@@ -10623,11 +10817,34 @@
           "desc": "Add a property to the portfolio with its owner",
           "intro": {
             "titulo": "You're creating a listing agreement",
-            "resumen": "It's the agreement with the owner to manage their property. It's saved to the portfolio, and you can publish it from there.",
-            "paso1": "Pick the owner, or create one if they aren't there yet.",
-            "paso2": "Enter the property details and the rent.",
-            "paso3": "Set the commission and who handles it.",
-            "necesitas": "Have the owner's ID and the property's exact address handy."
+            "resumen": "It's the agreement with the owner to manage their property. It goes into your portfolio and you publish it from there.",
+            "pasos": {
+              "p1": {
+                "titulo": "The owner",
+                "texto": "You pick them, or create them if they aren't there yet. With several owners, you split the share."
+              },
+              "p2": {
+                "titulo": "The property",
+                "texto": "Type, title, address, city and rent (or sale price). The rest can wait."
+              },
+              "p3": {
+                "titulo": "The commission",
+                "texto": "The terms of the mandate with the owner."
+              },
+              "p4": {
+                "titulo": "Who handles it",
+                "texto": "If you're an administrator, you pick the agent; if you don't, it's you."
+              },
+              "p5": {
+                "titulo": "Inventory and photos",
+                "texto": "Optional: the record with its rooms and the photos. At the end you confirm."
+              }
+            },
+            "antes": {
+              "a1": "The owner's details: name and ID.",
+              "a2": "The property's exact address, city and rent.",
+              "a3": "The photos and the inventory, if you already have them."
+            }
           }
         },
         "avaluo": {
@@ -10635,11 +10852,30 @@
           "desc": "Request a property's market appraisal",
           "intro": {
             "titulo": "You're requesting an appraisal",
-            "resumen": "It is a reference value estimate, 100% remote and with no site visit: a Leasefy reviewer reviews and signs it. The request lives outside this panel, so it opens in a new tab and you won't lose anything you have open here.",
-            "paso1": "Enter the address and property details.",
-            "paso2": "Say what you need it for.",
-            "paso3": "Track it under Appraisals until the signed report arrives.",
-            "necesitas": "Have the property's registry number handy."
+            "resumen": "It's a reference value estimate, 100% remote with no site visit: a Leasefy reviewer checks and signs it. The request opens in a new tab, so you don't lose what you have open here.",
+            "pasos": {
+              "p1": {
+                "titulo": "You load the property",
+                "texto": "In the appraisal assistant: you, or your client with the link you share."
+              },
+              "p2": {
+                "titulo": "It's paid online",
+                "texto": "The estimate starts once the payment is confirmed."
+              },
+              "p3": {
+                "titulo": "A reviewer signs it",
+                "texto": "The engine compares the property with market data and a Leasefy reviewer checks and signs the certificate."
+              },
+              "p4": {
+                "titulo": "It arrives signed",
+                "texto": "At the agency's email, with the PDF. In Appraisals you'll see it «Delivered»."
+              }
+            },
+            "antes": {
+              "a1": "The property's address, city, type, area, stratum, bedrooms and bathrooms.",
+              "a2": "A way to pay online, or your client's email if they pay.",
+              "a3": "The registration number and photos help, but they are optional."
+            }
           }
         },
         "asegurabilidad": {
@@ -10647,11 +10883,29 @@
           "desc": "Tells you whether insurers back them, and up to how much",
           "intro": {
             "titulo": "You're checking insurability",
-            "resumen": "It's the first question, and the one that decides whether there's anything to pursue: will insurers back this person? If so, you also get the maximum guaranteed amount, which tells you which properties you can offer them. Checked once, with no property attached. The A/B/C/D evaluation is a different thing and comes later: it starts on its own once the candidate applies.",
-            "paso1": "Identify the candidate.",
-            "paso2": "Pick which insurers to query.",
-            "paso3": "Compare the answers and keep the best one.",
-            "necesitas": "You need the candidate's ID number and their authorization to run the check."
+            "resumen": "It's the first question about a candidate: do the insurers back them for this rent? The A, B, C or D evaluation is something else and comes later: it starts on its own when the candidate applies.",
+            "pasos": {
+              "p1": {
+                "titulo": "The candidate",
+                "texto": "Their ID number, name and city."
+              },
+              "p2": {
+                "titulo": "The property",
+                "texto": "The rent and the type: apartment, house, office or retail space."
+              },
+              "p3": {
+                "titulo": "The agent asks",
+                "texto": "It asks every active insurer at once; you don't call any of them."
+              },
+              "p4": {
+                "titulo": "You see every answer",
+                "texto": "Each verdict, its terms, its cost and its reason, in a single matrix."
+              }
+            },
+            "antes": {
+              "a1": "The candidate's ID number and their consent to be checked.",
+              "a2": "The rent they'll pay and the property type."
+            }
           }
         },
         "contrato": {
@@ -10659,11 +10913,30 @@
           "desc": "Prepare the lease agreement",
           "intro": {
             "titulo": "You're preparing a contract",
-            "resumen": "It's built on an already-approved application: the tenant, the property and the rent all come from it. You pick which one first.",
-            "paso1": "Pick the approved application.",
-            "paso2": "Confirm rent, dates and guarantee.",
-            "paso3": "Review the clauses and send it for signature.",
-            "necesitas": "You'll need the candidate already approved."
+            "resumen": "It's built on an approved application: the tenant, the property and the rent come from it. If the rental was closed outside Leasefy, you can also build it by hand.",
+            "pasos": {
+              "p1": {
+                "titulo": "You pick the application",
+                "texto": "An approved one that doesn't have a contract yet, or «by hand» with the tenant and a consigned property."
+              },
+              "p2": {
+                "titulo": "You build the document",
+                "texto": "You upload your agency's PDF or use the legal template with the clauses you choose."
+              },
+              "p3": {
+                "titulo": "You set the terms",
+                "texto": "Dates, rent and payment day; the deposit only for commercial leases, and the insurance if you want it."
+              },
+              "p4": {
+                "titulo": "You send it for signature",
+                "texto": "From the contract; once they sign, you activate it."
+              }
+            },
+            "antes": {
+              "a1": "An approved application, or the tenant's name, ID and email if you build it by hand.",
+              "a2": "The agreed dates, rent and payment day.",
+              "a3": "The contract PDF, if you already have it."
+            }
           }
         }
       }

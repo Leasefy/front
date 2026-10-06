@@ -42,7 +42,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowSquareOut, Check, CloudArrowUp, Receipt, Wallet } from '@phosphor-icons/react'
+import { Plus, ArrowSquareOut, CloudArrowUp, Receipt, Wallet } from '@phosphor-icons/react'
 // SplitButton del DS: separa la acción principal del menú en dos segmentos,
 // que es su respuesta a la tensión "+ o chevron, no los dos" (§SplitButton).
 import { Button, SplitButton } from '@leasefy/cadence'
@@ -58,14 +58,7 @@ import {
   DropdownListLabel,
   DropdownListSeparator,
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { IntroHeroe } from '@/components/inmobiliaria/intro-de-flujo'
 
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
@@ -81,7 +74,6 @@ import {
   GRUPOS,
   estadoDelFlujo,
   flujoDescKey,
-  flujoIntro,
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
@@ -356,7 +348,21 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   )
 }
 
-/** La explicación de la primera vez. Se muestra una sola vez por flujo. */
+/**
+ * La explicación de la primera vez. Se muestra una sola vez por flujo.
+ *
+ * Desde el 05-10-2026 es la dirección A «Héroe» que eligió Nico
+ * (`components/inmobiliaria/intro-de-flujo/`): una banda de marca con el
+ * medallón del flujo —el ícono SIEMPRE se ve, adentro de su círculo; la
+ * «píldora celeste vacía» de antes era el ícono aplastado a 0 px por la
+ * reserva de la ✕ (lo fija `BotonNuevo.intro.test.tsx`)—, los pasos de SU
+ * asistente como línea de tiempo y «Antes de empezar» como lista de chequeo.
+ *
+ * `open` manda de verdad y el contenido es el último flujo presente
+ * (`useUltimoPresente`, adentro de `IntroHeroe`): cerrar anima la salida con
+ * el contenido todavía adentro. La explicación no se monta hasta que se pide
+ * la primera vez: nadie paga lo que no abrió.
+ */
 function IntroDelFlujo({
   flujo,
   onCancelar,
@@ -366,92 +372,7 @@ function IntroDelFlujo({
   onCancelar: () => void
   onEmpezar: () => void
 }) {
-  /*
-   * `open` manda de verdad. Antes era `if (!flujo) return null` con
-   * `<Dialog open>` fijo: cerrar era desmontarlo de un tirón y Radix se
-   * quedaba sin nada que animar, así que el diálogo desaparecía en seco.
-   * `useUltimoPresente` conserva el flujo mientras se va — en el render del
-   * cierre ya es null y el diálogo saldría vacío.
-   */
   const ultimo = useUltimoPresente(flujo)
-
-  return (
-    <Dialog open={Boolean(flujo)} onOpenChange={(abierto) => !abierto && onCancelar()}>
-      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
-          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
-          hace que el `DialogHeader` deje de verse como cabecera —título chico,
-          con el padding del cuerpo— y que el Content pinte SU aspa además de la
-          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
-      {ultimo && (
-        <CuerpoDeLaIntro flujo={ultimo} onCancelar={onCancelar} onEmpezar={onEmpezar} />
-      )}
-    </Dialog>
-  )
-}
-
-function CuerpoDeLaIntro({
-  flujo,
-  onCancelar,
-  onEmpezar,
-}: {
-  flujo: FlujoNuevo
-  onCancelar: () => void
-  onEmpezar: () => void
-}) {
-  const { t } = useI18n()
-  const claves = flujoIntro(flujo.key)
-  const Icono = flujo.icon
-
-  return (
-    <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
-            <Icono className="h-5 w-5 text-primary" />
-          </div>
-          <DialogTitle>{t(claves.titulo)}</DialogTitle>
-          <DialogDescription>{t(claves.resumen)}</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-              {t(`${NS}.intro.queVasAHacer`)}
-            </p>
-            <ol className="space-y-2">
-              {claves.pasos.map((clave, i) => (
-                <li key={clave} className="flex gap-2.5 text-sm text-fg">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted font-mono text-xs tabular-nums text-fg-muted">
-                    {i + 1}
-                  </span>
-                  {t(clave)}
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div className="flex gap-2.5 rounded-lg border border-border bg-surface-muted p-3">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="bold" />
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                {t(`${NS}.intro.necesitasTitulo`)}
-              </p>
-              <p className="text-sm text-fg">{t(claves.necesitas)}</p>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="items-center sm:justify-between">
-          {/* Se dice que no vuelve a aparecer: si no, cerrarlo da miedo. */}
-          <p className="text-xs text-fg-subtle">{t(`${NS}.intro.soloPrimeraVez`)}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onCancelar}>
-              {t(`${NS}.intro.ahoraNo`)}
-            </Button>
-            <Button variant="primary" size="sm" onClick={onEmpezar}>
-              {t(`${NS}.intro.empezar`)}
-            </Button>
-          </div>
-        </DialogFooter>
-    </DialogContent>
-  )
+  if (!ultimo) return null
+  return <IntroHeroe flujo={flujo} onCancelar={onCancelar} onEmpezar={onEmpezar} />
 }

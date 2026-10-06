@@ -72,7 +72,7 @@ async function montar(el: React.ReactElement) {
 const modal = () => document.body.querySelector('[data-testid="piloto-novedad"]')
 
 describe('PilotoNovedad', () => {
-  it('la primera vez sale sola, con sus tres pasos', async () => {
+  it('la primera vez sale sola, con lo que hacen sus agentes', async () => {
     await montar(<PilotoNovedad />)
     expect(modal()).not.toBeNull()
     const texto = modal()?.textContent ?? ''
@@ -92,23 +92,27 @@ describe('PilotoNovedad', () => {
     expect(monogramas).toHaveLength(0)
   })
 
-  it('🔴 el héroe es el orbe de Ori, no la aurora (Nico, 02-10), y despierta', async () => {
+  it('🔴 A «Escenario» (Nico, 05-10): el orbe de Ori, sólo con sus dos anillos, despierta', async () => {
     await montar(<PilotoNovedad />)
     // La aurora era un `background: url(data:…)` en el héroe: ya no hay ninguno.
     const conImagen = [...(modal()?.querySelectorAll<HTMLElement>('[style]') ?? [])].filter((el) =>
       el.style.background.includes('url('),
     )
     expect(conImagen).toHaveLength(0)
-    const orbe = modal()?.querySelector('[data-escenario-del-orbe] .cdc-orb') as HTMLElement
+    const orbe = modal()?.querySelector('[data-orbe-de-la-presentacion] .cdc-orb') as HTMLElement
     expect(orbe).not.toBeNull()
     expect(orbe.dataset.agente).toBe('orquestador')
     expect(orbe.dataset.variant).toBe('orchestrator')
-    expect(orbe.style.width).toBe('120px')
-    // Recién montada (el `act` de `montar` la pinta al cerrar): todavía
-    // quieta; a los 450 ms late y a los 1900 se asienta.
+    // Sin la retícula de líneas grandes: sólo los dos anillos del orbe.
+    expect(modal()?.querySelector('[data-fondo-de-marca] svg')).toBeNull()
+    // Cada orbe (el del escritorio y el del celular) con SUS dos anillos, y nada más.
+    expect(modal()?.querySelectorAll('[data-anillo-del-orbe]').length).toBe(
+      (modal()?.querySelectorAll('[data-orbe-de-la-presentacion]').length ?? 0) * 2,
+    )
+    // Recién montada: quieta; a los 350 ms piensa, a los 1100 trabaja y a los 2500 se asienta.
     expect(orbe.dataset.estado).toBe('quieto')
     await act(async () => {
-      vi.advanceTimersByTime(500)
+      vi.advanceTimersByTime(1200)
     })
     expect(orbe.dataset.estado).toBe('trabajando')
     await act(async () => {

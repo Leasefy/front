@@ -72,7 +72,20 @@ export function useVisits() {
 
   // Aceptar, cancelar o reprogramar una visita mueve esta lista, y las citas
   // del panel viven bajo `agenda`: los dos nombres, o media pantalla se queda vieja.
-  useRefrescoAutomatico(['visits', 'agenda'], fetchVisits);
+  // El refresco automático (alguien modificó visitas o agenda) va SIN «cargando»: lo de la
+  // pantalla se queda y se reemplaza cuando llega lo nuevo. Con el «cargando»
+  // los números pasaban por «—» y volvían a contar desde cero, y parecía que la
+  // pantalla se caía (Nico, 05-10-2026, en Contratos). Si falla, se queda lo
+  // que había: el próximo cambio o la próxima visita lo vuelve a pedir.
+  const refrescarEnSilencio = useCallback(async () => {
+    try {
+      setVisits(await visitsApi.getMine());
+      setError(null);
+    } catch {
+      /* se queda lo que había */
+    }
+  }, []);
+  useRefrescoAutomatico(['visits', 'agenda'], refrescarEnSilencio);
 
   return { visits, stats, isLoading, error, refetch: fetchVisits, getUpcoming, getForProperty };
 }

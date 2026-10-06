@@ -73,7 +73,21 @@ export function useLeases() {
     };
   }, [leases]);
 
-  useRefrescoAutomatico(['leases', 'contratos', 'cobros'], fetchLeases);
+  // El refresco automático (alguien modificó arriendos, contratos o cobros) va SIN «cargando»: lo de la
+  // pantalla se queda y se reemplaza cuando llega lo nuevo. Con el «cargando»
+  // los números pasaban por «—» y volvían a contar desde cero, y parecía que la
+  // pantalla se caía (Nico, 05-10-2026, en Contratos). Si falla, se queda lo
+  // que había: el próximo cambio o la próxima visita lo vuelve a pedir.
+  const refrescarEnSilencio = useCallback(async () => {
+    try {
+      setLeases(await leasesApi.getMine());
+      setError(null);
+      setErrorCrudo(null);
+    } catch {
+      /* se queda lo que había */
+    }
+  }, []);
+  useRefrescoAutomatico(['leases', 'contratos', 'cobros'], refrescarEnSilencio);
 
   return {
     leases,

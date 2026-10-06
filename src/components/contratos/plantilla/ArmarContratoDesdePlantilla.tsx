@@ -33,6 +33,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
@@ -43,14 +50,31 @@ import {
   bloqueadaPor,
 } from '@/lib/contratos/plantilla-legal';
 import type { EstadoDelContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla';
+import { faltaIdentificarAlArrendatario } from '@/lib/contratos/arrendatario';
+import type { TipoDeDocumentoDePersona } from '@/lib/api/contratos-plantilla.service';
+
+/** La identificación del arrendatario que la pantalla deja corregir. */
+export interface IdentificacionDelArrendatario {
+  nombre: string;
+  tipoDocumento: TipoDeDocumentoDePersona;
+  documento: string;
+}
 
 interface Props {
   /** `template` = elegir del catálogo. `generate` = describirlo y que proponga. */
   modo: 'template' | 'generate';
   estado: EstadoDelContratoDesdePlantilla;
+  /**
+   * T-0145 — nombre y documento del arrendatario, editables. Quien arma el
+   * borrador los manda como `arrendatario*`. Sin la prop no se pinta el bloque:
+   * un contrato manual con inquilino nuevo ya los pide arriba.
+   */
+  arrendatario?: IdentificacionDelArrendatario & {
+    onCambio: (cambio: Partial<IdentificacionDelArrendatario>) => void;
+  };
 }
 
-export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
+export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Props) {
   const {
     preparacion,
     preparando,
@@ -150,6 +174,16 @@ export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
               campos={campos}
               onQuitar={estado.quitarClausula}
               onDescartar={estado.descartarPropuesta}
+            />
+          )}
+
+          {arrendatario && (
+            <IdentificacionDelArrendatarioCampos
+              {...arrendatario}
+              obligatoria={faltaIdentificarAlArrendatario([
+                ...motivosDeRechazo,
+                ...(propuesta?.pendientes ?? []),
+              ])}
             />
           )}
 
@@ -400,6 +434,113 @@ function RevisionDeLaPropuesta({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Arrendatario ────────────────────────────────────────────────────────────
+
+const TIPOS_DE_DOCUMENTO: ReadonlyArray<{ valor: TipoDeDocumentoDePersona; etiqueta: string }> = [
+  { valor: 'CC', etiqueta: 'Cédula de ciudadanía' },
+  { valor: 'CE', etiqueta: 'Cédula de extranjería' },
+  { valor: 'TI', etiqueta: 'Tarjeta de identidad' },
+  { valor: 'NIT', etiqueta: 'NIT' },
+  { valor: 'PASSPORT', etiqueta: 'Pasaporte' },
+  { valor: 'PPT', etiqueta: 'Permiso por protección temporal' },
+];
+
+/**
+ * Nombre y documento del arrendatario, siempre a la vista y corregibles.
+ *
+ * Se muestran siempre y no sólo cuando el validador se queja: el nombre ya
+ * viene de la postulación y la agencia puede corregirlo antes de que salga
+ * impreso. El documento vacío NO bloquea —si el inquilino lo tiene en su
+ * perfil, el backend lo completa—; los campos pasan a obligatorios cuando el
+ * validador reporta el literal a) del art. 3.º, que es la señal de que el
+ * perfil no lo tenía.
+ */
+function IdentificacionDelArrendatarioCampos({
+  nombre,
+  tipoDocumento,
+  documento,
+  onCambio,
+  obligatoria,
+}: IdentificacionDelArrendatario & {
+  onCambio: (cambio: Partial<IdentificacionDelArrendatario>) => void;
+  obligatoria: boolean;
+}) {
+  const nombreVacio = obligatoria && nombre.trim() === '';
+  const documentoVacio = obligatoria && documento.trim() === '';
+
+  return (
+    <div
+      data-testid="plantilla-arrendatario"
+      className="rounded-lg border border-border bg-surface-muted p-4 space-y-3"
+    >
+      <div>
+        <p className="text-body-sm font-medium text-fg">Identificación del arrendatario</p>
+        <p className="text-caption text-fg-muted mt-0.5">
+          La ley pide identificar a las dos partes (Ley 820 de 2003, art. 3.º, literal a).
+          {obligatoria
+            ? ' El perfil del inquilino no trae estos datos: complétalos para poder emitir el contrato.'
+            : ' Si dejas el documento vacío, se toma del perfil del inquilino cuando está registrado.'}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="plantilla-arrendatario-nombre" required={obligatoria}>
+          Nombre del arrendatario
+        </Label>
+        <Input
+          id="plantilla-arrendatario-nombre"
+          data-testid="plantilla-arrendatario-nombre"
+          value={nombre}
+          maxLength={200}
+          autoComplete="off"
+          aria-required={obligatoria || undefined}
+          aria-invalid={nombreVacio}
+          onChange={(e) => onCambio({ nombre: e.target.value })}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="plantilla-arrendatario-tipo" required={obligatoria}>
+            Tipo de documento
+          </Label>
+          <Select
+            value={tipoDocumento}
+            onValueChange={(v) => onCambio({ tipoDocumento: v as TipoDeDocumentoDePersona })}
+          >
+            <SelectTrigger id="plantilla-arrendatario-tipo" data-testid="plantilla-arrendatario-tipo">
+              <SelectValue placeholder="Elige el tipo" />
+            </SelectTrigger>
+            <SelectContent className="z-[400]">
+              {TIPOS_DE_DOCUMENTO.map((t) => (
+                <SelectItem key={t.valor} value={t.valor}>
+                  {t.etiqueta}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="plantilla-arrendatario-documento" required={obligatoria}>
+            Número de documento
+          </Label>
+          <Input
+            id="plantilla-arrendatario-documento"
+            data-testid="plantilla-arrendatario-documento"
+            value={documento}
+            maxLength={40}
+            autoComplete="off"
+            aria-required={obligatoria || undefined}
+            aria-invalid={documentoVacio}
+            onChange={(e) => onCambio({ documento: e.target.value })}
+          />
+        </div>
+      </div>
     </div>
   );
 }

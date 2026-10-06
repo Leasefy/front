@@ -322,6 +322,22 @@ el SERVIDOR (no `localStorage` ni la memoria de la pestaña). El back es la mism
   `forbidNonWhitelisted`; contra un back anterior, esas claves son un 400). Sin tests por decisión del dueño: ver el
   `WU-1-report.md` de la tarea.
 
+## Arrendatario desde la postulación (T-0145)
+
+«Crear contrato → Usar plantilla» ya no se traba en el art. 3.º literal a). Contrato congelado en
+`.orchestration/tasks/T-0145-arrendatario-desde-la-postulacion/contract.md`; el back es WU-1.
+
+- **Borrador** (`BorradorDeContrato`): `applicationId` (postulación) o `tenantId` (manual, inquilino existente);
+  el back resuelve al arrendatario y completa sólo los `arrendatario*` vacíos, lo que el front mande gana. Contra
+  un back anterior las dos claves se ignoran.
+- **`tenantId` sólo si es UUID** (`esUuid`, `src/lib/contratos/arrendatario.ts`): la lista de «inquilino existente» puede
+  traer llaves `doc:…`; con esas se manda lo que la lista sabe (`SeleccionDeInquilino.datos`) como `arrendatario*`.
+- **«Candidato:»**: `GET /landlord/applications/:id` NO trae `tenantName` (es de la tarjeta de la lista); el nombre está
+  en `tenant.firstName/lastName` (`nombreDelCandidato`). Sin nombre, «Sin nombre registrado», nunca vacío.
+- **Identificación editable** (`ArmarContratoDesdePlantilla`, prop `arrendatario`): nombre, tipo y número de documento,
+  siempre visibles y prellenados; pasan a obligatorios (`Label required`, `aria-required`) cuando el validador reporta
+  `ARTICULO_3_INCOMPLETO` literal a). El tipo sólo viaja si hay documento escrito. Con inquilino NUEVO tecleado no se pinta.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

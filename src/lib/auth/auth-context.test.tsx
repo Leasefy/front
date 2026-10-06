@@ -817,16 +817,33 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
   // `fetchBootstrap`'s mock resolution (V8/event-loop scheduling, not
   // anything this test controls) was enough to occasionally let the
   // setTimeout(0) fire before the assertion ran, flaking the test both ways.
+  //
+  // LOGIN-BUCLE r2 (06-10-2026): the network and the MFA check now run in a
+  // task the auth-js callback does NOT await (so the lock is released at
+  // once), and that task asks for the MFA verdict right after the profile —
+  // there is no setTimeout(0) window anymore. The tests below open the SAME
+  // window deterministically by holding the MFA answer itself
+  // (`retenerElMfa`): until it resolves, nothing may show the session as
+  // "inside" (isLoading stays true / the user is not set).
   beforeEach(() => {
     vi.useFakeTimers()
   })
+
+  /** Holds `getAuthenticatorAssuranceLevel` until `soltar(aal)` is called. */
+  function retenerElMfa() {
+    let soltar!: (aal: { currentLevel: string; nextLevel: string }) => void
+    getAalMock.mockImplementation(
+      () => new Promise((resolve) => { soltar = (aal) => resolve({ data: aal, error: null }) }),
+    )
+    return (aal: { currentLevel: string; nextLevel: string }) => soltar(aal)
+  }
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
   it('TOKEN_REFRESHED as the very first event (documented page-load edge case) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
-    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    const soltarElMfa = retenerElMfa()
     getMock.mockResolvedValue({
       id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', role: 'AGENT',
     })
@@ -846,13 +863,18 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('TOKEN_REFRESHED', fakeSession)
     })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
 
-    // The callback already returned — auth-js's lock is free — but the
-    // deferred MFA check (next macrotask) has not run yet. This is EXACTLY
-    // the window ProtectedRoute reads via `isLoading`/`mfaRequired`.
+    // The callback already returned — auth-js's lock is free — and `/users/me`
+    // answered, but the MFA verdict has not. This is EXACTLY the window
+    // ProtectedRoute reads via `isLoading`/`mfaRequired`.
+    expect(getAalMock).toHaveBeenCalled()
     expect(captured!.isLoading).toBe(true)
 
     await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
       await vi.advanceTimersByTimeAsync(0)
     })
 
@@ -861,7 +883,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
   })
 
   it('SIGNED_IN as the very first event (e.g. /auth/enlace magic-link exchange) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
-    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    const soltarElMfa = retenerElMfa()
     getMock.mockResolvedValue(bootstrapEnvelope(
       { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
       'agency',
@@ -881,10 +903,18 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
     })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
 
+    // The bootstrap answered; the MFA verdict has not: still loading, and the
+    // user is not exposed yet.
+    expect(getAalMock).toHaveBeenCalled()
     expect(captured!.isLoading).toBe(true)
+    expect(captured!.isAuthenticated).toBe(false)
 
     await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
       await vi.advanceTimersByTimeAsync(0)
     })
 
@@ -900,7 +930,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
    * AuthForm navegaba al destino sin pedir el código.
    */
   it('entrar desde el formulario con un factor pendiente: nunca hay un render «adentro» sin mfaRequired', async () => {
-    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    const soltarElMfa = retenerElMfa()
     getMock.mockResolvedValue(bootstrapEnvelope(
       { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: null },
       'agency',
@@ -934,11 +964,16 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
     })
-    // El callback volvió; el chequeo de MFA todavía no corrió: la sesión
-    // todavía no se muestra.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    // El callback volvió y el bootstrap contestó; el chequeo de MFA todavía
+    // no: la sesión todavía no se muestra.
+    expect(getAalMock).toHaveBeenCalled()
     expect(captured!.isAuthenticated).toBe(false)
 
     await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
       await vi.advanceTimersByTimeAsync(0)
     })
 

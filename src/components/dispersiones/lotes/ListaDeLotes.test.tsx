@@ -35,7 +35,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/components/ui/toast', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
 vi.mock('@/lib/hooks/usePermissions', () => ({
@@ -356,6 +356,23 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     const { toast } = await import('@/components/ui/toast');
     const [titulo] = vi.mocked(toast.success).mock.calls.at(-1)!;
     expect(titulo).toBe('Lote de septiembre de 2026 armado');
+  });
+
+  it('🔴 QA-PAGOS-95 (Nico, 05-10-2026): sobre el monto, «armado» y la frase de la segunda persona; «1 pago», no «1 pagos»', async () => {
+    const nota = 'El lote suma $ 7.011.000 y desde $ 5.000.000 lo aprueba una segunda persona (el monto que escogió tu inmobiliaria). Quien lo armó no lo puede aprobar, aunque sea administrador.';
+    armar.mockResolvedValue({
+      lote: { id: 'lote-1', cantidad: 1, totalCop: 7_011_000, estado: 'BORRADOR' },
+      excluidos: [],
+      descubiertoCop: 0,
+      mismoPaso: { aprobadoEnElMismoPaso: false, porQueNo: 'SOBRE_EL_MONTO', nota },
+    });
+    await abrirArmar();
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+    const { toast } = await import('@/components/ui/toast');
+    const [titulo, opciones] = vi.mocked(toast.success).mock.calls.at(-1)!;
+    expect(titulo).toBe('Lote de septiembre de 2026 armado');
+    expect((opciones as { description: string }).description).toMatch(/^1 pago por /);
+    expect(toast.info).toHaveBeenCalledWith(nota);
   });
 
   it('los bancos salen agrupados por lo que reciben', async () => {

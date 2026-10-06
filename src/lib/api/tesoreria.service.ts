@@ -55,6 +55,15 @@ function cuerpoDelConvenio(dto: GuardarConvenio): Record<string, unknown> {
   if (dto.referenciaPrefijo) cuerpo.referenciaPrefijo = dto.referenciaPrefijo;
   if (dto.referenciaDv) cuerpo.referenciaDv = dto.referenciaDv;
   if (dto.activo !== undefined) cuerpo.activo = dto.activo;
+  /*
+   * 🔴 QA-PAGOS-95 r2 (N-33, 06-10-2026): la cuenta que recauda y POR DÓNDE
+   * entra su plata no viajaban. El cajón las pedía y el back las guardaba, pero
+   * el cuerpo las soltaba: toda cuenta quedaba «sin declarar» y la vía, siempre
+   * la de por defecto (ARCHIVO), así que «un camino de entrada por cuenta» no
+   * se podía configurar desde la pantalla y el mismo pago podía entrar dos veces.
+   */
+  if (dto.cuentaBancaria) cuerpo.cuentaBancaria = dto.cuentaBancaria;
+  if (dto.viaDeEntrada) cuerpo.viaDeEntrada = dto.viaDeEntrada;
   return cuerpo;
 }
 

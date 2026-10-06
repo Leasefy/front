@@ -1267,6 +1267,7 @@ export const cobrosApi = {
       totalLate?: number;
       countByStatus?: Record<string, number>;
       tasaDeRecaudo?: TasaDeRecaudo | null;
+      plazoSinFijar?: boolean;
     };
     const totalExpected = raw.totalExpected ?? 0;
     const totalCollected = raw.totalCollected ?? 0;
@@ -1290,6 +1291,8 @@ export const cobrosApi = {
       cobrosPaid: counts['PAID'] ?? 0,
       cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
       cobrosLate: counts['LATE'] ?? 0,
+      // N-22: sin plazo fijado lo vencido no es mora (CR-31).
+      plazoSinFijar: raw.plazoSinFijar === true,
     };
   },
 

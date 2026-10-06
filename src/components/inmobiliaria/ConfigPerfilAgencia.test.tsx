@@ -272,13 +272,17 @@ describe('<ConfigPerfilAgencia>', () => {
     expect(text).toContain('Código en todos los lotes')
   })
 
-  it('con el motor prendido lo dice, y sin umbral dice «Nunca por monto»', () => {
+  // 🔴 Decisión de Nico (05-10-2026, QA-PAGOS-95): «nunca pedir segunda persona»
+  // ya no viene por defecto; sin umbral rige el monto que trae Leasefy. Antes
+  // esta prueba esperaba «Nunca por monto».
+  it('con el motor prendido lo dice, y sin umbral dice el monto que trae Leasefy', () => {
     render({
       agency: { ...AGENCY, motorDeCobrosV2: true, dispersionMontoDobleAprobacion: null },
     })
     const text = container.textContent ?? ''
     expect(text).toContain('Reglas de mora')
-    expect(text).toContain('Nunca por monto')
+    expect(text).not.toContain('Nunca por monto')
+    expect(text).toContain('20.000.000 · el que trae Leasefy')
   })
 
   it('prender el motor manda { motorDeCobrosV2: true } y nada más', async () => {
@@ -1058,6 +1062,15 @@ describe('<ConfigPerfilAgencia> · llegar al campo de los días de plazo', () =>
       await new Promise((r) => setTimeout(r, 30))
     })
   }
+
+  it('🔴 CONS-03 (QA-PAGOS-95): sin plazo fijado el campo sale vacío con el sugerido, no «0» (0 días es un plazo de verdad)', async () => {
+    await pintarConAncla({ agency: { ...AGENCY, diasDePlazo: 0, plazoDePagoFijadoAt: null } as never })
+    const campo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')
+    expect(campo?.value).toBe('')
+    expect(campo?.placeholder).toContain('Sin fijar')
+    act(() => setInputValue(campo as HTMLInputElement, '5'))
+    expect(campo?.value).toBe('5')
+  })
 
   it('con el ancla y permiso: abre la edición y deja el foco en el campo', async () => {
     await pintarConAncla()

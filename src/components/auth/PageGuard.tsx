@@ -49,7 +49,7 @@ interface PageGuardProps {
  * never fire for unauthorized users.
  */
 export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, seccion, children }: PageGuardProps) {
-  const { canAccess, isAdmin, isLoading, agencyRole } = usePermissions();
+  const { canAccess, isAdmin, isLoading, agencyRole, permisosDelBack, refetch } = usePermissions();
   const sinSenal = useSinSenal();
 
   const moduleAllowed =
@@ -101,6 +101,36 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
    */
   if (noSePudoPreguntar || (!isLoading && !hasAccess && estaSinSenal())) {
     return <>{children}</>;
+  }
+
+  /*
+   * 🔴 H-09 (QA-PAGOS-95 r2; main, con la recomendada): los permisos del back
+   * NO se pudieron saber (`my-permissions` respondió 5xx o no respondió). Eso
+   * no es «no tienes acceso»: se muestra la pantalla con el aviso y un
+   * «Reintentar». No afloja nada: cada llamada la sigue decidiendo el back.
+   */
+  if (!isLoading && !hasAccess && permisosDelBack === 'sin-verificar') {
+    return (
+      <>
+        <div className="px-4 pt-4 md:px-6 md:pt-6" data-testid="permisos-sin-verificar">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
+            <span>
+              No pudimos verificar tus permisos: el servidor no respondió. Te mostramos la pantalla; si algo no te
+              corresponde, te lo diremos al intentarlo.
+            </span>
+            <button
+              type="button"
+              className="font-medium underline underline-offset-4"
+              onClick={() => void refetch()}
+              data-testid="permisos-reintentar"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+        {children}
+      </>
+    );
   }
 
   if (!isLoading && !hasAccess) {

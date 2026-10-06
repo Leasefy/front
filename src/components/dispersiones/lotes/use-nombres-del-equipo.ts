@@ -18,12 +18,21 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { agentesApi } from '@/lib/api/inmobiliaria.service';
 import { useAuth } from '@/lib/auth/use-auth';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 
 export function useNombresDelEquipo() {
   const { user } = useAuth();
   const [porId, setPorId] = useState<Record<string, string>>({});
+  /*
+   * N-15 (QA-PAGOS-95): la lista de agentes es `agentes:view`; sin él (el
+   * contador) era un 403 en cada lote. Los nombres los trae el back
+   * (`creadoPorNombre`), así que sin la lista no se pierde nada.
+   */
+  const { canAccess, isLoading: permisosCargando } = usePermissions();
+  const veLosAgentes = !permisosCargando && canAccess('agentes', 'view');
 
   useEffect(() => {
+    if (!veLosAgentes) return;
     let cancelado = false;
     agentesApi
       .getAll()
@@ -41,7 +50,7 @@ export function useNombresDelEquipo() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [veLosAgentes]);
 
   const yo = user?.id ?? null;
 

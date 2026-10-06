@@ -12,6 +12,7 @@ interface NoDataYetBadgeProps {
 
 export function NoDataYetBadge({ reason, phase, cta, ctaHref }: NoDataYetBadgeProps) {
   const { t } = useI18n();
+  void phase;
 
   return (
     // `role="status"` mirrors the EmptyState primitive so screen-reader users
@@ -24,9 +25,9 @@ export function NoDataYetBadge({ reason, phase, cta, ctaHref }: NoDataYetBadgePr
         {t('inmobiliaria.ai.cotizador.noDataYet.heading')}
       </p>
       <p className="text-xs text-fg-subtle max-w-xs">{reason}</p>
-      <span className="text-xs bg-muted rounded-full px-2 py-0.5 text-fg-muted">
-        Fase {phase}
-      </span>
+      {/* N-11 (QA-PAGOS-95): la píldora «Fase 37» era la fase interna del
+          desarrollo, no algo que la inmobiliaria pueda leer. `phase` queda en
+          la firma (los llamadores lo pasan) pero ya no se pinta. */}
       {cta && (
         <a href={ctaHref ?? '#'} className="text-xs text-primary underline hover:text-primary">
           {cta}

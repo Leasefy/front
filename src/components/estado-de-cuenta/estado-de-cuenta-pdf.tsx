@@ -693,7 +693,9 @@ function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
                 ? resumen.cuotasEnPlazo === 1
                   ? frase('estadoDeCuenta.unaVencidaSinPlazoDetalle')
                   : frase('estadoDeCuenta.vencidaSinPlazoDetalle', { n: resumen.cuotasEnPlazo })
-                : frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
+                : resumen.cuotasEnPlazo === 1
+                  ? frase('estadoDeCuenta.unaVencidaEnPlazoDetalle')
+                  : frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
             </Text>
           ) : null}
           {resumen.enMora ? (

@@ -30,14 +30,14 @@ export const SALDO_MAXIMO_DEL_EXTRACTO_COP = 1_000_000_000_000;
 
 export const MENSAJES_DEL_EXTRACTO = {
   valorMaximo:
-    'El valor de un movimiento no puede pasar de $1.000.000.000.000. Revisa que no sobren ceros.',
+    'El valor de un movimiento no puede pasar de $\u00a01.000.000.000.000. Revisa que no sobren ceros.',
   valorMinimo:
-    'Una salida de plata no puede pasar de $1.000.000.000.000. Revisa que no sobren ceros.',
+    'Una salida de plata no puede pasar de $\u00a01.000.000.000.000. Revisa que no sobren ceros.',
   filasMaximas:
     'Puedes cargar hasta 20.000 movimientos a la vez. Divide el extracto (por ejemplo, por mes).',
   saldoEntero: 'El saldo debe ser un número entero de pesos, sin decimales.',
   saldoFueraDeRango:
-    'Un saldo no puede pasar de $1.000.000.000.000 (ni bajar de −$1.000.000.000.000). Revisa que no sobren ceros.',
+    'Un saldo no puede pasar de $\u00a01.000.000.000.000 (ni bajar de −$\u00a01.000.000.000.000). Revisa que no sobren ceros.',
 } as const;
 
 /**

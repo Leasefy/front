@@ -82,7 +82,7 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus, modulosPagos } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus, permisosDelBack, modulosPagos } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   // Sólo lo usaba la tarjeta de invitar (comentada abajo).
   // const router = useRouter();
@@ -138,7 +138,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // visible siempre, en la nav.
   // 🔴 ARREGLOS-4: `GET /contracts/migrar/lotes` pide `contratos:view`; sin él
   // (la asesora) no se pide — era otro 403 en cada pantalla — y no hay badge.
-  const { pendientes: migracionesPendientes } = useMigracionesPendientes(canAccess('contratos', 'view'));
+  // 🔴 H-08 (QA-PAGOS-95): el ABOGADO EXTERNO trae `contratos:view` de fábrica, pero
+  // el back se lo recorta fuera de lo jurídico: era un 403 en CADA pantalla suya.
+  const { pendientes: migracionesPendientes } = useMigracionesPendientes(
+    canAccess('contratos', 'view') && agencyRole !== 'ABOGADO_EXTERNO',
+  );
   // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
   // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
   const { total: pilotoPendientes } = usePilotoBadge();
@@ -157,7 +161,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
     // reintentar. Borrarlos se lee como «esto no existe».
     agentUnverified: agentAccessStatus === 'sin-verificar',
-  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, modulosPagos]);
+    // H-09 (QA-PAGOS-95 r2): un 500 de los permisos del back no apaga el menú.
+    backUnverified: permisosDelBack === 'sin-verificar',
+  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, permisosDelBack, modulosPagos]);
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════

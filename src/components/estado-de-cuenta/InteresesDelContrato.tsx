@@ -34,6 +34,7 @@ import {
 import { fechaLegible } from './filas';
 import type { FilaDeInteres, InteresesDelContrato } from '@/lib/types/estado-de-cuenta';
 import { useTextoDelEstado } from './textos';
+import { BotonCondonarIntereses } from './CondonarInteresesDeLaFila';
 
 /** Donde la inmobiliaria fija sus días de plazo (la misma ruta del aviso de la ficha del contrato). */
 export const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
@@ -231,6 +232,14 @@ function Concepto({ fila }: { fila: FilaDeInteres }) {
           {t('estadoDeCuenta.pagadaEnMora')}
         </p>
       )}
+      {/* B-13 (QA-PAGOS-95 r2): lo condonado ya salió de «Liquidado» y de «Falta». */}
+      {fila.condonado && fila.condonado > 0 ? (
+        <p className="mt-0.5 text-caption text-fg-muted" data-testid="interes-condonado">
+          Condonado: {formatCurrency(fila.condonado)}
+        </p>
+      ) : null}
+      {/* Sólo en el panel y para un administrador (sin proveedor no pinta nada). */}
+      <BotonCondonarIntereses fila={fila} />
     </>
   );
 }

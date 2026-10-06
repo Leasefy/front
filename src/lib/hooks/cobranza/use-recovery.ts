@@ -45,6 +45,12 @@ export interface RecoveryResponse {
   /** mora reducida (puntos % — positivo = la mora bajó en la ventana). */
   moraReducedPct: number | null
   moraWindowDays: number
+  /** N-10 (QA-PAGOS-95 r2): el índice del reporte más viejo y el de hoy, y desde qué día. */
+  moraDesdePct?: number | null
+  moraHastaPct?: number | null
+  moraDesdeDia?: string | null
+  /** N-10: hoy no hay cartera en mora: no hay recuperación que medir. */
+  moraSinCarteraHoy?: boolean
   generatedAt: string
 }
 

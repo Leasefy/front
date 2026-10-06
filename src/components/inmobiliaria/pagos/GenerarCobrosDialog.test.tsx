@@ -87,12 +87,24 @@ describe('GenerarCobrosDialog', () => {
     expect(dialogo()?.getAttribute('data-variant')).toBe('confirm')
   })
 
+  it('🔴 N-14 (QA-PAGOS-95): dentro de la frase el mes va en minúscula («de septiembre de 2026»)', () => {
+    montar({ yaGenerados: 0 })
+    const texto = dialogo()?.textContent ?? ''
+    // (El doble de `t` pinta «clave:parámetros».)
+    expect(texto).toContain('generar.descripcion:septiembre de 2026')
+    expect(texto).toContain('generar.titulo:septiembre de 2026')
+    // La única «Septiembre» con mayúscula es el valor suelto del mes.
+    expect(texto.match(/Septiembre de 2026/g) ?? []).toHaveLength(1)
+    expect(porTestId('generar-mes')?.textContent).toBe('Septiembre de 2026')
+  })
+
   it('si ya hay cobros de ese mes, avisa antes de duplicar', () => {
     montar({ yaGenerados: 7 })
     const aviso = porTestId('generar-aviso-duplicado')
     expect(aviso).not.toBeNull()
     expect(aviso!.textContent).toContain('7')
-    expect(aviso!.textContent).toContain('Septiembre de 2026')
+    // N-14 (QA-PAGOS-95): dentro de la frase, el mes en minúscula.
+    expect(aviso!.textContent).toContain('septiembre de 2026')
   })
 
   it('si no hay ninguno, no inventa una advertencia', () => {
@@ -255,7 +267,7 @@ describe('GenerarCobrosDialog · contratos vencidos', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
     // Terminó: medallón de éxito, y el título y el conteo lo dicen.
     expect(dialogo()?.getAttribute('data-variant')).toBe('success')
-    expect(dialogo()?.textContent).toContain('La corrida de Septiembre de 2026 terminó')
+    expect(dialogo()?.textContent).toContain('La corrida de septiembre de 2026 terminó')
     expect(dialogo()?.textContent).toContain('812 cobros generados.')
   })
 

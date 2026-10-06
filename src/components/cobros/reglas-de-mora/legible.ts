@@ -29,6 +29,7 @@ export const NOMBRE_DEL_DISPARADOR: Record<DisparadorDeRegla, string> = {
 };
 
 export const NOMBRE_DE_LA_FORMULA: Record<FormulaDeRegla, string> = {
+  INTERES_MENSUAL: 'Interés mensual',
   INTERES_DIARIO: 'Interés diario',
   PORCENTAJE_DE_LA_BASE: 'Porcentaje de la base',
   MONTO_FIJO: 'Monto fijo',
@@ -43,6 +44,8 @@ export const NOMBRE_DE_LA_BASE: Record<BaseDeCalculo, string> = {
 
 /** Lo que cada opción significa, para el formulario. */
 export const EXPLICACION_DE_LA_FORMULA: Record<FormulaDeRegla, string> = {
+  INTERES_MENSUAL:
+    'Una tasa del mes que corre a prorrata cada día de mora (base 30). El 2 % mensual son exactamente 2 % en 30 días.',
   INTERES_DIARIO: 'Una tasa que corre cada día de mora sobre la base. Es el interés corriente.',
   PORCENTAJE_DE_LA_BASE: 'Un porcentaje único de la base, cobrado el día que la regla se dispara.',
   MONTO_FIJO: 'Un monto fijo en pesos, cobrado el día que la regla se dispara.',
@@ -90,6 +93,8 @@ export function describirFormula(regla: {
 }): string {
   const base = NOMBRE_DE_LA_BASE[regla.base];
   switch (regla.formula) {
+    case 'INTERES_MENSUAL':
+      return `${formatearPorcentaje(regla.valor)} mensual sobre el ${base}, por días de mora`;
     case 'INTERES_DIARIO':
       return `${formatearPorcentaje(regla.valor)} diario sobre el ${base}`;
     case 'PORCENTAJE_DE_LA_BASE':

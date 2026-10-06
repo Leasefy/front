@@ -15,8 +15,8 @@
  *   - NO PIIRevealContext.Provider in this subtree → if any descendant Mask
  *     tries to use the context, the safe `usePIIRevealContextSafe()` hook
  *     returns null and the Mask falls into no-reveal mode
- *   - Details are rendered via plain <pre>{JSON.stringify(...)}</pre> — NEVER
- *     via raw-HTML injection sinks (see T-34-07-02)
+ *   - Details are rendered as plain-text «clave: valor» rows
+ *     (`detallesLegibles`, N-09) — NEVER via raw-HTML injection sinks (see T-34-07-02)
  *
  * Refs mvp:docs/DESIGN.md §4 (cards, tables, inputs), §16 (tabular-nums).
  */
@@ -27,8 +27,10 @@ import { ClipboardText } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { detallesLegibles } from '@/lib/cobranza/detalles-de-la-auditoria'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Badge, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
@@ -127,8 +129,13 @@ function AuditContent() {
     useAuditLog(filters)
 
   // Load agency members once for the actor dropdown
+  // N-15 (QA-PAGOS-95): la lista del equipo es `configuracion:view`; sin él (el
+  // contador) era un 403 en cada visita. Sin la lista, el filtro sigue por correo.
+  const { canAccess, isLoading: permisosCargando } = usePermissionsContext()
+  const veElEquipo = !permisosCargando && canAccess('configuracion', 'view')
   const [members, setMembers] = useState<AgencyUser[]>([])
   useEffect(() => {
+    if (!veElEquipo) return
     let cancelled = false
     inmobiliariaConfigApi
       .getUsers()
@@ -141,7 +148,7 @@ function AuditContent() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [veElEquipo])
 
   const onResetActor = useCallback(() => setActor(undefined), [])
 
@@ -468,11 +475,17 @@ function AuditContent() {
                           />
                         </div>
                       )}
-                      {/* Render details JSON as plain text inside <pre>.
-                          NEVER use raw-HTML sinks — T-34-07-02. */}
-                      <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
-                        {JSON.stringify(details, null, 2)}
-                      </pre>
+                      {/* N-09 (QA-PAGOS-95): los detalles en renglones «clave: valor»,
+                          no JSON crudo. Siguen siendo TEXTO plano — NUNCA HTML
+                          (T-34-07-02). */}
+                      <dl className="text-[11px] text-muted-foreground max-h-32 overflow-y-auto space-y-0.5" data-testid="detalles-de-la-auditoria">
+                        {detallesLegibles(details).map((d, i) => (
+                          <div key={`${d.clave}-${i}`} className="flex flex-wrap gap-x-1">
+                            <dt className="font-medium text-fg-muted">{d.clave}:</dt>
+                            <dd className="break-words">{d.valor}</dd>
+                          </div>
+                        ))}
+                      </dl>
                     </TableCell>
                   </TableRowAnimada>
                 )

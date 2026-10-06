@@ -36,6 +36,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
+import { MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP } from '@/lib/dispersiones/segunda-persona-por-monto';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
@@ -114,7 +115,7 @@ interface PerfilFormState {
   diasParaAvisoAseguradora: number;
   // Controles de la dispersión (Agency.dispersionExigePin / dispersionMontoDobleAprobacion)
   dispersionExigePin: boolean;
-  /** COP entero; `null` = nunca por monto. */
+  /** COP entero; `null` = el monto que trae Leasefy (`lib/dispersiones/segunda-persona-por-monto.ts`). */
   dispersionMontoDobleAprobacion: number | null;
   // Tarifas tributarias (Agency.ivaPorcentaje … baseMinimaRetefuenteCop)
   ivaPorcentaje: number;
@@ -698,7 +699,7 @@ export function ConfigPerfilAgencia({
       }
     }
 
-    // `null` es un valor («nunca por monto»), no una ausencia: viaja tal cual.
+    // `null` es un valor («el monto que trae Leasefy»), no una ausencia: viaja tal cual.
     if (formData.dispersionMontoDobleAprobacion !== original.dispersionMontoDobleAprobacion) {
       payload.dispersionMontoDobleAprobacion = formData.dispersionMontoDobleAprobacion;
     }
@@ -800,6 +801,12 @@ export function ConfigPerfilAgencia({
    * el foco queda EN el campo; quien no puede, ve el dato resaltado.
    */
   const [llegoAlPlazo, setLlegoAlPlazo] = useState(false);
+  /**
+   * CONS-03 (QA-PAGOS-95): sin plazo fijado el campo arrancaba en «0», que es un
+   * plazo de verdad (la mora corre desde el día siguiente). «Sin fijar» ≠ 0: el
+   * campo sale vacío con el sugerido hasta que la persona escriba.
+   */
+  const [plazoTocado, setPlazoTocado] = useState(false);
   useEffect(() => {
     if (isLoading || typeof window === 'undefined') return;
     if (window.location.hash !== `#${ANCLA_DEL_PLAZO}`) return;
@@ -1528,8 +1535,10 @@ export function ConfigPerfilAgencia({
                     min={0}
                     max={MAX_DIAS_DE_PLAZO}
                     step={1}
-                    value={formData.diasDePlazo}
+                    value={plazoSinFijar(agency) && !plazoTocado ? '' : formData.diasDePlazo}
+                    placeholder={plazoSinFijar(agency) ? 'Sin fijar · el sugerido es 5' : undefined}
                     onChange={(e) => {
+                      setPlazoTocado(true);
                       const n = parseInt(e.target.value, 10);
                       updateField('diasDePlazo', Number.isNaN(n) ? 0 : n);
                     }}
@@ -1706,7 +1715,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Segundo aprobador desde (COP)"
                 error={errors.dispersionMontoDobleAprobacion}
-                hint="Un lote que sume este monto o más exige el código de otra persona. Vacío = nunca por monto."
+                hint={`Desde este monto un lote de giros o de egresos lo aprueba una segunda persona, con el código: quien lo armó no, aunque sea administrador. Por debajo, el administrador lo aprueba al armarlo. Vacío = el que trae Leasefy (${formatCurrency(MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP)}).`}
                 campo="dispersionMontoDobleAprobacion"
               >
                 <CurrencyInput
@@ -1734,7 +1743,7 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-semibold tabular-nums">
                 {agency.dispersionMontoDobleAprobacion != null
                   ? formatCurrency(agency.dispersionMontoDobleAprobacion)
-                  : 'Nunca por monto'}
+                  : `${formatCurrency(MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP)} · el que trae Leasefy`}
               </div>
             </div>
           </div>

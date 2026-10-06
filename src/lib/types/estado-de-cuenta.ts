@@ -56,6 +56,12 @@ export interface DocumentoDePago {
     nit: string;
     siniestroReferencia: string | null;
   };
+  /**
+   * QA-MIGRACION-95 (CA-08): recibo migrado SIN el documento del inquilino que
+   * paga el mes porque se colgó del contrato por su número o por el código del
+   * inmueble. Ausente = por el documento.
+   */
+  asociadoPor?: 'numero_contrato' | 'codigo_inmueble';
 }
 
 /**
@@ -258,6 +264,11 @@ export interface FilaDeInteres {
   origen: 'COBRO' | 'CUOTA' | null;
   /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
   pagadaEnMora: boolean;
+  /**
+   * B-13 (QA-PAGOS-95 r2): lo que un administrador condonó de este interés
+   * (ya descontado de `liquidado` y `pendiente`). Ausente = nada.
+   */
+  condonado?: number;
 }
 
 export interface InteresesDelContrato {
@@ -499,3 +510,22 @@ export interface ResumenDelEstadoDeCuenta {
  * mostrar de emitir y no llevaba intereses—. La única prefactura es la de
  * `GET /inmobiliaria/facturacion/por-generar`, en `facturacion-por-mes.service`.
  */
+
+/**
+ * QA-MIGRACION-95 — CA-04: un contrato vigente del inquilino que todavía no
+ * tiene arriendo en el portal (el migrado sin día de pago, o cuya cuenta nació
+ * después). Espejo de `ContratoDelPortalDto` del back. `diaDePago` `null` = el
+ * archivo no lo trajo: se dice «sin definir», nunca un número inventado.
+ */
+export interface ContratoDelPortal {
+  contratoId: string;
+  numero: string | null;
+  inmobiliaria: { id: string; nombre: string };
+  direccion: string | null;
+  ciudad: string | null;
+  desde: string | null;
+  hasta: string | null;
+  canonCop: number | null;
+  diaDePago: number | null;
+  estado: string;
+}

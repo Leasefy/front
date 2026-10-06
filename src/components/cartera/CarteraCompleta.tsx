@@ -192,6 +192,13 @@ export function CarteraCompleta() {
    * hace que el número de arriba cuadre con sus partes.
    */
   const castigada = report?.castigada ?? null
+  /** COLA-01: con 6 fichas en fila (lg–2xl) la cifra va en text-base; con 5, en text-xl. */
+  const tamanoDeLaCifra =
+    castigada && siniestros
+      ? 'text-2xl lg:text-base 2xl:text-2xl'
+      : castigada || siniestros
+        ? 'text-2xl lg:text-xl 2xl:text-2xl'
+        : 'text-2xl'
   /*
    * Los tramos por edad que NO PUEDEN llenarse con esta configuración: los que
    * arrancan en o después del umbral de siniestro, porque esa cartera sale de
@@ -361,9 +368,16 @@ export function CarteraCompleta() {
     >
       <div className="space-y-6">
         {/* ── UNA franja de resumen. Cada cifra es un filtro. ──────────── */}
+        {/* 🔴 COLA-01 (QA-PAGOS-95): a 390 px dos columnas dejaban ≈147 px a una
+            cifra de diez dígitos («$ 2.535.172.123», ≈216 px en text-2xl mono)
+            y la franja la cortaba (overflow-hidden). Una debajo de otra en el
+            teléfono, como el resumen de Cobros. */}
+        {/* COLA-01 a 1440: con 5 o 6 fichas en fila cada una deja 157–195 px y
+            «$ 1.636.622.564» en text-2xl (≈216 px) se montaba sobre la de al
+            lado. La cifra baja de tamaño SÓLO en esa franja de anchos. */}
         <div
           className={cn(
-            'grid grid-cols-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface',
+            'grid grid-cols-1 sm:grid-cols-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface',
             'lg:divide-x lg:divide-y-0',
             castigada && siniestros
               ? 'lg:grid-cols-6'
@@ -382,7 +396,7 @@ export function CarteraCompleta() {
             data-testid="resumen-deuda-total"
           >
             <p className="text-xs text-fg-muted">Deuda total</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
+            <p className={cn('mt-1 font-mono font-semibold tabular-nums text-fg', tamanoDeLaCifra)} data-testid="cifra-deuda-total">
               {formatCurrency(cartera.deudaTotal)}
             </p>
             <p className="mt-0.5 text-xs text-fg-muted">
@@ -425,7 +439,8 @@ export function CarteraCompleta() {
                 <p className="text-xs text-fg-muted">{nombreDelCajon(cual)}</p>
                 <p
                   className={cn(
-                    'mt-1 font-mono text-2xl font-semibold tabular-nums',
+                    'mt-1 font-mono font-semibold tabular-nums',
+                    tamanoDeLaCifra,
                     cual === 'CARTERA' ? 'text-danger' : TONO[cual],
                   )}
                 >
@@ -572,6 +587,7 @@ export function CarteraCompleta() {
             className={cn('grid grid-cols-2 gap-3', siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}
             role="group"
             aria-label="Edad de la cartera"
+            data-testid="tramos-de-la-cartera"
           >
             {cartera.tramos.map((tramo) => {
               const activa = edad === tramo.edad && vista !== 'siniestros'
@@ -596,7 +612,8 @@ export function CarteraCompleta() {
                     />
                   ) : null}
                   <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
-                  <p className={cn('mt-1 font-mono text-lg font-semibold tabular-nums', TONO[tramo.edad])}>
+                  {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
+                  <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', TONO[tramo.edad])}>
                     {formatCurrency(tramo.monto)}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-muted">
@@ -626,7 +643,7 @@ export function CarteraCompleta() {
                   />
                 ) : null}
                 <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-danger">
+                <p className="mt-1 font-mono text-base font-semibold tabular-nums text-danger sm:text-lg">
                   {formatCurrency(cartera.enSiniestro.monto)}
                 </p>
                 <p className="mt-0.5 text-xs text-fg-muted">

@@ -56,6 +56,12 @@ export interface NavFilterContext {
    */
   agentUnverified?: boolean;
   /**
+   * H-09 (QA-PAGOS-95 r2): los permisos del BACK no se pudieron saber (5xx o
+   * sin respuesta). Igual que `agentUnverified`: «no se pudo saber» no borra
+   * filas del menú; la pantalla lo dice y el back decide cada llamada.
+   */
+  backUnverified?: boolean;
+  /**
    * Los módulos de PAGO prendidos para esta inmobiliaria, tal como los devuelve
    * `GET /inmobiliaria/agency/my-permissions`. `undefined` = todavía no llegó, y
    * se trata como vacío: una fila de un módulo de pago NO se muestra hasta que
@@ -105,18 +111,22 @@ export function pasaGateDeFila(
   }
   // Alguno de varios módulos (la agenda): alcanza con uno.
   if (fila.modulos && fila.modulos.length > 0) {
-    if (!fila.modulos.some((m) => ctx.canAccess(m, 'view'))) return false;
+    if (!fila.modulos.some((m) => ctx.canAccess(m, 'view')) && ctx.backUnverified !== true) return false;
   } else if (fila.module && !ctx.canAccess(fila.module, 'view')) {
     // Excepción única: el agente no contestó y el módulo es suyo. No es que
     // no tenga permiso — es que no pudimos preguntar. Ver `agentUnverified`.
     const esDelAgente = ctx.agentUnverified === true && isAgentModule(fila.module);
-    if (!esDelAgente) return false;
+    const delBackSinVerificar = ctx.backUnverified === true && !isAgentModule(fila.module);
+    if (!esDelAgente && !delBackSinVerificar) return false;
   }
   // Role-based gate: isAdmin bypasses; otherwise the current agencyRole must
   // be in the item's allow-list.
   if (fila.roles && fila.roles.length > 0) {
     const roleAllowed =
-      ctx.isAdmin || (ctx.agencyRole !== null && fila.roles.includes(ctx.agencyRole));
+      ctx.isAdmin ||
+      // H-09: sin los permisos del back el rol tampoco se sabe: no se borra.
+      (ctx.backUnverified === true && ctx.agencyRole === null) ||
+      (ctx.agencyRole !== null && fila.roles.includes(ctx.agencyRole));
     if (!roleAllowed) return false;
   }
   return true;

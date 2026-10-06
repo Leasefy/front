@@ -89,6 +89,17 @@ async function pintar() {
 const testId = (id: string) => container.querySelector(`[data-testid="${id}"]`);
 
 describe('el veredicto de arriba', () => {
+  it('🔴 QA-PAGOS-95 (N-14, PG-13): plurales de verdad y la fecha en palabras, nunca «movimiento(s)» ni «2026-09-17»', async () => {
+    h.cuadre.mockResolvedValue(respuesta());
+    await pintar();
+    const texto = container.textContent ?? '';
+    expect(texto).not.toMatch(/\w\(s\)/);
+    expect(texto).toContain('412 movimientos del extracto hasta el 17 de septiembre de 2026');
+    expect(texto).toContain('7 garantías');
+    expect(texto).toContain('2 entradas del extracto');
+    expect(texto).not.toContain('2026-09-17');
+  });
+
   it('cuando cuadra exacto, lo dice y no alarma', async () => {
     await pintar();
     const veredicto = testId('cuadre-veredicto');

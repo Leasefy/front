@@ -2804,7 +2804,8 @@
         "preExpiry": "Pre-vencimiento",
         "overdue": "Mora",
         "lastReminder": "Último recordatorio:",
-        "remindersCount": "{{count}} recordatorio(s) enviado(s)",
+        "remindersCount": "{{count}} recordatorios enviados",
+        "remindersCountOne": "1 recordatorio enviado",
         "noReminders": "No se han enviado recordatorios"
       },
       "registerModal": {
@@ -3152,6 +3153,7 @@
         "downloadExtracto": "Descargar extracto",
         "error": "Error",
         "totalCount": "Total · {{count}}",
+        "enContra": "{{monto}} en contra: pasa a la próxima liquidación",
         "pendingAbbr": "{{count}} pend.",
         "processingAbbr": "{{count}} proc.",
         "completedAbbr": "{{count}} comp.",
@@ -10439,7 +10441,7 @@
     "ap": {
       "bill": {
         "title": "Factura AP",
-        "backToList": "Volver a liquidaciones",
+        "backToList": "Volver a facturas de proveedores",
         "notFound": "Factura no encontrada",
         "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
         "labelInvoiceNumber": "Número de factura",
@@ -12873,6 +12875,8 @@
       "maximo": "Máximo abonable: {{monto}}",
       "deudaTotal": "Deuda total, vencida y futura: {{monto}}",
       "confirmarAFavor": "Sí, quedan {{monto}} a favor de {{nombre}}",
+      "aseguradoraPendiente": "La plata de una aseguradora sólo paga lo vencido ({{vencido}}). Los {{monto}} de más quedan pendientes de aplicar (Pagos › Pendientes de aplicar) hasta que alguien los aplique o los devuelva: no adelantan cuotas ni quedan a favor del inquilino.",
+      "avisoAjusteAlPeso": "{{monto}} superan toda la deuda por un desfase de hasta {{tope}}: se llevan como ajuste al peso, no quedan a favor ni como anticipo.",
       "abonarTodo": "Paga toda la deuda",
       "montoRequerido": "Escribe cuánto entró",
       "montoPositivo": "Tiene que ser mayor que cero",
@@ -13620,7 +13624,8 @@
     "pie": "Generado por Leasefy el {{fecha}}",
     "pagina": "Página {{n}} de {{total}}",
     "vencidoEnPlazo": "Vencido, en plazo",
-    "vencidoEnPlazoDetalle": "{{n}} vencida(s) dentro del plazo del contrato: todavía no es mora.",
+    "vencidoEnPlazoDetalle": "{{n}} cuotas vencidas dentro del plazo del contrato: todavía no es mora.",
+    "unaVencidaEnPlazoDetalle": "1 cuota vencida dentro del plazo del contrato: todavía no es mora.",
     "vencidaSinPlazo": "Vencida",
     "vencidaSinPlazoDetalle": "{{n}} cuotas vencidas sin pagar: todavía no corre interés de mora.",
     "unaVencidaSinPlazoDetalle": "1 cuota vencida sin pagar: todavía no corre interés de mora.",
@@ -13770,7 +13775,7 @@
       },
       "noHace": {
         "horario": "No llama fuera del horario de ley ni más de una vez al día por persona (Ley 2300)",
-        "t323": "No aprueba sola más de $5.000.000, más de 6 meses de plazo ni más de 20% de descuento",
+        "t323": "No aprueba sola más de $\u00a05.000.000, más de 6 meses de plazo ni más de 20 % de descuento",
         "verifica": "No confirma pagos: verificarlos es trabajo de una persona de tu equipo"
       }
     },

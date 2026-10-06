@@ -17,7 +17,7 @@ export const MENSAJES_DEL_JURIDICO = {
   topeEntero: 'El tope de los honorarios debe ser un número entero de pesos, sin decimales.',
   topePositivo: 'El tope de los honorarios debe ser mayor que cero.',
   topeMaximo:
-    'El tope de los honorarios no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    'El tope de los honorarios no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
   porcentajeNumero: 'El porcentaje de los honorarios debe ser un número.',
   porcentajeMinimo: 'El porcentaje de los honorarios debe ser mayor que cero.',
   porcentajeMaximo: 'El porcentaje de los honorarios no puede pasar de 100 %.',

@@ -39,7 +39,7 @@ export type TextoDelConvenio = keyof typeof LARGOS_DEL_CONVENIO;
 export const MENSAJES_DE_TESORERIA = {
   valorEntero: 'El valor debe ser un número entero de pesos, sin decimales.',
   valorPositivo: 'El valor debe ser mayor que cero.',
-  valorMaximo: 'El valor no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+  valorMaximo: 'El valor no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
   fecha: 'Elige una fecha válida (un día real del calendario).',
   fechaFueraDeRango: 'La fecha debe estar entre el año 2000 y el 2100.',
   fechaDelFestivo: 'Elige una fecha válida para el festivo.',

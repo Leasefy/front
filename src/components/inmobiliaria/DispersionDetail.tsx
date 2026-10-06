@@ -36,7 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@leasefy/cadence';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
+import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
@@ -284,7 +284,7 @@ export function DispersionDetail({
   });
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
   const { t, formatDate, formatCurrency } = useI18n();
-  const { config } = useInmobiliariaConfig();
+  // N-15 (QA-PAGOS-95): aquí se pedía `GET /inmobiliaria/config` sin usarlo (un 403 al contador).
 
   // Get propietario details
   const { propietarios } = usePropietarios();

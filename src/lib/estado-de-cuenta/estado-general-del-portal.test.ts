@@ -17,7 +17,8 @@ describe('estadoGeneralDelArriendo', () => {
   it('con cuotas vencidas NO dice «Al día» aunque el pago del período esté confirmado', () => {
     const e = estadoGeneralDelArriendo('APPROVED', conVencido);
     expect(e?.etiqueta).toBe('Con saldo vencido');
-    expect(e?.detalle).toBe('$6.050.000 vencidos en 3 cuotas');
+    // COLA-04: el formateador común (espacio duro, como el resto de la pantalla).
+    expect(e?.detalle).toBe('$\u00a06.050.000 vencidos en 3 cuotas');
     expect(e?.tono).toBe('peligro');
   });
   it('sin vencidas y pago confirmado sí dice «Al día»', () => {
@@ -29,13 +30,13 @@ describe('estadoGeneralDelArriendo', () => {
   it('un pago en validación se muestra como tal y nombra lo vencido', () => {
     const e = estadoGeneralDelArriendo('PENDING_VALIDATION', conVencido);
     expect(e?.etiqueta).toBe('En verificación');
-    expect(e?.detalle).toContain('$6.050.000');
+    expect(e?.detalle).toContain('$\u00a06.050.000');
   });
   it('sin información devuelve null', () => {
     expect(estadoGeneralDelArriendo(undefined, null)).toBeNull();
   });
   it('una cuota vencida se cuenta en singular', () => {
-    expect(fraseDeLoVencido({ ...conVencido, cuotasVencidas: 1, vencidoCop: 2_000_000 })).toBe('$2.000.000 vencidos en 1 cuota');
+    expect(fraseDeLoVencido({ ...conVencido, cuotasVencidas: 1, vencidoCop: 2_000_000 })).toBe('$\u00a02.000.000 vencidos en 1 cuota');
   });
 });
 

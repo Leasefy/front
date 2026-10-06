@@ -48,6 +48,7 @@ import { useI18n } from '@/lib/i18n'
 import type { InquilinoEnCartera, TipoDeConcepto } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesDe, sumarIntereses } from './interes-de-mora'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 /** En qué cajón está el mes, con sus palabras y su matiz. */
 function ElCajonDelMes({
@@ -123,9 +124,8 @@ export function InquilinoEnCarteraCajon({
       <CajonCabecera
         titulo={inquilino.nombre ?? 'Sin nombre en el contrato'}
         descripcion={
-          inquilino.documento
-            ? `CC ${inquilino.documento}`
-            : 'El contrato no trae su documento.'
+          // N-01 (QA-PAGOS-95): nunca un «CC» inventado (una empresa con NIT salía «CC 900555666»).
+          documentoDelCliente(inquilino) ?? 'El contrato no trae su documento.'
         }
       >
         <div className="mt-3 flex flex-wrap items-center gap-3">

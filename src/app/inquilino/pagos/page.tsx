@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AnimatedNumber, CrossFade, Presence, StaggerItem } from '@leasefy/cadence';
+import { AnimatedNumber, Banner, CrossFade, Presence, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
 // Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
@@ -146,10 +146,15 @@ function PagosPageContent() {
       .catch(() => setPagoEnLinea({ aplica: false, cuotas: [], totalVencidoCop: 0, enVerificacion: null, ultimoRechazo: null }));
   };
   useEffect(() => {
-    if (hayArriendo) {
-      cargarResumen();
-      cargarPagoEnLinea();
-    }
+    /*
+     * 🔴 N-21 (QA-PAGOS-95): el resumen sale del ESTADO DE CUENTA (el contrato),
+     * no del arriendo del portal. Un contrato migrado o invitado después no
+     * tiene arriendo y la pantalla decía «Sin pagos por ahora» a quien debía
+     * $6.300.000 vencidos. El resumen se pide siempre; el pago en línea, que sí
+     * va por el arriendo, sólo con arriendo.
+     */
+    cargarResumen();
+    if (hayArriendo) cargarPagoEnLinea();
   }, [hayArriendo, leaseIdPrincipal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enriquecer requests con title de la propiedad (request.lease solo trae address+city)
@@ -392,7 +397,9 @@ function PagosPageContent() {
   }
 
   // No active lease — show clean empty state (no fake stats, no mock Visa)
-  if (!primaryLease) {
+  /** Tiene un contrato con cuotas aunque no tenga arriendo del portal (N-21). */
+  const conContrato = resumen !== null && (resumen.restaPorPagar > 0 || resumen.proxima !== null);
+  if (!primaryLease && (errorResumen || !cargandoResumen) && !conContrato) {
     return (
       <div className="min-h-screen bg-bg">
         <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -435,6 +442,21 @@ function PagosPageContent() {
             {t('payments.subtitle')}
           </p>
         </header>
+
+        {/* N-21 (QA-PAGOS-95): con contrato y sin arriendo del portal, la deuda se
+            ve igual, pero el pago en línea todavía no: se dice y se ofrece cómo pagar. */}
+        {!primaryLease && conContrato && (
+          <div className="mb-6 lg:max-w-2xl">
+            <Banner variant="info" title="El pago en línea todavía no está disponible para tu contrato" data-testid="sin-pago-en-linea">
+              Puedes pagar con los medios de tu inmobiliaria que ves en «Cómo pagar»: ella registra el recibo y
+              lo ves en tu{' '}
+              <Link href="/inquilino/estado-de-cuenta" className="underline">
+                estado de cuenta
+              </Link>
+              .
+            </Banner>
+          </div>
+        )}
 
         {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta».
             Llega en su propia consulta: el cargando se cruza con las cifras, que
@@ -523,7 +545,7 @@ function PagosPageContent() {
 
         {/* «Pagar lo vencido» (PAGO-ONLINE): justo debajo de lo que debe, antes de
             «Cómo pagar» (a 390 px quedaba al final, después del historial). */}
-        {pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
+        {primaryLease && pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
           <div className="mb-8 lg:max-w-2xl">
             <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
           </div>
@@ -685,7 +707,7 @@ function PagosPageContent() {
             {/* Period Status Card — depende de currentPeriodStatus. Llega en su
                 propia consulta: si llega después, entra; si ya estaba, no. */}
             <Presence show={Boolean(paymentInfo) && pagoEnLinea !== null && !pagoEnLinea.aplica} initial={false}>
-            {paymentInfo && pagoEnLinea !== null && !pagoEnLinea.aplica && (
+            {primaryLease && paymentInfo && pagoEnLinea !== null && !pagoEnLinea.aplica && (
               <PeriodStatusCard
                 status={paymentInfo.currentPeriodStatus}
                 rejectionReason={paymentInfo.currentPeriodRejectionReason}

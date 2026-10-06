@@ -80,6 +80,7 @@ import {
 } from '../mandato/ElMandatoEnLaLiquidacion';
 import { FalloDelAsistente, MesSinGiros } from './FalloDelAsistente';
 import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje';
+import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { AvisoPorLiquidarAMano } from '@/components/inmobiliaria/AvisoPorLiquidarAMano';
 import {
   NADA_FUERA,
@@ -869,7 +870,7 @@ function FilaDelPropietario({
                 girar plata, un dato inventado se ve igual que uno real. */}
             <span className="text-sm text-fg-muted">
               {p.propietarioBankAccount
-                ? `${p.propietarioBankName ?? 'Cuenta'} ${p.propietarioBankAccount}`
+                ? `${p.propietarioBankName ?? 'Cuenta'} ${enmascarar(p.propietarioBankAccount)}` /* N-07: enmascarada */
                 : 'Sin cuenta registrada'}
             </span>
           </div>

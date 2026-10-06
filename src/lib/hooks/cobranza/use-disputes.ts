@@ -92,6 +92,11 @@ export interface DisputeMutationResult<T> {
 export interface UseDisputesParams {
   /** Filtro server-side por estado (omitir → todas). */
   status?: DisputeStatus
+  /**
+   * `false` = no pedir nada (N-15, QA-PAGOS-95: un rol sin `cobranza:intervene`
+   * recibía un 403 del micro en cada visita). Omitir → pide, como siempre.
+   */
+  activo?: boolean
 }
 
 export interface UseDisputesResult {
@@ -125,6 +130,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
   const [fallo, setFallo] = useState<unknown>(null)
 
   const { status } = params
+  const activo = params.activo ?? true
 
   const fetchData = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
@@ -161,12 +167,12 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
   }, [agencyId, status])
 
   useEffect(() => {
-    if (!agencyId) {
+    if (!agencyId || !activo) {
       setIsLoading(false)
       return
     }
     void fetchData()
-  }, [fetchData, agencyId])
+  }, [fetchData, agencyId, activo])
 
   const refetch = useCallback(async () => {
     setIsLoading(true)

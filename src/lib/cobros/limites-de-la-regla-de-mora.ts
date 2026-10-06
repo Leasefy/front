@@ -15,5 +15,5 @@ export const TOPE_MAXIMO_DE_LA_REGLA_COP = 2_000_000_000
 
 export const MENSAJES_DE_LA_REGLA_DE_MORA = {
   valorMaximo: 'El valor de la regla no puede pasar de 99.999.999. Revisa que no sobren ceros.',
-  topeMaximo: 'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+  topeMaximo: 'El tope no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
 } as const

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { IconButton, Chip, Collapse, Presence } from '@leasefy/cadence';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 export interface CobroFiltersState {
   month: string; // '2026-02'
@@ -60,7 +61,7 @@ export function CobroFilters({
   onFilterChange,
   cobroCountByStatus,
 }: CobroFiltersProps) {
-  const { t, formatDate } = useI18n();
+  const { t } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
@@ -84,12 +85,13 @@ export function CobroFilters({
     for (let i = 0; i < 6; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const label = formatDate(date, { month: 'long', year: 'numeric' });
+      // N-14 (QA-PAGOS-95): «Octubre de 2026», no «Octubre De 2026» (`capitalize`).
+      const label = mesEnTitulo(value);
       months.push({ value, label });
     }
 
     return months;
-  }, [formatDate]);
+  }, []);
 
   // Count active filters (excluding month and 'all' status since those are always set)
   const activeFiltersCount = useMemo(() => {
@@ -188,13 +190,13 @@ export function CobroFilters({
                     value={filters.month}
                     onValueChange={(value) => updateFilter('month', value)}
                   >
-                    <SelectTrigger className="gap-2 capitalize">
+                    <SelectTrigger className="gap-2">
                       <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
                       <SelectValue placeholder={t('inmobiliaria.cobros.filters.selectMonth')} />
                     </SelectTrigger>
                     <SelectContent>
                       {recentMonths.map((month) => (
-                        <SelectItem key={month.value} value={month.value} className="capitalize">
+                        <SelectItem key={month.value} value={month.value}>
                           {month.label}
                         </SelectItem>
                       ))}

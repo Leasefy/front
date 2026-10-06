@@ -93,6 +93,7 @@ import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 import { CuotaDelMesCajon } from './CuotaDelMesCajon'
 import { fechaLocal, nombreDeLaFila, varianteDeLaFila } from './cajon-de-la-cuota'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 const VOLVER_A = '/panel/inmobiliaria/pagos'
 
@@ -232,7 +233,8 @@ export function CuotasDelMesTabla({
                     {f.inquilino ?? 'Sin nombre en el contrato'}
                   </p>
                   <p className="max-w-[16rem] truncate text-caption text-fg-muted">
-                    {f.documento ? `CC ${f.documento}` : ''}
+                    {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», como el estado de cuenta; nunca un «CC» inventado. */}
+                    {documentoDelCliente(f) ?? ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
                   </p>
                 </TableCell>

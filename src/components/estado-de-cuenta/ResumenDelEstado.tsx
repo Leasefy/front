@@ -208,7 +208,9 @@ export function ResumenDelEstado({
                 ? r.cuotasEnPlazo === 1
                   ? t('estadoDeCuenta.unaVencidaSinPlazoDetalle')
                   : t('estadoDeCuenta.vencidaSinPlazoDetalle', { n: r.cuotasEnPlazo })
-                : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
+                : r.cuotasEnPlazo === 1
+                  ? t('estadoDeCuenta.unaVencidaEnPlazoDetalle')
+                  : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
             </p>
           )}
           {r.enMora && (

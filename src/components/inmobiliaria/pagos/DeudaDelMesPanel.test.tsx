@@ -611,6 +611,32 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect($('[data-testid="pagos-cuotas-tabla"]').className).not.toContain('border-border')
   })
 
+  it('🔴 N-02 (QA-PAGOS-95): dentro de la frase el mes va en minúscula («que se deben en octubre de 2026»), no «Octubre»', () => {
+    montar()
+    const frase = $('[data-testid="resumen-del-mes"]').textContent ?? ''
+    expect(frase).toMatch(/que se deben en [a-z]+ de \d{4}/)
+    expect(frase).not.toMatch(/que se deben en [A-Z]/)
+    expect($('[data-testid="alcance-de-la-tabla"]').textContent).toMatch(/cuotas? de [a-z]+ de \d{4}\./)
+  })
+
+  it('🔴 A-04 (QA-PAGOS-95): sin plazo fijado, el aviso lleva «Fijar los días de plazo» al campo', () => {
+    conMes(
+      mes({
+        filas: [fila({ cajon: 'VENCIDA_EN_PLAZO', plazoSinFijar: true, enMora: false, diasDeMora: 0 })],
+        avisos: ['Hay 1 cuota vencida que no entra a la cartera en mora ni a la cobranza porque esta inmobiliaria todavía no fijó sus días de plazo para pagar.'],
+      }),
+    )
+    montar()
+    const enlace = $('[data-testid="mes-fijar-el-plazo"]') as HTMLAnchorElement
+    expect(enlace.textContent).toBe('Fijar los días de plazo')
+    expect(enlace.getAttribute('href')).toBe('/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo')
+  })
+
+  it('con el plazo fijado no ofrece fijarlo', () => {
+    montar()
+    expect(document.querySelector('[data-testid="mes-fijar-el-plazo"]')).toBeNull()
+  })
+
   it('🔴 dice lo que estos números NO cuentan', () => {
     conMes(
       mes({

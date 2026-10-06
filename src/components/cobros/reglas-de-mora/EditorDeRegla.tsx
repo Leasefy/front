@@ -164,7 +164,13 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
 
   const editando = regla !== null;
   const unidadDelValor =
-    formula === 'INTERES_DIARIO' ? '% por día' : formula === 'PORCENTAJE_DE_LA_BASE' ? '% de la base' : null;
+    formula === 'INTERES_MENSUAL'
+      ? '% al mes'
+      : formula === 'INTERES_DIARIO'
+        ? '% por día'
+        : formula === 'PORCENTAJE_DE_LA_BASE'
+          ? '% de la base'
+          : null;
 
   return (
     <Dialog open={abierto} onOpenChange={(estaAbierto) => !estaAbierto && onCerrar()}>
@@ -316,7 +322,9 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 id="regla-valor"
                 etiqueta={formula === 'MONTO_FIJO' ? 'Monto' : formula === 'PORCENTAJE_DE_LA_BASE' ? 'Porcentaje' : 'Tasa'}
                 ayuda={
-                  formula === 'INTERES_DIARIO'
+                  formula === 'INTERES_MENSUAL'
+                    ? 'Al mes, a prorrata por día de mora (base 30). El 2 % mensual da exactamente 2 % en 30 días.'
+                    : formula === 'INTERES_DIARIO'
                     ? 'Por día. Un 2 % mensual son 0,0667 diarios.'
                     : formula === 'PORCENTAJE_DE_LA_BASE'
                       ? 'Una sola vez, sobre la base.'
@@ -347,7 +355,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                       inputMode="decimal"
                       min={0}
                       step="any"
-                      placeholder={formula === 'INTERES_DIARIO' ? '0,0667' : '10'}
+                      placeholder={formula === 'INTERES_DIARIO' ? '0,0667' : formula === 'INTERES_MENSUAL' ? '2' : '10'}
                       className={cn('font-mono tabular-nums', unidadDelValor && 'pr-24')}
                       aria-invalid={Boolean(errors.valor)}
                       aria-describedby="regla-valor-error"

@@ -36,8 +36,33 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import { nombreDelMes } from '@/lib/utils/mes';
+import { mesEnTitulo } from '@/lib/utils/mes';
+import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { baseDeLasDispersiones, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
+
+/**
+ * 🔴 N-39 (QA-PAGOS-95 r2): lo que se GIRA de una dispersión — entero o nada.
+ * Una liquidación con deducciones mayores que el mes (Tomás: neto $ 881.000,
+ * deducciones $ 4.150.000) guarda un neto NEGATIVO (−$ 3.269.000): no se le
+ * gira nada y lo que queda en contra pasa a la siguiente. La tabla pintaba el
+ * negativo y el «Total» lo restaba ($ 5.594.500 junto a «A dispersar
+ * $ 8.863.500»).
+ */
+export function loQueSeGira(d: Pick<Dispersion, 'netToPropietario' | 'conDeducciones'>): {
+  aGirarCop: number;
+  enContraCop: number;
+} {
+  if (d.conDeducciones) {
+    return {
+      aGirarCop: Math.max(0, d.conDeducciones.aGirarCop),
+      enContraCop: Math.max(0, d.conDeducciones.saldoEnContraCop),
+    };
+  }
+  return {
+    aGirarCop: Math.max(0, d.netToPropietario),
+    enContraCop: Math.max(0, -d.netToPropietario),
+  };
+}
 
 type SortField =
   | 'propietarioName'
@@ -170,7 +195,7 @@ export function DispersionTable({
       (acc, d) => ({
         totalCollected: acc.totalCollected + d.totalCollected,
         totalCommissions: acc.totalCommissions + d.totalCommission,
-        totalToDisburse: acc.totalToDisburse + d.netToPropietario,
+        totalToDisburse: acc.totalToDisburse + loQueSeGira(d).aGirarCop,
         pending: acc.pending + (d.status === 'pending' ? 1 : 0),
         processing: acc.processing + (d.status === 'processing' ? 1 : 0),
         completed: acc.completed + (d.status === 'completed' ? 1 : 0),
@@ -276,7 +301,8 @@ export function DispersionTable({
                       <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
                         <Bank className="w-3 h-3" />
                         <span>
-                          {dispersion.propietarioBankAccount?.accountNumber ??
+                          {/* N-07 (QA-PAGOS-95): enmascarada en la lista; completa en el detalle. */}
+                          {enmascarar(dispersion.propietarioBankAccount?.accountNumber) ??
                             'Sin cuenta registrada'}
                         </span>
                       </div>
@@ -286,8 +312,9 @@ export function DispersionTable({
 
                 {/* Month */}
                 <TableCell className="p-4">
-                  <span className="text-foreground capitalize">
-                    {nombreDelMes(dispersion.month, 'es', 'short')}
+                  {/* N-14 (QA-PAGOS-95): sin `capitalize` («Oct De 2026»). */}
+                  <span className="text-foreground">
+                    {mesEnTitulo(dispersion.month, 'es', 'short')}
                   </span>
                 </TableCell>
 
@@ -321,11 +348,18 @@ export function DispersionTable({
                   </span>
                 </TableCell>
 
-                {/* Net Amount */}
+                {/* Net Amount: lo que se gira (N-39: nunca un negativo). */}
                 <TableCell className="p-4">
                   <span className="font-bold text-foreground tabular-nums">
-                    {formatCurrency(dispersion.netToPropietario)}
+                    {formatCurrency(loQueSeGira(dispersion).aGirarCop)}
                   </span>
+                  {loQueSeGira(dispersion).enContraCop > 0 && (
+                    <span className="block text-xs text-muted-foreground tabular-nums" data-testid="dispersion-en-contra">
+                      {t('inmobiliaria.dispersiones.tableView.enContra', {
+                        monto: formatCurrency(loQueSeGira(dispersion).enContraCop),
+                      })}
+                    </span>
+                  )}
                 </TableCell>
 
                 {/* Status */}

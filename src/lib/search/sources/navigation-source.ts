@@ -30,6 +30,7 @@ import { Compass } from '@phosphor-icons/react';
 import { pantallaDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 import { pasaGateDeFila, type NavFilterContext } from '@/lib/nav/agency-nav-filter';
 import { canSeeBusinessModule } from '@/lib/nav/agency-module-scope';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 
 interface NavEntry {
   /** Label as shown in the sidebar / tab / page. */
@@ -134,7 +135,11 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Lotes al banco', context: 'Dispersiones', href: `${P}/pagos/dispersiones/lotes`, keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Facturación', context: 'Dinero', href: `${P}/facturacion`, keywords: 'facturas cobrar dian' },
   { kind: 'page', title: 'Contabilidad', context: 'Dinero', href: `${P}/contabilidad`, keywords: 'puc cuentas asientos partida doble balance de prueba libro auxiliar estado de cuenta cierre contabilidad general' },
-  { kind: 'page', title: 'Mapeo contable', context: 'Contabilidad', href: `${P}/contabilidad/mapeo`, keywords: 'contabilidad mapeo cuentas asientos automaticos puc eventos' },
+  // 🔴 CB-19 (QA-PAGOS-95 r2): el MISMO gate del `PageGuard` de la pantalla
+  // (`contabilidad/mapeo/page.tsx`: módulo `reportes`, sólo administrador y
+  // contador). Sin él el buscador se lo ofrecía al auxiliar, que al abrirlo
+  // recibía «No tienes acceso».
+  { kind: 'page', title: 'Mapeo contable', context: 'Contabilidad', href: `${P}/contabilidad/mapeo`, keywords: 'contabilidad mapeo cuentas asientos automaticos puc eventos', permission: { module: 'reportes', action: 'view' }, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
   { kind: 'action', title: 'Migrar el plan de cuentas (PUC)', context: 'Contabilidad', href: `${P}/migracion/puc`, keywords: 'importar puc cuentas contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'action', title: 'Migrar registros contables', context: 'Contabilidad', href: `${P}/migracion/contables`, keywords: 'importar asientos apertura saldos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
 

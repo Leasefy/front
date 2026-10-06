@@ -48,6 +48,7 @@ import { useI18n } from '@/lib/i18n'
 import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
 interface Metrica {
@@ -97,6 +98,13 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     // leer la dirección dos veces.
     const mora = rec?.moraReducedPct ?? null
     const moraDias = rec?.moraWindowDays ?? 90
+    // N-10 (QA-PAGOS-95 r2): de cuánto a cuánto y desde qué día; sin cartera hoy
+    // no hay «recuperación» (el índice en cero no es mora que bajó).
+    const sinCarteraHoy = rec?.moraSinCarteraHoy === true
+    const deCuantoACuanto =
+      rec?.moraDesdePct != null && rec?.moraHastaPct != null && rec?.moraDesdeDia
+        ? `De ${formatNumber(rec.moraDesdePct)} % a ${formatNumber(rec.moraHastaPct)} % desde el ${fechaLarga(rec.moraDesdeDia)}`
+        : null
 
     return [
       {
@@ -137,21 +145,24 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       {
         key: 'mora',
         label:
-          mora == null || mora === 0
+          sinCarteraHoy || mora == null || mora === 0
             ? 'Variación de mora'
             : mora > 0
               ? 'Mora reducida'
               : 'Mora aumentada',
         icon: mora != null && mora < 0 ? TrendUp : TrendDown,
-        value: mora != null ? `${formatNumber(Math.abs(mora))} pts` : null,
-        sublabel:
-          mora == null
+        value: sinCarteraHoy ? '—' : mora != null ? `${formatNumber(Math.abs(mora))} pts` : null,
+        sublabel: sinCarteraHoy
+          ? 'Hoy no hay cartera en mora: no hay recuperación que medir.'
+          : mora == null
             ? ''
-            : mora === 0
-              ? `Sin cambio en ${moraDias} días`
-              : mora > 0
-                ? `Bajó en ${moraDias} días`
-                : `Subió en ${moraDias} días`,
+            : deCuantoACuanto
+              ? `${deCuantoACuanto}.`
+              : mora === 0
+                ? `Sin cambio en ${moraDias} días`
+                : mora > 0
+                  ? `Bajó en ${moraDias} días`
+                  : `Subió en ${moraDias} días`,
       },
       {
         key: 'casos-activos',

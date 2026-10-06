@@ -34,7 +34,7 @@
  * per-section as a dedicated banner (`notProvisioned`), never a generic error.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Warning, FloppyDisk, LockSimple } from '@phosphor-icons/react'
@@ -47,8 +47,11 @@ import {
   type AgencyPolicy,
   type AgencyPolicyPatchBody,
 } from '@/lib/hooks/cobranza/use-agency-policy'
-import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autonomy'
+import { useAutonomy } from '@/lib/hooks/cobranza/use-autonomy'
 import { NOMBRE_DEL_MODO, useModoDeCobranzaEnElPiloto } from '@/lib/hooks/cobranza/use-modo-de-cobranza-en-el-piloto'
+import { putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
+import { modoDelNivel } from '@/lib/cobranza/modo-del-nivel'
+import { AuthContext } from '@/lib/auth/auth-context'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
@@ -260,28 +263,32 @@ function diffPatch(saved: NegotiationDraft, draft: NegotiationDraft): AgencyPoli
   return patch as AgencyPolicyPatchBody
 }
 
-const AUTONOMY_OPTIONS: { value: AutonomyLevel; label: string; description: string }[] = [
+/**
+ * N-13 (QA-PAGOS-95 r2; main, con la recomendada; decisión de Nico 17-09): la
+ * autonomía de la cobranza se dice con los TRES modos del Piloto (Manual ·
+ * Copiloto · Automático), no con los cuatro peldaños del micro. Elegir uno lo
+ * guarda en el Piloto (`PUT …/ai-hub/agentes/cobranza/autonomia`); desde ahí
+ * manda ese modo (`piloto/autonomia.ts → modoEfectivo`).
+ */
+const MODOS_DEL_PILOTO: { value: AutonomiaModo; label: string; description: string }[] = [
   {
-    value: 'sugerir',
-    label: 'Sugerir',
-    description: 'El agente propone la acción; un humano decide y la ejecuta manualmente.',
+    value: 'sombra',
+    label: 'Manual',
+    description: 'El agente observa y propone; una persona decide y contacta al deudor.',
   },
   {
-    value: 'aprobar',
-    label: 'Aprobar',
-    description: 'El agente prepara la acción; requiere aprobación humana antes de contactar al deudor.',
+    value: 'copiloto',
+    label: 'Copiloto',
+    description: 'El agente prepara la acción y una persona la aprueba antes de contactar al deudor.',
   },
   {
-    value: 'automatico_controlado',
-    label: 'Automático controlado',
-    description: 'El agente actúa solo dentro de límites estrictos, con revisión humana posterior.',
-  },
-  {
-    value: 'automatico_completo',
-    label: 'Automático completo',
-    description: 'El agente actúa sin intervención humana, siempre bajo las guardas de Ley 2300 / habeas data.',
+    value: 'autonomo',
+    label: 'Automático',
+    description: 'El agente actúa solo, siempre bajo las guardas de Ley 2300 y habeas data.',
   },
 ]
+
+
 
 // ─── Shared small components ────────────────────────────────────────────────
 
@@ -386,7 +393,11 @@ function CobranzaConfiguracionContent() {
   const policy = useAgencyPolicy()
   const autonomy = useAutonomy()
   // QA-IA-95: si la cobranza ya tiene su modo en el Piloto, ese manda y este nivel no decide nada.
-  const modoDelPiloto = useModoDeCobranzaEnElPiloto()
+  const modoLeido = useModoDeCobranzaEnElPiloto()
+  // N-13 (r2): el modo elegido acá mismo (queda guardado en el Piloto).
+  const [modoElegido, setModoElegido] = useState<AutonomiaModo | null>(null)
+  const modoDelPiloto = modoElegido ?? modoLeido
+  const agencyId = useContext(AuthContext)?.agency?.id ?? null
 
   // ── Negotiation local draft ────────────────────────────────────────────
   const [negDraft, setNegDraft] = useState<NegotiationDraft | null>(null)
@@ -465,26 +476,27 @@ function CobranzaConfiguracionContent() {
   const [autonomySaving, setAutonomySaving] = useState(false)
   const [autonomyError, setAutonomyError] = useState<string | null>(null)
 
-  const handleSelectAutonomy = useCallback(
-    async (level: AutonomyLevel) => {
-      if (!canEdit || autonomy.data?.autonomyLevel === level) return
+  const elegirModoDelPiloto = useCallback(
+    async (modo: AutonomiaModo) => {
+      if (!canEdit || !agencyId) return
       setAutonomySaving(true)
       setAutonomyError(null)
-      try {
-        await autonomy.saveAutonomy(level)
-      } catch (err) {
-        setAutonomyError(
-          mensajeParaLaPersona(err, {
-            porDefecto: 'No pudimos guardar el nivel de autonomía.',
-            accion: 'guardar el nivel de autonomía',
-          }),
-        )
-      } finally {
-        setAutonomySaving(false)
+      const r = await putPilotoAutonomia(agencyId, 'cobranza', modo)
+      setAutonomySaving(false)
+      if (r.ok) {
+        setModoElegido(modo)
+        return
       }
+      setAutonomyError(
+        mensajeParaLaPersona(r.fallo ?? r.error, {
+          porDefecto: 'No pudimos guardar el modo de la cobranza.',
+          accion: 'guardar el modo de la cobranza',
+        }),
+      )
     },
-    [autonomy, canEdit],
+    [agencyId, canEdit],
   )
+
 
   // ── Full-page skeleton while the 2 resources settle ────────────────────
   const policySettled = !policy.isLoading || !!policy.data || policy.notProvisioned
@@ -675,20 +687,27 @@ function CobranzaConfiguracionContent() {
 
         {!modoDelPiloto && !autonomy.notProvisioned && autonomy.data && (
           <>
+            {/* N-13 (r2): los tres modos del Piloto. Hoy rige el peldaño de
+                antes; se dice a qué modo equivale y elegir lo guarda en el Piloto. */}
+            <p className="text-sm text-fg-muted" data-testid="autonomia-tres-modos">
+              Los modos son los del Piloto automático: Manual · Copiloto · Automático. Hoy la cobranza
+              sigue lo que tenía antes, que equivale a <strong>{NOMBRE_DEL_MODO[modoDelNivel(autonomy.data.autonomyLevel)]}</strong>.
+              Al elegir un modo queda guardado en el Piloto.
+            </p>
             <RadioCardGroup
               orientation="vertical"
               className="space-y-2"
-              value={autonomy.data.autonomyLevel}
-              onValueChange={(v) => void handleSelectAutonomy(v as AutonomyLevel)}
+              value={modoDelNivel(autonomy.data.autonomyLevel)}
+              onValueChange={(v) => void elegirModoDelPiloto(v as AutonomiaModo)}
             >
-              {AUTONOMY_OPTIONS.map((opt) => (
+              {MODOS_DEL_PILOTO.map((opt) => (
                 <RadioCard
                   key={opt.value}
                   value={opt.value}
                   label={opt.label}
                   description={opt.description}
-                  disabled={!canEdit || autonomySaving}
-                  data-testid={`autonomy-option-${opt.value}`}
+                  disabled={!canEdit || autonomySaving || !agencyId}
+                  data-testid={`autonomia-modo-${opt.value}`}
                 />
               ))}
             </RadioCardGroup>

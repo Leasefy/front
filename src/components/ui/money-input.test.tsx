@@ -42,7 +42,12 @@ describe('soloNumero', () => {
   });
 
   it('en COP no deja decimales — el peso no tiene centavos en la práctica', () => {
-    expect(soloNumero('1500,75')).toBe('150075');
+    // 🔴 CE-04 (QA-PAGOS-95): antes daba '150075' (los centavos se volvían
+    // pesos: cien veces más). Los centavos se frenan; quedan los pesos.
+    expect(soloNumero('1500,75')).toBe('1500');
+    expect(soloNumero('1.000.000,5')).toBe('1000000');
+    // Tres dígitos después de la coma siguen siendo agrupación, como siempre.
+    expect(soloNumero('1,500')).toBe('1500');
   });
 
   it('en USD la coma agrupa y el punto separa decimales', () => {

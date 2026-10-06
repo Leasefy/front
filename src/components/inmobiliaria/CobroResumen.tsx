@@ -126,8 +126,9 @@ export function CobroResumen({
             <ChartLineUp className="w-5 h-5 text-primary" weight="duotone" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-fg capitalize">
-              {monthDisplay}
+            {/* N-14 (QA-PAGOS-95): «Octubre de 2026», no «Octubre De 2026». */}
+            <h3 className="text-base font-semibold text-fg">
+              {monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1)}
             </h3>
             <p className="text-sm text-fg-muted">
               {t('inmobiliaria.cobros.resumen.summaryTitle')}
@@ -254,11 +255,15 @@ export function CobroResumen({
             </p>
           </div>
 
-          {/* En mora */}
-          <div className="p-3 rounded-md bg-muted/30">
+          {/* En mora. 🔴 N-22 (QA-PAGOS-95, CR-31): sin plazo fijado lo vencido NO
+              es mora —así lo dicen Cartera, Deuda del mes y Tablero—; los cobros
+              conservan su `LATE`, y esta tarjeta decía «En mora · Ver morosos». */}
+          <div className="p-3 rounded-md bg-muted/30" data-testid="cobros-resumen-vencido">
             <div className="flex items-center gap-2 mb-1">
-              <Warning className="w-4 h-4 text-danger" weight="fill" />
-              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
+              <Warning className={cn('w-4 h-4', summary.plazoSinFijar ? 'text-warning' : 'text-danger')} weight="fill" />
+              <span className="text-xs font-medium text-fg-muted">
+                {summary.plazoSinFijar ? 'Vencido' : t('inmobiliaria.cobros.resumen.lateLabel')}
+              </span>
             </div>
             <AnimatedNumber
               value={summary.totalLate}
@@ -268,6 +273,9 @@ export function CobroResumen({
             />
             <p className="text-xs text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosLate })}
+              {summary.plazoSinFijar && (
+                <span data-testid="vencido-sin-plazo"> · sin plazo fijado: no corre mora</span>
+              )}
             </p>
           </div>
         </div>
@@ -300,8 +308,8 @@ export function CobroResumen({
                 className="flex-1 justify-between group"
               >
                 <span className="flex items-center gap-2">
-                  <Warning className="w-4 h-4 text-danger" weight="fill" />
-                  {t('inmobiliaria.cobros.resumen.viewLate')}
+                  <Warning className={cn('w-4 h-4', summary.plazoSinFijar ? 'text-warning' : 'text-danger')} weight="fill" />
+                  {summary.plazoSinFijar ? 'Ver vencidos' : t('inmobiliaria.cobros.resumen.viewLate')}
                 </span>
                 <CaretRight className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
               </Button>

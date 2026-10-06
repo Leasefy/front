@@ -326,7 +326,7 @@ export function AcuerdoGeneralForm({
           <ErrorDelCampo
             id="ag-condicion-error"
             mensaje={errores.conditionEs}
-            pista="Se lo dice tal cual, en la llamada. Escribilo como se lo dirías tú."
+            pista="Se lo dice tal cual, en la llamada. Escríbelo como se lo dirías tú."
           />
         </div>
       </Card>

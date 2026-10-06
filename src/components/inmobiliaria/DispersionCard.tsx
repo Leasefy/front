@@ -25,6 +25,7 @@ import {
   getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
 import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
+import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -73,7 +74,9 @@ function formatBankAccount(
 
   const bankLabel = bankLabels[bank] || bank;
   const typeLabel = typeLabels[accountType] || accountType;
-  return `${bankLabel} · ${typeLabel} ${accountNumber}`;
+  // N-07 (QA-PAGOS-95): en la lista va enmascarada («•••• 4321»), como en
+  // Liquidaciones y en los lotes; completa sólo en el detalle, donde se copia.
+  return `${bankLabel} · ${typeLabel} ${enmascarar(accountNumber) ?? ''}`.trim();
 }
 
 /**

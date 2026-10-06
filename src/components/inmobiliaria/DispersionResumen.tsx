@@ -136,7 +136,8 @@ export function DispersionResumen({
     >
       {/* Header */}
       <div className="px-6 pt-6 pb-4">
-        <h3 className="text-lg font-semibold text-foreground capitalize">
+        {/* N-14 (QA-PAGOS-95): sin `capitalize` («Resumen Octubre De 2026»). */}
+        <h3 className="text-lg font-semibold text-foreground">
           {t('inmobiliaria.dispersiones.resumen.summaryMonth', { month: monthDisplay })}
         </h3>
         <p className="text-sm text-muted-foreground mt-0.5">

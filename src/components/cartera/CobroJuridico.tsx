@@ -42,6 +42,7 @@ import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/format';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -85,8 +86,16 @@ const dia = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export function CobroJuridico() {
-  const { canAccess, isLoading: permisosCargando } = usePermissions();
+  const { canAccess, isLoading: permisosCargando, agencyRole } = usePermissions();
   const puedeMover = !permisosCargando && canAccess('cobros', 'edit');
+  /*
+   * 🔴 B-17 (QA-PAGOS-95, 05-10-2026): el ABOGADO EXTERNO entraba a Jurídico y
+   * veía la pantalla ENTERA negada («No tienes acceso…»): la página pedía también
+   * lo que hace la inmobiliaria (lo pactado y los sugeridos, 403
+   * `SOLO_SUS_CASOS_JURIDICOS`) y un solo 403 tumbaba todo. Él ve y trabaja SUS
+   * casos y SUS honorarios; lo demás ni se le pide ni se le muestra.
+   */
+  const esAbogadoExterno = agencyRole === AGENCY_ROLES.ABOGADO_EXTERNO;
 
   const [abogados, setAbogados] = useState<Abogado[]>([]);
   const [config, setConfig] = useState<ConfiguracionJuridica | null>(null);
@@ -130,9 +139,9 @@ export function CobroJuridico() {
     setCargando(true);
     try {
       const [a, c, s, k, h] = await Promise.all([
-        juridicoApi.abogados(),
-        juridicoApi.configuracion(),
-        juridicoApi.sugeridos(),
+        esAbogadoExterno ? Promise.resolve([] as Abogado[]) : juridicoApi.abogados(),
+        esAbogadoExterno ? Promise.resolve(null) : juridicoApi.configuracion(),
+        esAbogadoExterno ? Promise.resolve([] as CasoSugerido[]) : juridicoApi.sugeridos(),
         juridicoApi.casos(),
         juridicoApi.honorarios(),
       ]);
@@ -147,11 +156,13 @@ export function CobroJuridico() {
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [esAbogadoExterno]);
 
   useEffect(() => {
+    // Con el rol todavía cargando no se pide nada: al abogado no se le pide lo ajeno.
+    if (permisosCargando) return;
     void cargar();
-  }, [cargar]);
+  }, [cargar, permisosCargando]);
 
   const registrarAbogado = async () => {
     if (!nombre.trim() || ocupado) return;
@@ -343,7 +354,8 @@ export function CobroJuridico() {
   return (
     <EstadoDeDatos cargando={cargando} error={error} queEs="el cobro jurídico" onReintentar={cargar}>
       <div className="space-y-6" data-testid="cobro-juridico">
-        {/* Lo pactado por defecto */}
+        {/* Lo pactado por defecto (lo decide la inmobiliaria: el abogado externo no lo ve, B-17) */}
+        {!esAbogadoExterno && (
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="pactado">
           <p className="flex items-center gap-2 text-body font-semibold text-fg">
             <Gavel className="h-4 w-4" aria-hidden="true" />
@@ -429,8 +441,10 @@ export function CobroJuridico() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Abogados */}
+        {!esAbogadoExterno && (
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="abogados">
           <p className="text-body font-semibold text-fg">Abogados</p>
           <ul className="mt-2 space-y-1 text-body-sm">
@@ -498,11 +512,14 @@ export function CobroJuridico() {
             </div>
           )}
         </section>
+        )}
 
         {/* Movimiento (ola 2, 03-10-2026): al pasar un caso a jurídico, el
             sugerido SALE de su lista y el caso ENTRA en la de abajo; lo mismo
             al cerrar un caso o marcar un honorario pagado. */}
+
         {/* Sugeridos */}
+        {!esAbogadoExterno && (
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="sugeridos">
           <p className="text-body font-semibold text-fg">Sugeridos para jurídico</p>
           <p className="mt-1 text-body-sm text-fg-muted">
@@ -559,6 +576,7 @@ export function CobroJuridico() {
             </Stagger>
           )}
         </section>
+        )}
 
         {/* Casos en jurídico */}
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="casos">
@@ -585,6 +603,8 @@ export function CobroJuridico() {
                   </span>
                   {puedeMover && (
                     <span className="flex flex-wrap items-center gap-2">
+                      {/* Pactar en el contrato lo hace la inmobiliaria; el abogado cierra SUS casos (B-17). */}
+                      {!esAbogadoExterno && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -595,6 +615,7 @@ export function CobroJuridico() {
                       >
                         {c.pactaHonorarios ? 'No cobrarle honorarios' : 'Cobrarle honorarios'}
                       </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -644,7 +665,8 @@ export function CobroJuridico() {
                       <span className="text-fg-muted"> · cargado al estado de cuenta del inquilino</span>
                     ) : null}
                   </span>
-                  {puedeMover && (
+                  {/* Pagarle al abogado lo hace la inmobiliaria (B-17). */}
+                  {puedeMover && !esAbogadoExterno && (
                     <Button
                       size="sm"
                       variant="outline"

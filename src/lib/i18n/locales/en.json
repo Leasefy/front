@@ -2769,7 +2769,8 @@
         "preExpiry": "Pre-expiry",
         "overdue": "Overdue",
         "lastReminder": "Last reminder:",
-        "remindersCount": "{{count}} reminder(s) sent",
+        "remindersCount": "{{count}} reminders sent",
+        "remindersCountOne": "1 reminder sent",
         "noReminders": "No reminders have been sent"
       },
       "registerModal": {
@@ -3117,6 +3118,7 @@
         "downloadExtracto": "Download statement",
         "error": "Error",
         "totalCount": "Total · {{count}}",
+        "enContra": "{{monto}} owed back: carried to the next statement",
         "pendingAbbr": "{{count}} pend.",
         "processingAbbr": "{{count}} proc.",
         "completedAbbr": "{{count}} comp.",
@@ -10403,7 +10405,7 @@
     "ap": {
       "bill": {
         "title": "AP Invoice",
-        "backToList": "Back to settlements",
+        "backToList": "Back to supplier invoices",
         "notFound": "Invoice not found",
         "notFoundDesc": "The requested invoice does not exist or you do not have access.",
         "labelInvoiceNumber": "Invoice number",
@@ -12837,6 +12839,8 @@
       "maximo": "Maximum you can apply: {{monto}}",
       "deudaTotal": "Total debt, due and upcoming: {{monto}}",
       "confirmarAFavor": "Yes, {{monto}} stays as credit for {{nombre}}",
+      "aseguradoraPendiente": "Insurer money only pays what is overdue ({{vencido}}). The extra {{monto}} stays pending to apply (Payments › Pending to apply) until someone applies or returns it: it does not prepay installments or become tenant credit.",
+      "avisoAjusteAlPeso": "{{monto}} exceed the whole debt by a difference of up to {{tope}}: they are recorded as a rounding adjustment, not as credit or prepayment.",
       "abonarTodo": "Pay the whole debt",
       "montoRequerido": "Enter how much came in",
       "montoPositivo": "It has to be greater than zero",
@@ -13585,6 +13589,7 @@
     "pagina": "Page {{n}} of {{total}}",
     "vencidoEnPlazo": "Overdue, within grace period",
     "vencidoEnPlazoDetalle": "{{n}} overdue within the contract’s grace period: not late yet.",
+    "unaVencidaEnPlazoDetalle": "1 installment overdue within the contract’s grace period: not late yet.",
     "vencidaSinPlazo": "Overdue",
     "vencidaSinPlazoDetalle": "{{n}} overdue installments unpaid: no late interest accrues yet.",
     "unaVencidaSinPlazoDetalle": "1 overdue installment unpaid: no late interest accrues yet.",

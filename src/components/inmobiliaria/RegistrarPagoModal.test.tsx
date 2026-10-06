@@ -929,6 +929,43 @@ describe('<RegistrarPagoModal> pagar de más', () => {
 
     expect(document.body.querySelector('[data-testid="aviso-a-favor"]')).toBeNull();
   });
+
+  /*
+   * 🔴 A-15 (QA-PAGOS-95 r2): hasta $ 1.000 por encima de TODA la deuda es un
+   * desfase y el back lo lleva como ajuste al peso (`separarAjusteAlPeso`). El
+   * cajón decía «quedan a su favor», pedía la casilla y el botón quedaba apagado.
+   */
+  it('🔴 $ 644 por encima de la deuda: ajuste al peso, sin «a favor» ni casilla, y se emite', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    const onSubmit = await abrir({});
+    escribir('#monto-recibo', '$ 3.000.644');
+    elegirMedio('transferencia');
+
+    expect(document.body.querySelector('[data-testid="aviso-ajuste-al-peso"]')?.textContent).toContain(
+      'recibos.form.avisoAjusteAlPeso',
+    );
+    expect(document.body.querySelector('[data-testid="aviso-a-favor"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="confirmar-a-favor-casilla"]')).toBeNull();
+    await enviar();
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('$ 1.001 por encima ya no es desfase: queda a favor y se confirma', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 3.001.001');
+    expect(document.body.querySelector('[data-testid="aviso-ajuste-al-peso"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="aviso-a-favor"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="confirmar-a-favor-casilla"]')).toBeTruthy();
+  });
+
+  it('el desfase también vale sin la migración del saldo a favor (el back no deja nada a favor)', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: false }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 3.000.500');
+    expect(document.body.querySelector('[data-testid="aviso-ajuste-al-peso"]')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('recibos.form.montoExcede');
+  });
 });
 
 describe('<RegistrarPagoModal> la deuda nace con el contrato (2026-09-15)', () => {
@@ -1340,7 +1377,7 @@ describe('<RegistrarPagoModal> los errores van a su campo', () => {
     await enviar();
 
     expect(errorDe('monto-recibo')).toBe(
-      'El valor del pago no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+      'El valor del pago no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
     );
     expect(onSubmit).not.toHaveBeenCalled();
   });

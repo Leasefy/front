@@ -24,6 +24,7 @@ import { identidadDeLaRuta } from '@/lib/inquilinos/identidad-de-la-ruta';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAnularRecibo } from '@/components/estado-de-cuenta/AnularReciboDeLaFila';
+import { ProveedorDeCondonarIntereses } from '@/components/estado-de-cuenta/CondonarInteresesDeLaFila';
 import { GestionesDeLaPersona } from '@/components/cobranza-manual/GestionesDeLaPersona';
 
 const LISTA = '/panel/inmobiliaria/inquilinos';
@@ -88,6 +89,8 @@ function Contenido() {
 
   return (
     <ProveedorDeAnularRecibo habilitado={isAdmin} onAnulado={() => setVersion((v) => v + 1)}>
+      {/* B-13 (QA-PAGOS-95 r2): condonar intereses, sólo el administrador. */}
+      <ProveedorDeCondonarIntereses habilitado={isAdmin} onCambio={() => setVersion((v) => v + 1)}>
       <PantallaDelEstadoDeCuenta
         key={version}
         /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
@@ -127,6 +130,7 @@ function Contenido() {
           />
         </div>
       ) : null}
+      </ProveedorDeCondonarIntereses>
     </ProveedorDeAnularRecibo>
   );
 }

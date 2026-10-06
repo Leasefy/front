@@ -53,10 +53,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Switch,
   Spinner,
   Badge,
 } from '@/components/ui'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { cuotasDelAcuerdo } from '@/lib/cobranza/cuotas-del-acuerdo'
 import {
   usePaymentsFunnel,
   type PaymentsFunnelItem,
@@ -119,12 +121,6 @@ function copFormat(value: number | null | undefined, formatCurrency: (n: number 
   return formatCurrency(value ?? 0)
 }
 
-/** Reparte un saldo en N cuotas enteras (la primera absorbe el residuo). */
-function cuotaMonto(saldo: number, n: number): number {
-  if (n <= 0) return 0
-  return Math.round(saldo / n)
-}
-
 // ── Card de acuerdo de la lista (cross-link al detalle real) ────────────────────
 
 /**
@@ -180,23 +176,20 @@ function AcuerdoPropuestoCard({
   cuotaInicial,
   numCuotas,
   primerPago,
-  consecuencia,
 }: {
   totalAdeudado: number
   cuotaInicial: number
   numCuotas: number
   primerPago: string
-  consecuencia: string
 }) {
   const { formatCurrency, formatDate } = useI18n()
-  const saldo = Math.max(0, totalAdeudado - cuotaInicial)
-  const valorCuota = cuotaMonto(saldo, numCuotas)
-
-  const fechaLabel = useMemo(() => {
-    if (!primerPago || primerPago.length < 10) return '—'
-    const d = new Date(`${primerPago}T00:00:00`)
-    return formatDate(d, { day: 'numeric', month: 'short', year: 'numeric' })
-  }, [primerPago, formatDate])
+  // Sin cuotas, la inicial ES el total (pago único), como lo guarda el micro.
+  const inicial = numCuotas === 0 ? totalAdeudado : cuotaInicial
+  const saldo = Math.max(0, totalAdeudado - inicial)
+  const cuotas = cuotasDelAcuerdo(saldo, numCuotas, primerPago)
+  const valorCuota = cuotas[0]?.valor ?? 0
+  const fechaEnPalabras = (f: string | null) =>
+    f ? formatDate(new Date(`${f}T12:00:00`), { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -208,7 +201,7 @@ function AcuerdoPropuestoCard({
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-fg">Acuerdo propuesto</p>
-            <p className="text-xs text-fg-muted">Vista previa — ejemplo</p>
+            <p className="text-xs text-fg-muted">Lo que se va a guardar</p>
           </div>
         </div>
         <Badge variant="warning" className="shrink-0">
@@ -226,13 +219,15 @@ function AcuerdoPropuestoCard({
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Pago inicial</dt>
-          <dd className="text-sm font-semibold tabular-nums text-success">
-            {copFormat(cuotaInicial, formatCurrency)}
+          <dt className="text-xs text-fg-muted">{numCuotas === 0 ? 'Pago único' : 'Pago inicial'}</dt>
+          <dd className="text-sm font-semibold tabular-nums text-success" data-testid="vista-inicial">
+            {copFormat(inicial, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Saldo en {numCuotas} cuotas</dt>
+          <dt className="text-xs text-fg-muted">
+            {numCuotas === 0 ? 'Sin cuotas' : `Saldo en ${numCuotas} ${numCuotas === 1 ? 'cuota' : 'cuotas'}`}
+          </dt>
           <dd className="text-sm font-semibold tabular-nums text-fg">
             {copFormat(saldo, formatCurrency)}
           </dd>
@@ -240,25 +235,36 @@ function AcuerdoPropuestoCard({
         <div className="bg-card p-4 space-y-0.5">
           <dt className="text-xs text-fg-muted">Valor por cuota</dt>
           <dd className="text-sm font-semibold tabular-nums text-fg">
-            {copFormat(valorCuota, formatCurrency)}
+            {numCuotas === 0 ? '—' : copFormat(valorCuota, formatCurrency)}
           </dd>
         </div>
       </dl>
 
-      {/* Fechas + consecuencia */}
+      {/* Las cuotas con su fecha (CB-05) y qué pasa si incumple (lo que hace el sistema, no un selector). */}
       <div className="px-5 py-4 space-y-2 border-t border-border">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-fg-muted">Primer pago:</span>
-          <span className="font-medium text-fg">{fechaLabel}</span>
-        </div>
-        {consecuencia && (
-          <div className="flex items-start gap-2 text-sm">
-            <Warning className="w-4 h-4 text-warning shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-            <span className="text-fg-muted">
-              <span className="font-medium text-fg">Si incumple:</span> {consecuencia}
-            </span>
-          </div>
+        {cuotas.length > 0 ? (
+          <ul className="space-y-1 text-sm" data-testid="vista-cuotas">
+            {cuotas.map((c) => (
+              <li key={c.numero} className="flex items-center justify-between gap-3">
+                <span className="text-fg-muted">
+                  Cuota {c.numero} · {fechaEnPalabras(c.vence)}
+                </span>
+                <span className="font-medium tabular-nums text-fg">{copFormat(c.valor, formatCurrency)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-fg-muted">Pago único: se paga entero con el enlace de pago.</p>
         )}
+        <div className="flex items-start gap-2 text-sm">
+          <Warning className="w-4 h-4 text-warning shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
+          <span className="text-fg-muted">
+            <span className="font-medium text-fg">Si incumple:</span> el acuerdo queda incumplido y la deuda vuelve a la cobranza.
+          </span>
+        </div>
+        <p className="text-xs text-fg-muted leading-relaxed">
+          Si la etapa tiene un acuerdo general con descuento sobre intereses, al guardar ese descuento baja las cuotas (o el pago único).
+        </p>
       </div>
 
       {/*
@@ -293,21 +299,15 @@ function AcuerdoPropuestoCard({
 
 // ── Formulario crear acuerdo ────────────────────────────────────────────────────
 
-const METODOS_PAGO = [
-  { value: 'wompi', label: 'Link de pago (Wompi)' },
-  { value: 'pse', label: 'PSE' },
-  { value: 'transferencia', label: 'Transferencia bancaria' },
-  { value: 'efectivo', label: 'Efectivo / ventanilla' },
-]
+/**
+ * CB-05: 0 = pago único. Hasta 4: el tope del micro (`installmentCount`); lo que
+ * permita la política de la etapa lo dice el micro al guardar, bajo el campo.
+ */
+const NUM_CUOTAS_OPCIONES = [0, 1, 2, 3, 4]
+const NOMBRE_DE_LAS_CUOTAS = (n: number) => (n === 0 ? 'Pago único (sin cuotas)' : n === 1 ? '1 cuota' : `${n} cuotas`)
 
-const CONSECUENCIAS = [
-  { value: 'reactivar_cobranza', label: 'Reactivar gestión de cobranza' },
-  { value: 'reportar_centrales', label: 'Reporte a centrales de riesgo' },
-  { value: 'escalar_prejuridico', label: 'Escalar a etapa prejurídica' },
-  { value: 'activar_siniestro', label: 'Activar siniestro de la póliza' },
-]
-
-const NUM_CUOTAS_OPCIONES = [2, 3, 4, 6, 9, 12]
+/** Los campos que el micro puede señalar en un 400 (`campos`). */
+type CampoDelAcuerdo = 'initialAmountCop' | 'installmentCount' | 'firstDueDate'
 
 function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
   // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado no hay deudores en
@@ -327,17 +327,25 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
   const [totalAdeudado, setTotalAdeudado] = useState<string>('')
   const [intereses, setIntereses] = useState<string>('')
   const [cuotaInicial, setCuotaInicial] = useState<string>('')
-  const [numCuotas, setNumCuotas] = useState<string>('3')
+  const [numCuotas, setNumCuotas] = useState<string>('0')
   const [primerPago, setPrimerPago] = useState<string>('')
-  const [metodoPago, setMetodoPago] = useState<string>('wompi')
-  const [consecuencia, setConsecuencia] = useState<string>('reactivar_cobranza')
-  // T-323: un acuerdo SIEMPRE requiere aprobación humana. No es un ajuste, es
-  // una invariante — por eso se enuncia, no se ofrece como interruptor.
-  const [notificarPropietario, setNotificarPropietario] = useState<boolean>(true)
+  // CB-05 (QA-PAGOS-95 r2): «Método de pago», «Consecuencia si incumple» y
+  // «Notificar al propietario» se quitaron: el acuerdo no tiene dónde
+  // guardarlos y nada los leía (el plan se paga con su enlace o un recibo, y al
+  // incumplir vuelve a la cobranza). Un control que no se guarda miente.
 
   // El POST que SÍ persiste la propuesta (status 'offered', pendiente de
   // aprobación). Antes «Guardar» llamaba a propose y nada quedaba en la base.
-  const { offer, isSubmitting, error, notDeployed, reset } = useAgreementOffer()
+  const { offer, isSubmitting, error, fallo, notDeployed, reset } = useAgreementOffer()
+  // CB-05: lo que el micro frena va BAJO su campo; lo demás, al aviso de abajo.
+  const reparto = fallo
+    ? repartirErroresDelServidor<CampoDelAcuerdo>(fallo, {
+        campos: ['initialAmountCop', 'installmentCount', 'firstDueDate'],
+        porDefecto: 'No pudimos guardar la propuesta.',
+        accion: 'guardar la propuesta',
+      })
+    : null
+  const errorGeneral = reparto ? (reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null) : error
 
   // La deuda REAL del deudor: al elegirlo, se autocompleta «Valor total
   // adeudado» con lo que dice la base (kpis.totalOwed). El usuario puede
@@ -352,9 +360,6 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
   const interesesNum = parseMiles(intereses) ?? 0
   const inicial = parseMiles(cuotaInicial) ?? 0
   const cuotas = Number(numCuotas) || 0
-
-  const consecuenciaLabel =
-    CONSECUENCIAS.find((c) => c.value === consecuencia)?.label ?? ''
 
   const selectedDebtor = useMemo(
     () => debtoresNegociables.find((d) => d.id === debtorId) ?? null,
@@ -372,11 +377,14 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
     }
   }, [deudaReal, debtorId, autoLlenadoPara])
 
-  const hasPreview = total > 0 && cuotas > 0
+  const hasPreview = total > 0
+  // Con cuotas hacen falta la inicial y la fecha de la primera (lo que se ve es
+  // lo que se guarda); sin cuotas, la inicial es el total.
+  const faltaLoDeLasCuotas = cuotas > 0 && (inicial <= 0 || primerPago.length < 10)
   // Se puede guardar la propuesta cuando hay deudor + deuda total válida y los
   // intereses no superan el total (regla del motor).
   const canSubmit =
-    debtorId !== '' && total > 0 && interesesNum >= 0 && interesesNum <= total
+    debtorId !== '' && total > 0 && interesesNum >= 0 && interesesNum <= total && !faltaLoDeLasCuotas
 
   async function handleSubmit() {
     if (!selectedDebtor || total <= 0) return
@@ -385,6 +393,10 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
       stage: selectedDebtor.currentStage,
       totalDueCop: Math.round(total),
       interestsCop: Math.round(interesesNum),
+      // CB-05: lo que se ve en la vista previa es lo que se guarda. Sin cuotas
+      // no se manda la inicial: el micro pone el total ya descontado.
+      installmentCount: cuotas,
+      ...(cuotas > 0 ? { initialAmountCop: Math.round(inicial), firstDueDate: primerPago } : {}),
     })
     // Persistió: el plan queda 'offered' (pendiente aprobación). Se cierra el
     // modal y se recarga la lista para que la propuesta aparezca ahí.
@@ -512,78 +524,75 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
               id="acuerdo-inicial"
               type="text"
               inputMode="numeric"
-              placeholder="Ej. 600.000"
-              value={cuotaInicial}
-              onChange={(e) => setCuotaInicial(reformatearMiles(e.target.value))}
+              placeholder={cuotas === 0 ? 'Sin cuotas: es el total' : 'Ej. 600.000'}
+              value={cuotas === 0 ? (total > 0 ? formatMiles(total) : '') : cuotaInicial}
+              disabled={cuotas === 0}
+              aria-invalid={reparto?.porCampo.initialAmountCop ? true : undefined}
+              aria-describedby={reparto?.porCampo.initialAmountCop ? 'acuerdo-inicial-error' : undefined}
+              onChange={(e) => {
+                setCuotaInicial(reformatearMiles(e.target.value))
+                clearFeedback()
+              }}
             />
+            <ErrorDelCampo id="acuerdo-inicial-error" mensaje={reparto?.porCampo.initialAmountCop} />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="acuerdo-cuotas" className="text-sm font-medium text-fg">
               Número de cuotas
             </label>
-            <Select value={numCuotas} onValueChange={setNumCuotas}>
-              <SelectTrigger id="acuerdo-cuotas" aria-label="Número de cuotas">
+            <Select
+              value={numCuotas}
+              onValueChange={(v) => {
+                setNumCuotas(v)
+                clearFeedback()
+              }}
+            >
+              <SelectTrigger
+                id="acuerdo-cuotas"
+                aria-label="Número de cuotas"
+                aria-invalid={reparto?.porCampo.installmentCount ? true : undefined}
+                aria-describedby={reparto?.porCampo.installmentCount ? 'acuerdo-cuotas-error' : undefined}
+              >
                 <SelectValue placeholder="Selecciona" />
               </SelectTrigger>
               <SelectContent>
                 {NUM_CUOTAS_OPCIONES.map((n) => (
                   <SelectItem key={n} value={String(n)}>
-                    {n} cuotas
+                    {NOMBRE_DE_LAS_CUOTAS(n)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <ErrorDelCampo id="acuerdo-cuotas-error" mensaje={reparto?.porCampo.installmentCount} />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="acuerdo-fecha" className="text-sm font-medium text-fg">
-              Fecha del primer pago
-            </label>
-            <Input
-              id="acuerdo-fecha"
-              type="date"
-              value={primerPago}
-              onChange={(e) => setPrimerPago(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="acuerdo-metodo" className="text-sm font-medium text-fg">
-              Método de pago
-            </label>
-            <Select value={metodoPago} onValueChange={setMetodoPago}>
-              <SelectTrigger id="acuerdo-metodo" aria-label="Método de pago">
-                <SelectValue placeholder="Selecciona" />
-              </SelectTrigger>
-              <SelectContent>
-                {METODOS_PAGO.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="acuerdo-consecuencia" className="text-sm font-medium text-fg">
-              Consecuencia si incumple
-            </label>
-            <Select value={consecuencia} onValueChange={setConsecuencia}>
-              <SelectTrigger id="acuerdo-consecuencia" aria-label="Consecuencia si incumple">
-                <SelectValue placeholder="Selecciona" />
-              </SelectTrigger>
-              <SelectContent>
-                {CONSECUENCIAS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {cuotas > 0 && (
+            <div className="space-y-1.5">
+              <label htmlFor="acuerdo-fecha" className="text-sm font-medium text-fg">
+                Fecha de la primera cuota
+              </label>
+              <Input
+                id="acuerdo-fecha"
+                type="date"
+                value={primerPago}
+                aria-invalid={reparto?.porCampo.firstDueDate ? true : undefined}
+                aria-describedby={reparto?.porCampo.firstDueDate ? 'acuerdo-fecha-error' : undefined}
+                onChange={(e) => {
+                  setPrimerPago(e.target.value)
+                  clearFeedback()
+                }}
+              />
+              <ErrorDelCampo id="acuerdo-fecha-error" mensaje={reparto?.porCampo.firstDueDate} />
+            </div>
+          )}
         </div>
+
+        {faltaLoDeLasCuotas && (
+          <p className="text-xs text-fg-muted" data-testid="acuerdo-falta">
+            Con cuotas, escribe la cuota inicial y la fecha de la primera cuota.
+          </p>
+        )}
 
         {/* Switches */}
         <div className="space-y-3 border-t border-border pt-4">
@@ -609,20 +618,6 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             </Badge>
           </div>
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-0.5 min-w-0">
-              <p className="text-sm font-medium text-fg">Notificar al propietario</p>
-              <p className="text-xs text-fg-muted">
-                Enviar un resumen del acuerdo al propietario del inmueble cuando se apruebe.
-              </p>
-            </div>
-            <Switch
-              checked={notificarPropietario}
-              onCheckedChange={setNotificarPropietario}
-              aria-label="Notificar al propietario"
-              className="shrink-0 mt-0.5"
-            />
-          </div>
         </div>
 
         {/* Aviso T-323 */}
@@ -649,12 +644,12 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
 
         {/* Error de validación / permiso / red: entra y sale con `Presence`. */}
         <Presence
-            show={Boolean(error)}
+            show={Boolean(errorGeneral)}
             role="alert"
             className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 ring-1 ring-danger/30"
           >
             <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
-            <p className="text-xs text-danger leading-relaxed">{error}</p>
+            <p className="text-xs text-danger leading-relaxed">{errorGeneral}</p>
         </Presence>
 
         <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
@@ -683,7 +678,6 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             cuotaInicial={inicial}
             numCuotas={cuotas}
             primerPago={primerPago}
-            consecuencia={consecuenciaLabel}
           />
         ) : (
           <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center">

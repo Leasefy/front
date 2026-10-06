@@ -79,6 +79,22 @@ export const esquemaDeRegla = z
           'atado a una fecha del calendario cobraría lo mismo el día 16 que el 30.',
       });
     }
+    if (v.formula === 'INTERES_MENSUAL' && v.disparador === 'DIA_DEL_MES') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['disparador'],
+        message:
+          'Un interés mensual se cobra por días de mora, no por día del mes: ' +
+          'atado a una fecha del calendario cobraría lo mismo el día 16 que el 30.',
+      });
+    }
+    if (v.formula === 'INTERES_MENSUAL' && v.valor > 30) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['valor'],
+        message: `Una tasa MENSUAL de ${v.valor}% es más que la usura de cualquier mes. Revisa la cifra: el sugerido es 2 % mensual.`,
+      });
+    }
     if (v.formula === 'INTERES_DIARIO' && v.valor > 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -138,7 +154,7 @@ export function resolverDeZod<T extends z.ZodTypeAny>(
 export const TASA_DIARIA_DEL_2_MENSUAL = Math.round((2 / 30) * 10000) / 10000;
 
 export interface PlantillaDeRegla {
-  id: 'interes-diario' | 'gasto-administrativo';
+  id: 'interes-mensual' | 'gasto-administrativo';
   titulo: string;
   explicacion: string;
   valores: NuevaReglaDeMora;
@@ -150,17 +166,22 @@ export interface PlantillaDeRegla {
  */
 export const PLANTILLAS: readonly PlantillaDeRegla[] = [
   {
-    id: 'interes-diario',
-    titulo: 'Interés diario después del plazo',
+    /*
+     * 🔴 PPF-05 (QA-PAGOS-95 r2; Nico, 05-10-2026): la sugerida es el 2 %
+     * MENSUAL a prorrata por día (exactamente 2 % en 30 días). La diaria
+     * 0,0667 % daba 2,001 %. Las reglas ya guardadas no cambian solas.
+     */
+    id: 'interes-mensual',
+    titulo: 'Interés del 2 % mensual después del plazo',
     explicacion:
-      'Cada día de atraso suma 0,0667 % del canon —2 % al mes— a partir del primer día después del plazo. Es el interés corriente de la mora.',
+      'Corre a prorrata cada día de atraso: el 2 % del canon por cada 30 días de mora, a partir del primer día después del plazo. Es el interés corriente de la mora.',
     valores: {
       nombre: 'Interés de mora',
       concepto: 'INTERES_DE_MORA',
       disparador: 'DIAS_DE_MORA',
       disparadorDia: 1,
-      formula: 'INTERES_DIARIO',
-      valor: TASA_DIARIA_DEL_2_MENSUAL,
+      formula: 'INTERES_MENSUAL',
+      valor: 2,
       base: 'CANON',
       orden: 0,
     },

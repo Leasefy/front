@@ -34,9 +34,11 @@ function escribir(input: HTMLInputElement, texto: string, cursor = texto.length)
 }
 
 describe('soloNumero y agrupar en COP', () => {
-  it('sin centavos, como siempre: la coma se descarta', () => {
-    expect(soloNumero('1.500,75')).toBe('150075');
-    expect(soloNumero('1.500,75', 'COP', false)).toBe('150075');
+  it('sin centavos: los centavos escritos se frenan (CE-04), quedan los pesos', () => {
+    // 🔴 CE-04 (QA-PAGOS-95, 05-10-2026): antes «1.500,75» daba 150075 —los
+    // centavos se volvían pesos, cien veces más—. Ahora quedan los pesos.
+    expect(soloNumero('1.500,75')).toBe('1500');
+    expect(soloNumero('1.500,75', 'COP', false)).toBe('1500');
     expect(agrupar('1500.75')).toBe('1.500');
   });
 
@@ -104,13 +106,29 @@ describe('MoneyInput según la llave del área', () => {
     return { input, alCambiar };
   }
 
-  it('apagada (o back viejo): pesos enteros, la coma se descarta, teclado numérico', async () => {
+  it('apagada (o back viejo): pesos enteros, los centavos se frenan con su pista, teclado numérico', async () => {
     const { input, alCambiar } = await montar(new Error('404'));
     expect(input.inputMode).toBe('numeric');
     await act(async () => escribir(input, '1.500,75'));
-    expect(alCambiar).toHaveBeenLastCalledWith('150075');
-    expect(input.value).toBe('150.075');
+    // CE-04: antes '150075' (cien veces más).
+    expect(alCambiar).toHaveBeenLastCalledWith('1500');
     expect(host.querySelector('[data-testid="pista-del-tercer-decimal"]')).toBeNull();
+    expect(host.querySelector('[data-testid="pista-sin-centavos"]')).not.toBeNull();
+  });
+
+  it('🔴 CE-04 al TECLEAR: después de la coma los dígitos no caen en los pesos (antes 1.500 + «,75» = 150.075)', async () => {
+    const { input, alCambiar } = await montar(new Error('404'));
+    for (const c of '1500') await act(async () => escribir(input, input.value + c));
+    expect(input.value).toBe('1.500');
+    await act(async () => escribir(input, input.value + ','));
+    for (const c of '75') await act(async () => escribir(input, input.value + c));
+    expect(alCambiar).toHaveBeenLastCalledWith('1500');
+    expect(input.value).toBe('1.500');
+    expect(host.querySelector('[data-testid="pista-sin-centavos"]')).not.toBeNull();
+    // Borrar suelta el freno: se sigue escribiendo pesos.
+    await act(async () => escribir(input, '1.50'));
+    for (const c of '00') await act(async () => escribir(input, input.value + c));
+    expect(alCambiar).toHaveBeenLastCalledWith('15000');
   });
 
   it('sin `areas` no pregunta nada y es el campo de siempre', async () => {
@@ -120,7 +138,8 @@ describe('MoneyInput según la llave del área', () => {
     const input = host.querySelector('input') as HTMLInputElement;
     await act(async () => escribir(input, '2.350.000,29'));
     expect(pedir).not.toHaveBeenCalled();
-    expect(onChange).toHaveBeenLastCalledWith('235000029');
+    // CE-04: los centavos se frenan (antes '235000029').
+    expect(onChange).toHaveBeenLastCalledWith('2350000');
   });
 
   it('prendida: coma decimal y $1.234.567,29 viaja como "1234567.29"', async () => {
@@ -157,7 +176,8 @@ describe('MoneyInput según la llave del área', () => {
     const soloUna = { conCentavos: { contratos_y_cuotas: true } };
     const { input, alCambiar } = await montar(soloUna);
     await act(async () => escribir(input, '2.350.000,29'));
-    expect(alCambiar).toHaveBeenLastCalledWith('235000029');
+    // CE-04: los centavos se frenan (antes '235000029').
+    expect(alCambiar).toHaveBeenLastCalledWith('2350000');
   });
 });
 

@@ -150,6 +150,7 @@ import {
   sumarIntereses,
 } from '@/components/cartera/interes-de-mora'
 import { InquilinoEnCarteraCajon } from './InquilinoEnCarteraCajon'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 /**
  * La columna del saldo queda PEGADA al borde derecho.
@@ -577,7 +578,7 @@ export function CarteraPorConcepto() {
           <p className="text-xs text-fg-muted">
             La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe desde que
             se firma. Los conceptos salen de las líneas de cada cuota, y lo que se abona se imputa
-            primero a los intereses y después al capital. Leído contra el {datos.hoy}.
+            primero a los intereses y después al capital. Leído contra el {fechaLarga(datos.hoy)}.
           </p>
         ) : null}
 
@@ -763,7 +764,8 @@ function FilasDelInquilino({
                 {inquilino.nombre ?? 'Sin nombre en el contrato'}
               </span>
               <span className="block text-xs text-fg-muted">
-                {inquilino.documento ? `CC ${inquilino.documento} · ` : ''}
+                {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», nunca un «CC» inventado. */}
+                {inquilino.documento ? `${documentoDelCliente(inquilino)} · ` : ''}
                 {inquilino.filas.length} {inquilino.filas.length === 1 ? 'mes' : 'meses'}
                 {inquilino.contratos.length > 1
                   ? ` · ${inquilino.contratos.length} contratos`

@@ -65,6 +65,7 @@ import {
   type ConceptoDeNotaCredito,
   type FacturaEmitida,
 } from '@/lib/api/facturacion-por-mes.service'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 /**
  * Los conceptos DIAN de una nota crédito PARCIAL (FA-25, 03-10): los de la
@@ -88,7 +89,23 @@ export interface CorregirFacturaProps {
   factura: FacturaEmitida
   /** Se llama después de emitir, para recargar el listado. */
   onHecho: () => void | Promise<void>
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-B-06): sin días de plazo fijados no corre
+   * interés de mora: «Intereses de mora» no se ofrece (el back la frena con
+   * 409 INTERESES_SIN_PLAZO_FIJADO).
+   */
+  plazoSinFijar?: boolean
 }
+
+/** FA-B-06: los conceptos de la nota débito que se ofrecen; sin plazo fijado, sin intereses. */
+export function conceptosDeLaNotaDebito(plazoSinFijar = false): ConceptoDeNotaDebito[] {
+  const todos = Object.keys(NOMBRE_DEL_CONCEPTO_DEBITO) as ConceptoDeNotaDebito[]
+  return plazoSinFijar ? todos.filter((k) => k !== 'INTERESES_DE_MORA') : todos
+}
+
+/** FA-B-06: por qué no está «Intereses de mora» en la lista. */
+export const SIN_PLAZO_SIN_INTERESES =
+  'Sin días de plazo fijados no corre interés de mora: no hay intereses que cobrar. Fíjalos en Configuración → Perfil.'
 
 type Cual = 'PARCIAL' | 'DEBITO' | null
 
@@ -117,13 +134,12 @@ export function errorDelValorDeLaNota(
   return null
 }
 
-export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
+export function CorregirFactura({ factura, onHecho, plazoSinFijar = false }: CorregirFacturaProps) {
+  const conceptosDebito = conceptosDeLaNotaDebito(plazoSinFijar)
   const [cual, setCual] = useState<Cual>(null)
   const [motivo, setMotivo] = useState('')
   const [valor, setValor] = useState('')
-  const [concepto, setConcepto] = useState<ConceptoDeNotaDebito>(
-    'INTERESES_DE_MORA',
-  )
+  const [concepto, setConcepto] = useState<ConceptoDeNotaDebito>(conceptosDebito[0])
   /** El concepto DIAN de la parcial (FA-25: antes iba fijo «Rebaja»). */
   const [conceptoParcial, setConceptoParcial] = useState<ConceptoDeNotaCredito>('REBAJA')
   const [guardando, setGuardando] = useState(false)
@@ -179,7 +195,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
         // emite esperaba verla subir.
         const conIva =
           typeof r.ivaCop === 'number' && r.ivaCop > 0 ? ` (IVA ${formatCurrency(r.ivaCop)})` : ''
-        const enLaDeuda = r.deuda?.explicacion ? ` ${r.deuda.explicacion}` : ''
+        const enLaDeuda = r.deuda?.explicacion ? ` ${conLaPlataPegada(r.deuda.explicacion)}` : ''
         const porCuanto = typeof r.valorCop === 'number' ? ` por ${formatCurrency(r.valorCop)}` : ''
         toast.success(`Nota débito ${r.numeroInterno} emitida${porCuanto}${conIva}.${enLaDeuda}`)
       }
@@ -233,7 +249,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
           onClick={() => {
             setMotivo('')
             setValor('')
-            setConcepto('INTERESES_DE_MORA')
+            setConcepto(conceptosDebito[0])
             setCual('DEBITO')
           }}
           data-testid={`nota-debito-${factura.numero}`}
@@ -332,9 +348,7 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(
-                      Object.keys(NOMBRE_DEL_CONCEPTO_DEBITO) as ConceptoDeNotaDebito[]
-                    ).map((k) => (
+                    {conceptosDebito.map((k) => (
                       <SelectItem key={k} value={k}>
                         {NOMBRE_DEL_CONCEPTO_DEBITO[k]}
                       </SelectItem>
@@ -342,6 +356,14 @@ export function CorregirFactura({ factura, onHecho }: CorregirFacturaProps) {
                   </SelectContent>
                 </Select>
                 <ErrorDelCampo id="corregir-concepto-error" mensaje={delServidor.concepto} />
+                {plazoSinFijar && (
+                  <p
+                    className="text-caption text-fg-muted"
+                    data-testid="corregir-sin-plazo-sin-intereses"
+                  >
+                    {SIN_PLAZO_SIN_INTERESES}
+                  </p>
+                )}
               </div>
             )}
             <div className="space-y-1.5">

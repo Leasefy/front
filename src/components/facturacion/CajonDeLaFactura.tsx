@@ -255,9 +255,12 @@ export function CajonDeLaFactura({
                     Actualiza la lista para poder descargar el PDF de esta factura.
                   </p>
                 )}
-                <p className="text-sm text-fg-muted">
-                  El XML firmado y el CUFE los entrega el proveedor de facturación
-                  electrónica, que todavía no está conectado: el PDF lo dice en su pie.
+                {/* QA-FACT-CONTA-95 (FA-A-22, FA-J-07): decía «el proveedor… todavía
+                    no está conectado» también con FEEL transmitiendo. */}
+                <p className="text-sm text-fg-muted" data-testid="cajon-xml-y-cufe">
+                  El XML firmado y el CUFE llegan cuando la DIAN valida la factura;
+                  mientras tanto el PDF lo dice en su pie. En «Electrónica (DIAN)»
+                  ves en qué va.
                 </p>
               </section>
             )}

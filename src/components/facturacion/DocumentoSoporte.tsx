@@ -27,7 +27,7 @@
  * selector de fecha del DS (FA-R29 / FA-R30); la plata, `formatCurrency`.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PencilSimple, Plus, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -222,9 +222,22 @@ export function DocumentoSoporte() {
     setPrevia(null)
   }
 
+  /*
+   * QA-FACT-CONTA-95 (FA-E-04): el documento soporte sustenta un pago que YA se
+   * hizo: una fecha futura se dice bajo el campo y no se emite (el back también
+   * la rechaza).
+   */
+  const hoyEnBogota = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+  const fechaFutura = form.fecha !== '' && form.fecha.slice(0, 10) > hoyEnBogota
   const completo =
     form.proveedorId !== '' &&
     form.fecha !== '' &&
+    !fechaFutura &&
     form.concepto.trim() !== '' &&
     Number(form.valorCop) > 0
 
@@ -255,8 +268,15 @@ export function DocumentoSoporte() {
     }
   }
 
+  /*
+   * QA-FACT-CONTA-95 (FA-E-03): `trabajando` es estado y un doble clic llega
+   * antes del siguiente render: los dos clics veían `false` y salían DOS
+   * documentos soporte con su número. La guarda va en una referencia.
+   */
+  const emitiendoAhora = useRef(false)
   async function emitir() {
-    if (!completo || !previa || trabajando) return
+    if (!completo || !previa || trabajando || emitiendoAhora.current) return
+    emitiendoAhora.current = true
     setTrabajando(true)
     try {
       const r = await facturacionElectronicaService.emitirDocumentoSoporte({
@@ -279,6 +299,7 @@ export function DocumentoSoporte() {
         }),
       )
     } finally {
+      emitiendoAhora.current = false
       setTrabajando(false)
     }
   }
@@ -764,6 +785,15 @@ export function DocumentoSoporte() {
                 value={form.fecha}
                 onChange={campo('fecha')}
                 testid="ds-fecha"
+                invalido={fechaFutura}
+              />
+              <ErrorDelCampo
+                id="ds-fecha-error"
+                mensaje={
+                  fechaFutura
+                    ? 'La fecha no puede ser futura: es el día en que se le pagó al proveedor.'
+                    : undefined
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -830,7 +860,9 @@ export function DocumentoSoporte() {
           </CajonCuerpo>
           <CajonPie
             ayuda={
-              !completo
+              fechaFutura
+                ? 'La fecha no puede ser futura: es el día en que se le pagó al proveedor.'
+                : !completo
                 ? 'Faltan el proveedor, la fecha, el concepto y el valor.'
                 : !previa
                   ? 'Primero mira las retenciones: es lo que de verdad se le paga.'

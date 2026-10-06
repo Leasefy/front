@@ -160,6 +160,8 @@ import {
   porQueNoSeEmite,
   rutaDelEscenario,
   rutaDelMandante,
+  rutaDelInquilino,
+  frenaPorElDocumentoDelMandante,
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
@@ -366,16 +368,29 @@ function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
       <p className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
         {formatCurrency(factura.totalCop)}
       </p>
+      {/* 🔴 FA-04 (QA-FACT-CONTA-95, 05-10): un renglón corto por cifra. En dos
+          renglones largos («Base … · IVA …», «Retiene … · Neto …») la columna
+          medía 329 px y la tabla no cabía a 1.440: el valor quedaba debajo de
+          la columna del estado. */}
       {(factura.ivaCop > 0 || factura.retencionesCop > 0) && (
-        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
+        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`base-${factura.clave}`}>
           Base {formatCurrency(factura.baseCop)}
-          {factura.ivaCop > 0 && <> · IVA {formatCurrency(factura.ivaCop)}</>}
+        </p>
+      )}
+      {factura.ivaCop > 0 && (
+        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`iva-${factura.clave}`}>
+          IVA {formatCurrency(factura.ivaCop)}
         </p>
       )}
       {factura.retencionesCop > 0 && (
-        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
-          Retiene −{formatCurrency(factura.retencionesCop)} · Neto {formatCurrency(factura.netoCop)}
-        </p>
+        <>
+          <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`retiene-${factura.clave}`}>
+            Retiene −{formatCurrency(factura.retencionesCop)}
+          </p>
+          <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`neto-${factura.clave}`}>
+            Neto {formatCurrency(factura.netoCop)}
+          </p>
+        </>
       )}
       {factura.ivaCop > 0 &&
         factura.impuestosSinConfirmar === false &&
@@ -533,9 +548,33 @@ function EstadoDeLaFactura({
       </span>
     )
   }
-  if (estado === 'todavia-no' && factura.codigoNoEmitible === 'MANDANTE_SIN_TIPO_DE_DOCUMENTO') {
+  if (estado === 'todavia-no' && factura.codigoNoEmitible === 'INQUILINO_SIN_TIPO_DE_DOCUMENTO') {
+    /* 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): sin el tipo de
+       documento GUARDADO del inquilino no se numera (nunca se adivina por el
+       largo). La fila lleva a la persona en Inquilinos, donde se completa. */
+    const ruta = rutaDelInquilino(factura)
+    return (
+      <div className="flex flex-col items-start gap-1" data-testid={`inquilino-sin-tipo-${factura.clave}`}>
+        <span className="text-caption text-fg-subtle" title={factura.motivoNoEmitible ?? undefined}>
+          {motivoCorto(factura)}
+        </span>
+        {ruta && (
+          <Link
+            href={ruta}
+            className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+            data-testid={`completar-inquilino-${factura.clave}`}
+          >
+            Completar en el inquilino
+          </Link>
+        )}
+      </div>
+    )
+  }
+  if (estado === 'todavia-no' && frenaPorElDocumentoDelMandante(factura.codigoNoEmitible)) {
     /* QA-FACT-PROF (04-10): la factura sale a nombre del propietario (mandato)
-       y la DIAN exige su tipo de documento. La fila lleva a su ficha. */
+       y la DIAN exige su tipo de documento. La fila lleva a su ficha.
+       QA-FACT-CONTA-95 · B-08 (05-10): el mismo aviso cuando la ficha dice
+       «CC» con un número que parece un NIT. */
     const ruta = rutaDelMandante(factura)
     return (
       <div className="flex flex-col items-start gap-1" data-testid={`mandante-sin-tipo-${factura.clave}`}>
@@ -1054,6 +1093,14 @@ function TablaDeFacturas({
     </section>
   )
 }
+
+/**
+ * CU-F-02 (QA-FACT-CONTA-95 r2): arriba de la lista de propietarios se dice que
+ * la comisión SALE AL GIRAR (FA-R13, Nico 03-10: «se factura al marcar pagado su
+ * giro»). Antes sólo cada fila decía «Se factura cuando se le gire».
+ */
+export const DESCRIPCION_DE_LAS_COMISIONES =
+  'La comisión de administración del mes sale al girar: se factura cuando el giro al propietario queda pagado (o con «Facturar ahora» al marcar pagado el lote). Lo que el propietario paga y no se factura va a deducción del egreso.'
 
 export interface NuevaFacturaProps {
   /**
@@ -1976,7 +2023,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               descripcion={
                 aQuien === 'INQUILINO'
                   ? 'El canon del período y los conceptos que se le facturan al inquilino.'
-                  : 'La comisión de administración del mes. Lo que el propietario paga y no se factura va a deducción del egreso.'
+                  : DESCRIPCION_DE_LAS_COMISIONES
               }
               filas={filasDeLaVista}
               seleccion={seleccion}

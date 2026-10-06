@@ -378,7 +378,10 @@ export default function FacturacionPage() {
   return (
     // Nico (03-10-2026): Facturación es sólo de administrador y contador, también
     // en el back. A los demás, el cartel dice «No tienes acceso a Facturación».
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Facturación">
+    // FA-H-10 (QA-FACT-CONTA-95 r2): y con el permiso de `cobros` (lo que pide el
+    // back en todas las rutas de facturación). Sin él, el contador veía la
+    // pantalla entera con cada consulta en 403; ahora el cartel la cubre entera.
+    <PageGuard module="cobros" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Facturación">
       <FacturacionContent />
     </PageGuard>
   );

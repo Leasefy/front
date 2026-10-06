@@ -2106,3 +2106,77 @@ describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasa
     }
   });
 });
+
+/*
+ * 🔴 QA-FACT-CONTA-95 · B-08 (decisión de Nico n.º 15, 05-10-2026): la factura
+ * por mandato también se frena cuando la ficha del propietario dice «CC» con un
+ * número que parece un NIT. La fila lleva el MISMO aviso y el mismo camino a la
+ * ficha que la del propietario sin tipo de documento (QA-FACT-PROF).
+ */
+describe('QA-FACT-CONTA-95 · mandante con el tipo de documento por revisar', () => {
+  it('🔴 la fila dice qué revisar y lleva a la ficha del propietario, sin botón de emitir', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            emitible: false,
+            codigoNoEmitible: 'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR',
+            motivoNoEmitible:
+              'Inversiones Lab S.A.S. tiene «CC» en su ficha con un número que parece un NIT (901222333), y esta factura sale a su nombre (por mandato): la DIAN rechaza un tipo de documento equivocado. Revisa el tipo en Propietarios y se emite.',
+            mandato: { porMandato: true, mandanteId: 'p-4', mandanteNombre: 'Inversiones Lab S.A.S.' },
+          }),
+        ],
+      }),
+    );
+    await montar();
+    const celda = q('[data-testid="mandante-sin-tipo-ct-1|2026-09|INQUILINO"]');
+    expect(celda?.textContent).toContain('Revisa el tipo de documento del propietario');
+    const enlace = q('[data-testid="completar-mandante-ct-1|2026-09|INQUILINO"]') as HTMLAnchorElement | null;
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios/p-4');
+    expect(celda?.querySelector('[title]')?.getAttribute('title')).toContain('parece un NIT');
+  });
+  it('🔴 sin ningún documento del propietario: «Falta el documento del propietario» y el mismo enlace', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            emitible: false,
+            codigoNoEmitible: 'MANDANTE_SIN_DOCUMENTO',
+            motivoNoEmitible: 'Sin Doc no tiene el documento en su ficha, y esta factura sale a su nombre (por mandato): la DIAN exige el tipo y el número. Complétalos en Propietarios y se emite.',
+            mandato: { porMandato: true, mandanteId: 'p-7', mandanteNombre: 'Sin Doc' },
+          }),
+        ],
+      }),
+    );
+    await montar();
+    const celda = q('[data-testid="mandante-sin-tipo-ct-1|2026-09|INQUILINO"]');
+    expect(celda?.textContent).toContain('Falta el documento del propietario');
+    expect(q('[data-testid="completar-mandante-ct-1|2026-09|INQUILINO"]')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/propietarios/p-7',
+    );
+  });
+});
+
+/*
+ * 🔴 FA-04 (QA-FACT-CONTA-95, 05-10-2026): medido en el navegador a 1.440 px, la
+ * columna «Valor» medía 329 px con «Base … · IVA …» y «Retiene … · Neto …» en
+ * dos renglones sin partir, y la tabla (1.231 px) no cabía en su tarjeta
+ * (1.102 px): el valor quedaba debajo de la columna fija del estado.
+ */
+describe('QA-FACT-CONTA-95 · FA-04 · la plata de la fila en renglones cortos', () => {
+  it('base, IVA, retención y neto van cada uno en su renglón', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({ baseCop: 8_900_000, ivaCop: 1_691_000, retencionesCop: 565_150, totalCop: 10_591_000, netoCop: 10_025_850 }),
+        ],
+      }),
+    );
+    await montar();
+    const c = 'ct-1|2026-09|INQUILINO';
+    expect(q(`[data-testid="base-${c}"]`)?.textContent).toBe('Base $ 8.900.000');
+    expect(q(`[data-testid="iva-${c}"]`)?.textContent).toBe('IVA $ 1.691.000');
+    expect(q(`[data-testid="retiene-${c}"]`)?.textContent).toBe('Retiene −$ 565.150');
+    expect(q(`[data-testid="neto-${c}"]`)?.textContent).toBe('Neto $ 10.025.850');
+  });
+});

@@ -88,6 +88,8 @@ import {
   type NotaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
 import { descargarBlob } from '@/lib/reportes/exportables'
+// QA-FACT-CONTA-95 (FA-R28): las frases del back traen «$500.000»; la sección escribe «$ 500.000».
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   facturacionElectronicaService,
@@ -210,7 +212,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               corregida ? ` y factura corregida ${corregida}` : ''
             }. La deuda queda igual.`
           : `Nota crédito ${nota.numeroDeLaNota} por ${formatCurrency(nota.valorCop)}. ${
-              nota.deuda?.explicacion ?? 'La deuda de la cuota baja en ese valor.'
+              conLaPlataPegada(nota.deuda?.explicacion) ?? 'La deuda de la cuota baja en ese valor.'
             }`,
       )
       // La corregida que no pudo salir en el mismo paso: el porqué del back.
@@ -317,6 +319,26 @@ export function FacturasEmitidas({ mes, vista }: Props) {
       </Button>
     ) : null
 
+  /**
+   * QA-FACT-CONTA-95 (FA3-09): cómo quedó ante la DIAN, en palabras («Validada
+   * por la DIAN», «Rechazada por la DIAN», «En cola»). Sin dato, nada.
+   */
+  const estadoAnteLaDian = (f: FacturaEmitida) =>
+    f.transmision ? (
+      <span
+        className={`block font-sans text-caption ${
+          f.transmision.estado === 'RECHAZADA_DIAN'
+            ? 'text-danger'
+            : f.transmision.estado === 'ACEPTADA_DIAN'
+              ? 'text-success'
+              : 'text-fg-muted'
+        }`}
+        data-testid={`ventas-dian-${f.numero}`}
+      >
+        {f.transmision.nombre}
+      </span>
+    ) : null
+
   /** Anular con nota crédito, o por qué no; y las correcciones (la fila y la tarjeta). */
   /** «Emitir» (una GENERADA) y el PDF de una nota del mes: en la tabla y en la tarjeta. */
   const accionesDeLaNota = (n: NotaDelMes) => (
@@ -387,9 +409,12 @@ export function FacturasEmitidas({ mes, vista }: Props) {
           completo decía lo mismo tres veces («ya se anuló con NC-3», «ya se
           anuló por completo… emite la factura nueva» y «ya acreditado
           $ 1.750.000 · saldo $ 0»). Con la anulación basta: una línea. */}
-      {f.anulacion.bloqueo !== 'YA_ANULADA' && (
+      {/* QA-FACT-CONTA-95 (FA3-09): a una rechazada por la DIAN tampoco se le
+          ofrece corregir con nota (lo mismo dicho dos veces sobra). */}
+      {f.anulacion.bloqueo !== 'YA_ANULADA' &&
+        f.anulacion.bloqueo !== 'RECHAZADA_POR_LA_DIAN' && (
         <span className="mt-1 block">
-          <CorregirFactura factura={f} onHecho={cargar} />
+          <CorregirFactura factura={f} onHecho={cargar} plazoSinFijar={datos?.plazoSinFijar === true} />
         </span>
       )}
     </>
@@ -538,6 +563,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                     <span className="font-mono tabular-nums">interna N.º {f.numero}</span>
                     {botonDelPdf(f)}
                   </p>
+                  {estadoAnteLaDian(f)}
                   <p className="truncate text-caption text-fg-muted" title={f.inmueble}>
                     {f.inmueble}
                   </p>
@@ -588,7 +614,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                 )}
                 {(n.notaContable || n.estado === 'GENERADA') && (
                   <p className="text-caption text-fg-muted">
-                    {n.notaContable ?? 'Sin emitir todavía.'}
+                    {conLaPlataPegada(n.notaContable) ?? 'Sin emitir todavía.'}
                   </p>
                 )}
                 {n.estado === 'GENERADA' && !n.puedeEmitir && n.porQueNoSePuedeEmitir && (
@@ -652,6 +678,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   <TableCell className="whitespace-nowrap font-mono tabular-nums">
                     {f.numeroDian ?? '—'}
                     {botonDelPdf(f)}
+                    {estadoAnteLaDian(f)}
                   </TableCell>
                   <TableCell>
                     <span className="block">{f.terceroNombre}</span>
@@ -715,7 +742,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{fechaLegible(n.dia)}</TableCell>
                   <TableCell className="max-w-[20rem] text-caption text-fg-muted">
-                    {n.notaContable ?? (n.estado === 'GENERADA' ? 'Sin emitir todavía.' : '—')}
+                    {conLaPlataPegada(n.notaContable) ?? (n.estado === 'GENERADA' ? 'Sin emitir todavía.' : '—')}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-right">{accionesDeLaNota(n)}</TableCell>
                 </TableRow>
@@ -767,7 +794,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{fechaLegible(nota.createdAt)}</TableCell>
                   <TableCell className="max-w-[20rem] text-caption text-fg-muted">
-                    {nota.notaContable ?? (nota.numero === null ? 'Sin emitir todavía.' : 'Se está registrando…')}
+                    {conLaPlataPegada(nota.notaContable) ?? (nota.numero === null ? 'Sin emitir todavía.' : 'Se está registrando…')}
                   </TableCell>
                 </TableRow>
               ))}

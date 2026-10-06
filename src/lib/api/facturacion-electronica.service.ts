@@ -459,6 +459,8 @@ export type BloqueoDeCorreccion =
   | 'YA_ANULADA'
   | 'SIN_SALDO'
   | 'MIGRACION_PENDIENTE'
+  /** QA-FACT-CONTA-95 (FA3-09): la DIAN la rechazó; se corrige y se retransmite. */
+  | 'RECHAZADA_POR_LA_DIAN'
 
 export interface EstadoDeLaCorreccion {
   saldoCop: number
@@ -663,6 +665,13 @@ export const facturacionElectronicaService = {
       `${BASE}/certificaciones/${propietarioId}`,
       { desde: periodo.desde, hasta: periodo.hasta },
     ),
+
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el PDF de una certificación ya generada
+   * (`GET /certificaciones/:id/pdf`), lo que el propietario necesita para declarar.
+   */
+  pdfDeLaCertificacion: (id: string) =>
+    apiClient.getBlob(`${BASE}/certificaciones/${encodeURIComponent(id)}/pdf`),
 
   /** Las notas débito emitidas. */
   notasDebito: () =>

@@ -12,6 +12,34 @@ import { mensajeDelAdmin } from './errores-del-admin'
 
 export type AmbienteDelFacturador = 'SANDBOX' | 'PRODUCCION'
 
+/**
+ * QA-FACT-CONTA-95 (05-10-2026), decisión de Nico n.º 6: «varios prefijos, uno
+ * por resolución». En FEEL un token = un facturador = UNA numeración (P11.4):
+ * la resolución de la comisión, con su prefijo, es un facturador aparte del de
+ * «cualquier tipo». La emisión escoge el token por el tipo de la factura.
+ */
+export type TipoDelFacturador = 'CANON_INQUILINO' | 'COMISION_PROPIETARIO' | 'OTROS'
+
+export const TIPOS_DEL_FACTURADOR: readonly TipoDelFacturador[] = ['CANON_INQUILINO', 'COMISION_PROPIETARIO', 'OTROS']
+
+export const NOMBRE_DEL_TIPO: Record<TipoDelFacturador, string> = {
+  CANON_INQUILINO: 'canon del inquilino',
+  COMISION_PROPIETARIO: 'comisión al propietario',
+  OTROS: 'otros conceptos (intereses)',
+}
+
+export interface VistaDelFacturador {
+  ambiente: string
+  /** SIN_PROBAR | CONECTADA | FALLO */
+  estado: string
+  finalDelToken: string
+  nitDelFacturador: string | null
+  prefijoFa: string | null
+  ultimaPruebaAt: string | null
+  ultimoError: string | null
+  actualizadoAt: string
+}
+
 /** GET /api/v1/admin/tenants/:tenantId/facturacion-electronica */
 export interface FacturadorFeelDeLaInmobiliaria {
   disponible: boolean
@@ -20,21 +48,16 @@ export interface FacturadorFeelDeLaInmobiliaria {
   urlSandbox: boolean
   urlProduccion: boolean
   inmobiliaria: { id: string; nombre: string; nit: string | null; razonSocial: string | null }
-  facturador: null | {
-    ambiente: string
-    /** SIN_PROBAR | CONECTADA | FALLO */
-    estado: string
-    finalDelToken: string
-    nitDelFacturador: string | null
-    prefijoFa: string | null
-    ultimaPruebaAt: string | null
-    ultimoError: string | null
-    actualizadoAt: string
-  }
+  facturador: null | VistaDelFacturador
+  /** QA-FACT-CONTA-95: ausentes con un back anterior (= sin facturadores por tipo). */
+  porTipoDisponible?: boolean
+  migracionPorTipo?: string | null
+  facturadoresPorTipo?: (VistaDelFacturador & { tipoDeDocumento: TipoDelFacturador; nombreDelTipo: string })[]
   resoluciones: { numero: string; prefijo: string; coincideConFeel: boolean | null }[]
 }
 
-const ruta = (tenantId: string) => `/tenants/${encodeURIComponent(tenantId)}/facturacion-electronica`
+const ruta = (tenantId: string, tipo?: TipoDelFacturador | null) =>
+  `/tenants/${encodeURIComponent(tenantId)}/facturacion-electronica${tipo ? `/por-tipo/${tipo}` : ''}`
 
 export function verFacturador(
   tenantId: string,
@@ -46,8 +69,9 @@ export function verFacturador(
 export function guardarFacturador(
   tenantId: string,
   datos: { ambiente: AmbienteDelFacturador; tokenIdentificador: string; nitDelFacturador: string },
+  tipo: TipoDelFacturador | null = null,
 ): Promise<FacturadorFeelDeLaInmobiliaria> {
-  return adminApi<FacturadorFeelDeLaInmobiliaria>(ruta(tenantId), {
+  return adminApi<FacturadorFeelDeLaInmobiliaria>(ruta(tenantId, tipo), {
     method: 'PUT',
     body: {
       ambiente: datos.ambiente,
@@ -57,12 +81,18 @@ export function guardarFacturador(
   })
 }
 
-export function probarFacturador(tenantId: string): Promise<FacturadorFeelDeLaInmobiliaria> {
-  return adminApi<FacturadorFeelDeLaInmobiliaria>(`${ruta(tenantId)}/probar`, { method: 'POST', body: {} })
+export function probarFacturador(
+  tenantId: string,
+  tipo: TipoDelFacturador | null = null,
+): Promise<FacturadorFeelDeLaInmobiliaria> {
+  return adminApi<FacturadorFeelDeLaInmobiliaria>(`${ruta(tenantId, tipo)}/probar`, { method: 'POST', body: {} })
 }
 
-export function quitarFacturador(tenantId: string): Promise<FacturadorFeelDeLaInmobiliaria> {
-  return adminApi<FacturadorFeelDeLaInmobiliaria>(ruta(tenantId), { method: 'DELETE' })
+export function quitarFacturador(
+  tenantId: string,
+  tipo: TipoDelFacturador | null = null,
+): Promise<FacturadorFeelDeLaInmobiliaria> {
+  return adminApi<FacturadorFeelDeLaInmobiliaria>(ruta(tenantId, tipo), { method: 'DELETE' })
 }
 
 /** Lo que dice el estado de la conexión, en palabras. */

@@ -243,3 +243,12 @@ describe('InquilinosPage — el vacío de una inmobiliaria sin inquilinos', () =
   });
 });
 
+describe('QA-FACT-CONTA-95 r2 · «Completar en el inquilino» llega con doc:<documento>', () => {
+  it('abre la ficha de la persona aunque la lista la traiga con el id de su cuenta', () => {
+    paramsState.persona = 'doc:1020304050';
+    montar();
+    const cajon = host.querySelector('[data-testid="cerrar-cajon"]');
+    expect(cajon?.getAttribute('data-persona')).toBe('t-1');
+  });
+});
+

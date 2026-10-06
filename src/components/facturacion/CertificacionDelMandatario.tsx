@@ -55,6 +55,7 @@ import {
 import { formatCurrency } from '@/lib/format'
 import { faltaEnLaBase } from '@/lib/facturacion/por-facturar'
 import { CajonDeLaCertificacion } from './CajonDeLaCertificacion'
+import { BotonPdfDeLaCertificacion } from './BotonPdfDeLaCertificacion'
 
 /**
  * El CSV sigue exportándose desde acá para quien ya lo importaba; vive en
@@ -202,12 +203,15 @@ export function CertificacionDelMandatario({
                     Retenciones
                   </TableHead>
                   <TableHead className="whitespace-nowrap text-right">Total</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    <span className="sr-only">Documento</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginado.pageItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="p-0">
+                    <TableCell colSpan={8} className="p-0">
                       <SinDatos
                         queSon="certificaciones del mandatario"
                         icono={Certificate}
@@ -252,6 +256,16 @@ export function CertificacionDelMandatario({
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg">
                         {formatCurrency(c.totalCop)}
+                      </TableCell>
+                      {/* 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el PDF de la certificación. */}
+                      <TableCell className="w-10">
+                        <BotonPdfDeLaCertificacion
+                          id={c.id}
+                          propietario={c.propietarioNombre}
+                          desde={String(c.periodoDesde)}
+                          hasta={String(c.periodoHasta)}
+                          compacto
+                        />
                       </TableCell>
                     </TableRow>
                   ))

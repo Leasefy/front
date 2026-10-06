@@ -170,7 +170,10 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(document.body.textContent).toContain('no se factura hasta confirmarlo');
     expect(document.body.textContent).toContain('se facturan aparte, cuando se pagan');
     expect(document.body.textContent).not.toContain('se factura SIN impuestos');
-    expect(document.body.textContent).toContain('todavía no se transmite');
+    // QA-FACT-CONTA-95: Leasefy ya transmite con FEEL; el texto no dice que
+    // «todavía no se transmite», manda a «Electrónica (DIAN)» a ver en qué va.
+    expect(document.body.textContent).not.toContain('todavía no se transmite');
+    expect(document.body.textContent).toContain('ves si ya está validada');
   });
 
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {

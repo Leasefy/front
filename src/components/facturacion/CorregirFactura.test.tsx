@@ -276,7 +276,8 @@ describe('CorregirFactura · el sistema de errores (02-10)', () => {
     await debitoCon('11900');
     await confirmar();
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      'Nota débito ND-3 emitida por $\u00a011.900 (IVA $\u00a01.900). La deuda de la cuota de octubre sube en $ 11.900.',
+      // QA-FACT-CONTA-95 (FA-R28): la frase del back también con el «$» pegado a su cifra.
+      'Nota débito ND-3 emitida por $\u00a011.900 (IVA $\u00a01.900). La deuda de la cuota de octubre sube en $\u00a011.900.',
     );
   });
 

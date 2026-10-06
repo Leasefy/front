@@ -29,9 +29,9 @@ export function ComoSeFactura() {
         los impuestos que de verdad lleva. La factura del mes no lleva
         intereses de mora: se facturan aparte, cuando se pagan. La comisión
         del propietario se factura cuando se le gira. Cada factura se numera
-        con la resolución vigente de la DIAN, pero todavía no se transmite
-        electrónicamente (sin CUFE ni validación): eso llega cuando quede
-        conectado el proveedor tecnológico de Leasefy.
+        con la resolución vigente de la DIAN y Leasefy la transmite con su
+        proveedor tecnológico: en «Electrónica (DIAN)» ves si ya está validada
+        (con su CUFE) o qué le falta a tu inmobiliaria para transmitir.
       </p>
     </ParaEntenderMas>
   );

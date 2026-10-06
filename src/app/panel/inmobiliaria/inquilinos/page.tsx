@@ -252,7 +252,16 @@ function ContenidoDeInquilinos() {
     if (personaYaAbierta.current === personaBuscada) return;
     personaYaAbierta.current = personaBuscada;
 
-    const encontrada = inquilinos.find((i) => i.tenantId === personaBuscada);
+    /*
+     * QA-FACT-CONTA-95 r2 (decisión de Nico «la a»): «Completar en el inquilino»
+     * desde Facturación llega con `doc:<documento>` (la fila sólo sabe el
+     * documento del contrato). Si esa persona tiene cuenta por OTRO contrato, la
+     * lista la trae con el id de la cuenta: se encuentra también por documento.
+     */
+    const porDocumento = personaBuscada.startsWith('doc:') ? personaBuscada.slice(4).trim() : null;
+    const encontrada =
+      inquilinos.find((i) => i.tenantId === personaBuscada) ??
+      (porDocumento ? inquilinos.find((i) => (i.documento ?? '').trim() === porDocumento) : undefined);
     if (encontrada) {
       setAbierto(encontrada);
       setPersonaNoEncontrada(false);

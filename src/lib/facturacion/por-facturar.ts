@@ -139,9 +139,30 @@ export function motivoCorto(f: FacturaDelMes): string {
       return 'Falta una actualización'
     case 'MANDANTE_SIN_TIPO_DE_DOCUMENTO':
       return 'Falta el tipo de documento del propietario'
+    case 'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR':
+      return 'Revisa el tipo de documento del propietario'
+    case 'MANDANTE_SIN_DOCUMENTO':
+      return 'Falta el documento del propietario'
+    case 'INQUILINO_SIN_TIPO_DE_DOCUMENTO':
+      return 'Falta el tipo de documento del inquilino'
     default:
       return 'Todavía no'
   }
+}
+
+/**
+ * 🔴 QA-FACT-CONTA-95 · B-08: los tres frenos de la factura por mandato por el
+ * documento del propietario (espejo de `CODIGOS_DEL_DOCUMENTO_DEL_MANDANTE`
+ * del back). La fila los pinta igual: el motivo corto y «Completar en el propietario».
+ */
+export const CODIGOS_DEL_DOCUMENTO_DEL_MANDANTE = [
+  'MANDANTE_SIN_DOCUMENTO',
+  'MANDANTE_SIN_TIPO_DE_DOCUMENTO',
+  'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR',
+] as const
+
+export function frenaPorElDocumentoDelMandante(codigo: string | null | undefined): boolean {
+  return (CODIGOS_DEL_DOCUMENTO_DEL_MANDANTE as readonly string[]).includes(codigo ?? '')
 }
 
 /**
@@ -151,6 +172,18 @@ export function motivoCorto(f: FacturaDelMes): string {
 export function rutaDelMandante(f: Pick<FacturaDelMes, 'mandato'>): string | null {
   const id = f.mandato?.mandanteId
   return id ? `/panel/inmobiliaria/propietarios/${id}` : null
+}
+
+/**
+ * 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): la persona inquilina
+ * en Inquilinos («Editar datos» guarda el tipo en su contrato), para completar
+ * el tipo de documento que falta. Vuelve a Facturación. `null` sin documento.
+ */
+export function rutaDelInquilino(f: Pick<FacturaDelMes, 'terceroDocumento'>): string | null {
+  const doc = (f.terceroDocumento ?? '').trim()
+  if (!doc) return null
+  const volver = '/panel/inmobiliaria/facturacion?tab=nueva'
+  return `/panel/inmobiliaria/inquilinos?persona=${encodeURIComponent(`doc:${doc}`)}&volver=${encodeURIComponent(volver)}`
 }
 
 /** La ruta del contrato, en la sección del escenario tributario. */

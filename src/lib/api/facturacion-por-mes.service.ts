@@ -254,6 +254,16 @@ export type CodigoNoEmitible =
   | 'GIRO_SIN_PAGAR'
   /** QA-FACT-PROF (04-10): la factura por mandato cuyo propietario no tiene tipo de documento. */
   | 'MANDANTE_SIN_TIPO_DE_DOCUMENTO'
+  /** QA-FACT-CONTA-95 · B-08 (05-10): su ficha dice «CC» con un número que parece un NIT. */
+  | 'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR'
+  /** QA-FACT-CONTA-95 · B-08 (05-10): su ficha no tiene número de documento. */
+  | 'MANDANTE_SIN_DOCUMENTO'
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): el inquilino no tiene
+   * el tipo de documento guardado (ni en el contrato ni en su cuenta): no se
+   * numera; nunca se adivina por el largo del número.
+   */
+  | 'INQUILINO_SIN_TIPO_DE_DOCUMENTO'
 
 export interface ContratoOmitido {
   contractId: string
@@ -601,6 +611,8 @@ export type BloqueoDeNotaCredito =
   | 'SIN_NUMERO_DIAN'
   | 'YA_ANULADA'
   | 'MIGRACION_PENDIENTE'
+  /** QA-FACT-CONTA-95 (FA3-09): la DIAN la rechazó; no se anula con nota. */
+  | 'RECHAZADA_POR_LA_DIAN'
 
 export interface EstadoDeLaAnulacion {
   puede: boolean
@@ -659,6 +671,12 @@ export interface FacturaEmitida {
   anulacion: EstadoDeLaAnulacion
   /** Qué se le puede hacer hoy: anular, acreditar en parte o cobrar de más. */
   correccion: EstadoDeLaCorreccion
+  /**
+   * QA-FACT-CONTA-95 (FA3-09): cómo quedó ante la DIAN («Validada por la
+   * DIAN», «Rechazada por la DIAN», «En cola»…). `null`/ausente = no está en
+   * la cola (o un back anterior): no se dice nada.
+   */
+  transmision?: { estado: string; nombre: string } | null
 }
 
 /**
@@ -745,6 +763,12 @@ export interface FacturasEmitidasDelMes {
   anulacionDisponible: boolean
   /** `false` sin la migración 20260918000000: sólo existe la nota TOTAL. */
   notaParcialDisponible: boolean
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-B-06): la inmobiliaria no ha fijado sus días de
+   * plazo, así que no corre interés de mora y la nota débito de «Intereses de
+   * mora» no se ofrece. Un back anterior no lo manda (= como antes).
+   */
+  plazoSinFijar?: boolean
   facturas: FacturaEmitida[]
 }
 

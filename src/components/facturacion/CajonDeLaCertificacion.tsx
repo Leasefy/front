@@ -47,6 +47,7 @@ import {
 import { comoCsv } from './certificacion-en-csv'
 import { CampoDeFecha } from './CampoDeFecha'
 import { formatCurrency } from '@/lib/format'
+import { BotonPdfDeLaCertificacion } from './BotonPdfDeLaCertificacion'
 
 /** Cuántos resultados se muestran: es un buscador, no un listado. */
 const CUANTOS_RESULTADOS = 8
@@ -291,12 +292,13 @@ export function CajonDeLaCertificacion({
                 // FA-R28: la plata con un solo formato en toda la sección.
                 ['Base', formatCurrency(ultima.baseCop)],
                 ['IVA', formatCurrency(ultima.ivaCop)],
-                [
-                  'Retenciones',
-                  formatCurrency(
-                    ultima.retefuenteCop + ultima.reteivaCop + ultima.reteicaCop,
-                  ),
-                ],
+                /* 🔴 QA-FACT-CONTA-95 r2 (FA3-12): cada retención por su lado —
+                   el propietario las declara en renglones distintos (el CSV ya
+                   las separaba; el resumen las juntaba en «Retenciones»). */
+                ['Retención en la fuente', formatCurrency(ultima.retefuenteCop)],
+                ['Retención de IVA', formatCurrency(ultima.reteivaCop)],
+                ['Retención de ICA', formatCurrency(ultima.reteicaCop)],
+                ['Total', formatCurrency(ultima.totalCop)],
               ].map(([rotulo, valor]) => (
                 <div key={rotulo}>
                   <dt className="text-caption text-fg-muted">{rotulo}</dt>
@@ -330,6 +332,15 @@ export function CajonDeLaCertificacion({
             >
               Descargar el detalle (CSV)
             </Button>
+            {/* 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el documento para declarar. */}
+            {ultima.id ? (
+              <BotonPdfDeLaCertificacion
+                id={ultima.id}
+                propietario={ultima.propietario.nombre}
+                desde={ultima.periodo.desde}
+                hasta={ultima.periodo.hasta}
+              />
+            ) : null}
           </div>
         )}
       </CajonCuerpo>

@@ -18,7 +18,7 @@
  * recorte es de presentación: `useTablePagination`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle, Scales, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -149,6 +149,19 @@ export function TablaDeBalance({
                 <dd className="whitespace-nowrap" data-testid="total-creditos"><Monto valor={balance.totalCreditosCop} className="font-medium" /></dd>
               </div>
             </dl>
+            {/* CB-T-01: los saldos finales, del lado en que quedan. */}
+            {balance.saldosFinales ? (
+              <dl className="grid grid-cols-1 gap-x-4 sm:grid-cols-2" data-testid="saldos-finales-tarjeta">
+                <div className="flex items-baseline justify-between gap-2">
+                  <dt className="shrink-0 text-caption text-fg-muted">Saldos débito</dt>
+                  <dd className="whitespace-nowrap" data-testid="saldo-final-debito-tarjeta"><Monto valor={balance.saldosFinales.debitoCop} className="font-medium" /></dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <dt className="shrink-0 text-caption text-fg-muted">Saldos crédito</dt>
+                  <dd className="whitespace-nowrap" data-testid="saldo-final-credito-tarjeta"><Monto valor={balance.saldosFinales.creditoCop} className="font-medium" /></dd>
+                </div>
+              </dl>
+            ) : null}
             </div>
           </>
         ) : (
@@ -205,6 +218,39 @@ export function TablaDeBalance({
               </TableCell>
               <TableCell />
             </TableRow>
+            {/* 🔴 CB-T-01 (QA-FACT-CONTA-95 r3): los SALDOS, del lado en que
+                quedan. En un mes sin movimiento los totales del período son
+                $ 0 y el pie parecía decir que el libro estaba vacío. */}
+            {balance.saldosAnteriores && balance.saldosFinales ? (
+              <>
+                <TableRow className="hover:bg-transparent" data-testid="saldos-debito">
+                  <TableCell colSpan={2} className="whitespace-nowrap text-sm text-fg-muted">
+                    Saldos débito
+                  </TableCell>
+                  <TableCell numeric className="whitespace-nowrap" data-testid="saldo-anterior-debito">
+                    <Monto valor={balance.saldosAnteriores.debitoCop} />
+                  </TableCell>
+                  <TableCell />
+                  <TableCell />
+                  <TableCell numeric className="whitespace-nowrap" data-testid="saldo-final-debito">
+                    <Monto valor={balance.saldosFinales.debitoCop} className="font-medium" />
+                  </TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-transparent" data-testid="saldos-credito">
+                  <TableCell colSpan={2} className="whitespace-nowrap text-sm text-fg-muted">
+                    Saldos crédito
+                  </TableCell>
+                  <TableCell numeric className="whitespace-nowrap" data-testid="saldo-anterior-credito">
+                    <Monto valor={balance.saldosAnteriores.creditoCop} />
+                  </TableCell>
+                  <TableCell />
+                  <TableCell />
+                  <TableCell numeric className="whitespace-nowrap" data-testid="saldo-final-credito">
+                    <Monto valor={balance.saldosFinales.creditoCop} className="font-medium" />
+                  </TableCell>
+                </TableRow>
+              </>
+            ) : null}
           </TableFooter>
         </Table>
         )}
@@ -236,23 +282,31 @@ export function BalanceDePrueba() {
   const [error, setError] = useState<unknown>(null);
 
   const invertido = rangoInvertido(rango.desde, rango.hasta);
+  /*
+   * 🔴 CB-C-14 (QA-FACT-CONTA-95 r3, visto en el navegador): quitar «Desde» y
+   * después «Hasta» lanza dos pedidos; si el primero (todavía con «Hasta»)
+   * llegaba DESPUÉS, la tabla mostraba ese balance con los filtros diciendo
+   * otra cosa («Sin fecha» y $ 85.000 menos que el libro). Sólo cuenta la
+   * respuesta del ÚLTIMO pedido.
+   */
+  const ultimoPedido = useRef(0);
 
   const cargar = useCallback(async () => {
     if (invertido) return;
+    const pedido = ++ultimoPedido.current;
     setCargando(true);
     setError(null);
     try {
-      setBalance(
-        await contabilidadApi.reportes.balanceDePrueba({
-          desde: rango.desde || undefined,
-          hasta: rango.hasta || undefined,
-          soloConMovimiento,
-        }),
-      );
+      const respuesta = await contabilidadApi.reportes.balanceDePrueba({
+        desde: rango.desde || undefined,
+        hasta: rango.hasta || undefined,
+        soloConMovimiento,
+      });
+      if (pedido === ultimoPedido.current) setBalance(respuesta);
     } catch (e) {
-      setError(e);
+      if (pedido === ultimoPedido.current) setError(e);
     } finally {
-      setCargando(false);
+      if (pedido === ultimoPedido.current) setCargando(false);
     }
   }, [rango.desde, rango.hasta, soloConMovimiento, invertido]);
 

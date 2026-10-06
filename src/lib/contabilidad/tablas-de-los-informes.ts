@@ -36,7 +36,16 @@ export function tablasDelBalanceDePrueba(b: BalanceDePrueba): TablaDelInforme[] 
         f.creditosCop,
         f.saldoFinalCop,
       ]),
-      pie: [['Totales del período', null, null, null, b.totalDebitosCop, b.totalCreditosCop, null]],
+      pie: [
+        ['Totales del período', null, null, null, b.totalDebitosCop, b.totalCreditosCop, null],
+        // CB-T-01: los saldos, del lado en que quedan (un back viejo no los manda).
+        ...(b.saldosAnteriores && b.saldosFinales
+          ? [
+              ['Saldos débito', null, null, b.saldosAnteriores.debitoCop, null, null, b.saldosFinales.debitoCop],
+              ['Saldos crédito', null, null, b.saldosAnteriores.creditoCop, null, null, b.saldosFinales.creditoCop],
+            ]
+          : []),
+      ],
     },
   ];
 }

@@ -147,6 +147,14 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
               })}
             </p>
           )}
+          {/* PI-15 (Nico, 05-10-2026: «un solo conteo»): las filas son tareas de
+              la plataforma; los PROCESOS son los del Piloto (la perilla), el
+              mismo número de «¿Opera sola?». */}
+          {typeof data?.procesosDelPiloto === 'number' && (
+            <p className="text-caption text-fg-muted" data-testid="catalogo-procesos-del-piloto">
+              {t(k('procesosDelPiloto'), { n: String(data.procesosDelPiloto) })}
+            </p>
+          )}
         </div>
 
         <fieldset className="flex flex-wrap items-center gap-2">

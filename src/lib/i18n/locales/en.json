@@ -1147,9 +1147,12 @@
         "toastOk": "Pilot in {{modo}} for every agent",
         "toastParcial": "Pilot in {{modo}}, except: {{agentes}}",
         "ahora": "Right now",
-        "llamadas": "{{n}} call(s) in progress",
-        "conciliando": "{{n}} deposit(s) being reconciled",
-        "esperando": "{{n}} deposit(s) waiting for your OK",
+        "llamadas": "{{n}} calls in progress",
+        "llamadasUna": "1 call in progress",
+        "conciliando": "{{n}} deposits being reconciled",
+        "conciliandoUno": "1 deposit being reconciled",
+        "esperando": "{{n}} deposits waiting for your OK",
+        "esperandoUno": "1 deposit waiting for your OK",
         "verProcesos": "See processes",
         "porAgente": "Per agent"
       },
@@ -1300,6 +1303,7 @@
         "afecta": "Affects: {{agentes}}",
         "sinModoElegido": "nobody chose its mode",
         "verProcesos": "See its {{n}} processes",
+        "verProcesosUno": "See its process",
         "ocultarProcesos": "Hide its processes",
         "interruptoresAyuda": "Leasefy turns these on in the server, never the agency. This only says whether they are on, never their value.",
         "migraciones": "Missing migrations (Leasefy applies them)",
@@ -1356,7 +1360,7 @@
         "errorAlGuardar": "Not saved: {{error}}",
         "topeMontoCop": {
           "label": "Limit per action",
-          "ayuda": "The money in a single action (a receipt, a charge). With $0, every action with money asks for your click."
+          "ayuda": "The money in a single action (a receipt, a charge). With $ 0, every action with money asks for your click."
         },
         "topeDestinatarios": {
           "label": "People per send",

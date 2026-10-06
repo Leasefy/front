@@ -472,19 +472,19 @@ export function PilotoModoHeader() {
             {vivo.llamadas > 0 && (
               <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1">
                 <Phone weight="fill" className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-                {t('inmobiliaria.piloto.flota.llamadas', { n: String(vivo.llamadas) })}
+                {vivo.llamadas === 1 ? t('inmobiliaria.piloto.flota.llamadasUna') : t('inmobiliaria.piloto.flota.llamadas', { n: String(vivo.llamadas) })}
               </li>
             )}
             {vivo.conciliando > 0 && (
               <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1">
                 <Bank weight="fill" className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-                {t('inmobiliaria.piloto.flota.conciliando', { n: String(vivo.conciliando) })}
+                {vivo.conciliando === 1 ? t('inmobiliaria.piloto.flota.conciliandoUno') : t('inmobiliaria.piloto.flota.conciliando', { n: String(vivo.conciliando) })}
               </li>
             )}
             {vivo.esperando > 0 && (
               <li className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1">
                 <HourglassMedium weight="fill" className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
-                {t('inmobiliaria.piloto.flota.esperando', { n: String(vivo.esperando) })}
+                {vivo.esperando === 1 ? t('inmobiliaria.piloto.flota.esperandoUno') : t('inmobiliaria.piloto.flota.esperando', { n: String(vivo.esperando) })}
               </li>
             )}
           </ul>

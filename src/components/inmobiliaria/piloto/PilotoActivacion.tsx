@@ -72,7 +72,9 @@ export function comoSeVe(d: PilotoActivoResponse): { titulo: string; severidad: 
     case 'apagado_por_leasefy':
       return { titulo: 'Leasefy tiene apagado el Piloto automático', severidad: 'info' }
     case 'apagado_por_la_inmobiliaria':
-      return { titulo: 'Apagaste el Piloto automático', severidad: 'info' }
+      // QA-PILOTO-95 (06-10): sin «Apagaste»: lo lee también el asesor o el otro administrador, que
+      // no lo apagaron. Quién lo apagó lo dice la frase del micro («Tu inmobiliaria apagó…»).
+      return { titulo: 'El Piloto automático está apagado', severidad: 'info' }
     case 'no_se_pudo_leer':
       return { titulo: 'No pude comprobar el Piloto automático', severidad: 'warning' }
     default:
@@ -176,7 +178,8 @@ export function PilotoActivacion() {
         {...(sePuedePrender
           ? {
               accion: {
-                label: data.motivo === 'apagado_por_la_inmobiliaria' ? 'Volver a encenderlo' : `Activar la prueba de ${data.diasDePrueba} días`,
+                // ACT-09: contratado con Leasefy no tiene prueba que ofrecer.
+                label: data.motivo === 'apagado_por_la_inmobiliaria' ? 'Volver a encenderlo' : data.sinVencimiento ? 'Encender el Piloto automático' : `Activar la prueba de ${data.diasDePrueba} días`,
                 onClick: () => setConfirmando(true),
                 cargando: cambiando,
               },
@@ -184,17 +187,19 @@ export function PilotoActivacion() {
           : {})}
         {...(sePuedeApagar ? { secundaria: { label: 'Apagar el Piloto', onClick: () => setApagando(true), cargando: cambiando } } : {})}
       >
+        {/* 🔴 axe (06-10): las líneas de abajo heredan la tinta legible de la alerta;
+            en `text-fg-muted`, con la opacidad 0,9 del texto, daban 3,9:1 sobre el verde. */}
         <p data-testid="piloto-activacion-frase">{data.frase}</p>
         {!puede && !data.activo && data.motivo !== 'apagado_por_leasefy' && data.motivo !== 'prueba_terminada' && (
-          <p className="mt-1 text-fg-muted">Lo activa un administrador de tu inmobiliaria.</p>
+          <p className="mt-1">Lo activa un administrador de tu inmobiliaria.</p>
         )}
         {data.activo && data.enAutomatico.length > 0 && (
-          <p className="mt-1 text-fg-muted" data-testid="piloto-activacion-en-automatico">
+          <p className="mt-1" data-testid="piloto-activacion-en-automatico">
             Actúan solos: {enLista(data.enAutomatico.map((a) => a.nombre))}.
           </p>
         )}
         {data.activo && data.enAutomatico.length === 0 && (
-          <p className="mt-1 text-fg-muted">
+          <p className="mt-1">
             Todavía no tienes ningún agente en Automático: pásalos en Autonomía para que actúen solos.
           </p>
         )}

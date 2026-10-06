@@ -1147,14 +1147,17 @@
         "toastOk": "Piloto en {{modo}} para todos los agentes",
         "toastParcial": "Piloto en {{modo}}, salvo: {{agentes}}",
         "ahora": "Ahora mismo",
-        "llamadas": "{{n}} llamada(s) en curso",
-        "conciliando": "{{n}} depósito(s) conciliándose",
-        "esperando": "{{n}} depósito(s) esperando tu visto bueno",
-        "verProcesos": "Ver procesos",
+        "llamadas": "{{n}} llamadas en curso",
+        "llamadasUna": "1 llamada en curso",
+        "conciliando": "{{n}} depósitos conciliándose",
+        "conciliandoUno": "1 depósito conciliándose",
+        "esperando": "{{n}} depósitos esperando tu visto bueno",
+        "esperandoUno": "1 depósito esperando tu visto bueno",
+        "verProcesos": "Ver lo que hace",
         "porAgente": "Por agente"
       },
       "procesos": {
-        "titulo": "Procesos",
+        "titulo": "Lo que hace el Piloto",
         "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
         "loQuePaso": "Lo que pasó",
         "volver": "Piloto automático",
@@ -1173,15 +1176,15 @@
           "hecho": "Hechos",
           "sin_resultado": "Sin resultado"
         },
-        "filtrarTipo": "Filtrar por tipo de proceso",
+        "filtrarTipo": "Filtrar por tipo",
         "filtrarEstado": "Filtrar por estado",
-        "vacio": "Todavía no hay procesos",
+        "vacio": "El Piloto todavía no ha hecho nada aquí",
         "vacioHint": "Cuando el Piloto detecte un depósito, llame a alguien o escriba por WhatsApp, aparece aquí con sus pasos.",
         "vacioFiltro": "Nada con ese filtro",
-        "vacioFiltroHint": "Hay {{n}} procesos en total; prueba con otro tipo o estado.",
-        "sinFuente": "No pudimos consultar los procesos",
+        "vacioFiltroHint": "Hay {{n}} en total; prueba con otro tipo o estado.",
+        "sinFuente": "No pudimos consultar lo que hizo el Piloto",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
-        "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
+        "fuenteCaida": "{{fuente}} no respondió: lo suyo no está en esta lista.",
         "sinBack": "La conciliación del Piloto todavía no está activada para tu inmobiliaria: los depósitos del banco no se ven acá ni llegan a la Bandeja. La activa el equipo de Leasefy.",
         "contador": "{{visibles}} de {{total}}",
         "verPasos": "Ver pasos",
@@ -1192,18 +1195,18 @@
         "ellos": "Inquilino",
         "actualizado": "Actualizado {{hace}}",
         "fuente": {
-          "deposito": "El ERP",
+          "deposito": "La conciliación",
           "llamada": "Las llamadas",
           "whatsapp": "WhatsApp"
         }
       },
       "dock": {
-        "boton": "Procesos",
-        "aria": "Abrir el tray de procesos del Piloto",
+        "boton": "Lo que hace",
+        "aria": "Abrir lo que está haciendo el Piloto",
         "cerrar": "Cerrar",
         "enVivo": "{{n}} en vivo",
-        "vacio": "Todavía no hay procesos. Cuando el Piloto haga algo, aparece aquí.",
-        "verTodos": "Ver todos los procesos",
+        "vacio": "Todavía no hay nada en curso. Cuando el Piloto haga algo, aparece aquí.",
+        "verTodos": "Ver todo lo que hizo",
         "tope": "los últimos {{n}}"
       },
       "autonomia": {
@@ -1284,11 +1287,12 @@
         "toastOff": "{{agente}} apagada para tu inmobiliaria"
       },
       "catalogo": {
-        "titulo": "Todos los procesos",
-        "descripcion": "Toda la maquinaria de la plataforma, proceso por proceso: qué hace cada uno, quién lo corre, en qué modo está y cuándo se lo vio por última vez.",
-        "queEs": "procesos",
-        "buscar": "Buscar un proceso",
-        "resumen": "{{total}} procesos · {{corriendo}} encendidos · {{conSenal}} con señal reciente",
+        "titulo": "Todo lo que corre en la plataforma",
+        "descripcion": "Cada tarea de la plataforma, una por fila: qué hace, quién la corre, en qué modo está y cuándo se vio por última vez. Los procesos del Piloto (lo que puede hacer solo según su modo) se cuentan en «¿Opera sola?».",
+        "queEs": "tareas",
+        "buscar": "Buscar una tarea",
+        "resumen": "{{total}} tareas · {{corriendo}} encendidas · {{conSenal}} con señal reciente",
+        "procesosDelPiloto": "El Piloto tiene {{n}} procesos: los mide «¿Opera sola?».",
         "filtrarArea": "Filtrar por área",
         "filtrarModo": "Filtrar por modo",
         "area": {
@@ -1306,20 +1310,20 @@
           "sistema": "Sin modo"
         },
         "col": {
-          "proceso": "Proceso",
+          "proceso": "Tarea",
           "quien": "Quién lo corre",
           "cuando": "Cuándo corre",
           "ultima": "Última señal",
           "abrir": "Abrir"
         },
         "sinModo": "Lo corre el sistema",
-        "modoNoManda": "El modo queda registrado, pero todavía no cambia lo que este proceso hace.",
+        "modoNoManda": "El modo queda registrado, pero todavía no cambia lo que esta tarea hace.",
         "apagado": "Apagado",
         "noDisponible": "No disponible",
         "vacio": "Nada con ese filtro",
         "vacioHint": "Prueba con otra área, otro modo o borrando la búsqueda.",
-        "sinFuente": "No pudimos consultar los procesos",
-        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya procesos corriendo."
+        "sinFuente": "No pudimos consultar las tareas de la plataforma",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya nada corriendo."
       },
       "operaSola": {
         "boton": "¿Opera sola?",
@@ -1334,12 +1338,13 @@
         "afecta": "Afecta a: {{agentes}}",
         "sinModoElegido": "nadie eligió su modo",
         "verProcesos": "Ver sus {{n}} procesos",
+        "verProcesosUno": "Ver su proceso",
         "ocultarProcesos": "Ocultar sus procesos",
         "interruptoresAyuda": "Los prende Leasefy, nunca la inmobiliaria. Aquí sólo se dice si están prendidos.",
         "migraciones": "Partes que Leasefy todavía tiene que instalar",
         "migracionSinAplicar": "sin aplicar",
         "migracionNoSe": "no se pudo comprobar",
-        "loQueHizoSinFuente": "No pude leer lo que hizo: el ERP no contestó.",
+        "loQueHizoSinFuente": "No pude leer lo que hizo: la plataforma no contestó.",
         "secciones": {
           "queFalta": "Qué falta, y quién lo destraba",
           "porAgente": "Por agente",
@@ -1374,7 +1379,7 @@
           "noSeVe": "No se ve desde aquí",
           "donde": {
             "micro": "En el Piloto",
-            "back": "En el ERP"
+            "back": "En la plataforma"
           }
         }
       },
@@ -1390,7 +1395,7 @@
         "errorAlGuardar": "No se guardaron: {{error}}",
         "topeMontoCop": {
           "label": "Tope por acción",
-          "ayuda": "La plata de una sola acción (un recibo, un cobro). Con $0, toda acción con plata te pide un clic."
+          "ayuda": "La plata de una sola acción (un recibo, un cobro). Con $ 0, toda acción con plata te pide un clic."
         },
         "topeDestinatarios": {
           "label": "Personas por envío",
@@ -1484,7 +1489,7 @@
             "texto": "Qué le falta a tu inmobiliaria para operar sola en Automático, y quién lo destraba."
           },
           "procesos": {
-            "titulo": "Procesos",
+            "titulo": "Lo que hace el Piloto",
             "texto": "Lo que el Piloto hizo, caso por caso: depósitos que detectó y concilió, llamadas de cobranza y conversaciones de WhatsApp."
           },
           "autonomia": {

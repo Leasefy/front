@@ -1087,6 +1087,8 @@ export interface PilotoCatalogoResponse {
   procesos: ProcesoDelCatalogo[]
   totales: { total: number; corriendo: number; conSenal: number; sinDato: number }
   porArea: Record<AreaDeProceso, number>
+  /** PI-15: los procesos del Piloto (la perilla), el mismo número de «¿Opera sola?». Un micro anterior no lo manda. */
+  procesosDelPiloto?: number
   activo: boolean
   tomadoAt: string
 }

@@ -216,7 +216,9 @@ function FilaDeAgente({ a }: { a: AgenteEnAutomatico }) {
             )}
             {abierto
               ? t('inmobiliaria.piloto.operaSola.ocultarProcesos')
-              : t('inmobiliaria.piloto.operaSola.verProcesos', { n: String(a.procesos.length) })}
+              : a.procesos.length === 1
+                ? t('inmobiliaria.piloto.operaSola.verProcesosUno')
+                : t('inmobiliaria.piloto.operaSola.verProcesos', { n: String(a.procesos.length) })}
           </button>
           {abierto && (
             <ul className="mt-2 space-y-2 border-t border-border-faint pt-2">

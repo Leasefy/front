@@ -183,4 +183,57 @@ describe('PI-01: la franja del Piloto automático de la inmobiliaria', () => {
     expect(botonCon('Activar')).toBeUndefined()
     expect(botonCon('Volver a encenderlo')).toBeUndefined()
   })
+
+  it('🔴 ACT-09: contratado con Leasefy y apagado: «Encender el Piloto automático», nunca «Activar la prueba de 30 días»', () => {
+    pintar({
+      ...SIN_ACTIVAR,
+      sinVencimiento: true,
+      pruebaHastaSiSeActivaHoy: null,
+      frase:
+        'Tu inmobiliaria tiene contratado el Piloto automático, pero está apagado: ningún agente actúa solo y todo te pide un clic. Un administrador lo enciende aquí.',
+    })
+    expect(botonCon('Encender el Piloto automático')).toBeDefined()
+    expect(botonCon('Activar la prueba')).toBeUndefined()
+    expect(q('[data-testid="piloto-activacion-frase"]')!.textContent).toContain('tiene contratado el Piloto automático')
+  })
+
+  it('ACT-09: Leasefy lo apagó para ESTA inmobiliaria: lo dice con su frase y no ofrece prenderlo', () => {
+    pintar({
+      ...SIN_ACTIVAR,
+      motivo: 'apagado_por_leasefy',
+      sePuedeActivar: false,
+      frase:
+        'Leasefy apagó el Piloto automático para tu inmobiliaria: ningún agente actúa solo y todo te pide un clic. Lo que elijas en cada agente queda guardado. Para volver a encenderlo, habla con Leasefy.',
+    })
+    expect(q('[data-testid="piloto-activacion-estado"]')!.textContent).toContain('Leasefy tiene apagado el Piloto automático')
+    expect(q('[data-testid="piloto-activacion-frase"]')!.textContent).toContain('habla con Leasefy')
+    expect(botonCon('Activar')).toBeUndefined()
+    expect(botonCon('Encender')).toBeUndefined()
+  })
+
+  // 🟡 QA-PILOTO-95 (06-10): apagado por la inmobiliaria, el asesor (o el otro administrador) leía
+  // «Apagaste el Piloto automático», como si lo hubiera apagado él. El título no le atribuye nada a
+  // quien mira; quién lo apagó lo dice la frase («Tu inmobiliaria apagó…»).
+  it('apagado por la inmobiliaria: el título no le dice «Apagaste» a quien lo está mirando', () => {
+    pintar({ ...SIN_ACTIVAR, motivo: 'apagado_por_la_inmobiliaria', puedeCambiarlo: false, frase: 'Tu inmobiliaria apagó el Piloto automático: ningún agente actúa solo.' })
+    const estado = q('[data-testid="piloto-activacion-estado"]')!.textContent!
+    expect(estado).not.toContain('Apagaste')
+    expect(estado).toContain('El Piloto automático está apagado')
+    expect(estado).toContain('Lo activa un administrador de tu inmobiliaria.')
+  })
+
+  // 🔴 axe (06-10, QA-PILOTO-95): «Actúan solos: …» iba en `text-fg-muted` dentro de la
+  // alerta verde, que además escribe con opacidad 0,9: 3,9:1 sobre #E8F4EA (AA pide 4,5:1).
+  // Las líneas de abajo heredan la tinta legible de la alerta, como la frase.
+  it.each([
+    ['en prueba, con agentes en Automático', () => EN_PRUEBA, 'Actúan solos:'],
+    ['activo sin agentes en Automático', () => ({ ...EN_PRUEBA, enAutomatico: [] }), 'Todavía no tienes ningún agente en Automático'],
+    ['sin activar, visto por quien no es administrador', () => ({ ...SIN_ACTIVAR, puedeCambiarlo: false }), 'Lo activa un administrador'],
+  ])('🔴 contraste: %s — la línea de abajo usa la tinta de la alerta, no el gris', (_caso, datos, texto) => {
+    pintar(datos() as PilotoActivoResponse)
+    const lineas = [...document.querySelectorAll('[data-testid="piloto-activacion-estado"] p')]
+    const linea = lineas.find((p) => p.textContent?.includes(texto))
+    expect(linea).toBeDefined()
+    expect(linea!.className).not.toMatch(/\btext-fg-(muted|subtle)\b/)
+  })
 })

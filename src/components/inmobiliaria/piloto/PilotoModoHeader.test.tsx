@@ -324,7 +324,9 @@ describe('PilotoModoHeader', () => {
     render()
     expect(q('[data-testid="piloto-modo-vivo"]')?.textContent).toContain('1')
     const ahora = q('[data-testid="piloto-modo-ahora"]')!
-    expect(ahora.textContent).toContain('inmobiliaria.piloto.flota.llamadas(1)')
+    // QA-PILOTO-95 (TXT-02): con UNA, la clave del singular («1 llamada en curso»), nunca «llamada(s)».
+    expect(ahora.textContent).toContain('inmobiliaria.piloto.flota.llamadasUna')
+    expect(ahora.textContent).not.toContain('inmobiliaria.piloto.flota.llamadas(1)')
     expect(ahora.textContent).toContain('inmobiliaria.piloto.flota.esperando(2)')
   })
 

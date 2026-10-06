@@ -34,6 +34,8 @@ export const NAV_ITEMS = [
   { href: '/admin/keys', label: 'Keys', hint: 'rotación 90d', code: '24' },
   { href: '/admin/feature-flags', label: 'Flags', hint: 'per-tenant', code: '25' },
   { href: '/admin/pricing-config', label: 'Pricing', hint: 'modelo agencia', code: '26' },
+  // ACT-09 (Nico, 05-10-2026): el Piloto automático de cada inmobiliaria lo deja Leasefy en prueba, contratado o apagado.
+  { href: '/admin/piloto', label: 'Piloto automático', hint: 'prueba · contratado · apagado', code: '37' },
   { href: '/admin/plans', label: 'Planes', hint: 'catálogo agency', code: '30' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
   { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },

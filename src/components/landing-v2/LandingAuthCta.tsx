@@ -28,10 +28,19 @@ const VARIANT_CLASS: Record<NonNullable<LandingAuthCtaProps['variant']>, string>
  * `HuecoDeBotonDeSesion`.
  */
 export function LandingAuthCta({ variant = 'header' }: LandingAuthCtaProps) {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading, confirmacionDeLaSesion } = useAuth()
   const className = VARIANT_CLASS[variant]
 
-  if (isLoading) return <HuecoDeBotonDeSesion className={className} texto="Iniciar sesión" />
+  /*
+   * 🔴 LOGIN-BUCLE (06-10-2026): con una sesión guardada, `isLoading` ya no se
+   * suelta a los 5 s si no se confirma (un «todavía no sé» no es «no hay
+   * sesión»). Pasado el tope, el hueco no puede quedarse para siempre: vuelve
+   * «Iniciar sesión», como antes de los 5 s. «Ir al panel» sólo sale con la
+   * sesión confirmada, y el panel ya no rebota al login mientras confirma.
+   */
+  if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
+    return <HuecoDeBotonDeSesion className={className} texto="Iniciar sesión" />
+  }
 
   if (!isLoading && isAuthenticated && user) {
     return (

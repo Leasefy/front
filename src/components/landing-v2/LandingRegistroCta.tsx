@@ -34,10 +34,14 @@ const VARIANT_CLASS: Record<LandingRegistroCtaProps['variant'], string> = {
  * (QA 01-10-2026: «Empezar ahora» aparecía y desaparecía solo).
  */
 export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading, confirmacionDeLaSesion } = useAuth()
   const className = VARIANT_CLASS[variant]
 
-  if (isLoading) return <HuecoDeBotonDeSesion className={className} texto="Empezar ahora" />
+  // 🔴 LOGIN-BUCLE: pasado el tope de una sesión guardada sin confirmar, el
+  // hueco no se queda para siempre (mismo criterio que LandingAuthCta).
+  if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
+    return <HuecoDeBotonDeSesion className={className} texto="Empezar ahora" />
+  }
   const authenticated = !isLoading && isAuthenticated && !!user
 
   if (authenticated) {

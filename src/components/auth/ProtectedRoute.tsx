@@ -8,6 +8,7 @@ import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useSinSenal } from '@/lib/hooks/use-sin-senal'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
+import { olvidarQueContinuo } from '@/lib/auth/regreso-tras-continuar'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
@@ -50,7 +51,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser, confirmacionDeLaSesion, signOut } = useAuth()
   /*
    * 🔴 Nico, 02-10-2026: sin saber si a la sesión le falta el código, no se
    * entra. `pending` = todavía se pregunta (cargador); `failed` = no respondió
@@ -215,6 +216,36 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
+    /*
+     * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): con una sesión guardada que no se
+     * confirma, `isLoading` sigue en true —el efecto de arriba no decide nada,
+     * y por eso ya no hay `router.replace('/auth…')` por un «todavía no sé»—.
+     * Pasado el tope se dice la verdad, con «Reintentar» y una salida a otra
+     * cuenta que la persona elige; debajo se sigue esperando y, si la
+     * confirmación llega, el panel se monta solo.
+     */
+    if (confirmacionDeLaSesion === 'sin-confirmar') {
+      return (
+        <NoPudimosConfirmarTuSesion>
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+            onClick={() => {
+              void (async () => {
+                try {
+                  await signOut()
+                } finally {
+                  window.location.assign(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
+                }
+              })()
+            }}
+            data-testid="sin-confirmar-otra-cuenta"
+          >
+            Entrar con otra cuenta
+          </button>
+        </NoPudimosConfirmarTuSesion>
+      )
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando acceso..." />
@@ -318,7 +349,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
      * deja pasar, y en cuanto vuelve la señal el perfil se confirma solo.
      */
     if (user?.profileSource === 'session' && sinSenal) {
-      return <>{children}</>
+      return <><OlvidarQueContinuo />{children}</>
     }
     if (user?.profileSource === 'session') {
       return (
@@ -362,7 +393,18 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   }
 
   // User is authenticated and has required role
-  return <>{children}</>
+  return <><OlvidarQueContinuo />{children}</>
+}
+
+/**
+ * 🔴 LOGIN-BUCLE: el destino de «Continuar como…» abrió bien, así que la marca
+ * de `regreso-tras-continuar.ts` ya no tiene nada que avisar. No pinta nada.
+ */
+function OlvidarQueContinuo() {
+  useEffect(() => {
+    olvidarQueContinuo()
+  }, [])
+  return null
 }
 
 /**

@@ -16,8 +16,9 @@ import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/aut
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
-import { SesionYaAbierta } from './SesionYaAbierta';
+import { SesionYaAbierta, type MotivoDelCambioDeCuenta } from './SesionYaAbierta';
 import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { MedidorDeContrasena } from './MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
@@ -391,7 +392,7 @@ function errorDeGoogle(err: unknown): string {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -512,6 +513,27 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    * Se le pregunta con cuál cuenta sigue; `quiereOtraCuenta` es su respuesta.
    */
   const [quiereOtraCuenta, setQuiereOtraCuenta] = React.useState(false);
+  /*
+   * 🔴 LOGIN-BUCLE (06-10-2026): «Continuar» de `SesionYaAbierta` puede
+   * descubrir que la sesión ya no servía (token vencido y la renovación falló
+   * de verdad). Entonces se pasa al formulario CON el porqué, el mismo aviso de
+   * «tu sesión expiró» de siempre.
+   */
+  const alCambiarDeCuenta = React.useCallback((motivo?: MotivoDelCambioDeCuenta) => {
+    setQuiereOtraCuenta(true);
+    if (motivo === 'sesion-vencida') setMotivoDeCierre('expirada');
+  }, []);
+  const [saliendoDeLaEspera, setSaliendoDeLaEspera] = React.useState(false);
+  /** «Entrar con otra cuenta» mientras se revisa la sesión guardada. */
+  const entrarConOtraDesdeLaEspera = async () => {
+    setSaliendoDeLaEspera(true);
+    try {
+      await signOut();
+    } finally {
+      setSaliendoDeLaEspera(false);
+      setQuiereOtraCuenta(true);
+    }
+  };
 
   // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
   // another account) is handed over by auth-context via sessionStorage across
@@ -982,7 +1004,42 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   ) {
     return (
       <div className={cn('w-full', className)}>
-        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={() => setQuiereOtraCuenta(true)} />
+        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={alCambiarDeCuenta} />
+      </div>
+    );
+  }
+
+  /*
+   * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): «vuelve a salir el login y luego de unos
+   * segundos se cambia al de sigue con tu cuenta porque la identifica». Con una
+   * sesión GUARDADA que todavía se está confirmando, el formulario vacío decía
+   * algo falso («no tienes sesión») y segundos después lo reemplazaba la
+   * tarjeta. Mientras se revisa —y sólo cuando venía a algo (`returnUrl`), el
+   * mismo caso de la tarjeta— se dice eso, con la salida a otra cuenta a la
+   * mano. Pasado el tope (`sin-confirmar`) vuelve el formulario.
+   */
+  if (
+    authLoading &&
+    confirmacionDeLaSesion === 'revisando' &&
+    !didAuthenticateInForm.current &&
+    !quiereOtraCuenta &&
+    returnUrl &&
+    returnUrl !== '/'
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <div className="flex w-full flex-col items-center gap-5 py-10 text-center" data-testid="revisando-sesion">
+          <CargaDeMarca tamano="lg" disposicion="apilada" texto="Revisando tu sesión…" />
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4 disabled:opacity-60"
+            onClick={() => void entrarConOtraDesdeLaEspera()}
+            disabled={saliendoDeLaEspera}
+            data-testid="revisando-sesion-otra-cuenta"
+          >
+            Entrar con otra cuenta
+          </button>
+        </div>
       </div>
     );
   }
